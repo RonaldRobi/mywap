@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Campaign;
+use App\Models\DashboardBanner;
+use App\Models\EventRsvp;
+use App\Models\Infaq;
+use App\Models\LibraryItem;
+use App\Models\NewsPost;
+use App\Models\Payment;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class MemberDashboardController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = $request->user()->load('organization');
+
+        $nextEventRsvp = EventRsvp::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['going', 'maybe'])
+            ->whereHas('event', fn ($query) => $query->where('start_time', '>=', now()))
+            ->with('event.organization')
+            ->get()
+            ->sortBy(fn (EventRsvp $rsvp) => $rsvp->event->start_time)
+            ->first();
+
+        $latestFeePayment = Payment::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'successful')
+            ->where('payable_type', 'membership_fee')
+            ->latest('created_at')
+            ->first();
+
+        $feeIsActive = $latestFeePayment
+            && $latestFeePayment->created_at->year === now()->year;
+
+        $feeAmount = (float) ($user->organization?->fee_amount ?? 50.00);
+
+        $usrahGroup = $user->usrahGroups()
+            ->with(['members' => fn ($query) => $query->withoutGlobalScopes()->select('users.id', 'name')])
+            ->first();
+
+        $isNaqib = $usrahGroup
+            ? $usrahGroup->members->contains(fn ($member) => (int) $member->id === (int) $user->id && (bool) $member->pivot->is_naqib)
+            : false;
+
+        $naqib = $usrahGroup
+            ? $usrahGroup->members->first(fn ($member) => (bool) $member->pivot->is_naqib)
+            : null;
+
+        $campaigns = Campaign::query()
+            ->where('organization_id', $user->current_organization_id)
+            ->where('status', 'active')
+            ->latest()
+            ->take(2)
+            ->get()
+            ->map(fn (Campaign $campaign) => [
+                'id' => $campaign->id,
+                'title' => $campaign->title,
+                'slug' => $campaign->slug,
+                'description' => $campaign->description,
+                'target_amount' => (float) $campaign->target_amount,
+                'current_amount' => (float) $campaign->current_amount,
+                'progress_percent' => $campaign->target_amount > 0
+                    ? min(100, round(($campaign->current_amount / $campaign->target_amount) * 100))
+                    : 0,
+            ]);
+
+        $libraryBooks = LibraryItem::query()
+            ->where('organization_id', $user->current_organization_id)
+            ->latest()
+            ->take(12)
+            ->get()
+            ->map(fn (LibraryItem $item) => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category' => $item->category,
+                'file_path' => $item->file_path,
+                'cover_image_path' => $item->cover_image_path,
+            ]);
+
+        $banners = DashboardBanner::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->orderBy('display_order')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (DashboardBanner $banner) => [
+                'id' => $banner->id,
+                'title' => $banner->title,
+                'image_path' => $banner->image_path,
+                'display_order' => $banner->display_order,
+                'organization_id' => $banner->organization_id,
+            ]);
+
+        $latestNews = NewsPost::query()
+            ->with(['category:id,name', 'organization:id,name'])
+            ->where('is_published', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->latest('published_at')
+            ->latest('id')
+            ->take(8)
+            ->get()
+            ->map(fn (NewsPost $post) => [
+                'id' => $post->id,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt,
+                'cover_image_path' => $post->cover_image_path,
+                'organization_name' => $post->organization?->name ?? 'Semua Organisasi',
+                'category_name' => $post->category?->name ?? 'Umum',
+                'published_at' => $post->published_at?->toDateString(),
+            ]);
+
+        // Infaq / donation campaigns (global or org-specific, active, max 6)
+        $infaqItems = Infaq::query()
+            ->where('is_active', true)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('organization_id')
+                  ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->orderBy('display_order')
+            ->take(6)
+            ->get()
+            ->map(fn (Infaq $infaq) => [
+                'id'               => $infaq->id,
+                'title'            => $infaq->title,
+                'description'      => $infaq->description,
+                'image_path'       => $infaq->image_path,
+                'type'             => $infaq->type,
+                'target_amount'    => $infaq->target_amount,
+                'collected_amount' => $infaq->collected_amount,
+                'progress_percent' => $infaq->progress_percent,
+                'public_url'       => $infaq->public_url,
+            ]);
+
+        return Inertia::render('Member/Dashboard', [
+            'member' => [
+                'name' => $user->name,
+                'organization' => [
+                    'name' => $user->organization?->name,
+                    'slug' => $user->organization?->slug,
+                    'color_theme' => $user->organization?->color_theme,
+                ],
+            ],
+            'feeStatus' => [
+                'status'      => $feeIsActive ? 'active' : 'due',
+                'amount_due'  => $feeIsActive ? 0 : $feeAmount,
+                'last_paid_at'=> $latestFeePayment?->created_at?->toISOString(),
+                'last_reference' => $latestFeePayment?->reference,
+            ],
+            'nextEvent' => $nextEventRsvp ? [
+                'title' => $nextEventRsvp->event->title,
+                'start_formatted' => $nextEventRsvp->event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'location_or_link' => $nextEventRsvp->event->location_or_link,
+                'status' => $nextEventRsvp->status,
+            ] : null,
+            'usrah' => $usrahGroup ? [
+                'id' => $usrahGroup->id,
+                'name' => $usrahGroup->name,
+                'meeting_day' => $usrahGroup->meeting_day,
+                'meeting_time' => $usrahGroup->meeting_time,
+                'naqib_name' => $naqib?->name,
+                'is_naqib' => $isNaqib,
+                'members' => $usrahGroup->members->map(fn ($member) => [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'is_naqib' => (bool) $member->pivot->is_naqib,
+                ])->values(),
+            ] : null,
+            'campaigns' => $campaigns,
+            'libraryBooks' => $libraryBooks,
+            'banners' => $banners,
+            'infaqItems' => $infaqItems,
+            'latestNews' => $latestNews,
+        ]);
+    }
+}
