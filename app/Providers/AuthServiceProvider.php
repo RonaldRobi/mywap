@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\UsrahGroup;
 use App\Policies\ProductPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\OrderPolicy;
+use App\Policies\UsrahGroupPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,7 @@ class AuthServiceProvider extends ServiceProvider
         Product::class => ProductPolicy::class,
         Category::class => CategoryPolicy::class,
         Order::class => OrderPolicy::class,
+        UsrahGroup::class => UsrahGroupPolicy::class,
     ];
 
     /**

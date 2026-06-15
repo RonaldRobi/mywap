@@ -121,9 +121,15 @@
 - Member browse + book time slots
 - Admin approve/reject bookings
 
-### Usrah Groups
-- Admin create groups + assign members
-- Member view own group + log attendance
+### Usrah Groups ✅
+- Admin create/edit/delete groups + assign members (max 1 naqib per group)
+- Member view own group + attendance history
+- Naqib log attendance (hadir/tidak_hadir/uzur) via modal with date picker
+- Meeting day select (dropdown — Isnin–Ahad), is_active toggle
+- Attendance persisted in `usrah_attendances` table (unique per user per session date)
+- Duplicate usrah loading logic extracted to `LoadUsrahForUser` action
+- Authorization via `UsrahGroupPolicy` (viewAny, create, update, delete, assignMembers, logAttendance)
+- Full test coverage (10 tests) for CRUD, assign, attendance
 
 ### Broadcast Messages
 - Admin compose + send targeted broadcasts

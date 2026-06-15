@@ -24,6 +24,7 @@ use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PostcodeController;
+use App\Http\Controllers\PollController;
 use App\Http\Controllers\UsrahController;
 use Illuminate\Support\Facades\Route;
 
@@ -80,6 +81,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
         Route::get('/admin/usrah', [UsrahController::class, 'adminIndex'])->name('admin.usrah.index');
         Route::post('/admin/usrah/groups', [UsrahController::class, 'storeGroup'])->name('admin.usrah.groups.store');
+        Route::put('/admin/usrah/groups/{usrahGroup}', [UsrahController::class, 'updateGroup'])->name('admin.usrah.groups.update');
+        Route::delete('/admin/usrah/groups/{usrahGroup}', [UsrahController::class, 'deleteGroup'])->name('admin.usrah.groups.delete');
         Route::post('/admin/usrah/groups/{usrahGroup}/assign', [UsrahController::class, 'assignMembers'])->name('admin.usrah.groups.assign');
         Route::get('/admin/broadcasts', [BroadcastController::class, 'index'])->name('admin.broadcasts.index');
         Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
@@ -89,6 +92,16 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/admin/facilities/{facility}', [FacilityBookingController::class, 'destroyFacility'])->name('admin.facilities.destroy');
         Route::get('/admin/facility-bookings', [FacilityBookingController::class, 'adminIndex'])->name('admin.facility-bookings.index');
         Route::patch('/admin/facility-bookings/{facilityBooking}', [FacilityBookingController::class, 'updateStatus'])->name('admin.facility-bookings.update');
+        // Polls / Surveys
+        Route::get('/admin/polls', [PollController::class, 'adminIndex'])->name('admin.polls.index');
+        Route::get('/admin/polls/create', [PollController::class, 'adminCreate'])->name('admin.polls.create');
+        Route::post('/admin/polls', [PollController::class, 'adminStore'])->name('admin.polls.store');
+        Route::get('/admin/polls/{poll}', [PollController::class, 'adminEdit'])->name('admin.polls.edit');
+        Route::put('/admin/polls/{poll}', [PollController::class, 'adminUpdate'])->name('admin.polls.update');
+        Route::delete('/admin/polls/{poll}', [PollController::class, 'adminDestroy'])->name('admin.polls.destroy');
+        Route::get('/admin/polls/{poll}/results', [PollController::class, 'adminResults'])->name('admin.polls.results');
+        Route::get('/admin/polls/{poll}/export', [PollController::class, 'exportCsv'])->name('admin.polls.export');
+
         Route::get('/admin/info-terkini/manage', [NewsController::class, 'manage'])->name('admin.news.manage');
         Route::post('/admin/info-terkini', [NewsController::class, 'store'])->name('admin.news.store');
         Route::put('/admin/info-terkini/{newsPost}', [NewsController::class, 'update'])->name('admin.news.update');
@@ -150,6 +163,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/member/facilities', [FacilityBookingController::class, 'index'])->name('member.facilities.index');
         Route::get('/member/facilities/{facility}', [FacilityBookingController::class, 'show'])->name('member.facilities.show');
         Route::post('/member/facilities/{facility}/book', [FacilityBookingController::class, 'store'])->name('member.facilities.book');
+
+        // Polls / Surveys
+        Route::get('/polls', [PollController::class, 'index'])->name('member.polls.index');
+        Route::get('/polls/{poll}', [PollController::class, 'show'])->name('member.polls.show');
+        Route::post('/polls/{poll}/respond', [PollController::class, 'respond'])->name('member.polls.respond');
+        Route::get('/polls/{poll}/results', [PollController::class, 'results'])->name('member.polls.results');
     });
 
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');

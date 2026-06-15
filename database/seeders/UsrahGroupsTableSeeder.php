@@ -2,23 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\UsrahGroup;
 use Illuminate\Database\Seeder;
 
 class UsrahGroupsTableSeeder extends Seeder
 {
-
-    /**
-     * Auto generated seed file
-     *
-     * @return void
-     */
-    public function run()
+    public function run(): void
     {
-        
-
-        \DB::table('usrah_groups')->delete();
-        
-        
-        
+        UsrahGroup::factory()->count(3)->create();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\LoadUsrahForUser;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
 use App\Models\EventRsvp;
@@ -34,17 +35,7 @@ class MemberDashboardController extends Controller
         $feeStatus = $feeService->getStatus($user);
         $feeAmount = (float) ($user->organization?->fee_amount ?? 50.00);
 
-        $usrahGroup = $user->usrahGroups()
-            ->with(['members' => fn ($query) => $query->withoutGlobalScopes()->select('users.id', 'name')])
-            ->first();
-
-        $isNaqib = $usrahGroup
-            ? $usrahGroup->members->contains(fn ($member) => (int) $member->id === (int) $user->id && (bool) $member->pivot->is_naqib)
-            : false;
-
-        $naqib = $usrahGroup
-            ? $usrahGroup->members->first(fn ($member) => (bool) $member->pivot->is_naqib)
-            : null;
+        $usrahGroup = app(LoadUsrahForUser::class)->execute($user);
 
         $campaigns = Campaign::query()
             ->where('organization_id', $user->current_organization_id)
@@ -157,19 +148,7 @@ class MemberDashboardController extends Controller
                 'location_or_link' => $nextEventRsvp->event->location_or_link,
                 'status' => $nextEventRsvp->status,
             ] : null,
-            'usrah' => $usrahGroup ? [
-                'id' => $usrahGroup->id,
-                'name' => $usrahGroup->name,
-                'meeting_day' => $usrahGroup->meeting_day,
-                'meeting_time' => $usrahGroup->meeting_time,
-                'naqib_name' => $naqib?->name,
-                'is_naqib' => $isNaqib,
-                'members' => $usrahGroup->members->map(fn ($member) => [
-                    'id' => $member->id,
-                    'name' => $member->name,
-                    'is_naqib' => (bool) $member->pivot->is_naqib,
-                ])->values(),
-            ] : null,
+            'usrah' => $usrahGroup,
             'campaigns' => $campaigns,
             'libraryBooks' => $libraryBooks,
             'banners' => $banners,

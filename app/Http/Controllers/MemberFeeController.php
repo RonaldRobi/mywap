@@ -85,8 +85,14 @@ class MemberFeeController extends Controller
                 ? $feeService->getAdminStats(null, $year)
                 : $feeService->getAdminStats($orgId, $year));
 
+        $monthExpr = match (DB::connection()->getDriverName()) {
+            'pgsql' => "EXTRACT(MONTH FROM created_at)",
+            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
+            default => "MONTH(created_at)",
+        };
+
         $monthlyTotals = Payment::query()
-            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
+            ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
             ->where('status', 'successful')
             ->whereYear('created_at', $year)
             ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request) {

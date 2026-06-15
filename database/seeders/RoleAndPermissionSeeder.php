@@ -49,6 +49,12 @@ class RoleAndPermissionSeeder extends Seeder
             'view.documents',
             'manage.documents',
 
+            // Polls / Surveys
+            'view.polls',
+            'create.polls',
+            'edit.polls',
+            'delete.polls',
+
             // Settings
             'manage.settings',
             'manage.organizations',  // Superadmin only

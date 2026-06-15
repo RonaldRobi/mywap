@@ -158,15 +158,15 @@ class User extends Authenticatable
     public function usrahGroups(): BelongsToMany
     {
         return $this->belongsToMany(UsrahGroup::class, 'usrah_group_user')
-            ->withPivot(['is_naqib', 'joined_at'])
+            ->withPivot(['role', 'is_naqib', 'joined_at'])
             ->withTimestamps();
     }
 
     public function ledUsrahGroups(): BelongsToMany
     {
         return $this->belongsToMany(UsrahGroup::class, 'usrah_group_user')
-            ->withPivot(['is_naqib', 'joined_at'])
-            ->wherePivot('is_naqib', true)
+            ->withPivot(['role', 'is_naqib', 'joined_at'])
+            ->wherePivotIn('role', ['leader', 'sub_leader'])
             ->withTimestamps();
     }
 

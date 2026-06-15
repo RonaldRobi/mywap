@@ -44,35 +44,26 @@ class EventController extends Controller
             $query->whereDate('start_time', '<=', $request->input('end'));
         }
 
-        $events = $query->orderBy('start_time', 'desc')->paginate(20);
+        $events = $query->orderBy('start_time', 'desc')->take(100)->get();
 
         // Filter by status (hadir/tidak_hadir)
         $status = $request->input('status');
-        $filtered = $events->through(function($event) use ($status) {
+        $filtered = $events->map(function($event) use ($status) {
             $attendanceCount = $event->rsvps->where('status', 'attended')->count();
-            return [
+            $eventArr = [
                 'id' => $event->id,
                 'title' => $event->title,
                 'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
                 'location_or_link' => $event->location_or_link,
                 'attendance_count' => $attendanceCount,
             ];
-        })->filter(function($eventArr) use ($status) {
-            if ($status === 'hadir' && $eventArr['attendance_count'] === 0) return false;
-            if ($status === 'tidak_hadir' && $eventArr['attendance_count'] > 0) return false;
-            return true;
-        })->values();
+            if ($status === 'hadir' && $attendanceCount === 0) return null;
+            if ($status === 'tidak_hadir' && $attendanceCount > 0) return null;
+            return $eventArr;
+        })->filter()->values();
 
         return Inertia::render('Events/AdminAttendance', [
-            'adminAttendance' => [
-                'data' => $filtered,
-                'links' => [
-                    'next' => $events->nextPageUrl(),
-                    'prev' => $events->previousPageUrl(),
-                ],
-                'current_page' => $events->currentPage(),
-                'last_page' => $events->lastPage(),
-            ],
+            'adminAttendance' => $filtered,
         ]);
     }
     // ─── Helpers ─────────────────────────────────────────────────────────────

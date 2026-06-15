@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -38,13 +39,19 @@ class AdminFinanceController extends Controller
         if ($infaqTotal > 0) $bySource->push(['type' => 'Infaq', 'total' => $infaqTotal]);
 
         // Monthly chart - single GROUP BY query per source
+        $monthExpr = match (DB::connection()->getDriverName()) {
+            'pgsql' => "EXTRACT(MONTH FROM created_at)",
+            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
+            default => "MONTH(created_at)",
+        };
+
         $feeMonthly = (clone $paymentQuery)
-            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
+            ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
             ->groupBy('month')
             ->pluck('total', 'month');
 
         $infaqMonthly = (clone $infaqQuery)
-            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
+            ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
             ->groupBy('month')
             ->pluck('total', 'month');
 

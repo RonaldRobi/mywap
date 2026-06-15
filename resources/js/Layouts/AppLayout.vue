@@ -217,6 +217,14 @@ const navItems = computed(() => [
                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/>
                </svg>`,
     },
+    {
+        label:  'Undian',
+        href:   isAdmin.value || isSuperadmin.value ? route('admin.polls.index') : route('member.polls.index'),
+        active: route().current('*polls.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+               </svg>`,
+    },
         ...(isAdmin.value || isSuperadmin.value ? [{
                 label:  'Members',
                 href:   route('admin.hub.manage'),
