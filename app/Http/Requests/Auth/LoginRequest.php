@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,8 +30,8 @@ class LoginRequest extends FormRequest
     {
         return [
             'login_type' => ['nullable', 'in:admin,member'],
-            'email' => ['required_if:login_type,admin', 'nullable', 'string', 'email'],
-            'ic_number' => ['required_if:login_type,member', 'nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'email'],
+            'ic_number' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'remember' => ['nullable', 'boolean'],
         ];
@@ -45,41 +46,68 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $loginType = $this->string('login_type')->toString();
-        $identifierField = $loginType === 'member' ? 'ic_number' : 'email';
-
-        if ($identifierField === 'email') {
-            $credentials = [
-                'email' => Str::lower(trim((string) $this->input('email'))),
-                'password' => $this->input('password'),
-            ];
-
-            if (! Auth::attempt($credentials, $this->boolean('remember'))) {
-                RateLimiter::hit($this->throttleKey());
-                throw ValidationException::withMessages([
-                    'email' => trans('auth.failed'),
-                ]);
-            }
+        if ($this->filled('email')) {
+            $this->authenticateByEmail();
         } else {
-            $identifier = (string) $this->input('ic_number');
-            $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
-            $email = Str::lower(trim($identifier));
-
-            $user = \App\Models\User::where(function ($query) use ($normalizedId, $email) {
-                $query->where('ic_number', $normalizedId)
-                      ->orWhere('member_no', $normalizedId)
-                      ->orWhere('email', $email);
-            })->first();
-
-            if (! $user || ! Auth::attempt(['id' => $user->id, 'password' => $this->input('password')], $this->boolean('remember'))) {
-                RateLimiter::hit($this->throttleKey());
-                throw ValidationException::withMessages([
-                    'ic_number' => trans('auth.failed'),
-                ]);
-            }
+            $this->authenticateByIdentifier();
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    private function authenticateByEmail(): void
+    {
+        $email = Str::lower(trim((string) $this->input('email')));
+
+        $user = User::where('email', $email)->first();
+
+        if (! Auth::attempt(['email' => $email, 'password' => $this->input('password')], $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            if ($user && is_null($user->first_login_at)) {
+                throw ValidationException::withMessages([
+                    'email' => 'Akaun ini belum aktif. Sila gunakan pautan "Log Masuk Kali Pertama" di bawah.',
+                ]);
+            }
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+    }
+
+    private function authenticateByIdentifier(): void
+    {
+        $identifier = (string) $this->input('ic_number');
+        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $email = Str::lower(trim($identifier));
+
+        $user = User::where(function ($query) use ($normalizedId, $email) {
+            $query->where('ic_number', $normalizedId)
+                  ->orWhere('member_no', $normalizedId)
+                  ->orWhere('email', $email);
+        })->first();
+
+        if (! $user) {
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'ic_number' => trans('auth.failed'),
+            ]);
+        }
+
+        if (! Auth::attempt(['id' => $user->id, 'password' => $this->input('password')], $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            if (is_null($user->first_login_at)) {
+                throw ValidationException::withMessages([
+                    'ic_number' => 'Akaun ini belum aktif. Sila gunakan pautan "Log Masuk Kali Pertama" di bawah.',
+                ]);
+            }
+
+            throw ValidationException::withMessages([
+                'ic_number' => trans('auth.failed'),
+            ]);
+        }
     }
 
     /**
@@ -110,28 +138,24 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        $identifier = $this->identifierField() === 'ic_number'
-            ? $this->normalizedIcNumber()
-            : Str::lower(trim((string) $this->input('email')));
-
-        return Str::transliterate($identifier.'|'.$this->ip());
+        return Str::transliterate($this->identifierValue().'|'.$this->ip());
     }
 
     private function identifierField(): string
     {
-        if ($this->string('login_type')->toString() === 'member') {
-            return 'ic_number';
+        if ($this->filled('email')) {
+            return 'email';
         }
 
-        if ($this->filled('ic_number') && ! $this->filled('email')) {
-            return 'ic_number';
-        }
-
-        return 'email';
+        return 'ic_number';
     }
 
-    private function normalizedIcNumber(): string
+    private function identifierValue(): string
     {
+        if ($this->filled('email')) {
+            return Str::lower(trim((string) $this->input('email')));
+        }
+
         $raw = (string) $this->input('ic_number');
 
         return Str::upper(preg_replace('/\s+/', '', trim($raw)) ?? '');

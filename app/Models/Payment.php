@@ -19,6 +19,8 @@ class Payment extends Model
         'status',
         'reference',
         'description',
+        'proof_path',
+        'uploaded_by',
     ];
 
     protected function casts(): array
@@ -31,6 +33,11 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     public function payable(): MorphTo

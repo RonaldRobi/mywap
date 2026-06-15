@@ -1,13 +1,45 @@
 <script setup>
+import { computed, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
-defineProps({
+const props = defineProps({
     infaq: {
         type: Object,
         required: true,
     },
 });
+
+const sharePreviewUrl = computed(() => {
+    return route('share.infaq', props.infaq.slug || props.infaq.id, true);
+});
+
+const qrUrl = computed(() => {
+    return route('infaq.qr', {
+        year: props.infaq.year || new Date().getFullYear(),
+        month: props.infaq.month || String(new Date().getMonth() + 1).padStart(2, '0'),
+        day: props.infaq.day || String(new Date().getDate()).padStart(2, '0'),
+        infaq: props.infaq.slug || props.infaq.id,
+    });
+});
+
+const linkCopied = ref(false);
+async function copyShareLink() {
+    try {
+        await navigator.clipboard.writeText(sharePreviewUrl.value);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = sharePreviewUrl.value;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    }
+}
 </script>
 
 <template>
@@ -31,6 +63,32 @@ defineProps({
                 </p>
             </div>
 
+            <!-- QR Share -->
+            <div class="rounded-2xl bg-gray-50 border border-gray-200 p-5">
+                <p class="text-xs font-bold text-slate-700 mb-3">Kongsikan Kempen Ini</p>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="bg-white p-2 border border-gray-200 rounded-xl shadow-sm">
+                        <img :src="qrUrl" alt="QR Code" class="w-28 h-28"/>
+                    </div>
+                    <div class="flex items-center w-full rounded-lg bg-white border border-gray-200 p-1.5">
+                        <span class="truncate text-xs text-gray-500 px-1 flex-1">{{ sharePreviewUrl }}</span>
+                        <button
+                            @click="copyShareLink"
+                            class="shrink-0 rounded-md px-3 py-1 text-xs font-bold transition"
+                            :class="linkCopied ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'"
+                        >
+                            {{ linkCopied ? 'Disalin!' : 'Salin' }}
+                        </button>
+                    </div>
+                    <SocialShareButtons
+                        :title="infaq.title"
+                        :url="sharePreviewUrl"
+                        text="Saya baru menyumbang untuk kempen ini. Jom turut serta!"
+                        compact
+                    />
+                </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="space-y-3">
                 <Link 
@@ -41,7 +99,7 @@ defineProps({
                 </Link>
                 
                 <Link 
-                    href="/#infaq" 
+                    href="/sumbangan" 
                     class="block w-full py-3.5 px-4 bg-white border-2 border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 text-sm font-bold uppercase tracking-wide rounded-xl transition"
                 >
                     Lihat Kempen Lain

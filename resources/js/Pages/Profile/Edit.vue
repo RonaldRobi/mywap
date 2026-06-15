@@ -16,6 +16,10 @@ defineProps({
         type: Array,
         default: () => [],
     },
+    orgPositions: {
+        type: Array,
+        default: () => [],
+    },
     canEditIcNumber: {
         type: Boolean,
         default: false,
@@ -36,6 +40,7 @@ defineProps({
                         :must-verify-email="mustVerifyEmail"
                         :status="status"
                         :branches="branches"
+                        :org-positions="orgPositions"
                         :can-edit-ic-number="canEditIcNumber"
                     />
                 </section>

@@ -18,6 +18,11 @@ class AppSetting extends Model
         'splash_title',
         'splash_duration_ms',
         'splash_enabled',
+        'admin_contact_email',
+        'admin_contact_phone',
+        'resend_api_key',
+        'mail_from_address',
+        'mail_from_name',
     ];
 
     protected function casts(): array
@@ -25,6 +30,7 @@ class AppSetting extends Model
         return [
             'splash_duration_ms' => 'integer',
             'splash_enabled' => 'boolean',
+            'resend_api_key' => 'encrypted',
         ];
     }
 

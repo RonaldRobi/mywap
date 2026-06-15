@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -55,7 +56,7 @@ class InformationHubAdminController extends Controller
         ]);
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, FeeService $feeService): Response
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -63,8 +64,18 @@ class InformationHubAdminController extends Controller
         $search = $request->input('search');
         $organizationIdFilter = $request->input('organization_id');
         $roleFilter = $request->input('role');
+        $perPage = (int) ($request->input('per_page', 25));
+        $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 25;
 
-        $query = User::query()->with(['organization:id,name', 'branch:id,name,organization_id', 'roles']);
+        $query = User::query()->with([
+            'organization:id,name,color_theme',
+            'branch:id,name,organization_id',
+            'roles',
+            'membershipFees',
+            'transitionHistory.fromOrganization',
+            'transitionHistory.toOrganization',
+            'rsvps.event.organization',
+        ]);
 
         if (! $isSuperadmin) {
             $query->where('current_organization_id', $user->current_organization_id);
@@ -77,7 +88,9 @@ class InformationHubAdminController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('ic_number', 'like', "%{$search}%");
+                  ->orWhere('ic_number', 'like', "%{$search}%")
+                  ->orWhere('member_no', 'like', "%{$search}%")
+                  ->orWhere('original_member_no', 'like', "%{$search}%");
             });
         }
 
@@ -87,18 +100,79 @@ class InformationHubAdminController extends Controller
             });
         }
 
-        $members = $query->latest()->paginate(20)->withQueryString()
+        $year = now()->year;
+        $branches = $isSuperadmin
+            ? \App\Models\Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : \App\Models\Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
+        $members = $query->latest()->paginate($perPage)->withQueryString()
             ->through(fn(User $u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
+                'member_no' => $u->member_no,
+                'original_member_no' => $u->original_member_no,
                 'ic_number' => $this->maskIcNumber($u->ic_number),
                 'phone' => $u->phone,
+                'dob' => $u->dob?->format('d M Y'),
+                'gender' => $u->gender,
+                'marital_status' => $u->marital_status,
+                'education_level' => $u->education_level,
+                'current_profession' => $u->current_profession,
+                'industry' => $u->industry,
+                'expertise' => $u->expertise,
+                'position' => $u->position,
+                'topics' => $u->topics,
                 'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
+                'organization_id' => $u->current_organization_id,
+                'organization_color' => $u->organization?->color_theme,
                 'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
+                'branch_id' => $u->branch_id,
+                'locality' => $u->locality,
+                'linkedin_url' => $u->linkedin_url,
+                'profile_photo_path' => $u->profile_photo_path,
+                'address_1' => $u->address_1,
+                'address_2' => $u->address_2,
+                'postcode' => $u->postcode,
+                'city' => $u->city,
+                'state' => $u->state,
+                'emergency_contact_name' => $u->emergency_contact_name,
+                'emergency_contact_phone' => $u->emergency_contact_phone,
                 'role' => $u->roles->pluck('name')->first() ?? 'Member',
-                'is_active' => true, // placeholder if we decide to implement suspension
+                'is_active' => true,
+                'transition_history' => $u->transitionHistory->map(fn ($h) => [
+                    'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
+                    'to'   => $h->toOrganization->name,
+                    'date' => $h->transitioned_at->format('d M Y'),
+                    'color' => $h->toOrganization?->color_theme ?? '#6b7280',
+                ])->values(),
+                'attended_programs' => $u->rsvps
+                    ->where('status', 'attended')
+                    ->sortByDesc('attended_at')
+                    ->values()
+                    ->map(fn ($rsvp) => [
+                        'title' => $rsvp->event?->title ?? 'Program tidak wujud',
+                        'date'  => $rsvp->attended_at?->format('d M Y'),
+                        'year'  => $rsvp->attended_at?->year,
+                        'org'   => $rsvp->event?->organization?->name ?? '—',
+                        'color' => $rsvp->event?->organization?->color_theme ?? '#6b7280',
+                    ]),
+                'fee_status' => $u->membershipFees
+                    ->where('year', $year)
+                    ->first()?->status ?? 'unpaid',
             ]);
+
+
+        $positions = \App\Models\OrganizationPosition::where('organization_id', $user->current_organization_id)
+            ->orderBy('display_order')->get(['id', 'name']);
+
+        $userQuery = User::withoutGlobalScopes()
+            ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id));
+        $stats = [
+            'total' => (clone $userQuery)->count(),
+            'aktif' => (clone $userQuery)->whereNotNull('profile_completed_at')->count(),
+            'tidak_aktif' => (clone $userQuery)->whereNull('profile_completed_at')->count(),
+        ];
 
         return Inertia::render('Admin/InformationHubManage', [
             'isSuperadmin' => $isSuperadmin,
@@ -113,12 +187,57 @@ class InformationHubAdminController extends Controller
                     'max_age' => $user->organization?->max_age,
                 ]]),
             'members' => $members,
+            'branches' => $branches,
+            'orgPositions' => $positions,
+            'stats' => $stats,
             'filters' => [
                 'search' => $search,
                 'organization_id' => $organizationIdFilter,
                 'role' => $roleFilter,
+                'per_page' => $perPage,
             ]
         ]);
+    }
+
+    public function updateMember(Request $request, User $user): RedirectResponse
+    {
+        $authUser = $request->user();
+        $isSuperadmin = $authUser->hasRole('Superadmin');
+
+        if (! $isSuperadmin && $user->current_organization_id !== $authUser->current_organization_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'ic_number' => ['nullable', 'string', 'max:32', \Illuminate\Validation\Rule::unique('users', 'ic_number')->ignore($user->id)],
+            'dob' => ['nullable', 'date'],
+            'gender' => ['nullable', 'in:lelaki,perempuan'],
+            'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
+            'education_level' => ['nullable', 'string', 'max:120'],
+            'current_profession' => ['nullable', 'string', 'max:120'],
+            'industry' => ['nullable', 'string', 'max:120'],
+            'expertise' => ['nullable', 'string', 'max:255'],
+            'position' => ['nullable', 'string', 'max:255'],
+            'topics' => ['nullable', 'string'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
+            'locality' => ['nullable', 'string', 'max:120'],
+            'linkedin_url' => ['nullable', 'url', 'max:255'],
+            'address_1' => ['nullable', 'string', 'max:255'],
+            'address_2' => ['nullable', 'string', 'max:255'],
+            'postcode' => ['nullable', 'string', 'max:5'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'is_public_in_directory' => ['nullable', 'boolean'],
+        ]);
+
+        $user->update($validated);
+
+        return back()->with('success', 'Profil ahli berjaya dikemas kini.');
     }
 
     public function storeAnnouncement(Request $request): RedirectResponse
@@ -405,7 +524,10 @@ class InformationHubAdminController extends Controller
             );
             \Maatwebsite\Excel\Facades\Excel::import($import, $request->filename, 'local');
             
-            return response()->json(['processed' => $import->processedCount]);
+            return response()->json([
+                'processed' => $import->processedCount,
+                'errors' => $import->errors,
+            ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('CHUNK IMPORT ERROR: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['error' => $e->getMessage()], 500);

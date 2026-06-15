@@ -29,10 +29,9 @@ class SendBroadcastJob implements ShouldQueue
             ->where('current_organization_id', $message->organization_id);
 
         if ($message->target_criteria === 'unpaid_fees') {
-            $query->whereDoesntHave('payments', function ($paymentQuery) {
-                $paymentQuery->where('status', 'successful')
-                    ->where('payable_type', 'membership_fee')
-                    ->whereYear('created_at', now()->year);
+            $query->whereDoesntHave('membershipFees', function ($feeQuery) {
+                $feeQuery->where('year', now()->year)
+                  ->whereIn('status', ['paid', 'exempted', 'life_member']);
             });
         }
 

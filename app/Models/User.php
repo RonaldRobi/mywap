@@ -57,6 +57,7 @@ class User extends Authenticatable
         'linkedin_url',
         'is_public_in_directory',
         'member_no',
+        'original_member_no',
         'wadah_state',
         'key_in_date',
         'registration_year',
@@ -71,6 +72,13 @@ class User extends Authenticatable
         'fax_number',
         'legacy_update_note',
         'notes',
+        'gender',
+        'marital_status',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'position',
+        'topics',
+        'referred_by_user_id',
     ];
 
     protected $hidden = [
@@ -119,6 +127,17 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Branch::class, 'branch_id');
     }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by_user_id');
+    }
+
+    public function referredMembers(): HasMany
+    {
+        return $this->hasMany(User::class, 'referred_by_user_id');
+    }
+
     /**
      * Full chronological history of all NGO tier transitions.
      * Ordered ascending so the Profile Timeline renders oldest-first.
@@ -159,6 +178,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
+
+    public function membershipFees(): HasMany
+    {
+        return $this->hasMany(MembershipFee::class);
+    }
+
+    public function rsvps(): HasMany
+    {
+        return $this->hasMany(EventRsvp::class);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**
@@ -172,5 +202,43 @@ class User extends Authenticatable
     public function getProfilePhotoPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
+    }
+
+    /**
+     * Parse DOB from Malaysian IC number (YYMMDD-PB-XXXX).
+     * Returns YYYY-MM-DD string or null.
+     */
+    public static function parseDobFromIc(?string $ic): ?string
+    {
+        if (! $ic) return null;
+
+        $digits = preg_replace('/[^0-9]/', '', $ic);
+        if (strlen($digits) < 6) return null;
+
+        $yy = (int) substr($digits, 0, 2);
+        $mm = (int) substr($digits, 2, 2);
+        $dd = (int) substr($digits, 4, 2);
+
+        if ($mm < 1 || $mm > 12 || $dd < 1 || $dd > 31) return null;
+
+        $yyyy = $yy > 25 ? 1900 + $yy : 2000 + $yy;
+
+        return sprintf('%04d-%02d-%02d', $yyyy, $mm, $dd);
+    }
+
+    /**
+     * Guess gender from Malaysian IC number.
+     * Last digit of 12-digit IC: odd = lelaki, even = perempuan.
+     */
+    public static function guessGenderFromIc(?string $ic): ?string
+    {
+        if (! $ic) return null;
+
+        $digits = preg_replace('/[^0-9]/', '', $ic);
+        if (strlen($digits) < 12) return null;
+
+        $lastDigit = (int) substr($digits, -1);
+
+        return $lastDigit % 2 === 1 ? 'lelaki' : 'perempuan';
     }
 }

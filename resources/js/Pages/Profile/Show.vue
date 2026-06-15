@@ -154,6 +154,86 @@ const initials = computed(() =>
             </div>
 
             <!-- ════════════════════════════════════════════════════════════ -->
+            <!--  MAKLUMAT LANJUT                                           -->
+            <!-- ════════════════════════════════════════════════════════════ -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+                <div class="px-5 py-4 border-b border-gray-50">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Maklumat Peribadi</h3>
+                </div>
+                <div class="px-5 py-4 grid grid-cols-2 gap-4 text-sm">
+                    <div v-if="profileUser.gender">
+                        <span class="text-xs text-gray-400 block">Jantina</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.gender }}</span>
+                    </div>
+                    <div v-if="profileUser.marital_status">
+                        <span class="text-xs text-gray-400 block">Status Perkahwinan</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.marital_status }}</span>
+                    </div>
+                    <div v-if="profileUser.education_level">
+                        <span class="text-xs text-gray-400 block">Pendidikan</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.education_level }}</span>
+                    </div>
+                    <div v-if="profileUser.current_profession">
+                        <span class="text-xs text-gray-400 block">Profesion</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.current_profession }}</span>
+                    </div>
+                    <div v-if="profileUser.industry">
+                        <span class="text-xs text-gray-400 block">Industri</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.industry }}</span>
+                    </div>
+                    <div v-if="profileUser.position">
+                        <span class="text-xs text-gray-400 block">Jawatan</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.position }}</span>
+                    </div>
+                    <div v-if="profileUser.expertise" class="col-span-2">
+                        <span class="text-xs text-gray-400 block">Kepakaran</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.expertise }}</span>
+                    </div>
+                    <div v-if="profileUser.topics" class="col-span-2">
+                        <span class="text-xs text-gray-400 block">Bidang Kepakaran / Topik</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.topics }}</span>
+                    </div>
+                    <div v-if="profileUser.branch_name" class="col-span-2">
+                        <span class="text-xs text-gray-400 block">Cawangan</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.branch_name }}</span>
+                    </div>
+                    <div v-if="profileUser.locality" class="col-span-2">
+                        <span class="text-xs text-gray-400 block">Lokaliti</span>
+                        <span class="font-medium text-gray-800">{{ profileUser.locality }}</span>
+                    </div>
+                </div>
+
+                <div v-if="profileUser.address_1 || profileUser.address_2 || profileUser.postcode" class="border-t border-gray-50 px-5 py-4">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Alamat</h4>
+                    <div class="text-sm text-gray-700 space-y-0.5">
+                        <p v-if="profileUser.address_1">{{ profileUser.address_1 }}</p>
+                        <p v-if="profileUser.address_2">{{ profileUser.address_2 }}</p>
+                        <p v-if="profileUser.postcode || profileUser.city || profileUser.state">
+                            {{ [profileUser.postcode, profileUser.city, profileUser.state].filter(Boolean).join(', ') }}
+                        </p>
+                    </div>
+                </div>
+
+                <div v-if="profileUser.emergency_contact_name" class="border-t border-gray-50 px-5 py-4">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Contact Kecemasan</h4>
+                    <div class="text-sm text-gray-700">
+                        <p><span class="font-medium">{{ profileUser.emergency_contact_name }}</span></p>
+                        <p v-if="profileUser.emergency_contact_phone" class="text-gray-500">{{ profileUser.emergency_contact_phone }}</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-50 px-5 py-4">
+                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Status Yuran</h4>
+                    <div v-if="profileUser.fee_status" class="text-sm">
+                        <span v-if="profileUser.fee_status.status === 'active'" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Aktif</span>
+                        <span v-else class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Tertunggak</span>
+                        <p v-if="profileUser.fee_status.amount_due > 0" class="mt-1 text-gray-600">Jumlah perlu dibayar: RM {{ Number(profileUser.fee_status.amount_due).toFixed(2) }}</p>
+                        <p v-if="profileUser.fee_status.last_paid_at" class="mt-0.5 text-xs text-gray-400">Bayaran terakhir: {{ profileUser.fee_status.last_paid_at }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════════════════════════ -->
             <!--  PROGRAM YANG TELAH DIHADIRI                                -->
             <!-- ════════════════════════════════════════════════════════════ -->
             <div class="mb-7">

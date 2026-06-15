@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\EventRsvp;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+
+use App\Services\FeeService;
 
 class ProfileController extends Controller
 {
@@ -65,21 +68,42 @@ class ProfileController extends Controller
                 'transitioned_at_human'=> $record->transitioned_at->translatedFormat('d F Y'),
             ]);
 
+        $feeStatus = app(\App\Services\FeeService::class)->getStatus($user);
+
         return Inertia::render('Profile/Show', [
             'profileUser' => [
                 'id'           => $user->id,
                 'name'         => $user->name,
                 'email'        => $user->email,
                 'phone'        => $user->phone,
+                'ic_number'    => $user->ic_number,
                 'roles'        => $user->getRoleNames()->values(),
                 'dob'          => $isSuperadmin ? null : $user->dob?->format('d M Y'),
                 'age'          => $isSuperadmin ? null : $user->dob?->age,
+                'gender'       => $user->gender,
+                'marital_status' => $user->marital_status,
+                'education_level' => $user->education_level,
+                'current_profession' => $user->current_profession,
+                'industry'     => $user->industry,
+                'expertise'    => $user->expertise,
+                'topics'       => $user->topics,
+                'position'     => $user->position,
+                'branch_name'  => $user->branch?->name,
+                'locality'     => $user->locality,
+                'address_1'    => $user->address_1,
+                'address_2'    => $user->address_2,
+                'postcode'     => $user->postcode,
+                'city'         => $user->city,
+                'state'        => $user->state,
+                'emergency_contact_name' => $user->emergency_contact_name,
+                'emergency_contact_phone' => $user->emergency_contact_phone,
                 'organization' => $user->organization ? [
                     'id'          => $user->organization->id,
                     'name'        => $user->organization->name,
                     'slug'        => $user->organization->slug,
                     'color_theme' => $user->organization->color_theme,
                 ] : null,
+                'feeStatus'    => $feeStatus,
             ],
             'history' => $history,
             'attendedPrograms' => $attendedPrograms,
@@ -93,7 +117,6 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Load branches belonging to the user's current organisation
         $branches = $user->current_organization_id
             ? \App\Models\Branch::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
@@ -101,10 +124,17 @@ class ProfileController extends Controller
                 ->get(['id', 'name', 'state'])
             : collect();
 
+        $positions = $user->current_organization_id
+            ? \App\Models\OrganizationPosition::where('organization_id', $user->current_organization_id)
+                ->orderBy('display_order')
+                ->get(['id', 'name'])
+            : collect();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status'          => session('status'),
             'branches'        => $branches,
+            'orgPositions'    => $positions,
             'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin']),
         ]);
     }
@@ -120,7 +150,14 @@ class ProfileController extends Controller
             return Redirect::route('dashboard');
         }
 
-        return Inertia::render('Member/CompleteProfile');
+        // Auto-fill DOB + gender from IC number
+        $parsedDob = User::parseDobFromIc($user->ic_number);
+        $parsedGender = User::guessGenderFromIc($user->ic_number);
+
+        return Inertia::render('Member/CompleteProfile', [
+            'parsedDob' => $parsedDob,
+            'parsedGender' => $parsedGender,
+        ]);
     }
 
     /**
@@ -132,9 +169,32 @@ class ProfileController extends Controller
             'education_level' => ['required', 'string', 'max:120'],
             'current_profession' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'max:30'],
+            'dob' => ['nullable', 'date'],
+            'gender' => ['nullable', 'in:lelaki,perempuan'],
+            'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
+            'address_1' => ['nullable', 'string', 'max:255'],
+            'address_2' => ['nullable', 'string', 'max:255'],
+            'postcode' => ['nullable', 'string', 'max:5'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'topics' => ['nullable', 'string'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        // Auto-fill DOB from IC if not provided
+        if (empty($data['dob']) && $user->ic_number) {
+            $data['dob'] = User::parseDobFromIc($user->ic_number);
+        }
+
+        // Auto-draft gender from IC if not selected
+        if (empty($data['gender']) && $user->ic_number) {
+            $data['gender'] = User::guessGenderFromIc($user->ic_number);
+        }
+
+        $user->update([
             ...$data,
             'profile_completed_at' => now(),
         ]);
@@ -171,6 +231,12 @@ class ProfileController extends Controller
                 'expertise',
                 'linkedin_url',
                 'is_public_in_directory',
+                'gender',
+                'marital_status',
+                'emergency_contact_name',
+                'emergency_contact_phone',
+                'position',
+                'topics',
             ] as $field) {
                 unset($validated[$field]);
             }
@@ -178,6 +244,20 @@ class ProfileController extends Controller
 
         if (! $isSuperadmin) {
             $validated['is_public_in_directory'] = $request->boolean('is_public_in_directory');
+        }
+
+        // Auto-fill DOB + gender from IC
+        if (! $isSuperadmin && $request->user()->hasRole('Member')) {
+            $ic = $validated['ic_number'] ?? $request->user()->ic_number;
+
+            if ($ic) {
+                if (empty($validated['dob']) && ($request->user()->isDirty('ic_number') || ! $request->user()->dob)) {
+                    $validated['dob'] = User::parseDobFromIc($ic);
+                }
+                if (empty($validated['gender']) && ($request->user()->isDirty('ic_number') || ! $request->user()->gender)) {
+                    $validated['gender'] = User::guessGenderFromIc($ic);
+                }
+            }
         }
 
         if ($request->hasFile('profile_photo')) {

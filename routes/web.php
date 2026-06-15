@@ -14,6 +14,7 @@ use App\Http\Controllers\InformationHubAdminController;
 use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MemberCardController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\MemberFeeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -21,10 +22,13 @@ use App\Http\Controllers\SharePreviewController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\PostcodeController;
 use App\Http\Controllers\UsrahController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [DashboardController::class, 'landing'])->name('landing');
+Route::get('/', fn () => redirect()->route('login'));
+Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup');
 Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info');
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article');
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq');
@@ -40,6 +44,14 @@ Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::cla
 Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donateForm'])->name('infaq.donate.form');
 Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate');
 Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr');
+
+Route::get('/s/{infaq:slug}', fn (\App\Models\Infaq $infaq) => redirect()->route('infaq.show', [
+    'year' => $infaq->year,
+    'month' => $infaq->month,
+    'day' => $infaq->day,
+    'infaq' => $infaq->slug,
+], 301))->name('infaq.short');
 
 Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
@@ -50,6 +62,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');
         Route::get('/admin/information-hub/manage', [InformationHubAdminController::class, 'index'])->name('admin.hub.manage');
+        Route::patch('/admin/information-hub/members/{user}/role', [InformationHubAdminController::class, 'updateRole'])->name('admin.hub.members.role.update');
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
         Route::post('/admin/information-hub/members/import-start', [InformationHubAdminController::class, 'importStart'])->name('admin.hub.members.importStart');
         Route::post('/admin/information-hub/members/import-chunk', [InformationHubAdminController::class, 'importChunk'])->name('admin.hub.members.importChunk');
@@ -106,6 +119,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/infaq/seed-demo', [InfaqController::class, 'seedDemo'])->name('superadmin.infaq.seed');
         Route::put('/superadmin/infaq/{infaq}', [InfaqController::class, 'update'])->name('superadmin.infaq.update');
         Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
+        Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
         Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
         Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
@@ -113,6 +127,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/settings', [SuperadminSystemSettingController::class, 'index'])->name('superadmin.settings.index');
         Route::post('/superadmin/settings/system-logo', [SuperadminSystemSettingController::class, 'updateSystemLogo'])->name('superadmin.settings.system-logo.update');
         Route::post('/superadmin/settings/splash', [SuperadminSystemSettingController::class, 'updateSplashSetting'])->name('superadmin.settings.splash.update');
+        Route::post('/superadmin/settings/admin-contact', [SuperadminSystemSettingController::class, 'updateAdminContact'])->name('superadmin.settings.admin-contact.update');
+        Route::post('/superadmin/settings/resend-key', [SuperadminSystemSettingController::class, 'updateResendKey'])->name('superadmin.settings.resend-key.update');
+        Route::get('/superadmin/email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
+        Route::put('/superadmin/email-templates/{emailTemplate}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
         Route::post('/superadmin/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
 
         Route::redirect('/superadmin/logo-settings', '/superadmin/organizations');
@@ -121,6 +139,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::middleware('role:Member')->group(function () {
         Route::get('/member/dashboard', [MemberDashboardController::class, 'index'])->name('member.dashboard');
         Route::get('/member/financial/overview', [FinancialController::class, 'memberOverview'])->name('member.financial.overview');
+        Route::get('/member/referral', [MemberDashboardController::class, 'referral'])->name('member.referral');
         Route::get('/member/announcements', [InformationHubController::class, 'announcements'])->name('member.announcements');
         Route::get('/member/library', [InformationHubController::class, 'library'])->name('member.library');
         Route::get('/member/information-hub', [InformationHubController::class, 'announcements'])->name('member.hub');
@@ -158,6 +177,43 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('branches/{branch}', [App\Http\Controllers\BranchController::class, 'update'])->name('branches.update');
         Route::post('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'updateLogo'])->name('branches.logo.update');
         Route::delete('branches/{branch}', [App\Http\Controllers\BranchController::class, 'destroy'])->name('branches.destroy');
+
+
+
+        // Positions management
+        Route::get('positions', [PositionController::class, 'index'])->name('positions.index');
+        Route::post('positions', [PositionController::class, 'store'])->name('positions.store');
+        Route::put('positions/{position}', [PositionController::class, 'update'])->name('positions.update');
+        Route::delete('positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
+
+        // Finance Dashboard
+        Route::get('/admin/finance', [App\Http\Controllers\AdminFinanceController::class, 'index'])->name('admin.finance.index');
+        Route::get('/admin/finance/member/{targetUser}', [App\Http\Controllers\AdminFinanceController::class, 'memberTransactions'])->name('admin.finance.member');
+        Route::get('/admin/finance/export/pdf', [App\Http\Controllers\AdminFinanceController::class, 'exportPdf'])->name('admin.finance.export.pdf');
+        Route::get('/admin/finance/export/excel', [App\Http\Controllers\AdminFinanceController::class, 'exportExcel'])->name('admin.finance.export.excel');
+        Route::get('/admin/finance/export/csv', [App\Http\Controllers\AdminFinanceController::class, 'exportCsv'])->name('admin.finance.export.csv');
+
+        // Member fee management
+        Route::get('/admin/fees/members', [MemberFeeController::class, 'index'])->name('admin.fees.members');
+        Route::get('/admin/fees/members/payments/{targetUser}', [MemberFeeController::class, 'paymentHistory'])->name('admin.fees.members.payments');
+        Route::get('/admin/fees/members/logs/{targetUser}', [MemberFeeController::class, 'activityLog'])->name('admin.fees.members.logs');
+        Route::get('/admin/fees/members/fee-detail/{targetUser}/{membershipFee}', [MemberFeeController::class, 'feeDetail'])->name('admin.fees.members.fee-detail');
+        Route::post('/admin/fees/members/fee-update/{targetUser}/{membershipFee}', [MemberFeeController::class, 'updateMemberFee'])->name('admin.fees.members.fee-update');
+        Route::post('/admin/fees/members/generate', [MemberFeeController::class, 'generateFees'])->name('admin.fees.members.generate');
+        Route::get('/admin/fees/members/receipt/{payment}', [MemberFeeController::class, 'downloadReceipt'])->name('admin.fees.members.receipt');
+        Route::post('/admin/fees/members/reverse/{payment}', [MemberFeeController::class, 'reversePayment'])->name('admin.fees.members.reverse');
+        Route::get('/admin/fees/members/import/template', [MemberFeeController::class, 'downloadTemplate'])->name('admin.fees.members.import.template');
+        Route::post('/admin/fees/members/manual-pay', [MemberFeeController::class, 'manualPayment'])->name('admin.fees.members.manual-pay');
+        Route::post('/admin/fees/members/import/preview', [MemberFeeController::class, 'previewImport'])->name('admin.fees.members.import.preview');
+        Route::post('/admin/fees/members/import/process', [MemberFeeController::class, 'processImport'])->name('admin.fees.members.import.process');
+        Route::get('/admin/fees/members/export/csv', [MemberFeeController::class, 'exportCsv'])->name('admin.fees.members.export.csv');
+        Route::get('/admin/fees/members/export/excel', [MemberFeeController::class, 'exportExcel'])->name('admin.fees.members.export.excel');
+        Route::get('/admin/fees/members/export/pdf', [MemberFeeController::class, 'exportPdf'])->name('admin.fees.members.export.pdf');
+        Route::post('/admin/fees/members/{targetUser}/life-member', [MemberFeeController::class, 'toggleLifeMember'])->name('admin.fees.members.life-member');
+        Route::post('/admin/fees/members/{targetUser}/exempted', [MemberFeeController::class, 'markExempted'])->name('admin.fees.members.exempted');
+
+        // Admin update member profile
+        Route::patch('/admin/members/{user}/update', [InformationHubAdminController::class, 'updateMember'])->name('admin.members.update');
     });
 });
 

@@ -24,8 +24,60 @@ class SuperadminSystemSettingController extends Controller
             'splashTitle' => $setting?->splash_title ?? 'myWAP',
             'splashDurationMs' => $setting?->splash_duration_ms ?? 1800,
             'splashEnabled' => (bool) ($setting?->splash_enabled ?? true),
+            'adminContactEmail' => $setting?->admin_contact_email ?? '',
+            'adminContactPhone' => $setting?->admin_contact_phone ?? '',
+            'hasResendKey' => $setting && $setting->resend_api_key ? true : false,
+            'mailFromAddress' => $setting?->mail_from_address ?? '',
+            'mailFromName' => $setting?->mail_from_name ?? '',
             'canManageSystemLogo' => $canManageSystemLogo,
         ]);
+    }
+
+    public function updateResendKey(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'resend_api_key' => ['nullable', 'string', 'max:255'],
+            'mail_from_address' => ['nullable', 'email', 'max:255'],
+            'mail_from_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $updateData = [];
+        $mailConfig = [];
+
+        // Only update API key if a non-empty value was sent
+        if ($request->filled('resend_api_key')) {
+            $updateData['resend_api_key'] = $data['resend_api_key'];
+            $mailConfig['mail.default'] = 'resend';
+            $mailConfig['mail.mailers.resend.key'] = $data['resend_api_key'];
+            $mailConfig['services.resend.key'] = $data['resend_api_key'];
+            $mailConfig['resend.api_key'] = $data['resend_api_key'];
+        }
+
+        if ($request->has('mail_from_address')) {
+            $updateData['mail_from_address'] = $data['mail_from_address'] ?: null;
+        }
+
+        if ($request->has('mail_from_name')) {
+            $updateData['mail_from_name'] = $data['mail_from_name'] ?: null;
+        }
+
+        if (! empty($updateData)) {
+            $setting->update($updateData);
+        }
+
+        if ($setting->mail_from_address) {
+            $mailConfig['mail.from.address'] = $setting->mail_from_address;
+            $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
+        }
+
+        config($mailConfig);
+
+        return back()->with('success', 'Tetapan emel berjaya disimpan.');
     }
 
     public function updateSystemLogo(Request $request): RedirectResponse
@@ -94,6 +146,26 @@ class SuperadminSystemSettingController extends Controller
         ]);
 
         return back()->with('success', 'Tetapan splash screen berjaya dikemas kini.');
+    }
+
+    public function updateAdminContact(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'admin_contact_email' => ['nullable', 'email', 'max:255'],
+            'admin_contact_phone' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $setting->update([
+            'admin_contact_email' => $data['admin_contact_email'] ?: null,
+            'admin_contact_phone' => $data['admin_contact_phone'] ?: null,
+        ]);
+
+        return back()->with('success', 'Maklumat hubungi admin berjaya dikemas kini.');
     }
 
     private function normalizeStorageUrl(?string $url): ?string

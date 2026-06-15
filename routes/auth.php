@@ -21,10 +21,36 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
+    Route::get('register/payment', [RegisteredUserController::class, 'payment'])
+        ->name('register.payment');
+
+    Route::post('register/payment', [RegisteredUserController::class, 'processPayment'])
+        ->name('register.payment.process');
+
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::post('login/send-otp', [AuthenticatedSessionController::class, 'sendOtp'])
+        ->middleware('throttle:5,1')
+        ->name('login.send-otp');
+
+    Route::post('login/update-and-send-otp', [AuthenticatedSessionController::class, 'updateAndSendOtp'])
+        ->middleware('throttle:5,1')
+        ->name('login.update-and-send-otp');
+
+    Route::post('login/verify-otp', [AuthenticatedSessionController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1')
+        ->name('login.verify-otp');
+
+    Route::post('login/verify-identity', [AuthenticatedSessionController::class, 'verifyIdentity'])
+        ->middleware('throttle:5,1')
+        ->name('login.verify-identity');
+
+    Route::post('forgot-id', [AuthenticatedSessionController::class, 'forgotId'])
+        ->middleware('throttle:10,1')
+        ->name('login.forgot-id');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

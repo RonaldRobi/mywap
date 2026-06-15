@@ -9,6 +9,44 @@ const shareItem = ref(null);
 function openShare(item) { shareItem.value = item; }
 function closeShare() { shareItem.value = null; }
 
+const sharePreviewUrl = computed(() => {
+    if (!shareItem.value) return '';
+    return route('share.infaq', shareItem.value.slug, true);
+});
+
+const qrUrl = computed(() => {
+    if (!shareItem.value) return '';
+    return route('superadmin.infaq.qr', shareItem.value.slug);
+});
+
+const linkCopied = ref(false);
+async function copyShareLink() {
+    try {
+        await navigator.clipboard.writeText(sharePreviewUrl.value);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = sharePreviewUrl.value;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    }
+}
+
+function downloadQr() {
+    if (!shareItem.value) return;
+    const link = document.createElement('a');
+    link.href = qrUrl.value;
+    link.download = `qr-infaq-${shareItem.value.slug}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 const props = defineProps({
     organizations: { type: Array, default: () => [] },
     infaqItems:    { type: Array, default: () => [] },
@@ -389,21 +427,37 @@ function formatMYR(val) {
                 <div v-if="shareItem" class="text-center">
                     <!-- QR Code -->
                     <div class="mx-auto bg-white p-2 border border-gray-200 rounded-xl inline-block shadow-sm mb-4">
-                        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareItem.public_url)}`" alt="QR Code" class="w-40 h-40"/>
+                        <img :src="qrUrl" alt="QR Code" class="w-40 h-40"/>
                     </div>
                     
                     <h4 class="font-bold text-gray-900 mb-1">{{ shareItem.title }}</h4>
                     
-                    <!-- Link -->
-                    <div class="mt-4 flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2 mb-6">
-                        <span class="truncate text-sm text-gray-600 px-2">{{ shareItem.public_url }}</span>
+                    <!-- Share Link with Copy -->
+                    <div class="mt-4 flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2 mb-3">
+                        <span class="truncate text-sm text-gray-600 px-2">{{ sharePreviewUrl }}</span>
+                        <button
+                            @click="copyShareLink"
+                            class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                            :class="linkCopied ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'"
+                        >
+                            {{ linkCopied ? 'Disalin!' : 'Salin' }}
+                        </button>
                     </div>
+
+                    <!-- Download QR Button -->
+                    <button
+                        @click="downloadQr"
+                        class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 mb-5"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Muat Turun QR
+                    </button>
                     
                     <!-- Social Buttons -->
                     <div class="border-t border-gray-100 pt-5">
                         <SocialShareButtons 
                             :title="shareItem.title" 
-                            :url="shareItem.public_url" 
+                            :url="sharePreviewUrl"
                             text="Sumbang untuk kempen ini!" 
                         />
                     </div>

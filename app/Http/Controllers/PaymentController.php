@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -167,38 +168,43 @@ class PaymentController extends Controller
      * Member: initiate a (dummy) membership fee payment.
      * In production this would redirect to a payment gateway.
      */
-    public function payFee(Request $request): RedirectResponse
+    public function payFee(Request $request, FeeService $feeService): RedirectResponse
     {
         $user = $request->user()->load('organization');
 
-        // Guard: only Members can pay fees
         if (! $user->hasRole('Member')) {
             abort(403);
         }
 
+        $year = now()->year;
+
+        if ($feeService->isLifeMember($user)) {
+            return back()->with('error', 'Anda adalah ahli seumur hidup — tidak perlu bayar yuran.');
+        }
+
+        if ($feeService->isExempted($user)) {
+            return back()->with('error', 'Yuran anda telah dikecualikan — tidak perlu bayar yuran.');
+        }
+
         $feeAmount = (float) ($user->organization?->fee_amount ?? 50.00);
 
-        // Check if already paid this year
-        $alreadyPaid = Payment::where('user_id', $user->id)
-            ->where('payable_type', 'membership_fee')
-            ->where('status', 'successful')
-            ->whereYear('created_at', now()->year)
-            ->exists();
-
-        if ($alreadyPaid) {
+        $status = $feeService->getStatus($user, $year);
+        if ($status['status'] === 'active') {
             return back()->with('error', 'Yuran keahlian anda untuk tahun ini sudah dibayar.');
         }
 
         // Dummy payment — simulate instant success
-        Payment::create([
+        $payment = Payment::create([
             'user_id'     => $user->id,
             'payable_type'=> 'membership_fee',
             'payable_id'  => null,
             'amount'      => $feeAmount,
             'status'      => 'successful',
             'reference'   => 'DUMMY-' . strtoupper(Str::random(8)),
-            'description' => "Yuran keahlian {$user->organization?->name} " . now()->year,
+            'description' => "Yuran keahlian {$user->organization?->name} {$year}",
         ]);
+
+        $feeService->markAsPaid($user, $year, $feeAmount, $payment->id);
 
         return back()->with('success', "Pembayaran yuran RM {$feeAmount} berjaya! (Mod dummy — gateway sebenar akan disambung kemudian)");
     }

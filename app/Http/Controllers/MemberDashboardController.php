@@ -8,14 +8,16 @@ use App\Models\EventRsvp;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\NewsPost;
-use App\Models\Payment;
+use App\Models\User;
+use App\Services\FeeService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class MemberDashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, FeeService $feeService): Response
     {
         $user = $request->user()->load('organization');
 
@@ -28,16 +30,7 @@ class MemberDashboardController extends Controller
             ->sortBy(fn (EventRsvp $rsvp) => $rsvp->event->start_time)
             ->first();
 
-        $latestFeePayment = Payment::query()
-            ->where('user_id', $user->id)
-            ->where('status', 'successful')
-            ->where('payable_type', 'membership_fee')
-            ->latest('created_at')
-            ->first();
-
-        $feeIsActive = $latestFeePayment
-            && $latestFeePayment->created_at->year === now()->year;
-
+        $feeStatus = $feeService->getStatus($user);
         $feeAmount = (float) ($user->organization?->fee_amount ?? 50.00);
 
         $usrahGroup = $user->usrahGroups()
@@ -156,12 +149,7 @@ class MemberDashboardController extends Controller
                     'color_theme' => $user->organization?->color_theme,
                 ],
             ],
-            'feeStatus' => [
-                'status'      => $feeIsActive ? 'active' : 'due',
-                'amount_due'  => $feeIsActive ? 0 : $feeAmount,
-                'last_paid_at'=> $latestFeePayment?->created_at?->toISOString(),
-                'last_reference' => $latestFeePayment?->reference,
-            ],
+            'feeStatus' => $feeStatus,
             'nextEvent' => $nextEventRsvp ? [
                 'title' => $nextEventRsvp->event->title,
                 'start_formatted' => $nextEventRsvp->event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
@@ -186,6 +174,45 @@ class MemberDashboardController extends Controller
             'banners' => $banners,
             'infaqItems' => $infaqItems,
             'latestNews' => $latestNews,
+        ]);
+    }
+
+    public function referral(Request $request): Response
+    {
+        $user = $request->user();
+
+        $referredMembers = User::where('referred_by_user_id', $user->id)
+            ->with('organization')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'member_no' => $member->member_no,
+                    'registered_at' => $member->created_at?->toISOString(),
+                    'status' => $member->profile_completed_at ? 'active' : 'pending',
+                    'organization' => $member->organization?->name,
+                ];
+            });
+
+        $stats = [
+            'total' => $referredMembers->count(),
+            'active' => $referredMembers->where('status', 'active')->count(),
+            'pending' => $referredMembers->where('status', 'pending')->count(),
+        ];
+
+        $referralLink = route('register', ['ref' => $user->member_no]);
+        $qrCode = QrCode::format('svg')->size(300)->margin(2)->generate($referralLink);
+        $qrCode = preg_replace('/^<\?xml.*?\?>\s*/', '', $qrCode);
+        $qrCode = preg_replace('/\s(width|height)="\d+"/', '', $qrCode);
+
+        return Inertia::render('Member/Referral', [
+            'referralLink' => $referralLink,
+            'memberNo' => $user->member_no,
+            'qrSvg' => $qrCode,
+            'stats' => $stats,
+            'referredMembers' => $referredMembers,
         ]);
     }
 }

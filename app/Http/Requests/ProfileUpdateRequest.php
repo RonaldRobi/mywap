@@ -43,6 +43,17 @@ class ProfileUpdateRequest extends FormRequest
             'linkedin_url' => ['nullable', 'url', 'max:255'],
             'profile_photo' => ['nullable', 'image', 'max:4096'],
             'is_public_in_directory' => ['nullable', 'boolean'],
+            'gender' => ['nullable', 'in:lelaki,perempuan'],
+            'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
+            'address_1' => ['nullable', 'string', 'max:255'],
+            'address_2' => ['nullable', 'string', 'max:255'],
+            'postcode' => ['nullable', 'string', 'max:5'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'position' => ['nullable', 'string', 'max:255'],
+            'topics' => ['nullable', 'string'],
         ];
     }
 }

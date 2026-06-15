@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\MemberNoPrefix;
 use Illuminate\Console\Command;
 
 /**
@@ -21,6 +22,8 @@ use Illuminate\Console\Command;
  */
 class ProcessAgeTransitions extends Command
 {
+    use \App\Console\Commands\Traits\MemberNoPrefix;
+
     protected $signature = 'app:process-age-transitions
                             {--dry-run : Preview transitions without persisting any changes}';
 
@@ -75,7 +78,13 @@ class ProcessAgeTransitions extends Command
                     $this->line("  ↪  User #{$user->id} ({$user->name}) age {$age} → {$toOrgName}");
 
                     if (! $isDryRun) {
-                        // 1. Update the user's active organization.
+                        // 1. Update member_no: prepend new org prefix
+                        $prefix = $this->prefixForOrg($correctOrg);
+                        if ($prefix && $user->member_no && !str_starts_with($user->member_no, $prefix)) {
+                            $user->member_no = $prefix . $user->member_no;
+                        }
+
+                        // 2. Update the user's active organization.
                         $user->current_organization_id = $correctOrg->id;
                         $user->save();
 

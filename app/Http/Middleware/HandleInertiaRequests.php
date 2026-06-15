@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'csrf_token' => csrf_token(),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error'   => $request->session()->get('error'),
@@ -64,6 +65,17 @@ class HandleInertiaRequests extends Middleware
                     'profile_photo_path' => $user->profile_photo_path,
                     'expertise' => $user->expertise,
                     'linkedin_url' => $user->linkedin_url,
+                    'gender' => $user->gender,
+                    'marital_status' => $user->marital_status,
+                    'emergency_contact_name' => $user->emergency_contact_name,
+                    'emergency_contact_phone' => $user->emergency_contact_phone,
+                    'position' => $user->position,
+                    'topics' => $user->topics,
+                    'address_1' => $user->address_1,
+                    'address_2' => $user->address_2,
+                    'postcode' => $user->postcode,
+                    'city' => $user->city,
+                    'state' => $user->state,
                     'is_public_in_directory' => (bool) $user->is_public_in_directory,
                     'roles' => $user->getRoleNames(),
                     'organization' => $isSuperadmin

@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
 import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const props = defineProps({
@@ -25,7 +26,36 @@ function formatCurrency(value) {
     }).format(value ?? 0);
 }
 
-// Removed donateForm since it's just a link now
+const qrUrl = computed(() => {
+    return route('infaq.qr', {
+        year: props.infaq.year || new Date().getFullYear(),
+        month: props.infaq.month || String(new Date().getMonth() + 1).padStart(2, '0'),
+        day: props.infaq.day || String(new Date().getDate()).padStart(2, '0'),
+        infaq: props.infaq.slug || props.infaq.id,
+    });
+});
+
+const sharePreviewUrl = computed(() => {
+    return route('share.infaq', props.infaq.slug || props.infaq.id, true);
+});
+
+const linkCopied = ref(false);
+async function copyShareLink() {
+    try {
+        await navigator.clipboard.writeText(sharePreviewUrl.value);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = sharePreviewUrl.value;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        linkCopied.value = true;
+        setTimeout(() => { linkCopied.value = false; }, 2000);
+    }
+}
 </script>
 
 <template>
@@ -100,7 +130,7 @@ function formatCurrency(value) {
                                 <SocialShareButtons
                                     :title="infaq.title"
                                     :text="infaq.description || 'Jom menyumbang bersama kami.'"
-                                    :url="route('share.infaq', infaq.id, true)"
+                                    :url="sharePreviewUrl"
                                 />
                             </div>
                         </div>
@@ -138,6 +168,35 @@ function formatCurrency(value) {
                                     <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
                                     Bayaran Selamat & Terjamin
                                 </p>
+                            </div>
+                        </div>
+
+                        <!-- QR Share Card -->
+                        <div class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="font-black text-slate-900 mb-4 text-sm flex items-center gap-2">
+                                <svg class="h-5 w-5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2m4 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Imbas QR untuk Kongsi
+                            </h3>
+                            <div class="flex flex-col items-center">
+                                <div class="bg-white p-2 border border-gray-200 rounded-xl shadow-sm mb-3">
+                                    <img :src="qrUrl" alt="QR Code" class="w-36 h-36"/>
+                                </div>
+                                <div class="flex items-center w-full rounded-lg bg-gray-50 border border-gray-200 p-1.5 mb-3">
+                                    <span class="truncate text-xs text-gray-600 px-1 flex-1">{{ sharePreviewUrl }}</span>
+                                    <button
+                                        @click="copyShareLink"
+                                        class="shrink-0 rounded-md px-3 py-1 text-xs font-bold transition"
+                                        :class="linkCopied ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'"
+                                    >
+                                        {{ linkCopied ? 'Disalin!' : 'Salin' }}
+                                    </button>
+                                </div>
+                                <SocialShareButtons
+                                    :title="infaq.title"
+                                    :url="sharePreviewUrl"
+                                    :text="infaq.description || 'Jom menyumbang bersama kami.'"
+                                    compact
+                                />
                             </div>
                         </div>
 

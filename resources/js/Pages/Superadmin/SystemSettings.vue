@@ -32,6 +32,26 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    adminContactEmail: {
+        type: String,
+        default: '',
+    },
+    adminContactPhone: {
+        type: String,
+        default: '',
+    },
+    hasResendKey: {
+        type: Boolean,
+        default: false,
+    },
+    mailFromAddress: {
+        type: String,
+        default: '',
+    },
+    mailFromName: {
+        type: String,
+        default: '',
+    },
 });
 
 const form = useForm({
@@ -75,6 +95,29 @@ function onSplashImageSelected(event) {
     if (file) {
         splashPreviewUrl.value = URL.createObjectURL(file);
     }
+}
+
+const contactForm = useForm({
+    admin_contact_email: props.adminContactEmail || '',
+    admin_contact_phone: props.adminContactPhone || '',
+});
+
+function saveContact() {
+    contactForm.post(route('superadmin.settings.admin-contact.update'), {
+        preserveScroll: true,
+    });
+}
+
+const resendForm = useForm({
+    resend_api_key: '',
+    mail_from_address: props.mailFromAddress || '',
+    mail_from_name: props.mailFromName || '',
+});
+
+function saveResendKey() {
+    resendForm.post(route('superadmin.settings.resend-key.update'), {
+        preserveScroll: true,
+    });
 }
 
 onBeforeUnmount(() => {
@@ -204,6 +247,70 @@ onBeforeUnmount(() => {
                         </button>
                     </form>
                 </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Kunci API Resend</h2>
+                <p class="mt-1 text-xs text-gray-500">Digunakan untuk menghantar emel OTP dan pemberitahuan sistem. Dapatkan kunci dari <strong>resend.com</strong>.</p>
+
+                <form class="mt-4 space-y-3" @submit.prevent="saveResendKey">
+                    <p v-if="hasResendKey" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                        ✓ Kunci API telah disimpan sebelumnya. Masukkan kunci baru untuk menggantikan, atau kosongkan untuk memadam.
+                    </p>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Kunci API</span>
+                        <input v-model="resendForm.resend_api_key" type="password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="hasResendKey ? 'Klik untuk tukar (kunci sedia ada dikekalkan)' : 're_xxxxxxxxxxxxxx'">
+                        <p v-if="resendForm.errors.resend_api_key" class="mt-1 text-xs text-red-500">{{ resendForm.errors.resend_api_key }}</p>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Emel Pengirim (From Address)</span>
+                        <input v-model="resendForm.mail_from_address" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="onboarding@resend.dev">
+                        <p v-if="resendForm.errors.mail_from_address" class="mt-1 text-xs text-red-500">{{ resendForm.errors.mail_from_address }}</p>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Nama Pengirim (From Name)</span>
+                        <input v-model="resendForm.mail_from_name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="myWAP">
+                        <p v-if="resendForm.errors.mail_from_name" class="mt-1 text-xs text-red-500">{{ resendForm.errors.mail_from_name }}</p>
+                    </label>
+
+                    <button
+                        type="submit"
+                        :disabled="resendForm.processing"
+                        class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                    >
+                        {{ resendForm.processing ? 'Menyimpan...' : 'Simpan Tetapan Emel' }}
+                    </button>
+                </form>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Maklumat Hubungi Admin</h2>
+                <p class="mt-1 text-xs text-gray-500">Dipaparkan kepada ahli yang menghadapi masalah log masuk (emel hilang/tiada akses).</p>
+
+                <form class="mt-4 space-y-3" @submit.prevent="saveContact">
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Emel Admin</span>
+                        <input v-model="contactForm.admin_contact_email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="admin@mywap.my">
+                        <p v-if="contactForm.errors.admin_contact_email" class="mt-1 text-xs text-red-500">{{ contactForm.errors.admin_contact_email }}</p>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">No Telefon Admin</span>
+                        <input v-model="contactForm.admin_contact_phone" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="+60123456789">
+                        <p v-if="contactForm.errors.admin_contact_phone" class="mt-1 text-xs text-red-500">{{ contactForm.errors.admin_contact_phone }}</p>
+                    </label>
+
+                    <button
+                        type="submit"
+                        :disabled="contactForm.processing"
+                        class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                    >
+                        {{ contactForm.processing ? 'Menyimpan...' : 'Simpan Maklumat Admin' }}
+                    </button>
+                </form>
             </section>
         </div>
     </AppLayout>

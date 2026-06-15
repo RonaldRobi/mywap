@@ -3,21 +3,24 @@
 namespace App\Imports;
 
 use App\Models\User;
-use App\Models\Organization;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithStartRow;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithLimit;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 
-class MembersImport implements ToCollection, WithStartRow, WithLimit
+class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithLimit
 {
     protected $organizationId;
     protected $prefix;
     protected $startRow;
     protected $limit;
+    protected $padding;
     public $processedCount = 0;
+    public $errors = [];
 
     public function __construct($organizationId, $prefix, $startRow = 2, $limit = 100)
     {
@@ -25,6 +28,7 @@ class MembersImport implements ToCollection, WithStartRow, WithLimit
         $this->prefix = $prefix;
         $this->startRow = $startRow;
         $this->limit = $limit;
+        $this->padding = $prefix === 'W' ? 4 : 5;
     }
 
     public function startRow(): int
@@ -37,89 +41,110 @@ class MembersImport implements ToCollection, WithStartRow, WithLimit
         return $this->limit;
     }
 
+    protected function nextMemberNo(): string
+    {
+        $max = User::where('member_no', 'like', $this->prefix . '%')
+            ->where('member_no', 'REGEXP', '^' . $this->prefix . '[0-9]+$')
+            ->selectRaw('MAX(CAST(SUBSTRING(member_no, ' . (strlen($this->prefix) + 1) . ') AS UNSIGNED)) as max_num')
+            ->value('max_num');
+
+        $next = ($max ?? 0) + 1;
+        return $this->prefix . str_pad($next, $this->padding, '0', STR_PAD_LEFT);
+    }
+
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
-            // Check if essential fields (NAMA and NO KP) are somewhat present
-            if (empty($row[1]) && empty($row[5])) {
+            $name = trim((string) ($row['nama'] ?? ''));
+            $ic = Str::upper(preg_replace('/\s+/', '', trim((string) ($row['ic'] ?? ''))));
+
+            if (empty($name) && empty($ic)) {
                 continue;
             }
 
-            $icNumber = $row[5] ?? '';
-            $icNumber = Str::upper(preg_replace('/\s+/', '', trim((string) $icNumber)));
-
-            if (empty($icNumber)) {
-                $icNumber = 'NO-IC-' . Str::random(8); // Fallback if IC is completely empty but name exists
+            if (empty($ic)) {
+                $this->errors[] = "Nama '{$name}' — tiada IC, dilewati.";
+                continue;
             }
 
-            // Generate an email if not provided
-            $email = $row[14] ?? '';
-            if (empty(trim($email))) {
-                $email = strtolower($icNumber) . '@mywap.my';
-            } else {
-                $email = trim($email);
+            if (strlen(preg_replace('/[^0-9]/', '', $ic)) < 6) {
+                $this->errors[] = "Nama '{$name}' — IC '{$ic}' tidak sah (minimum 6 digit), dilewati.";
+                continue;
             }
 
-            // Handle Key-in date
-            $keyInDate = null;
-            if (!empty($row[3])) {
-                try {
-                    $keyInDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row[3])->format('Y-m-d');
-                } catch (\Throwable $e) { // Changed to Throwable to catch TypeError in PHP 8
-                    $keyInDate = date('Y-m-d', strtotime($row[3]));
-                }
-            }
-            
-            // Year of birth -> dob
-            $dob = null;
-            $birthYear = trim((string)($row[6] ?? ''));
-            if (!empty($birthYear) && is_numeric($birthYear)) {
-                $dob = $birthYear . '-01-01';
-            } else {
-                $dob = '1970-01-01';
+            // Auto-fill DOB from IC
+            $parsedDob = User::parseDobFromIc($ic);
+            $rawDob = trim((string) ($row['tarikh_lahir'] ?? ''));
+            $dob = !empty($rawDob) ? (date('Y-m-d', strtotime($rawDob)) ?: $parsedDob) : $parsedDob;
+
+            // Auto-fill gender from IC
+            $rawGender = trim((string) ($row['jantina'] ?? ''));
+            $gender = !empty($rawGender)
+                ? (in_array(strtolower($rawGender), ['lelaki', 'perempuan']) ? strtolower($rawGender) : User::guessGenderFromIc($ic))
+                : User::guessGenderFromIc($ic);
+
+            // Email fallback
+            $email = trim((string) ($row['email'] ?? ''));
+            if (empty($email)) {
+                $email = strtolower($ic) . '@mywap.my';
             }
 
-            // Prefix handling for member_no
-            $memberNo = $row[0] ?? null;
+            // Member number: use provided or auto-generate
+            $memberNo = trim((string) ($row['no_ahli'] ?? ''));
             if (!empty($memberNo)) {
-                $memberNo = trim((string) $memberNo);
-                // Strip existing prefix if user accidentally typed it so we don't get WW0001
-                if (!empty($this->prefix)) {
-                    $memberNo = ltrim($memberNo, $this->prefix);
-                    $memberNo = $this->prefix . $memberNo;
-                }
+                $memberNo = $this->ensurePrefix($memberNo);
             }
 
-            User::updateOrCreate(
-                ['ic_number' => $icNumber], // Match based on IC Number
+            $user = User::updateOrCreate(
+                ['ic_number' => $ic],
                 [
-                    'member_no' => $memberNo,
-                    'name' => $row[1] ?? 'Unknown',
-                    'wadah_state' => $row[2] ?? null,
-                    'key_in_date' => $keyInDate,
-                    'registration_year' => $row[4] ?? null,
-                    'birth_year' => $birthYear,
-                    'address_1' => $row[8] ?? null,
-                    'address_2' => $row[9] ?? null,
-                    'postcode' => $row[10] ?? null,
-                    'city' => $row[11] ?? null,
-                    'state' => $row[12] ?? null,
-                    'phone' => $row[13] ?? null,
-                    'email' => $email,
-                    'office_phone' => $row[15] ?? null,
-                    'home_phone' => $row[16] ?? null,
-                    'fax_number' => $row[17] ?? null,
-                    'current_profession' => $row[18] ?? null,
-                    'education_level' => $row[19] ?? null,
-                    'legacy_update_note' => $row[20] ?? null,
-                    'notes' => $row[21] ?? null,
+                    'member_no' => $memberNo ?: null,
+                    'original_member_no' => DB::raw('IFNULL(original_member_no, member_no)'),
+                    'name' => $name ?: 'Unknown',
                     'dob' => $dob,
-                    'password' => Hash::make($memberNo ?? 'password123'),
+                    'gender' => $gender,
+                    'phone' => trim((string) ($row['no_telefon'] ?? '')) ?: null,
+                    'email' => $email,
+                    'education_level' => trim((string) ($row['pendidikan'] ?? '')) ?: null,
+                    'current_profession' => trim((string) ($row['profesion'] ?? '')) ?: null,
+                    'address_1' => trim((string) ($row['alamat_1'] ?? '')) ?: null,
+                    'address_2' => trim((string) ($row['alamat_2'] ?? '')) ?: null,
+                    'postcode' => trim((string) ($row['poskod'] ?? '')) ?: null,
+                    'city' => trim((string) ($row['bandar'] ?? '')) ?: null,
+                    'state' => trim((string) ($row['negeri'] ?? '')) ?: null,
+                    'registration_year' => trim((string) ($row['tahun_daftar'] ?? '')) ?: null,
+                    'notes' => trim((string) ($row['catatan'] ?? '')) ?: null,
+                    'password' => Hash::make($memberNo ?: 'password123'),
                     'current_organization_id' => $this->organizationId,
                 ]
-            )->assignRole('Member');
+            );
 
+            // If this is a new user (no member_no yet), auto-generate one
+            if (!$user->member_no) {
+                $user->update(['member_no' => $this->nextMemberNo()]);
+            }
+
+            // Set original_member_no on first creation
+            if (!$user->original_member_no) {
+                $user->update(['original_member_no' => $user->member_no]);
+            }
+
+            $user->assignRole('Member');
             $this->processedCount++;
         }
+    }
+
+    protected function ensurePrefix(string $no): string
+    {
+        $no = strtoupper(trim($no));
+        $known = ['W', 'A', 'P', 'WA', 'AP', 'WP', 'WAP', 'WPA', 'AWP', 'APW', 'PWA', 'PAW'];
+
+        foreach ($known as $p) {
+            if (str_starts_with($no, $p)) {
+                return $no;
+            }
+        }
+
+        return $this->prefix . ltrim($no, 'WAPwapr');
     }
 }

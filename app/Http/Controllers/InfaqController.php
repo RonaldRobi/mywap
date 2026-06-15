@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InfaqController extends Controller
 {
@@ -28,6 +29,7 @@ class InfaqController extends Controller
             ->map(fn (Infaq $infaq) => [
                 'id'               => $infaq->id,
                 'title'            => $infaq->title,
+                'slug'             => $infaq->slug,
                 'description'      => $infaq->description,
                 'image_path'       => $infaq->image_path,
                 'type'             => $infaq->type,
@@ -319,6 +321,7 @@ SVG;
         return Inertia::render('Infaq/Show', [
             'infaq' => [
                 'id' => $infaq->id,
+                'slug' => $infaq->slug,
                 'title' => $infaq->title,
                 'description' => $infaq->description,
                 'image_path' => $infaq->image_path,
@@ -330,6 +333,9 @@ SVG;
                 'total_donors' => $totalDonors,
                 'days_running' => $daysRunning,
                 'public_url' => $infaq->public_url,
+                'year' => $year,
+                'month' => $month,
+                'day' => $day,
             ],
             'recentDonations' => $recentDonations,
             'relatedInfaqs' => $related,
@@ -394,13 +400,28 @@ SVG;
         ]);
     }
 
+    public function qrCode(Infaq $infaq)
+    {
+        $shortUrl = route('infaq.short', ['infaq' => $infaq->slug]);
+
+        return response(
+            QrCode::format('png')->size(300)->margin(1)->generate($shortUrl),
+            200,
+            ['Content-Type' => 'image/png']
+        );
+    }
+
     public function success(Request $request, $year, $month, $day, Infaq $infaq): Response
     {
         return Inertia::render('Infaq/Success', [
             'infaq' => [
                 'id' => $infaq->id,
+                'slug' => $infaq->slug,
                 'title' => $infaq->title,
                 'public_url' => $infaq->public_url,
+                'year' => $year,
+                'month' => $month,
+                'day' => $day,
             ]
         ]);
     }

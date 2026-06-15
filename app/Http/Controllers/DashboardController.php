@@ -14,6 +14,7 @@ use App\Models\NewsPost;
 use App\Models\DashboardBanner;
 use App\Models\UsrahGroup;
 use App\Models\User;
+use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
@@ -104,7 +105,7 @@ class DashboardController extends Controller
         return redirect()->route($this->dashboardRouteFor($request->user()));
     }
 
-    public function admin(Request $request): Response
+    public function admin(Request $request, FeeService $feeService): Response
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -190,14 +191,13 @@ class DashboardController extends Controller
             ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
             ->count();
 
-        $feesDueCount = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->whereDoesntHave('payments', function ($query) {
-                $query->where('status', 'successful')
-                    ->where('payable_type', 'membership_fee')
-                    ->whereYear('created_at', now()->year);
-            })
-            ->count();
+        $year = now()->year;
+        $feesDueCount = $isSuperadmin
+            ? User::withoutGlobalScopes()
+                ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
+                ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
+                ->count()
+            : $feeService->getDueCount($user->current_organization_id, $year);
 
         $topBranches = Branch::query()
             ->with(['organization:id,name,slug'])

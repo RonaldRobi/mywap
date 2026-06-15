@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Campaign;
 use App\Models\Payment;
+use App\Services\FeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,7 +69,7 @@ class FinancialController extends Controller
         return back()->with('success', 'Kempen infaq berjaya dicipta.');
     }
 
-    public function memberOverview(Request $request): Response
+    public function memberOverview(Request $request, FeeService $feeService): Response
     {
         $user = $request->user();
 
@@ -102,24 +103,11 @@ class FinancialController extends Controller
                 'created_at' => $payment->created_at?->toISOString(),
             ]);
 
-        $latestFeePayment = Payment::query()
-            ->where('user_id', $user->id)
-            ->where('status', 'successful')
-            ->where('payable_type', 'membership_fee')
-            ->latest('created_at')
-            ->first();
-
-        $feeStatusValue = $latestFeePayment && $latestFeePayment->created_at->gte(now()->subYear())
-            ? 'active'
-            : 'due';
+        $feeStatus = $feeService->getStatus($user);
 
         return Inertia::render('Member/Financial/Overview', [
             'campaigns' => $campaigns,
-            'feeStatus' => [
-                'status' => $feeStatusValue,
-                'amount_due' => $feeStatusValue === 'active' ? 0 : 120,
-                'last_paid_at' => $latestFeePayment?->created_at?->toISOString(),
-            ],
+            'feeStatus' => $feeStatus,
             'paymentHistory' => $paymentHistory,
         ]);
     }

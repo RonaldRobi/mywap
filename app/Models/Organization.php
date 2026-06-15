@@ -88,6 +88,11 @@ class Organization extends Model
         return $this->hasMany(Branch::class);
     }
 
+    public function positions(): HasMany
+    {
+        return $this->hasMany(OrganizationPosition::class)->orderBy('display_order');
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     /**

@@ -4,9 +4,10 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import axios from 'axios';
 
-defineProps({
+const props = defineProps({
     mustVerifyEmail: {
         type: Boolean,
     },
@@ -14,6 +15,10 @@ defineProps({
         type: String,
     },
     branches: {
+        type: Array,
+        default: () => [],
+    },
+    orgPositions: {
         type: Array,
         default: () => [],
     },
@@ -27,12 +32,26 @@ defineProps({
 const user = usePage().props.auth.user;
 const isSuperadmin = computed(() => (user?.roles ?? []).includes('Superadmin'));
 
+function parseDobFromIc(ic) {
+    if (!ic) return '';
+    const digits = ic.replace(/[^0-9]/g, '');
+    if (digits.length < 6) return '';
+    const yy = parseInt(digits.substring(0, 2));
+    const mm = parseInt(digits.substring(2, 4));
+    const dd = parseInt(digits.substring(4, 6));
+    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return '';
+    const yyyy = yy > 25 ? 1900 + yy : 2000 + yy;
+    return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+}
+
 const form = useForm({
     name: user.name,
     email: user.email,
     ic_number: user.ic_number ?? '',
     phone: user.phone ?? '',
     dob: user.dob ?? '',
+    gender: user.gender ?? '',
+    marital_status: user.marital_status ?? '',
     education_level: user.education_level ?? '',
     current_profession: user.current_profession ?? '',
     industry: user.industry ?? '',
@@ -42,6 +61,40 @@ const form = useForm({
     linkedin_url: user.linkedin_url ?? '',
     profile_photo: null,
     is_public_in_directory: user.is_public_in_directory ?? true,
+    address_1: user.address_1 ?? '',
+    address_2: user.address_2 ?? '',
+    postcode: user.postcode ?? '',
+    city: user.city ?? '',
+    state: user.state ?? '',
+    emergency_contact_name: user.emergency_contact_name ?? '',
+    emergency_contact_phone: user.emergency_contact_phone ?? '',
+    position: user.position ?? '',
+    topics: user.topics ?? '',
+});
+
+function guessGenderFromIc(ic) {
+    if (!ic) return '';
+    const digits = ic.replace(/[^0-9]/g, '');
+    if (digits.length < 12) return '';
+    return parseInt(digits.slice(-1)) % 2 === 1 ? 'lelaki' : 'perempuan';
+}
+
+watch(() => form.ic_number, (val) => {
+    if (val) {
+        if (!form.dob) form.dob = parseDobFromIc(val);
+        if (!form.gender) form.gender = guessGenderFromIc(val);
+    }
+});
+
+watch(() => form.postcode, async (val) => {
+    if (!val || val.length !== 5) return;
+    try {
+        const res = await axios.get(route('postcode.lookup'), { params: { postcode: val } });
+        if (res.data.found) {
+            if (!form.city) form.city = res.data.city || '';
+            if (!form.state) form.state = res.data.state || '';
+        }
+    } catch {}
 });
 
 function onProfilePhotoSelected(event) {
@@ -134,7 +187,43 @@ function submitProfile() {
                     <div>
                         <InputLabel for="dob" value="Tarikh Lahir" />
                         <TextInput id="dob" type="date" class="mt-1 block w-full" v-model="form.dob" />
+                        <p class="mt-1 text-xs text-gray-400">Auto-fill dari IC</p>
                         <InputError class="mt-2" :message="form.errors.dob" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="gender" value="Jantina" />
+                        <select id="gender" v-model="form.gender" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="">Pilih</option>
+                            <option value="lelaki">Lelaki</option>
+                            <option value="perempuan">Perempuan</option>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.gender" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="marital_status" value="Status Perkahwinan" />
+                        <select id="marital_status" v-model="form.marital_status" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="">Pilih</option>
+                            <option value="bujang">Bujang</option>
+                            <option value="berkahwin">Berkahwin</option>
+                            <option value="bercerai">Bercerai</option>
+                            <option value="duda/janda">Duda / Janda</option>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.marital_status" />
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="!isSuperadmin" class="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5">
+                <p class="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Alamat</p>
+                <div class="mt-3 space-y-3">
+                    <TextInput type="text" class="mt-1 block w-full" v-model="form.address_1" placeholder="Alamat baris 1" />
+                    <TextInput type="text" class="mt-1 block w-full" v-model="form.address_2" placeholder="Alamat baris 2 (optional)" />
+                    <div class="grid grid-cols-3 gap-3">
+                        <TextInput type="text" maxlength="5" class="mt-1 block w-full" v-model="form.postcode" placeholder="Poskod" />
+                        <TextInput type="text" class="mt-1 block w-full" v-model="form.city" placeholder="Bandar" />
+                        <TextInput type="text" class="mt-1 block w-full" v-model="form.state" placeholder="Negeri" />
                     </div>
                 </div>
             </div>
@@ -170,6 +259,38 @@ function submitProfile() {
                         <InputLabel for="linkedin_url" value="LinkedIn URL" />
                         <TextInput id="linkedin_url" type="url" class="mt-1 block w-full" v-model="form.linkedin_url" />
                         <InputError class="mt-2" :message="form.errors.linkedin_url" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="position" value="Jawatan dalam Organisasi" />
+                        <select id="position" v-model="form.position" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="">Pilih jawatan</option>
+                            <option v-for="pos in orgPositions" :key="pos.id" :value="pos.name">{{ pos.name }}</option>
+                        </select>
+                        <p v-if="!orgPositions.length" class="mt-1 text-xs text-gray-400">Tiada jawatan disediakan. Admin boleh tambah di menu Jawatan.</p>
+                        <InputError class="mt-2" :message="form.errors.position" />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <InputLabel for="topics" value="Bidang Kepakaran / Topik" />
+                        <textarea id="topics" rows="2" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" v-model="form.topics" placeholder="Pengurusan, Kewangan, Pendidikan, IT, ..."></textarea>
+                        <InputError class="mt-2" :message="form.errors.topics" />
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="!isSuperadmin" class="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5">
+                <p class="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Contact Kecemasan</p>
+                <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <InputLabel for="emergency_contact_name" value="Nama Waris / Hubungi" />
+                        <TextInput id="emergency_contact_name" type="text" class="mt-1 block w-full" v-model="form.emergency_contact_name" />
+                        <InputError class="mt-2" :message="form.errors.emergency_contact_name" />
+                    </div>
+                    <div>
+                        <InputLabel for="emergency_contact_phone" value="No. Telefon" />
+                        <TextInput id="emergency_contact_phone" type="text" class="mt-1 block w-full" v-model="form.emergency_contact_phone" />
+                        <InputError class="mt-2" :message="form.errors.emergency_contact_phone" />
                     </div>
                 </div>
             </div>
