@@ -85,16 +85,18 @@ class MemberFeeController extends Controller
                 ? $feeService->getAdminStats(null, $year)
                 : $feeService->getAdminStats($orgId, $year));
 
-        $monthlyCollection = collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => (float) Payment::query()
+        $monthlyTotals = Payment::query()
+            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
             ->where('status', 'successful')
             ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $m)
             ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request) {
                 $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScopes()->where('current_organization_id',
                     $isSuperadmin ? (int) $request->organization_id : $orgId));
             })
-            ->sum('amount')
-        ]);
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
+        $monthlyCollection = collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => (float) ($monthlyTotals[$m] ?? 0)]);
 
         $chart = $monthlyCollection->map(fn ($total, $m) => [
             'month' => date('F', mktime(0, 0, 0, (int) $m, 1)),
@@ -173,8 +175,9 @@ class MemberFeeController extends Controller
         $user = $request->user();
         if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
 
-        $targetUser = $payment->user;
-        $this->authorizeOrg($user, $targetUser);
+        $payment->loadMissing('user.organization');
+        $member = $payment->user;
+        $this->authorizeOrg($user, $member);
 
         $fee = MembershipFee::where('payment_id', $payment->id)->first();
         if (! $fee) abort(404);
@@ -182,10 +185,10 @@ class MemberFeeController extends Controller
         $pdf = Pdf::loadView('exports.receipt', [
             'payment' => $payment,
             'fee' => $fee,
-            'member' => $payment->user,
+            'member' => $member,
         ]);
 
-        $filename = 'resit-yuran-' . $fee->year . '-' . ($payment->user->member_no ?? $payment->user->id) . '.pdf';
+        $filename = 'resit-yuran-' . $fee->year . '-' . ($member->member_no ?? $member->id) . '.pdf';
         return $pdf->download($filename);
     }
 
@@ -573,7 +576,7 @@ class MemberFeeController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         return User::withoutGlobalScopes()
-            ->with(['membershipFees' => fn ($q) => $q->where('year', $year), 'organization'])
+            ->with(['membershipFees' => fn ($q) => $q->where('year', $year)->with('payment'), 'organization'])
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->orderBy('name');
     }

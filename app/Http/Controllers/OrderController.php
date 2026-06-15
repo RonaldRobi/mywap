@@ -53,10 +53,16 @@ class OrderController extends Controller
         ]);
         DB::beginTransaction();
         try {
+            $productIds = collect($request->products)->pluck('id');
+            $products = Product::whereIn('id', $productIds)->lockForUpdate()->get()->keyBy('id');
+
             $total = 0;
             $items = [];
             foreach ($request->products as $item) {
-                $product = Product::findOrFail($item['id']);
+                $product = $products->get($item['id']);
+                if (! $product) {
+                    throw new \Exception('Produk tidak dijumpai.');
+                }
                 if ($product->stock < $item['quantity']) {
                     throw new \Exception('Stok tidak mencukupi untuk ' . $product->name);
                 }

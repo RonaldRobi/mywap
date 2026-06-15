@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Enums\FeeStatus;
-use App\Models\FeeImport;
 use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -74,6 +74,9 @@ class FeeService
             ]
         );
 
+        Cache::forget("life_member:{$user->id}");
+        Cache::forget("exempted:{$user->id}");
+
         return $fee;
     }
 
@@ -94,6 +97,9 @@ class FeeService
             ]
         );
 
+        Cache::forget("life_member:{$user->id}");
+        Cache::forget("exempted:{$user->id}");
+
         return $fee;
     }
 
@@ -106,6 +112,9 @@ class FeeService
         MembershipFee::where('user_id', $user->id)
             ->where('status', 'exempted')
             ->delete();
+
+        Cache::forget("life_member:{$user->id}");
+        Cache::forget("exempted:{$user->id}");
     }
 
     public function markAsExempted(User $user, string $reason): MembershipFee
@@ -125,32 +134,41 @@ class FeeService
             ]
         );
 
+        Cache::forget("life_member:{$user->id}");
+        Cache::forget("exempted:{$user->id}");
+
         return $fee;
     }
 
     public function isLifeMember(User $user): bool
     {
-        return MembershipFee::where('user_id', $user->id)
-            ->where('status', 'life_member')
-            ->exists();
+        return Cache::remember("life_member:{$user->id}", 300, fn () =>
+            MembershipFee::where('user_id', $user->id)
+                ->where('status', 'life_member')
+                ->exists()
+        );
     }
 
     public function isExempted(User $user): bool
     {
-        return MembershipFee::where('user_id', $user->id)
-            ->where('status', 'exempted')
-            ->exists();
+        return Cache::remember("exempted:{$user->id}", 300, fn () =>
+            MembershipFee::where('user_id', $user->id)
+                ->where('status', 'exempted')
+                ->exists()
+        );
     }
 
     public function getDueCount(int $organizationId, ?int $year = null): int
     {
         $year ??= now()->year;
 
-        return User::withoutGlobalScopes()
-            ->where('current_organization_id', $organizationId)
-            ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
-            ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
-            ->count();
+        return Cache::remember("due_count:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
+            return User::withoutGlobalScopes()
+                ->where('current_organization_id', $organizationId)
+                ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
+                ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
+                ->count();
+        });
     }
 
     public function getPaymentHistory(User $user, int $limit = 10): array
@@ -196,46 +214,58 @@ class FeeService
 
     public function getAdminStats(?int $organizationId, int $year): array
     {
-        $baseQuery = User::withoutGlobalScopes();
-        if ($organizationId) {
-            $baseQuery->where('current_organization_id', $organizationId);
-        }
+        return Cache::remember("fee_stats:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
+            $baseQuery = User::withoutGlobalScopes();
+            if ($organizationId) {
+                $baseQuery->where('current_organization_id', $organizationId);
+            }
 
-        $total = (clone $baseQuery)->count();
+            $stats = (clone $baseQuery)->selectRaw("
+                COUNT(*) as total,
+                SUM(EXISTS(
+                    SELECT 1 FROM membership_fees
+                    WHERE membership_fees.user_id = users.id
+                    AND membership_fees.year = ?
+                    AND membership_fees.status = 'paid'
+                )) as paid,
+                SUM(EXISTS(
+                    SELECT 1 FROM membership_fees
+                    WHERE membership_fees.user_id = users.id
+                    AND membership_fees.status = 'life_member'
+                )) as life_member,
+                SUM(EXISTS(
+                    SELECT 1 FROM membership_fees
+                    WHERE membership_fees.user_id = users.id
+                    AND membership_fees.status = 'exempted'
+                )) as exempted
+            ", [$year])->first();
 
-        $paid = (clone $baseQuery)
-            ->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
-            ->count();
+            $total = (int) $stats->total;
+            $paid = (int) $stats->paid;
+            $lifeMember = (int) $stats->life_member;
+            $exempted = (int) $stats->exempted;
 
-        $lifeMember = (clone $baseQuery)
-            ->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'))
-            ->count();
+            $collectedQuery = Payment::query()
+                ->where('status', 'successful')
+                ->whereYear('created_at', $year)
+                ->where('payable_type', MembershipFee::class);
 
-        $exempted = (clone $baseQuery)
-            ->whereHas('membershipFees', fn ($q) => $q->where('status', 'exempted'))
-            ->count();
+            if ($organizationId) {
+                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('current_organization_id', $organizationId));
+            }
 
-        $collectedQuery = Payment::query()
-            ->where('status', 'successful')
-            ->whereYear('created_at', $year)
-            ->where('payable_type', MembershipFee::class);
+            $collectedAmount = $collectedQuery->sum('amount');
+            $due = $total - $paid - $lifeMember - $exempted;
 
-        if ($organizationId) {
-            $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('current_organization_id', $organizationId));
-        }
-
-        $collectedAmount = $collectedQuery->sum('amount');
-
-        $due = $total - $paid - $lifeMember - $exempted;
-
-        return [
-            'total' => max(0, $total),
-            'paid' => max(0, $paid),
-            'due' => max(0, $due),
-            'life_member' => max(0, $lifeMember),
-            'exempted' => max(0, $exempted),
-            'collected_amount' => (float) $collectedAmount,
-        ];
+            return [
+                'total' => max(0, $total),
+                'paid' => max(0, $paid),
+                'due' => max(0, $due),
+                'life_member' => max(0, $lifeMember),
+                'exempted' => max(0, $exempted),
+                'collected_amount' => (float) $collectedAmount,
+            ];
+        });
     }
 
     public function generateAnnualFees(Organization $org, int $year): int

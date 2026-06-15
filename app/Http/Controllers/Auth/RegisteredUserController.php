@@ -104,9 +104,7 @@ class RegisteredUserController extends Controller
         $padding = $prefix === 'W' ? 4 : 5;
 
         $max = User::where('member_no', 'like', $prefix.'%')
-            ->where('member_no', 'REGEXP', '^'.$prefix.'[0-9]+$')
-            ->selectRaw('MAX(CAST(SUBSTRING(member_no, '.(strlen($prefix) + 1).') AS UNSIGNED)) as max_num')
-            ->value('max_num');
+            ->max('member_no_sequence');
         $next = ($max ?? 0) + 1;
         $memberNo = $prefix.str_pad($next, $padding, '0', STR_PAD_LEFT);
 
@@ -120,6 +118,7 @@ class RegisteredUserController extends Controller
             'current_organization_id' => $organization?->id,
             'branch_id' => $branchId,
             'member_no' => $memberNo,
+            'member_no_sequence' => $next,
             'original_member_no' => $memberNo,
             'referred_by_user_id' => $request->referred_by_user_id,
             'password' => Hash::make(Str::random(32)),

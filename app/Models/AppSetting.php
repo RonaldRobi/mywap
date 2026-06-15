@@ -11,6 +11,12 @@ class AppSetting extends Model
     use HasFactory;
     use NormalizesStoragePath;
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => cache()->forget('app_settings'));
+        static::deleted(fn () => cache()->forget('app_settings'));
+    }
+
     protected $fillable = [
         'system_logo_path',
         'splash_image_path',

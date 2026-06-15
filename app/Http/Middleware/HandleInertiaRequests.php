@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\AppSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
@@ -36,10 +37,16 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $isSuperadmin = $user?->hasRole('Superadmin') ?? false;
-        $appSetting = Schema::hasTable('app_settings')
+
+        if ($user) {
+            $user->loadMissing('organization:id,name,slug,color_theme,logo_path', 'roles');
+        }
+
+        $appSetting = Cache::rememberForever('app_settings', fn () => Schema::hasTable('app_settings')
             ? AppSetting::query()->first()
-            : null;
+            : null);
+
+        $isSuperadmin = $user?->hasRole('Superadmin') ?? false;
 
         return [
             ...parent::share($request),
@@ -103,7 +110,7 @@ class HandleInertiaRequests extends Middleware
                 'splash_enabled' => (bool) ($appSetting?->splash_enabled ?? true),
             ],
             'notifications' => $user ? [
-                'unread_count' => $user->unreadNotifications()->count(),
+                'unread_count' => Cache::remember("unread:{$user->id}", 30, fn () => $user->unreadNotifications()->count()),
                 'recent' => $user->notifications()
                     ->latest()
                     ->take(8)

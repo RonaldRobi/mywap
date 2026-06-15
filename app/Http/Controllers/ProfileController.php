@@ -28,7 +28,7 @@ class ProfileController extends Controller
      */
     public function show(Request $request): Response
     {
-        $user = $request->user()->load(['organization']);
+        $user = $request->user()->load(['organization', 'branch']);
         $isSuperadmin = $user->hasRole(['Superadmin', 'Admin']);
 
         $attendedPrograms = EventRsvp::query()

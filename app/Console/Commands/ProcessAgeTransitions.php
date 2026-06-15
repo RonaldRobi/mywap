@@ -42,7 +42,7 @@ class ProcessAgeTransitions extends Command
 
         \App\Models\User::withoutGlobalScopes()
             ->whereNotNull('dob')
-            ->with('organization')
+            ->with('organization', 'roles')
             ->chunkById(500, function ($users) use (
                 $organizations,
                 $isDryRun,
@@ -58,7 +58,10 @@ class ProcessAgeTransitions extends Command
                     }
 
                     $age            = $user->dob->age;
-                    $correctOrg     = \App\Models\Organization::forAge($age);
+                    $correctOrg     = $organizations->first(fn ($org) =>
+                        $org->min_age <= $age
+                        && ($org->max_age === null || $org->max_age >= $age)
+                    );
 
                     if (! $correctOrg) {
                         $this->warn("  ⚠  No organization matched for age {$age} (user #{$user->id})");

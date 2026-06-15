@@ -57,6 +57,7 @@ class User extends Authenticatable
         'linkedin_url',
         'is_public_in_directory',
         'member_no',
+        'member_no_sequence',
         'original_member_no',
         'wadah_state',
         'key_in_date',

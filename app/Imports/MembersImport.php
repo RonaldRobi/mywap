@@ -44,9 +44,7 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
     protected function nextMemberNo(): string
     {
         $max = User::where('member_no', 'like', $this->prefix . '%')
-            ->where('member_no', 'REGEXP', '^' . $this->prefix . '[0-9]+$')
-            ->selectRaw('MAX(CAST(SUBSTRING(member_no, ' . (strlen($this->prefix) + 1) . ') AS UNSIGNED)) as max_num')
-            ->value('max_num');
+            ->max('member_no_sequence');
 
         $next = ($max ?? 0) + 1;
         return $this->prefix . str_pad($next, $this->padding, '0', STR_PAD_LEFT);
@@ -121,7 +119,9 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
 
             // If this is a new user (no member_no yet), auto-generate one
             if (!$user->member_no) {
-                $user->update(['member_no' => $this->nextMemberNo()]);
+                $newMemberNo = $this->nextMemberNo();
+                $seq = (int) substr($newMemberNo, strlen($this->prefix));
+                $user->update(['member_no' => $newMemberNo, 'member_no_sequence' => $seq]);
             }
 
             // Set original_member_no on first creation

@@ -21,7 +21,7 @@ class PaymentController extends Controller
      */
     public function feesConfig(): Response
     {
-        $organizations = Organization::orderBy('min_age')->get()->map(fn (Organization $org) => [
+        $organizations = Organization::withCount('members')->orderBy('min_age')->get()->map(fn (Organization $org) => [
             'id'         => $org->id,
             'name'       => $org->name,
             'slug'       => $org->slug,
@@ -29,7 +29,7 @@ class PaymentController extends Controller
             'min_age'    => $org->min_age,
             'max_age'    => $org->max_age,
             'fee_amount' => (float) $org->fee_amount,
-            'member_count' => $org->members()->count(),
+            'member_count' => $org->members_count,
         ]);
 
         return Inertia::render('Superadmin/Fees', [

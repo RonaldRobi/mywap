@@ -37,10 +37,19 @@ class AdminFinanceController extends Controller
         if ($feeTotal > 0) $bySource->push(['type' => 'Yuran Keahlian', 'total' => $feeTotal]);
         if ($infaqTotal > 0) $bySource->push(['type' => 'Infaq', 'total' => $infaqTotal]);
 
-        // Monthly chart - combine both
+        // Monthly chart - single GROUP BY query per source
+        $feeMonthly = (clone $paymentQuery)
+            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
+        $infaqMonthly = (clone $infaqQuery)
+            ->selectRaw('MONTH(created_at) as month, SUM(amount) as total')
+            ->groupBy('month')
+            ->pluck('total', 'month');
+
         $monthly = collect(range(1, 12))->mapWithKeys(fn ($m) => [
-            $m => (float) (clone $paymentQuery)->whereMonth('created_at', $m)->sum('amount')
-                + (float) (clone $infaqQuery)->whereMonth('created_at', $m)->sum('amount'),
+            $m => (float) ($feeMonthly[$m] ?? 0) + (float) ($infaqMonthly[$m] ?? 0),
         ]);
 
         $chart = $monthly->map(fn ($total, $m) => [
@@ -61,7 +70,7 @@ class AdminFinanceController extends Controller
                 'reference' => $p->reference,
             ]);
 
-        $infaqRows = (clone $infaqQuery)->with('infaq:id,title')->latest('created_at')->get()
+        $infaqRows = (clone $infaqQuery)->with('infaq:id,title', 'user:id,name,member_no')->latest('created_at')->get()
             ->map(fn (InfaqDonation $d) => [
                 'id' => 'i-' . $d->id,
                 'user_id' => $d->user_id,

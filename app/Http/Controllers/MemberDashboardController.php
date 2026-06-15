@@ -26,8 +26,9 @@ class MemberDashboardController extends Controller
             ->whereIn('status', ['going', 'maybe'])
             ->whereHas('event', fn ($query) => $query->where('start_time', '>=', now()))
             ->with('event.organization')
-            ->get()
-            ->sortBy(fn (EventRsvp $rsvp) => $rsvp->event->start_time)
+            ->join('events', 'event_rsvps.event_id', '=', 'events.id')
+            ->orderBy('events.start_time')
+            ->select('event_rsvps.*')
             ->first();
 
         $feeStatus = $feeService->getStatus($user);

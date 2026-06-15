@@ -28,23 +28,23 @@ use App\Http\Controllers\UsrahController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
-Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup');
-Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info');
-Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article');
-Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq');
-Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event');
+Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup')->middleware('throttle:30,1');
+Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info')->middleware('throttle:30,1');
+Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');
+Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
+Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
 
-Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index');
-Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show');
-Route::post('/artikel/{article:slug}/react', [ArticleController::class, 'react'])->name('articles.react');
-Route::post('/artikel/{article:slug}/comments', [ArticleController::class, 'storeComment'])->name('articles.comments.store');
+Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
+Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');
+Route::post('/artikel/{article:slug}/react', [ArticleController::class, 'react'])->name('articles.react')->middleware('throttle:30,1');
+Route::post('/artikel/{article:slug}/comments', [ArticleController::class, 'storeComment'])->name('articles.comments.store')->middleware('throttle:10,1');
 
-Route::get('/sumbangan', [InfaqController::class, 'index'])->name('infaq.index');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::class, 'show'])->name('infaq.show');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donateForm'])->name('infaq.donate.form');
-Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr');
+Route::get('/sumbangan', [InfaqController::class, 'index'])->name('infaq.index')->middleware('throttle:60,1');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::class, 'show'])->name('infaq.show')->middleware('throttle:60,1');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donateForm'])->name('infaq.donate.form')->middleware('throttle:60,1');
+Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate')->middleware('throttle:10,1');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success')->middleware('throttle:60,1');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr')->middleware('throttle:60,1');
 
 Route::get('/s/{infaq:slug}', fn (\App\Models\Infaq $infaq) => redirect()->route('infaq.show', [
     'year' => $infaq->year,
