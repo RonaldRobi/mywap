@@ -3,15 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\OrderItem;
+use App\Services\BayarCashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        protected BayarCashService $bayarCashService,
+    ) {}
+
     public function index()
     {
         $this->authorize('viewAny', Order::class);
@@ -101,5 +109,51 @@ class OrderController extends Controller
         ]);
         $order->update($request->only('status', 'tracking_no'));
         return redirect()->route('orders.show', $order)->with('success', 'Status pesanan dikemaskini!');
+    }
+
+    public function pay(Order $order): RedirectResponse
+    {
+        $this->authorize('view', $order);
+
+        if ($order->status !== 'pending') {
+            return redirect()->route('orders.show', $order)->with('error', 'Pesanan ini sudah dibayar.');
+        }
+
+        $user = Auth::user();
+        $orgId = $order->organisasi_id ?? $user->current_organization_id;
+        $org = Organization::find($orgId);
+        $useBayarCash = $org && $org->hasBayarCashConfig();
+
+        $payment = Payment::create([
+            'user_id'         => $user->id,
+            'payable_type'    => 'order',
+            'payable_id'      => $order->id,
+            'amount'          => (float) $order->total,
+            'status'          => $useBayarCash ? 'pending' : 'successful',
+            'reference'       => $useBayarCash ? 'ORD-' . strtoupper(Str::random(8)) : 'DUMMY-' . strtoupper(Str::random(8)),
+            'description'     => "Pesanan #{$order->id}",
+            'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
+            'organization_id' => $org?->id,
+        ]);
+
+        if ($useBayarCash && $org) {
+            $url = $this->bayarCashService->createPaymentIntent(
+                $org,
+                $payment,
+                $user->name,
+                $user->email,
+            );
+
+            if ($url) {
+                return redirect()->away($url);
+            }
+
+            $payment->update(['status' => 'failed']);
+            return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
+        }
+
+        $order->update(['status' => 'paid']);
+
+        return redirect()->route('orders.show', $order)->with('success', 'Pesanan berjaya dibayar!');
     }
 }

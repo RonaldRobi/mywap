@@ -21,6 +21,10 @@ class Payment extends Model
         'description',
         'proof_path',
         'uploaded_by',
+        'gateway',
+        'gateway_ref',
+        'gateway_url',
+        'organization_id',
     ];
 
     protected function casts(): array
@@ -43,5 +47,10 @@ class Payment extends Model
     public function payable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

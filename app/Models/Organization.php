@@ -34,6 +34,10 @@ class Organization extends Model
         'min_age',
         'max_age',
         'fee_amount',
+        'bayarcash_api_token',
+        'bayarcash_portal_key',
+        'bayarcash_secret_key',
+        'bayarcash_environment',
     ];
 
     protected function casts(): array
@@ -41,6 +45,13 @@ class Organization extends Model
         return [
             'fee_amount' => 'decimal:2',
         ];
+    }
+
+    public function hasBayarCashConfig(): bool
+    {
+        return filled($this->bayarcash_api_token)
+            && filled($this->bayarcash_portal_key)
+            && filled($this->bayarcash_secret_key);
     }
 
     // ─── Relationships ──────────────────────────────────────────────────────────

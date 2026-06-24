@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class MemberCardController extends Controller
 {
@@ -16,6 +17,12 @@ class MemberCardController extends Controller
         $setting = Schema::hasTable('app_settings')
             ? AppSetting::query()->first()
             : null;
+
+        $privateUrl = route('member.card');
+        $publicUrl = route('public.card', $user->member_no);
+
+        $privateQr = $this->generateQrSvg($privateUrl);
+        $publicQr = $this->generateQrSvg($publicUrl);
 
         return Inertia::render('Member/Card', [
             'card' => [
@@ -27,6 +34,7 @@ class MemberCardController extends Controller
                 'locality' => $user->locality,
                 'profession' => $user->current_profession,
                 'industry' => $user->industry,
+                'member_no' => $user->member_no,
                 'organization' => [
                     'name' => $user->organization?->name,
                     'slug' => $user->organization?->slug,
@@ -36,7 +44,17 @@ class MemberCardController extends Controller
                 'member_since' => optional($user->created_at)->format('M Y'),
                 'system_logo_path' => $this->normalizeStorageUrl($setting?->system_logo_path),
             ],
+            'qrPrivate' => $privateQr,
+            'qrPublic' => $publicQr,
         ]);
+    }
+
+    private function generateQrSvg(string $url): string
+    {
+        $svg = QrCode::format('svg')->size(200)->margin(1)->generate($url);
+        $svg = preg_replace('/^<\?xml.*?\?>\s*/', '', $svg);
+        $svg = preg_replace('/\s(width|height)="\d+"/', '', $svg);
+        return $svg;
     }
 
     private function normalizeStorageUrl(?string $url): ?string

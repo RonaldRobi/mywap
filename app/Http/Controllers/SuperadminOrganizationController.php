@@ -22,10 +22,8 @@ class SuperadminOrganizationController extends Controller
             ->orderBy($hasSortOrderColumn ? 'sort_order' : 'min_age')
             ->orderBy('min_age')
             ->get($hasLogoColumn && $hasSortOrderColumn
-                ? ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'logo_path', 'sort_order']
-                : ($hasLogoColumn
-                    ? ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'logo_path']
-                    : ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age']))
+                ? ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'logo_path', 'sort_order', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment']
+                : ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment'])
             ->map(fn (Organization $organization) => [
                 'id' => $organization->id,
                 'name' => $organization->name,
@@ -36,6 +34,10 @@ class SuperadminOrganizationController extends Controller
                 'logo_path' => $hasLogoColumn ? $this->normalizeStorageUrl($organization->logo_path) : null,
                 'sort_order' => $hasSortOrderColumn ? $organization->sort_order : null,
                 'member_count' => $organization->members_count,
+                'bayarcash_api_token' => $organization->bayarcash_api_token,
+                'bayarcash_portal_key' => $organization->bayarcash_portal_key,
+                'bayarcash_secret_key' => $organization->bayarcash_secret_key,
+                'bayarcash_environment' => $organization->bayarcash_environment,
             ])
             ->values();
 
@@ -58,6 +60,10 @@ class SuperadminOrganizationController extends Controller
             'min_age' => ['required', 'integer', 'min:0', 'max:120'],
             'max_age' => ['nullable', 'integer', 'min:0', 'max:120', 'gte:min_age'],
             'sort_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'bayarcash_api_token' => ['nullable', 'string', 'max:255'],
+            'bayarcash_portal_key' => ['nullable', 'string', 'max:255'],
+            'bayarcash_secret_key' => ['nullable', 'string', 'max:255'],
+            'bayarcash_environment' => ['nullable', 'in:sandbox,live'],
         ]);
 
         $payload = [
@@ -65,6 +71,10 @@ class SuperadminOrganizationController extends Controller
             'color_theme' => $data['color_theme'] ?? null,
             'min_age' => (int) $data['min_age'],
             'max_age' => $data['max_age'] !== null ? (int) $data['max_age'] : null,
+            'bayarcash_api_token' => $data['bayarcash_api_token'] ?? null,
+            'bayarcash_portal_key' => $data['bayarcash_portal_key'] ?? null,
+            'bayarcash_secret_key' => $data['bayarcash_secret_key'] ?? null,
+            'bayarcash_environment' => $data['bayarcash_environment'] ?? 'sandbox',
         ];
 
         if ($hasSortOrderColumn) {

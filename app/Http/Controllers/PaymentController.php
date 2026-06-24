@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\BayarCashService;
 use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,10 @@ use Inertia\Response;
 
 class PaymentController extends Controller
 {
+    public function __construct(
+        protected BayarCashService $bayarCashService,
+    ) {}
+
     // ─── SUPERADMIN ──────────────────────────────────────────────────────────────
 
     /**
@@ -165,8 +170,7 @@ class PaymentController extends Controller
     // ─── MEMBER ──────────────────────────────────────────────────────────────────
 
     /**
-     * Member: initiate a (dummy) membership fee payment.
-     * In production this would redirect to a payment gateway.
+     * Member: initiate a membership fee payment via BayarCash or dummy fallback.
      */
     public function payFee(Request $request, FeeService $feeService): RedirectResponse
     {
@@ -193,16 +197,36 @@ class PaymentController extends Controller
             return back()->with('error', 'Yuran keahlian anda untuk tahun ini sudah dibayar.');
         }
 
-        // Dummy payment — simulate instant success
+        $org = $user->organization;
+        $useBayarCash = $org && $org->hasBayarCashConfig();
+
         $payment = Payment::create([
-            'user_id'     => $user->id,
-            'payable_type'=> 'membership_fee',
-            'payable_id'  => null,
-            'amount'      => $feeAmount,
-            'status'      => 'successful',
-            'reference'   => 'DUMMY-' . strtoupper(Str::random(8)),
-            'description' => "Yuran keahlian {$user->organization?->name} {$year}",
+            'user_id'         => $user->id,
+            'payable_type'    => 'membership_fee',
+            'payable_id'      => null,
+            'amount'          => $feeAmount,
+            'status'          => $useBayarCash ? 'pending' : 'successful',
+            'reference'       => $useBayarCash ? 'FEE-' . strtoupper(Str::random(8)) : 'DUMMY-' . strtoupper(Str::random(8)),
+            'description'     => "Yuran keahlian {$org?->name} {$year}",
+            'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
+            'organization_id' => $org?->id,
         ]);
+
+        if ($useBayarCash && $org) {
+            $url = $this->bayarCashService->createPaymentIntent(
+                $org,
+                $payment,
+                $user->name,
+                $user->email,
+            );
+
+            if ($url) {
+                return redirect()->away($url);
+            }
+
+            $payment->update(['status' => 'failed']);
+            return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
+        }
 
         $feeService->markAsPaid($user, $year, $feeAmount, $payment->id);
 

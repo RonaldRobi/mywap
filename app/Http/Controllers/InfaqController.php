@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Infaq;
 use App\Models\InfaqDonation;
 use App\Models\Organization;
+use App\Models\Payment;
+use App\Services\BayarCashService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,10 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InfaqController extends Controller
 {
+    public function __construct(
+        protected BayarCashService $bayarCashService,
+    ) {}
+
     // ─── Superadmin: list all infaq ─────────────────────────────────────────
 
     public function manage(): Response
@@ -373,14 +379,18 @@ SVG;
         ]);
 
         $user = $request->user();
+        $org = $infaq->organization_id ? Organization::find($infaq->organization_id) : null;
+        $useBayarCash = $org && $org->hasBayarCashConfig();
 
-        DB::transaction(function () use ($infaq, $user, $data) {
-            InfaqDonation::create([
+        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useBayarCash) {
+            $ref = 'INFQ-' . strtoupper(Str::random(10));
+
+            $donation = InfaqDonation::create([
                 'infaq_id'       => $infaq->id,
                 'user_id'        => $user?->id,
                 'amount'         => $data['amount'],
-                'reference'      => 'INFQ-' . strtoupper(Str::random(10)),
-                'status'         => 'confirmed', // simplified
+                'reference'      => $ref,
+                'status'         => $useBayarCash ? 'pending' : 'confirmed',
                 'donor_name'     => $data['donor_name'],
                 'donor_phone'    => $data['donor_phone'],
                 'donor_email'    => $data['donor_email'],
@@ -389,8 +399,47 @@ SVG;
                 'wants_updates'  => $data['wants_updates'] ?? false,
             ]);
 
-            $infaq->increment('collected_amount', $data['amount']);
+            $paymentRef = 'INFQ-' . strtoupper(Str::random(8));
+
+            $payment = Payment::create([
+                'user_id'         => $user?->id,
+                'payable_type'    => 'infaq_donation',
+                'payable_id'      => $donation->id,
+                'amount'          => $data['amount'],
+                'status'          => $useBayarCash ? 'pending' : 'successful',
+                'reference'       => $paymentRef,
+                'description'     => "Donasi: {$infaq->title}",
+                'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
+                'organization_id' => $org?->id,
+            ]);
+
+            if (!$useBayarCash) {
+                $infaq->increment('collected_amount', $data['amount']);
+            }
+
+            return $donation;
         });
+
+        if ($useBayarCash && $org) {
+            $payment = Payment::where('payable_type', 'infaq_donation')
+                ->where('payable_id', $donation->id)
+                ->first();
+
+            $url = $this->bayarCashService->createPaymentIntent(
+                $org,
+                $payment,
+                $data['donor_name'],
+                $data['donor_email'],
+                $data['donor_phone'],
+            );
+
+            if ($url) {
+                return redirect()->away($url);
+            }
+
+            $payment->update(['status' => 'failed']);
+            return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
+        }
 
         return redirect()->route('infaq.success', [
             'year'  => $year,

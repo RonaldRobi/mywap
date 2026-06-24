@@ -1,42 +1,58 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
-    member: {
-        type: Object,
-        required: true,
-    },
-    feeStatus: {
-        type: Object,
-        required: true,
-    },
-    nextEvent: {
-        type: Object,
-        default: null,
-    },
-    banners: {
-        type: Array,
-        default: () => [],
-    },
-    libraryBooks: {
-        type: Array,
-        default: () => [],
-    },
-    usrah: {
-        type: Object,
-        default: null,
-    },
-    infaqItems: {
-        type: Array,
-        default: () => [],
-    },
-    latestNews: {
-        type: Array,
-        default: () => [],
-    },
+    member: { type: Object, required: true },
+    feeStatus: { type: Object, required: true },
+    nextEvent: { type: Object, default: null },
+    banners: { type: Array, default: () => [] },
+    libraryBooks: { type: Array, default: () => [] },
+    usrah: { type: Object, default: null },
+    infaqItems: { type: Array, default: () => [] },
+    latestNews: { type: Array, default: () => [] },
+    activePolls: { type: Array, default: () => [] },
 });
+
+const themeMap = {
+    management: { accent: 'bg-slate-500', accentText: 'text-slate-600', accentBg: 'bg-slate-50', badge: 'bg-slate-100 text-slate-700', dot: 'bg-slate-500' },
+    pkpim: { accent: 'bg-indigo-500', accentText: 'text-indigo-600', accentBg: 'bg-indigo-50', badge: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-500' },
+    abim: { accent: 'bg-emerald-500', accentText: 'text-emerald-600', accentBg: 'bg-emerald-50', badge: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    wadah: { accent: 'bg-amber-500', accentText: 'text-amber-600', accentBg: 'bg-amber-50', badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+};
+const darkGradMap = {
+    management: { from: '#1e293b', to: '#334155' },
+    pkpim: { from: '#312e81', to: '#4338ca' },
+    abim: { from: '#064e3b', to: '#065f46' },
+    wadah: { from: '#78350f', to: '#92400e' },
+};
+const lightGradMap = {
+    management: { from: '#94a3b8', to: '#64748b' },
+    pkpim: { from: '#818cf8', to: '#6366f1' },
+    abim: { from: '#34d399', to: '#10b981' },
+    wadah: { from: '#fbbf24', to: '#f59e0b' },
+};
+const colorMap = {
+    management: '#64748b', pkpim: '#6366f1', abim: '#10b981', wadah: '#f59e0b',
+};
+const orgSlug = computed(() => props.member?.organization?.slug);
+const theme = computed(() => themeMap[orgSlug.value] ?? themeMap.abim);
+const themeColor = computed(() => colorMap[orgSlug.value] ?? colorMap.abim);
+const darkGrad = computed(() => darkGradMap[orgSlug.value] ?? darkGradMap.abim);
+const lightGrad = computed(() => lightGradMap[orgSlug.value] ?? lightGradMap.abim);
+
+const page = usePage();
+const notifCount = computed(() => page.props.notifications?.unread_count ?? 0);
+function markNotifsRead() {
+    if (notifCount.value > 0) {
+        router.post(route('notifications.read-all'), {}, { preserveScroll: true, preserveState: true });
+    }
+}
+
+function openDrawer() {
+    window.dispatchEvent(new CustomEvent('open-mobile-drawer'));
+}
 
 const payForm = useForm({});
 const infaqForms = ref({});
@@ -56,46 +72,54 @@ const featuredInfaq = computed(() =>
 const featuredNews = computed(() => (props.latestNews ?? []).slice(0, 5));
 const firstInfaqUrl = computed(() => featuredInfaq.value[0]?.public_url ?? null);
 
+const activeBannerIndex = ref(0);
+const carouselItems = computed(() => {
+    if (props.banners.length) return props.banners;
+    return [{ id: 0, title: 'Selamat datang ke myWAP', image_path: null }];
+});
+let bannerTimer;
+onMounted(() => {
+    bannerTimer = setInterval(() => {
+        if (carouselItems.value.length > 1) {
+            activeBannerIndex.value = (activeBannerIndex.value + 1) % carouselItems.value.length;
+        }
+    }, 5000);
+});
+onUnmounted(() => {
+    if (bannerTimer) clearInterval(bannerTimer);
+});
+
+function initials(name) {
+    return (name || 'U').split(' ').slice(0, 2).map(v => v[0]).join('').toUpperCase();
+}
+
 function payFee() {
     payForm.post(route('member.pay.fee'), { preserveScroll: true });
 }
-
 function formatCurrency(value) {
     return new Intl.NumberFormat('ms-MY', {
-        style: 'currency',
-        currency: 'MYR',
-        maximumFractionDigits: 2,
+        style: 'currency', currency: 'MYR', maximumFractionDigits: 2,
     }).format(value ?? 0);
 }
-
 function getInfaqForm(infaqId) {
     if (!infaqForms.value[infaqId]) {
         infaqForms.value[infaqId] = useForm({ amount: 10 });
     }
-
     return infaqForms.value[infaqId];
 }
-
 function donateInfaq(infaqId) {
     const infaq = props.infaqItems.find(i => i.id === infaqId);
     if (!infaq) return;
     const form = getInfaqForm(infaqId);
-    form.post(infaq.public_url + '/donate', {
-        preserveScroll: true,
-    });
+    form.post(infaq.public_url + '/donate', { preserveScroll: true });
 }
-
 function quickDonate(infaqId, amount) {
     const form = getInfaqForm(infaqId);
     form.amount = amount;
     donateInfaq(infaqId);
 }
-
 function scrollBooks(direction) {
-    if (!booksScroller.value) {
-        return;
-    }
-
+    if (!booksScroller.value) return;
     booksScroller.value.scrollBy({
         left: direction === 'left' ? -880 : 880,
         behavior: 'smooth',
@@ -105,480 +129,403 @@ function scrollBooks(direction) {
 
 <template>
     <Head title="Member Dashboard" />
+    <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
+        <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden">
+            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7 px-px md:px-6">
 
-    <AppLayout>
-        <template #header>Dashboard Ahli</template>
-
-        <div class="relative mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
-            <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl">
-                <div class="absolute -top-20 -left-14 h-48 w-48 rounded-full bg-emerald-200/40 blur-3xl"></div>
-                <div class="absolute top-1/3 -right-10 h-56 w-56 rounded-full bg-indigo-200/40 blur-3xl"></div>
-            </div>
-
-            <!-- Flash messages -->
-            <div v-if="$page.props.flash?.success" class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
-                {{ $page.props.flash.success }}
-            </div>
-            <div v-if="$page.props.flash?.error" class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {{ $page.props.flash.error }}
-            </div>
-
-            <div class="space-y-4 md:space-y-7">
-                <section class="md:hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Quick Action</p>
-                        <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-gray-500 ring-1 ring-gray-200">Mobile View</span>
+                <!-- Flash Messages -->
+                <template v-if="$page.props.flash?.success || $page.props.flash?.error">
+                    <div v-if="$page.props.flash?.success" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                        {{ $page.props.flash.success }}
                     </div>
-                    <div class="mt-3 grid grid-cols-2 gap-2.5">
-                        <Link :href="route('member.financial.overview')" class="mobile-action-card">
-                            <span class="mobile-action-icon bg-emerald-100 text-emerald-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                            </span>
-                            <span>Yuran Saya</span>
-                        </Link>
-                        <Link :href="route('member.facilities.index')" class="mobile-action-card">
-                            <span class="mobile-action-icon bg-amber-100 text-amber-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
-                            </span>
-                            <span>Tempah Ruang</span>
-                        </Link>
-                        <Link :href="route('news.index')" class="mobile-action-card">
-                            <span class="mobile-action-icon bg-indigo-100 text-indigo-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/></svg>
-                            </span>
-                            <span>Info Terkini</span>
-                        </Link>
-                        <Link v-if="firstInfaqUrl" :href="firstInfaqUrl" class="mobile-action-card">
-                            <span class="mobile-action-icon bg-rose-100 text-rose-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
-                            </span>
-                            <span>Sumbang Infaq</span>
-                        </Link>
-                        <button v-else type="button" class="mobile-action-card opacity-60">
-                            <span class="mobile-action-icon bg-rose-100 text-rose-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
-                            </span>
-                            <span>Tiada Infaq</span>
+                    <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                        {{ $page.props.flash.error }}
+                    </div>
+                </template>
+
+                <!-- ═══ 1. HEADER — compact, native-feel ═══ -->
+                <header class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <button @click="openDrawer" class="shrink-0 p-1.5 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
                         </button>
+                        <div class="min-w-0">
+                            <p class="text-[11px] text-gray-500 font-medium leading-tight">Assalamualaikum,</p>
+                            <h1 class="text-lg md:text-xl font-bold text-gray-900 truncate">{{ member.name }}</h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button @click="markNotifsRead" class="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span v-if="notifCount > 0" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px] font-bold" :class="theme.accent">
+                                {{ notifCount > 9 ? '9+' : notifCount }}
+                            </span>
+                        </button>
+                        <Link :href="route('profile.show')" class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" :class="theme.accent">
+                            {{ member.name?.charAt(0)?.toUpperCase() || 'A' }}
+                        </Link>
+                    </div>
+                </header>
+
+                <!-- ═══ 2. BANNER CAROUSEL ═══ -->
+                <section class="relative h-[190px] md:h-56 rounded-[28px] overflow-hidden shadow-lg">
+                    <div v-for="(banner, i) in carouselItems" :key="banner.id" v-show="i === activeBannerIndex" class="absolute inset-0">
+                        <img v-if="banner.image_path" :src="banner.image_path" :alt="banner.title" class="w-full h-full object-cover" />
+                        <div v-else class="w-full h-full" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    </div>
+                    <div class="relative z-10 h-full flex flex-col justify-end px-5 pb-5">
+                        <span class="inline-flex self-start rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm" :class="theme.accent">
+                            {{ nextEvent ? 'Program Terkini' : 'Dashboard' }}
+                        </span>
+                        <h2 class="text-lg md:text-xl font-bold text-white mt-2 leading-tight line-clamp-2">
+                            {{ carouselItems[activeBannerIndex]?.title || nextEvent?.title || 'Selamat datang ke myWAP' }}
+                        </h2>
+                        <div class="flex items-center justify-between mt-3">
+                            <Link :href="route('events.index')" class="inline-flex items-center px-4 py-2 rounded-xl font-semibold text-xs bg-white/20 backdrop-blur-md text-white border border-white/20 hover:bg-white/30 transition">
+                                {{ nextEvent ? 'Daftar Sekarang' : 'Lihat Program' }}
+                            </Link>
+                            <div v-if="carouselItems.length > 1" class="flex gap-1.5">
+                                <button v-for="(_, i) in carouselItems" :key="i" @click="activeBannerIndex = i"
+                                    class="h-1.5 rounded-full transition-all duration-300"
+                                    :class="i === activeBannerIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40'" />
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                <section class="relative overflow-hidden rounded-3xl border border-white/30 bg-gradient-to-br from-slate-900 via-emerald-900 to-emerald-700 p-4 text-white shadow-xl sm:p-5 md:p-8">
-                    <div class="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-white/10 blur-2xl"></div>
-                    <div class="absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-emerald-300/25 blur-2xl"></div>
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_35%)]"></div>
-                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-100/80">Dashboard Command</p>
-                            <h2 class="mt-2 text-xl font-black leading-tight sm:text-2xl md:text-3xl lg:text-4xl">Assalamualaikum, {{ member.name }}</h2>
-                            <div class="mt-3 flex flex-wrap items-center gap-2.5 sm:mt-4 sm:gap-3">
-                                <span class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-semibold ring-1 ring-white/30">
-                                    {{ member.organization?.name || 'NGO' }}
-                                </span>
-                                <Link :href="route('profile.show')" class="inline-flex rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-50">
-                                    Lihat Profil &amp; Journey
-                                </Link>
+                <!-- ═══ 3. PINTASTAN — fintech style ═══ -->
+                <section>
+                    <h2 class="text-sm font-bold text-gray-900 mb-3">Pintasan</h2>
+                    <div class="grid grid-cols-4 gap-2.5">
+                        <Link :href="route('member.financial.overview')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
+                            <div class="w-14 h-14 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200/60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                             </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 md:w-72">
-                            <div class="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
-                                <p class="text-[11px] text-emerald-100/80">Yuran</p>
-                                <p class="mt-1 text-sm font-bold text-white">{{ feeStatus.status === 'active' ? 'Aktif' : 'Tertunggak' }}</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Yuran Saya</p>
+                        </Link>
+                        <Link :href="route('member.facilities.index')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
+                            <div class="w-14 h-14 mx-auto bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200/60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
                             </div>
-                            <div class="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
-                                <p class="text-[11px] text-emerald-100/80">Usrah</p>
-                                <p class="mt-1 text-sm font-bold text-white line-clamp-1">{{ usrah?.name || 'Belum Set' }}</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Tempah</p>
+                        </Link>
+                        <Link :href="route('news.index')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
+                            <div class="w-14 h-14 mx-auto bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200/60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/></svg>
                             </div>
-                            <div class="col-span-2 rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
-                                <p class="text-[11px] text-emerald-100/80">Program Seterusnya</p>
-                                <p class="mt-1 text-sm font-bold text-white line-clamp-1">{{ nextEvent?.title || 'Tiada program akan datang' }}</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Info</p>
+                        </Link>
+                        <Link v-if="firstInfaqUrl" :href="firstInfaqUrl" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
+                            <div class="w-14 h-14 mx-auto bg-gradient-to-br from-rose-400 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200/60">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
                             </div>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Infaq</p>
+                        </Link>
+                        <div v-else class="bg-white/60 px-2 py-3 rounded-[22px] shadow-sm text-center opacity-50">
+                            <div class="w-14 h-14 mx-auto bg-gradient-to-br from-rose-300 to-rose-400 rounded-2xl flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
+                            </div>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-400">Infaq</p>
                         </div>
                     </div>
                 </section>
 
-                <section class="md:hidden">
-                    <div class="mb-2 flex items-end justify-between">
-                        <div>
-                            <h3 class="text-lg font-black text-gray-900">Kempen Infaq Pilihan</h3>
-                            <p class="text-xs text-gray-500">Swipe dan sumbang terus dari dashboard.</p>
-                        </div>
-                        <Link :href="route('member.financial.overview')" class="text-[11px] font-bold text-emerald-700">Lihat Semua</Link>
-                    </div>
-                    <div class="-mx-4 overflow-x-auto px-4 pb-2">
-                        <div class="flex snap-x snap-mandatory gap-3">
-                            <article
-                                v-for="item in featuredInfaq"
-                                :key="`mobile-infaq-${item.id}`"
-                                class="card-float w-[85%] shrink-0 snap-start overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-md"
-                            >
-                                <div class="relative aspect-[4/5] overflow-hidden bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500 p-3 text-white">
-                                    <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 h-full w-full object-cover opacity-35">
-                                    <div class="relative z-10">
-                                        <span class="inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                                            {{ item.type === 'progress' ? 'Progress' : 'One-Off' }}
-                                        </span>
-                                        <h4 class="mt-2 line-clamp-2 text-base font-black">{{ item.title }}</h4>
-                                        <p class="mt-1 text-xs text-emerald-50">{{ formatCurrency(item.collected_amount) }} terkumpul</p>
-                                    </div>
+                <!-- ═══ 4. KAD KEAHLIAN — premium card ═══ -->
+                <section class="relative overflow-hidden rounded-[28px] p-5 text-white shadow-lg" :style="{ background: `linear-gradient(135deg, ${darkGrad.from}, ${darkGrad.to})`, boxShadow: `0 8px 32px ${darkGrad.from}4d` }">
+                    <!-- Arabesque corner pattern -->
+                    <svg class="absolute top-0 right-0 w-64 h-64 opacity-[0.03] pointer-events-none" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.8); transform-origin: top right;">
+                        <path d="M190,20 C175,10 155,8 140,15 C125,22 118,38 120,55 C122,72 132,80 148,75 C164,70 170,55 165,42 C160,30 148,25 142,32" stroke="white" stroke-width="0.7" fill="none"/>
+                        <path d="M200,40 C180,42 150,50 130,38 C110,26 105,8 118,2 C132,-2 145,10 142,25" stroke="white" stroke-width="0.6" fill="none"/>
+                        <path d="M152,18 C149,14 145,11 140,14 C144,18 148,21 152,18Z" fill="white"/>
+                        <path d="M130,30 C133,26 137,23 141,27 C137,31 133,34 130,30Z" fill="white"/>
+                        <path d="M165,55 C162,51 158,49 155,52 C158,56 161,58 165,55Z" fill="white"/>
+                        <path d="M120,60 C123,56 127,53 131,57 C127,61 123,64 120,60Z" fill="white"/>
+                        <circle cx="148" cy="38" r="0.8" fill="white"/>
+                        <circle cx="160" cy="25" r="1.2" fill="white"/>
+                        <circle cx="112" cy="40" r="0.7" fill="white"/>
+                    </svg>
+                    <div class="relative z-10">
+                        <!-- Top bar -->
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-md border border-white/20">
+                                    <img v-if="member.system_logo_path" :src="member.system_logo_path" alt="myWAP" class="h-5 w-5 object-contain">
+                                    <span v-else class="text-[9px] font-bold text-white/70">MW</span>
                                 </div>
-                                <div class="p-3.5">
-                                    <div class="h-2 w-full overflow-hidden rounded-full bg-emerald-100">
-                                        <div class="h-2 rounded-full bg-emerald-500 transition-all duration-700" :style="{ width: (item.progress_percent || 0) + '%' }"></div>
-                                    </div>
-                                    <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
-                                        <span>{{ item.progress_percent || 0 }}% capai</span>
-                                        <span>{{ formatCurrency(item.target_amount || 0) }}</span>
-                                    </div>
-                                    <div class="mt-3 grid grid-cols-3 gap-2">
-                                        <button type="button" @click="quickDonate(item.id, 10)" :disabled="getInfaqForm(item.id).processing" class="rounded-xl bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">RM10</button>
-                                        <button type="button" @click="quickDonate(item.id, 30)" :disabled="getInfaqForm(item.id).processing" class="rounded-xl bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">RM30</button>
-                                        <button type="button" @click="quickDonate(item.id, 50)" :disabled="getInfaqForm(item.id).processing" class="rounded-xl bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">RM50</button>
-                                    </div>
-                                </div>
-                            </article>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/60">myWAP</p>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <img v-if="member.organization?.logo_path" :src="member.organization.logo_path" :alt="member.organization?.name" class="h-7 w-7 rounded-full object-cover border border-white/30">
+                                <span class="text-[10px] font-semibold text-white/80 max-w-[80px] truncate">{{ member.organization?.name || 'Organisasi' }}</span>
+                            </div>
                         </div>
-                    </div>
-                </section>
-
-                <section class="md:hidden">
-                    <div class="mb-2 flex items-end justify-between">
-                        <div>
-                            <h3 class="text-lg font-black text-gray-900">Berita Untuk Anda</h3>
-                            <p class="text-xs text-gray-500">Story cards yang cepat dibaca.</p>
-                        </div>
-                        <Link :href="route('news.index')" class="text-[11px] font-bold text-indigo-700">Buka Feed</Link>
-                    </div>
-                    <div class="-mx-4 overflow-x-auto px-4 pb-2">
-                        <div class="flex snap-x snap-mandatory gap-3">
-                            <article
-                                v-for="item in featuredNews"
-                                :key="`mobile-news-${item.id}`"
-                                class="card-float w-[82%] shrink-0 snap-start overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-sm"
-                            >
-                                <Link :href="route('news.show', item.id)" class="block">
-                                    <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
-                                        <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/55 to-transparent"></div>
-                                        <p class="absolute bottom-3 left-3 right-3 line-clamp-2 text-sm font-black text-white">{{ item.title }}</p>
-                                    </div>
-                                    <div class="p-3">
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">{{ item.organization_name }}</span>
-                                        </div>
-                                        <p class="mt-2 line-clamp-2 text-xs text-gray-600">{{ item.excerpt || 'Tap untuk baca lanjut.' }}</p>
-                                    </div>
-                                </Link>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-
-                <div class="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
-                    <section class="rounded-3xl border border-gray-100 bg-white/95 p-4 shadow-sm ring-1 ring-gray-100 md:p-6">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-base font-black text-gray-900">Aktiviti Saya</h3>
-                            <Link :href="route('events.index')" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">Lihat Program</Link>
-                        </div>
-
-                        <div class="mt-4 space-y-2.5 sm:space-y-3">
-                            <div class="rounded-2xl border border-gray-100 bg-gray-50 p-3.5 sm:p-4">
-                                <div class="flex items-center gap-3">
-                                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <!-- Body -->
+                        <div class="mt-4 flex items-center gap-4">
+                            <img v-if="member.photo_url" :src="member.photo_url" alt="" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shrink-0">
+                            <div v-else class="w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-black text-white bg-white/15 backdrop-blur-md border-2 border-white/30 shrink-0">
+                                {{ initials(member.name) }}
+                            </div>
+                            <div class="min-w-0">
+                                <h3 class="text-base font-bold text-white truncate">{{ member.name }}</h3>
+                                <p class="text-[11px] text-white/60 mt-0.5">Ahli sejak {{ member.member_since || '—' }}</p>
+                                <div class="flex flex-wrap gap-1.5 mt-2">
+                                    <span v-if="member.email" class="inline-flex items-center gap-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] text-white/80">
+                                        {{ member.email }}
                                     </span>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Program</p>
-                                        <p class="text-sm font-semibold text-gray-800">{{ nextEvent?.title || 'Tiada program akan datang' }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="rounded-2xl border border-gray-100 bg-gray-50 p-3.5 sm:p-4">
-                                <div class="flex items-center gap-3">
-                                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+                                    <span v-if="member.phone" class="inline-flex items-center gap-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] text-white/80">
+                                        {{ member.phone }}
                                     </span>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Usrah</p>
-                                        <p class="text-sm font-semibold text-gray-800">{{ usrah?.name || 'Belum ditetapkan kumpulan' }}</p>
-                                    </div>
                                 </div>
                             </div>
+                        </div>
+                        <!-- Glassmorphism stats -->
+                        <div class="flex items-end justify-between mt-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/15 p-2.5">
+                                    <p class="text-[10px] text-white/60">Yuran</p>
+                                    <p class="mt-0.5 text-sm font-bold">{{ feeStatus.status === 'active' ? 'Aktif' : 'Tertunggak' }}</p>
+                                </div>
+                                <div class="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/15 p-2.5">
+                                    <p class="text-[10px] text-white/60">Usrah</p>
+                                    <p class="mt-0.5 text-sm font-bold line-clamp-1">{{ usrah?.name || 'Belum Set' }}</p>
+                                </div>
+                            </div>
+                            <Link :href="route('member.card')" class="text-[10px] font-semibold text-white/70 hover:text-white transition shrink-0">
+                                Lihat Kad Penuh →
+                            </Link>
+                        </div>
+                    </div>
+                </section>
 
-                            <div class="rounded-2xl border border-gray-100 bg-gray-50 p-3.5 sm:p-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
-                                        </span>
-                                        <div>
-                                            <p class="text-xs text-gray-500">Tempahan Ruang</p>
-                                            <p class="text-sm font-semibold text-gray-800">Semak ruang & buat tempahan</p>
+                <!-- ═══ 5. KEMPEN INFAQ ═══ -->
+                <section v-if="infaqItems.length">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold text-gray-900">Kempen Infaq</h2>
+                        <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                    </div>
+                    <div class="flex gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[280px] md:min-w-0 bg-white rounded-3xl shadow-sm overflow-hidden shrink-0">
+                            <div class="relative h-32 overflow-hidden bg-gray-100">
+                                <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
+                                <div v-else class="absolute inset-0" :style="{ background: `linear-gradient(to right, ${lightGrad.from}, ${lightGrad.to})` }"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                <div class="absolute bottom-3 left-3 right-3 z-10">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/20 backdrop-blur-md text-white border border-white/20">
+                                        {{ item.type === 'progress' ? 'Progress' : 'One-Off' }}
+                                    </span>
+                                    <h3 class="text-sm font-bold text-white mt-1 line-clamp-1">{{ item.title }}</h3>
+                                </div>
+                            </div>
+                            <div class="px-4 pt-3 pb-4">
+                                <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                                    <span class="font-semibold" :class="theme.accentText">{{ formatCurrency(item.collected_amount) }}</span>
+                                    <span>daripada {{ formatCurrency(item.target_amount || 0) }}</span>
+                                </div>
+                                <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                    <div class="h-1.5 rounded-full transition-all duration-700" :class="theme.accent" :style="{ width: (item.progress_percent || 0) + '%' }"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mt-3">
+                                    <button @click="quickDonate(item.id, 10)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM10</button>
+                                    <button @click="quickDonate(item.id, 30)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM30</button>
+                                    <button @click="quickDonate(item.id, 50)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM50</button>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <!-- ═══ 6. UNDIAN ═══ -->
+                <section v-if="activePolls.length">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Undian &amp; Survey</h2>
+                                <p class="text-[11px] text-gray-500">{{ activePolls.filter(p => !p.has_responded).length }} belum dijawab</p>
+                            </div>
+                        </div>
+                        <Link :href="route('member.polls.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <div v-for="poll in activePolls" :key="poll.id" class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                            <div :class="['h-1 w-full', poll.has_responded ? 'bg-gradient-to-r from-emerald-400 to-emerald-300' : 'bg-gradient-to-r from-indigo-500 to-purple-500']"></div>
+                            <div class="p-3.5">
+                                <div class="mb-2 flex items-start justify-between gap-2">
+                                    <span :class="['rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide', poll.type === 'poll' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700']">
+                                        {{ poll.type === 'poll' ? 'POLL' : 'SURVEY' }}
+                                    </span>
+                                    <span v-if="poll.ends_at_formatted" class="flex items-center gap-1 text-[10px] text-gray-400 shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        {{ poll.ends_at_formatted }}
+                                    </span>
+                                </div>
+                                <h4 class="text-sm font-bold text-gray-900 leading-snug mb-1">{{ poll.title }}</h4>
+                                <p v-if="poll.first_question" class="text-[11px] text-gray-500 line-clamp-2 mb-2 italic">"{{ poll.first_question }}"</p>
+
+                                <div v-if="poll.has_responded && poll.options_preview.length" class="space-y-1 mb-3">
+                                    <div v-for="opt in poll.options_preview.slice(0, 3)" :key="opt.id" class="flex items-center gap-2">
+                                        <div class="flex-1 h-4 rounded-md bg-gray-100 overflow-hidden">
+                                            <div class="h-full rounded-md transition-all duration-700" :class="opt.count > 0 ? 'bg-gradient-to-r from-emerald-400 to-emerald-300' : ''" :style="{ width: opt.width + '%' }"></div>
                                         </div>
+                                        <span class="text-[10px] font-semibold text-gray-600 w-6 text-right shrink-0">{{ opt.count }}</span>
                                     </div>
-                                    <Link :href="route('member.facilities.index')" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">
-                                        Tempah
+                                    <p v-if="poll.options_preview.length > 3" class="text-[10px] text-gray-400">+{{ poll.options_preview.length - 3 }} lagi</p>
+                                </div>
+
+                                <div v-else-if="!poll.has_responded && poll.options_preview.length" class="flex flex-wrap gap-1 mb-3">
+                                    <span v-for="opt in poll.options_preview.slice(0, 3)" :key="opt.id" class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">{{ opt.text }}</span>
+                                    <span v-if="poll.options_preview.length > 3" class="rounded-lg border border-dashed border-gray-300 px-2 py-0.5 text-[10px] font-medium text-gray-400">+{{ poll.options_preview.length - 3 }}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                                    <div class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                        <span class="text-xs font-bold text-gray-700 tabular-nums">{{ poll.response_count }}</span>
+                                        <span class="text-[10px] text-gray-400">respon</span>
+                                    </div>
+                                    <Link :href="poll.has_responded ? route('member.polls.results', poll.id) : route('member.polls.show', poll.id)" :class="['rounded-xl px-3 py-1.5 text-xs font-bold transition-all', poll.has_responded ? 'border border-emerald-200 text-emerald-700' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm hover:shadow-md']">
+                                        <span v-if="poll.has_responded">Lihat Keputusan</span>
+                                        <span v-else class="flex items-center gap-1">
+                                            Jawab
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </span>
                                     </Link>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <!-- ═══ 7. AKTIVITI + 8. STATUS YURAN ═══ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <section class="bg-white rounded-3xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-sm font-bold text-gray-900">Aktiviti Saya</h2>
+                            <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Program</Link>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[11px] text-gray-500">Program</p>
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ nextEvent?.title || 'Tiada program akan datang' }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2.5">
+                                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[11px] text-gray-500">Usrah</p>
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ usrah?.name || 'Belum ditetapkan kumpulan' }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-[11px] text-gray-500">Tempahan Ruang</p>
+                                        <p class="text-sm font-semibold text-gray-800 truncate">Semak ruang &amp; buat tempahan</p>
+                                    </div>
+                                </div>
+                                <Link :href="route('member.facilities.index')" class="shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">Tempah</Link>
+                            </div>
+                        </div>
                     </section>
 
-                    <section class="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm md:p-6">
-                        <div class="flex items-center justify-between gap-3">
-                            <h3 class="text-base font-black text-gray-900">Status Ahli / Yuran</h3>
-                            <Link :href="route('member.financial.overview')" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-                                Yuran &amp; Bayaran
-                            </Link>
+                    <section class="bg-white rounded-3xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between gap-2">
+                            <h2 class="text-sm font-bold text-gray-900">Status Yuran</h2>
+                            <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Bayaran</Link>
                         </div>
-                        <div class="mt-4 rounded-2xl bg-white p-3.5 ring-1 ring-emerald-100 sm:p-4">
+                        <div class="mt-3 rounded-2xl bg-gray-50 p-4">
                             <div class="flex items-center justify-between">
-                                <p class="text-sm font-semibold text-gray-700">Yuran Tahunan</p>
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="feeStatus.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
+                                <p class="text-xs font-semibold text-gray-700">Yuran Tahunan</p>
+                                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold" :class="feeStatus.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
                                     {{ feeStatus.status === 'active' ? 'Aktif' : 'Tertunggak' }}
                                 </span>
                             </div>
-
                             <template v-if="feeStatus.status === 'active'">
-                                <p class="mt-3 text-sm text-gray-600">Keahlian anda aktif. Teruskan penglibatan anda dalam program komuniti.</p>
-                                <p v-if="feeStatus.last_reference" class="mt-2 text-xs font-mono text-gray-400">Ref: {{ feeStatus.last_reference }}</p>
+                                <p class="mt-3 text-xs text-gray-600">Keahlian anda aktif.</p>
+                                <p v-if="feeStatus.last_reference" class="mt-1.5 text-[11px] font-mono text-gray-400">Ref: {{ feeStatus.last_reference }}</p>
                             </template>
-
                             <template v-else>
-                                <p class="mt-3 text-sm text-gray-600">Yuran tahunan perlu diperbaharui.</p>
-                                <p class="mt-2 text-2xl font-black text-gray-900">{{ formatCurrency(feeStatus.amount_due) }}</p>
-                                <button
-                                    @click="payFee"
-                                    :disabled="payForm.processing"
-                                    class="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                                >
-                                    {{ payForm.processing ? 'Memproses...' : 'Bayar Yuran Sekarang' }}
+                                <p class="mt-3 text-xs text-gray-600">Yuran tahunan perlu diperbaharui.</p>
+                                <p class="mt-1 text-2xl font-black text-gray-900">{{ formatCurrency(feeStatus.amount_due) }}</p>
+                                <button @click="payFee" :disabled="payForm.processing" :class="[theme.accent, 'mt-3 w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60 shadow-sm']">
+                                    {{ payForm.processing ? 'Memproses...' : 'Bayar Sekarang' }}
                                 </button>
                             </template>
                         </div>
                     </section>
                 </div>
 
-                <section class="hidden md:block">
-                    <div class="mb-3 flex items-end justify-between md:mb-4">
-                        <div>
-                            <h3 class="text-lg font-black text-gray-900 sm:text-xl md:text-2xl">Info Terkini</h3>
-                            <p class="text-sm text-gray-500">Swipe kad untuk baca makluman terbaru.</p>
-                        </div>
-                        <Link :href="route('news.index')" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-                            Lihat Semua
-                        </Link>
+                <!-- ═══ 9. BERITA ═══ -->
+                <section v-if="latestNews.length">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
+                        <Link :href="route('news.index')" class="text-xs font-semibold" :class="theme.accentText">Buka Feed</Link>
                     </div>
-
-                    <div class="-mx-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
-                        <div class="flex snap-x snap-mandatory gap-3 md:grid md:grid-cols-3 md:gap-4">
-                            <article
-                                v-for="item in latestNews"
-                                :key="item.id"
-                                class="group w-[82%] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:w-[60%] md:w-auto"
-                            >
-                                <Link :href="route('news.show', item.id)" class="block">
-                                    <div class="aspect-[16/10] bg-gray-100">
-                                        <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
-                                        <div v-else class="grid h-full place-items-center text-xs text-gray-400">Tiada gambar</div>
+                    <div class="flex gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[240px] md:min-w-0 bg-white rounded-3xl shadow-sm overflow-hidden shrink-0">
+                            <Link :href="route('news.show', item.id)" class="block">
+                                <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                                    <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                </div>
+                                <div class="p-3.5">
+                                    <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
+                                        <span v-if="item.category_name" class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
+                                        <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
                                     </div>
-                                    <div class="p-3.5">
-                                        <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                                            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
-                                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">{{ item.organization_name }}</span>
-                                        </div>
-                                        <h4 class="mt-2 line-clamp-2 text-sm font-black text-gray-900">{{ item.title }}</h4>
-                                        <p class="mt-1 line-clamp-2 text-xs text-gray-600">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
-                                        <p class="mt-2 text-[11px] text-gray-400">{{ item.published_at || '-' }}</p>
-                                    </div>
-                                </Link>
-                            </article>
-                        </div>
-
-                        <div v-if="!latestNews.length" class="rounded-2xl border border-gray-100 bg-white px-4 py-8 text-center text-sm text-gray-500">
-                            Belum ada info terkini untuk dipaparkan.
-                        </div>
-                    </div>
-                </section>
-
-                <section class="hidden md:block">
-                    <div class="mb-3 flex items-end justify-between md:mb-4">
-                        <div>
-                            <h3 class="text-lg font-black text-gray-900 sm:text-xl md:text-2xl">Berita Bergambar</h3>
-                            <p class="text-sm text-gray-500">Makluman visual terkini untuk ahli.</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                        <article
-                            v-for="banner in banners"
-                            :key="banner.id"
-                            class="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
-                        >
-                            <div class="relative">
-                                <img :src="banner.image_path" :alt="banner.title" class="aspect-[4/5] w-full object-cover">
-                                <div class="absolute inset-x-3 bottom-3 rounded-xl bg-slate-900/35 px-3 py-2 backdrop-blur-md ring-1 ring-white/25">
-                                    <p class="text-sm font-bold text-white">{{ banner.title }}</p>
+                                    <h4 class="mt-1.5 line-clamp-2 text-sm font-bold text-gray-900">{{ item.title }}</h4>
+                                    <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
                                 </div>
-                            </div>
+                            </Link>
                         </article>
-
-                        <div v-if="!banners.length" class="md:col-span-3 rounded-2xl border border-gray-100 bg-white px-4 py-10 text-center text-sm text-gray-500">
-                            Tiada berita bergambar buat masa ini.
-                        </div>
                     </div>
                 </section>
 
-                <section class="hidden md:block">
-                    <div class="mb-3 flex items-end justify-between md:mb-4">
-                        <div>
-                            <h3 class="text-lg font-black text-gray-900 sm:text-xl md:text-2xl">Infaq &amp; Sumbangan</h3>
-                            <p class="text-sm text-gray-500">Sokong program melalui infaq komuniti.</p>
-                        </div>
+                <!-- ═══ 10. PUSTAKA ═══ -->
+                <section>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold text-gray-900">Pustaka</h2>
+                        <Link :href="route('member.library')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
-
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                        <article
-                            v-for="item in infaqItems"
-                            :key="item.id"
-                            class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                            <div class="h-40 w-full overflow-hidden bg-gray-100">
-                                <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="h-full w-full object-cover">
-                                <div v-else class="grid h-full place-items-center text-sm text-gray-400">No Image</div>
-                            </div>
-
-                            <div class="p-3.5 sm:p-4">
-                                <div class="mb-2 flex items-center gap-2">
-                                    <span
-                                        class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                        :class="item.type === 'progress' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'"
-                                    >
-                                        {{ item.type === 'progress' ? 'Progress' : 'One-Off' }}
-                                    </span>
-                                </div>
-
-                                <h4 class="line-clamp-2 text-sm font-bold text-gray-900">{{ item.title }}</h4>
-                                <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ item.description }}</p>
-                                <Link :href="item.public_url" class="mt-2 inline-flex text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-                                    Lihat Butiran
-                                </Link>
-
-                                <div class="mt-3 text-xs text-gray-600">
-                                    <template v-if="item.type === 'progress'">
-                                        <div class="mb-1 flex items-center justify-between">
-                                            <span class="font-semibold">{{ formatCurrency(item.collected_amount) }}</span>
-                                            <span class="text-gray-400">/ {{ formatCurrency(item.target_amount) }}</span>
-                                        </div>
-                                        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                            <div class="h-2 rounded-full bg-emerald-500" :style="{ width: item.progress_percent + '%' }"></div>
-                                        </div>
-                                        <p class="mt-1 text-[11px] text-gray-400">{{ item.progress_percent }}% terkumpul</p>
-                                    </template>
-                                    <template v-else>
-                                        <p>
-                                            Terkumpul:
-                                            <span class="font-semibold">{{ formatCurrency(item.collected_amount) }}</span>
-                                        </p>
-                                    </template>
-                                </div>
-
-                                <form class="mt-3 flex items-center gap-2" @submit.prevent="donateInfaq(item.id)">
-                                    <input
-                                        v-model.number="getInfaqForm(item.id).amount"
-                                        type="number"
-                                        min="1"
-                                        step="0.01"
-                                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                                        placeholder="Jumlah (RM)"
-                                    >
-                                    <button
-                                        type="submit"
-                                        :disabled="getInfaqForm(item.id).processing"
-                                        class="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                                    >
-                                        {{ getInfaqForm(item.id).processing ? '...' : 'Derma' }}
-                                    </button>
-                                </form>
-                            </div>
-                        </article>
-
-                        <div v-if="!infaqItems.length" class="sm:col-span-2 md:col-span-3 rounded-2xl border border-gray-100 bg-white px-4 py-10 text-center text-sm text-gray-500">
-                            Tiada infaq aktif buat masa ini.
-                        </div>
-                    </div>
-                </section>
-
-                <section class="rounded-3xl border border-gray-100 bg-white/95 p-4 shadow-sm ring-1 ring-gray-100 md:p-6">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h3 class="text-sm font-black text-gray-900 sm:text-base md:text-xl">PUSTAKA – JUDUL TERKINI</h3>
-                        <Link :href="route('member.library')" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Lihat Semua Buku</Link>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <button type="button" @click="scrollBooks('left')" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-lg text-gray-500 transition hover:bg-gray-50">‹</button>
-
-                        <div ref="booksScroller" class="flex-1 overflow-x-auto scroll-smooth">
-                            <div class="flex min-w-full gap-4 pb-2">
-                                <a
-                                    v-for="(book, index) in libraryBooks"
-                                    :key="book.id"
-                                    :href="book.file_path"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="group block w-[120px] shrink-0 sm:w-[140px] md:w-[150px]"
-                                >
-                                    <div class="aspect-[2/3] overflow-hidden rounded-md border border-gray-200 shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md">
+                    <div v-if="libraryBooks.length" class="flex items-center gap-2">
+                        <button @click="scrollBooks('left')" class="hidden md:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-base text-gray-500 transition hover:bg-gray-50">‹</button>
+                        <div ref="booksScroller" class="flex-1 overflow-x-auto hide-scrollbar">
+                            <div class="flex gap-3 pb-1 min-w-full">
+                                <a v-for="(book, index) in libraryBooks" :key="book.id" :href="book.file_path" target="_blank" class="group block w-[110px] shrink-0 md:w-[140px]">
+                                    <div class="aspect-[2/3] overflow-hidden rounded-xl border border-gray-200 shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md">
                                         <img v-if="book.cover_image_path" :src="book.cover_image_path" :alt="book.title" class="h-full w-full object-cover">
-                                        <div v-else :class="['h-full bg-gradient-to-b p-3', coverStyles[index % coverStyles.length]]">
+                                        <div v-else :class="['h-full bg-gradient-to-b p-2.5', coverStyles[index % coverStyles.length]]">
                                             <p class="line-clamp-4 text-sm font-bold leading-tight">{{ book.title }}</p>
                                         </div>
                                     </div>
-                                    <p class="mt-2 line-clamp-2 text-xs font-semibold text-gray-700">{{ book.title }}</p>
+                                    <p class="mt-1.5 line-clamp-2 text-xs font-semibold text-gray-700">{{ book.title }}</p>
                                 </a>
                             </div>
-
-                            <div v-if="!libraryBooks.length" class="rounded-2xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-                                Tiada buku terkini dalam pustaka.
-                            </div>
                         </div>
-
-                        <button type="button" @click="scrollBooks('right')" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-lg text-gray-500 transition hover:bg-gray-50">›</button>
+                        <button @click="scrollBooks('right')" class="hidden md:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-base text-gray-500 transition hover:bg-gray-50">›</button>
+                    </div>
+                    <div v-else class="rounded-2xl bg-gray-50 px-4 py-6 text-center text-xs text-gray-500">
+                        Tiada buku terkini dalam pustaka.
                     </div>
                 </section>
+
             </div>
         </div>
     </AppLayout>
 </template>
-
-<style scoped>
-.mobile-action-card {
-    @apply flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 text-xs font-bold text-gray-700 ring-1 ring-gray-200 transition;
-}
-
-.mobile-action-card:hover {
-    @apply -translate-y-0.5 bg-gray-50;
-}
-
-.mobile-action-icon {
-    @apply inline-flex h-7 w-7 items-center justify-center rounded-lg ring-1 ring-black/5;
-}
-
-.card-float {
-    animation: card-float-in 480ms ease-out both;
-}
-
-@keyframes card-float-in {
-    0% {
-        opacity: 0;
-        transform: translateY(10px) scale(0.98);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-</style>

@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
     <AppLayout>
         <Head title="myWAP Settings" />
 
-        <div class="mx-auto max-w-4xl space-y-6 px-4 py-6 md:px-6">
+        <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900">myWAP Settings</h1>
                 <p class="mt-1 text-sm text-gray-500">Tetapan peringkat sistem seperti logo rasmi myWAP.</p>

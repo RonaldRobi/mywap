@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Actions\LoadUsrahForUser;
+use App\Models\AppSetting;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
 use App\Models\EventRsvp;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\NewsPost;
+use App\Models\Poll;
+use App\Models\PollResponse;
 use App\Models\User;
 use App\Services\FeeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -21,6 +25,9 @@ class MemberDashboardController extends Controller
     public function index(Request $request, FeeService $feeService): Response
     {
         $user = $request->user()->load('organization');
+        $setting = Schema::hasTable('app_settings')
+            ? AppSetting::query()->first()
+            : null;
 
         $nextEventRsvp = EventRsvp::query()
             ->where('user_id', $user->id)
@@ -132,13 +139,88 @@ class MemberDashboardController extends Controller
                 'public_url'       => $infaq->public_url,
             ]);
 
+        $activePolls = Poll::withoutGlobalScopes()
+            ->with(['questions' => function ($q) {
+                $q->orderBy('sort_order')->take(1)->with(['options' => fn($o) => $o->orderBy('sort_order')]);
+            }])
+            ->withCount('responses')
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
+            })
+            ->where(function ($q) use ($user) {
+                $q->where('organization_id', $user->current_organization_id)
+                  ->orWhere('target_type', 'all_orgs');
+            })
+            ->where(function ($q) use ($user) {
+                $q->where('target_type', 'all')
+                    ->orWhere('target_type', 'all_orgs')
+                    ->orWhere(function ($q) use ($user) {
+                        $q->where('target_type', 'members')
+                            ->whereHas('targetMembers', fn($q) => $q->where('user_id', $user->id));
+                    })
+                    ->orWhere(function ($q) use ($user) {
+                        $q->where('target_type', 'usrah')
+                            ->whereHas('targetUsrahGroups.members', fn($q) => $q->where('user_id', $user->id));
+                    });
+            })
+            ->latest()
+            ->take(6)
+            ->get()
+            ->map(function ($poll) use ($user) {
+                $hasResponded = PollResponse::where('poll_id', $poll->id)
+                    ->where('user_id', $user->id)
+                    ->exists();
+
+                $firstQuestion = $poll->questions->first();
+                $optionsPreview = [];
+                $totalAnswers = 0;
+
+                if ($firstQuestion) {
+                    $totalAnswers = \App\Models\PollAnswer::where('poll_question_id', $firstQuestion->id)->count();
+                    $optionsPreview = $firstQuestion->options->map(function ($opt) use ($firstQuestion, $totalAnswers) {
+                        $count = \App\Models\PollAnswer::where('poll_question_id', $firstQuestion->id)
+                            ->where('poll_option_id', $opt->id)
+                            ->count();
+                        return [
+                            'id' => $opt->id,
+                            'text' => $opt->option_text,
+                            'count' => $count,
+                            'width' => $totalAnswers > 0 ? round(($count / $totalAnswers) * 100) : 0,
+                        ];
+                    });
+                }
+
+                return [
+                    'id' => $poll->id,
+                    'title' => $poll->title,
+                    'type' => $poll->type,
+                    'ends_at_formatted' => $poll->ends_at?->locale('ms')->isoFormat('D MMM'),
+                    'response_count' => $poll->responses_count,
+                    'has_responded' => $hasResponded,
+                    'first_question' => $firstQuestion?->question_text,
+                    'options_preview' => $optionsPreview,
+                    'total_answers' => $totalAnswers,
+                ];
+            });
+
         return Inertia::render('Member/Dashboard', [
             'member' => [
                 'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'branch_name' => $user->branch_name,
+                'locality' => $user->locality,
+                'profession' => $user->current_profession,
+                'photo_url' => $user->profile_photo_path,
+                'member_since' => optional($user->created_at)->format('M Y'),
+                'member_no' => $user->member_no,
+                'system_logo_path' => $this->normalizeStorageUrl($setting?->system_logo_path),
                 'organization' => [
                     'name' => $user->organization?->name,
                     'slug' => $user->organization?->slug,
                     'color_theme' => $user->organization?->color_theme,
+                    'logo_path' => $this->normalizeStorageUrl($user->organization?->logo_path),
                 ],
             ],
             'feeStatus' => $feeStatus,
@@ -154,6 +236,7 @@ class MemberDashboardController extends Controller
             'banners' => $banners,
             'infaqItems' => $infaqItems,
             'latestNews' => $latestNews,
+            'activePolls' => $activePolls,
         ]);
     }
 
@@ -194,5 +277,20 @@ class MemberDashboardController extends Controller
             'stats' => $stats,
             'referredMembers' => $referredMembers,
         ]);
+    }
+
+    private function normalizeStorageUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $parsedPath = parse_url($url, PHP_URL_PATH);
+
+        if (is_string($parsedPath) && str_starts_with($parsedPath, '/storage/')) {
+            return $parsedPath;
+        }
+
+        return $url;
     }
 }

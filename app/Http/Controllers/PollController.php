@@ -28,13 +28,17 @@ class PollController extends Controller
         $orgId = (int) $user->current_organization_id;
 
         $polls = Poll::withoutGlobalScopes()
-            ->where('organization_id', $orgId)
+            ->where(function ($q) use ($orgId) {
+                $q->where('organization_id', $orgId)
+                  ->orWhere('target_type', 'all_orgs');
+            })
             ->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
             })
             ->where(function ($q) use ($user) {
                 $q->where('target_type', 'all')
+                    ->orWhere('target_type', 'all_orgs')
                     ->orWhere(function ($q) use ($user) {
                         $q->where('target_type', 'members')
                             ->whereHas('targetMembers', fn($q) => $q->where('user_id', $user->id));
@@ -79,7 +83,7 @@ class PollController extends Controller
     {
         $user = $request->user();
 
-        abort_if($poll->organization_id !== (int) $user->current_organization_id, 403);
+        abort_if($poll->organization_id !== (int) $user->current_organization_id && $poll->target_type !== 'all_orgs', 403);
         abort_if(!$poll->isAvailable(), 404);
 
         if (PollResponse::where('poll_id', $poll->id)->where('user_id', $user->id)->exists()) {
@@ -97,7 +101,7 @@ class PollController extends Controller
     {
         $user = $request->user();
 
-        abort_if($poll->organization_id !== (int) $user->current_organization_id, 403);
+        abort_if($poll->organization_id !== (int) $user->current_organization_id && $poll->target_type !== 'all_orgs', 403);
         abort_if(!$poll->isAvailable(), 404);
         abort_if(PollResponse::where('poll_id', $poll->id)->where('user_id', $user->id)->exists(), 409);
 
@@ -140,7 +144,7 @@ class PollController extends Controller
     {
         $user = $request->user();
 
-        abort_if($poll->organization_id !== (int) $user->current_organization_id, 403);
+        abort_if($poll->organization_id !== (int) $user->current_organization_id && $poll->target_type !== 'all_orgs', 403);
 
         $myResponse = PollResponse::where('poll_id', $poll->id)
             ->where('user_id', $user->id)
@@ -198,7 +202,10 @@ class PollController extends Controller
         $query = Poll::withCount('responses');
 
         if (!$user->hasRole('Superadmin')) {
-            $query->where('organization_id', $user->current_organization_id);
+            $query->where(function ($q) use ($user) {
+                $q->where('organization_id', $user->current_organization_id)
+                  ->orWhere('target_type', 'all_orgs');
+            });
         }
 
         $polls = $query->orderByDesc('created_at')->paginate(15)->withQueryString()->through(
@@ -553,7 +560,7 @@ class PollController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:poll,survey'],
-            'target_type' => ['required', 'in:all,members,usrah'],
+            'target_type' => ['required', 'in:all,members,usrah,all_orgs'],
             'ends_at' => ['nullable', 'date', 'after:now'],
             'show_results' => ['boolean'],
             'questions' => ['required', 'array', 'min:1'],

@@ -32,6 +32,13 @@ const memberCheckProcessing = ref(false);
 const memberCheckError = ref('');
 const memberOrganization = ref(null);
 
+const biometricAlert = ref('');
+
+const showBiometricAlert = (type) => {
+    biometricAlert.value = type;
+    setTimeout(() => { biometricAlert.value = ''; }, 4000);
+};
+
 const currentIdentifierError = computed(() => {
     if (flow.value === 'admin') {
         return form.errors.email;
@@ -118,27 +125,6 @@ const submit = () => {
     });
 };
 
-const quickLoginRole = ref('');
-const quickLogin = () => {
-    if (!quickLoginRole.value) return;
-    
-    form.reset();
-    form.clearErrors();
-    form.password = 'password';
-
-    if (quickLoginRole.value === 'superadmin') {
-        form.login_type = 'admin';
-        form.email = 'superadmin@mywap.my';
-    } else if (quickLoginRole.value === 'admin_pkpim') {
-        form.login_type = 'admin';
-        form.email = 'admin@mywap.my';
-    } else if (quickLoginRole.value === 'member') {
-        form.login_type = 'member';
-        form.ic_number = '980512101234';
-    }
-    
-    submit();
-};
 </script>
 
 <template>
@@ -197,25 +183,6 @@ const quickLogin = () => {
                         <p class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">Welcome Back</p>
                         <h2 class="mt-1 text-2xl font-black text-white sm:text-3xl">Sign in to continue</h2>
                         <p class="mt-1 text-sm text-slate-300">Masukkan butiran akaun anda untuk akses dashboard.</p>
-                    </div>
-
-                    <!-- Quick Login for Testing -->
-                    <div class="mb-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4 backdrop-blur-sm">
-                        <p class="mb-2 text-xs font-bold text-yellow-200 uppercase tracking-widest flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
-                            Log Masuk Pantas (Pengujian)
-                        </p>
-                        <div class="flex gap-2">
-                            <select v-model="quickLoginRole" class="flex-1 rounded-xl border-white/10 bg-white/5 text-sm text-white focus:border-yellow-400 focus:ring-yellow-400 [&>option]:text-gray-900">
-                                <option value="">Sila Pilih Peranan...</option>
-                                <option value="superadmin">1. Superadmin (Urus Semua)</option>
-                                <option value="admin_pkpim">2. Admin Organisasi (Sistem PKPIM)</option>
-                                <option value="member">3. Ahli Biasa (Sistem ABIM)</option>
-                            </select>
-                            <button @click="quickLogin" :disabled="!quickLoginRole || form.processing" class="rounded-xl bg-yellow-500 px-4 py-2 text-sm font-bold text-gray-900 shadow-sm hover:bg-yellow-400 transition-all disabled:opacity-50">
-                                Masuk Terus
-                            </button>
-                        </div>
                     </div>
 
                     <div v-if="status" class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
@@ -369,6 +336,62 @@ const quickLogin = () => {
                                     <InputError class="mt-2" :message="currentIdentifierError" />
                                 </div>
 
+                                <!-- Biometric placeholder -->
+                                <div class="relative">
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex-1 border-t border-white/10"></span>
+                                        <span class="text-xs text-slate-400">atau</span>
+                                        <span class="flex-1 border-t border-white/10"></span>
+                                    </div>
+
+                                    <div class="mt-3 flex items-center justify-center gap-6">
+                                        <button
+                                            type="button"
+                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-cyan-300"
+                                            @click="showBiometricAlert('faceid')"
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7">
+                                                <path d="M2 8V6a2 2 0 0 1 2-2h2" />
+                                                <path d="M2 16v2a2 2 0 0 0 2 2h2" />
+                                                <path d="M18 4h2a2 2 0 0 1 2 2v2" />
+                                                <path d="M18 20h2a2 2 0 0 0 2-2v-2" />
+                                                <circle cx="9" cy="11" r="1" fill="currentColor" stroke="none" />
+                                                <circle cx="15" cy="11" r="1" fill="currentColor" stroke="none" />
+                                                <path d="M8 16c1.5 1.3 4.5 1.3 6 0" />
+                                            </svg>
+                                            <span class="text-[10px] font-medium">Face ID</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-cyan-300"
+                                            @click="showBiometricAlert('touchid')"
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7">
+                                                <path d="M12 10a2 2 0 0 1 2 2c0 .8-.2 1.6-.6 2.2" />
+                                                <path d="M8 12a4 4 0 0 1 4-4" />
+                                                <path d="M6.5 14.3A6 6 0 0 1 18 12" />
+                                                <path d="M5 17.3A8.5 8.5 0 0 1 20.5 12" />
+                                                <path d="M4 19.8A11 11 0 0 1 23 12" />
+                                                <path d="M3 21.5A13 13 0 0 1 24 12" />
+                                                <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+                                            </svg>
+                                            <span class="text-[10px] font-medium">Touch ID</span>
+                                        </button>
+                                    </div>
+
+                                    <Transition name="biometric-fade">
+                                        <div
+                                            v-if="biometricAlert"
+                                            class="mt-3 rounded-lg border border-cyan-200/30 bg-cyan-500/10 px-3 py-2 text-center text-xs text-cyan-100"
+                                        >
+                                            <template v-if="biometricAlert === 'faceid'">Face ID</template>
+                                            <template v-else>Touch ID</template>
+                                            akan tersedia dalam aplikasi mudah alih myWAP.
+                                        </div>
+                                    </Transition>
+                                </div>
+
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <label class="inline-flex items-center gap-2">
                                         <Checkbox name="remember" v-model:checked="form.remember" />
@@ -426,5 +449,16 @@ const quickLogin = () => {
 .step-fade-leave-to {
     opacity: 0;
     transform: translateY(10px);
+}
+
+.biometric-fade-enter-active,
+.biometric-fade-leave-active {
+    transition: all 200ms ease;
+}
+
+.biometric-fade-enter-from,
+.biometric-fade-leave-to {
+    opacity: 0;
+    transform: translateY(6px);
 }
 </style>

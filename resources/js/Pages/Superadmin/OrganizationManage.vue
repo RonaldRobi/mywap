@@ -26,6 +26,10 @@ const editForms = Object.fromEntries(
             min_age: organization.min_age,
             max_age: organization.max_age,
             sort_order: organization.sort_order,
+            bayarcash_api_token: organization.bayarcash_api_token ?? '',
+            bayarcash_portal_key: organization.bayarcash_portal_key ?? '',
+            bayarcash_secret_key: organization.bayarcash_secret_key ?? '',
+            bayarcash_environment: organization.bayarcash_environment ?? 'sandbox',
         }),
     ])
 );
@@ -69,7 +73,7 @@ function updateOrganizationLogo(organization) {
         <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900">Organization Management</h1>
-                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, logo, umur tier, warna tema, susunan paparan, dan semak jumlah ahli.</p>
+                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, logo, umur tier, warna tema, susunan paparan, BayarCash payment gateway, dan semak jumlah ahli.</p>
             </div>
 
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -155,6 +159,31 @@ function updateOrganizationLogo(organization) {
                             <label class="mb-1 block text-xs font-semibold text-gray-500">Susunan Paparan</label>
                             <input v-model.number="editForms[organization.id].sort_order" type="number" min="1" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
                         </div>
+
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">BayarCash Payment Gateway</summary>
+                            <div class="space-y-3 border-t border-gray-100 p-3">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">API Token</label>
+                                    <input v-model="editForms[organization.id].bayarcash_api_token" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Personal Access Token">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Portal Key</label>
+                                    <input v-model="editForms[organization.id].bayarcash_portal_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Portal key dari BayarCash console">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Secret Key</label>
+                                    <input v-model="editForms[organization.id].bayarcash_secret_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="API Secret Key untuk checksum">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Environment</label>
+                                    <select v-model="editForms[organization.id].bayarcash_environment" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                                        <option value="sandbox">Sandbox (Ujian)</option>
+                                        <option value="live">Live (Produksi)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </details>
 
                         <button
                             type="submit"

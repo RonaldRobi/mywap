@@ -292,8 +292,6 @@ const fiVerify = async () => {
     }
 };
 
-// ─── Quick Login (Testing) ────────────────────────────────────────────
-
 const resetLinkSending = ref(false);
 
 const sendResetLink = () => {
@@ -306,34 +304,7 @@ const sendResetLink = () => {
     });
 };
 
-const quickLoginRole = ref('');
 
-const quickLogin = () => {
-    if (!quickLoginRole.value || form.processing) return;
-
-    form.clearErrors();
-    form.password = 'password';
-    form.remember = true;
-
-    if (quickLoginRole.value === 'superadmin') {
-        form.email = 'superadmin@mywap.my';
-        form.ic_number = '';
-    } else if (quickLoginRole.value === 'admin_pkpim') {
-        form.email = 'admin@mywap.my';
-        form.ic_number = '';
-    } else if (quickLoginRole.value === 'member') {
-        form.email = '';
-        form.ic_number = '980512101234';
-    }
-
-    setTimeout(() => {
-        form.post(route('login'), {
-            onError: (errors) => {
-                loginError.value = errors.email || errors.ic_number || 'Log masuk gagal.';
-            },
-        });
-    }, 100);
-};
 </script>
 
 <template>
@@ -396,25 +367,6 @@ const quickLogin = () => {
                     <div class="relative z-10">
                         <h2 class="text-3xl font-black text-slate-900">Log Masuk</h2>
                         <p class="mt-1 text-sm text-slate-500">Akses papan pemuka mengikut peranan anda.</p>
-                    </div>
-
-                    <!-- Quick Login for Testing -->
-                    <div class="relative z-10 mt-6 mb-2 rounded-2xl border border-yellow-500/30 bg-yellow-50 p-4">
-                        <p class="mb-2 text-xs font-bold text-yellow-700 uppercase tracking-widest flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
-                            Log Masuk Pantas (Pengujian)
-                        </p>
-                        <div class="flex gap-2">
-                            <select v-model="quickLoginRole" class="flex-1 rounded-xl border-yellow-200 bg-white text-sm text-slate-800 focus:border-yellow-400 focus:ring-yellow-400">
-                                <option value="">Sila Pilih...</option>
-                                <option value="superadmin">1. Superadmin (Semua)</option>
-                                <option value="admin_pkpim">2. Admin (PKPIM)</option>
-                                <option value="member">3. Ahli (ABIM)</option>
-                            </select>
-                            <button @click="quickLogin" :disabled="!quickLoginRole || form.processing" class="shrink-0 rounded-xl bg-yellow-500 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-yellow-400 transition-all disabled:opacity-50">
-                                Masuk
-                            </button>
-                        </div>
                     </div>
 
                     <div v-if="status" class="relative z-10 mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">

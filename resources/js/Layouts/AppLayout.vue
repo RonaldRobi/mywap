@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
@@ -65,12 +65,26 @@ const theme = computed(() =>
     themeMap[org.value?.slug] ?? themeMap['abim']
 );
 
+const props = defineProps({
+    hideMobileBell: { type: Boolean, default: false },
+    hideMobileHeader: { type: Boolean, default: false },
+});
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
 const sidebarOpen      = ref(true);
 const profileMenuOpen  = ref(false);
 const notifMenuOpen    = ref(false);
 const mobileMenuOpen   = ref(false);
+
+let drawerHandler;
+onMounted(() => {
+    drawerHandler = () => { mobileMenuOpen.value = true; };
+    window.addEventListener('open-mobile-drawer', drawerHandler);
+});
+onUnmounted(() => {
+    if (drawerHandler) window.removeEventListener('open-mobile-drawer', drawerHandler);
+});
 const groupOpenState   = reactive({
     ecommerce: true,
     facilities: true,
@@ -559,7 +573,7 @@ const bottomNavItems = computed(() => [
             ]"
         >
             <!-- ─── TOP HEADER (glassmorphism) ─────────────────────────────── -->
-            <header class="sticky top-0 z-30 backdrop-blur-md bg-white/70 border-b border-gray-100/80 shadow-sm">
+            <header :class="[hideMobileHeader ? 'hidden md:block' : '', 'sticky top-0 z-30 backdrop-blur-md bg-white/70 border-b border-gray-100/80 shadow-sm']">
                 <div class="flex items-center justify-between h-16 px-4 md:px-6">
 
                     <!-- Left: hamburger (mobile) + page title -->
@@ -582,7 +596,7 @@ const bottomNavItems = computed(() => [
                     <div class="flex items-center gap-2 md:gap-3">
 
                         <!-- Notification Bell -->
-                        <div class="relative">
+                        <div :class="hideMobileBell ? 'hidden md:block' : ''" class="relative">
                             <button @click="openNotifications" class="relative p-2 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>

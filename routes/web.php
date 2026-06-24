@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BayarCashController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EventController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\MemberFeeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicCardController;
 use App\Http\Controllers\SharePreviewController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\SuperadminOrganizationController;
@@ -34,6 +36,7 @@ Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->n
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
+Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
 
 Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');
@@ -46,6 +49,9 @@ Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqControll
 Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate')->middleware('throttle:10,1');
 Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success')->middleware('throttle:60,1');
 Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr')->middleware('throttle:60,1');
+
+Route::post('/bayarcash/callback', [BayarCashController::class, 'callback'])->name('bayarcash.callback');
+Route::get('/bayarcash/redirect', [BayarCashController::class, 'redirect'])->name('bayarcash.redirect');
 
 Route::get('/s/{infaq:slug}', fn (\App\Models\Infaq $infaq) => redirect()->route('infaq.show', [
     'year' => $infaq->year,
@@ -183,6 +189,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('products/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
 
     Route::resource('orders', App\Http\Controllers\OrderController::class)->only(['index', 'show', 'store']);
+    Route::get('orders/{order}/pay', [App\Http\Controllers\OrderController::class, 'pay'])->name('orders.pay');
 
     // Admin/Superadmin: manage catalog + manage orders
     Route::middleware('role:Admin|Superadmin')->group(function () {

@@ -148,17 +148,21 @@ const filteredMembers = computed(() => {
 
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Sasaran</label>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" @click="form.target_type = 'all_orgs'"
+                                :class="['rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'all_orgs' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
+                                Semua Organisasi
+                            </button>
                             <button type="button" @click="form.target_type = 'all'"
-                                :class="['flex-1 rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'all' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
+                                :class="['rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'all' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
                                 Semua Ahli
                             </button>
                             <button type="button" @click="form.target_type = 'members'"
-                                :class="['flex-1 rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'members' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
+                                :class="['rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'members' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
                                 Ahli Tertentu
                             </button>
                             <button type="button" @click="form.target_type = 'usrah'"
-                                :class="['flex-1 rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'usrah' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
+                                :class="['rounded-xl border px-3 py-2 text-sm font-semibold', form.target_type === 'usrah' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600']">
                                 Usrah Group
                             </button>
                         </div>

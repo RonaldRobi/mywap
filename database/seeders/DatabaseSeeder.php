@@ -31,12 +31,8 @@ class DatabaseSeeder extends Seeder
             // --- STRUKTUR (Organizations) ---
             OrganizationsTableSeeder::class,
 
-            // --- PENGGUNA (Users) ---
-            UsersTableSeeder::class,
-
-            // --- HUBUNGAN (Pivot Tables Spatie) ---
-            // Wajib masuk untuk elak 403 Forbidden
-            ModelHasRolesTableSeeder::class,
+            // --- KREDENSIAL (Users + Roles, guna updateOrCreate utk elak delete) ---
+            CredentialSeeder::class,
 
             // --- DATA KONTEN (Events, Infaq, Pustaka, Banners) ---
             EventsTableSeeder::class,
@@ -53,9 +49,6 @@ class DatabaseSeeder extends Seeder
 
             // --- JAWATAN ORGANISASI ---
             OrganizationPositionSeeder::class,
-
-            // --- DEMO ACTIVITY (Transitions + Programs) ---
-            DemoActivitySeeder::class,
 
             // --- DEMO DATA YURAN (Fee Module) ---
             FeeDemoSeeder::class,
