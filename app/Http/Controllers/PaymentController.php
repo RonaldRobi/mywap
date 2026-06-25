@@ -70,7 +70,7 @@ class PaymentController extends Controller
         }
         if ($request->filled('org')) {
             $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
-                ->where('current_organization_id', $request->org));
+                ->where('current_organization_id', (int) $request->org));
         }
         if ($request->filled('type')) {
             $query->where('payable_type', $request->type);

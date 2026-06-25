@@ -3,6 +3,7 @@ import AccernityCard from '@/Components/ui/AccernityCard.vue';
 import AuroraBackground from '@/Components/ui/AuroraBackground.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import MemberSearch from '@/Components/MemberSearch.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -32,6 +33,7 @@ const form = useForm({
     referred_by_user_id: props.referrer?.id ?? '',
 });
 
+const selectedReferrer = ref(props.referrer ? { ...props.referrer } : null);
 const referredByName = ref(props.referrer?.name ?? '');
 const referredByNo = ref(props.referrer?.member_no ?? '');
 
@@ -96,6 +98,18 @@ const filteredBranches = computed(() => {
     if (!inferredOrganization.value) return [];
     const orgBranches = props.branches[inferredOrganization.value.id] || [];
     return orgBranches;
+});
+
+watch(selectedReferrer, (val) => {
+    if (val) {
+        referredByName.value = val.name;
+        referredByNo.value = val.member_no;
+        form.referred_by_user_id = val.id;
+    } else {
+        referredByName.value = '';
+        referredByNo.value = '';
+        form.referred_by_user_id = '';
+    }
 });
 
 watch(() => form.ic_number, (val) => {
@@ -254,23 +268,13 @@ const submit = () => {
                         </div>
 
                         <div v-if="inferredOrganization">
-                            <InputLabel for="referred_name" value="Dirujuk Oleh (Pilihan)" class="!text-slate-200" />
-                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                <input
-                                    id="referred_name"
-                                    v-model="referredByName"
-                                    type="text"
-                                    class="mt-1 block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
-                                    placeholder="Nama Perujuk"
-                                >
-                                <input
-                                    v-model="referredByNo"
-                                    type="text"
-                                    class="mt-1 block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
-                                    placeholder="No Ahli Perujuk"
-                                >
-                            </div>
-                            <p v-if="props.referrer" class="mt-1 text-xs text-cyan-200">Dirujuk oleh: {{ props.referrer.name }} ({{ props.referrer.member_no }})</p>
+                            <InputLabel for="member_search" value="Dirujuk Oleh (Pilihan)" class="!text-slate-200" />
+                            <MemberSearch
+                                id="member_search"
+                                v-model="selectedReferrer"
+                                placeholder="Cari nama atau no ahli..."
+                            />
+                            <p v-if="selectedReferrer" class="mt-1 text-xs text-cyan-200">{{ selectedReferrer.name }} ({{ selectedReferrer.member_no }})</p>
                         </div>
 
                         <button

@@ -43,7 +43,7 @@ class OtpEmail extends Notification implements ShouldQueue
             : "Kod OTP anda: {$this->code}";
 
         $settings = AppSetting::singleton();
-        $logoPath = $settings->system_logo_path ?? '/storage/logos/organizations/logomywaphorizontal.png';
+        $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
         $logoUrl = url($logoPath);
 
         return (new MailMessage)

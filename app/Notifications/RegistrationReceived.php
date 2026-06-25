@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\AppSetting;
 use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,8 +37,18 @@ class RegistrationReceived extends Notification implements ShouldQueue
         $subject = $template?->renderSubject($data) ?? 'Pendaftaran Diterima - myWAP';
         $body = $template?->renderBody($data) ?? 'Pendaftaran anda telah diterima.';
 
+        $settings = AppSetting::singleton();
+        $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
+        $logoUrl = url($logoPath);
+
         return (new MailMessage)
             ->subject($subject)
-            ->line(nl2br(e($body)));
+            ->view('emails.registration-received', [
+                'subject' => $subject,
+                'body' => $body,
+                'name' => $data['name'],
+                'logoUrl' => $logoUrl,
+                'appName' => config('app.name'),
+            ]);
     }
 }

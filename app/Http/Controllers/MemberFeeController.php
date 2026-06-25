@@ -35,7 +35,7 @@ class MemberFeeController extends Controller
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)])
             ->with('organization:id,name,slug')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
-            ->when($isSuperadmin && $request->filled('organization_id'), fn ($q) => $q->where('current_organization_id', $request->organization_id))
+            ->when($isSuperadmin && $request->filled('organization_id'), fn ($q) => $q->where('current_organization_id', (int) $request->organization_id))
             ->orderBy('name');
 
         if ($request->filled('search')) {
