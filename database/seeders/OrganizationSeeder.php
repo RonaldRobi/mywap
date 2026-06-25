@@ -10,8 +10,8 @@ use Illuminate\Database\Seeder;
  *
  * Seeds the three canonical NGO tiers that form the MyMarhalah lifecycle:
  *   PKPIM  → Under 20    (Junior / Student)
- *   ABIM   → 20 – 29     (Youth)
- *   WADAH  → 30+         (Senior / Veteran)
+ *   ABIM   → 20 – 43     (Youth)
+ *   WADAH  → 44+         (Senior / Veteran)
  *
  * color_theme stores a CSS hex value used by the dynamic theming system to
  * shift the UI accent colour when a user transitions between organizations.
@@ -33,13 +33,13 @@ class OrganizationSeeder extends Seeder
                 'slug'        => 'abim',
                 'color_theme' => '#10b981', // Emerald — energetic, growth
                 'min_age'     => 20,
-                'max_age'     => 29,
+                'max_age'     => 43,
             ],
             [
                 'name'        => 'WADAH',
                 'slug'        => 'wadah',
                 'color_theme' => '#f59e0b', // Amber — wisdom, experience
-                'min_age'     => 30,
+                'min_age'     => 44,
                 'max_age'     => null,      // No upper bound
             ],
         ];

@@ -39,7 +39,7 @@ Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->na
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
 Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
 
-Route::post('/__deploy/{token}', DeployController::class)->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+Route::post('/__deploy/{token}', DeployController::class);
 
 Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');

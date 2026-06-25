@@ -40,7 +40,7 @@ class OrganizationsTableSeeder extends Seeder
                 'slug' => 'abim',
                 'color_theme' => '#10b981',
                 'min_age' => 20,
-                'max_age' => 29,
+                'max_age' => 43,
                 'created_at' => '2026-03-16 15:25:34',
                 'updated_at' => '2026-03-17 18:07:54',
                 'fee_amount' => 50,
