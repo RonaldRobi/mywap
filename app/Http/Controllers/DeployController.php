@@ -39,7 +39,7 @@ class DeployController extends Controller
             "cd $basePath && git pull origin main 2>&1",
             "cd $basePath && php artisan migrate --force 2>&1",
             "cd $basePath && php artisan optimize 2>&1",
-            "export NODE_OPTIONS=\"--max-old-space-size=512\" && cd $basePath && npm run build 2>&1",
+            "cd $basePath && NODE_OPTIONS=\"--max-old-space-size=512\" npx vite build 2>&1",
         ];
 
         foreach ($commands as $cmd) {
