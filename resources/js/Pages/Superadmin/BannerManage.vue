@@ -125,6 +125,7 @@ function seedDemoBanners() {
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Imej Banner</label>
                         <input type="file" accept="image/*" @change="form.banner_image = $event.target.files[0]" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
+                        <p class="mt-1.5 text-[11px] text-gray-400">Saiz disyorkan: 1200×514px (nisbah 21:9) — muat web &amp; mobile tanpa stretch.</p>
                         <p v-if="form.errors.banner_image" class="mt-2 text-xs font-semibold text-red-600">{{ form.errors.banner_image }}</p>
                     </div>
                     <div class="md:col-span-2">

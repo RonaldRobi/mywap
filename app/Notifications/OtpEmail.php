@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\AppSetting;
 use App\Models\EmailTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -41,8 +42,20 @@ class OtpEmail extends Notification implements ShouldQueue
             ? $template->renderBody($data)
             : "Kod OTP anda: {$this->code}";
 
+        $settings = AppSetting::singleton();
+        $logoPath = $settings->system_logo_path ?? '/storage/logos/organizations/logomywaphorizontal.png';
+        $logoUrl = url($logoPath);
+
         return (new MailMessage)
             ->subject($subject)
-            ->line(nl2br(e($body)));
+            ->view('emails.otp', [
+                'subject' => $subject,
+                'body' => $body,
+                'name' => $data['name'],
+                'code' => $data['code'],
+                'purpose' => $data['purpose'],
+                'logoUrl' => $logoUrl,
+                'appName' => config('app.name'),
+            ]);
     }
 }

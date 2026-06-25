@@ -6,6 +6,7 @@ use App\Actions\LoadUsrahForUser;
 use App\Models\AppSetting;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
+use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
@@ -91,6 +92,36 @@ class MemberDashboardController extends Controller
                 'display_order' => $banner->display_order,
                 'organization_id' => $banner->organization_id,
             ]);
+
+        $upcomingEvents = Event::with('organization')
+            ->where('start_time', '>=', now())
+            ->where(function ($q) use ($user) {
+                $q->whereNull('organization_id')
+                  ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->orderBy('start_time')
+            ->take(5)
+            ->get()
+            ->map(function (Event $e) use ($user) {
+                $myRsvp = EventRsvp::where('event_id', $e->id)
+                    ->where('user_id', $user->id)
+                    ->first();
+                return [
+                    'id' => $e->id,
+                    'title' => $e->title,
+                    'type' => $e->type,
+                    'location_or_link' => $e->location_or_link,
+                    'start_time' => $e->start_time->toISOString(),
+                    'start_formatted' => $e->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                    'featured_image_url' => $e->featured_image_url,
+                    'organization' => [
+                        'name' => $e->organization?->name ?? 'Semua Organisasi',
+                        'slug' => $e->organization?->slug ?? 'semua',
+                        'color_theme' => $e->organization?->color_theme ?? '#334155',
+                    ],
+                    'my_rsvp' => $myRsvp ? $myRsvp->status : null,
+                ];
+            });
 
         $latestNews = NewsPost::query()
             ->with(['category:id,name', 'organization:id,name'])
@@ -230,6 +261,7 @@ class MemberDashboardController extends Controller
                 'location_or_link' => $nextEventRsvp->event->location_or_link,
                 'status' => $nextEventRsvp->status,
             ] : null,
+            'upcomingEvents' => $upcomingEvents,
             'usrah' => $usrahGroup,
             'campaigns' => $campaigns,
             'libraryBooks' => $libraryBooks,

@@ -7,6 +7,7 @@ const props = defineProps({
     member: { type: Object, required: true },
     feeStatus: { type: Object, required: true },
     nextEvent: { type: Object, default: null },
+    upcomingEvents: { type: Array, default: () => [] },
     banners: { type: Array, default: () => [] },
     libraryBooks: { type: Array, default: () => [] },
     usrah: { type: Object, default: null },
@@ -131,7 +132,7 @@ function scrollBooks(direction) {
     <Head title="Member Dashboard" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden">
-            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7 px-px md:px-6">
+            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7 px-4 md:px-6">
 
                 <!-- Flash Messages -->
                 <template v-if="$page.props.flash?.success || $page.props.flash?.error">
@@ -172,29 +173,17 @@ function scrollBooks(direction) {
                 </header>
 
                 <!-- ═══ 2. BANNER CAROUSEL ═══ -->
-                <section class="relative h-[190px] md:h-56 rounded-[28px] overflow-hidden shadow-lg">
+                <section class="relative aspect-[21/9] rounded-[28px] overflow-hidden shadow-lg">
                     <div v-for="(banner, i) in carouselItems" :key="banner.id" v-show="i === activeBannerIndex" class="absolute inset-0">
                         <img v-if="banner.image_path" :src="banner.image_path" :alt="banner.title" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                    </div>
-                    <div class="relative z-10 h-full flex flex-col justify-end px-5 pb-5">
-                        <span class="inline-flex self-start rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm" :class="theme.accent">
-                            {{ nextEvent ? 'Program Terkini' : 'Dashboard' }}
-                        </span>
-                        <h2 class="text-lg md:text-xl font-bold text-white mt-2 leading-tight line-clamp-2">
-                            {{ carouselItems[activeBannerIndex]?.title || nextEvent?.title || 'Selamat datang ke myWAP' }}
-                        </h2>
-                        <div class="flex items-center justify-between mt-3">
-                            <Link :href="route('events.index')" class="inline-flex items-center px-4 py-2 rounded-xl font-semibold text-xs bg-white/20 backdrop-blur-md text-white border border-white/20 hover:bg-white/30 transition">
-                                {{ nextEvent ? 'Daftar Sekarang' : 'Lihat Program' }}
-                            </Link>
-                            <div v-if="carouselItems.length > 1" class="flex gap-1.5">
-                                <button v-for="(_, i) in carouselItems" :key="i" @click="activeBannerIndex = i"
-                                    class="h-1.5 rounded-full transition-all duration-300"
-                                    :class="i === activeBannerIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40'" />
-                            </div>
+                        <div v-else class="w-full h-full flex items-center justify-center" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }">
+                            <span class="text-white font-bold text-lg">Selamat datang ke myWAP</span>
                         </div>
+                    </div>
+                    <div v-if="carouselItems.length > 1" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+                        <button v-for="(_, i) in carouselItems" :key="i" @click="activeBannerIndex = i"
+                            class="h-1.5 rounded-full transition-all duration-300"
+                            :class="i === activeBannerIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40'" />
                     </div>
                 </section>
 
@@ -339,7 +328,58 @@ function scrollBooks(direction) {
                     </div>
                 </section>
 
-                <!-- ═══ 6. UNDIAN ═══ -->
+                <!-- ═══ 6. PROGRAM ═══ -->
+                <section>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold text-gray-900">Program</h2>
+                        <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                    </div>
+                    <div v-if="upcomingEvents.length" class="flex gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[280px] md:min-w-0 bg-white rounded-3xl shadow-sm overflow-hidden shrink-0">
+                            <Link :href="route('events.index')" class="block">
+                                <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                                    <img v-if="event.featured_image_url && !event.featured_image_url.includes('placehold.co')" :src="event.featured_image_url" :alt="event.title" class="h-full w-full object-cover">
+                                    <div v-else class="h-full w-full" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                    <div class="absolute top-3 left-3 z-10">
+                                        <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/90 backdrop-blur-md text-gray-800 border border-white/20 shadow-sm">
+                                            {{ event.type === 'physical' ? 'Fizikal' : 'Online' }}
+                                        </span>
+                                    </div>
+                                    <div class="absolute bottom-3 left-3 right-3 z-10">
+                                        <h3 class="text-sm font-bold text-white line-clamp-2 drop-shadow-sm">{{ event.title }}</h3>
+                                    </div>
+                                </div>
+                                <div class="px-4 pt-3 pb-4">
+                                    <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        {{ event.start_formatted }}
+                                    </div>
+                                    <p v-if="event.location_or_link" class="mt-1 text-xs text-gray-400 line-clamp-1 flex items-center gap-1.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        {{ event.location_or_link }}
+                                    </p>
+                                </div>
+                            </Link>
+                        </article>
+                    </div>
+                    <div v-else class="rounded-2xl bg-white border-2 border-dashed border-gray-200 px-4 py-8 text-center">
+                        <div class="w-12 h-12 mx-auto rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-700">Tiada program akan datang</p>
+                        <p class="text-xs text-gray-400 mt-1">Tekan Lihat Semua untuk terokai program lepas</p>
+                    </div>
+                </section>
+
+                <!-- ═══ 7. UNDIAN ═══ -->
                 <section v-if="activePolls.length">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2.5">
@@ -403,23 +443,13 @@ function scrollBooks(direction) {
                     </div>
                 </section>
 
-                <!-- ═══ 7. AKTIVITI + 8. STATUS YURAN ═══ -->
+                <!-- ═══ 8. AKTIVITI + 9. STATUS YURAN ═══ -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <section class="bg-white rounded-3xl p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-sm font-bold text-gray-900">Aktiviti Saya</h2>
-                            <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Program</Link>
                         </div>
                         <div class="space-y-3">
-                            <div class="flex items-center gap-2.5">
-                                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[11px] text-gray-500">Program</p>
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ nextEvent?.title || 'Tiada program akan datang' }}</p>
-                                </div>
-                            </div>
                             <div class="flex items-center gap-2.5">
                                 <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
@@ -471,7 +501,7 @@ function scrollBooks(direction) {
                     </section>
                 </div>
 
-                <!-- ═══ 9. BERITA ═══ -->
+                <!-- ═══ 10. BERITA ═══ -->
                 <section v-if="latestNews.length">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
@@ -497,7 +527,7 @@ function scrollBooks(direction) {
                     </div>
                 </section>
 
-                <!-- ═══ 10. PUSTAKA ═══ -->
+                <!-- ═══ 11. PUSTAKA ═══ -->
                 <section>
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-sm font-bold text-gray-900">Pustaka</h2>

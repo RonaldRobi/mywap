@@ -56,7 +56,7 @@ function initials(name) {
     <Head title="Kad Keahlian" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] py-6 md:py-10 overflow-x-hidden">
-            <div class="max-w-md md:max-w-xl mx-auto space-y-5 px-px md:px-4">
+            <div class="max-w-md md:max-w-xl mx-auto space-y-5 px-4 md:px-4">
 
                 <!-- ═══ PREMIUM MEMBERSHIP CARD ═══ -->
                 <div id="membership-card" class="relative overflow-hidden rounded-[28px] p-5 md:p-8 text-white shadow-lg"
