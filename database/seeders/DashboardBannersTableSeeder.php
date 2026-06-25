@@ -119,7 +119,7 @@ class DashboardBannersTableSeeder extends Seeder
                 'updated_at' => '2026-03-16 17:16:06',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('dashboard_banners_id_seq', COALESCE((SELECT MAX(id) FROM dashboard_banners), 1))");
     }
 }

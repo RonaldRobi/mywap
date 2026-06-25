@@ -44,7 +44,7 @@ class RolesTableSeeder extends Seeder
                 'updated_at' => '2026-03-16 15:25:34',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('roles_id_seq', COALESCE((SELECT MAX(id) FROM roles), 1))");
     }
 }

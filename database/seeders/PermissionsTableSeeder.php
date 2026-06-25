@@ -140,7 +140,7 @@ class PermissionsTableSeeder extends Seeder
                 'updated_at' => '2026-03-16 15:25:34',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('permissions_id_seq', COALESCE((SELECT MAX(id) FROM permissions), 1))");
     }
 }

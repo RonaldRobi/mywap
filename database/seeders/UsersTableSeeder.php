@@ -174,7 +174,7 @@ class UsersTableSeeder extends Seeder
                 'state' => NULL,
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1))");
     }
 }

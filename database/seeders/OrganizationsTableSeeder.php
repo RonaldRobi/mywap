@@ -62,7 +62,7 @@ class OrganizationsTableSeeder extends Seeder
                 'sort_order' => NULL,
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('organizations_id_seq', COALESCE((SELECT MAX(id) FROM organizations), 1))");
     }
 }

@@ -100,7 +100,7 @@ class InfaqTableSeeder extends Seeder
                 'updated_at' => '2026-03-17 03:27:21',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('infaq_id_seq', COALESCE((SELECT MAX(id) FROM infaq), 1))");
     }
 }

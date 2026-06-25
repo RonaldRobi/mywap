@@ -200,7 +200,7 @@ class LibraryItemsTableSeeder extends Seeder
                 'cover_image_path' => '/storage/library/covers/org-3/adab-aktivis-muslim-5.svg',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('library_items_id_seq', COALESCE((SELECT MAX(id) FROM library_items), 1))");
     }
 }

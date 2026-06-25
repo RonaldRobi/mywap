@@ -33,7 +33,7 @@ class CampaignsTableSeeder extends Seeder
                 'updated_at' => '2026-03-17 03:32:03',
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('campaigns_id_seq', COALESCE((SELECT MAX(id) FROM campaigns), 1))");
     }
 }

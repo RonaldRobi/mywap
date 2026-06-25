@@ -122,7 +122,7 @@ class EventsTableSeeder extends Seeder
                 'deleted_at' => NULL,
             ),
         ));
-        
-        
+
+        \DB::statement("SELECT setval('events_id_seq', COALESCE((SELECT MAX(id) FROM events), 1))");
     }
 }
