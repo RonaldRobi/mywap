@@ -322,7 +322,7 @@ function scrollBooks(direction) {
                             v-for="item in videos"
                             :key="item.id"
                             @click="playVideo(item)"
-                            class="min-w-[150px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0 text-left transition hover:shadow-md"
+                            class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0 text-left transition hover:shadow-md"
                         >
                             <div class="relative aspect-video overflow-hidden bg-gray-100">
                                 <img :src="item.thumbnail_url" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
@@ -350,7 +350,7 @@ function scrollBooks(direction) {
                         <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[150px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                        <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
                             <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
                                 <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
                                 <div v-else class="absolute inset-0" :style="{ background: `linear-gradient(to right, ${lightGrad.from}, ${lightGrad.to})` }"></div>
@@ -362,15 +362,15 @@ function scrollBooks(direction) {
                                     <h3 class="text-xs md:text-sm font-bold text-white mt-1 line-clamp-1">{{ item.title }}</h3>
                                 </div>
                             </div>
-                            <div class="px-3 pt-2 pb-3 md:px-4 md:pt-3 md:pb-4">
-                                <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                            <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
+                                <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
                                     <span class="font-semibold" :class="theme.accentText">{{ formatCurrency(item.collected_amount) }}</span>
                                     <span>daripada {{ formatCurrency(item.target_amount || 0) }}</span>
                                 </div>
                                 <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                                     <div class="h-1.5 rounded-full transition-all duration-700" :class="theme.accent" :style="{ width: (item.progress_percent || 0) + '%' }"></div>
                                 </div>
-                                <div class="grid grid-cols-3 gap-2 mt-3">
+                                <div class="grid grid-cols-3 gap-2 mt-2">
                                     <button @click="quickDonate(item.id, 10)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM10</button>
                                     <button @click="quickDonate(item.id, 30)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM30</button>
                                     <button @click="quickDonate(item.id, 50)" :disabled="getInfaqForm(item.id).processing" :class="[theme.accentBg, theme.accentText, 'rounded-xl border py-2 text-xs font-semibold transition hover:opacity-80 disabled:opacity-50']">RM50</button>
@@ -387,7 +387,7 @@ function scrollBooks(direction) {
                         <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div v-if="upcomingEvents.length" class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[150px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('events.index')" class="block">
                                 <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
                                     <img v-if="event.featured_image_url && !event.featured_image_url.includes('placehold.co')" :src="event.featured_image_url" :alt="event.title" class="h-full w-full object-cover">
@@ -402,15 +402,15 @@ function scrollBooks(direction) {
                                         <h3 class="text-xs md:text-sm font-bold text-white line-clamp-2 drop-shadow-sm">{{ event.title }}</h3>
                                     </div>
                                 </div>
-                                <div class="px-3 pt-2 pb-3 md:px-4 md:pt-3 md:pb-4">
-                                    <div class="flex items-center gap-1.5 text-[11px] md:text-xs text-gray-500">
+                                <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
+                                    <div class="flex items-center gap-1 text-[11px] md:text-xs text-gray-500">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
-                                        {{ event.start_formatted }}
+                                        <span class="truncate">{{ event.start_formatted }}</span>
                                     </div>
-                                    <p v-if="event.location_or_link" class="mt-1 text-[11px] md:text-xs text-gray-400 line-clamp-1 flex items-center gap-1.5">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <p v-if="event.location_or_link" class="mt-0.5 text-[11px] md:text-xs text-gray-400 truncate flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 md:w-3.5 md:h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         </svg>
@@ -560,19 +560,19 @@ function scrollBooks(direction) {
                         <Link :href="route('news.index')" class="text-xs font-semibold" :class="theme.accentText">Buka Feed</Link>
                     </div>
                     <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[150px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('news.show', item.id)" class="block">
                                 <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
                                     <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 </div>
-                                <div class="px-3 pt-2.5 pb-3 md:px-4 md:pt-3 md:pb-4">
+                                <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
                                     <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
                                         <span v-if="item.category_name" class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
                                         <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
                                     </div>
-                                    <h4 class="mt-1.5 line-clamp-2 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
-                                    <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
+                                    <h4 class="mt-1 line-clamp-2 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
+                                    <p class="mt-0.5 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
                                 </div>
                             </Link>
                         </article>
@@ -586,19 +586,19 @@ function scrollBooks(direction) {
                         <Link :href="route('articles.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="min-w-[150px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('articles.show', item.slug)" class="block">
                                 <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
                                     <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 </div>
-                                <div class="px-3 pt-2.5 pb-3 md:px-4 md:pt-3 md:pb-4">
+                                <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
                                     <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
                                         <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
-                                        <span v-if="item.author_name" class="text-gray-400">oleh {{ item.author_name }}</span>
+                                        <span v-if="item.author_name" class="text-gray-400 truncate">oleh {{ item.author_name }}</span>
                                     </div>
-                                    <h4 class="mt-1.5 line-clamp-2 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
-                                    <p class="mt-1 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
+                                    <h4 class="mt-1 line-clamp-1 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
+                                    <p v-if="item.excerpt" class="mt-0.5 line-clamp-1 text-xs text-gray-500">{{ item.excerpt }}</p>
                                 </div>
                             </Link>
                         </article>
