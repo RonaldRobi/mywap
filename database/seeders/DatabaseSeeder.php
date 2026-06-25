@@ -47,6 +47,9 @@ class DatabaseSeeder extends Seeder
             // --- E-Commerce (Dummy Catalog) ---
             EcommerceDummySeeder::class,
 
+            // --- KNOWLEDGE BASE (Chatbot) ---
+            KnowledgeBaseSeeder::class,
+
             // --- JAWATAN ORGANISASI ---
             OrganizationPositionSeeder::class,
 

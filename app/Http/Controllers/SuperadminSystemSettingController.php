@@ -19,6 +19,7 @@ class SuperadminSystemSettingController extends Controller
 
         return Inertia::render('Superadmin/SystemSettings', [
             'systemLogoPath' => $this->normalizeStorageUrl($setting?->system_logo_path),
+            'chatbotLogoPath' => $this->normalizeStorageUrl($setting?->chatbot_logo_path),
             'splashImagePath' => $this->normalizeStorageUrl($setting?->splash_image_path),
             'splashBackgroundColor' => $setting?->splash_background_color ?? '#0f172a',
             'splashTitle' => $setting?->splash_title ?? 'myWAP',
@@ -27,6 +28,7 @@ class SuperadminSystemSettingController extends Controller
             'adminContactEmail' => $setting?->admin_contact_email ?? '',
             'adminContactPhone' => $setting?->admin_contact_phone ?? '',
             'hasResendKey' => $setting && $setting->resend_api_key ? true : false,
+            'hasGeminiKey' => $setting && $setting->gemini_api_key ? true : false,
             'mailFromAddress' => $setting?->mail_from_address ?? '',
             'mailFromName' => $setting?->mail_from_name ?? '',
             'canManageSystemLogo' => $canManageSystemLogo,
@@ -146,6 +148,62 @@ class SuperadminSystemSettingController extends Controller
         ]);
 
         return back()->with('success', 'Tetapan splash screen berjaya dikemas kini.');
+    }
+
+    public function updateChatbotLogo(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sila jalankan migration terlebih dahulu.');
+        }
+
+        $data = $request->validate([
+            'chatbot_logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+        ]);
+
+        $setting = AppSetting::singleton();
+
+        if ($setting->chatbot_logo_path) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url((string) $setting->chatbot_logo_path, PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        $storedPath = $data['chatbot_logo']->store('logos/chatbot', 'public');
+
+        $setting->update([
+            'chatbot_logo_path' => '/storage/' . ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', 'Logo chatbot berjaya dikemas kini.');
+    }
+
+    public function updateGeminiKey(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'gemini_api_key' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $updateData = [];
+
+        if ($request->filled('gemini_api_key')) {
+            $updateData['gemini_api_key'] = $data['gemini_api_key'];
+        }
+
+        if ($request->has('gemini_api_key') && ! $request->filled('gemini_api_key')) {
+            $updateData['gemini_api_key'] = null;
+        }
+
+        if (! empty($updateData)) {
+            $setting->update($updateData);
+        }
+
+        return back()->with('success', 'Kunci API Gemini berjaya disimpan.');
     }
 
     public function updateAdminContact(Request $request): RedirectResponse

@@ -108,6 +108,9 @@ class HandleInertiaRequests extends Middleware
                 'splash_title' => $appSetting?->splash_title ?? 'myWAP',
                 'splash_duration_ms' => (int) ($appSetting?->splash_duration_ms ?? 1800),
                 'splash_enabled' => (bool) ($appSetting?->splash_enabled ?? true),
+                'chatbot_logo_path' => $this->normalizeStorageUrl($appSetting?->chatbot_logo_path),
+                'admin_contact_email' => $appSetting?->admin_contact_email ?? '',
+                'admin_contact_phone' => $appSetting?->admin_contact_phone ?? '',
             ],
             'notifications' => $user ? [
                 'unread_count' => Cache::remember("unread:{$user->id}", 30, fn () => $user->unreadNotifications()->count()),

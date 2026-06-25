@@ -4,6 +4,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt.vue';
+import ChatBot from '@/Components/ChatBot.vue';
 
 // ─── Auth & Theme ────────────────────────────────────────────────────────────
 
@@ -322,6 +323,13 @@ const navItems = computed(() => [
                         active: route().current('admin.email-templates.*'),
                         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                 </svg>`,
+                    }, {
+                        label:  'Knowledge Base',
+                        href:   route('admin.knowledge-base.index'),
+                        active: route().current('admin.knowledge-base.*'),
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                                  </svg>`,
                     }] : []),
         {
@@ -884,6 +892,9 @@ const bottomNavItems = computed(() => [
         <!-- PWA Install Prompt -->
         <PwaInstallPrompt />
         <AppSplashScreen />
+
+        <!-- AI Chatbot -->
+        <ChatBot />
     </div>
 </template>
 

@@ -150,10 +150,17 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/settings/system-logo', [SuperadminSystemSettingController::class, 'updateSystemLogo'])->name('superadmin.settings.system-logo.update');
         Route::post('/superadmin/settings/splash', [SuperadminSystemSettingController::class, 'updateSplashSetting'])->name('superadmin.settings.splash.update');
         Route::post('/superadmin/settings/admin-contact', [SuperadminSystemSettingController::class, 'updateAdminContact'])->name('superadmin.settings.admin-contact.update');
+        Route::post('/superadmin/settings/chatbot-logo', [SuperadminSystemSettingController::class, 'updateChatbotLogo'])->name('superadmin.settings.chatbot-logo.update');
         Route::post('/superadmin/settings/resend-key', [SuperadminSystemSettingController::class, 'updateResendKey'])->name('superadmin.settings.resend-key.update');
+        Route::post('/superadmin/settings/gemini-key', [SuperadminSystemSettingController::class, 'updateGeminiKey'])->name('superadmin.settings.gemini-key.update');
         Route::get('/superadmin/email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
         Route::put('/superadmin/email-templates/{emailTemplate}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
         Route::post('/superadmin/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
+
+        Route::get('/superadmin/knowledge-base', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
+        Route::post('/superadmin/knowledge-base', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'store'])->name('admin.knowledge-base.store');
+        Route::post('/superadmin/knowledge-base/{knowledgeArticle}', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
+        Route::delete('/superadmin/knowledge-base/{knowledgeArticle}', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
 
         Route::redirect('/superadmin/logo-settings', '/superadmin/organizations');
     });
@@ -205,6 +212,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('branches', [App\Http\Controllers\BranchController::class, 'store'])->name('branches.store');
         Route::put('branches/{branch}', [App\Http\Controllers\BranchController::class, 'update'])->name('branches.update');
         Route::post('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'updateLogo'])->name('branches.logo.update');
+        Route::delete('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'deleteLogo'])->name('branches.logo.destroy');
         Route::delete('branches/{branch}', [App\Http\Controllers\BranchController::class, 'destroy'])->name('branches.destroy');
 
 
@@ -246,6 +254,11 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     });
 });
 
+
+// ─── Chatbot API ─────────────────────────────────────────────────────────────
+Route::post('/api/chat', [App\Http\Controllers\ChatController::class, 'send'])
+    ->name('api.chat.send')
+    ->middleware('throttle:30,1');
 
 // ─── Authenticated Member Routes ─────────────────────────────────────────────
 

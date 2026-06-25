@@ -82,6 +82,15 @@ function submitLogo() {
     });
 }
 
+function deleteLogo() {
+    if (confirm('Padam logo cawangan ini?')) {
+        useForm({}).delete(route('branches.logo.destroy', editingBranch.value.id), {
+            preserveScroll: true,
+            onSuccess: () => { editingBranch.value.logo_path = null; },
+        });
+    }
+}
+
 function deleteBranch(branch) {
     if (confirm(`Padam cawangan "${branch.name}"? Cawangan yang mempunyai ahli tidak boleh dipadam.`)) {
         useForm({}).delete(route('branches.destroy', branch.id), {
@@ -289,9 +298,18 @@ const malaysianStates = [
                         <div>
                             <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Logo Cawangan</p>
                             <div class="flex items-center gap-4 mb-3">
-                                <div class="h-16 w-16 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                                <div class="relative h-16 w-16 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
                                     <img v-if="editingBranch.logo_path" :src="editingBranch.logo_path" class="h-full w-full object-contain p-1" />
                                     <span v-else class="text-2xl font-black text-gray-200">{{ editingBranch.name.charAt(0) }}</span>
+                                    <button
+                                        v-if="editingBranch.logo_path"
+                                        type="button"
+                                        @click="deleteLogo"
+                                        class="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
+                                        title="Padam logo"
+                                    >
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
                                 </div>
                                 <p class="text-xs text-gray-500">Logo khusus cawangan. Jika tiada, logo organisasi digunakan.</p>
                             </div>

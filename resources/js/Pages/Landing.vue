@@ -1,5 +1,6 @@
 <script setup>
 import AuroraBackground from '@/Components/ui/AuroraBackground.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -293,6 +294,21 @@ const fiVerify = async () => {
 };
 
 const resetLinkSending = ref(false);
+
+// First-time prompt modal (session-only)
+const showFirstTimePrompt = ref(!sessionStorage.getItem('first_prompt_closed'));
+
+const promptGoFirstTime = () => {
+    sessionStorage.setItem('first_prompt_closed', '1');
+    showFirstTimePrompt.value = false;
+    resetFlow();
+    flow.value = 'first-time';
+};
+
+const closeFirstTimePrompt = () => {
+    showFirstTimePrompt.value = false;
+    sessionStorage.setItem('first_prompt_closed', '1');
+};
 
 const sendResetLink = () => {
     resetLinkSending.value = true;
@@ -713,6 +729,25 @@ const sendResetLink = () => {
                             </div>
                         </div>
                     </Transition>
+
+                    <Modal :show="showFirstTimePrompt" @close="closeFirstTimePrompt" maxWidth="md">
+                        <div class="p-6">
+                            <h2 class="text-xl font-bold text-slate-900">Selamat Datang ke myWAP</h2>
+                            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+                                Jika ini adalah log masuk kali pertama anda, sila tekan butang
+                                <button @click="promptGoFirstTime" class="font-semibold text-emerald-700 underline hover:text-emerald-600">
+                                    'Log Masuk Kali Pertama'
+                                </button>
+                                di bawah borang log masuk untuk persediaan akaun.
+                            </p>
+                            <p class="mt-2 text-sm text-slate-600">Pengguna sedia ada boleh log masuk seperti biasa.</p>
+                            <div class="mt-6 flex justify-end">
+                                <button @click="closeFirstTimePrompt" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                                    OK, Faham
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
                 </section>
             </div>
         </div>

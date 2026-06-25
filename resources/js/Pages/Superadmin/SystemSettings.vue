@@ -8,6 +8,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    chatbotLogoPath: {
+        type: String,
+        default: null,
+    },
     canManageSystemLogo: {
         type: Boolean,
         default: false,
@@ -44,6 +48,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    hasGeminiKey: {
+        type: Boolean,
+        default: false,
+    },
     mailFromAddress: {
         type: String,
         default: '',
@@ -56,6 +64,10 @@ const props = defineProps({
 
 const form = useForm({
     system_logo: null,
+});
+
+const chatbotForm = useForm({
+    chatbot_logo: null,
 });
 
 const splashForm = useForm({
@@ -72,6 +84,14 @@ function uploadSystemLogo() {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => form.reset('system_logo'),
+    });
+}
+
+function uploadChatbotLogo() {
+    chatbotForm.post(route('superadmin.settings.chatbot-logo.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => chatbotForm.reset('chatbot_logo'),
     });
 }
 
@@ -113,6 +133,16 @@ const resendForm = useForm({
     mail_from_address: props.mailFromAddress || '',
     mail_from_name: props.mailFromName || '',
 });
+
+const geminiForm = useForm({
+    gemini_api_key: '',
+});
+
+function saveGeminiKey() {
+    geminiForm.post(route('superadmin.settings.gemini-key.update'), {
+        preserveScroll: true,
+    });
+}
 
 function saveResendKey() {
     resendForm.post(route('superadmin.settings.resend-key.update'), {
@@ -174,6 +204,36 @@ onBeforeUnmount(() => {
                             class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
                         >
                             {{ form.processing ? 'Memuat naik...' : 'Simpan Logo myWAP' }}
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Logo Chatbot</h2>
+                <p class="mt-1 text-xs text-gray-500">Logo yang dipaparkan pada butang chatbot terapung. Cadangan saiz: <strong>512 × 512px</strong>, format PNG/SVG dengan latar transparen.</p>
+
+                <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div class="flex h-24 w-24 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+                        <img v-if="chatbotLogoPath" :src="chatbotLogoPath" alt="Chatbot Logo" class="h-20 w-20 rounded-full object-contain">
+                        <span v-else class="text-xs font-semibold text-gray-400">No logo</span>
+                    </div>
+
+                    <form class="flex-1 space-y-2" @submit.prevent="uploadChatbotLogo">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            :disabled="!canManageSystemLogo"
+                            @change="chatbotForm.chatbot_logo = $event.target.files[0]"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                        >
+                        <p v-if="chatbotForm.errors.chatbot_logo" class="text-xs text-red-500">{{ chatbotForm.errors.chatbot_logo }}</p>
+                        <button
+                            type="submit"
+                            :disabled="chatbotForm.processing || !canManageSystemLogo"
+                            class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                        >
+                            {{ chatbotForm.processing ? 'Memuat naik...' : 'Simpan Logo Chatbot' }}
                         </button>
                     </form>
                 </div>
@@ -247,6 +307,31 @@ onBeforeUnmount(() => {
                         </button>
                     </form>
                 </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Kunci API Gemini</h2>
+                <p class="mt-1 text-xs text-gray-500">Digunakan untuk chatbot MyWAP AI. Dapatkan kunci percuma dari <strong>ai.google.dev</strong>. Had percuma 60 permintaan seminit.</p>
+
+                <form class="mt-4 space-y-3" @submit.prevent="saveGeminiKey">
+                    <p v-if="hasGeminiKey" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                        ✓ Kunci API telah disimpan sebelumnya. Masukkan kunci baru untuk menggantikan, atau kosongkan untuk memadam.
+                    </p>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Kunci API Gemini</span>
+                        <input v-model="geminiForm.gemini_api_key" type="password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="hasGeminiKey ? 'Klik untuk tukar (kunci sedia ada dikekalkan)' : 'AIzaSy...'">
+                        <p v-if="geminiForm.errors.gemini_api_key" class="mt-1 text-xs text-red-500">{{ geminiForm.errors.gemini_api_key }}</p>
+                    </label>
+
+                    <button
+                        type="submit"
+                        :disabled="geminiForm.processing"
+                        class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                    >
+                        {{ geminiForm.processing ? 'Menyimpan...' : 'Simpan Kunci API Gemini' }}
+                    </button>
+                </form>
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

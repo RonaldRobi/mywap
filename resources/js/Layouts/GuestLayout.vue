@@ -1,6 +1,7 @@
 <script setup>
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import ChatBot from '@/Components/ChatBot.vue';
 import { Link } from '@inertiajs/vue3';
 </script>
 
@@ -20,5 +21,6 @@ import { Link } from '@inertiajs/vue3';
             <slot />
         </div>
         <AppSplashScreen />
+        <ChatBot />
     </div>
 </template>

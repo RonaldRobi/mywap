@@ -24,9 +24,11 @@ class AppSetting extends Model
         'splash_title',
         'splash_duration_ms',
         'splash_enabled',
+        'chatbot_logo_path',
         'admin_contact_email',
         'admin_contact_phone',
         'resend_api_key',
+        'gemini_api_key',
         'mail_from_address',
         'mail_from_name',
     ];
@@ -64,6 +66,11 @@ class AppSetting extends Model
     }
 
     public function getSplashImagePathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getChatbotLogoPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

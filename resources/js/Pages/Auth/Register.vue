@@ -98,6 +98,12 @@ const filteredBranches = computed(() => {
     return orgBranches;
 });
 
+watch(() => form.ic_number, (val) => {
+    if (val && !form.dob) {
+        form.dob = parseDobFromIc(val);
+    }
+});
+
 const icLength = computed(() => {
     const digits = (form.ic_number || '').replace(/[^0-9]/g, '');
     return digits.length;
@@ -210,7 +216,7 @@ const submit = () => {
                                     autocomplete="bday"
                                 />
                                 <InputError class="mt-2" :message="form.errors.dob" />
-                                <p v-if="inferredDob && !form.dob" class="mt-1 text-xs text-slate-400">Auto dari No IC. Boleh ubah jika salah.</p>
+                                <p v-if="inferredDob" class="mt-1 text-xs text-slate-400">Auto dari No IC. Boleh ubah jika salah.</p>
                             </div>
                         </div>
 

@@ -140,6 +140,30 @@ class BranchController extends Controller
     }
 
     /**
+     * Delete the logo for a specific branch.
+     */
+    public function deleteLogo(Branch $branch): RedirectResponse
+    {
+        $user = Auth::user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+
+        if (! $isSuperadmin && $branch->organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        if ($branch->logo_path) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url((string) $branch->logo_path, PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        $branch->update(['logo_path' => null]);
+
+        return back()->with('success', 'Logo cawangan berjaya dipadam!');
+    }
+
+    /**
      * Delete a branch (only if it has no active members).
      */
     public function destroy(Branch $branch): RedirectResponse
