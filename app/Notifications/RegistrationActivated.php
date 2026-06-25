@@ -3,13 +3,14 @@
 namespace App\Notifications;
 
 use App\Models\EmailTemplate;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class RegistrationActivated extends Notification implements ShouldQueue
 {
-    public $connection = 'database';
+    use Queueable;
 
     public function __construct(
         public $user,
