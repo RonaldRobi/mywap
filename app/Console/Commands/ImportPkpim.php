@@ -18,7 +18,7 @@ class ImportPkpim extends Command
     public function handle()
     {
         $file = $this->argument('file')
-            ?? database_path('seeders/data/PKPIM.csv');
+            ?? database_path('seeders/data/pkpim.csv');
 
         if (! file_exists($file)) {
             $this->error("File tak jumpa: {$file}");
@@ -211,14 +211,14 @@ class ImportPkpim extends Command
         while (($row = fgetcsv($handle)) !== false) {
             if (count($row) < count($headers)) continue;
 
-            $name = trim($row[$col['FullName']] ?? '');
-            $icRaw = trim($row[$col['icNumber']] ?? '');
+            $name = $this->clean(trim($row[$col['FullName']] ?? ''));
+            $icRaw = $this->clean(trim($row[$col['icNumber']] ?? ''));
             $digits = preg_replace('/[^0-9]/', '', $icRaw);
 
             if (empty($name) && empty($digits)) continue;
 
             if (strlen($digits) < 11) {
-                $persatuan = trim($row[$col['Persatuan'] ?? ''] ?? '');
+                $persatuan = $this->clean(trim($row[$col['Persatuan'] ?? ''] ?? ''));
                 $errors[] = "{$name} — IC=\"{$icRaw}\" (no telefon?), Persatuan: {$persatuan}";
                 continue;
             }
@@ -226,14 +226,14 @@ class ImportPkpim extends Command
             $count++;
             $icPadded = str_pad($digits, 12, '0', STR_PAD_RIGHT);
 
-            $persatuan = trim($row[$col['Persatuan'] ?? ''] ?? '');
+            $persatuan = $this->clean(trim($row[$col['Persatuan'] ?? ''] ?? ''));
             $branchName = ! empty($persatuan) ? $persatuan : 'Pusat';
             $branchNames->push($branchName);
 
-            $email = trim($row[$col['email'] ?? ''] ?? '');
+            $email = $this->clean(trim($row[$col['email'] ?? ''] ?? ''));
             if (empty($email)) $email = strtolower($digits) . '@mywap.my';
 
-            $phone = ltrim(trim($row[$col['phoneNo'] ?? ''] ?? ''), "'");
+            $phone = ltrim($this->clean(trim($row[$col['phoneNo'] ?? ''] ?? '')), "'");
 
             $records[] = [
                 'name'       => $name,
@@ -255,5 +255,10 @@ class ImportPkpim extends Command
             'records' => $records,
             'errors' => $errors,
         ];
+    }
+
+    protected function clean(string $str): string
+    {
+        return mb_convert_encoding($str, 'UTF-8', 'Windows-1252');
     }
 }

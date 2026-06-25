@@ -206,9 +206,9 @@ class ImportAbim extends Command
         while (($row = fgetcsv($handle)) !== false) {
             if (count($row) < count($headers)) continue;
 
-            $nama = trim($row[$col['NAMA']] ?? '');
-            $mykadRaw = trim($row[$col['MYKAD']] ?? '');
-            $noRuj = trim($row[$col['NO.RUJ']] ?? '');
+            $nama = $this->clean(trim($row[$col['NAMA']] ?? ''));
+            $mykadRaw = $this->clean(trim($row[$col['MYKAD']] ?? ''));
+            $noRuj = $this->clean(trim($row[$col['NO.RUJ']] ?? ''));
 
             $ic = ltrim($mykadRaw, "'");
             $ic = preg_replace('/[^0-9]/', '', $ic);
@@ -222,7 +222,7 @@ class ImportAbim extends Command
             $count++;
             $icPadded = str_pad($ic, 12, '0', STR_PAD_RIGHT);
 
-            $branchName = $this->extractBranchName(trim($row[$col['LOKALITI'] ?? ''] ?? ''));
+            $branchName = $this->extractBranchName($this->clean(trim($row[$col['LOKALITI'] ?? ''] ?? '')));
             if ($branchName) $branchNames->push($branchName);
 
             $records[] = [
@@ -252,6 +252,11 @@ class ImportAbim extends Command
         ];
     }
 
+    protected function clean(string $str): string
+    {
+        return mb_convert_encoding($str, 'UTF-8', 'Windows-1252');
+    }
+
     protected function extractBranchName(string $lokality): ?string
     {
         if (empty($lokality)) return null;
@@ -270,7 +275,8 @@ class ImportAbim extends Command
     protected function val(array $row, array $col, string $key, string $default = ''): string
     {
         $v = isset($col[$key]) ? trim($row[$col[$key]] ?? '') : '';
-        return $v !== '' ? $v : $default;
+        $clean = $v !== '' ? $this->clean($v) : '';
+        return $clean !== '' ? $clean : $default;
     }
 
     protected function cleanAddress(string $v): ?string
