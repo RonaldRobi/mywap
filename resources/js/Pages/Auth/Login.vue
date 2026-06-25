@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -31,6 +32,7 @@ const step = ref('role');
 const memberCheckProcessing = ref(false);
 const memberCheckError = ref('');
 const memberOrganization = ref(null);
+const showIcNotFoundModal = ref(false);
 
 const biometricAlert = ref('');
 
@@ -104,7 +106,8 @@ const checkMember = async () => {
         const payload = await response.json();
 
         if (!response.ok || !payload?.found) {
-            memberCheckError.value = payload?.message || 'Ahli tidak dijumpai.';
+            memberCheckError.value = '';
+            showIcNotFoundModal.value = true;
             return;
         }
 
@@ -437,6 +440,21 @@ const submit = () => {
             </section>
         </div>
     </AuroraBackground>
+
+    <Modal :show="showIcNotFoundModal" @close="showIcNotFoundModal = false" maxWidth="md">
+        <div class="p-6">
+            <h2 class="text-xl font-bold text-slate-900">Ahli Tidak Dijumpai</h2>
+            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+                No IC/Pasport yang anda masukkan tidak ditemui dalam sistem.
+                Sila hubungi <strong>urusetia organisasi</strong> masing-masing untuk bantuan lanjut.
+            </p>
+            <div class="mt-6 flex justify-end">
+                <button @click="showIcNotFoundModal = false" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                    OK
+                </button>
+            </div>
+        </div>
+    </Modal>
 </template>
 
 <style scoped>

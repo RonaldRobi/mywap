@@ -139,7 +139,8 @@ const ftLookup = async () => {
         const payload = await res.json();
 
         if (!res.ok || !payload?.found) {
-            ftError.value = payload?.message || 'Ahli tidak dijumpai.';
+            ftError.value = '';
+            showIcNotFoundModal.value = true;
             return;
         }
 
@@ -248,7 +249,8 @@ const fiLookup = async () => {
         const payload = await res.json();
 
         if (!res.ok) {
-            fiError.value = payload?.message || 'No IC tidak ditemui.';
+            fiError.value = '';
+            showIcNotFoundModal.value = true;
             return;
         }
 
@@ -297,6 +299,8 @@ const resetLinkSending = ref(false);
 
 // First-time prompt modal (session-only)
 const showFirstTimePrompt = ref(!sessionStorage.getItem('first_prompt_closed'));
+
+const showIcNotFoundModal = ref(false);
 
 const promptGoFirstTime = () => {
     sessionStorage.setItem('first_prompt_closed', '1');
@@ -744,6 +748,21 @@ const sendResetLink = () => {
                             <div class="mt-6 flex justify-end">
                                 <button @click="closeFirstTimePrompt" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
                                     OK, Faham
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    <Modal :show="showIcNotFoundModal" @close="showIcNotFoundModal = false" maxWidth="md">
+                        <div class="p-6">
+                            <h2 class="text-xl font-bold text-slate-900">Ahli Tidak Dijumpai</h2>
+                            <p class="mt-3 text-sm leading-relaxed text-slate-600">
+                                No IC/Pasport yang anda masukkan tidak ditemui dalam sistem.
+                                Sila hubungi <strong>urusetia organisasi</strong> masing-masing untuk bantuan lanjut.
+                            </p>
+                            <div class="mt-6 flex justify-end">
+                                <button @click="showIcNotFoundModal = false" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                                    OK
                                 </button>
                             </div>
                         </div>
