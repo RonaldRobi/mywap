@@ -37,8 +37,6 @@ class DeployController extends Controller
 
         $commands = [
             "cd $basePath && git pull origin main 2>&1",
-            "cd $basePath && PATH=/usr/bin:$PATH /usr/bin/npm install --no-optional --no-audit --no-fund --prefer-offline 2>&1",
-            "cd $basePath && PATH=/usr/bin:$PATH NODE_OPTIONS=\"--max-old-space-size=512\" /usr/bin/npm run build 2>&1",
             "cd $basePath && php artisan migrate --force 2>&1",
             "cd $basePath && php artisan optimize 2>&1",
         ];
