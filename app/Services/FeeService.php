@@ -222,22 +222,22 @@ class FeeService
 
             $stats = (clone $baseQuery)->selectRaw("
                 COUNT(*) as total,
-                SUM(EXISTS(
+                SUM(CASE WHEN EXISTS(
                     SELECT 1 FROM membership_fees
                     WHERE membership_fees.user_id = users.id
                     AND membership_fees.year = ?
                     AND membership_fees.status = 'paid'
-                )) as paid,
-                SUM(EXISTS(
+                ) THEN 1 ELSE 0 END) as paid,
+                SUM(CASE WHEN EXISTS(
                     SELECT 1 FROM membership_fees
                     WHERE membership_fees.user_id = users.id
                     AND membership_fees.status = 'life_member'
-                )) as life_member,
-                SUM(EXISTS(
+                ) THEN 1 ELSE 0 END) as life_member,
+                SUM(CASE WHEN EXISTS(
                     SELECT 1 FROM membership_fees
                     WHERE membership_fees.user_id = users.id
                     AND membership_fees.status = 'exempted'
-                )) as exempted
+                ) THEN 1 ELSE 0 END) as exempted
             ", [$year])->first();
 
             $total = (int) $stats->total;
