@@ -37,21 +37,22 @@ class DeployController extends Controller
 
         $commands = [
             "cd $basePath && git pull origin main 2>&1",
+            "cd $basePath && npm ci 2>&1",
+            "cd $basePath && NODE_OPTIONS=\"--max-old-space-size=512\" npx --yes vite build 2>&1",
             "cd $basePath && php artisan migrate --force 2>&1",
             "cd $basePath && php artisan optimize 2>&1",
         ];
-
-        $npmOutput = []; $npmExit = -1;
-        exec("cd $basePath && NODE_OPTIONS=\"--max-old-space-size=512\" npx --yes vite build 2>&1", $npmOutput, $npmExit);
-        Log::channel('deploy')->info('npm build result', [
-            'exit_code' => $npmExit,
-            'output' => implode("\n", $npmOutput),
-        ]);
 
         foreach ($commands as $cmd) {
             $output = [];
             $exitCode = 0;
             exec($cmd, $output, $exitCode);
+
+            Log::channel('deploy')->info('Command result', [
+                'command' => $cmd,
+                'exit_code' => $exitCode,
+                'output' => implode("\n", $output),
+            ]);
 
             $log[] = [
                 'command' => $cmd,
