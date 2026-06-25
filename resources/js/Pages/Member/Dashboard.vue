@@ -387,23 +387,28 @@ function scrollBooks(direction) {
                         <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div v-if="upcomingEvents.length" class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
-                            <Link :href="route('events.index')" class="block">
-                                <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
-                                    <img v-if="event.featured_image_url && !event.featured_image_url.includes('placehold.co')" :src="event.featured_image_url" :alt="event.title" class="h-full w-full object-cover">
-                                    <div v-else class="h-full w-full" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
+                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="w-[170px] h-[230px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
+                            <Link :href="route('events.index')" class="flex flex-col h-full md:block md:h-auto">
+                                <div class="relative h-[100px] md:aspect-[16/9] w-full overflow-hidden bg-gray-100 shrink-0">
+                                    <img v-if="event.featured_image_url && !event.featured_image_url.includes('placehold.co')" :src="event.featured_image_url" :alt="event.title" class="absolute inset-0 w-full h-full object-cover">
+                                    <div v-else class="absolute inset-0" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                     <div class="absolute top-2 left-2 md:top-3 md:left-3 z-10">
                                         <span class="inline-flex rounded-full px-1.5 py-0.5 md:px-2 md:py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/90 backdrop-blur-md text-gray-800 border border-white/20 shadow-sm">
                                             {{ event.type === 'physical' ? 'Fizikal' : 'Online' }}
                                         </span>
                                     </div>
-                                    <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10">
+                                    <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10 hidden md:block">
                                         <h3 class="text-xs md:text-sm font-bold text-white line-clamp-2 drop-shadow-sm">{{ event.title }}</h3>
                                     </div>
                                 </div>
-                                <div class="px-4 pt-3 pb-4">
-                                    <div class="flex items-center gap-2 text-[13px] text-gray-500">
+                                <div class="flex flex-col flex-1 px-3 pt-2 pb-3 md:px-4 md:pt-3 md:pb-4">
+                                    <h3 class="text-xs font-bold text-gray-900 leading-snug line-clamp-2 block md:hidden mb-1.5">{{ event.title }}</h3>
+                                    <div class="block md:hidden space-y-0.5">
+                                        <div class="text-[11px] text-gray-500">{{ event.start_formatted }}</div>
+                                        <div class="text-[11px] text-gray-400 truncate">{{ event.type === 'physical' ? (event.location_or_link || 'Fizikal') : 'Online' }}</div>
+                                    </div>
+                                    <div class="hidden md:flex items-center gap-2 text-[13px] text-gray-500">
                                         <span>{{ event.start_formatted }}</span>
                                         <span class="text-gray-300">·</span>
                                         <span class="truncate">{{ event.type === 'physical' ? (event.location_or_link || 'Fizikal') : 'Online' }}</span>
@@ -578,15 +583,19 @@ function scrollBooks(direction) {
                         <Link :href="route('articles.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
-                            <Link :href="route('articles.show', item.slug)" class="block">
-                                <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
-                                    <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
+                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="w-[170px] h-[220px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
+                            <Link :href="route('articles.show', item.slug)" class="flex flex-col h-full md:block md:h-auto">
+                                <div class="relative h-[100px] md:aspect-[16/9] w-full overflow-hidden bg-gray-100 shrink-0">
+                                    <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
                                 </div>
-                                <div class="px-4 pt-3 pb-4">
-                                    <div v-if="item.organization_name" class="text-[11px] font-semibold uppercase tracking-wider" :class="theme.accentText">{{ item.organization_name }}</div>
-                                    <h4 class="mt-1 line-clamp-2 text-sm font-bold text-gray-900 leading-snug">{{ item.title }}</h4>
-                                    <p v-if="item.excerpt" class="mt-1 text-[13px] text-gray-500 line-clamp-1">{{ item.excerpt }}</p>
+                                <div class="flex flex-col flex-1 px-3 pt-2 pb-3 md:px-4 md:pt-3 md:pb-4">
+                                    <h4 class="text-xs font-bold text-gray-900 leading-snug line-clamp-2 block md:hidden mb-1">{{ item.title }}</h4>
+                                    <p v-if="item.excerpt" class="text-[11px] text-gray-500 line-clamp-1 block md:hidden">{{ item.excerpt }}</p>
+                                    <div class="hidden md:block">
+                                        <div v-if="item.organization_name" class="text-[11px] font-semibold uppercase tracking-wider" :class="theme.accentText">{{ item.organization_name }}</div>
+                                        <h4 class="mt-1 line-clamp-2 text-sm font-bold text-gray-900 leading-snug">{{ item.title }}</h4>
+                                        <p v-if="item.excerpt" class="mt-1 text-[13px] text-gray-500 line-clamp-1">{{ item.excerpt }}</p>
+                                    </div>
                                 </div>
                             </Link>
                         </article>
