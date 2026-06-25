@@ -110,7 +110,7 @@ function onEditImageChange(e, item) {
 }
 
 function submitEdit(item) {
-    getEditForm(item).put(route('superadmin.infaq.update', item.id), {
+    getEditForm(item).put(route('superadmin.infaq.update', item.slug), {
         preserveScroll: true,
         onSuccess: () => { editingId.value = null; },
     });
@@ -124,7 +124,7 @@ function getDeleteForm(id) {
 }
 function deleteItem(item) {
     if (!confirm(`Padam infaq "${item.title}"?`)) return;
-    getDeleteForm(item.id).delete(route('superadmin.infaq.destroy', item.id), {
+    getDeleteForm(item.id).delete(route('superadmin.infaq.destroy', item.slug), {
         preserveScroll: true,
     });
 }
