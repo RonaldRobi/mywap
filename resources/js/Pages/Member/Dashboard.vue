@@ -144,7 +144,7 @@ function scrollBooks(direction) {
     <Head title="Member Dashboard" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden px-4 md:px-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right))">
-            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7">
+            <div class="max-w-md md:max-w-none mx-auto space-y-6 md:space-y-8">
 
                 <!-- Flash Messages -->
                 <template v-if="$page.props.flash?.success || $page.props.flash?.error">
@@ -317,27 +317,27 @@ function scrollBooks(direction) {
                         </div>
                         <Link :href="route('member.videos.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
                     </div>
-                    <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                    <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <button
                             v-for="item in videos"
                             :key="item.id"
                             @click="playVideo(item)"
-                            class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0 text-left transition hover:shadow-md"
+                            class="min-w-[220px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0 text-left transition hover:shadow-md"
                         >
                             <div class="relative aspect-video overflow-hidden bg-gray-100">
                                 <img :src="item.thumbnail_url" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/5"></div>
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-lg">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-4 w-4 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-xl backdrop-blur-sm transition-transform active:scale-95">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="ml-0.5 h-5 w-5 text-gray-900" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                     </div>
                                 </div>
-                                <div class="absolute top-2 left-2 md:top-3 md:left-3 z-10">
-                                    <span class="inline-flex rounded-full px-1.5 py-0.5 md:px-2 md:py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/90 backdrop-blur-md text-gray-800 border border-white/20 shadow-sm">Video</span>
+                                <div class="absolute top-3 left-3 z-10">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-gray-800 border border-white/20 shadow-sm">Video</span>
                                 </div>
-                                <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10">
-                                    <h3 class="text-xs md:text-sm font-bold text-white line-clamp-2 drop-shadow-sm">{{ item.title }}</h3>
-                                </div>
+                            </div>
+                            <div class="px-4 pt-3 pb-4">
+                                <h3 class="text-sm font-bold text-gray-900 line-clamp-1">{{ item.title }}</h3>
                             </div>
                         </button>
                     </div>
@@ -349,8 +349,8 @@ function scrollBooks(direction) {
                         <h2 class="text-sm font-bold text-gray-900">Kempen Infaq</h2>
                         <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
-                    <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                    <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
                             <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
                                 <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
                                 <div v-else class="absolute inset-0" :style="{ background: `linear-gradient(to right, ${lightGrad.from}, ${lightGrad.to})` }"></div>
@@ -386,8 +386,8 @@ function scrollBooks(direction) {
                         <h2 class="text-sm font-bold text-gray-900">Program</h2>
                         <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
-                    <div v-if="upcomingEvents.length" class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                    <div v-if="upcomingEvents.length" class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('events.index')" class="block">
                                 <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
                                     <img v-if="event.featured_image_url && !event.featured_image_url.includes('placehold.co')" :src="event.featured_image_url" :alt="event.title" class="h-full w-full object-cover">
@@ -559,8 +559,8 @@ function scrollBooks(direction) {
                         <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
                         <Link :href="route('news.index')" class="text-xs font-semibold" :class="theme.accentText">Buka Feed</Link>
                     </div>
-                    <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                    <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('news.show', item.id)" class="block">
                                 <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
                                     <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
@@ -585,8 +585,8 @@ function scrollBooks(direction) {
                         <h2 class="text-sm font-bold text-gray-900">Artikel</h2>
                         <Link :href="route('articles.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
                     </div>
-                    <div class="flex gap-2 md:gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="min-w-[165px] md:min-w-0 bg-white rounded-xl md:rounded-2xl shadow-sm overflow-hidden shrink-0">
+                    <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
+                        <article v-for="item in latestArticles" :key="`article-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
                             <Link :href="route('articles.show', item.slug)" class="block">
                                 <div class="relative aspect-[16/9] overflow-hidden bg-gray-100">
                                     <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
