@@ -131,8 +131,8 @@ function scrollBooks(direction) {
 <template>
     <Head title="Member Dashboard" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
-        <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden">
-            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7 px-4 md:px-6">
+        <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden px-4 md:px-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right))">
+            <div class="max-w-md md:max-w-none mx-auto space-y-5 md:space-y-7">
 
                 <!-- Flash Messages -->
                 <template v-if="$page.props.flash?.success || $page.props.flash?.error">

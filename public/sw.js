@@ -1,4 +1,4 @@
-// MyMarhalah Service Worker — Basic caching strategy
+// MyWAP Service Worker — Basic caching strategy
 const CACHE_NAME = 'mymarhalah-v1';
 const PRECACHE_URLS = [
     '/offline.html',

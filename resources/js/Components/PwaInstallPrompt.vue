@@ -78,14 +78,14 @@ onUnmounted(() => {
                 <div class="shrink-0">
                     <img 
                         src="/pwa-icon-192.png" 
-                        alt="MyMarhalah" 
+                        alt="MyWAP" 
                         class="h-10 w-10 rounded-xl shadow-md ring-1 ring-white/10"
                     >
                 </div>
                 
                 <!-- Text -->
                 <div class="flex-1 min-w-0">
-                    <p class="text-[13px] font-bold text-white leading-tight">Pasang MyMarhalah</p>
+                    <p class="text-[13px] font-bold text-white leading-tight">Pasang MyWAP</p>
                     <p class="text-[11px] text-gray-400 leading-snug mt-0.5">Akses pantas dari Skrin Utama</p>
                 </div>
                 

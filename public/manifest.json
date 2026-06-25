@@ -1,6 +1,6 @@
 {
-    "name": "MyMarhalah",
-    "short_name": "MyMarhalah",
+    "name": "MyWAP",
+    "short_name": "MyWAP",
     "description": "Platform Pengurusan Keahlian NGO — PKPIM, ABIM & WADAH",
     "start_url": "/dashboard",
     "scope": "/",
