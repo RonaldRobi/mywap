@@ -27,6 +27,7 @@ use App\Http\Controllers\SuperadminSystemSettingController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PostcodeController;
 use App\Http\Controllers\PollController;
+use App\Http\Controllers\DeployController;
 use App\Http\Controllers\UsrahController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,8 @@ Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'art
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
 Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
+
+Route::post('/__deploy/{token}', DeployController::class)->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
 Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');
