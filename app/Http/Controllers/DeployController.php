@@ -9,7 +9,8 @@ class DeployController extends Controller
 {
     public function __invoke(Request $request, string $token)
     {
-        if ($token !== env('DEPLOY_TOKEN')) {
+        $deployToken = config('app.deploy_token');
+        if (!$deployToken || $token !== $deployToken) {
             Log::channel('deploy')->warning('Invalid deploy token attempt', [
                 'ip' => $request->ip(),
             ]);
@@ -20,7 +21,7 @@ class DeployController extends Controller
         $signature = $request->header('X-Hub-Signature-256');
 
         if ($signature) {
-            $expected = 'sha256=' . hash_hmac('sha256', $payload, env('DEPLOY_TOKEN'));
+            $expected = 'sha256=' . hash_hmac('sha256', $payload, $deployToken);
             if (!hash_equals($expected, $signature)) {
                 Log::channel('deploy')->warning('Invalid webhook signature', [
                     'ip' => $request->ip(),
