@@ -220,7 +220,7 @@ class User extends Authenticatable
         $mm = (int) substr($digits, 2, 2);
         $dd = (int) substr($digits, 4, 2);
 
-        if ($mm < 1 || $mm > 12 || $dd < 1 || $dd > 31) return null;
+        if (! checkdate($mm, $dd, 2000)) return null;
 
         $yyyy = $yy > 25 ? 1900 + $yy : 2000 + $yy;
 
@@ -236,7 +236,7 @@ class User extends Authenticatable
         if (! $ic) return null;
 
         $digits = preg_replace('/[^0-9]/', '', $ic);
-        if (strlen($digits) < 12) return null;
+        if (strlen($digits) < 11) return null;
 
         $lastDigit = (int) substr($digits, -1);
 
