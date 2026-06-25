@@ -110,10 +110,13 @@ function onEditImageChange(e, item) {
 }
 
 function submitEdit(item) {
-    getEditForm(item).put(route('superadmin.infaq.update', item.slug), {
-        preserveScroll: true,
-        onSuccess: () => { editingId.value = null; },
-    });
+    getEditForm(item)
+        .transform((data) => ({ ...data, _method: 'put' }))
+        .post(route('superadmin.infaq.update', item.slug), {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => { editingId.value = null; },
+        });
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────

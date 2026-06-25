@@ -66,7 +66,13 @@ class Infaq extends Model
 
         static::creating(function ($infaq) {
             if (empty($infaq->slug)) {
-                $infaq->slug = \Illuminate\Support\Str::slug($infaq->title);
+                $slug = \Illuminate\Support\Str::slug($infaq->title);
+                $original = $slug;
+                $counter = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $original . '-' . $counter++;
+                }
+                $infaq->slug = $slug;
             }
         });
     }
