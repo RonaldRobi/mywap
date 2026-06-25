@@ -150,6 +150,7 @@ function removePost(article) {
                                 <div class="md:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
                                     <QuillEditor v-model:content="editForm.content" contentType="html" toolbar="full" class="min-h-[300px]" />
                                 </div>
+                                <img v-if="article.cover_image_path && !editForm.cover_image" :src="article.cover_image_path" class="md:col-span-2 h-32 w-full rounded-lg border border-gray-200 object-cover">
                                 <input type="file" accept="image/*" class="md:col-span-2 rounded-lg border border-gray-200 px-3 py-2 text-xs" @change="editForm.cover_image = $event.target.files?.[0] ?? null">
                                 <label class="md:col-span-2 flex items-center gap-2 text-xs text-gray-600"><input v-model="editForm.is_published" type="checkbox" class="rounded border-gray-300"> Terbitkan</label>
                                 <div class="md:col-span-2 flex items-center gap-2">

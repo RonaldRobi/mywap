@@ -29,6 +29,7 @@ use App\Http\Controllers\PostcodeController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\UsrahController;
+use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
@@ -121,6 +122,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/articles', [ArticleController::class, 'store'])->name('admin.articles.store');
         Route::put('/admin/articles/{article}', [ArticleController::class, 'update'])->name('admin.articles.update');
         Route::delete('/admin/articles/{article}', [ArticleController::class, 'destroy'])->name('admin.articles.destroy');
+
+        // Video management (Admin + Superadmin)
+        Route::get('/admin/videos/manage', [VideoController::class, 'manage'])->name('admin.videos.manage');
+        Route::post('/admin/videos', [VideoController::class, 'store'])->name('admin.videos.store');
+        Route::put('/admin/videos/{video}', [VideoController::class, 'update'])->name('admin.videos.update');
+        Route::delete('/admin/videos/{video}', [VideoController::class, 'destroy'])->name('admin.videos.destroy');
     });
 
     // Superadmin-only: fee management + all transactions
@@ -181,6 +188,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/member/facilities/{facility}/book', [FacilityBookingController::class, 'store'])->name('member.facilities.book');
 
         // Polls / Surveys
+        Route::get('/member/videos', [VideoController::class, 'memberIndex'])->name('member.videos.index');
         Route::get('/polls', [PollController::class, 'index'])->name('member.polls.index');
         Route::get('/polls/{poll}', [PollController::class, 'show'])->name('member.polls.show');
         Route::post('/polls/{poll}/respond', [PollController::class, 'respond'])->name('member.polls.respond');

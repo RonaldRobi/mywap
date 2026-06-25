@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\LoadUsrahForUser;
 use App\Models\AppSetting;
+use App\Models\Article;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
 use App\Models\Event;
@@ -14,6 +15,7 @@ use App\Models\NewsPost;
 use App\Models\Poll;
 use App\Models\PollResponse;
 use App\Models\User;
+use App\Models\Video;
 use App\Services\FeeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -93,6 +95,22 @@ class MemberDashboardController extends Controller
                 'organization_id' => $banner->organization_id,
             ]);
 
+        $videos = Video::query()
+            ->where(function ($query) use ($user) {
+                $query->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(fn (Video $video) => [
+                'id' => $video->id,
+                'title' => $video->title,
+                'youtube_id' => $video->youtube_id,
+                'thumbnail_url' => $video->thumbnail_url,
+                'embed_url' => $video->embed_url,
+            ]);
+
         $upcomingEvents = Event::with('organization')
             ->where('start_time', '>=', now())
             ->where(function ($q) use ($user) {
@@ -146,6 +164,28 @@ class MemberDashboardController extends Controller
                 'organization_name' => $post->organization?->name ?? 'Semua Organisasi',
                 'category_name' => $post->category?->name ?? 'Umum',
                 'published_at' => $post->published_at?->toDateString(),
+            ]);
+
+        $latestArticles = Article::query()
+            ->with(['author:id,name', 'organization:id,name'])
+            ->where('is_published', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->latest('published_at')
+            ->latest('id')
+            ->take(8)
+            ->get()
+            ->map(fn (Article $article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'slug' => $article->slug,
+                'excerpt' => $article->excerpt,
+                'cover_image_path' => $article->cover_image_path,
+                'author_name' => $article->author?->name ?? 'Admin',
+                'organization_name' => $article->organization?->name ?? 'Semua Organisasi',
+                'published_at' => $article->published_at?->toDateString(),
             ]);
 
         // Infaq / donation campaigns (global or org-specific, active, max 6)
@@ -266,8 +306,10 @@ class MemberDashboardController extends Controller
             'campaigns' => $campaigns,
             'libraryBooks' => $libraryBooks,
             'banners' => $banners,
+            'videos' => $videos,
             'infaqItems' => $infaqItems,
             'latestNews' => $latestNews,
+            'latestArticles' => $latestArticles,
             'activePolls' => $activePolls,
         ]);
     }
