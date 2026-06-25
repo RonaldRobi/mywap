@@ -36,7 +36,7 @@ class DeployController extends Controller
         $log = [];
 
         $commands = [
-            "cd $basePath && rm -rf public/build/ && git pull origin main 2>&1",
+            "cd $basePath && git fetch origin main && git reset --hard origin/main 2>&1",
             "cd $basePath && php artisan migrate --force 2>&1",
             "cd $basePath && php artisan optimize 2>&1",
         ];
