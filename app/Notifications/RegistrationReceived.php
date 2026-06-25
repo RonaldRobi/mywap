@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notification;
 
 class RegistrationReceived extends Notification implements ShouldQueue
 {
+    public $connection = 'database';
+
     public function __construct(
         public $user,
     ) {}

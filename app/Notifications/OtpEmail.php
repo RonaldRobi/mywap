@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notification;
 
 class OtpEmail extends Notification implements ShouldQueue
 {
+    public $connection = 'database';
+
     public function __construct(
         public string $code,
         public string $purpose = 'login',
