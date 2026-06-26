@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\AnnouncementImage;
+use App\Jobs\SendAnnouncementJob;
+use App\Models\BranchChangeRequest;
+use App\Models\BranchTransitionHistory;
 use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\User;
@@ -235,7 +239,28 @@ class InformationHubAdminController extends Controller
             'is_public_in_directory' => ['nullable', 'boolean'],
         ]);
 
+        $originalBranchId = $user->getOriginal('branch_id');
         $user->update($validated);
+
+        // If admin changed branch directly → bypass: auto-reject pending + record audit
+        if (array_key_exists('branch_id', $validated) && $validated['branch_id'] != $originalBranchId) {
+            BranchChangeRequest::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'rejected',
+                    'reviewed_by' => $authUser->id,
+                    'reviewed_at' => now(),
+                    'rejection_reason' => 'Ditukar terus oleh admin.',
+                ]);
+
+            BranchTransitionHistory::create([
+                'user_id' => $user->id,
+                'from_branch_id' => $originalBranchId,
+                'to_branch_id' => $validated['branch_id'] ?: null,
+                'changed_by' => $authUser->id,
+                'change_type' => 'admin_direct',
+            ]);
+        }
 
         return back()->with('success', 'Profil ahli berjaya dikemas kini.');
     }
@@ -250,17 +275,48 @@ class InformationHubAdminController extends Controller
             'content' => ['required', 'string'],
             'is_pinned' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
+            'target_criteria' => ['nullable', 'in:all,unpaid_fees,specific_usrah'],
+            'usrah_group_id' => ['nullable', 'integer', 'exists:usrah_groups,id'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'gallery_images' => ['nullable', 'array'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
         ]);
+
+        if (($data['target_criteria'] ?? 'all') === 'specific_usrah' && empty($data['usrah_group_id'])) {
+            return back()->withErrors(['usrah_group_id' => 'Sila pilih kumpulan usrah sasaran.'])->withInput();
+        }
 
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
 
-        Announcement::create([
+        $coverPath = $request->hasFile('cover_image')
+            ? '/storage/' . ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/')
+            : null;
+
+        $announcement = Announcement::create([
             'organization_id' => $organizationId,
+            'author_id' => $user->id,
             'title' => $data['title'],
             'content' => $data['content'],
             'is_pinned' => (bool) ($data['is_pinned'] ?? false),
             'published_at' => $data['published_at'] ?? now(),
+            'cover_image_path' => $coverPath,
+            'target_criteria' => $data['target_criteria'] ?? 'all',
+            'usrah_group_id' => ($data['target_criteria'] ?? 'all') === 'specific_usrah'
+                ? $data['usrah_group_id']
+                : null,
         ]);
+
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $order => $image) {
+                $path = $image->store('announcements/gallery', 'public');
+                $announcement->images()->create([
+                    'image_path' => '/storage/' . ltrim($path, '/'),
+                    'display_order' => $order,
+                ]);
+            }
+        }
+
+        SendAnnouncementJob::dispatch($announcement->id);
 
         return back()->with('success', 'Pengumuman berjaya diterbitkan.');
     }
@@ -285,14 +341,69 @@ class InformationHubAdminController extends Controller
             'content' => ['required', 'string'],
             'is_pinned' => ['nullable', 'boolean'],
             'published_at' => ['nullable', 'date'],
+            'target_criteria' => ['nullable', 'in:all,unpaid_fees,specific_usrah'],
+            'usrah_group_id' => ['nullable', 'integer', 'exists:usrah_groups,id'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'remove_cover_image' => ['nullable', 'boolean'],
+            'gallery_images' => ['nullable', 'array'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'remove_image_ids' => ['nullable', 'array'],
+            'remove_image_ids.*' => ['integer', 'exists:announcement_images,id'],
         ]);
+
+        $coverPath = $announcement->cover_image_path;
+
+        if ($request->hasFile('cover_image')) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url($announcement->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+            $coverPath = '/storage/' . ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/');
+        } elseif ($request->boolean('remove_cover_image')) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url($announcement->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+            $coverPath = null;
+        }
 
         $announcement->update([
             'title' => $data['title'],
             'content' => $data['content'],
             'is_pinned' => (bool) ($data['is_pinned'] ?? false),
             'published_at' => $data['published_at'] ?? $announcement->published_at,
+            'cover_image_path' => $coverPath,
+            'target_criteria' => $data['target_criteria'] ?? $announcement->target_criteria ?? 'all',
+            'usrah_group_id' => ($data['target_criteria'] ?? $announcement->target_criteria ?? 'all') === 'specific_usrah'
+                ? ($data['usrah_group_id'] ?? $announcement->usrah_group_id)
+                : null,
         ]);
+
+        // Remove gallery images
+        if ($removeIds = $request->input('remove_image_ids')) {
+            $images = AnnouncementImage::whereIn('id', $removeIds)
+                ->where('announcement_id', $announcement->id)
+                ->get();
+            foreach ($images as $img) {
+                $path = ltrim(str_replace('/storage/', '', parse_url($img->image_path ?? '', PHP_URL_PATH) ?? ''), '/');
+                if ($path !== '' && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+                $img->delete();
+            }
+        }
+
+        // Add new gallery images
+        if ($request->hasFile('gallery_images')) {
+            $maxOrder = $announcement->images()->max('display_order') ?? -1;
+            foreach ($request->file('gallery_images') as $order => $image) {
+                $path = $image->store('announcements/gallery', 'public');
+                $announcement->images()->create([
+                    'image_path' => '/storage/' . ltrim($path, '/'),
+                    'display_order' => $maxOrder + 1 + $order,
+                ]);
+            }
+        }
 
         return back()->with('success', 'Pengumuman berjaya dikemas kini.');
     }
@@ -300,6 +411,18 @@ class InformationHubAdminController extends Controller
     public function destroyAnnouncement(Request $request, Announcement $announcement): RedirectResponse
     {
         $this->authorizeOrganizationAccess($request->user(), $announcement->organization_id);
+
+        $coverPath = ltrim(str_replace('/storage/', '', parse_url($announcement->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
+        if ($coverPath !== '' && Storage::disk('public')->exists($coverPath)) {
+            Storage::disk('public')->delete($coverPath);
+        }
+
+        foreach ($announcement->images as $img) {
+            $path = ltrim(str_replace('/storage/', '', parse_url($img->image_path ?? '', PHP_URL_PATH) ?? ''), '/');
+            if ($path !== '' && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
 
         $announcement->delete();
 

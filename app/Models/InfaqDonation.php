@@ -21,10 +21,18 @@ class InfaqDonation extends Model
         'prayer_message',
         'is_anonymous',
         'wants_updates',
+        'is_recurring',
+        'frequency',
+        'mandate_id',
+        'mandate_ref',
+        'next_billing_date',
+        'recurring_status',
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'           => 'float',
+        'is_recurring'     => 'boolean',
+        'next_billing_date'=> 'date',
     ];
 
     public function infaq(): BelongsTo

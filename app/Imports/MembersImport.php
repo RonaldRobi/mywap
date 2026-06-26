@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use App\Models\Branch;
+use App\Models\BranchTransitionHistory;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -87,8 +89,20 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
                 $email = strtolower($ic) . '@mywap.my';
             }
 
+            // Branch lookup from Excel column 'cawangan' or 'branch'
+            $branchId = null;
+            $branchName = trim((string) ($row['cawangan'] ?? $row['branch'] ?? ''));
+            if (!empty($branchName)) {
+                $branch = Branch::where('organization_id', $this->organizationId)
+                    ->where('name', $branchName)
+                    ->orWhere('name', 'like', $branchName . '%')
+                    ->first();
+                if ($branch) {
+                    $branchId = $branch->id;
+                }
+            }
+
             // Member number: use provided or auto-generate
-            $memberNo = trim((string) ($row['no_ahli'] ?? ''));
             if (!empty($memberNo)) {
                 $memberNo = $this->ensurePrefix($memberNo);
             }
@@ -114,6 +128,7 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
                     'notes' => trim((string) ($row['catatan'] ?? '')) ?: null,
                     'password' => Hash::make($memberNo ?: 'password123'),
                     'current_organization_id' => $this->organizationId,
+                    'branch_id' => $branchId,
                 ]
             );
 
@@ -127,6 +142,17 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
             // Set original_member_no on first creation
             if (!$user->original_member_no) {
                 $user->update(['original_member_no' => $user->member_no]);
+            }
+
+            // Record branch transition history if branch was set
+            if ($branchId && ($user->wasRecentlyCreated || $user->branch_id != $branchId)) {
+                BranchTransitionHistory::create([
+                    'user_id' => $user->id,
+                    'from_branch_id' => $user->wasRecentlyCreated ? null : $user->getOriginal('branch_id'),
+                    'to_branch_id' => $branchId,
+                    'changed_by' => $user->id,
+                    'change_type' => 'import',
+                ]);
             }
 
             $user->assignRole('Member');

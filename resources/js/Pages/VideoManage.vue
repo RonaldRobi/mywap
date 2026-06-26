@@ -66,7 +66,7 @@ function previewThumbnail(url) {
 <template>
     <Head title="Video Management" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Video Management</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-6">

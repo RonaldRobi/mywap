@@ -6,7 +6,7 @@
         <meta name="theme-color" content="#111827">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-        <meta name="apple-mobile-web-app-title" content="MyWAP">
+        <meta name="apple-mobile-web-app-title" content="{{ $page['props']['brand']['app_name'] ?? config('app.name', 'myWAP') }}">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

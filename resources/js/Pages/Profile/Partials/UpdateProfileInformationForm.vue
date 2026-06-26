@@ -4,7 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -26,11 +26,16 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    pendingBranchRequest: {
+        type: Object,
+        default: null,
+    },
 });
 
 
 const user = usePage().props.auth.user;
 const isSuperadmin = computed(() => (user?.roles ?? []).includes('Superadmin'));
+const photoError = ref('');
 
 function parseDobFromIc(ic) {
     if (!ic) return '';
@@ -43,6 +48,8 @@ function parseDobFromIc(ic) {
     const yyyy = yy > 25 ? 1900 + yy : 2000 + yy;
     return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
 }
+
+const pendingBranchRequest = computed(() => user.pending_branch_request ?? null);
 
 const form = useForm({
     name: user.name,
@@ -98,7 +105,19 @@ watch(() => form.postcode, async (val) => {
 });
 
 function onProfilePhotoSelected(event) {
-    form.profile_photo = event.target.files[0];
+    const file = event.target.files[0];
+    if (!file) return;
+
+    photoError.value = '';
+    form.errors.profile_photo = '';
+
+    if (file.size > 2 * 1024 * 1024) {
+        photoError.value = 'Saiz gambar mesti kurang daripada 2MB.';
+        event.target.value = '';
+        return;
+    }
+
+    form.profile_photo = file;
 }
 
 function submitProfile() {
@@ -300,6 +319,11 @@ function submitProfile() {
                 <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <InputLabel for="branch_id" value="Cawangan" />
+                        <div v-if="pendingBranchRequest" class="mb-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
+                            <p class="text-xs font-medium text-amber-800">
+                                ⏳ Permohonan tukar cawangan ke <strong>{{ pendingBranchRequest.to_branch }}</strong> sedang menunggu kelulusan admin.
+                            </p>
+                        </div>
                         <select
                             id="branch_id"
                             v-model="form.branch_id"
@@ -311,6 +335,7 @@ function submitProfile() {
                             </option>
                         </select>
                         <p v-if="!branches.length" class="mt-1 text-xs text-gray-400">Tiada cawangan tersedia untuk organisasi anda.</p>
+                        <p v-else class="mt-1 text-xs text-gray-400">Tukar cawangan akan dihantar untuk kelulusan admin.</p>
                         <InputError class="mt-2" :message="form.errors.branch_id" />
                     </div>
 
@@ -328,7 +353,8 @@ function submitProfile() {
                 <div>
                     <InputLabel for="profile_photo" value="Foto Profil" />
                     <input id="profile_photo" type="file" accept="image/*" class="mt-1 block w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm" @change="onProfilePhotoSelected" />
-                    <InputError class="mt-2" :message="form.errors.profile_photo" />
+                    <p class="mt-1 text-xs text-gray-400">Maksimum 2MB. Format: JPEG, PNG, GIF, WebP.</p>
+                    <InputError class="mt-2" :message="photoError || form.errors.profile_photo" />
                 </div>
 
                 <label

@@ -58,6 +58,7 @@ const createForm = useForm({
     title:           '',
     description:     '',
     type:            'one_off',
+    allow_recurring: false,
     target_amount:   '',
     is_active:       true,
     display_order:   1,
@@ -93,6 +94,7 @@ function getEditForm(item) {
             title:           item.title,
             description:     item.description ?? '',
             type:            item.type,
+            allow_recurring: item.allow_recurring ?? false,
             target_amount:   item.target_amount ?? '',
             is_active:       item.is_active,
             display_order:   item.display_order,
@@ -147,7 +149,7 @@ function formatMYR(val) {
 
 <template>
     <Head title="Urus Infaq" />
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Urus Infaq</template>
 
         <div class="mx-auto max-w-6xl px-4 py-6 md:px-6">
@@ -216,6 +218,12 @@ function formatMYR(val) {
                                     <option value="one_off">One-Off (Derma Bebas)</option>
                                     <option value="progress">Progress Bar (Ada Sasaran)</option>
                                 </select>
+                            </div>
+
+                            <!-- Allow Recurring -->
+                            <div class="flex items-center gap-2 pt-5">
+                                <input type="checkbox" id="create-recurring" v-model="createForm.allow_recurring" class="rounded accent-emerald-600"/>
+                                <label for="create-recurring" class="text-sm text-gray-700">Benarkan donasi recurring (bulanan)</label>
                             </div>
 
                             <!-- Target Amount (only for progress) -->
@@ -305,6 +313,9 @@ function formatMYR(val) {
                                         <span class="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
                                             {{ item.type === 'one_off' ? 'One-Off' : 'Progress' }}
                                         </span>
+                                        <span v-if="item.allow_recurring" class="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                                            Recurring
+                                        </span>
                                         <span class="inline-flex rounded-full bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-500">
                                             {{ item.organization_name }}
                                         </span>
@@ -378,6 +389,10 @@ function formatMYR(val) {
                                                 <option value="one_off">One-Off</option>
                                                 <option value="progress">Progress Bar</option>
                                             </select>
+                                        </div>
+                                        <div class="flex items-center gap-2 pt-4">
+                                            <input type="checkbox" :id="'edit-recurring-' + item.id" v-model="getEditForm(item).allow_recurring" class="rounded accent-emerald-600"/>
+                                            <label :for="'edit-recurring-' + item.id" class="text-sm text-gray-700">Benarkan donasi recurring</label>
                                         </div>
                                         <div v-if="getEditForm(item).type === 'progress'">
                                             <label class="block text-xs font-semibold text-gray-600 mb-1">Sasaran (RM)</label>

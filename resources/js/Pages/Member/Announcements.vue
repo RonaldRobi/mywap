@@ -14,7 +14,7 @@ defineProps({
 <template>
     <Head title="Pengumuman" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('member.dashboard')" back-label="Kembali ke Papan Pemuka">
         <template #header>Pengumuman</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">

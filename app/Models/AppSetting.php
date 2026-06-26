@@ -18,6 +18,7 @@ class AppSetting extends Model
     }
 
     protected $fillable = [
+        'app_name',
         'system_logo_path',
         'splash_image_path',
         'splash_background_color',
@@ -51,6 +52,7 @@ class AppSetting extends Model
         }
 
         return static::query()->create([
+            'app_name' => 'myWAP',
             'system_logo_path' => null,
             'splash_image_path' => null,
             'splash_background_color' => '#0f172a',

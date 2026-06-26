@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventComment;
 use App\Models\EventRsvp;
 use App\Models\Organization;
 use Illuminate\Http\RedirectResponse;
@@ -201,6 +202,79 @@ class EventController extends Controller
         ]);
     }
 
+    /**
+     * show()
+     *
+     * Display a single event with full details, comments, and related events.
+     */
+    public function show(Request $request, string $slug): Response
+    {
+        $user = $request->user();
+
+        $event = Event::with(['organization', 'rsvps.user'])
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        $eventArr = $this->serializeEvent($event, $user->id);
+
+        // Attendance list for admins
+        if ($user->hasRole(['Superadmin', 'Admin'])) {
+            $eventArr['attendance'] = $event->rsvps
+                ->where('status', 'attended')
+                ->map(function ($rsvp) {
+                    return [
+                        'name' => $rsvp->user?->name ?? 'Ahli Dibuang',
+                        'email' => $rsvp->user?->email ?? '-',
+                        'phone' => $rsvp->user?->phone ?? '-',
+                        'attended_at' => optional($rsvp->attended_at)->format('d/m/Y H:i'),
+                    ];
+                })->values();
+        }
+
+        // Check if user has RSVPed
+        $myRsvp = null;
+        if ($user) {
+            $rsvp = $event->rsvps->firstWhere('user_id', $user->id);
+            $myRsvp = $rsvp?->status;
+        }
+
+        // Comments
+        $comments = EventComment::with('user')
+            ->where('event_id', $event->id)
+            ->where('is_hidden', false)
+            ->latest()
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Ahli',
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                ];
+            });
+
+        // Related events (same organization, upcoming, exclude current)
+        $relatedEvents = Event::with('organization')
+            ->where('start_time', '>=', now())
+            ->where('id', '!=', $event->id)
+            ->where(function ($q) use ($event) {
+                if ($event->organization_id) {
+                    $q->where('organization_id', $event->organization_id)
+                      ->orWhereNull('organization_id');
+                }
+            })
+            ->orderBy('start_time')
+            ->take(3)
+            ->get()
+            ->map(fn ($e) => $this->serializeEvent($e, $user?->id));
+
+        return Inertia::render('Events/Show', [
+            'event' => $eventArr,
+            'comments' => $comments,
+            'relatedEvents' => $relatedEvents,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
@@ -265,6 +339,26 @@ class EventController extends Controller
         );
 
         return back()->with('success', 'RSVP berjaya dikemas kini.');
+    }
+
+    /**
+     * storeComment()
+     */
+    public function storeComment(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'content' => ['required', 'string', 'max:2000'],
+            'anonymous_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        EventComment::create([
+            'event_id' => $event->id,
+            'user_id' => $request->user()?->id,
+            'anonymous_name' => $data['anonymous_name'] ?? null,
+            'content' => $data['content'],
+        ]);
+
+        return back()->with('success', 'Komen berjaya dihantar.');
     }
 
     // ─── Admin Facing ─────────────────────────────────────────────────────────

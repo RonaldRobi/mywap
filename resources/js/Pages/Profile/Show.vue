@@ -73,7 +73,7 @@ const initials = computed(() =>
 <template>
     <Head title="Profil Saya" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('dashboard')" back-label="Kembali ke Papan Pemuka">
         <template #header>Profil &amp; Perjalanan Keahlian</template>
 
         <div class="max-w-2xl mx-auto px-4 pb-10 md:px-6">

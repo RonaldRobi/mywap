@@ -37,7 +37,7 @@ function destroy(pos) {
 
 <template>
     <Head title="Jawatan Organisasi" />
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Jawatan Organisasi</template>
         <div class="mx-auto max-w-4xl px-4 py-6">
             <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">

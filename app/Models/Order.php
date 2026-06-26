@@ -13,8 +13,14 @@ class Order extends Model
         'user_id',
         'organisasi_id',
         'total',
+        'postage_cost',
         'status',
         'tracking_no',
+        'shipping_address',
+        'shipping_postcode',
+        'shipping_phone',
+        'shipping_name',
+        'courier',
     ];
 
     public function user()
@@ -30,5 +36,10 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'payable_id')->where('payable_type', 'order');
     }
 }

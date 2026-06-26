@@ -26,7 +26,7 @@ function save(org) {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <Head title="Pengurusan Yuran" />
 
         <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">

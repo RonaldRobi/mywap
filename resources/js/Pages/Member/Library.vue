@@ -43,7 +43,7 @@ const filteredItems = computed(() => {
 <template>
     <Head title="Pustaka PDF Digital" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('member.dashboard')" back-label="Kembali ke Papan Pemuka">
         <template #header>Pustaka PDF Digital</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">

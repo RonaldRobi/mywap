@@ -1,6 +1,5 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head } from '@inertiajs/vue3';
@@ -24,13 +23,17 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    pendingBranchRequest: {
+        type: Object,
+        default: null,
+    },
 });
 </script>
 
 <template>
     <Head title="Profile" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('dashboard')" back-label="Kembali ke Papan Pemuka">
         <template #header>Edit Profile</template>
 
         <div class="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-6">
@@ -42,6 +45,7 @@ defineProps({
                         :branches="branches"
                         :org-positions="orgPositions"
                         :can-edit-ic-number="canEditIcNumber"
+                        :pending-branch-request="pendingBranchRequest"
                     />
                 </section>
 
@@ -49,9 +53,6 @@ defineProps({
                     <UpdatePasswordForm />
                 </section>
 
-                <section class="rounded-3xl border border-red-100 bg-white p-4 shadow-sm md:p-6">
-                    <DeleteUserForm />
-                </section>
             </div>
         </div>
     </AppLayout>

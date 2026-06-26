@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -9,9 +9,14 @@ const props = defineProps({
     },
 });
 
+const page = usePage();
+const systemLogo = computed(() => page.props.brand?.system_logo_path ?? null);
+
 const form = useForm({
     amount: 50,
     payment_method: 'fpx',
+    is_recurring: false,
+    frequency: 'monthly',
     donor_name: '',
     donor_phone: '',
     donor_email: '',
@@ -35,7 +40,8 @@ function submitDonation() {
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     Kembali
                 </Link>
-                <img src="/storage/logos/organizations/logomywaphorizontal.png" alt="myWAP Logo" class="h-8 w-auto" />
+                <img v-if="systemLogo" :src="systemLogo" alt="Logo" class="h-8 w-auto" />
+                <span v-else class="text-sm font-black text-slate-800">myWAP</span>
             </div>
         </nav>
 
@@ -84,9 +90,30 @@ function submitDonation() {
                     </div>
                 </div>
 
-                <!-- Section 3: Information -->
+                <!-- Section 3: Frequency (recurring) -->
+                <div v-if="infaq.allow_recurring" class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">3. Kekerapan Sumbangan</h2>
+
+                    <div class="space-y-3">
+                        <label class="flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition" :class="{'border-emerald-500 bg-emerald-50/50': !form.is_recurring}">
+                            <input type="radio" :value="false" v-model="form.is_recurring" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                            <div class="ml-3 flex-1">
+                                <span class="font-bold text-slate-700">One-off (Sekali)</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition" :class="{'border-emerald-500 bg-emerald-50/50': form.is_recurring}">
+                            <input type="radio" :value="true" v-model="form.is_recurring" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                            <div class="ml-3 flex-1 flex items-center justify-between">
+                                <span class="font-bold text-slate-700">Bulanan (Auto-debit)</span>
+                                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-[10px] font-black uppercase rounded">Berkala</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 4: Information -->
                 <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                    <h2 class="text-lg font-bold text-slate-800">3. Isikan Maklumat</h2>
+                    <h2 class="text-lg font-bold text-slate-800">{{ infaq.allow_recurring ? '4' : '3' }}. Isikan Maklumat</h2>
                     
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">Nama Penuh Pendaftar</label>

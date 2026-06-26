@@ -74,7 +74,7 @@ function removePost(article) {
 <template>
     <Head title="Manage Artikel" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Manage Artikel</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-6">

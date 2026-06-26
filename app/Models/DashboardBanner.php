@@ -16,6 +16,8 @@ class DashboardBanner extends Model
         'organization_id',
         'title',
         'image_path',
+        'link_url',
+        'link_target',
         'is_active',
         'display_order',
     ];

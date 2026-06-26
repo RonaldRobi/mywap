@@ -39,7 +39,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
-            $user->loadMissing('organization:id,name,slug,color_theme,logo_path', 'roles');
+            $user->loadMissing('organization:id,name,slug,color_theme,logo_path', 'roles', 'branch:id,name');
         }
 
         $appSetting = Cache::rememberForever('app_settings', fn () => Schema::hasTable('app_settings')
@@ -67,7 +67,8 @@ class HandleInertiaRequests extends Middleware
                     'education_level' => $user->education_level,
                     'current_profession' => $user->current_profession,
                     'industry' => $user->industry,
-                    'branch_name' => $user->branch_name,
+                    'branch_name' => $user->branch?->name,
+                    'branch_id' => $user->branch_id,
                     'locality' => $user->locality,
                     'profile_photo_path' => $user->profile_photo_path,
                     'expertise' => $user->expertise,
@@ -102,6 +103,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'brand' => [
+                'app_name' => $appSetting?->app_name ?? config('app.name', 'myWAP'),
                 'system_logo_path' => $this->normalizeStorageUrl($appSetting?->system_logo_path),
                 'splash_image_path' => $this->normalizeStorageUrl($appSetting?->splash_image_path),
                 'splash_background_color' => $appSetting?->splash_background_color ?? '#0f172a',

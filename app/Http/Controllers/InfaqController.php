@@ -39,6 +39,7 @@ class InfaqController extends Controller
                 'description'      => $infaq->description,
                 'image_path'       => $infaq->image_path,
                 'type'             => $infaq->type,
+                'allow_recurring'  => $infaq->allow_recurring,
                 'target_amount'    => $infaq->target_amount,
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
@@ -65,6 +66,7 @@ class InfaqController extends Controller
             'title'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string', 'max:2000'],
             'type'            => ['required', 'in:one_off,progress'],
+            'allow_recurring' => ['nullable', 'boolean'],
             'target_amount'   => ['nullable', 'numeric', 'min:1', 'max:9999999'],
             'is_active'       => ['nullable', 'boolean'],
             'display_order'   => ['nullable', 'integer', 'min:1', 'max:9999'],
@@ -83,6 +85,7 @@ class InfaqController extends Controller
             'description'     => $data['description'] ?? null,
             'image_path'      => $imagePath,
             'type'            => $data['type'],
+            'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
             'target_amount'   => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
             'collected_amount'=> 0,
             'is_active'       => (bool) ($data['is_active'] ?? true),
@@ -101,6 +104,7 @@ class InfaqController extends Controller
             'title'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string', 'max:2000'],
             'type'            => ['required', 'in:one_off,progress'],
+            'allow_recurring' => ['nullable', 'boolean'],
             'target_amount'   => ['nullable', 'numeric', 'min:1', 'max:9999999'],
             'is_active'       => ['nullable', 'boolean'],
             'display_order'   => ['nullable', 'integer', 'min:1', 'max:9999'],
@@ -127,6 +131,7 @@ class InfaqController extends Controller
             'description'     => $data['description'] ?? null,
             'image_path'      => $imagePath,
             'type'            => $data['type'],
+            'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
             'target_amount'   => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
             'is_active'       => (bool) ($data['is_active'] ?? false),
             'display_order'   => (int) ($data['display_order'] ?? 1),
@@ -296,7 +301,8 @@ SVG;
                 'id' => $donation->id,
                 'amount' => (float) $donation->amount,
                 'created_at' => $donation->created_at->diffForHumans(),
-                'donor_name' => $donation->user?->name ?? 'Hamba Allah',
+                'donor_name' => $donation->is_anonymous ? 'Hamba Allah' : ($donation->donor_name ?? $donation->user?->name ?? 'Hamba Allah'),
+                'prayer_message' => $donation->prayer_message,
             ]);
 
         $totalDonors = InfaqDonation::query()
@@ -306,7 +312,7 @@ SVG;
 
         $daysRunning = max(1, (int) abs(now()->diffInDays($infaq->created_at)));
 
-        $infaq->load('organization:id,name');
+        $infaq->load('organization:id,name,slug,logo_path,color_theme');
 
         $related = Infaq::query()
             ->where('is_active', true)
@@ -332,10 +338,14 @@ SVG;
                 'description' => $infaq->description,
                 'image_path' => $infaq->image_path,
                 'type' => $infaq->type,
+                'allow_recurring' => $infaq->allow_recurring,
                 'target_amount' => $infaq->target_amount,
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
                 'organization_name' => $infaq->organization?->name ?? 'Pengurusan myWAP',
+                'organization_slug' => $infaq->organization?->slug,
+                'organization_logo' => $infaq->organization?->logo_path,
+                'organization_color' => $infaq->organization?->color_theme,
                 'total_donors' => $totalDonors,
                 'days_running' => $daysRunning,
                 'public_url' => $infaq->public_url,
@@ -361,6 +371,7 @@ SVG;
                 'id' => $infaq->id,
                 'title' => $infaq->title,
                 'image_path' => $infaq->image_path,
+                'allow_recurring' => $infaq->allow_recurring,
                 'public_url' => $infaq->public_url,
             ]
         ]);
@@ -368,7 +379,9 @@ SVG;
 
     public function donate(Request $request, $year, $month, $day, Infaq $infaq): RedirectResponse
     {
-        $data = $request->validate([
+        $isRecurring = $request->boolean('is_recurring') && $infaq->allow_recurring;
+
+        $rules = [
             'amount'         => ['required', 'numeric', 'min:1', 'max:99999'],
             'donor_name'     => ['required', 'string', 'max:255'],
             'donor_phone'    => ['required', 'string', 'max:50'],
@@ -376,30 +389,59 @@ SVG;
             'prayer_message' => ['nullable', 'string', 'max:400'],
             'is_anonymous'   => ['boolean'],
             'wants_updates'  => ['boolean'],
-        ]);
+        ];
+
+        if ($isRecurring) {
+            $rules['frequency'] = ['required', 'in:monthly,weekly,yearly'];
+        }
+
+        $data = $request->validate($rules);
 
         $user = $request->user();
         $org = $infaq->organization_id ? Organization::find($infaq->organization_id) : null;
         $useBayarCash = $org && $org->hasBayarCashConfig();
 
-        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useBayarCash) {
+        if ($isRecurring && !$useBayarCash) {
+            return back()->with('error', 'Pembayaran recurring memerlukan gateway BayarCash.');
+        }
+
+        $frequencyMap = [
+            'monthly' => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_MONTHLY,
+            'weekly'  => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_WEEKLY,
+            'yearly'  => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_YEARLY,
+        ];
+
+        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useBayarCash, $isRecurring, $frequencyMap) {
             $ref = 'INFQ-' . strtoupper(Str::random(10));
 
+            $nextBilling = null;
+            if ($isRecurring) {
+                $nextBilling = match ($data['frequency']) {
+                    'monthly' => now()->addMonth()->toDateString(),
+                    'weekly'  => now()->addWeek()->toDateString(),
+                    'yearly'  => now()->addYear()->toDateString(),
+                };
+            }
+
             $donation = InfaqDonation::create([
-                'infaq_id'       => $infaq->id,
-                'user_id'        => $user?->id,
-                'amount'         => $data['amount'],
-                'reference'      => $ref,
-                'status'         => $useBayarCash ? 'pending' : 'confirmed',
-                'donor_name'     => $data['donor_name'],
-                'donor_phone'    => $data['donor_phone'],
-                'donor_email'    => $data['donor_email'],
-                'prayer_message' => $data['prayer_message'] ?? null,
-                'is_anonymous'   => $data['is_anonymous'] ?? false,
-                'wants_updates'  => $data['wants_updates'] ?? false,
+                'infaq_id'         => $infaq->id,
+                'user_id'          => $user?->id,
+                'amount'           => $data['amount'],
+                'reference'        => $ref,
+                'status'           => $useBayarCash ? 'pending' : 'confirmed',
+                'donor_name'       => $data['donor_name'],
+                'donor_phone'      => $data['donor_phone'],
+                'donor_email'      => $data['donor_email'],
+                'prayer_message'   => $data['prayer_message'] ?? null,
+                'is_anonymous'     => $data['is_anonymous'] ?? false,
+                'wants_updates'    => $data['wants_updates'] ?? false,
+                'is_recurring'     => $isRecurring,
+                'frequency'        => $isRecurring ? $frequencyMap[$data['frequency']] : null,
+                'next_billing_date'=> $nextBilling,
+                'recurring_status' => $isRecurring ? 'pending' : null,
             ]);
 
-            $paymentRef = 'INFQ-' . strtoupper(Str::random(8));
+            $paymentRef = ($isRecurring ? 'DDR-' : 'INFQ-') . strtoupper(Str::random(8));
 
             $payment = Payment::create([
                 'user_id'         => $user?->id,
@@ -408,7 +450,9 @@ SVG;
                 'amount'          => $data['amount'],
                 'status'          => $useBayarCash ? 'pending' : 'successful',
                 'reference'       => $paymentRef,
-                'description'     => "Donasi: {$infaq->title}",
+                'description'     => $isRecurring
+                    ? "Donasi berkala ({$data['frequency']}): {$infaq->title}"
+                    : "Donasi: {$infaq->title}",
                 'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
                 'organization_id' => $org?->id,
             ]);
@@ -425,13 +469,25 @@ SVG;
                 ->where('payable_id', $donation->id)
                 ->first();
 
-            $url = $this->bayarCashService->createPaymentIntent(
-                $org,
-                $payment,
-                $data['donor_name'],
-                $data['donor_email'],
-                $data['donor_phone'],
-            );
+            if ($isRecurring) {
+                $url = $this->bayarCashService->createDirectDebitEnrollment(
+                    $org,
+                    $donation,
+                    $payment,
+                    $data['donor_name'],
+                    $data['donor_email'],
+                    $data['donor_phone'],
+                    $frequencyMap[$data['frequency']],
+                );
+            } else {
+                $url = $this->bayarCashService->createPaymentIntent(
+                    $org,
+                    $payment,
+                    $data['donor_name'],
+                    $data['donor_email'],
+                    $data['donor_phone'],
+                );
+            }
 
             if ($url) {
                 return redirect()->away($url);

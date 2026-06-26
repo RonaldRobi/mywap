@@ -1,0 +1,167 @@
+<script setup>
+import { Head, Link } from '@inertiajs/vue3';
+</script>
+
+<template>
+    <Head title="Polisi Privasi (PDPA)" />
+
+    <div class="min-h-screen bg-slate-50 font-sans text-slate-900 pb-16 md:pb-0">
+        <nav class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
+            <div class="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
+                <Link href="/" class="flex items-center">
+                    <img src="/storage/logos/organizations/logomywaphorizontal.png" alt="myWAP Logo" class="h-8 w-auto" />
+                </Link>
+                <Link href="/" class="text-sm font-semibold text-slate-600 hover:text-emerald-600 transition">
+                    Kembali ke Halaman Utama
+                </Link>
+            </div>
+        </nav>
+
+        <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+            <article class="rounded-3xl border border-gray-100 bg-white p-8 md:p-12 shadow-sm">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">Polisi Privasi (PDPA)</h1>
+                <p class="text-sm text-slate-500 mb-8">Kemas Kini Terakhir: Jun 2026</p>
+
+                <div class="prose prose-slate max-w-none space-y-6 text-slate-600 leading-relaxed">
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">1. Pengenalan</h2>
+                        <p>
+                            myWAP (MyMarhalah) komited untuk melindungi privasi dan data peribadi anda. Polisi Privasi ini menerangkan cara kami mengumpul, menggunakan, mendedahkan, menyimpan, dan memproses data peribadi anda selaras dengan Akta Perlindungan Data Peribadi 2010 (Akta 709) dan peraturan-peraturan di bawahnya.
+                        </p>
+                        <p>
+                            Dengan mendaftar dan menggunakan sistem myWAP, anda bersetuju dengan pengumpulan dan penggunaan data peribadi anda sebagaimana yang diterangkan dalam polisi ini.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">2. Jenis Data Peribadi yang Dikumpul</h2>
+                        <p>Kami mungkin mengumpul data peribadi berikut daripada anda:</p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li>Nama penuh dan nama samaran</li>
+                            <li>Nombor Kad Pengenalan (MyKad)</li>
+                            <li>Alamat e-mel dan nombor telefon</li>
+                            <li>Alamat tempat tinggal</li>
+                            <li>Maklumat pekerjaan dan pendidikan</li>
+                            <li>Maklumat pembayaran (yuran, infaq, sumbangan)</li>
+                            <li>Maklumat organisasi dan cawangan</li>
+                            <li>Gambar profil dan dokumen pengenalan diri</li>
+                            <li>Log aktiviti sistem dan data penggunaan</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">3. Sumber Pengumpulan Data</h2>
+                        <p>Kami mengumpul data peribadi anda melalui:</p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li>Pendaftaran akaun ahli secara dalam talian</li>
+                            <li>Penyerahan borang keahlian oleh pihak organisasi</li>
+                            <li>Urusan pembayaran dan transaksi kewangan</li>
+                            <li>Komunikasi e-mel dan borang pertanyaan</li>
+                            <li>Penggunaan sistem dan ciri-ciri myWAP</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">4. Tujuan Pemprosesan Data</h2>
+                        <p>Data peribadi anda diproses untuk tujuan-tujuan berikut:</p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li>Pendaftaran dan pengurusan keahlian</li>
+                            <li>Pemprosesan yuran keahlian dan sumbangan (infaq)</li>
+                            <li>Komunikasi organisasi, pengumuman, dan makluman</li>
+                            <li>Pengurusan acara, kehadiran, dan aktiviti</li>
+                            <li>Penyediaan perkhidmatan perpustakaan dan sumber digital</li>
+                            <li>Pemantauan dan pelaporan prestasi organisasi</li>
+                            <li>Pematuhan kehendak undang-undang dan peraturan</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">5. Pendedahan Data kepada Pihak Ketiga</h2>
+                        <p>
+                            Kami mungkin mendedahkan data peribadi anda kepada pihak ketiga yang berikut untuk tujuan yang dinyatakan di atas:
+                        </p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li>Pemproses pembayaran (ToyyibPay, Bayarcash) – untuk pemprosesan transaksi kewangan</li>
+                            <li>Penyedia perkhidmatan e-mel dan pemberitahuan (Resend.com)</li>
+                            <li>Pihak berkuasa penguatkuasaan undang-undang jika dikehendaki oleh undang-undang</li>
+                            <li>Organisasi induk dan gabungan PKPIM, ABIM, dan WADAH untuk tujuan pengurusan keahlian</li>
+                        </ul>
+                        <p class="mt-3">
+                            Kami tidak akan menjual, menyewa, atau memperdagangkan data peribadi anda kepada pihak ketiga untuk tujuan pemasaran tanpa kebenaran anda.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">6. Hak Subjek Data</h2>
+                        <p>Di bawah PDPA, anda mempunyai hak-hak berikut:</p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li><strong>Hak untuk dimaklumkan</strong> – mengenai pengumpulan dan pemprosesan data peribadi anda</li>
+                            <li><strong>Hak akses</strong> – meminta salinan data peribadi yang kami simpan</li>
+                            <li><strong>Hak pembetulan</strong> – membetulkan data peribadi yang tidak tepat atau tidak lengkap</li>
+                            <li><strong>Hak pemadaman</strong> – meminta pemadaman data peribadi anda (tertakluk kepada keperluan undang-undang)</li>
+                            <li><strong>Hak menyekat pemprosesan</strong> – menyekat pemprosesan data anda dalam keadaan tertentu</li>
+                            <li><strong>Hak kebolehpindahan data</strong> – menerima data peribadi anda dalam format yang boleh dibaca mesin</li>
+                        </ul>
+                        <p class="mt-3">
+                            Untuk melaksanakan hak-hak anda, sila hubungi pegawai perlindungan data kami di alamat e-mel yang dinyatakan di bahagian bawah polisi ini.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">7. Tempoh Penyimpanan Data</h2>
+                        <p>
+                            Kami akan menyimpan data peribadi anda selama tempoh yang diperlukan untuk memenuhi tujuan pemprosesan yang dinyatakan dalam polisi ini, atau selama tempoh yang dikehendaki oleh undang-undang yang berkenaan. Setelah tempoh penyimpanan tamat, data peribadi anda akan dimusnahkan atau dijadikan tanpa nama (anonymized).
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">8. Keselamatan Data</h2>
+                        <p>
+                            Kami melaksanakan langkah-langkah keselamatan teknikal dan organisasi yang sesuai untuk melindungi data peribadi anda daripada akses tanpa kebenaran, pendedahan, pengubahsuaian, atau pemusnahan. Langkah-langkah ini termasuk:
+                        </p>
+                        <ul class="list-disc pl-6 space-y-1 mt-2">
+                            <li>Penyulitan data semasa penghantaran (SSL/TLS)</li>
+                            <li>Kawalan akses berasaskan peranan (RBAC)</li>
+                            <li>Firewall dan sistem pengesanan pencerobohan</li>
+                            <li>Audit keselamatan dan semakan berkala</li>
+                            <li>Latihan kesedaran privasi untuk kakitangan</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">9. Penggunaan Kuki</h2>
+                        <p>
+                            Sistem myWAP menggunakan kuki (cookies) sesi untuk memastikan fungsi sistem berjalan dengan lancar. Kuki ini tidak mengandungi maklumat peribadi yang sensitif. Anda boleh memilih untuk mematikan kuki melalui tetapan pelayar web anda, tetapi ini mungkin menjejaskan fungsi sistem.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">10. Pertanyaan & Hubungi Kami</h2>
+                        <p>
+                            Jika anda mempunyai sebarang pertanyaan mengenai Polisi Privasi ini atau ingin melaksanakan hak-hak anda di bawah PDPA, sila hubungi kami:
+                        </p>
+                        <div class="mt-3 bg-slate-50 rounded-xl p-5 border border-slate-200">
+                            <p class="font-semibold text-slate-800">Pegawai Perlindungan Data</p>
+                            <p>E-mel: privacy@mywap.my</p>
+                            <p>Sistem myWAP (MyMarhalah)</p>
+                            <p class="text-xs text-slate-400 mt-2">Respons dalam tempoh 21 hari bekerja</p>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">11. Pindaan Polisi</h2>
+                        <p>
+                            Kami berhak untuk meminda Polisi Privasi ini dari semasa ke semasa. Pemberitahuan mengenai sebarang pindaan akan dimaklumkan melalui laman web dan/atau e-mel. Anda dinasihatkan untuk menyemak polisi ini secara berkala.
+                        </p>
+                    </section>
+
+                </div>
+            </article>
+        </main>
+
+        <footer class="bg-slate-950 py-8 text-center text-sm text-slate-500">
+            <p>&copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.</p>
+        </footer>
+    </div>
+</template>

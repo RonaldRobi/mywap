@@ -1,7 +1,10 @@
 <script setup>
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { computed, ref, onMounted, onUnmounted, Teleport } from 'vue';
+import { computed, ref, onMounted, onUnmounted, Teleport, Transition } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PopupDisplay from '@/Components/PopupDisplay.vue';
+
+const profileMenuOpen = ref(false);
 
 const props = defineProps({
     member: { type: Object, required: true },
@@ -86,21 +89,28 @@ const featuredNews = computed(() => (props.latestNews ?? []).slice(0, 5));
 const firstInfaqUrl = computed(() => featuredInfaq.value[0]?.public_url ?? null);
 
 const activeBannerIndex = ref(0);
+const bannerHovered = ref(false);
 const carouselItems = computed(() => {
     if (props.banners.length) return props.banners;
     return [{ id: 0, title: 'Selamat datang ke myWAP', image_path: null }];
 });
 let bannerTimer;
-onMounted(() => {
+function advanceBanner() {
+    if (carouselItems.value.length > 1) {
+        activeBannerIndex.value = (activeBannerIndex.value + 1) % carouselItems.value.length;
+    }
+}
+function startBannerTimer() {
+    stopBannerTimer();
     bannerTimer = setInterval(() => {
-        if (carouselItems.value.length > 1) {
-            activeBannerIndex.value = (activeBannerIndex.value + 1) % carouselItems.value.length;
-        }
+        if (!bannerHovered.value) advanceBanner();
     }, 5000);
-});
-onUnmounted(() => {
+}
+function stopBannerTimer() {
     if (bannerTimer) clearInterval(bannerTimer);
-});
+}
+onMounted(() => startBannerTimer());
+onUnmounted(() => stopBannerTimer());
 
 function initials(name) {
     return (name || 'U').split(' ').slice(0, 2).map(v => v[0]).join('').toUpperCase();
@@ -142,22 +152,12 @@ function scrollBooks(direction) {
 
 <template>
     <Head title="Member Dashboard" />
+    <PopupDisplay />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
-        <div class="min-h-screen bg-[#F5F7F6] pt-4 pb-6 overflow-x-hidden px-4 md:px-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right))">
-            <div class="max-w-md md:max-w-none mx-auto space-y-6 md:space-y-8">
+        <div class="min-h-screen bg-[#F5F7F6] pb-6 overflow-x-hidden">
 
-                <!-- Flash Messages -->
-                <template v-if="$page.props.flash?.success || $page.props.flash?.error">
-                    <div v-if="$page.props.flash?.success" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
-                        {{ $page.props.flash.success }}
-                    </div>
-                    <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                        {{ $page.props.flash.error }}
-                    </div>
-                </template>
-
-                <!-- ═══ 1. HEADER — compact, native-feel ═══ -->
-                <header class="flex items-center justify-between">
+            <!-- ═══ 1. HEADER — sticky glassmorphism ═══ -->
+            <header class="sticky top-0 z-30 backdrop-blur-md bg-white/70 border-b border-gray-100/80 shadow-sm flex items-center justify-between px-4 md:px-6 py-2.5" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right))">
                     <div class="flex items-center gap-3 min-w-0">
                         <button @click="openDrawer" class="shrink-0 p-1.5 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Menu">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -178,20 +178,103 @@ function scrollBooks(direction) {
                                 {{ notifCount > 9 ? '9+' : notifCount }}
                             </span>
                         </button>
-                        <Link :href="route('profile.show')" class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0" :class="theme.accent">
-                            {{ member.name?.charAt(0)?.toUpperCase() || 'A' }}
-                        </Link>
+                        <div class="relative">
+                            <button
+                                @click="profileMenuOpen = !profileMenuOpen"
+                                class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 transition-colors" :class="theme.accent"
+                            >
+                                {{ member.name?.charAt(0)?.toUpperCase() || 'A' }}
+                            </button>
+                            <transition
+                                enter-active-class="transition ease-out duration-100"
+                                enter-from-class="opacity-0 scale-95"
+                                enter-to-class="opacity-100 scale-100"
+                                leave-active-class="transition ease-in duration-75"
+                                leave-from-class="opacity-100 scale-100"
+                                leave-to-class="opacity-0 scale-95"
+                            >
+                                <div
+                                    v-if="profileMenuOpen"
+                                    v-click-outside="() => profileMenuOpen = false"
+                                    class="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border border-gray-100 py-1 z-50"
+                                >
+                                    <Link
+                                        :href="route('profile.show')"
+                                        class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                                        @click="profileMenuOpen = false"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                        Profil Saya
+                                    </Link>
+                                    <div class="my-1 border-t border-gray-100"></div>
+                                    <Link
+                                        :href="route('logout')"
+                                        method="post"
+                                        as="button"
+                                        class="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                                        @click="profileMenuOpen = false"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Log Keluar
+                                    </Link>
+                                </div>
+                            </transition>
+                        </div>
                     </div>
                 </header>
 
-                <!-- ═══ 2. BANNER CAROUSEL ═══ -->
-                <section class="relative aspect-[21/9] rounded-[28px] overflow-hidden shadow-lg">
-                    <div v-for="(banner, i) in carouselItems" :key="banner.id" v-show="i === activeBannerIndex" class="absolute inset-0">
-                        <img v-if="banner.image_path" :src="banner.image_path" :alt="banner.title" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }">
-                            <span class="text-white font-bold text-lg">Selamat datang ke myWAP</span>
-                        </div>
+            <div class="max-w-md md:max-w-none mx-auto space-y-6 md:space-y-8 px-4 md:px-6 pt-4" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right))">
+
+                <!-- Flash Messages -->
+                <template v-if="$page.props.flash?.success || $page.props.flash?.error">
+                    <div v-if="$page.props.flash?.success" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+                        {{ $page.props.flash.success }}
                     </div>
+                    <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                        {{ $page.props.flash.error }}
+                    </div>
+                </template>
+
+                <!-- ═══ 2. BANNER CAROUSEL ═══ -->
+                <section
+                    class="relative aspect-[21/9] rounded-[28px] overflow-hidden shadow-lg group"
+                    @mouseenter="bannerHovered = true"
+                    @mouseleave="bannerHovered = false"
+                >
+                    <Transition name="banner-fade" mode="out-in">
+                        <div :key="activeBannerIndex" class="absolute inset-0">
+                            <template v-if="carouselItems[activeBannerIndex]">
+                                <a
+                                    v-if="carouselItems[activeBannerIndex].link_url"
+                                    :href="carouselItems[activeBannerIndex].link_url"
+                                    :target="carouselItems[activeBannerIndex].link_target || '_blank'"
+                                    :rel="(carouselItems[activeBannerIndex].link_target || '_blank') === '_blank' ? 'noopener noreferrer' : undefined"
+                                    class="block w-full h-full"
+                                >
+                                    <img v-if="carouselItems[activeBannerIndex].image_path" :src="carouselItems[activeBannerIndex].image_path" :alt="carouselItems[activeBannerIndex].title" class="w-full h-full object-cover" />
+                                    <div v-else class="w-full h-full flex items-center justify-center" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }">
+                                        <span class="text-white font-bold text-lg">{{ carouselItems[activeBannerIndex].title }}</span>
+                                    </div>
+                                    <div class="absolute bottom-14 left-1/2 -translate-x-1/2 z-10">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-white border border-white/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            Buka Link
+                                        </span>
+                                    </div>
+                                </a>
+                                <template v-else>
+                                    <img v-if="carouselItems[activeBannerIndex].image_path" :src="carouselItems[activeBannerIndex].image_path" :alt="carouselItems[activeBannerIndex].title" class="w-full h-full object-cover" />
+                                    <div v-else class="w-full h-full flex items-center justify-center" :style="{ background: `linear-gradient(135deg, ${lightGrad.from}, ${lightGrad.to})` }">
+                                        <span class="text-white font-bold text-lg">{{ carouselItems[activeBannerIndex].title }}</span>
+                                    </div>
+                                </template>
+                            </template>
+                        </div>
+                    </Transition>
                     <div v-if="carouselItems.length > 1" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
                         <button v-for="(_, i) in carouselItems" :key="i" @click="activeBannerIndex = i"
                             class="h-1.5 rounded-full transition-all duration-300"
@@ -346,22 +429,30 @@ function scrollBooks(direction) {
                 <!-- ═══ 6. KEMPEN INFAQ ═══ -->
                 <section v-if="infaqItems.length">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-bold text-gray-900">Kempen Infaq</h2>
-                        <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Kempen Infaq</h2>
+                                <p class="text-[11px] text-gray-500">Salurkan sumbangan anda</p>
+                            </div>
+                        </div>
+                        <Link :href="route('infaq.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
-                            <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                                <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
+                            <Link :href="item.public_url" class="block relative aspect-[4/3] overflow-hidden bg-gray-100 group">
+                                <img v-if="item.image_path" :src="item.image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-105">
                                 <div v-else class="absolute inset-0" :style="{ background: `linear-gradient(to right, ${lightGrad.from}, ${lightGrad.to})` }"></div>
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10">
                                     <span class="inline-flex rounded-full px-1.5 py-0.5 md:px-2 md:py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/20 backdrop-blur-md text-white border border-white/20">
-                                        {{ item.type === 'progress' ? 'Progress' : 'One-Off' }}
+                                        {{ item.type === 'progress' ? 'Kutipan Dana' : 'Derma Bebas' }}
                                     </span>
-                                    <h3 class="text-xs md:text-sm font-bold text-white mt-1 line-clamp-1">{{ item.title }}</h3>
+                                    <h3 class="text-xs md:text-sm font-bold text-white mt-1 line-clamp-1 group-hover:underline">{{ item.title }}</h3>
                                 </div>
-                            </div>
+                            </Link>
                             <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
                                 <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
                                     <span class="font-semibold" :class="theme.accentText">{{ formatCurrency(item.collected_amount) }}</span>
@@ -383,8 +474,16 @@ function scrollBooks(direction) {
                 <!-- ═══ 7. PROGRAM ═══ -->
                 <section>
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-bold text-gray-900">Program</h2>
-                        <Link :href="route('events.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Program</h2>
+                                <p class="text-[11px] text-gray-500">Acara dan aktiviti akan datang</p>
+                            </div>
+                        </div>
+                        <Link :href="route('events.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div v-if="upcomingEvents.length" class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="w-[170px] h-[230px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -553,8 +652,16 @@ function scrollBooks(direction) {
                 <!-- ═══ 11. BERITA ═══ -->
                 <section v-if="latestNews.length">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
-                        <Link :href="route('news.index')" class="text-xs font-semibold" :class="theme.accentText">Buka Feed</Link>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
+                                <p class="text-[11px] text-gray-500">Ikuti perkembangan terkini</p>
+                            </div>
+                        </div>
+                        <Link :href="route('news.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Buka Feed</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -579,8 +686,16 @@ function scrollBooks(direction) {
                 <!-- ═══ 12. ARTIKEL ═══ -->
                 <section v-if="latestArticles?.length" class="mt-5">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-bold text-gray-900">Artikel</h2>
-                        <Link :href="route('articles.index')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Artikel</h2>
+                                <p class="text-[11px] text-gray-500">Ilmu dan informasi bermanfaat</p>
+                            </div>
+                        </div>
+                        <Link :href="route('articles.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in latestArticles" :key="`article-${item.id}`" class="w-[170px] h-[220px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -605,8 +720,16 @@ function scrollBooks(direction) {
                 <!-- ═══ 13. PUSTAKA ═══ -->
                 <section>
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-bold text-gray-900">Pustaka</h2>
-                        <Link :href="route('member.library')" class="text-xs font-semibold" :class="theme.accentText">Lihat Semua</Link>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-gray-900">Pustaka</h2>
+                                <p class="text-[11px] text-gray-500">Koleksi buku dan rujukan</p>
+                            </div>
+                        </div>
+                        <Link :href="route('member.library')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
                     </div>
                     <div v-if="libraryBooks.length" class="flex items-center gap-2">
                         <button @click="scrollBooks('left')" class="hidden md:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-base text-gray-500 transition hover:bg-gray-50">‹</button>
@@ -660,3 +783,14 @@ function scrollBooks(direction) {
         </transition>
     </Teleport>
 </template>
+
+<style scoped>
+.banner-fade-enter-active,
+.banner-fade-leave-active {
+    transition: opacity 0.6s ease;
+}
+.banner-fade-enter-from,
+.banner-fade-leave-to {
+    opacity: 0;
+}
+</style>

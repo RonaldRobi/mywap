@@ -124,4 +124,9 @@ class Event extends Model
                     ->withPivot(['status', 'attended_at'])
                     ->withTimestamps();
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(EventComment::class)->latest();
+    }
 }

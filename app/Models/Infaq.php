@@ -20,6 +20,7 @@ class Infaq extends Model
         'description',
         'image_path',
         'type',
+        'allow_recurring',
         'target_amount',
         'collected_amount',
         'is_active',
@@ -28,6 +29,7 @@ class Infaq extends Model
 
     protected $casts = [
         'is_active'        => 'boolean',
+        'allow_recurring'  => 'boolean',
         'target_amount'    => 'float',
         'collected_amount' => 'float',
         'display_order'    => 'integer',

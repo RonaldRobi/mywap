@@ -5,6 +5,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt.vue';
 import ChatBot from '@/Components/ChatBot.vue';
+import BackButton from '@/Components/BackButton.vue';
 
 // ─── Auth & Theme ────────────────────────────────────────────────────────────
 
@@ -69,6 +70,8 @@ const theme = computed(() =>
 const props = defineProps({
     hideMobileBell: { type: Boolean, default: false },
     hideMobileHeader: { type: Boolean, default: false },
+    backRoute: { type: String, default: null },
+    backLabel: { type: String, default: 'Kembali' },
 });
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -97,6 +100,7 @@ const groupOpenState   = reactive({
 const roles = computed(() => user.value?.roles ?? []);
 const isSuperadmin = computed(() => roles.value.includes('Superadmin'));
 const isAdmin      = computed(() => roles.value.includes('Admin'));
+const isBranchAdmin = computed(() => roles.value.includes('Admin Cawangan'));
 const isMember     = computed(() => roles.value.includes('Member'));
 const notifications = computed(() => page.props.notifications ?? { unread_count: 0, recent: [] });
 
@@ -208,161 +212,103 @@ function isGroupOpen(groupKey) {
 }
 
 const navItems = computed(() => [
+    // ═══════════════════════════════════
+    //  UTAMA
+    // ═══════════════════════════════════
+    { type: 'section', label: 'Utama' },
     {
-        label:  'Dashboard',
+        label:  'Papan Pemuka',
         href:   route('dashboard'),
         active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>`,
     },
     {
         label:  'Program',
         href:   route('events.index'),
         active: route().current('events.*'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>`,
     },
     {
         label:  'Info Terkini',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.news.manage') : route('news.index'),
         active: route().current('news.*') || route().current('admin.news.*'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/>
+                </svg>`,
     },
     {
         label:  'Undian',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.polls.index') : route('member.polls.index'),
         active: route().current('*polls.*'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>`,
     },
     {
         label:  'Artikel',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.manage') : route('articles.index'),
         active: route().current('articles.*') || route().current('admin.articles.*'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
+                </svg>`,
     },
-        ...(isAdmin.value || isSuperadmin.value ? [{
-                label:  'Members',
-                href:   route('admin.hub.manage'),
-                active: route().current('admin.hub.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                             </svg>`,
-        }, {
-                label:  'Video',
-                href:   route('admin.videos.manage'),
-                active: route().current('admin.videos.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                             </svg>`,
-        }] : []),
-        ...(isAdmin.value || isSuperadmin.value ? [{
-                label:  'Yuran Ahli',
-                href:   route('admin.fees.members'),
-                active: route().current('admin.fees.members'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
-        }, {
-                label:  'Kewangan',
-                href:   route('admin.finance.index'),
-                active: route().current('admin.finance.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-        }, {
-                label:  'Cawangan',
-                href:   route('branches.index'),
-                active: route().current('branches.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
-        }, {
-                label:  'Jawatan',
-                href:   route('positions.index'),
-                active: route().current('positions.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
-        }] : []),
-                    ...(isSuperadmin.value ? [{
-                        label:  'Pustaka Manage',
-                        href:   route('admin.library.manage'),
-                        active: route().current('admin.library.manage'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
-                                 </svg>`,
-                    }] : []),
-                    ...(isSuperadmin.value ? [{
-                        label:  'Banner Manage',
-                        href:   route('superadmin.banners.index'),
-                        active: route().current('superadmin.banners.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 3v18m10-18v18"/>
-                                 </svg>`,
-                    }] : []),
-                    ...(isSuperadmin.value ? [{
-                        label:  'Infaq',
-                        href:   route('superadmin.infaq.index'),
-                        active: route().current('superadmin.infaq.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10v10m0-10c1.11 0 2.08.402 2.599 1M12 8c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                 </svg>`,
-                    }] : []),
-                    ...(isSuperadmin.value ? [{
-                        label:  'Organizations',
-                        href:   route('superadmin.organizations.index'),
-                        active: route().current('superadmin.organizations.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
-                                 </svg>`,
-                    }] : []),
-                    ...(isSuperadmin.value ? [{
-                        label:  'myWAP Settings',
-                        href:   route('superadmin.settings.index'),
-                        active: route().current('superadmin.settings.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.36 2.36 1.724 1.724 0 001.065 2.572 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.36 2.36 1.724 1.724 0 00-2.572 1.065 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.36-2.36 1.724 1.724 0 00-1.065-2.572 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.36-2.36 1.724 1.724 0 002.572-1.065z"/>
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                 </svg>`,
-                    }, {
-                        label:  'Template Emel',
-                        href:   route('admin.email-templates.index'),
-                        active: route().current('admin.email-templates.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                 </svg>`,
-                    }, {
-                        label:  'Knowledge Base',
-                        href:   route('admin.knowledge-base.index'),
-                        active: route().current('admin.knowledge-base.*'),
-                        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
-                                 </svg>`,
-                    }] : []),
-        {
-                label:  'Usrah',
-                href:   isMember.value ? route('member.usrah') : route('admin.usrah.index'),
-                active: route().current('member.usrah') || route().current('admin.usrah.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
-                             </svg>`,
-        },
-        {
-                label:  'Directory',
-                href:   route('directory.index'),
-                active: route().current('directory.index'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M12 12a4 4 0 100-8 4 4 0 000 8zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                             </svg>`,
-        },
-        ...(isAdmin.value || isSuperadmin.value ? [{
-                label: 'Broadcast',
-                href: route('admin.broadcasts.index'),
-                active: route().current('admin.broadcasts.*'),
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-1 0v14m-7-7h14"/>
-                             </svg>`,
-        }] : []),
+    {
+        label:  'Usrah',
+        href:   isMember.value ? route('member.usrah') : route('admin.usrah.index'),
+        active: route().current('member.usrah') || route().current('admin.usrah.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                </svg>`,
+    },
+
+    // ═══════════════════════════════════
+    //  PENGURUSAN AHLI  (Admin/Superadmin)
+    // ═══════════════════════════════════
+    ...(isAdmin.value || isSuperadmin.value ? [{ type: 'section', label: 'Pengurusan Ahli' }] : []),
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Ahli',
+        href:   route('admin.hub.manage'),
+        active: route().current('admin.hub.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>`,
+    }, {
+        label:  'Yuran Ahli',
+        href:   route('admin.fees.members'),
+        active: route().current('admin.fees.members'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
+    }, {
+        label:  'Cawangan',
+        href:   route('branches.index'),
+        active: route().current('branches.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
+    }, {
+        label:  'Jawatan',
+        href:   route('positions.index'),
+        active: route().current('positions.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
+    }] : []),
+    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
+        label:  'Tukar Cawangan',
+        href:   route('branch-change-requests.index'),
+        active: route().current('branch-change-requests.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+    }] : []),
+
+    // ═══════════════════════════════════
+    //  KEWANGAN
+    // ═══════════════════════════════════
+    ...((isAdmin.value || isSuperadmin.value) ? [{ type: 'section', label: 'Kewangan' }] : []),
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Kewangan',
+        href:   route('admin.finance.index'),
+        active: route().current('admin.finance.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    }] : []),
     {
         label:  'Yuran & Bayaran',
         href:   isSuperadmin.value
@@ -375,12 +321,118 @@ const navItems = computed(() => [
              || route().current('admin.transactions')
              || route().current('member.financial.overview'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>`,
     },
+    ...(isSuperadmin.value || isMember.value ? [{
+        label:  'Infaq',
+        href:   isSuperadmin.value ? route('superadmin.infaq.index') : route('infaq.index'),
+        active: isSuperadmin.value
+            ? route().current('superadmin.infaq.*')
+            : (route().current('infaq.index') || route().current('infaq.show') || route().current('infaq.donate*') || route().current('infaq.success')),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10v10m0-10c1.11 0 2.08.402 2.599 1M12 8c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>`,
+    }] : []),
+    ...(isMember.value ? [{ type: 'section', label: 'Kewangan' }] : []),
+
+    // ═══════════════════════════════════
+    //  KANDUNGAN & KOMUNIKASI  (Admin/Superadmin)
+    // ═══════════════════════════════════
+    ...(isAdmin.value || isSuperadmin.value ? [{ type: 'section', label: 'Kandungan & Komunikasi' }] : []),
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Video',
+        href:   route('admin.videos.manage'),
+        active: route().current('admin.videos.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>`,
+    }, {
+        label:  'Popup',
+        href:   route('admin.popups.index'),
+        active: route().current('admin.popups.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5m-5-5v12"/>
+                </svg>`,
+    }, {
+        label:  'Direktori',
+        href:   route('directory.index'),
+        active: route().current('directory.index'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M12 12a4 4 0 100-8 4 4 0 000 8zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>`,
+    }, {
+        label: 'Siaran',
+        href: route('admin.broadcasts.index', { tab: 'broadcast' }),
+        active: route().current('admin.broadcasts.*') && (page.url.includes('tab=broadcast') || !page.url.includes('tab=')),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                </svg>`,
+    }, {
+        label: 'Pengumuman',
+        href: route('admin.broadcasts.index', { tab: 'announcement' }),
+        active: route().current('admin.broadcasts.*') && page.url.includes('tab=announcement'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/>
+                </svg>`,
+    }] : []),
+    ...(isSuperadmin.value ? [{
+        label:  'Urus Pustaka',
+        href:   route('admin.library.manage'),
+        active: route().current('admin.library.manage'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
+                </svg>`,
+    }, {
+        label:  'Urus Banner',
+        href:   route('superadmin.banners.index'),
+        active: route().current('superadmin.banners.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 3v18m10-18v18"/>
+                </svg>`,
+    }] : []),
+
+    // ═══════════════════════════════════
+    //  SISTEM  (Superadmin only)
+    // ═══════════════════════════════════
+    ...(isSuperadmin.value ? [{ type: 'section', label: 'Sistem' }] : []),
+    ...(isSuperadmin.value ? [{
+        label:  'Organisasi',
+        href:   route('superadmin.organizations.index'),
+        active: route().current('superadmin.organizations.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
+                </svg>`,
+    }, {
+        label:  'Tetapan myWAP',
+        href:   route('superadmin.settings.index'),
+        active: route().current('superadmin.settings.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.36 2.36 1.724 1.724 0 001.065 2.572 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.36 2.36 1.724 1.724 0 00-2.572 1.065 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.36-2.36 1.724 1.724 0 00-1.065-2.572 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.36-2.36 1.724 1.724 0 002.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>`,
+    }, {
+        label:  'Template Emel',
+        href:   route('admin.email-templates.index'),
+        active: route().current('admin.email-templates.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>`,
+    }, {
+        label:  'Pangkalan Ilmu',
+        href:   route('admin.knowledge-base.index'),
+        active: route().current('admin.knowledge-base.*'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                </svg>`,
+    }] : []),
+
+    // ═══════════════════════════════════
+    //  GROUPS
+    // ═══════════════════════════════════
     ...(ecommerceChildren.value.length ? [{
         type: 'group',
-        label: 'Ecommerce',
+        label: 'E-dagang',
         groupKey: 'ecommerce',
         active: ecommerceActive.value,
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/></svg>`,
@@ -388,7 +440,7 @@ const navItems = computed(() => [
     }] : []),
     ...(adminFacilityChildren.value.length ? [{
         type: 'group',
-        label: 'Facilities',
+        label: 'Kemudahan',
         groupKey: 'adminFacilities',
         active: adminFacilitiesActive.value,
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
@@ -396,22 +448,26 @@ const navItems = computed(() => [
     }] : []),
     ...(memberFacilityChildren.value.length ? [{
         type: 'group',
-        label: 'Facilities',
+        label: 'Kemudahan',
         groupKey: 'facilities',
         active: facilitiesActive.value,
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
         children: memberFacilityChildren.value,
     }] : []),
+
+    // ═══════════════════════════════════
+    //  MEMBER ITEMS
+    // ═══════════════════════════════════
     ...(isMember.value ? [{
-        label: 'Pengumuman',
-        href: route('member.announcements'),
-        active: route().current('member.announcements') || route().current('member.hub'),
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/></svg>`,
-    }, {
         label: 'Pustaka',
         href: route('member.library'),
         active: route().current('member.library'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
+    }, {
+        label: 'Pengumuman',
+        href: route('member.announcements'),
+        active: route().current('member.announcements') || route().current('member.hub'),
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/></svg>`,
     }, {
         label: 'Kad Ahli',
         href: route('member.card'),
@@ -423,21 +479,25 @@ const navItems = computed(() => [
         active: route().current('member.referral'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`,
     }] : []),
+
+    // ═══════════════════════════════════
+    //  ACCOUNT
+    // ═══════════════════════════════════
     {
-        label:  'Profile',
+        label:  'Profil',
         href:   route('profile.edit'),
         active: route().current('profile.edit'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>`,
     },
     {
-        label:  'Journey',
+        label:  'Perjalanan',
         href:   route('profile.show'),
         active: route().current('profile.show'),
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-               </svg>`,
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>`,
     },
 ]);
 
@@ -453,12 +513,15 @@ if (facilitiesActive.value) {
 }
 
 // Bottom nav items (mobile) — keep concise: 4 items max
-const bottomNavItems = computed(() => [
-    { label: 'Home',     href: route('dashboard'),     active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),   icon: navItems.value[0].icon },
-    { label: 'Program',  href: route('events.index'),  active: route().current('events.*'),    icon: navItems.value[1].icon },
-    { label: isMember.value ? 'Pustaka' : 'Usrah', href: isMember.value ? route('member.library') : (isAdmin.value || isSuperadmin.value ? route('admin.usrah.index') : route('member.usrah')), active: isMember.value ? route().current('member.library') : (route().current('member.usrah') || route().current('admin.usrah.*')), icon: isMember.value ? navItems.value.find(i => i.label === 'Pustaka')?.icon : navItems.value.find(i => i.label === 'Usrah')?.icon },
-    { label: isMember.value ? 'Kad' : 'Profile',  href: isMember.value ? route('member.card') : route('profile.edit'),  active: isMember.value ? route().current('member.card') : route().current('profile.edit'), icon: isMember.value ? navItems.value.find(i => i.label === 'Kad Ahli')?.icon : navItems.value.find(i => i.label === 'Profile')?.icon },
-]);
+const bottomNavItems = computed(() => {
+    const find = (label) => navItems.value.find(i => i.type !== 'section' && i.label === label);
+    return [
+        { label: 'Utama',     href: route('dashboard'),     active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),   icon: find('Papan Pemuka')?.icon },
+        { label: 'Program',  href: route('events.index'),  active: route().current('events.*'),    icon: find('Program')?.icon },
+        { label: isMember.value ? 'Pustaka' : 'Usrah', href: isMember.value ? route('member.library') : (isAdmin.value || isSuperadmin.value ? route('admin.usrah.index') : route('member.usrah')), active: isMember.value ? route().current('member.library') : (route().current('member.usrah') || route().current('admin.usrah.*')), icon: isMember.value ? find('Pustaka')?.icon : find('Usrah')?.icon },
+        { label: isMember.value ? 'Kad' : 'Profil',  href: isMember.value ? route('member.card') : route('profile.edit'),  active: isMember.value ? route().current('member.card') : route().current('profile.edit'), icon: isMember.value ? find('Kad Ahli')?.icon : find('Profil')?.icon },
+    ];
+});
 </script>
 
 <template>
@@ -494,9 +557,12 @@ const bottomNavItems = computed(() => [
 
             <!-- Nav Links -->
             <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-                <template v-for="item in navItems" :key="item.label">
+                <template v-for="item in navItems" :key="`${item.type}-${item.label}`">
+                    <div v-if="item.type === 'section'" class="px-3 pt-4 pb-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-400/80">{{ item.label }}</span>
+                    </div>
                     <button
-                        v-if="item.type === 'group'"
+                        v-else-if="item.type === 'group'"
                         type="button"
                         @click="toggleGroup(item.groupKey)"
                         :class="[
@@ -569,7 +635,7 @@ const bottomNavItems = computed(() => [
                 <button
                     @click="sidebarOpen = !sidebarOpen"
                     class="w-full flex items-center justify-center p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-                    :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                    :title="sidebarOpen ? 'Gulung sidebar' : 'Kembangkan sidebar'"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
@@ -591,8 +657,12 @@ const bottomNavItems = computed(() => [
             <header :class="[hideMobileHeader ? 'hidden md:block' : '', 'sticky top-0 z-30 backdrop-blur-md bg-white/70 border-b border-gray-100/80 shadow-sm']">
                 <div class="flex items-center justify-between h-16 px-4 md:px-6">
 
-                    <!-- Left: hamburger (mobile) + page title -->
+                    <!-- Left: back button + hamburger (mobile) + page title -->
                     <div class="flex items-center gap-3 min-w-0">
+                        <!-- Back button -->
+                        <slot name="back">
+                            <BackButton v-if="backRoute" :href="backRoute" :label="backLabel" />
+                        </slot>
                         <!-- Hamburger button — mobile only -->
                         <button
                             @click="mobileMenuOpen = true"
@@ -604,7 +674,7 @@ const bottomNavItems = computed(() => [
                             </svg>
                         </button>
                         <h1 class="text-base font-semibold text-gray-800 truncate">
-                            <slot name="header">Dashboard</slot>
+                            <slot name="header">Papan Pemuka</slot>
                         </h1>
                     </div>
 
@@ -636,8 +706,8 @@ const bottomNavItems = computed(() => [
                                     class="absolute right-0 mt-2 w-80 rounded-2xl border border-white/60 backdrop-blur-md bg-white/90 shadow-lg z-50 overflow-hidden"
                                 >
                                     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                        <p class="text-sm font-bold text-gray-800">Notifications</p>
-                                        <span class="text-xs text-gray-500">{{ notifications.unread_count }} unread</span>
+                                        <p class="text-sm font-bold text-gray-800">Notifikasi</p>
+                                        <span class="text-xs text-gray-500">{{ notifications.unread_count }} belum dibaca</span>
                                     </div>
                                     <div class="max-h-80 overflow-y-auto">
                                         <div
@@ -699,7 +769,7 @@ const bottomNavItems = computed(() => [
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
-                                        My Profile
+                                        Profil Saya
                                     </Link>
                                     <div class="my-1 border-t border-gray-100"></div>
                                     <Link
@@ -712,7 +782,7 @@ const bottomNavItems = computed(() => [
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                         </svg>
-                                        Log Out
+                                        Log Keluar
                                     </Link>
                                 </div>
                             </transition>
@@ -725,6 +795,17 @@ const bottomNavItems = computed(() => [
             <main class="flex-1 pb-20 md:pb-6">
                 <slot />
             </main>
+
+            <!-- ─── FOOTER ──────────────────────────────────────────────────── -->
+            <footer class="hidden md:block border-t border-gray-100 bg-white/50 py-4 px-6">
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <p>&copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.</p>
+                    <div class="flex gap-4">
+                        <Link :href="route('terms')" class="hover:text-emerald-600 transition">Terma & Syarat</Link>
+                        <Link :href="route('privacy')" class="hover:text-emerald-600 transition">Privasi</Link>
+                    </div>
+                </div>
+            </footer>
         </div>
 
         <!-- ══════════════════════════════════════════════════════════════════ -->
@@ -788,9 +869,12 @@ const bottomNavItems = computed(() => [
 
                 <!-- Nav links -->
                 <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-                    <template v-for="item in navItems" :key="item.label">
+                    <template v-for="item in navItems" :key="`${item.type}-${item.label}`">
+                        <div v-if="item.type === 'section'" class="px-3 pt-4 pb-1">
+                            <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-400/80">{{ item.label }}</span>
+                        </div>
                         <button
-                            v-if="item.type === 'group'"
+                            v-else-if="item.type === 'group'"
                             type="button"
                             @click="toggleGroup(item.groupKey)"
                             :class="[
@@ -868,7 +952,7 @@ const bottomNavItems = computed(() => [
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        Log Out
+                        Log Keluar
                     </Link>
                 </div>
             </aside>

@@ -18,6 +18,7 @@ class SuperadminSystemSettingController extends Controller
         $setting = $canManageSystemLogo ? AppSetting::singleton() : null;
 
         return Inertia::render('Superadmin/SystemSettings', [
+            'appName' => $setting?->app_name ?? config('app.name', 'myWAP'),
             'systemLogoPath' => $this->normalizeStorageUrl($setting?->system_logo_path),
             'chatbotLogoPath' => $this->normalizeStorageUrl($setting?->chatbot_logo_path),
             'splashImagePath' => $this->normalizeStorageUrl($setting?->splash_image_path),
@@ -33,6 +34,24 @@ class SuperadminSystemSettingController extends Controller
             'mailFromName' => $setting?->mail_from_name ?? '',
             'canManageSystemLogo' => $canManageSystemLogo,
         ]);
+    }
+
+    public function updateAppName(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'app_name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $setting->update(['app_name' => trim($data['app_name'])]);
+
+        config(['app.name' => trim($data['app_name'])]);
+
+        return back()->with('success', 'Nama aplikasi berjaya dikemas kini.');
     }
 
     public function updateResendKey(Request $request): RedirectResponse

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AppSetting;
+use App\Models\OtpCode;
 use App\Models\User;
 use App\Services\OtpService;
 use Illuminate\Http\JsonResponse;
@@ -76,9 +77,14 @@ class AuthenticatedSessionController extends Controller
         $isAdmin = $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
         $isMember = $user->hasRole('Member');
 
+        $hasRequestedOtp = OtpCode::where('user_id', $user->id)
+            ->where('purpose', 'login')
+            ->exists();
+
         return response()->json([
             'found' => true,
             'is_first_login' => is_null($user->first_login_at),
+            'has_requested_otp' => $hasRequestedOtp,
             'has_email' => ! is_null($user->email),
             'masked_email' => $user->email ? $this->maskEmail($user->email) : null,
             'roles' => $roles,
@@ -145,6 +151,20 @@ class AuthenticatedSessionController extends Controller
             return response()->json(['message' => 'Ahli tidak dijumpai.'], 404);
         }
 
+        if (! is_null($user->first_login_at)) {
+            return response()->json(['message' => 'Akaun ini sudah pun log masuk kali pertama. Sila log masuk menggunakan kata laluan anda.'], 422);
+        }
+
+        $hasPreviousOtp = OtpCode::where('user_id', $user->id)
+            ->where('purpose', 'login')
+            ->exists();
+
+        if ($hasPreviousOtp) {
+            return response()->json([
+                'message' => 'Anda telah pun menghantar permintaan log masuk kali pertama. Sila gunakan pautan \'Lupa Kata Laluan\' jika terlupa kata laluan.',
+            ], 422);
+        }
+
         if (! $user->email) {
             return response()->json(['message' => 'Akaun ini tiada emel berdaftar.'], 422);
         }
@@ -165,6 +185,20 @@ class AuthenticatedSessionController extends Controller
 
         if (! $user) {
             return response()->json(['message' => 'Ahli tidak dijumpai.'], 404);
+        }
+
+        if (! is_null($user->first_login_at)) {
+            return response()->json(['message' => 'Akaun ini sudah pun log masuk kali pertama. Sila log masuk menggunakan kata laluan anda.'], 422);
+        }
+
+        $hasPreviousOtp = OtpCode::where('user_id', $user->id)
+            ->where('purpose', 'login')
+            ->exists();
+
+        if ($hasPreviousOtp) {
+            return response()->json([
+                'message' => 'Anda telah pun menghantar permintaan log masuk kali pertama. Sila gunakan pautan \'Lupa Kata Laluan\' jika terlupa kata laluan.',
+            ], 422);
         }
 
         $newEmail = Str::lower(trim($request->input('email')));

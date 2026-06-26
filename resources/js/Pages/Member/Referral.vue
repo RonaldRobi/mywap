@@ -66,7 +66,7 @@ function formatDate(dateString) {
 <template>
     <Head title="Jemput Ahli Baru" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('member.dashboard')" back-label="Kembali ke Papan Pemuka">
         <template #header>Jemput Ahli Baru</template>
 
         <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">

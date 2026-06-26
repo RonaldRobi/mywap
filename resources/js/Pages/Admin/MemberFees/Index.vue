@@ -340,7 +340,7 @@ function previewStatusClass(s) { return { ready: 'text-green-700 bg-green-50 bor
 
 <template>
     <Head title="Pengurusan Yuran Ahli" />
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Pengurusan Yuran Ahli</template>
         <div class="mx-auto max-w-7xl px-4 py-6">
 

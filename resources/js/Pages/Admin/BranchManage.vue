@@ -110,7 +110,7 @@ const malaysianStates = [
 <template>
     <Head title="Pengurusan Cawangan" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Pengurusan Cawangan</template>
 
         <div class="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">

@@ -15,7 +15,7 @@ function submit() {
 <template>
     <Head title="Tambah Kategori" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('categories.index')" back-label="Kembali ke Kategori">
         <template #header>Tambah Kategori</template>
 
         <div class="mx-auto max-w-2xl px-4 py-4 md:px-6 md:py-6">

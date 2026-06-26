@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\BranchChangeRequest;
 use App\Models\EventRsvp;
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -130,12 +131,21 @@ class ProfileController extends Controller
                 ->get(['id', 'name'])
             : collect();
 
+        // Check for pending branch change request
+        $pendingRequest = BranchChangeRequest::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->with('toBranch:id,name')
+            ->first();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status'          => session('status'),
             'branches'        => $branches,
             'orgPositions'    => $positions,
             'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin']),
+            'pendingBranchRequest' => $pendingRequest ? [
+                'to_branch' => $pendingRequest->toBranch?->name,
+            ] : null,
         ]);
     }
 
@@ -244,6 +254,26 @@ class ProfileController extends Controller
 
         if (! $isSuperadmin) {
             $validated['is_public_in_directory'] = $request->boolean('is_public_in_directory');
+
+            // Branch change → create pending request instead of updating directly
+            $submittedBranchId = !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+            $currentBranchId = $request->user()->branch_id;
+
+            if ($submittedBranchId !== $currentBranchId && $submittedBranchId) {
+                // Cancel any existing pending requests
+                BranchChangeRequest::where('user_id', $request->user()->id)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'cancelled']);
+
+                BranchChangeRequest::create([
+                    'user_id' => $request->user()->id,
+                    'from_branch_id' => $currentBranchId,
+                    'to_branch_id' => $submittedBranchId,
+                    'status' => 'pending',
+                ]);
+
+                unset($validated['branch_id']);
+            }
         }
 
         // Auto-fill DOB + gender from IC
@@ -289,6 +319,14 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        $hasBranchRequest = BranchChangeRequest::where('user_id', $request->user()->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasBranchRequest) {
+            return Redirect::route('profile.edit')->with('success', 'Permohonan pertukaran cawangan telah dihantar untuk kelulusan admin.');
+        }
+
         return Redirect::route('profile.edit');
     }
 
@@ -297,11 +335,15 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if (! $user->hasAnyRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
-
-        $user = $request->user();
 
         Auth::logout();
 

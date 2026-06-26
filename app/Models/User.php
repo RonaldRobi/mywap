@@ -129,6 +129,16 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class, 'branch_id');
     }
 
+    public function branchChangeRequests(): HasMany
+    {
+        return $this->hasMany(BranchChangeRequest::class);
+    }
+
+    public function branchTransitionHistory(): HasMany
+    {
+        return $this->hasMany(BranchTransitionHistory::class)->latest();
+    }
+
     public function referredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referred_by_user_id');

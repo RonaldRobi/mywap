@@ -12,7 +12,7 @@
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:image" content="{{ $metaImage }}">
     <meta property="og:url" content="{{ $metaUrl }}">
-    <meta property="og:site_name" content="myWAP">
+    <meta property="og:site_name" content="{{ $siteName }}">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $metaTitle }}">

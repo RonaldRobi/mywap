@@ -96,7 +96,7 @@ const showUploadForm = ref(false);
 <template>
     <Head title="Pengurusan Pustaka" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Pengurusan Pustaka</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">

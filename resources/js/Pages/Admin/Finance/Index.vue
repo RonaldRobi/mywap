@@ -103,7 +103,7 @@ const sourceColors = {
 
 <template>
     <Head title="Kewangan Organisasi" />
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Kewangan Organisasi</template>
         <div class="mx-auto max-w-7xl px-4 py-6">
 

@@ -45,6 +45,11 @@ class BroadcastController extends Controller
         }
 
         $announcements = $announcementsQuery
+            ->with(['author:id,name', 'images'])
+            ->withCount([
+                'reactions as likes_count' => fn ($q) => $q->where('reaction', 'like'),
+                'reads as reads_count',
+            ])
             ->latest('published_at')
             ->latest('id')
             ->take(50)
@@ -58,6 +63,16 @@ class BroadcastController extends Controller
                 'is_pinned' => (bool)$item->is_pinned,
                 'published_at' => $item->published_at?->toDateTimeString(),
                 'published_human' => $item->published_at?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'cover_image_url' => $item->coverImageUrl(),
+                'author_name' => $item->author?->name,
+                'likes_count' => (int) $item->likes_count,
+                'reads_count' => (int) $item->reads_count,
+                'target_criteria' => $item->target_criteria,
+                'images' => $item->images->map(fn ($img) => [
+                    'id' => $img->id,
+                    'url' => $img->imageUrl(),
+                    'caption' => $img->caption,
+                ]),
             ]);
 
         $organizations = $isSuperadmin

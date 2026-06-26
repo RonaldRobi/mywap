@@ -91,6 +91,8 @@ class MemberDashboardController extends Controller
                 'id' => $banner->id,
                 'title' => $banner->title,
                 'image_path' => $banner->image_path,
+                'link_url' => $banner->link_url,
+                'link_target' => $banner->link_target,
                 'display_order' => $banner->display_order,
                 'organization_id' => $banner->organization_id,
             ]);

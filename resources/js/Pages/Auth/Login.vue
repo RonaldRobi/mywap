@@ -7,7 +7,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Modal from '@/Components/Modal.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 defineProps({
@@ -27,12 +27,27 @@ const form = useForm({
     remember: false,
 });
 
+const otpForm = useForm({
+    ic_number: '',
+    code: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+});
+
 const flow = ref(null);
 const step = ref('role');
 const memberCheckProcessing = ref(false);
 const memberCheckError = ref('');
 const memberOrganization = ref(null);
 const showIcNotFoundModal = ref(false);
+
+const otpProcessing = ref(false);
+const otpError = ref('');
+const otpSent = ref(false);
+const memberHasEmail = ref(false);
+const memberMaskedEmail = ref('');
+const memberHasRequestedOtp = ref(false);
 
 const biometricAlert = ref('');
 
@@ -53,9 +68,24 @@ const currentIdentifierError = computed(() => {
     return '';
 });
 
+const _page = usePage();
+
+function csrfHeaders() {
+    const token = _page.props.csrf_token;
+    return {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': token,
+        'X-XSRF-TOKEN': token,
+    };
+}
+
 const resetFlowErrors = () => {
     form.clearErrors();
+    otpForm.clearErrors();
     memberCheckError.value = '';
+    otpError.value = '';
+    otpSent.value = false;
 };
 
 const goToRoleSelection = () => {
@@ -63,6 +93,7 @@ const goToRoleSelection = () => {
     step.value = 'role';
     memberOrganization.value = null;
     form.reset('email', 'ic_number', 'password', 'remember', 'login_type');
+    otpForm.reset();
     resetFlowErrors();
 };
 
@@ -112,11 +143,97 @@ const checkMember = async () => {
         }
 
         memberOrganization.value = payload.organization;
-        step.value = 'member-password';
+        otpForm.ic_number = form.ic_number;
+
+        if (payload.is_first_login) {
+            memberHasRequestedOtp.value = payload.has_requested_otp;
+            memberHasEmail.value = payload.has_email;
+            memberMaskedEmail.value = payload.masked_email;
+
+            if (payload.has_requested_otp) {
+                step.value = 'member-otp-blocked';
+            } else {
+                step.value = 'member-otp-send';
+            }
+        } else {
+            step.value = 'member-password';
+        }
     } catch {
         memberCheckError.value = 'Ralat rangkaian. Sila cuba sebentar lagi.';
     } finally {
         memberCheckProcessing.value = false;
+    }
+};
+
+const sendOtp = async () => {
+    otpError.value = '';
+    otpProcessing.value = true;
+
+    try {
+        const endpoint = memberHasEmail.value ? 'login.send-otp' : 'login.update-and-send-otp';
+        const body = memberHasEmail.value
+            ? { ic_number: otpForm.ic_number }
+            : { ic_number: otpForm.ic_number, email: otpForm.email };
+
+        if (!memberHasEmail.value && !otpForm.email?.trim()) {
+            otpError.value = 'Sila masukkan alamat emel anda.';
+            otpProcessing.value = false;
+            return;
+        }
+
+        const response = await fetch(route(endpoint), {
+            method: 'POST',
+            headers: csrfHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            otpError.value = data.message || 'Ralat menghantar OTP. Sila cuba sebentar lagi.';
+            return;
+        }
+
+        otpSent.value = true;
+        step.value = 'member-otp-verify';
+    } catch {
+        otpError.value = 'Ralat rangkaian. Sila cuba sebentar lagi.';
+    } finally {
+        otpProcessing.value = false;
+    }
+};
+
+const verifyOtp = async () => {
+    otpForm.clearErrors();
+    otpError.value = '';
+    otpProcessing.value = true;
+
+    try {
+        const response = await fetch(route('login.verify-otp'), {
+            method: 'POST',
+            headers: csrfHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                ic_number: otpForm.ic_number,
+                code: otpForm.code,
+                password: otpForm.password,
+                password_confirmation: otpForm.password_confirmation,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            otpError.value = data.message || 'Kod OTP tidak sah. Sila cuba sebentar lagi.';
+            return;
+        }
+
+        window.location.href = data.redirect;
+    } catch {
+        otpError.value = 'Ralat rangkaian. Sila cuba sebentar lagi.';
+    } finally {
+        otpProcessing.value = false;
     }
 };
 
@@ -311,7 +428,7 @@ const submit = () => {
                                 </div>
                             </div>
 
-                            <form v-else @submit.prevent="submit" class="space-y-4">
+                            <form v-else-if="step === 'member-password'" @submit.prevent="submit" class="space-y-4">
                                 <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
                                     <p class="font-semibold">
                                         Anda adalah ahli {{ memberOrganization?.name }}
@@ -427,6 +544,162 @@ const submit = () => {
                                     </PrimaryButton>
                                 </div>
                             </form>
+
+                            <div v-else-if="step === 'member-otp-send'" class="space-y-4">
+                                <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                    <p class="font-semibold">
+                                        Log Masuk Kali Pertama
+                                    </p>
+                                    <p class="mt-2 text-emerald-200/80">
+                                        Anda adalah ahli {{ memberOrganization?.name }}. Sila sahkan identiti anda untuk log masuk kali pertama.
+                                    </p>
+                                </div>
+
+                                <div v-if="!memberHasEmail" class="space-y-2">
+                                    <InputLabel for="otp_email" value="Alamat Emel" class="!text-slate-200" />
+                                    <TextInput
+                                        id="otp_email"
+                                        type="email"
+                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        v-model="otpForm.email"
+                                        required
+                                        placeholder="nama@domain.com"
+                                    />
+                                    <p class="text-xs text-slate-400">Akaun anda tiada emel berdaftar. Sila masukkan emel untuk menerima kod OTP.</p>
+                                </div>
+
+                                <div v-else class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
+                                    Kod OTP akan dihantar ke emel: <span class="font-medium text-emerald-200">{{ memberMaskedEmail }}</span>
+                                </div>
+
+                                <InputError class="mt-2" :message="otpError" />
+
+                                <div class="flex gap-2">
+                                    <button
+                                        type="button"
+                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        @click="step = 'member-id'"
+                                    >
+                                        Kembali
+                                    </button>
+                                    <PrimaryButton
+                                        class="flex-1 justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+                                        :class="{ 'opacity-25': otpProcessing }"
+                                        :disabled="otpProcessing"
+                                        @click="sendOtp"
+                                    >
+                                        {{ otpProcessing ? 'Menghantar...' : 'Hantar Kod OTP' }}
+                                    </PrimaryButton>
+                                </div>
+                            </div>
+
+                            <div v-else-if="step === 'member-otp-verify'" class="space-y-4">
+                                <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                    <p class="font-semibold">
+                                        Sahkan OTP & Cipta Kata Laluan
+                                    </p>
+                                    <p class="mt-1 text-emerald-200/80">
+                                        Kod OTP telah dihantar ke emel berdaftar anda.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <InputLabel for="otp_code" value="Kod OTP" class="!text-slate-200" />
+                                    <TextInput
+                                        id="otp_code"
+                                        type="text"
+                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 text-center text-lg tracking-widest focus:border-emerald-300 focus:ring-emerald-300"
+                                        v-model="otpForm.code"
+                                        required
+                                        maxlength="6"
+                                        placeholder="••••••"
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="otp_password" value="Kata Laluan Baru" class="!text-slate-200" />
+                                    <TextInput
+                                        id="otp_password"
+                                        type="password"
+                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        v-model="otpForm.password"
+                                        required
+                                        minlength="8"
+                                        placeholder="Minimum 8 aksara"
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="otp_password_confirmation" value="Pengesahan Kata Laluan" class="!text-slate-200" />
+                                    <TextInput
+                                        id="otp_password_confirmation"
+                                        type="password"
+                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        v-model="otpForm.password_confirmation"
+                                        required
+                                        placeholder="Taip semula kata laluan"
+                                    />
+                                </div>
+
+                                <InputError class="mt-2" :message="otpError" />
+
+                                <div class="flex gap-2">
+                                    <button
+                                        type="button"
+                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        @click="step = 'member-otp-send'"
+                                    >
+                                        Kembali
+                                    </button>
+                                    <PrimaryButton
+                                        class="flex-1 justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+                                        :class="{ 'opacity-25': otpProcessing }"
+                                        :disabled="otpProcessing"
+                                        @click="verifyOtp"
+                                    >
+                                        {{ otpProcessing ? 'Mengesahkan...' : 'Log Masuk' }}
+                                    </PrimaryButton>
+                                </div>
+                            </div>
+
+                            <div v-else-if="step === 'member-otp-blocked'" class="space-y-4">
+                                <div class="rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                                    <p class="font-semibold">
+                                        Permintaan Log Masuk Kali Pertama Telah Dihantar
+                                    </p>
+                                    <p class="mt-3 text-amber-200/80 leading-relaxed">
+                                        Anda telah pun menghantar permintaan log masuk kali pertama.
+                                        Sila gunakan pautan <strong>'Lupa Kata Laluan'</strong> di bawah untuk menetapkan semula kata laluan.
+                                    </p>
+                                </div>
+
+                                <div class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
+                                    <p v-if="memberMaskedEmail">
+                                        Pautan reset akan dihantar ke emel: <span class="font-medium text-amber-200">{{ memberMaskedEmail }}</span>
+                                    </p>
+                                    <p v-else>
+                                        Sila hubungi urusetia organisasi untuk bantuan lanjut.
+                                    </p>
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <Link
+                                        v-if="canResetPassword"
+                                        :href="route('password.request')"
+                                        class="block w-full rounded-xl bg-amber-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-500"
+                                    >
+                                        Lupa Kata Laluan
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        class="w-full rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        @click="goToRoleSelection"
+                                    >
+                                        Kembali ke Pilihan Log Masuk
+                                    </button>
+                                </div>
+                            </div>
 
                             <p class="text-center text-sm text-slate-300">
                                 New here?

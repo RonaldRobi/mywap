@@ -4,11 +4,21 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Role::create(['name' => 'Superadmin', 'guard_name' => 'web']);
+        Role::create(['name' => 'Admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'Member', 'guard_name' => 'web']);
+    }
 
     public function test_profile_page_is_displayed(): void
     {
@@ -61,9 +71,10 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account(): void
+    public function test_admin_can_delete_their_account(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('Admin');
 
         $response = $this
             ->actingAs($user)
@@ -82,6 +93,7 @@ class ProfileTest extends TestCase
     public function test_correct_password_must_be_provided_to_delete_account(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('Admin');
 
         $response = $this
             ->actingAs($user)
@@ -94,6 +106,21 @@ class ProfileTest extends TestCase
             ->assertSessionHasErrors('password')
             ->assertRedirect('/profile');
 
+        $this->assertNotNull($user->fresh());
+    }
+
+    public function test_member_cannot_delete_their_account(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('Member');
+
+        $response = $this
+            ->actingAs($user)
+            ->delete('/profile', [
+                'password' => 'password',
+            ]);
+
+        $response->assertStatus(403);
         $this->assertNotNull($user->fresh());
     }
 }

@@ -17,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->configureAppName();
         $this->configureMailFromSettings();
 
         Vite::prefetch(concurrency: 3);
@@ -29,6 +30,23 @@ class AppServiceProvider extends ServiceProvider
             UserOrganizationTransitioned::class,
             LogTransitionAndNotify::class,
         );
+    }
+
+    private function configureAppName(): void
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return;
+        }
+
+        try {
+            $setting = AppSetting::singleton();
+
+            if ($name = $setting->app_name) {
+                config(['app.name' => $name]);
+            }
+        } catch (\Throwable) {
+            // Silent fail
+        }
     }
 
     private function configureMailFromSettings(): void

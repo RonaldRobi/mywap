@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -12,7 +12,15 @@ const props = defineProps({
     isSuperadmin: Boolean,
 });
 
+const page = usePage();
 const activeTab = ref('broadcast'); // 'broadcast' or 'announcement'
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'announcement') {
+        activeTab.value = 'announcement';
+    }
+});
 
 // ─── Broadcast Notifications (Push/Email) ────────────────────────────────────
 const broadcastForm = useForm({
@@ -36,20 +44,45 @@ const announcementForm = useForm({
     content: '',
     is_pinned: false,
     published_at: '',
+    target_criteria: 'all',
+    usrah_group_id: '',
 });
 
-const editingAnnouncementId = ref(null);
 const announcementEditForm = useForm({
     title: '',
     content: '',
     is_pinned: false,
     published_at: '',
+    target_criteria: 'all',
+    usrah_group_id: '',
 });
 
 function submitAnnouncement() {
-    announcementForm.post(route('admin.hub.announcements.store'), {
+    const data = new FormData();
+    data.append('title', announcementForm.title);
+    data.append('content', announcementForm.content);
+    data.append('is_pinned', announcementForm.is_pinned ? '1' : '0');
+    data.append('published_at', announcementForm.published_at);
+    data.append('target_criteria', announcementForm.target_criteria);
+    data.append('usrah_group_id', announcementForm.usrah_group_id);
+    if (announcementForm.organization_id) data.append('organization_id', announcementForm.organization_id);
+
+    const coverInput = document.querySelector('input[name="cover_image"]');
+    if (coverInput?.files?.[0]) data.append('cover_image', coverInput.files[0]);
+
+    const galleryInput = document.querySelector('input[name="gallery_images"]');
+    if (galleryInput?.files) {
+        Array.from(galleryInput.files).forEach(file => data.append('gallery_images[]', file));
+    }
+
+    router.post(route('admin.hub.announcements.store'), data, {
         preserveScroll: true,
-        onSuccess: () => announcementForm.reset('title', 'content', 'is_pinned', 'published_at'),
+        onSuccess: () => {
+            announcementForm.reset();
+            coverImagePreview.value = null;
+            galleryPreviews.value = [];
+            document.querySelectorAll('input[type="file"]').forEach(el => { el.value = ''; });
+        },
     });
 }
 
@@ -60,10 +93,13 @@ function toDateTimeLocal(value) {
 
 function startEditAnnouncement(item) {
     editingAnnouncementId.value = item.id;
+    editRemoveImageIds.value = [];
     announcementEditForm.title = item.title ?? '';
     announcementEditForm.content = item.content ?? '';
     announcementEditForm.is_pinned = !!item.is_pinned;
     announcementEditForm.published_at = toDateTimeLocal(item.published_at);
+    announcementEditForm.target_criteria = item.target_criteria ?? 'all';
+    announcementEditForm.usrah_group_id = item.usrah_group_id ?? '';
 }
 
 function cancelEditAnnouncement() {
@@ -72,9 +108,32 @@ function cancelEditAnnouncement() {
 }
 
 function submitEditAnnouncement(item) {
-    announcementEditForm.put(route('admin.hub.announcements.update', item.id), {
+    const data = new FormData();
+    data.append('_method', 'PUT');
+    data.append('title', announcementEditForm.title);
+    data.append('content', announcementEditForm.content);
+    data.append('is_pinned', announcementEditForm.is_pinned ? '1' : '0');
+    data.append('published_at', announcementEditForm.published_at);
+    data.append('target_criteria', announcementEditForm.target_criteria);
+    data.append('usrah_group_id', announcementEditForm.usrah_group_id);
+
+    editRemoveImageIds.value.forEach(id => data.append('remove_image_ids[]', id));
+
+    const editForm = document.getElementById(`edit-form-${item.id}`);
+    const coverInput = editForm?.querySelector('input[name="cover_image"]');
+    if (coverInput?.files?.[0]) data.append('cover_image', coverInput.files[0]);
+
+    const galleryInput = editForm?.querySelector('input[name="gallery_images"]');
+    if (galleryInput?.files) {
+        Array.from(galleryInput.files).forEach(file => data.append('gallery_images[]', file));
+    }
+
+    router.post(route('admin.hub.announcements.update', item.id), data, {
         preserveScroll: true,
-        onSuccess: () => cancelEditAnnouncement(),
+        onSuccess: () => {
+            cancelEditAnnouncement();
+            editRemoveImageIds.value = [];
+        },
     });
 }
 
@@ -86,12 +145,45 @@ function removeAnnouncement(id) {
 function togglePinned(id) {
     router.patch(route('admin.hub.announcements.pin', id), {}, { preserveScroll: true });
 }
+
+const coverImagePreview = ref(null);
+function onCoverImageChange(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => { coverImagePreview.value = e.target.result; };
+        reader.readAsDataURL(file);
+    } else {
+        coverImagePreview.value = null;
+    }
+}
+
+const galleryPreviews = ref([]);
+function onGalleryChange(event) {
+    const files = Array.from(event.target.files || []);
+    galleryPreviews.value = [];
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            galleryPreviews.value.push({ name: file.name, url: e.target.result });
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+const editRemoveImageIds = ref([]);
+function markImageForRemoval(imageId) {
+    editRemoveImageIds.value.push(imageId);
+}
+function undoRemoveImage(imageId) {
+    editRemoveImageIds.value = editRemoveImageIds.value.filter(id => id !== imageId);
+}
 </script>
 
 <template>
     <Head title="Broadcast & Pengumuman" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <template #header>Broadcast & Pengumuman</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
@@ -219,7 +311,7 @@ function togglePinned(id) {
                         <p class="text-xs text-gray-500">Artikel pengumuman ini akan dipaparkan di Dashboard ahli.</p>
                     </div>
 
-                    <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAnnouncement">
+                    <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitAnnouncement" enctype="multipart/form-data">
                         <div v-if="isSuperadmin" class="md:col-span-1">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Mewakili Organisasi</label>
                             <select v-model="announcementForm.organization_id" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
@@ -235,6 +327,41 @@ function togglePinned(id) {
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kandungan</label>
                             <textarea v-model="announcementForm.content" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all" required></textarea>
+                        </div>
+
+                        <div>
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Gambar Cover (Pilihan)</label>
+                            <input type="file" name="cover_image" accept="image/*" @change="onCoverImageChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-gray-900 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white hover:file:bg-gray-800 transition-all">
+                            <div v-if="coverImagePreview" class="mt-2 rounded-xl overflow-hidden h-32 w-full bg-gray-100">
+                                <img :src="coverImagePreview" class="w-full h-full object-cover" />
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Galeri Gambar (Pilihan)</label>
+                            <input type="file" name="gallery_images" multiple accept="image/*" @change="onGalleryChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-gray-900 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white hover:file:bg-gray-800 transition-all">
+                            <div v-if="galleryPreviews.length" class="mt-2 grid grid-cols-3 gap-2">
+                                <div v-for="(preview, idx) in galleryPreviews" :key="idx" class="rounded-xl overflow-hidden h-20 bg-gray-100">
+                                    <img :src="preview.url" class="w-full h-full object-cover" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kumpulan Sasaran</label>
+                            <select v-model="announcementForm.target_criteria" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                                <option value="all">Kesemua Ahli</option>
+                                <option value="unpaid_fees">Ahli Tunggakan Yuran</option>
+                                <option value="specific_usrah">Kumpulan Usrah Spesifik</option>
+                            </select>
+                        </div>
+
+                        <div v-if="announcementForm.target_criteria === 'specific_usrah'">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Pilih Kumpulan Usrah</label>
+                            <select v-model="announcementForm.usrah_group_id" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                                <option value="">Sila Pilih...</option>
+                                <option v-for="group in usrahGroups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                            </select>
                         </div>
 
                         <div>
@@ -268,7 +395,7 @@ function togglePinned(id) {
                             :class="item.is_pinned ? 'border-amber-200 bg-amber-50/30 ring-1 ring-amber-100' : 'border-gray-100 bg-white hover:border-gray-200'"
                         >
                             <template v-if="editingAnnouncementId === item.id">
-                                <form class="space-y-4" @submit.prevent="submitEditAnnouncement(item)">
+                                <form :id="`edit-form-${item.id}`" class="space-y-4" @submit.prevent="submitEditAnnouncement(item)">
                                     <div>
                                         <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Tajuk</label>
                                         <input v-model="announcementEditForm.title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900" required>
@@ -279,6 +406,21 @@ function togglePinned(id) {
                                     </div>
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div>
+                                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kumpulan Sasaran</label>
+                                            <select v-model="announcementEditForm.target_criteria" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900">
+                                                <option value="all">Kesemua Ahli</option>
+                                                <option value="unpaid_fees">Ahli Tunggakan Yuran</option>
+                                                <option value="specific_usrah">Kumpulan Usrah Spesifik</option>
+                                            </select>
+                                        </div>
+                                        <div v-if="announcementEditForm.target_criteria === 'specific_usrah'">
+                                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Pilih Kumpulan Usrah</label>
+                                            <select v-model="announcementEditForm.usrah_group_id" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900">
+                                                <option value="">Sila Pilih...</option>
+                                                <option v-for="group in usrahGroups" :key="group.id" :value="group.id">{{ group.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div>
                                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Tarikh Terbit</label>
                                             <input v-model="announcementEditForm.published_at" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900">
                                         </div>
@@ -286,6 +428,21 @@ function togglePinned(id) {
                                             <input id="edit_is_pinned" v-model="announcementEditForm.is_pinned" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500">
                                             <label for="edit_is_pinned" class="text-sm font-bold text-gray-700 cursor-pointer">Pin Pengumuman</label>
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Galeri Gambar Sedia Ada</label>
+                                        <div v-if="item.images?.length" class="grid grid-cols-4 gap-2 mb-3">
+                                            <div v-for="img in item.images" :key="img.id" class="relative rounded-xl overflow-hidden h-20 bg-gray-100 group">
+                                                <img :src="img.url" class="w-full h-full object-cover" />
+                                                <button v-if="!editRemoveImageIds.includes(img.id)" @click.prevent="markImageForRemoval(img.id)" type="button" class="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow">
+                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                </button>
+                                                <div v-if="editRemoveImageIds.includes(img.id)" class="absolute inset-0 bg-red-500/60 flex items-center justify-center">
+                                                    <button @click.prevent="undoRemoveImage(img.id)" type="button" class="text-white text-[10px] font-bold underline">Batal</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="file" name="gallery_images" multiple accept="image/*" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-gray-900 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white hover:file:bg-gray-800 transition-all">
                                     </div>
                                     <div class="flex items-center gap-3 justify-end pt-2 border-t border-gray-100 mt-4">
                                         <button type="button" @click="cancelEditAnnouncement" class="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">Batal</button>
@@ -298,21 +455,43 @@ function togglePinned(id) {
                             
                             <template v-else>
                                 <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
-                                    <div class="flex items-start gap-4">
+                                    <div class="flex items-start gap-4 min-w-0">
                                         <div v-if="item.is_pinned" class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 ring-2 ring-white">
-                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/></svg>
+                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 21V4z"/></svg>
                                         </div>
-                                        <div v-else class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 ring-2 ring-white">
-                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-[15px] font-black text-gray-900 leading-tight">{{ item.title }}</h3>
+                                        <div class="min-w-0">
+                                            <!-- Cover thumb -->
+                                            <div v-if="item.cover_image_url" class="mb-2 rounded-xl overflow-hidden h-28 w-full bg-gray-100">
+                                                <img :src="item.cover_image_url" class="w-full h-full object-cover" />
+                                            </div>
+                                            <div v-if="item.images?.length" class="mb-2 grid grid-cols-4 gap-1.5">
+                                                <div v-for="img in item.images" :key="img.id" class="rounded-lg overflow-hidden h-16 bg-gray-100">
+                                                    <img :src="img.url" class="w-full h-full object-cover" />
+                                                </div>
+                                            </div>
+                                            <h3 class="text-[15px] font-black text-gray-900 leading-tight truncate">{{ item.title }}</h3>
                                             <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
                                                 <span class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600">{{ item.organization_name }}</span>
                                                 <span class="text-gray-300">•</span>
                                                 <span>{{ item.published_human || 'Draf / Tiada Tarikh' }}</span>
+                                                <span v-if="item.author_name" class="text-gray-300">•</span>
+                                                <span v-if="item.author_name">{{ item.author_name }}</span>
                                             </div>
-                                            <p class="mt-3 text-[14px] text-gray-600 whitespace-pre-line leading-relaxed">{{ item.content }}</p>
+                                            <p class="mt-2 text-[14px] text-gray-600 whitespace-pre-line leading-relaxed line-clamp-2">{{ item.content }}</p>
+                                            <!-- Stats row -->
+                                            <div class="mt-2 flex items-center gap-3 text-[11px] text-gray-400">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                                    {{ item.likes_count ?? 0 }}
+                                                </span>
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                    {{ item.reads_count ?? 0 }}
+                                                </span>
+                                                <span v-if="item.target_criteria && item.target_criteria !== 'all'" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-500">
+                                                    {{ item.target_criteria === 'unpaid_fees' ? 'Tunggakan' : 'Usrah' }}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                     

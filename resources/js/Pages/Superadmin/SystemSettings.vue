@@ -4,6 +4,10 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps({
+    appName: {
+        type: String,
+        default: 'myWAP',
+    },
     systemLogoPath: {
         type: String,
         default: null,
@@ -117,6 +121,16 @@ function onSplashImageSelected(event) {
     }
 }
 
+const appNameForm = useForm({
+    app_name: props.appName || 'myWAP',
+});
+
+function saveAppName() {
+    appNameForm.post(route('superadmin.settings.app-name.update'), {
+        preserveScroll: true,
+    });
+}
+
 const contactForm = useForm({
     admin_contact_email: props.adminContactEmail || '',
     admin_contact_phone: props.adminContactPhone || '',
@@ -158,7 +172,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <Head title="myWAP Settings" />
 
         <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
@@ -178,6 +192,26 @@ onBeforeUnmount(() => {
             <div v-if="!canManageSystemLogo" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Tetapan ini memerlukan migration baru. Jalankan <strong>php artisan migrate</strong> dahulu.
             </div>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Nama Aplikasi</h2>
+                <p class="mt-1 text-xs text-gray-500">Nama ini akan dipaparkan sebagai title di pelayar web, di pautan yang dikongsi (OG tag), dan di emel sistem.</p>
+
+                <form class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" @submit.prevent="saveAppName">
+                    <label class="flex-1">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Nama Aplikasi</span>
+                        <input v-model="appNameForm.app_name" type="text" maxlength="100" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="myWAP" required>
+                        <p v-if="appNameForm.errors.app_name" class="mt-1 text-xs text-red-500">{{ appNameForm.errors.app_name }}</p>
+                    </label>
+                    <button
+                        type="submit"
+                        :disabled="appNameForm.processing"
+                        class="shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                    >
+                        {{ appNameForm.processing ? 'Menyimpan...' : 'Simpan' }}
+                    </button>
+                </form>
+            </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-black text-gray-800">Logo Sistem</h2>

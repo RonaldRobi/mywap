@@ -41,7 +41,7 @@ class ProfileUpdateRequest extends FormRequest
             'locality' => ['nullable', 'string', 'max:120'],
             'expertise' => ['nullable', 'string', 'max:255'],
             'linkedin_url' => ['nullable', 'url', 'max:255'],
-            'profile_photo' => ['nullable', 'image', 'max:4096'],
+            'profile_photo' => ['nullable', 'image', 'max:2048'],
             'is_public_in_directory' => ['nullable', 'boolean'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],

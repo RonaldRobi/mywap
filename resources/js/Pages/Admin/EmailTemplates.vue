@@ -55,7 +55,7 @@ const placeholderInfo = [
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
         <Head title="Template Emel" />
 
         <div class="mx-auto max-w-4xl space-y-6 px-4 py-6 md:px-6">

@@ -78,7 +78,7 @@ onUnmounted(() => {
                             <img src="/storage/logos/organizations/logomywaphorizontal.png" alt="myWAP Logo" class="h-10 w-auto" />
                         </Link>
                         <div class="hidden md:ml-10 md:flex md:space-x-8">
-                            <a href="#home" class="text-slate-600 hover:text-emerald-600 px-3 py-2 text-sm font-medium transition-colors">Home</a>
+                            <a href="#home" class="text-slate-600 hover:text-emerald-600 px-3 py-2 text-sm font-medium transition-colors">Utama</a>
                             <a href="#infaq" class="text-slate-600 hover:text-emerald-600 px-3 py-2 text-sm font-medium transition-colors">Infaq</a>
                             <a href="#artikel" class="text-slate-600 hover:text-emerald-600 px-3 py-2 text-sm font-medium transition-colors">Artikel</a>
                         </div>
@@ -86,7 +86,7 @@ onUnmounted(() => {
                     <div class="hidden md:flex md:items-center md:space-x-4">
                         <template v-if="$page.props.auth?.user">
                             <Link :href="route('dashboard')" class="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-700 transition">
-                                Dashboard
+                                Papan Pemuka
                             </Link>
                         </template>
                         <template v-else>
@@ -140,7 +140,7 @@ onUnmounted(() => {
                     </button>
                 </div>
                 <div class="space-y-1 px-4 py-6 flex-1 overflow-y-auto">
-                    <a href="#home" @click="toggleMobileMenu" class="block rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Home</a>
+                    <a href="#home" @click="toggleMobileMenu" class="block rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Utama</a>
                     <a href="#info" @click="toggleMobileMenu" class="block rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Profil Organisasi</a>
                     <a href="#infaq" @click="toggleMobileMenu" class="block rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Kempen Infaq</a>
                     <a href="#artikel" @click="toggleMobileMenu" class="block rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition">Artikel & Berita</a>
@@ -164,7 +164,7 @@ onUnmounted(() => {
             <div class="flex justify-around items-center h-16">
                 <a href="#home" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
                     <svg class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span class="text-[10px] font-bold">Home</span>
+                    <span class="text-[10px] font-bold">Utama</span>
                 </a>
                 <Link href="/sumbangan" class="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
                     <svg class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
@@ -199,7 +199,10 @@ onUnmounted(() => {
                         <template v-if="banners && banners.length > 0">
                             <transition-group name="fade" tag="div" class="w-full h-full">
                                 <div v-for="(banner, index) in banners" :key="banner.id || index" v-show="currentSlide === index" class="absolute inset-0 w-full h-full">
-                                    <img :src="banner.image_path" class="w-full h-full object-cover" alt="Banner" />
+                                    <a v-if="banner.link_url" :href="banner.link_url" :target="banner.link_target || '_blank'" :rel="(banner.link_target || '_blank') === '_blank' ? 'noopener noreferrer' : undefined" class="block w-full h-full">
+                                        <img :src="banner.image_path" class="w-full h-full object-cover" alt="Banner" />
+                                    </a>
+                                    <img v-else :src="banner.image_path" class="w-full h-full object-cover" alt="Banner" />
                                 </div>
                             </transition-group>
                         </template>
@@ -387,8 +390,8 @@ onUnmounted(() => {
                         &copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.
                     </p>
                     <div class="mt-4 md:mt-0 flex gap-4">
-                        <a href="#" class="text-slate-500 hover:text-white transition">Terma & Syarat</a>
-                        <a href="#" class="text-slate-500 hover:text-white transition">Privasi</a>
+                        <Link :href="route('terms')" class="text-slate-500 hover:text-white transition">Terma & Syarat</Link>
+                        <Link :href="route('privacy')" class="text-slate-500 hover:text-white transition">Privasi</Link>
                     </div>
                 </div>
             </div>

@@ -24,6 +24,8 @@ class DashboardBannerController extends Controller
                 'id' => $banner->id,
                 'title' => $banner->title,
                 'image_path' => $banner->image_path,
+                'link_url' => $banner->link_url,
+                'link_target' => $banner->link_target,
                 'is_active' => $banner->is_active,
                 'display_order' => $banner->display_order,
                 'organization_id' => $banner->organization_id,
@@ -42,6 +44,8 @@ class DashboardBannerController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'banner_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'link_url' => ['nullable', 'url', 'max:2048'],
+            'link_target' => ['nullable', 'in:_self,_blank'],
             'is_active' => ['nullable', 'boolean'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
@@ -52,6 +56,8 @@ class DashboardBannerController extends Controller
             'organization_id' => $data['organization_id'] ?? null,
             'title' => $data['title'],
             'image_path' => '/storage/' . ltrim($storedPath, '/'),
+            'link_url' => $data['link_url'] ?? null,
+            'link_target' => $data['link_target'] ?? '_blank',
             'is_active' => (bool) ($data['is_active'] ?? true),
             'display_order' => (int) ($data['display_order'] ?? 1),
         ]);
@@ -65,6 +71,8 @@ class DashboardBannerController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'link_url' => ['nullable', 'url', 'max:2048'],
+            'link_target' => ['nullable', 'in:_self,_blank'],
             'is_active' => ['nullable', 'boolean'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
@@ -85,6 +93,8 @@ class DashboardBannerController extends Controller
             'organization_id' => $data['organization_id'] ?? null,
             'title' => $data['title'],
             'image_path' => $imagePath,
+            'link_url' => $data['link_url'] ?? null,
+            'link_target' => $data['link_target'] ?? '_blank',
             'is_active' => (bool) ($data['is_active'] ?? false),
             'display_order' => (int) ($data['display_order'] ?? 1),
         ]);
@@ -113,14 +123,14 @@ class DashboardBannerController extends Controller
         }
 
         $globalBanners = [
-            ['title' => 'Minggu Ukhuwah Nasional', 'display_order' => 1],
-            ['title' => 'Kempen Infaq Ramadan', 'display_order' => 2],
-            ['title' => 'Jelajah Kepimpinan Belia', 'display_order' => 3],
+            ['title' => 'Minggu Ukhuwah Nasional', 'display_order' => 1, 'link_url' => 'https://example.com/ukhuwah'],
+            ['title' => 'Kempen Infaq Ramadan', 'display_order' => 2, 'link_url' => 'https://example.com/infaq'],
+            ['title' => 'Jelajah Kepimpinan Belia', 'display_order' => 3, 'link_url' => null],
         ];
 
         $orgBannerTemplates = [
-            ['title' => 'Forum Komuniti {ORG}', 'display_order' => 10],
-            ['title' => 'Program Sukarelawan {ORG}', 'display_order' => 11],
+            ['title' => 'Forum Komuniti {ORG}', 'display_order' => 10, 'link_url' => 'https://example.com/forum'],
+            ['title' => 'Program Sukarelawan {ORG}', 'display_order' => 11, 'link_url' => null],
         ];
 
         $palette = [
@@ -169,6 +179,8 @@ class DashboardBannerController extends Controller
                 ],
                 [
                     'image_path' => '/storage/' . ltrim($storagePath, '/'),
+                    'link_url' => $banner['link_url'],
+                    'link_target' => '_blank',
                     'is_active' => true,
                     'display_order' => $banner['display_order'],
                 ]
@@ -195,6 +207,8 @@ class DashboardBannerController extends Controller
                     ],
                     [
                         'image_path' => '/storage/' . ltrim($storagePath, '/'),
+                        'link_url' => $template['link_url'],
+                        'link_target' => '_blank',
                         'is_active' => true,
                         'display_order' => $template['display_order'],
                     ]

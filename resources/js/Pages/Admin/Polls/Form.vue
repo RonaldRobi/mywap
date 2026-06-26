@@ -95,7 +95,7 @@ const filteredMembers = computed(() => {
 <template>
     <Head :title="isEditing ? 'Edit Undian' : 'Cipta Undian'" />
 
-    <AppLayout>
+    <AppLayout :back-route="route('admin.polls.index')" back-label="Kembali ke Senarai Undian">
         <template #header>{{ isEditing ? 'Edit Undian' : 'Cipta Undian' }}</template>
 
         <div class="mx-auto max-w-4xl px-4 py-6 md:px-6">

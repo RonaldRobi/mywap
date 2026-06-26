@@ -58,17 +58,12 @@ class SharePreviewController extends Controller
 
     public function event(Event $event): View
     {
-        $redirectUrl = route('events.index', [
-            'tab' => 'upcoming',
-            'search' => $event->title,
-        ], true);
-
         return $this->renderPreview(
             title: $event->title,
             description: $event->description ?: 'Program komuniti terkini. Jom sertai bersama.',
             imageUrl: $this->absoluteUrl($event->featured_image_url),
             pageUrl: route('share.event', $event, true),
-            redirectUrl: $redirectUrl,
+            redirectUrl: route('events.show', $event->slug, true),
             type: 'article'
         );
     }
@@ -82,13 +77,18 @@ class SharePreviewController extends Controller
         string $type = 'website'
     ): View {
         $fallbackLogo = null;
+        $siteName = config('app.name', 'myWAP');
+
         if (Schema::hasTable('app_settings')) {
-            $fallbackLogo = AppSetting::singleton()->system_logo_path;
+            $setting = AppSetting::singleton();
+            $fallbackLogo = $setting->system_logo_path;
+            $siteName = $setting->app_name ?: $siteName;
         }
 
         $resolvedImage = $imageUrl ?: $this->absoluteUrl($fallbackLogo) ?: asset('apple-touch-icon.png');
 
         return view('share.preview', [
+            'siteName' => $siteName,
             'metaTitle' => $title,
             'metaDescription' => Str::limit(trim($description), 200),
             'metaImage' => $resolvedImage,

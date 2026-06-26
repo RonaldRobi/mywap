@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
 use App\Models\Branch;
+use App\Models\BranchTransitionHistory;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
@@ -123,6 +124,16 @@ class RegisteredUserController extends Controller
             'referred_by_user_id' => $request->referred_by_user_id,
             'password' => Hash::make(Str::random(32)),
         ]);
+
+        if ($branchId) {
+            BranchTransitionHistory::create([
+                'user_id' => $user->id,
+                'from_branch_id' => null,
+                'to_branch_id' => $branchId,
+                'changed_by' => $user->id,
+                'change_type' => 'registration',
+            ]);
+        }
 
         if (Role::query()->where('name', 'Member')->where('guard_name', 'web')->exists()) {
             $user->assignRole('Member');

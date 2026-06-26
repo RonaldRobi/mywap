@@ -67,10 +67,10 @@ const quickStats = [
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Papan Pemuka" />
 
     <AppLayout>
-        <template #header>Dashboard</template>
+        <template #header>Papan Pemuka</template>
 
         <!-- ════════════════════════════════════════════════════════════════ -->
         <!--  BENTO GRID                                                     -->
