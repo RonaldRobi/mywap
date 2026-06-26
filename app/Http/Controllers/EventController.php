@@ -19,15 +19,13 @@ class EventController extends Controller
     /**
      * adminAttendance()
      *
-     * Returns a filtered list of events with attendance counts for admin view.
-     * Filters: start date, end date, status (hadir/tidak_hadir)
+     * Returns a paginated list of events with attendance counts for admin view.
+     * Filters: search, start date, end date, status (hadir/tidak_hadir)
      */
     public function adminAttendance(Request $request): \Inertia\Response
     {
         $user = $request->user();
-        $query = Event::with(['organization', 'rsvps' => function($q) {
-            $q->with('user:id');
-        }]);
+        $query = Event::with(['organization', 'rsvps']);
 
         // Filter by organization if not superadmin
         if (! $user->hasRole('Superadmin')) {
@@ -35,6 +33,11 @@ class EventController extends Controller
                 $innerQuery->where('organization_id', $user->current_organization_id)
                     ->orWhereNull('organization_id');
             });
+        }
+
+        // Search by title
+        if ($search = $request->input('search')) {
+            $query->where('title', 'like', "%{$search}%");
         }
 
         // Filter by date
@@ -45,26 +48,49 @@ class EventController extends Controller
             $query->whereDate('start_time', '<=', $request->input('end'));
         }
 
-        $events = $query->orderBy('start_time', 'desc')->take(100)->get();
+        // Filter by attendance status
+        $statusFilter = $request->input('status');
+        if ($statusFilter === 'hadir') {
+            $query->whereHas('rsvps', fn ($q) => $q->where('status', 'attended'));
+        } elseif ($statusFilter === 'tidak_hadir') {
+            $query->whereDoesntHave('rsvps', fn ($q) => $q->where('status', 'attended'));
+        }
 
-        // Filter by status (hadir/tidak_hadir)
-        $status = $request->input('status');
-        $filtered = $events->map(function($event) use ($status) {
+        $events = $query->orderBy('start_time', 'desc')->paginate(15)->withQueryString();
+
+        // Compute stats and transform events
+        $totalAttended = 0;
+
+        $events->getCollection()->transform(function ($event) use (&$totalAttended) {
             $attendanceCount = $event->rsvps->where('status', 'attended')->count();
-            $eventArr = [
+            $totalAttended += $attendanceCount;
+
+            return [
                 'id' => $event->id,
+                'slug' => $event->slug,
                 'title' => $event->title,
+                'type' => $event->type,
                 'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'end_formatted' => $event->end_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
                 'location_or_link' => $event->location_or_link,
+                'organization_name' => $event->organization?->name,
                 'attendance_count' => $attendanceCount,
+                'rsvp_counts' => [
+                    'going' => $event->rsvps->where('status', 'going')->count(),
+                    'attended' => $attendanceCount,
+                    'maybe' => $event->rsvps->where('status', 'maybe')->count(),
+                    'declined' => $event->rsvps->where('status', 'declined')->count(),
+                ],
             ];
-            if ($status === 'hadir' && $attendanceCount === 0) return null;
-            if ($status === 'tidak_hadir' && $attendanceCount > 0) return null;
-            return $eventArr;
-        })->filter()->values();
+        });
 
         return Inertia::render('Events/AdminAttendance', [
-            'adminAttendance' => $filtered,
+            'events' => $events,
+            'stats' => [
+                'total_events' => $events->total(),
+                'total_attended' => $totalAttended,
+            ],
+            'filters' => $request->only(['search', 'start', 'end', 'status']),
         ]);
     }
     // ─── Helpers ─────────────────────────────────────────────────────────────

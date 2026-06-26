@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
@@ -67,6 +67,15 @@ const theme = computed(() =>
     themeMap[org.value?.slug] ?? themeMap['abim']
 );
 
+const colorHoverMap = {
+    'text-slate-500': 'hover:bg-slate-50/70',
+    'text-blue-500':  'hover:bg-blue-50/70',
+    'text-violet-500':'hover:bg-violet-50/70',
+    'text-emerald-500':'hover:bg-emerald-50/70',
+    'text-amber-500': 'hover:bg-amber-50/70',
+    'text-rose-500':  'hover:bg-rose-50/70',
+};
+
 const props = defineProps({
     hideMobileBell: { type: Boolean, default: false },
     hideMobileHeader: { type: Boolean, default: false },
@@ -89,6 +98,17 @@ onMounted(() => {
 onUnmounted(() => {
     if (drawerHandler) window.removeEventListener('open-mobile-drawer', drawerHandler);
 });
+const navContainer   = ref(null);
+function scrollToActive() {
+    nextTick(() => {
+        const dot = navContainer.value?.querySelector('.rounded-r-full');
+        const el  = dot?.closest('a') ?? dot?.closest('button');
+        el?.scrollIntoView?.({ block: 'nearest' });
+    });
+}
+onMounted(scrollToActive);
+watch(() => page.url, scrollToActive);
+
 const groupOpenState   = reactive({
     ecommerce: true,
     facilities: true,
@@ -120,18 +140,21 @@ const ecommerceChildren = computed(() => {
                 label: 'Produk',
                 href: route('products.index'),
                 active: route().current('products.*'),
+                colorClass: 'text-emerald-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>`,
             },
             {
                 label: 'Kategori',
                 href: route('categories.index'),
                 active: route().current('categories.*'),
+                colorClass: 'text-emerald-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>`,
             },
             {
                 label: 'Pesanan',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
+                colorClass: 'text-emerald-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
         ];
@@ -143,12 +166,14 @@ const ecommerceChildren = computed(() => {
                 label: 'Produk',
                 href: route('products.index'),
                 active: route().current('products.*'),
+                colorClass: 'text-emerald-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>`,
             },
             {
                 label: 'Pesanan Saya',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
+                colorClass: 'text-emerald-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
         ];
@@ -165,12 +190,14 @@ const memberFacilityChildren = computed(() => {
                 label: 'Tempahan Ruang',
                 href: route('member.facilities.index'),
                 active: route().current('member.facilities.*') && queryParam('view') !== 'history',
+                colorClass: 'text-rose-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
             },
             {
                 label: 'Sejarah Tempahan',
                 href: route('member.facilities.index', { view: 'history' }),
                 active: route().current('member.facilities.index') && queryParam('view') === 'history',
+                colorClass: 'text-rose-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
             },
         ];
@@ -186,12 +213,14 @@ const adminFacilityChildren = computed(() => {
                 label: 'Urus Ruang',
                 href: route('admin.facilities.manage'),
                 active: route().current('admin.facilities.*'),
+                colorClass: 'text-amber-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
             },
             {
                 label: 'Senarai Tempahan',
                 href: route('admin.facility-bookings.index'),
                 active: route().current('admin.facility-bookings.*'),
+                colorClass: 'text-amber-500',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
             },
         ];
@@ -213,29 +242,45 @@ function isGroupOpen(groupKey) {
 
 const navItems = computed(() => [
     // ═══════════════════════════════════
-    //  UTAMA
+    //  PAPAN PEMUKA
     // ═══════════════════════════════════
-    { type: 'section', label: 'Utama' },
     {
         label:  'Papan Pemuka',
         href:   route('dashboard'),
         active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>`,
     },
+
+    // ═══════════════════════════════════
+    //  KANDUNGAN
+    // ═══════════════════════════════════
+    { type: 'section', label: 'Kandungan' },
     {
         label:  'Program',
         href:   route('events.index'),
         active: route().current('events.*'),
+        colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>`,
     },
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Kehadiran',
+        href:   route('admin.attendance'),
+        active: route().current('admin.attendance'),
+        colorClass: 'text-blue-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>`,
+    }] : []),
     {
         label:  'Info Terkini',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.news.manage') : route('news.index'),
         active: route().current('news.*') || route().current('admin.news.*'),
+        colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/>
                 </svg>`,
@@ -244,6 +289,7 @@ const navItems = computed(() => [
         label:  'Undian',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.polls.index') : route('member.polls.index'),
         active: route().current('*polls.*'),
+        colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>`,
@@ -252,14 +298,25 @@ const navItems = computed(() => [
         label:  'Artikel',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.manage') : route('articles.index'),
         active: route().current('articles.*') || route().current('admin.articles.*'),
+        colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
+                </svg>`,
+    },
+    {
+        label:  'Video',
+        href:   isAdmin.value || isSuperadmin.value ? route('admin.videos.manage') : route('member.videos.index'),
+        active: route().current('admin.videos.*') || route().current('member.videos.*'),
+        colorClass: 'text-blue-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>`,
     },
     {
         label:  'Usrah',
         href:   isMember.value ? route('member.usrah') : route('admin.usrah.index'),
         active: route().current('member.usrah') || route().current('admin.usrah.*'),
+        colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
@@ -273,6 +330,7 @@ const navItems = computed(() => [
         label:  'Ahli',
         href:   route('admin.hub.manage'),
         active: route().current('admin.hub.*'),
+        colorClass: 'text-violet-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>`,
@@ -280,33 +338,44 @@ const navItems = computed(() => [
         label:  'Yuran Ahli',
         href:   route('admin.fees.members'),
         active: route().current('admin.fees.members'),
+        colorClass: 'text-violet-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
     }, {
         label:  'Cawangan',
         href:   route('branches.index'),
         active: route().current('branches.*'),
+        colorClass: 'text-violet-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
     }, {
         label:  'Jawatan',
         href:   route('positions.index'),
         active: route().current('positions.*'),
+        colorClass: 'text-violet-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
-    }] : []),
-    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
+    }, {
         label:  'Tukar Cawangan',
         href:   route('branch-change-requests.index'),
         active: route().current('branch-change-requests.*'),
+        colorClass: 'text-violet-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+    }] : []),
+    ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
+        label:  'Tukar Cawangan',
+        href:   route('branch-change-requests.index'),
+        active: route().current('branch-change-requests.*'),
+        colorClass: 'text-violet-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     }] : []),
 
     // ═══════════════════════════════════
     //  KEWANGAN
     // ═══════════════════════════════════
-    ...((isAdmin.value || isSuperadmin.value) ? [{ type: 'section', label: 'Kewangan' }] : []),
+    ...((isAdmin.value || isSuperadmin.value || isMember.value) ? [{ type: 'section', label: 'Kewangan' }] : []),
     ...(isAdmin.value || isSuperadmin.value ? [{
-        label:  'Kewangan',
+        label:  'Ringkasan Kewangan',
         href:   route('admin.finance.index'),
         active: route().current('admin.finance.*'),
+        colorClass: 'text-emerald-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
     }] : []),
     {
@@ -320,6 +389,7 @@ const navItems = computed(() => [
              || route().current('superadmin.transactions')
              || route().current('admin.transactions')
              || route().current('member.financial.overview'),
+        colorClass: 'text-emerald-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>`,
@@ -330,27 +400,34 @@ const navItems = computed(() => [
         active: isSuperadmin.value
             ? route().current('superadmin.infaq.*')
             : (route().current('infaq.index') || route().current('infaq.show') || route().current('infaq.donate*') || route().current('infaq.success')),
+        colorClass: 'text-emerald-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10v10m0-10c1.11 0 2.08.402 2.599 1M12 8c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>`,
     }] : []),
-    ...(isMember.value ? [{ type: 'section', label: 'Kewangan' }] : []),
+
+    // ═══════════════════════════════════
+    //  E-DAGANG  (group)
+    // ═══════════════════════════════════
+    ...(ecommerceChildren.value.length ? [{
+        type: 'group',
+        label: 'E-dagang',
+        groupKey: 'ecommerce',
+        active: ecommerceActive.value,
+        colorClass: 'text-emerald-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/></svg>`,
+        children: ecommerceChildren.value,
+    }] : []),
 
     // ═══════════════════════════════════
     //  KANDUNGAN & KOMUNIKASI  (Admin/Superadmin)
     // ═══════════════════════════════════
     ...(isAdmin.value || isSuperadmin.value ? [{ type: 'section', label: 'Kandungan & Komunikasi' }] : []),
     ...(isAdmin.value || isSuperadmin.value ? [{
-        label:  'Video',
-        href:   route('admin.videos.manage'),
-        active: route().current('admin.videos.*'),
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>`,
-    }, {
         label:  'Popup',
         href:   route('admin.popups.index'),
         active: route().current('admin.popups.*'),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5m-5-5v12"/>
                 </svg>`,
@@ -358,6 +435,7 @@ const navItems = computed(() => [
         label:  'Direktori',
         href:   route('directory.index'),
         active: route().current('directory.index'),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M12 12a4 4 0 100-8 4 4 0 000 8zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>`,
@@ -365,6 +443,7 @@ const navItems = computed(() => [
         label: 'Siaran',
         href: route('admin.broadcasts.index', { tab: 'broadcast' }),
         active: route().current('admin.broadcasts.*') && (page.url.includes('tab=broadcast') || !page.url.includes('tab=')),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                 </svg>`,
@@ -372,6 +451,7 @@ const navItems = computed(() => [
         label: 'Pengumuman',
         href: route('admin.broadcasts.index', { tab: 'announcement' }),
         active: route().current('admin.broadcasts.*') && page.url.includes('tab=announcement'),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/>
                 </svg>`,
@@ -380,6 +460,7 @@ const navItems = computed(() => [
         label:  'Urus Pustaka',
         href:   route('admin.library.manage'),
         active: route().current('admin.library.manage'),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
@@ -387,9 +468,32 @@ const navItems = computed(() => [
         label:  'Urus Banner',
         href:   route('superadmin.banners.index'),
         active: route().current('superadmin.banners.*'),
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 3v18m10-18v18"/>
                 </svg>`,
+    }] : []),
+
+    // ═══════════════════════════════════
+    //  KEMUDAHAN  (group)
+    // ═══════════════════════════════════
+    ...(adminFacilityChildren.value.length ? [{
+        type: 'group',
+        label: 'Kemudahan',
+        groupKey: 'adminFacilities',
+        active: adminFacilitiesActive.value,
+        colorClass: 'text-amber-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
+        children: adminFacilityChildren.value,
+    }] : []),
+    ...(memberFacilityChildren.value.length ? [{
+        type: 'group',
+        label: 'Kemudahan',
+        groupKey: 'facilities',
+        active: facilitiesActive.value,
+        colorClass: 'text-rose-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
+        children: memberFacilityChildren.value,
     }] : []),
 
     // ═══════════════════════════════════
@@ -400,6 +504,7 @@ const navItems = computed(() => [
         label:  'Organisasi',
         href:   route('superadmin.organizations.index'),
         active: route().current('superadmin.organizations.*'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
                 </svg>`,
@@ -407,6 +512,7 @@ const navItems = computed(() => [
         label:  'Tetapan myWAP',
         href:   route('superadmin.settings.index'),
         active: route().current('superadmin.settings.*'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.36 2.36 1.724 1.724 0 001.065 2.572 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.36 2.36 1.724 1.724 0 00-2.572 1.065 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.36-2.36 1.724 1.724 0 00-1.065-2.572 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.36-2.36 1.724 1.724 0 002.572-1.065z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -415,6 +521,7 @@ const navItems = computed(() => [
         label:  'Template Emel',
         href:   route('admin.email-templates.index'),
         active: route().current('admin.email-templates.*'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>`,
@@ -422,71 +529,51 @@ const navItems = computed(() => [
         label:  'Pangkalan Ilmu',
         href:   route('admin.knowledge-base.index'),
         active: route().current('admin.knowledge-base.*'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>`,
     }] : []),
 
     // ═══════════════════════════════════
-    //  GROUPS
+    //  SUMBER & KEAHLIAN  (Member only)
     // ═══════════════════════════════════
-    ...(ecommerceChildren.value.length ? [{
-        type: 'group',
-        label: 'E-dagang',
-        groupKey: 'ecommerce',
-        active: ecommerceActive.value,
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/></svg>`,
-        children: ecommerceChildren.value,
-    }] : []),
-    ...(adminFacilityChildren.value.length ? [{
-        type: 'group',
-        label: 'Kemudahan',
-        groupKey: 'adminFacilities',
-        active: adminFacilitiesActive.value,
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
-        children: adminFacilityChildren.value,
-    }] : []),
-    ...(memberFacilityChildren.value.length ? [{
-        type: 'group',
-        label: 'Kemudahan',
-        groupKey: 'facilities',
-        active: facilitiesActive.value,
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
-        children: memberFacilityChildren.value,
-    }] : []),
-
-    // ═══════════════════════════════════
-    //  MEMBER ITEMS
-    // ═══════════════════════════════════
+    ...(isMember.value ? [{ type: 'section', label: 'Sumber & Keahlian' }] : []),
     ...(isMember.value ? [{
         label: 'Pustaka',
         href: route('member.library'),
         active: route().current('member.library'),
+        colorClass: 'text-rose-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
     }, {
         label: 'Pengumuman',
         href: route('member.announcements'),
         active: route().current('member.announcements') || route().current('member.hub'),
+        colorClass: 'text-rose-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/></svg>`,
     }, {
         label: 'Kad Ahli',
         href: route('member.card'),
         active: route().current('member.card'),
+        colorClass: 'text-rose-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8h18M7 15h1m3 0h2m-9 5h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
     }, {
         label: 'Jemput Ahli',
         href: route('member.referral'),
         active: route().current('member.referral'),
+        colorClass: 'text-rose-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`,
     }] : []),
 
     // ═══════════════════════════════════
-    //  ACCOUNT
+    //  AKAUN
     // ═══════════════════════════════════
+    { type: 'section', label: 'Akaun' },
     {
         label:  'Profil',
         href:   route('profile.edit'),
         active: route().current('profile.edit'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>`,
@@ -495,6 +582,7 @@ const navItems = computed(() => [
         label:  'Perjalanan',
         href:   route('profile.show'),
         active: route().current('profile.show'),
+        colorClass: 'text-slate-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>`,
@@ -556,73 +644,77 @@ const bottomNavItems = computed(() => {
             </div>
 
             <!-- Nav Links -->
-            <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+            <nav ref="navContainer" class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
                 <template v-for="item in navItems" :key="`${item.type}-${item.label}`">
-                    <div v-if="item.type === 'section'" class="px-3 pt-4 pb-1">
-                        <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-400/80">{{ item.label }}</span>
-                    </div>
-                    <button
-                        v-else-if="item.type === 'group'"
-                        type="button"
-                        @click="toggleGroup(item.groupKey)"
-                        :class="[
-                            'relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 text-left',
-                            item.active
-                                ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                        ]"
-                    >
-                        <span
-                            v-if="item.active"
-                            :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
-                        ></span>
-                        <span class="shrink-0" v-html="item.icon" />
-                        <transition name="fade">
-                            <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
-                        </transition>
-                        <span class="ms-auto shrink-0 text-gray-400" v-if="sidebarOpen">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200" :class="isGroupOpen(item.groupKey) ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
+                    <div v-if="item.type === 'section'" class="px-3 pt-5 pb-1.5 mt-1.5 border-t border-gray-100/60">
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400/70">
+                            <span class="w-1 h-1 rounded-full" :class="theme.accent"></span>
+                            {{ item.label }}
                         </span>
-                    </button>
-
-                    <div v-if="item.type === 'group' && isGroupOpen(item.groupKey) && sidebarOpen" class="ml-6 space-y-0.5">
-                        <Link
-                            v-for="child in item.children"
-                            :key="`${item.label}-${child.label}`"
-                            :href="child.href"
+                    </div>
+                    <template v-else-if="item.type === 'group'">
+                        <button
+                            type="button"
+                            @click="toggleGroup(item.groupKey)"
                             :class="[
-                                'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-150',
-                                child.active
+                            'relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 text-left',
+                                item.active
                                     ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                            ]"
+                                    : ['text-gray-500 hover:text-gray-800', colorHoverMap[item.colorClass] ?? 'hover:bg-gray-50']
+                        ]"
                         >
                             <span
-                                v-if="child.active"
-                                :class="['absolute left-0 w-1 h-5 rounded-r-full', theme.accent]"
+                                v-if="item.active"
+                                :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
                             ></span>
-                            <span class="shrink-0" v-html="child.icon" />
-                            <span class="truncate">{{ child.label }}</span>
-                        </Link>
-                    </div>
+                            <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
+                            <transition name="fade">
+                                <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
+                            </transition>
+                            <span class="ms-auto shrink-0 text-gray-400" v-if="sidebarOpen">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200" :class="isGroupOpen(item.groupKey) ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </span>
+                        </button>
+
+                        <div v-if="isGroupOpen(item.groupKey) && sidebarOpen" class="ml-5 space-y-0.5">
+                            <Link
+                                v-for="child in item.children"
+                                :key="`${item.label}-${child.label}`"
+                                :href="child.href"
+                                :class="[
+                                    'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-150',
+                                    child.active
+                                        ? [theme.accentBg, theme.accentText, 'font-semibold']
+                                        : ['text-gray-500 hover:text-gray-800', colorHoverMap[child.colorClass] ?? 'hover:bg-gray-50']
+                                ]"
+                            >
+                                <span
+                                    v-if="child.active"
+                                    :class="['absolute left-0 w-1 h-5 rounded-r-full', theme.accent]"
+                                ></span>
+                                <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
+                                <span class="truncate">{{ child.label }}</span>
+                            </Link>
+                        </div>
+                    </template>
 
                     <Link
-                        v-else-if="item.type !== 'group'"
+                        v-else
                         :href="item.href"
                         :class="[
                             'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150',
                             item.active
                                 ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                : ['text-gray-500 hover:text-gray-800', colorHoverMap[item.colorClass] ?? 'hover:bg-gray-50']
                         ]"
                     >
                         <span
                             v-if="item.active"
                             :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
                         ></span>
-                        <span class="shrink-0" v-html="item.icon" />
+                        <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
                         <transition name="fade">
                             <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
                         </transition>
@@ -870,25 +962,28 @@ const bottomNavItems = computed(() => {
                 <!-- Nav links -->
                 <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
                     <template v-for="item in navItems" :key="`${item.type}-${item.label}`">
-                        <div v-if="item.type === 'section'" class="px-3 pt-4 pb-1">
-                            <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-400/80">{{ item.label }}</span>
-                        </div>
+                    <div v-if="item.type === 'section'" class="px-3 pt-5 pb-1.5 mt-1.5 border-t border-gray-100/60">
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400/70">
+                            <span class="w-1 h-1 rounded-full" :class="theme.accent"></span>
+                            {{ item.label }}
+                        </span>
+                    </div>
+                    <template v-else-if="item.type === 'group'">
                         <button
-                            v-else-if="item.type === 'group'"
                             type="button"
                             @click="toggleGroup(item.groupKey)"
                             :class="[
                                 'relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 text-left',
                                 item.active
                                     ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                    : ['text-gray-500 hover:text-gray-800', colorHoverMap[item.colorClass] ?? 'hover:bg-gray-50']
                             ]"
                         >
                             <span
                                 v-if="item.active"
                                 :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
                             ></span>
-                            <span class="shrink-0" v-html="item.icon" />
+                            <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
                             <span class="truncate">{{ item.label }}</span>
                             <span class="ms-auto shrink-0 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200" :class="isGroupOpen(item.groupKey) ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -897,7 +992,7 @@ const bottomNavItems = computed(() => {
                             </span>
                         </button>
 
-                        <div v-if="item.type === 'group' && isGroupOpen(item.groupKey)" class="ml-6 space-y-0.5">
+                        <div v-if="isGroupOpen(item.groupKey)" class="ml-5 space-y-0.5">
                             <Link
                                 v-for="child in item.children"
                                 :key="`${item.label}-${child.label}`"
@@ -907,36 +1002,37 @@ const bottomNavItems = computed(() => {
                                     'relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors duration-150',
                                     child.active
                                         ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                        : ['text-gray-500 hover:text-gray-800', colorHoverMap[child.colorClass] ?? 'hover:bg-gray-50']
                                 ]"
                             >
                                 <span
                                     v-if="child.active"
                                     :class="['absolute left-0 w-1 h-5 rounded-r-full', theme.accent]"
                                 ></span>
-                                <span class="shrink-0" v-html="child.icon" />
+                                <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
                                 <span class="truncate">{{ child.label }}</span>
                             </Link>
                         </div>
+                    </template>
 
-                        <Link
-                            v-else-if="item.type !== 'group'"
-                            :href="item.href"
-                            @click="mobileMenuOpen = false"
-                            :class="[
-                                'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150',
-                                item.active
-                                    ? [theme.accentBg, theme.accentText, 'font-semibold']
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-                            ]"
-                        >
-                            <span
-                                v-if="item.active"
-                                :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
-                            ></span>
-                            <span class="shrink-0" v-html="item.icon" />
-                            <span class="truncate">{{ item.label }}</span>
-                        </Link>
+                    <Link
+                        v-else
+                        :href="item.href"
+                        @click="mobileMenuOpen = false"
+                        :class="[
+                            'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150',
+                            item.active
+                                ? [theme.accentBg, theme.accentText, 'font-semibold']
+                                : ['text-gray-500 hover:text-gray-800', colorHoverMap[item.colorClass] ?? 'hover:bg-gray-50']
+                        ]"
+                    >
+                        <span
+                            v-if="item.active"
+                            :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
+                        ></span>
+                        <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
+                        <span class="truncate">{{ item.label }}</span>
+                    </Link>
                     </template>
                 </nav>
 
