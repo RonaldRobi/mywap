@@ -2,7 +2,6 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted, Teleport, Transition } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import PopupDisplay from '@/Components/PopupDisplay.vue';
 
 const profileMenuOpen = ref(false);
 
@@ -71,6 +70,33 @@ function markNotifsRead() {
 
 function openDrawer() {
     window.dispatchEvent(new CustomEvent('open-mobile-drawer'));
+}
+
+// Popup
+const showPopup = ref(false);
+
+onMounted(() => {
+    if (props.activePopup) {
+        let isDismissed = false;
+        try {
+            isDismissed = !!localStorage.getItem('popup_dismissed_' + props.activePopup.id);
+        } catch {}
+        if (!isDismissed) {
+            setTimeout(() => { showPopup.value = true; }, 800);
+        }
+    }
+});
+
+function dismissPopup() {
+    if (props.activePopup) {
+        try { localStorage.setItem('popup_dismissed_' + props.activePopup.id, '1'); } catch {}
+    }
+    showPopup.value = false;
+}
+
+function popupButtonClick(url) {
+    dismissPopup();
+    if (url) window.location.href = url;
 }
 
 const payForm = useForm({});
@@ -165,7 +191,6 @@ function scrollBooks(direction) {
 
 <template>
     <Head title="Member Dashboard" />
-    <PopupDisplay :popup-data="activePopup" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] pb-6 overflow-x-hidden">
 
@@ -845,6 +870,36 @@ function scrollBooks(direction) {
             </div>
         </transition>
     </Teleport>
+
+    <Teleport to="body">
+        <Transition name="popup-fade">
+            <div v-if="showPopup && activePopup" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4" @click.self="dismissPopup">
+                <div :class="['relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto', activePopup.popup_size === 'sm' ? 'max-w-sm' : activePopup.popup_size === 'lg' ? 'max-w-2xl' : 'max-w-lg']">
+                    <button @click="dismissPopup" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/40 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+
+                    <img v-if="activePopup.image_path" :src="activePopup.image_path" :alt="activePopup.title" class="w-full aspect-[2/1] object-cover">
+
+                    <div :class="['px-6 pb-6', activePopup.image_path ? 'pt-4' : 'pt-6']">
+                        <h3 class="text-lg font-bold text-gray-900">{{ activePopup.title }}</h3>
+                        <p v-if="activePopup.content" class="mt-2 text-sm text-gray-600 leading-relaxed" v-html="activePopup.content.replace(/\n/g, '<br>')"></p>
+
+                        <div v-if="activePopup.button_text || activePopup.button_text_2" class="mt-5 flex flex-wrap gap-3">
+                            <a v-if="activePopup.button_text" :href="activePopup.button_url || '#'" @click.prevent="popupButtonClick(activePopup.button_url)" class="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors">
+                                {{ activePopup.button_text }}
+                            </a>
+                            <a v-if="activePopup.button_text_2" :href="activePopup.button_url_2 || '#'" @click.prevent="popupButtonClick(activePopup.button_url_2)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                                {{ activePopup.button_text_2 }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+    </Teleport>
 </template>
 
 <style scoped>
@@ -915,4 +970,9 @@ function scrollBooks(direction) {
     0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.5); }
     50% { box-shadow: 0 0 0 4px rgba(248, 113, 113, 0); }
 }
+
+.popup-fade-enter-active { transition: opacity 0.3s ease; }
+.popup-fade-leave-active { transition: opacity 0.2s ease; }
+.popup-fade-enter-from,
+.popup-fade-leave-to { opacity: 0; }
 </style>
