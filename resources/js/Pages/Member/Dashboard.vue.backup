@@ -19,7 +19,6 @@ const props = defineProps({
     latestNews: { type: Array, default: () => [] },
     latestArticles: { type: Array, default: () => [] },
     activePolls: { type: Array, default: () => [] },
-    activePopup: { type: Object, default: null },
 });
 
 const themeMap = {
@@ -153,7 +152,7 @@ function scrollBooks(direction) {
 
 <template>
     <Head title="Member Dashboard" />
-    <PopupDisplay :popup-data="activePopup" />
+    <PopupDisplay />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] pb-6 overflow-x-hidden">
 

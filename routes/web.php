@@ -188,7 +188,6 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
     Route::middleware('role:Member')->group(function () {
         Route::get('/member/dashboard', [MemberDashboardController::class, 'index'])->name('member.dashboard');
-        Route::get('/api/member/popups/active', [PopupController::class, 'getActivePopup'])->name('member.popups.active');
         Route::get('/member/financial/overview', [FinancialController::class, 'memberOverview'])->name('member.financial.overview');
         Route::get('/member/referral', [MemberDashboardController::class, 'referral'])->name('member.referral');
         Route::get('/member/announcements', [InformationHubController::class, 'announcements'])->name('member.announcements');

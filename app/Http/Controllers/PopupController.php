@@ -152,44 +152,4 @@ class PopupController extends Controller
         return back()->with('success', 'Popup berjaya dipadam.');
     }
 
-    public function getActivePopup(Request $request)
-    {
-        $user = $request->user();
-
-        $popup = Popup::query()
-            ->where('is_active', true)
-            ->where(function ($query) use ($user) {
-                $query->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
-            })
-            ->where(function ($query) {
-                $query->whereNull('start_at')
-                    ->orWhere('start_at', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('end_at')
-                    ->orWhere('end_at', '>=', now());
-            })
-            ->orderBy('display_order')
-            ->orderByDesc('id')
-            ->first();
-
-        if (!$popup) {
-            return response()->json(['popup' => null]);
-        }
-
-        return response()->json([
-            'popup' => [
-                'id' => $popup->id,
-                'title' => $popup->title,
-                'content' => $popup->content,
-                'image_path' => $popup->image_path,
-                'button_text' => $popup->button_text,
-                'button_url' => $popup->button_url,
-                'button_text_2' => $popup->button_text_2,
-                'button_url_2' => $popup->button_url_2,
-                'popup_size' => $popup->popup_size,
-            ],
-        ]);
-    }
 }

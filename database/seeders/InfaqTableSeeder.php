@@ -101,6 +101,8 @@ class InfaqTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('infaq_id_seq', COALESCE((SELECT MAX(id) FROM infaq), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('infaq_id_seq', COALESCE((SELECT MAX(id) FROM infaq), 1))");
+        }
     }
 }

@@ -63,6 +63,8 @@ class OrganizationsTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('organizations_id_seq', COALESCE((SELECT MAX(id) FROM organizations), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('organizations_id_seq', COALESCE((SELECT MAX(id) FROM organizations), 1))");
+        }
     }
 }

@@ -123,6 +123,8 @@ class EventsTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('events_id_seq', COALESCE((SELECT MAX(id) FROM events), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('events_id_seq', COALESCE((SELECT MAX(id) FROM events), 1))");
+        }
     }
 }

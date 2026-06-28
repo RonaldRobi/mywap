@@ -44,6 +44,16 @@ class DatabaseSeeder extends Seeder
             CampaignsTableSeeder::class,
             DashboardBannersTableSeeder::class,
 
+            // --- ARTIKEL & VIDEO ---
+            ArticleDemoSeeder::class,
+            VideoDemoSeeder::class,
+
+            // --- BERITA (Info Terkini) ---
+            NewsDemoSeeder::class,
+
+            // --- UNDIAN (Poll) ---
+            PollDemoSeeder::class,
+
             // --- E-Commerce (Dummy Catalog) ---
             EcommerceDummySeeder::class,
 

@@ -1017,7 +1017,7 @@
     ]
   },
   "resources/js/Pages/Member/Dashboard.vue": {
-    "file": "assets/Dashboard-KAZ6sVlB.js",
+    "file": "assets/Dashboard-DnAs3qru.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Member/Dashboard.vue",
     "isDynamicEntry": true,
@@ -1030,7 +1030,7 @@
       "_ChatBot-Cwn3RhYF.js"
     ],
     "css": [
-      "assets/Dashboard-DlHM0_76.css",
+      "assets/Dashboard-C1NoTUye.css",
       "assets/AppLayout-vab-YXdv.css"
     ]
   },
@@ -1464,7 +1464,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-ClyJ1tM_.js",
+    "file": "assets/app-CQRD3zEl.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

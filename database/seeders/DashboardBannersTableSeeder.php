@@ -138,6 +138,8 @@ class DashboardBannersTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('dashboard_banners_id_seq', COALESCE((SELECT MAX(id) FROM dashboard_banners), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('dashboard_banners_id_seq', COALESCE((SELECT MAX(id) FROM dashboard_banners), 1))");
+        }
     }
 }

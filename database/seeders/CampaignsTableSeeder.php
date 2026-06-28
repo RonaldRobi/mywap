@@ -34,6 +34,8 @@ class CampaignsTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('campaigns_id_seq', COALESCE((SELECT MAX(id) FROM campaigns), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('campaigns_id_seq', COALESCE((SELECT MAX(id) FROM campaigns), 1))");
+        }
     }
 }

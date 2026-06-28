@@ -8,6 +8,7 @@ use App\Models\Article;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
 use App\Models\Event;
+use App\Models\Popup;
 use App\Models\EventRsvp;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
@@ -277,7 +278,40 @@ class MemberDashboardController extends Controller
                 ];
             });
 
+        $activePopup = Popup::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($user) {
+                $query->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            })
+            ->where(function ($query) {
+                $query->whereNull('start_at')
+                    ->orWhere('start_at', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('end_at')
+                    ->orWhere('end_at', '>=', now());
+            })
+            ->orderBy('display_order')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($activePopup) {
+            $activePopup = [
+                'id' => $activePopup->id,
+                'title' => $activePopup->title,
+                'content' => $activePopup->content,
+                'image_path' => $activePopup->image_path,
+                'button_text' => $activePopup->button_text,
+                'button_url' => $activePopup->button_url,
+                'button_text_2' => $activePopup->button_text_2,
+                'button_url_2' => $activePopup->button_url_2,
+                'popup_size' => $activePopup->popup_size,
+            ];
+        }
+
         return Inertia::render('Member/Dashboard', [
+            'activePopup' => $activePopup,
             'member' => [
                 'name' => $user->name,
                 'email' => $user->email,

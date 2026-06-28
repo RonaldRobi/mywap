@@ -141,6 +141,8 @@ class PermissionsTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('permissions_id_seq', COALESCE((SELECT MAX(id) FROM permissions), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('permissions_id_seq', COALESCE((SELECT MAX(id) FROM permissions), 1))");
+        }
     }
 }

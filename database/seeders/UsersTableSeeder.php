@@ -175,6 +175,8 @@ class UsersTableSeeder extends Seeder
             ),
         ));
 
-        \DB::statement("SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1))");
+        if (\DB::connection()->getDriverName() === 'pgsql') {
+            \DB::statement("SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1))");
+        }
     }
 }
