@@ -19,10 +19,10 @@ class MemberCardController extends Controller
             : null;
 
         $privateUrl = route('member.card');
-        $publicUrl = route('public.card', $user->member_no);
+        $publicUrl = $user->member_no ? route('public.card', ['memberNo' => $user->member_no]) : null;
 
         $privateQr = $this->generateQrSvg($privateUrl);
-        $publicQr = $this->generateQrSvg($publicUrl);
+        $publicQr = $publicUrl ? $this->generateQrSvg($publicUrl) : null;
 
         return Inertia::render('Member/Card', [
             'card' => [

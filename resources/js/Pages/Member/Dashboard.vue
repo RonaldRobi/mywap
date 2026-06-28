@@ -6,6 +6,18 @@ import PopupDisplay from '@/Components/PopupDisplay.vue';
 
 const profileMenuOpen = ref(false);
 
+const timeGreeting = computed(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Selamat Pagi';
+    if (hour >= 12 && hour < 14) return 'Selamat Tengah Hari';
+    if (hour >= 14 && hour < 18) return 'Selamat Petang';
+    return 'Selamat Malam';
+});
+const todayDate = computed(() => {
+    const d = new Date();
+    return d.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+});
+
 const props = defineProps({
     member: { type: Object, required: true },
     feeStatus: { type: Object, required: true },
@@ -166,8 +178,8 @@ function scrollBooks(direction) {
                             </svg>
                         </button>
                         <div class="min-w-0">
-                            <p class="text-[11px] text-gray-500 font-medium leading-tight">Assalamualaikum,</p>
-                            <h1 class="text-lg md:text-xl font-bold text-gray-900 truncate">{{ member.name }}</h1>
+                            <h1 class="text-sm md:text-base font-bold text-gray-900 truncate">Assalamualaikum, {{ member.name }}</h1>
+                            <p class="text-[10px] text-gray-400 font-medium leading-tight">{{ timeGreeting }} · {{ todayDate }}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
@@ -321,67 +333,117 @@ function scrollBooks(direction) {
                 </section>
 
                 <!-- ═══ 4. KAD KEAHLIAN — premium card ═══ -->
-                <section class="relative overflow-hidden rounded-[28px] p-5 text-white shadow-lg" :style="{ background: `linear-gradient(135deg, ${darkGrad.from}, ${darkGrad.to})`, boxShadow: `0 8px 32px ${darkGrad.from}4d` }">
-                    <!-- Arabesque corner pattern -->
-                    <svg class="absolute top-0 right-0 w-64 h-64 opacity-[0.03] pointer-events-none" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.8); transform-origin: top right;">
-                        <path d="M190,20 C175,10 155,8 140,15 C125,22 118,38 120,55 C122,72 132,80 148,75 C164,70 170,55 165,42 C160,30 148,25 142,32" stroke="white" stroke-width="0.7" fill="none"/>
-                        <path d="M200,40 C180,42 150,50 130,38 C110,26 105,8 118,2 C132,-2 145,10 142,25" stroke="white" stroke-width="0.6" fill="none"/>
-                        <path d="M152,18 C149,14 145,11 140,14 C144,18 148,21 152,18Z" fill="white"/>
-                        <path d="M130,30 C133,26 137,23 141,27 C137,31 133,34 130,30Z" fill="white"/>
-                        <path d="M165,55 C162,51 158,49 155,52 C158,56 161,58 165,55Z" fill="white"/>
-                        <path d="M120,60 C123,56 127,53 131,57 C127,61 123,64 120,60Z" fill="white"/>
-                        <circle cx="148" cy="38" r="0.8" fill="white"/>
-                        <circle cx="160" cy="25" r="1.2" fill="white"/>
-                        <circle cx="112" cy="40" r="0.7" fill="white"/>
+                <section class="member-card group relative overflow-hidden rounded-[28px] p-5 text-white shadow-xl" :style="{ background: `linear-gradient(135deg, ${darkGrad.from} 0%, ${darkGrad.to} 50%, ${darkGrad.from} 100%)`, boxShadow: `0 12px 40px ${darkGrad.from}66, 0 4px 12px rgba(0,0,0,0.15)` }">
+                    <!-- Animated mesh gradient blobs -->
+                    <div class="card-blob card-blob-1 absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20 blur-2xl pointer-events-none" :style="{ background: lightGrad.from }"></div>
+                    <div class="card-blob card-blob-2 absolute -bottom-12 -left-12 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none" :style="{ background: lightGrad.to }"></div>
+                    <div class="card-blob card-blob-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-32 rounded-full opacity-10 blur-3xl pointer-events-none" :style="{ background: `linear-gradient(90deg, ${lightGrad.from}, ${lightGrad.to})` }"></div>
+                    <!-- Holographic shine overlay -->
+                    <div class="card-shine absolute inset-0 pointer-events-none rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <!-- Geometric pattern overlay -->
+                    <svg class="absolute inset-0 w-full h-full opacity-[0.04] pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <pattern id="card-geo" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                                <circle cx="20" cy="20" r="0.8" fill="white"/>
+                                <path d="M0 20h40M20 0v40" stroke="white" stroke-width="0.15" opacity="0.5"/>
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#card-geo)"/>
                     </svg>
+                    <!-- Arabesque corner accents -->
+                    <svg class="absolute top-0 right-0 w-40 h-40 opacity-[0.06] pointer-events-none" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M150,15 C138,8 122,6 110,12 C98,18 92,30 94,44 C96,58 104,64 116,60 C128,56 133,44 129,34 C125,24 116,20 111,26" stroke="white" stroke-width="0.8" fill="none"/>
+                        <path d="M160,30 C144,32 120,38 104,28 C88,18 84,5 94,1 C104,-2 114,8 111,20" stroke="white" stroke-width="0.6" fill="none"/>
+                        <circle cx="120" cy="30" r="1.2" fill="white"/>
+                        <circle cx="135" cy="18" r="0.8" fill="white"/>
+                        <circle cx="100" cy="38" r="1" fill="white"/>
+                    </svg>
+                    <svg class="absolute bottom-0 left-0 w-32 h-32 opacity-[0.04] pointer-events-none" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(180deg);">
+                        <path d="M120,12 C110,6 98,5 88,10 C78,15 74,24 75,35 C76,46 83,51 93,48 C103,45 106,35 103,27 C100,19 93,16 89,21" stroke="white" stroke-width="0.7" fill="none"/>
+                        <circle cx="96" cy="24" r="1" fill="white"/>
+                        <circle cx="80" cy="30" r="0.7" fill="white"/>
+                    </svg>
+
                     <div class="relative z-10">
                         <!-- Top bar -->
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-md border border-white/20">
-                                    <img v-if="member.system_logo_path" :src="member.system_logo_path" alt="myWAP" class="h-5 w-5 object-contain">
-                                    <span v-else class="text-[9px] font-bold text-white/70">MW</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 backdrop-blur-md border border-white/25 shadow-sm">
+                                    <img v-if="member.system_logo_path" :src="member.system_logo_path" alt="myWAP" class="h-4 w-4 object-contain">
+                                    <span v-else class="text-[8px] font-black text-white/80">MW</span>
                                 </div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/60">myWAP</p>
+                                <div class="flex flex-col">
+                                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 leading-none">Kad Ahli</p>
+                                    <p class="text-[10px] font-semibold text-white/70 leading-tight">myWAP</p>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-1.5">
-                                <img v-if="member.organization?.logo_path" :src="member.organization.logo_path" :alt="member.organization?.name" class="h-7 w-7 rounded-full object-cover border border-white/30">
-                                <span class="text-[10px] font-semibold text-white/80 max-w-[80px] truncate">{{ member.organization?.name || 'Organisasi' }}</span>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2.5 py-1">
+                                    <img v-if="member.organization?.logo_path" :src="member.organization.logo_path" :alt="member.organization?.name" class="h-5 w-5 rounded-full object-cover border border-white/30">
+                                    <span class="text-[10px] font-semibold text-white/90 max-w-[90px] truncate">{{ member.organization?.name || 'Organisasi' }}</span>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Divider line -->
+                        <div class="mt-3.5 mb-3.5 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
                         <!-- Body -->
-                        <div class="mt-4 flex items-center gap-4">
-                            <img v-if="member.photo_url" :src="member.photo_url" alt="" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shrink-0">
-                            <div v-else class="w-16 h-16 rounded-2xl flex items-center justify-center text-lg font-black text-white bg-white/15 backdrop-blur-md border-2 border-white/30 shrink-0">
-                                {{ initials(member.name) }}
+                        <div class="flex items-center gap-4">
+                            <div class="relative shrink-0">
+                                <img v-if="member.photo_url" :src="member.photo_url" alt="" class="w-[72px] h-[72px] rounded-2xl object-cover border-2 border-white/30 shadow-lg">
+                                <div v-else class="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-xl font-black text-white bg-white/15 backdrop-blur-md border-2 border-white/30 shadow-lg">
+                                    {{ initials(member.name) }}
+                                </div>
+                                <!-- Status dot -->
+                                <div class="absolute -bottom-0.5 -right-0.5 p-0.5 bg-white/20 rounded-full backdrop-blur-md">
+                                    <div :class="['w-3 h-3 rounded-full shadow-sm', feeStatus.status === 'active' ? 'bg-emerald-400 card-pulse-green' : 'bg-red-400 card-pulse-red']"></div>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <h3 class="text-base font-bold text-white truncate">{{ member.name }}</h3>
-                                <p class="text-[11px] text-white/60 mt-0.5">Ahli sejak {{ member.member_since || '—' }}</p>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-lg font-extrabold text-white truncate tracking-tight">{{ member.name }}</h3>
+                                <p class="text-[11px] text-white/50 mt-0.5 font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 inline -mt-0.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    Ahli sejak {{ member.member_since || '—' }}
+                                </p>
                                 <div class="flex flex-wrap gap-1.5 mt-2">
                                     <span v-if="member.email" class="inline-flex items-center gap-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] text-white/80">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                         {{ member.email }}
                                     </span>
                                     <span v-if="member.phone" class="inline-flex items-center gap-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] text-white/80">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                                         {{ member.phone }}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <!-- Glassmorphism stats -->
-                        <div class="flex items-end justify-between mt-4">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/15 p-2.5">
-                                    <p class="text-[10px] text-white/60">Yuran</p>
-                                    <p class="mt-0.5 text-sm font-bold">{{ feeStatus.status === 'active' ? 'Aktif' : 'Tertunggak' }}</p>
-                                </div>
-                                <div class="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/15 p-2.5">
-                                    <p class="text-[10px] text-white/60">Usrah</p>
-                                    <p class="mt-0.5 text-sm font-bold line-clamp-1">{{ usrah?.name || 'Belum Set' }}</p>
+
+                        <!-- Glassmorphism stats row -->
+                        <div class="grid grid-cols-3 gap-2 mt-4">
+                            <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Yuran</p>
+                                <div class="flex items-center justify-center gap-1 mt-1">
+                                    <div :class="['w-1.5 h-1.5 rounded-full shrink-0', feeStatus.status === 'active' ? 'bg-emerald-400' : 'bg-red-400']"></div>
+                                    <p class="text-[13px] font-bold">{{ feeStatus.status === 'active' ? 'Aktif' : 'Tunggak' }}</p>
                                 </div>
                             </div>
-                            <Link :href="route('member.card')" class="text-[10px] font-semibold text-white/70 hover:text-white transition shrink-0">
-                                Lihat Kad Penuh →
+                            <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Usrah</p>
+                                <p class="mt-1 text-[13px] font-bold line-clamp-1">{{ usrah?.name || '—' }}</p>
+                            </div>
+                            <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Sejak</p>
+                                <p class="mt-1 text-[13px] font-bold">{{ member.member_since || '—' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- CTA -->
+                        <div class="mt-4 flex items-center justify-end">
+                            <Link :href="route('member.card')" class="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 px-3.5 py-1.5 text-[11px] font-semibold text-white/80 hover:text-white transition-all duration-300 group/btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                Lihat Kad Penuh
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-transform duration-300 group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                             </Link>
                         </div>
                     </div>
@@ -793,5 +855,64 @@ function scrollBooks(direction) {
 .banner-fade-enter-from,
 .banner-fade-leave-to {
     opacity: 0;
+}
+
+/* Card blob orbit animations */
+.card-blob-1 {
+    animation: blob-orbit-1 8s ease-in-out infinite;
+}
+.card-blob-2 {
+    animation: blob-orbit-2 10s ease-in-out infinite;
+}
+.card-blob-3 {
+    animation: blob-orbit-3 12s ease-in-out infinite;
+}
+@keyframes blob-orbit-1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-20px, 15px) scale(1.1); }
+    66% { transform: translate(10px, -10px) scale(0.95); }
+}
+@keyframes blob-orbit-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(15px, -20px) scale(1.05); }
+    66% { transform: translate(-10px, 10px) scale(1.1); }
+}
+@keyframes blob-orbit-3 {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.1; }
+    50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.15; }
+}
+
+/* Holographic shine sweep */
+.card-shine {
+    background: linear-gradient(
+        105deg,
+        transparent 30%,
+        rgba(255,255,255,0.06) 45%,
+        rgba(255,255,255,0.12) 50%,
+        rgba(255,255,255,0.06) 55%,
+        transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: shine-sweep 3s ease-in-out infinite;
+}
+@keyframes shine-sweep {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Status dot pulse */
+.card-pulse-green {
+    animation: pulse-green 2s ease-in-out infinite;
+}
+.card-pulse-red {
+    animation: pulse-red 1.5s ease-in-out infinite;
+}
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+    50% { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0); }
+}
+@keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.5); }
+    50% { box-shadow: 0 0 0 4px rgba(248, 113, 113, 0); }
 }
 </style>

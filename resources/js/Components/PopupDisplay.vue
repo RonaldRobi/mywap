@@ -1,6 +1,8 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref } from 'vue';
 import Modal from '@/Components/Modal.vue';
+
+defineOptions({ inheritAttrs: false });
 
 const props = defineProps({
     popupData: {
@@ -9,32 +11,27 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['dismiss']);
-
 const show = ref(false);
-const dismissed = ref(false);
 
-const dismissKey = ref(null);
-
-watch(() => props.popupData, (val) => {
-    if (val) {
-        dismissKey.value = 'popup_dismissed_' + val.id;
-        if (localStorage.getItem(dismissKey.value)) {
-            dismissed.value = true;
-            return;
-        }
+if (props.popupData) {
+    let isDismissed = false;
+    try {
+        isDismissed = !!localStorage.getItem('popup_dismissed_' + props.popupData.id);
+    } catch {}
+    if (!isDismissed) {
         setTimeout(() => {
             show.value = true;
         }, 800);
     }
-}, { immediate: true });
+}
 
 function dismiss() {
-    if (dismissKey.value) {
-        localStorage.setItem(dismissKey.value, '1');
+    if (props.popupData) {
+        try {
+            localStorage.setItem('popup_dismissed_' + props.popupData.id, '1');
+        } catch {}
     }
     show.value = false;
-    emit('dismiss');
 }
 
 function buttonClick(url) {

@@ -46,12 +46,19 @@ const editForm = useForm({
 });
 
 function submit() {
-    form.is_active = toBoolString(form.is_active);
-    form.post(route('admin.popups.store'), {
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => form.reset('title', 'content', 'image', 'button_text', 'button_url', 'button_text_2', 'button_url_2', 'popup_size', 'is_active', 'display_order', 'start_at', 'end_at'),
-    });
+    form
+        .transform((data) => {
+            data.is_active = toBoolString(data.is_active);
+            if (!data.image) delete data.image;
+            if (!data.start_at) delete data.start_at;
+            if (!data.end_at) delete data.end_at;
+            return data;
+        })
+        .post(route('admin.popups.store'), {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => form.reset('title', 'content', 'image', 'button_text', 'button_url', 'button_text_2', 'button_url_2', 'popup_size', 'is_active', 'display_order', 'start_at', 'end_at'),
+        });
 }
 
 function startEdit(item) {
@@ -76,12 +83,15 @@ function cancelEdit() {
 }
 
 function saveEdit(item) {
-    editForm.is_active = toBoolString(editForm.is_active);
     editForm
-        .transform((data) => ({
-            ...data,
-            _method: 'put',
-        }))
+        .transform((data) => {
+            data._method = 'put';
+            data.is_active = toBoolString(data.is_active);
+            if (!data.image) delete data.image;
+            if (!data.start_at) delete data.start_at;
+            if (!data.end_at) delete data.end_at;
+            return data;
+        })
         .post(route('admin.popups.update', item.id), {
             preserveScroll: true,
             forceFormData: true,
