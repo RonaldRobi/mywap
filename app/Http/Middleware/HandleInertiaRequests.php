@@ -104,6 +104,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'brand' => [
                 'app_name' => $appSetting?->app_name ?? config('app.name', 'myWAP'),
+                'og_image_path' => $this->normalizeStorageUrl($appSetting?->og_image_path),
                 'system_logo_path' => $this->normalizeStorageUrl($appSetting?->system_logo_path),
                 'splash_image_path' => $this->normalizeStorageUrl($appSetting?->splash_image_path),
                 'splash_background_color' => $appSetting?->splash_background_color ?? '#0f172a',

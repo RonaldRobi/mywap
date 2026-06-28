@@ -19,6 +19,7 @@ class AppSetting extends Model
 
     protected $fillable = [
         'app_name',
+        'og_image_path',
         'system_logo_path',
         'splash_image_path',
         'splash_background_color',
@@ -63,6 +64,11 @@ class AppSetting extends Model
     }
 
     public function getSystemLogoPathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getOgImagePathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

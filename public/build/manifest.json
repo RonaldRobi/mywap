@@ -423,7 +423,7 @@
     ]
   },
   "resources/js/Pages/Admin/PopupManage.vue": {
-    "file": "assets/PopupManage-D96koidV.js",
+    "file": "assets/PopupManage-DC7Zce3H.js",
     "name": "PopupManage",
     "src": "resources/js/Pages/Admin/PopupManage.vue",
     "isDynamicEntry": true,
@@ -901,7 +901,7 @@
     ]
   },
   "resources/js/Pages/Infaq/Show.vue": {
-    "file": "assets/Show-CyYdA0NG.js",
+    "file": "assets/Show-CMB77m9Q.js",
     "name": "Show",
     "src": "resources/js/Pages/Infaq/Show.vue",
     "isDynamicEntry": true,
@@ -1361,7 +1361,7 @@
     ]
   },
   "resources/js/Pages/Superadmin/SystemSettings.vue": {
-    "file": "assets/SystemSettings-DUuPdWgl.js",
+    "file": "assets/SystemSettings-Bqf7zqU4.js",
     "name": "SystemSettings",
     "src": "resources/js/Pages/Superadmin/SystemSettings.vue",
     "isDynamicEntry": true,
@@ -1464,7 +1464,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-C3V76IsQ.js",
+    "file": "assets/app-ClyJ1tM_.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

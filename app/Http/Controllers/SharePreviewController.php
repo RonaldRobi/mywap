@@ -48,7 +48,7 @@ class SharePreviewController extends Controller
 
         return $this->renderPreview(
             title: $infaq->title,
-            description: $infaq->description ?: 'Sertai kempen infaq ini sekarang.',
+            description: strip_tags((string) $infaq->description) ?: 'Sertai kempen infaq ini sekarang.',
             imageUrl: $this->absoluteUrl($infaq->image_path),
             pageUrl: route('share.infaq', $infaq, true),
             redirectUrl: route('infaq.show', $infaq, true),

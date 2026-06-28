@@ -12,6 +12,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    ogImagePath: {
+        type: String,
+        default: null,
+    },
     chatbotLogoPath: {
         type: String,
         default: null,
@@ -70,6 +74,10 @@ const form = useForm({
     system_logo: null,
 });
 
+const ogForm = useForm({
+    og_image: null,
+});
+
 const chatbotForm = useForm({
     chatbot_logo: null,
 });
@@ -88,6 +96,14 @@ function uploadSystemLogo() {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => form.reset('system_logo'),
+    });
+}
+
+function uploadOgImage() {
+    ogForm.post(route('superadmin.settings.og-image.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => ogForm.reset('og_image'),
     });
 }
 
@@ -238,6 +254,36 @@ onBeforeUnmount(() => {
                             class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
                         >
                             {{ form.processing ? 'Memuat naik...' : 'Simpan Logo myWAP' }}
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Gambar OG (Open Graph)</h2>
+                <p class="mt-1 text-xs text-gray-500">Gambar preview bila pautan sistem dikongsi di WhatsApp/Telegram/Messenger. Cadangan saiz: <strong>1200 × 630px</strong>, format JPG/PNG/WEBP.</p>
+
+                <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div class="flex h-32 w-56 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+                        <img v-if="ogImagePath" :src="ogImagePath" alt="OG Image" class="h-28 w-52 rounded-xl object-cover">
+                        <span v-else class="text-xs font-semibold text-gray-400">Tiada gambar</span>
+                    </div>
+
+                    <form class="flex-1 space-y-2" @submit.prevent="uploadOgImage">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            :disabled="!canManageSystemLogo"
+                            @change="ogForm.og_image = $event.target.files[0]"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                        >
+                        <p v-if="ogForm.errors.og_image" class="text-xs text-red-500">{{ ogForm.errors.og_image }}</p>
+                        <button
+                            type="submit"
+                            :disabled="ogForm.processing || !canManageSystemLogo"
+                            class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                        >
+                            {{ ogForm.processing ? 'Memuat naik...' : 'Simpan Gambar OG' }}
                         </button>
                     </form>
                 </div>

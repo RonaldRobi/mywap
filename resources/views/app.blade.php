@@ -23,6 +23,22 @@
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
+
+        @if (request()->routeIs('login'))
+            @php
+                $ogImage = $page['props']['brand']['og_image_path'] ?? $page['props']['brand']['system_logo_path'] ?? asset('images/og-login.png');
+            @endphp
+            <meta property="og:title" content="Login - {{ config('app.name') }}" />
+            <meta property="og:description" content="Log masuk ke akaun myWAP anda" />
+            <meta property="og:image" content="{{ $ogImage }}" />
+            <meta property="og:url" content="{{ url()->current() }}" />
+            <meta property="og:type" content="website" />
+            <meta property="og:site_name" content="{{ config('app.name') }}" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="Login - {{ config('app.name') }}" />
+            <meta name="twitter:description" content="Log masuk ke akaun myWAP anda" />
+            <meta name="twitter:image" content="{{ $ogImage }}" />
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia

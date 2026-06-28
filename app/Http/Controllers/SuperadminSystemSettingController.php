@@ -20,6 +20,7 @@ class SuperadminSystemSettingController extends Controller
         return Inertia::render('Superadmin/SystemSettings', [
             'appName' => $setting?->app_name ?? config('app.name', 'myWAP'),
             'systemLogoPath' => $this->normalizeStorageUrl($setting?->system_logo_path),
+            'ogImagePath' => $this->normalizeStorageUrl($setting?->og_image_path),
             'chatbotLogoPath' => $this->normalizeStorageUrl($setting?->chatbot_logo_path),
             'splashImagePath' => $this->normalizeStorageUrl($setting?->splash_image_path),
             'splashBackgroundColor' => $setting?->splash_background_color ?? '#0f172a',
@@ -243,6 +244,34 @@ class SuperadminSystemSettingController extends Controller
         ]);
 
         return back()->with('success', 'Maklumat hubungi admin berjaya dikemas kini.');
+    }
+
+    public function updateOgImage(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sila jalankan migration terlebih dahulu.');
+        }
+
+        $data = $request->validate([
+            'og_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+        ]);
+
+        $setting = AppSetting::singleton();
+
+        if ($setting->og_image_path) {
+            $oldPath = ltrim(str_replace('/storage/', '', parse_url((string) $setting->og_image_path, PHP_URL_PATH) ?? ''), '/');
+            if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        $storedPath = $data['og_image']->store('og-images', 'public');
+
+        $setting->update([
+            'og_image_path' => '/storage/' . ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', 'Gambar OG (Open Graph) berjaya dikemas kini.');
     }
 
     private function normalizeStorageUrl(?string $url): ?string

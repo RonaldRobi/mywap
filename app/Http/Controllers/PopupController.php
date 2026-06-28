@@ -57,7 +57,7 @@ class PopupController extends Controller
             'button_text_2' => ['nullable', 'string', 'max:255'],
             'button_url_2' => ['nullable', 'string', 'max:255'],
             'popup_size' => ['nullable', 'string', 'in:sm,md,lg'],
-            'is_active' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'in:0,1,true,false'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'start_at' => ['nullable', 'date'],
             'end_at' => ['nullable', 'date', 'after_or_equal:start_at'],
@@ -80,10 +80,10 @@ class PopupController extends Controller
             'button_text_2' => $data['button_text_2'] ?? null,
             'button_url_2' => $data['button_url_2'] ?? null,
             'popup_size' => $data['popup_size'] ?? 'md',
-            'is_active' => (bool) ($data['is_active'] ?? true),
+            'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'display_order' => (int) ($data['display_order'] ?? 1),
-            'start_at' => $data['start_at'] ?? null,
-            'end_at' => $data['end_at'] ?? null,
+            'start_at' => !empty($data['start_at']) ? $data['start_at'] : null,
+            'end_at' => !empty($data['end_at']) ? $data['end_at'] : null,
         ]);
 
         return back()->with('success', 'Popup berjaya dibuat.');
@@ -100,7 +100,7 @@ class PopupController extends Controller
             'button_text_2' => ['nullable', 'string', 'max:255'],
             'button_url_2' => ['nullable', 'string', 'max:255'],
             'popup_size' => ['nullable', 'string', 'in:sm,md,lg'],
-            'is_active' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'in:0,1,true,false'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'start_at' => ['nullable', 'date'],
             'end_at' => ['nullable', 'date', 'after_or_equal:start_at'],
@@ -129,10 +129,10 @@ class PopupController extends Controller
             'button_text_2' => $data['button_text_2'] ?? null,
             'button_url_2' => $data['button_url_2'] ?? null,
             'popup_size' => $data['popup_size'] ?? 'md',
-            'is_active' => (bool) ($data['is_active'] ?? false),
+            'is_active' => filter_var($data['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'display_order' => (int) ($data['display_order'] ?? 1),
-            'start_at' => $data['start_at'] ?? null,
-            'end_at' => $data['end_at'] ?? null,
+            'start_at' => !empty($data['start_at']) ? $data['start_at'] : null,
+            'end_at' => !empty($data['end_at']) ? $data['end_at'] : null,
         ]);
 
         return back()->with('success', 'Popup berjaya dikemas kini.');

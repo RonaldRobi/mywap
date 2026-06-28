@@ -38,7 +38,14 @@ function formatCompact(value) {
 
 const ogTitle = computed(() => props.infaq.title);
 const ogDescription = computed(() => (props.infaq.description || 'Jom menyumbang bersama kami.').substring(0, 200));
-const ogImage = computed(() => props.infaq.image_path || '');
+const ogImage = computed(() => {
+    if (props.infaq.image_path) {
+        return props.infaq.image_path.startsWith('http')
+            ? props.infaq.image_path
+            : window.location.origin + props.infaq.image_path;
+    }
+    return '';
+});
 
 const qrUrl = computed(() => {
     return route('infaq.qr', {

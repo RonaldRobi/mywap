@@ -10,6 +10,10 @@ const props = defineProps({
     },
 });
 
+function toBoolString(val) {
+    return val ? '1' : '0';
+}
+
 const form = useForm({
     title: '',
     content: '',
@@ -42,6 +46,7 @@ const editForm = useForm({
 });
 
 function submit() {
+    form.is_active = toBoolString(form.is_active);
     form.post(route('admin.popups.store'), {
         preserveScroll: true,
         forceFormData: true,
@@ -71,6 +76,7 @@ function cancelEdit() {
 }
 
 function saveEdit(item) {
+    editForm.is_active = toBoolString(editForm.is_active);
     editForm
         .transform((data) => ({
             ...data,
@@ -121,6 +127,7 @@ const sizeLabels = {
                             <option value="md">Sederhana</option>
                             <option value="lg">Besar</option>
                         </select>
+                        <p v-if="form.errors.popup_size" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.popup_size }}</p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Kandungan (Teks)</label>
@@ -135,34 +142,42 @@ const sizeLabels = {
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Teks Butang 1</label>
                         <input v-model="form.button_text" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.button_text" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.button_text }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">URL Butang 1</label>
                         <input v-model="form.button_url" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.button_url" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.button_url }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Teks Butang 2 (Optional)</label>
                         <input v-model="form.button_text_2" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.button_text_2" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.button_text_2 }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">URL Butang 2</label>
                         <input v-model="form.button_url_2" type="url" placeholder="https://..." class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.button_url_2" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.button_url_2 }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Display Order</label>
                         <input v-model.number="form.display_order" type="number" min="1" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.display_order" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.display_order }}</p>
                     </div>
                     <div class="flex items-center gap-2 mt-6">
                         <input id="is_active" v-model="form.is_active" type="checkbox" class="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500">
                         <label for="is_active" class="text-sm text-gray-600">Aktifkan popup</label>
+                        <p v-if="form.errors.is_active" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.is_active }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Mula (kosongkan untuk tanpa had)</label>
                         <input v-model="form.start_at" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.start_at" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.start_at }}</p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Tamat (kosongkan untuk tanpa had)</label>
                         <input v-model="form.end_at" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                        <p v-if="form.errors.end_at" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.end_at }}</p>
                     </div>
                     <div class="md:col-span-2">
                         <button type="submit" :disabled="form.processing" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
@@ -182,6 +197,7 @@ const sizeLabels = {
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Tajuk</label>
                                         <input v-model="editForm.title" type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" required>
+                                        <p v-if="editForm.errors.title" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.title }}</p>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Saiz</label>
@@ -190,6 +206,7 @@ const sizeLabels = {
                                             <option value="md">Sederhana</option>
                                             <option value="lg">Besar</option>
                                         </select>
+                                        <p v-if="editForm.errors.popup_size" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.popup_size }}</p>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Kandungan</label>
@@ -201,6 +218,8 @@ const sizeLabels = {
                                             <input v-model="editForm.button_text" type="text" placeholder="Teks" class="w-1/2 rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                             <input v-model="editForm.button_url" type="url" placeholder="URL" class="w-1/2 rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                         </div>
+                                        <p v-if="editForm.errors.button_text" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.button_text }}</p>
+                                        <p v-if="editForm.errors.button_url" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.button_url }}</p>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Butang 2</label>
@@ -208,21 +227,27 @@ const sizeLabels = {
                                             <input v-model="editForm.button_text_2" type="text" placeholder="Teks" class="w-1/2 rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                             <input v-model="editForm.button_url_2" type="url" placeholder="URL" class="w-1/2 rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                         </div>
+                                        <p v-if="editForm.errors.button_text_2" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.button_text_2 }}</p>
+                                        <p v-if="editForm.errors.button_url_2" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.button_url_2 }}</p>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Display Order</label>
                                         <input v-model.number="editForm.display_order" type="number" min="1" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
+                                        <p v-if="editForm.errors.display_order" class="mt-1 text-xs font-semibold text-red-600">{{ editForm.errors.display_order }}</p>
                                     </div>
                                     <div class="flex items-end gap-4">
                                         <label class="flex items-center gap-2 text-xs text-gray-600">
                                             <input v-model="editForm.is_active" type="checkbox" class="rounded border-gray-300"> Aktif
                                         </label>
+                                        <p v-if="editForm.errors.is_active" class="text-xs font-semibold text-red-600">{{ editForm.errors.is_active }}</p>
                                         <label class="text-xs text-gray-500">Mula:
                                             <input v-model="editForm.start_at" type="datetime-local" class="rounded-lg border border-gray-200 px-2 py-1 text-xs ml-1">
                                         </label>
+                                        <p v-if="editForm.errors.start_at" class="text-xs font-semibold text-red-600">{{ editForm.errors.start_at }}</p>
                                         <label class="text-xs text-gray-500">Tamat:
                                             <input v-model="editForm.end_at" type="datetime-local" class="rounded-lg border border-gray-200 px-2 py-1 text-xs ml-1">
                                         </label>
+                                        <p v-if="editForm.errors.end_at" class="text-xs font-semibold text-red-600">{{ editForm.errors.end_at }}</p>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Gambar Baru (biarkan kosong jika nak kekal gambar lama)</label>
