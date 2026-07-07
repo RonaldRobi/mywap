@@ -4,7 +4,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
     categories: {
-        type: Array,
+        type: Object,
         required: true,
     },
 });
@@ -44,7 +44,7 @@ const page = usePage();
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="c in categories" :key="c.id" class="hover:bg-gray-50/60">
+                            <tr v-for="c in categories.data" :key="c.id" class="hover:bg-gray-50/60">
                                 <td class="px-4 py-3 font-semibold text-gray-900">{{ c.name }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ c.description || '—' }}</td>
                                 <td class="px-4 py-3 text-right">
@@ -53,13 +53,29 @@ const page = usePage();
                                     </Link>
                                 </td>
                             </tr>
-                            <tr v-if="!categories.length">
+                            <tr v-if="!categories.data?.length">
                                 <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500">
                                     Tiada kategori lagi.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div v-if="categories.links?.length > 3" class="mt-8 flex items-center justify-center">
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <Link
+                        v-for="link in categories.links"
+                        :key="link.label"
+                        :href="link.url || ''"
+                        class="rounded-xl px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                        :class="[
+                            link.active ? 'bg-gray-900 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900',
+                            !link.url ? 'pointer-events-none opacity-40' : '',
+                        ]"
+                        v-html="link.label"
+                    />
                 </div>
             </div>
         </div>

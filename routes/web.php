@@ -227,15 +227,14 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     // ─── E-Commerce Routes (Inertia, inside dashboard) ───────────────────────
     // Member access: browse products + create/view own orders
     Route::get('products', [App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
-    Route::get('products/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
-
     Route::resource('orders', App\Http\Controllers\OrderController::class)->only(['index', 'show', 'store']);
     Route::get('orders/{order}/pay', [App\Http\Controllers\OrderController::class, 'pay'])->name('orders.pay');
 
     // Admin/Superadmin: manage catalog + manage orders
     Route::middleware('role:Admin|Superadmin')->group(function () {
         Route::resource('products', App\Http\Controllers\ProductController::class)->except(['index', 'show']);
-        Route::resource('categories', App\Http\Controllers\CategoryController::class);
+
+        Route::resource('categories', App\Http\Controllers\CategoryController::class)->except(['show']);
         Route::post('orders/{order}/update-status', [App\Http\Controllers\OrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
         // Cawangan (Branch) management — Admin manages own org, Superadmin manages all
@@ -292,6 +291,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/bulk-branch', [InformationHubAdminController::class, 'bulkBranch'])->name('admin.bulk-branch');
         Route::patch('/admin/members/bulk-branch', [InformationHubAdminController::class, 'bulkBranchUpdate'])->name('admin.members.bulk-branch');
     });
+
+    Route::get('products/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
 
     // Branch change requests — Org Admin, Branch Admin
     Route::middleware('role:Admin|Superadmin|Admin Cawangan')->group(function () {
