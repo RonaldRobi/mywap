@@ -862,6 +862,141 @@ class InformationHubAdminController extends Controller
         return response()->json(['data' => $logs]);
     }
 
+    public function bulkBranch(Request $request): Response
+    {
+        $user = $request->user()->load('organization');
+        $isSuperadmin = $user->hasRole('Superadmin');
+
+        $search = $request->input('search');
+        $organizationIdFilter = $request->input('organization_id');
+        $branchIdFilter = $request->input('branch_id');
+        $perPage = (int) ($request->input('per_page', 50));
+        $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 50;
+
+        $query = User::query()
+            ->with(['branch:id,name,organization_id', 'organization:id,name,slug']);
+
+        if (! $isSuperadmin) {
+            $query->where('current_organization_id', $user->current_organization_id);
+        } elseif ($organizationIdFilter) {
+            $query->where('current_organization_id', $organizationIdFilter);
+        }
+
+        if ($branchIdFilter) {
+            $query->where('branch_id', $branchIdFilter);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('member_no', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('ic_number', 'like', "%{$search}%");
+            });
+        }
+
+        $members = $query->orderBy('name')->paginate($perPage)->withQueryString()
+            ->through(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'member_no' => $u->member_no,
+                'branch_id' => $u->branch_id,
+                'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
+                'organization_name' => $u->organization?->name ?? '—',
+                'organization_id' => $u->current_organization_id,
+            ]);
+
+        $branches = $isSuperadmin
+            ? \App\Models\Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id'])
+            : \App\Models\Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id']);
+
+        return Inertia::render('Admin/BulkBranch', [
+            'isSuperadmin' => $isSuperadmin,
+            'defaultOrganizationId' => $user->current_organization_id,
+            'organizations' => $isSuperadmin
+                ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
+                : collect([['id' => $user->organization?->id, 'name' => $user->organization?->name, 'slug' => $user->organization?->slug]]),
+            'members' => $members,
+            'branches' => $branches,
+            'filters' => [
+                'search' => $search,
+                'organization_id' => $organizationIdFilter,
+                'branch_id' => $branchIdFilter,
+                'per_page' => $perPage,
+            ],
+        ]);
+    }
+
+    public function bulkBranchUpdate(Request $request): JsonResponse
+    {
+        $authUser = $request->user();
+        $isSuperadmin = $authUser->hasRole('Superadmin');
+
+        $data = $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'member_ids' => ['required', 'array', 'max:100'],
+            'member_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $targetBranch = \App\Models\Branch::find($data['branch_id']);
+
+        if (! $isSuperadmin) {
+            if ($targetBranch->organization_id !== $authUser->current_organization_id) {
+                return response()->json(['message' => 'Cawangan di luar organisasi anda.'], 403);
+            }
+        }
+
+        $members = User::whereIn('id', $data['member_ids'])
+            ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $authUser->current_organization_id))
+            ->get();
+
+        $successCount = 0;
+        $errors = [];
+
+        foreach ($members as $member) {
+            if ($member->branch_id === $targetBranch->id) {
+                $errors[] = "{$member->name} ({$member->member_no}) sudah berada di cawangan ini.";
+                continue;
+            }
+
+            $originalBranchId = $member->branch_id;
+            $member->update(['branch_id' => $targetBranch->id]);
+
+            BranchTransitionHistory::create([
+                'user_id' => $member->id,
+                'from_branch_id' => $originalBranchId,
+                'to_branch_id' => $targetBranch->id,
+                'changed_by' => $authUser->id,
+                'change_type' => 'admin_bulk',
+            ]);
+
+            BranchChangeRequest::where('user_id', $member->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'rejected',
+                    'reviewed_by' => $authUser->id,
+                    'reviewed_at' => now(),
+                    'rejection_reason' => 'Ditukar secara pukal oleh admin.',
+                ]);
+
+            ActivityLog::create([
+                'user_id' => $authUser->id,
+                'organization_id' => $member->current_organization_id,
+                'target_type' => User::class,
+                'target_id' => $member->id,
+                'action' => 'bulk_branch_change',
+                'description' => "Cawangan ditukar secara pukal ke {$targetBranch->name}.",
+            ]);
+
+            $successCount++;
+        }
+
+        return response()->json([
+            'success_count' => $successCount,
+            'errors' => $errors,
+        ]);
+    }
+
     private function resolveOrganizationId($user, ?int $submittedOrganizationId): int
     {
         if ($user->hasRole('Superadmin')) {

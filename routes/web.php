@@ -287,6 +287,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
         // Admin update member profile
         Route::patch('/admin/members/{user}/update', [InformationHubAdminController::class, 'updateMember'])->name('admin.members.update');
+
+        // Bulk branch change
+        Route::get('/admin/bulk-branch', [InformationHubAdminController::class, 'bulkBranch'])->name('admin.bulk-branch');
+        Route::patch('/admin/members/bulk-branch', [InformationHubAdminController::class, 'bulkBranchUpdate'])->name('admin.members.bulk-branch');
     });
 
     // Branch change requests — Org Admin, Branch Admin
