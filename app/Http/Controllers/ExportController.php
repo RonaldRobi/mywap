@@ -13,7 +13,8 @@ class ExportController extends Controller
 
         abort_unless($admin->hasRole(['Admin', 'Superadmin']), 403);
 
-        $query = User::query()->with('organization');
+        $query = User::query()
+            ->with(['organization', 'branch', 'membershipFees' => fn ($q) => $q->where('year', now()->year)]);
 
         if ($admin->hasRole('Admin')) {
             $query->where('current_organization_id', $admin->current_organization_id);
@@ -21,7 +22,7 @@ class ExportController extends Controller
 
         $members = $query
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'phone', 'dob', 'current_organization_id']);
+            ->get();
 
         $fileName = 'members-export-' . now()->format('Ymd-His') . '.csv';
 
@@ -33,15 +34,20 @@ class ExportController extends Controller
         return response()->stream(function () use ($members): void {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Name', 'Email', 'Phone', 'DOB', 'Organization']);
+            fputcsv($handle, ['No Ahli', 'Nama', 'Email', 'Phone', 'IC', 'DOB', 'Organisasi', 'Cawangan', 'Status Yuran']);
 
             foreach ($members as $member) {
+                $fee = $member->membershipFees->first();
                 fputcsv($handle, [
+                    $member->member_no,
                     $member->name,
                     $member->email,
                     $member->phone,
+                    $member->ic_number,
                     optional($member->dob)->format('Y-m-d'),
                     $member->organization?->name,
+                    $member->branch?->name,
+                    $fee?->status?->value ?? ($fee?->status ?? 'unpaid'),
                 ]);
             }
 

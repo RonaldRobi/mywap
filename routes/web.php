@@ -81,6 +81,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/information-hub/manage', [InformationHubAdminController::class, 'index'])->name('admin.hub.manage');
         Route::patch('/admin/information-hub/members/{user}/role', [InformationHubAdminController::class, 'updateRole'])->name('admin.hub.members.role.update');
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
+        Route::patch('/admin/information-hub/members/{user}/toggle-active', [InformationHubAdminController::class, 'toggleActive'])->name('admin.hub.members.toggle-active');
+        Route::post('/admin/information-hub/members/{user}/reset-password', [InformationHubAdminController::class, 'resetPassword'])->name('admin.hub.members.reset-password');
+        Route::get('/admin/information-hub/members/{targetUser}/logs', [InformationHubAdminController::class, 'activityLog'])->name('admin.hub.members.logs');
         Route::post('/admin/information-hub/members/import-start', [InformationHubAdminController::class, 'importStart'])->name('admin.hub.members.importStart');
         Route::post('/admin/information-hub/members/import-chunk', [InformationHubAdminController::class, 'importChunk'])->name('admin.hub.members.importChunk');
         Route::post('/admin/information-hub/members/import-finish', [InformationHubAdminController::class, 'importFinish'])->name('admin.hub.members.importFinish');

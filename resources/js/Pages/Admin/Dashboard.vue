@@ -17,6 +17,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    campaigns: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const isManagementView = computed(() => props.organization?.slug === 'management');
@@ -143,6 +147,14 @@ function submitCampaign() {
                             <p class="text-xs text-indigo-100/80">Yuran Bulan Ini</p>
                             <p class="mt-1 text-xl font-black text-emerald-200">{{ formatCurrency(overview.fees_collected_month) }}</p>
                         </div>
+                        <div class="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm sm:p-4">
+                            <p class="text-xs text-indigo-100/80">Ahli Aktif</p>
+                            <p class="mt-1 text-xl font-black text-green-300 sm:text-2xl">{{ overview.active_members ?? '—' }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm sm:p-4">
+                            <p class="text-xs text-indigo-100/80">Tidak Aktif</p>
+                            <p class="mt-1 text-xl font-black text-amber-300 sm:text-2xl">{{ overview.inactive_members ?? '—' }}</p>
+                        </div>
                         <div class="col-span-2 rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm sm:p-4 md:col-span-1">
                             <p class="text-xs text-indigo-100/80">Jumlah Program</p>
                             <p class="mt-1 text-xl font-black text-cyan-200 sm:text-2xl">{{ overview.total_programs }}</p>
@@ -153,7 +165,13 @@ function submitCampaign() {
                 <section class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Pengurusan</p>
                     <div class="mt-3 space-y-2">
-                        <Link :href="managementLinks.create_program_url || managementLinks.create_event_url" class="block rounded-xl bg-gray-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-gray-800">
+                        <Link :href="managementLinks.information_hub_manage_url" class="block rounded-xl bg-gray-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-gray-800">
+                            Pengurusan Ahli
+                        </Link>
+                        <Link :href="managementLinks.fees_members_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                            Yuran Ahli
+                        </Link>
+                        <Link :href="managementLinks.create_program_url || managementLinks.create_event_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             Add New Program
                         </Link>
                         <Link :href="managementLinks.create_program_url || managementLinks.create_event_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
@@ -255,6 +273,18 @@ function submitCampaign() {
                         <div v-if="!(overview.alerts?.length)" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                             <p class="text-sm font-bold text-emerald-700">Semua Stabil</p>
                             <p class="mt-1 text-xs text-emerald-700">Tiada isu kritikal dikesan buat masa ini.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Per-Organization Member Count (Superadmin only) -->
+                <section v-if="isManagementView && overview.org_member_counts?.length" class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5 md:col-span-3 lg:col-span-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Ahli Mengikut Organisasi</p>
+                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div v-for="org in overview.org_member_counts" :key="org.id" class="rounded-2xl border p-3" :style="{ borderColor: (org.color_theme ?? '#6b7280') + '40', backgroundColor: (org.color_theme ?? '#6b7280') + '10' }">
+                            <p class="text-sm font-bold text-gray-900">{{ org.name }}</p>
+                            <p class="mt-1 text-2xl font-black" :style="{ color: org.color_theme ?? '#6b7280' }">{{ org.member_count }}</p>
+                            <p class="text-[11px] text-gray-500">ahli berdaftar</p>
                         </div>
                     </div>
                 </section>

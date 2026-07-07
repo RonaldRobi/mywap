@@ -236,7 +236,7 @@
     ]
   },
   "resources/js/Pages/Admin/BranchManage.vue": {
-    "file": "assets/BranchManage-BnVTaMNe.js",
+    "file": "assets/BranchManage-BTN3J_la.js",
     "name": "BranchManage",
     "src": "resources/js/Pages/Admin/BranchManage.vue",
     "isDynamicEntry": true,
@@ -268,7 +268,7 @@
     ]
   },
   "resources/js/Pages/Admin/Dashboard.vue": {
-    "file": "assets/Dashboard-DTz76VET.js",
+    "file": "assets/Dashboard-Clqt6ICL.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Admin/Dashboard.vue",
     "isDynamicEntry": true,
@@ -365,7 +365,7 @@
     ]
   },
   "resources/js/Pages/Admin/InformationHubManage.vue": {
-    "file": "assets/InformationHubManage-Bd4ev64J.js",
+    "file": "assets/InformationHubManage-BBgXAAc9.js",
     "name": "InformationHubManage",
     "src": "resources/js/Pages/Admin/InformationHubManage.vue",
     "isDynamicEntry": true,
@@ -1531,7 +1531,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DbhUgiH9.js",
+    "file": "assets/app-CsD2Cc3J.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1632,7 +1632,7 @@
       "resources/js/Pages/Welcome.vue"
     ],
     "css": [
-      "assets/app-Bh7lN6DT.css"
+      "assets/app-KkOu-9Cc.css"
     ]
   }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Announcement;
 use App\Models\AnnouncementImage;
 use App\Jobs\SendAnnouncementJob;
@@ -11,9 +12,11 @@ use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\FeeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -68,8 +71,14 @@ class InformationHubAdminController extends Controller
         $search = $request->input('search');
         $organizationIdFilter = $request->input('organization_id');
         $roleFilter = $request->input('role');
+        $branchIdFilter = $request->input('branch_id');
+        $feeStatusFilter = $request->input('fee_status');
+        $registeredFrom = $request->input('registered_from');
+        $registeredTo = $request->input('registered_to');
         $perPage = (int) ($request->input('per_page', 25));
         $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 25;
+
+        $year = now()->year;
 
         $query = User::query()->with([
             'organization:id,name,color_theme',
@@ -85,6 +94,10 @@ class InformationHubAdminController extends Controller
             $query->where('current_organization_id', $user->current_organization_id);
         } elseif ($organizationIdFilter) {
             $query->where('current_organization_id', $organizationIdFilter);
+        }
+
+        if ($branchIdFilter) {
+            $query->where('branch_id', $branchIdFilter);
         }
 
         if ($search) {
@@ -104,7 +117,26 @@ class InformationHubAdminController extends Controller
             });
         }
 
-        $year = now()->year;
+        if ($feeStatusFilter) {
+            if ($feeStatusFilter === 'paid') {
+                $query->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted']));
+            } elseif ($feeStatusFilter === 'life_member') {
+                $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'));
+            } elseif ($feeStatusFilter === 'exempted') {
+                $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'exempted'));
+            } elseif ($feeStatusFilter === 'due') {
+                $query->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted', 'life_member']));
+            }
+        }
+
+        if ($registeredFrom) {
+            $query->where('created_at', '>=', $registeredFrom . ' 00:00:00');
+        }
+
+        if ($registeredTo) {
+            $query->where('created_at', '<=', $registeredTo . ' 23:59:59');
+        }
+
         $branches = $isSuperadmin
             ? \App\Models\Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : \App\Models\Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
@@ -143,7 +175,7 @@ class InformationHubAdminController extends Controller
                 'emergency_contact_name' => $u->emergency_contact_name,
                 'emergency_contact_phone' => $u->emergency_contact_phone,
                 'role' => $u->roles->pluck('name')->first() ?? 'Member',
-                'is_active' => true,
+                'is_active' => (bool) $u->is_active,
                 'transition_history' => $u->transitionHistory->map(fn ($h) => [
                     'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
                     'to'   => $h->toOrganization->name,
@@ -174,9 +206,20 @@ class InformationHubAdminController extends Controller
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id));
         $stats = [
             'total' => (clone $userQuery)->count(),
-            'aktif' => (clone $userQuery)->whereNotNull('profile_completed_at')->count(),
-            'tidak_aktif' => (clone $userQuery)->whereNull('profile_completed_at')->count(),
+            'aktif' => (clone $userQuery)->where('is_active', true)->count(),
+            'tidak_aktif' => (clone $userQuery)->where('is_active', false)->count(),
         ];
+
+        $orgStats = [];
+        if ($isSuperadmin) {
+            $orgStats = Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
+                ->map(fn ($org) => [
+                    'id' => $org->id,
+                    'name' => $org->name,
+                    'slug' => $org->slug,
+                    'member_count' => User::where('current_organization_id', $org->id)->count(),
+                ])->values();
+        }
 
         return Inertia::render('Admin/InformationHubManage', [
             'isSuperadmin' => $isSuperadmin,
@@ -194,10 +237,15 @@ class InformationHubAdminController extends Controller
             'branches' => $branches,
             'orgPositions' => $positions,
             'stats' => $stats,
+            'orgStats' => $orgStats,
             'filters' => [
                 'search' => $search,
                 'organization_id' => $organizationIdFilter,
                 'role' => $roleFilter,
+                'branch_id' => $branchIdFilter,
+                'fee_status' => $feeStatusFilter,
+                'registered_from' => $registeredFrom,
+                'registered_to' => $registeredTo,
                 'per_page' => $perPage,
             ]
         ]);
@@ -241,6 +289,15 @@ class InformationHubAdminController extends Controller
 
         $originalBranchId = $user->getOriginal('branch_id');
         $user->update($validated);
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'update_profile',
+            'description' => 'Profil ahli dikemas kini.',
+        ]);
 
         // If admin changed branch directly → bypass: auto-reject pending + record audit
         if (array_key_exists('branch_id', $validated) && $validated['branch_id'] != $originalBranchId) {
@@ -483,6 +540,19 @@ class InformationHubAdminController extends Controller
         $organization = $dob ? Organization::forAge($dob->age) : null;
         $organization ??= Organization::query()->orderBy('min_age')->first();
 
+        $prefix = match ($organization?->slug) {
+            'pkpim' => 'P',
+            'abim' => 'A',
+            'wadah' => 'W',
+            default => 'M',
+        };
+        $padding = $prefix === 'W' ? 4 : 5;
+
+        $max = User::where('member_no', 'like', $prefix . '%')
+            ->max('member_no_sequence');
+        $next = ($max ?? 0) + 1;
+        $memberNo = $prefix . str_pad($next, $padding, '0', STR_PAD_LEFT);
+
         $user = User::withoutGlobalScopes()->create([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -490,12 +560,24 @@ class InformationHubAdminController extends Controller
             'phone' => $data['phone'] ?? null,
             'dob' => $dob,
             'current_organization_id' => $organization?->id,
+            'member_no' => $memberNo,
+            'member_no_sequence' => $next,
+            'original_member_no' => $memberNo,
             'password' => Hash::make($data['password'] ?: 'password123'),
         ]);
 
         if (Role::query()->where('name', 'Member')->where('guard_name', 'web')->exists()) {
             $user->assignRole('Member');
         }
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'organization_id' => $organization?->id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'create_member',
+            'description' => "Ahli baharu {$user->name} ({$user->member_no}) ditambah oleh {$request->user()->name}.",
+        ]);
 
         return back()->with('success', 'Ahli baharu berjaya ditambah.');
     }
@@ -583,6 +665,15 @@ class InformationHubAdminController extends Controller
         // We only allow syncing Admin or Member roles here.
         $user->syncRoles([$data['role']]);
 
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'update_role',
+            'description' => "Peranan ahli ditukar kepada {$data['role']}.",
+        ]);
+
         return back()->with('success', 'Peranan ahli berjaya dikemas kini.');
     }
 
@@ -601,6 +692,15 @@ class InformationHubAdminController extends Controller
 
         $user->update([
             'ic_number' => $data['ic_number'],
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'update_ic',
+            'description' => 'No IC/Passport dikemas kini.',
         ]);
 
         return back()->with('success', 'No IC/Passport berjaya dikemas kini.');
@@ -664,6 +764,75 @@ class InformationHubAdminController extends Controller
             \Illuminate\Support\Facades\Storage::disk('local')->delete($request->filename);
         }
         return response()->json(['success' => true]);
+    }
+
+    public function toggleActive(Request $request, User $user): RedirectResponse
+    {
+        $authUser = $request->user();
+        $isSuperadmin = $authUser->hasRole('Superadmin');
+
+        if (! $isSuperadmin && $user->current_organization_id !== $authUser->current_organization_id) {
+            abort(403);
+        }
+
+        $user->update(['is_active' => ! $user->is_active]);
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => $user->is_active ? 'activate_member' : 'deactivate_member',
+            'description' => $user->is_active
+                ? 'Ahli diaktifkan semula.'
+                : 'Ahli dinyahaktifkan.',
+        ]);
+
+        $status = $user->is_active ? 'diaktifkan' : 'dinyahaktifkan';
+        return back()->with('success', "Ahli berjaya {$status}.");
+    }
+
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'reset_password',
+            'description' => 'Link reset kata laluan dihantar ke emel ahli.',
+        ]);
+
+        return back()->with('success', 'Link reset kata laluan telah dihantar ke emel ahli.');
+    }
+
+    public function activityLog(Request $request, User $targetUser): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+
+        if (! $user->hasRole('Superadmin') && $targetUser->current_organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        $logs = ActivityLog::with('user:id,name')
+            ->where('target_type', User::class)
+            ->where('target_id', $targetUser->id)
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(fn (ActivityLog $log) => [
+                'action' => $log->action,
+                'description' => $log->description,
+                'performed_by' => $log->user?->name,
+                'created_at' => $log->created_at?->toISOString(),
+            ]);
+
+        return response()->json(['data' => $logs]);
     }
 
     private function resolveOrganizationId($user, ?int $submittedOrganizationId): int

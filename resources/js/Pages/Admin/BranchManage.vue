@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, reactive } from 'vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { ref, computed, reactive, watch } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -163,30 +163,36 @@ const adminSearchResults = ref([]);
 const adminSearchLoading = ref(false);
 let adminSearchTimer = null;
 
+watch(adminSearchQuery, (val) => {
+    clearTimeout(adminSearchTimer);
+    if (!val || val.length < 2) {
+        adminSearchResults.value = [];
+        return;
+    }
+    adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
+});
+
 function openAdminManage(branch) {
     managingAdminsBranch.value = branch;
     adminSearchQuery.value = '';
     adminSearchResults.value = [];
 }
 
-function onAdminSearchInput(val) {
-    clearTimeout(adminSearchTimer);
-    if (val.length < 2) {
-        adminSearchResults.value = [];
-        return;
-    }
-    adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
-}
-
 function searchBranchMembers(val) {
+    if (!managingAdminsBranch.value) return;
     adminSearchLoading.value = true;
     axios.get('/api/members/search', { params: { q: val, branch_id: managingAdminsBranch.value.id } })
         .then((res) => {
-            const existingIds = new Set(managingAdminsBranch.value.admins.map(a => a.id));
+            const existingIds = new Set((managingAdminsBranch.value?.admins || []).map(a => a.id));
             adminSearchResults.value = (res.data || []).filter(m => !existingIds.has(m.id));
         })
-        .catch(() => { adminSearchResults.value = []; })
-        .finally(() => { adminSearchLoading.value = false; });
+        .catch((err) => {
+            console.error('Admin search failed:', err);
+            adminSearchResults.value = [];
+        })
+        .finally(() => {
+            adminSearchLoading.value = false;
+        });
 }
 
 function assignAdmin(member) {
@@ -393,7 +399,7 @@ const malaysianStates = [
 
                             <!-- Actions row -->
                             <div class="flex items-center justify-between pt-2 border-t border-gray-50">
-                                <span class="text-xs text-gray-400 font-medium">{{ branch.member_count }} ahli</span>
+                                <Link :href="route('admin.hub.manage', { branch_id: branch.id })" class="text-xs text-gray-400 font-medium hover:text-indigo-600 transition-colors">{{ branch.member_count }} ahli</Link>
                                 <div class="flex items-center gap-1.5">
                                     <button
                                         @click="openAdminManage(branch)"
@@ -655,7 +661,6 @@ const malaysianStates = [
                             <div class="relative">
                                 <input
                                     v-model="adminSearchQuery"
-                                    @input="onAdminSearchInput($event.target.value)"
                                     type="text"
                                     placeholder="Cari nama atau no ahli..."
                                     class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors"

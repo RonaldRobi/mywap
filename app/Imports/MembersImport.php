@@ -103,6 +103,7 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
             }
 
             // Member number: use provided or auto-generate
+            $memberNo = trim((string) ($row['no_ahli'] ?? $row['member_no'] ?? ''));
             if (!empty($memberNo)) {
                 $memberNo = $this->ensurePrefix($memberNo);
             }

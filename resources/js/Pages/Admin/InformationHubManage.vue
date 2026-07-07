@@ -26,6 +26,10 @@ const props = defineProps({
         type: Object,
         default: () => ({ total: 0, paid: 0, due: 0, life_member: 0 }),
     },
+    orgStats: {
+        type: Array,
+        default: () => [],
+    },
     filters: {
         type: Object,
         default: () => ({ search: '', organization_id: '', role: '' }),
@@ -47,6 +51,40 @@ function closeDropdown() {
 // Close dropdown on outside click
 onMounted(() => document.addEventListener('click', closeDropdown));
 onUnmounted(() => document.removeEventListener('click', closeDropdown));
+
+// Activity Log state
+const activityLogs = ref([]);
+const loadingLogs = ref(false);
+
+async function fetchActivityLogs(memberId) {
+    loadingLogs.value = true;
+    activityLogs.value = [];
+    try {
+        const res = await window.axios.get(route('admin.hub.members.logs', memberId));
+        activityLogs.value = res.data.data ?? [];
+    } catch (e) {
+        console.error('Failed to load activity logs', e);
+    } finally {
+        loadingLogs.value = false;
+    }
+}
+
+// Member quick actions
+function toggleActive(member) {
+    if (!confirm(member.is_active ? 'Nyahaktifkan ahli ini?' : 'Aktifkan semula ahli ini?')) return;
+    router.patch(route('admin.hub.members.toggle-active', member.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => { openDropdownId.value = null; },
+    });
+}
+
+function resetPassword(member) {
+    if (!confirm('Hantar link reset kata laluan ke emel ahli?')) return;
+    router.post(route('admin.hub.members.reset-password', member.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => { openDropdownId.value = null; },
+    });
+}
 
 // ─── Program Year Filter ──────────────────────────────────────────────────
 
@@ -138,19 +176,31 @@ function submitMember() {
 const searchQuery = ref(props.filters?.search ?? '');
 const organizationIdFilter = ref(props.filters?.organization_id ?? '');
 const roleFilter = ref(props.filters?.role ?? '');
+const branchIdFilter = ref(props.filters?.branch_id ?? '');
+const feeStatusFilter = ref(props.filters?.fee_status ?? '');
+const registeredFrom = ref(props.filters?.registered_from ?? '');
+const registeredTo = ref(props.filters?.registered_to ?? '');
 
 let filterDebounce;
 
-watch([searchQuery, organizationIdFilter, roleFilter], ([newSearch, newOrg, newRole]) => {
+watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter], ([newSearch, newOrg, newRole, newBranch, newFeeStatus]) => {
     clearTimeout(filterDebounce);
     filterDebounce = setTimeout(() => {
         router.get(
             route('admin.hub.manage'),
-            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '' },
+            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '', branch_id: newBranch || '', fee_status: newFeeStatus || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '' },
             { preserveState: true, preserveScroll: true, replace: true }
         );
     }, 300);
 });
+
+function applyDateFilter() {
+    router.get(
+        route('admin.hub.manage'),
+        { search: searchQuery.value?.trim() || '', organization_id: organizationIdFilter.value || '', role: roleFilter.value || '', branch_id: branchIdFilter.value || '', fee_status: feeStatusFilter.value || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '' },
+        { preserveState: true, preserveScroll: true, replace: true }
+    );
+}
 
 // ─── Update Role ─────────────────────────────────────────────────────────────
 
@@ -215,6 +265,12 @@ const selectedMember = ref(null);
 const editing = ref(false);
 const panelTab = ref('peribadi');
 const programYearFilter = ref('');
+
+watch(panelTab, (newTab) => {
+    if (newTab === 'aktiviti' && selectedMember.value?.id) {
+        fetchActivityLogs(selectedMember.value.id);
+    }
+});
 
 function viewProfile(member) {
     selectedMember.value = member;
@@ -480,6 +536,13 @@ async function finishImport() {
                     <p class="text-sm font-medium text-gray-500 mt-1">Urus keahlian, organisasi, dan peranan sistem.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
+                    <a
+                        :href="route('admin.members.export')"
+                        class="inline-flex items-center gap-2 rounded-2xl bg-white border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all hover:-translate-y-0.5"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Export CSV
+                    </a>
                     <button
                         v-if="isSuperadmin"
                         @click="triggerExcelImport"
@@ -559,27 +622,60 @@ async function finishImport() {
             </transition>
 
             <!-- Filters Section -->
-            <div class="flex flex-col md:flex-row gap-3">
-                <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <input v-model="searchQuery" type="text" placeholder="Cari nama, email, no ahli, IC/passport, no telefon..." class="pl-10 w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
                     </div>
-                    <input v-model="searchQuery" type="text" placeholder="Cari nama, email, IC/passport, no telefon..." class="pl-10 w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+
+                    <div v-if="isSuperadmin" class="relative md:w-48 shrink-0">
+                        <select v-model="organizationIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <option value="">Semua Organisasi</option>
+                            <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="relative md:w-48 shrink-0">
+                        <select v-model="roleFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <option value="">Semua Peranan</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Member">Member / Ahli</option>
+                        </select>
+                    </div>
+
+                    <div class="relative md:w-48 shrink-0">
+                        <select v-model="feeStatusFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <option value="">Semua Status Yuran</option>
+                            <option value="paid">Lunas</option>
+                            <option value="due">Tertunggak</option>
+                            <option value="life_member">Seumur Hidup</option>
+                            <option value="exempted">Dikecualikan</option>
+                        </select>
+                    </div>
+
+                    <div class="relative md:w-48 shrink-0">
+                        <select v-model="branchIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <option value="">Semua Cawangan</option>
+                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
                 </div>
-                
-                <div v-if="isSuperadmin" class="relative md:w-48 shrink-0">
-                    <select v-model="organizationIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                        <option value="">Semua Organisasi</option>
-                        <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
-                    </select>
-                </div>
-                
-                <div class="relative md:w-48 shrink-0">
-                    <select v-model="roleFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                        <option value="">Semua Peranan</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Member">Member / Ahli</option>
-                    </select>
+
+                <div class="flex flex-col md:flex-row items-center gap-3">
+                    <div class="relative md:w-40 shrink-0">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Daftar Dari</label>
+                        <input v-model="registeredFrom" type="date" @change="applyDateFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                    </div>
+                    <div class="relative md:w-40 shrink-0">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Hingga</label>
+                        <input v-model="registeredTo" type="date" @change="applyDateFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                    </div>
+                    <button v-if="registeredFrom || registeredTo" @click="registeredFrom = ''; registeredTo = ''; applyDateFilter()" class="rounded-2xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 mt-5">
+                        Kosongkan Tarikh
+                    </button>
                 </div>
             </div>
 
@@ -589,6 +685,7 @@ async function finishImport() {
                     <table class="w-full text-left text-sm text-gray-600">
                         <thead class="bg-gray-50/70 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
                             <tr>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">No Ahli</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Ahli</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Organisasi & Yuran</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Peranan</th>
@@ -597,24 +694,27 @@ async function finishImport() {
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
                             <tr v-if="members.data.length === 0">
-                                <td colspan="4" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
+                                <td colspan="5" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
                             </tr>
                             <tr v-for="member in members.data" :key="member.id" class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-4 py-3">
+                                    <span class="text-xs font-mono font-bold text-gray-900">{{ member.member_no || '—' }}</span>
+                                    <div v-if="member.original_member_no && member.original_member_no !== member.member_no" class="text-[10px] text-gray-400">Asal: {{ member.original_member_no }}</div>
+                                </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold border border-gray-200 text-xs">
                                             {{ (member.name ?? '?').charAt(0).toUpperCase() }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="text-sm font-bold text-gray-900 truncate">{{ member.name }}</div>
+                                            <div class="text-sm font-bold text-gray-900 truncate">{{ member.name }} <span v-if="!member.is_active" class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 ml-1">Nyahaktif</span></div>
                                             <div class="text-xs text-gray-400 truncate">{{ member.email }}</div>
                                             <div class="flex items-center gap-2 text-[11px] text-gray-400">
-                                                <span v-if="member.member_no" class="font-semibold text-gray-500">{{ member.member_no }}</span>
                                                 <span>IC: {{ member.ic_number || '-' }}</span>
                                                 <span v-if="member.phone">• {{ member.phone }}</span>
-                                            </div>
-                                        </div>
                                     </div>
+                                </div>
+                            </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-semibold" :style="{ backgroundColor: (member.organization_color ?? '#6b7280') + '20', color: member.organization_color ?? '#6b7280' }">
@@ -659,9 +759,21 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 Lihat Profil
                                             </button>
+                                            <a v-if="member.member_no" :href="route('public.card', member.member_no)" target="_blank" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                                Lihat Kad Ahli
+                                            </a>
                                             <button v-if="isSuperadmin" @click="openIcModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                                                 Update IC
+                                            </button>
+                                            <button v-if="isSuperadmin" @click="resetPassword(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                                Reset Kata Laluan
+                                            </button>
+                                            <button @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
                                             </button>
                                         </div>
                                     </div>
@@ -904,6 +1016,10 @@ async function finishImport() {
                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 Lain
                             </button>
+                            <button @click="panelTab = 'aktiviti'" class="flex items-center gap-1.5 px-3 py-3 text-xs font-semibold border-b-2 transition-colors" :class="panelTab === 'aktiviti' ? 'border-gray-900 text-gray-900 bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Aktiviti
+                            </button>
                         </div>
 
                         <div class="p-6 space-y-5 text-sm">
@@ -1036,11 +1152,14 @@ async function finishImport() {
                                     <div class="px-4 py-2.5 border-b border-gray-50 bg-gray-50/50">
                                         <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Yuran</p>
                                     </div>
-                                    <div class="p-4">
-                                        <span v-if="selectedMember.fee_status === 'paid'" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Lunas</span>
-                                        <span v-else-if="selectedMember.fee_status === 'life_member'" class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Seumur Hidup</span>
-                                        <span v-else-if="selectedMember.fee_status === 'exempted'" class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Dikecualikan</span>
-                                        <span v-else class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Tertunggak</span>
+                                    <div class="p-4 flex items-center justify-between">
+                                        <div>
+                                            <span v-if="selectedMember.fee_status === 'paid'" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Lunas</span>
+                                            <span v-else-if="selectedMember.fee_status === 'life_member'" class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Seumur Hidup</span>
+                                            <span v-else-if="selectedMember.fee_status === 'exempted'" class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Dikecualikan</span>
+                                            <span v-else class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Tertunggak</span>
+                                        </div>
+                                        <Link :href="route('admin.fees.members')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Urus Yuran →</Link>
                                     </div>
                                 </div>
 
@@ -1051,6 +1170,25 @@ async function finishImport() {
                                     <div class="p-4">
                                         <span v-if="selectedMember.is_public_in_directory" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Papar</span>
                                         <span v-else class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Disembunyikan</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ═══ AKTIVITI ═══ -->
+                            <div v-if="panelTab === 'aktiviti'" class="space-y-4">
+                                <div v-if="loadingLogs" class="py-10 text-center text-sm text-gray-400">
+                                    <div class="h-4 w-3/4 rounded bg-gray-100 animate-pulse mx-auto mb-2"></div>
+                                    <div class="h-4 w-1/2 rounded bg-gray-100 animate-pulse mx-auto"></div>
+                                </div>
+                                <div v-else-if="!activityLogs.length" class="py-10 text-center text-sm text-gray-400">Tiada aktiviti direkodkan.</div>
+                                <div v-else class="space-y-3">
+                                    <div v-for="(log, i) in activityLogs" :key="i" class="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-xs font-bold uppercase tracking-wide text-gray-500">{{ log.action }}</p>
+                                            <span class="text-[10px] text-gray-400">{{ log.created_at ? new Date(log.created_at).toLocaleDateString('ms-MY') : '—' }}</span>
+                                        </div>
+                                        <p class="mt-1 text-sm text-gray-700">{{ log.description }}</p>
+                                        <p v-if="log.performed_by" class="mt-1 text-[10px] text-gray-400">Oleh: {{ log.performed_by }}</p>
                                     </div>
                                 </div>
                             </div>

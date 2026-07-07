@@ -15,6 +15,7 @@ use App\Models\DashboardBanner;
 use App\Actions\LoadUsrahForUser;
 use App\Models\UsrahGroup;
 use App\Models\User;
+use App\Models\Organization;
 use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -192,6 +193,30 @@ class DashboardController extends Controller
             ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
             ->count();
 
+        $activeMembers = User::withoutGlobalScopes()
+            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
+            ->where('is_active', true)
+            ->count();
+
+        $inactiveMembers = $totalMembers - $activeMembers;
+
+        $orgMemberCounts = [];
+        if ($isSuperadmin) {
+            $orgMemberCounts = Organization::query()
+                ->where('slug', '!=', 'management')
+                ->orderBy('min_age')
+                ->get(['id', 'name', 'slug', 'color_theme'])
+                ->map(fn ($org) => [
+                    'id' => $org->id,
+                    'name' => $org->name,
+                    'slug' => $org->slug,
+                    'color_theme' => $org->color_theme,
+                    'member_count' => User::where('current_organization_id', $org->id)->count(),
+                ])
+                ->values()
+                ->toArray();
+        }
+
         $year = now()->year;
         $feesDueCount = $isSuperadmin
             ? User::withoutGlobalScopes()
@@ -321,6 +346,9 @@ class DashboardController extends Controller
                 'pending_facility_bookings' => $pendingFacilityBookings,
                 'fees_due_count' => $feesDueCount,
                 'active_branches' => $activeBranches,
+                'active_members' => $activeMembers,
+                'inactive_members' => $inactiveMembers,
+                'org_member_counts' => $orgMemberCounts,
                 'alerts' => $alerts->values(),
                 'recent_activities' => $recentActivities,
                 'top_branches' => $topBranches,
@@ -333,6 +361,7 @@ class DashboardController extends Controller
                 'infaq_url' => $isSuperadmin ? route('superadmin.infaq.index') : route('admin.campaigns.index'),
                 'banners_url' => $isSuperadmin ? route('superadmin.banners.index') : null,
                 'information_hub_manage_url' => route('admin.hub.manage'),
+                'fees_members_url' => route('admin.fees.members'),
                 'usrah_manage_url' => route('admin.usrah.index'),
                 'broadcasts_url' => route('admin.broadcasts.index'),
                 'directory_url' => route('directory.index'),
