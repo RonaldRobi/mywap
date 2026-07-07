@@ -83,10 +83,17 @@ class RoleAndPermissionSeeder extends Seeder
             'manage.settings',
         ]);
 
+        $branchAdmin = Role::firstOrCreate(['name' => 'Admin Cawangan']);
+        $branchAdmin->syncPermissions([
+            'view.members',
+            'view.events',
+            'view.payments',
+        ]);
+
         // Superadmin gets all permissions unconditionally via Spatie's gate bypass.
         $superadmin = Role::firstOrCreate(['name' => 'Superadmin']);
         $superadmin->syncPermissions(Permission::all());
 
-        $this->command->info('✅  Roles & permissions seeded: Superadmin, Admin, Member');
+        $this->command->info('✅  Roles & permissions seeded: Superadmin, Admin, Admin Cawangan, Member');
     }
 }
