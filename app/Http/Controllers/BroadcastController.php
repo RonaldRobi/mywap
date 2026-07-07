@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SendBroadcastJob;
 use App\Models\BroadcastMessage;
+use App\Models\Organization;
+use App\Models\Announcement;
 use App\Models\UsrahGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-
-use App\Models\Organization;
-use App\Models\Announcement;
 
 class BroadcastController extends Controller
 {
@@ -21,7 +20,7 @@ class BroadcastController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $messages = BroadcastMessage::query()
-            ->with(['organization:id,name', 'usrahGroup:id,name'])
+            ->with(['organization:id,name', 'targetOrganization:id,name'])
             ->latest()
             ->take(20)
             ->get()
@@ -29,15 +28,18 @@ class BroadcastController extends Controller
                 'id' => $message->id,
                 'title' => $message->title,
                 'target_criteria' => $message->target_criteria,
+                'target_criteria_label' => match ($message->target_criteria) {
+                    'all' => 'Semua Ahli',
+                    'organization' => 'Ahli Organisasi',
+                    'specific_members' => 'Individu Tertentu',
+                    default => $message->target_criteria,
+                },
                 'organization_name' => $message->organization?->name,
-                'usrah_group_name' => $message->usrahGroup?->name,
+                'target_organization_name' => $message->targetOrganization?->name,
+                'recipient_count' => is_array($message->recipient_ids) ? count($message->recipient_ids) : 0,
+                'notification_channels' => $message->notification_channels ?? ['in_app'],
                 'sent_at' => $message->sent_at?->toDateTimeString(),
             ]);
-
-        $usrahGroups = UsrahGroup::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
 
         $announcementsQuery = Announcement::query()->with('organization:id,name,slug');
         if (! $isSuperadmin) {
@@ -79,43 +81,68 @@ class BroadcastController extends Controller
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : collect([['id' => $user->organization?->id, 'name' => $user->organization?->name]]);
 
+        $usrahGroups = UsrahGroup::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Admin/Broadcasts', [
             'recentMessages' => $messages,
-            'usrahGroups' => $usrahGroups,
             'defaultOrganizationId' => $user->current_organization_id,
             'isSuperadmin' => $isSuperadmin,
             'announcements' => $announcements,
             'organizations' => $organizations,
+            'usrahGroups' => $usrahGroups,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
-            'target_criteria' => ['required', 'in:all,unpaid_fees,specific_usrah'],
-            'usrah_group_id' => ['nullable', 'integer', 'exists:usrah_groups,id'],
+            'target_criteria' => ['required', 'in:all,organization,specific_members'],
+            'target_organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
+            'recipient_ids' => ['nullable', 'array'],
+            'recipient_ids.*' => ['integer', 'exists:users,id'],
+            'notification_channels' => ['required', 'array', 'min:1'],
+            'notification_channels.*' => ['string', 'in:in_app,email'],
+            'email_use_template' => ['boolean'],
         ]);
 
-        if ($data['target_criteria'] === 'specific_usrah') {
-            abort_if(empty($data['usrah_group_id']), 422, 'Sila pilih kumpulan usrah sasaran.');
+        $targetOrgId = null;
+
+        if ($data['target_criteria'] === 'all') {
+            $targetOrgId = null;
+        } elseif ($data['target_criteria'] === 'organization') {
+            if ($isSuperadmin) {
+                $targetOrgId = $data['target_organization_id'] ?? $user->current_organization_id;
+            } else {
+                $targetOrgId = $user->current_organization_id;
+            }
+        } elseif ($data['target_criteria'] === 'specific_members') {
+            if (empty($data['recipient_ids'])) {
+                return back()->withErrors(['recipient_ids' => 'Sila pilih sekurang-kurangnya seorang ahli.']);
+            }
+            $targetOrgId = null;
         }
 
         $message = BroadcastMessage::create([
             'organization_id' => $user->current_organization_id,
+            'target_organization_id' => $targetOrgId,
             'title' => $data['title'],
             'content' => $data['content'],
             'target_criteria' => $data['target_criteria'],
-            'usrah_group_id' => $data['target_criteria'] === 'specific_usrah'
-                ? $data['usrah_group_id']
-                : null,
+            'recipient_ids' => $data['recipient_ids'] ?? null,
+            'notification_channels' => $data['notification_channels'],
+            'email_use_template' => $request->boolean('email_use_template', false),
         ]);
 
         SendBroadcastJob::dispatch($message->id);
 
-        return back()->with('success', 'Broadcast sedang diproses dan akan dihantar berperingkat.');
+        return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
     }
 }

@@ -145,7 +145,7 @@ function initials(name) {
                                     </div>
                                     <div class="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/15 p-3">
                                         <p class="text-[10px] text-white/60 uppercase tracking-wide">No. Ahli</p>
-                                        <p class="text-sm font-semibold text-white truncate mt-0.5">#{{ card.id }}</p>
+                                        <p class="text-sm font-semibold text-white truncate mt-0.5">{{ card.member_no }}</p>
                         </div>
                     </div>
 

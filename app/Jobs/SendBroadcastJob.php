@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\BroadcastMessage;
-use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,20 +24,14 @@ class SendBroadcastJob implements ShouldQueue
             return;
         }
 
-        $query = User::withoutGlobalScopes()
-            ->where('current_organization_id', $message->organization_id);
+        $query = User::withoutGlobalScopes();
 
-        if ($message->target_criteria === 'unpaid_fees') {
-            $query->whereDoesntHave('membershipFees', function ($feeQuery) {
-                $feeQuery->where('year', now()->year)
-                  ->whereIn('status', ['paid', 'exempted', 'life_member']);
-            });
+        if ($message->target_criteria === 'organization') {
+            $query->where('current_organization_id', $message->target_organization_id);
         }
 
-        if ($message->target_criteria === 'specific_usrah' && $message->usrah_group_id) {
-            $query->whereHas('usrahGroups', function ($usrahQuery) use ($message) {
-                $usrahQuery->where('usrah_groups.id', $message->usrah_group_id);
-            });
+        if ($message->target_criteria === 'specific_members') {
+            $query->whereIn('id', $message->recipient_ids ?? []);
         }
 
         $query->orderBy('id')->chunk(200, function ($users) use ($message) {

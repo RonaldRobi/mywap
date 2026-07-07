@@ -132,6 +132,12 @@ const initials = computed(() =>
                                 {{ profileUser.organization.name }}
                             </span>
                         </div>
+                        <p v-if="profileUser.member_no" class="text-sm text-gray-500 flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.5.835 2.5 2.5v.5h-5v-.5c0-1.665 1.194-2.5 2.5-2.5z"/>
+                            </svg>
+                            {{ profileUser.member_no }}
+                        </p>
                         <p class="text-sm text-gray-500">{{ profileUser.email }}</p>
                     </div>
 

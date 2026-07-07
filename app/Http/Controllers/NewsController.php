@@ -93,6 +93,11 @@ class NewsController extends Controller
                 'created_at' => $comment->created_at?->diffForHumans(),
             ]);
 
+        $canEdit = $user->hasRole('Superadmin')
+            || ($user->hasRole('Admin')
+                && (is_null($newsPost->organization_id)
+                    || (int) $newsPost->organization_id === (int) $user->current_organization_id));
+
         return Inertia::render('Info/Show', [
             'post' => [
                 'id' => $newsPost->id,
@@ -110,6 +115,7 @@ class NewsController extends Controller
                 'likes_count' => $likes,
                 'dislikes_count' => $dislikes,
                 'my_reaction' => $myReaction,
+                'can_edit' => $canEdit,
             ],
             'comments' => $comments,
         ]);

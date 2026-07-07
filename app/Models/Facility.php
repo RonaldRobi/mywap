@@ -44,6 +44,11 @@ class Facility extends Model
         return $this->hasMany(FacilityBooking::class);
     }
 
+    public function media(): HasMany
+    {
+        return $this->hasMany(FacilityMedia::class)->orderBy('order');
+    }
+
     public function getImagePathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);

@@ -13,10 +13,13 @@ class BroadcastMessage extends Model
 
     protected $fillable = [
         'organization_id',
+        'target_organization_id',
         'title',
         'content',
         'target_criteria',
-        'usrah_group_id',
+        'recipient_ids',
+        'notification_channels',
+        'email_use_template',
         'sent_at',
     ];
 
@@ -24,6 +27,9 @@ class BroadcastMessage extends Model
     {
         return [
             'sent_at' => 'datetime',
+            'recipient_ids' => 'array',
+            'notification_channels' => 'array',
+            'email_use_template' => 'boolean',
         ];
     }
 
@@ -37,8 +43,8 @@ class BroadcastMessage extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function usrahGroup(): BelongsTo
+    public function targetOrganization(): BelongsTo
     {
-        return $this->belongsTo(UsrahGroup::class);
+        return $this->belongsTo(Organization::class, 'target_organization_id');
     }
 }

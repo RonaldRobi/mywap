@@ -74,6 +74,7 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Show', [
             'profileUser' => [
                 'id'           => $user->id,
+                'member_no'    => $user->member_no,
                 'name'         => $user->name,
                 'email'        => $user->email,
                 'phone'        => $user->phone,

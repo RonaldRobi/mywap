@@ -124,10 +124,13 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/admin/info-terkini/{newsPost}', [NewsController::class, 'destroy'])->name('admin.news.destroy');
         Route::post('/admin/info-terkini/categories', [NewsController::class, 'storeCategory'])->name('admin.news.categories.store');
 
-        Route::get('/admin/articles/manage', [ArticleController::class, 'manage'])->name('admin.articles.manage');
+        Route::get('/admin/articles', [ArticleController::class, 'adminIndex'])->name('admin.articles.index');
+        Route::get('/admin/articles/create', [ArticleController::class, 'adminCreate'])->name('admin.articles.create');
         Route::post('/admin/articles', [ArticleController::class, 'store'])->name('admin.articles.store');
+        Route::get('/admin/articles/{article}/edit', [ArticleController::class, 'adminEdit'])->name('admin.articles.edit');
         Route::put('/admin/articles/{article}', [ArticleController::class, 'update'])->name('admin.articles.update');
         Route::delete('/admin/articles/{article}', [ArticleController::class, 'destroy'])->name('admin.articles.destroy');
+        Route::delete('/admin/articles/media/{media}', [ArticleController::class, 'deleteMedia'])->name('admin.articles.media.destroy');
 
         // Video management (Admin + Superadmin)
         Route::get('/admin/videos/manage', [VideoController::class, 'manage'])->name('admin.videos.manage');
@@ -240,11 +243,17 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'deleteLogo'])->name('branches.logo.destroy');
         Route::delete('branches/{branch}', [App\Http\Controllers\BranchController::class, 'destroy'])->name('branches.destroy');
 
+        // Branch admin management
+        Route::post('branches/{branch}/admins', [App\Http\Controllers\BranchController::class, 'storeAdmin'])->name('branches.admins.store');
+        Route::delete('branches/{branch}/admins/{user}', [App\Http\Controllers\BranchController::class, 'destroyAdmin'])->name('branches.admins.destroy');
+
 
         // Positions management
         Route::get('positions', [PositionController::class, 'index'])->name('positions.index');
         Route::post('positions', [PositionController::class, 'store'])->name('positions.store');
+        Route::post('positions/reorder', [PositionController::class, 'reorder'])->name('positions.reorder');
         Route::put('positions/{position}', [PositionController::class, 'update'])->name('positions.update');
+        Route::patch('positions/{position}/toggle', [PositionController::class, 'toggleActive'])->name('positions.toggle');
         Route::delete('positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
 
         // Finance Dashboard

@@ -3,15 +3,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-// Simplified debouncer since we already removed lodash earlier
-function customDebounce(fn, wait) {
-    let timer;
-    return function (...args) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), wait);
-    };
-}
-
 const props = defineProps({
     isSuperadmin: Boolean,
     defaultOrganizationId: Number,
@@ -148,13 +139,18 @@ const searchQuery = ref(props.filters?.search ?? '');
 const organizationIdFilter = ref(props.filters?.organization_id ?? '');
 const roleFilter = ref(props.filters?.role ?? '');
 
-watch([searchQuery, organizationIdFilter, roleFilter], customDebounce(([newSearch, newOrg, newRole]) => {
-    router.get(
-        route('admin.hub.manage'),
-        { search: newSearch, organization_id: newOrg, role: newRole },
-        { preserveState: true, preserveScroll: true, replace: true }
-    );
-}, 300));
+let filterDebounce;
+
+watch([searchQuery, organizationIdFilter, roleFilter], ([newSearch, newOrg, newRole]) => {
+    clearTimeout(filterDebounce);
+    filterDebounce = setTimeout(() => {
+        router.get(
+            route('admin.hub.manage'),
+            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '' },
+            { preserveState: true, preserveScroll: true, replace: true }
+        );
+    }, 300);
+});
 
 // ─── Update Role ─────────────────────────────────────────────────────────────
 

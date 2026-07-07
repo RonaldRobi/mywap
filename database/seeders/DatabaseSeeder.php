@@ -44,8 +44,12 @@ class DatabaseSeeder extends Seeder
             CampaignsTableSeeder::class,
             DashboardBannersTableSeeder::class,
 
-            // --- ARTIKEL & VIDEO ---
+            // --- ARTIKEL (categories, tags, then demo content) ---
+            ArticleCategorySeeder::class,
+            ArticleTagSeeder::class,
             ArticleDemoSeeder::class,
+
+            // --- VIDEO ---
             VideoDemoSeeder::class,
 
             // --- BERITA (Info Terkini) ---

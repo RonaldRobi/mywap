@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Models\FacilityBooking;
+use App\Models\FacilityMedia;
 use App\Models\Organization;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,7 @@ class FacilityBookingController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $facilities = Facility::query()
-            ->with('organization:id,name,slug')
+            ->with(['organization:id,name,slug', 'media'])
             ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
             ->orderBy('name')
             ->get()
@@ -38,6 +39,11 @@ class FacilityBookingController extends Controller
                 'capacity' => $facility->capacity,
                 'image_path' => $facility->image_path,
                 'is_active' => (bool) $facility->is_active,
+                'media' => $facility->media->map(fn ($m) => [
+                    'id' => $m->id,
+                    'path' => $m->path,
+                    'caption' => $m->caption,
+                ])->values(),
             ]);
 
         return Inertia::render('Admin/FacilitiesManage', [
@@ -70,6 +76,8 @@ class FacilityBookingController extends Controller
             'price_per_unit' => ['required', 'numeric', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:1'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'gallery' => ['nullable', 'array'],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -79,7 +87,7 @@ class FacilityBookingController extends Controller
             ? '/storage/' . ltrim($request->file('image')->store('facilities', 'public'), '/')
             : null;
 
-        Facility::create([
+        $facility = Facility::create([
             'organization_id' => $organizationId,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
@@ -90,6 +98,14 @@ class FacilityBookingController extends Controller
             'image_path' => $imagePath,
             'is_active' => (bool) ($data['is_active'] ?? true),
         ]);
+
+        foreach ($request->file('gallery', []) as $i => $file) {
+            $facility->media()->create([
+                'path' => '/storage/' . ltrim($file->store('facilities/gallery', 'public'), '/'),
+                'type' => 'image',
+                'order' => $i,
+            ]);
+        }
 
         return back()->with('success', 'Ruang berjaya ditambah.');
     }
@@ -111,6 +127,10 @@ class FacilityBookingController extends Controller
             'price_per_unit' => ['required', 'numeric', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:1'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'gallery' => ['nullable', 'array'],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'delete_media' => ['nullable', 'array'],
+            'delete_media.*' => ['integer', 'exists:facility_media,id'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -139,6 +159,26 @@ class FacilityBookingController extends Controller
             'is_active' => (bool) ($data['is_active'] ?? false),
         ]);
 
+        foreach ($request->input('delete_media', []) as $mediaId) {
+            $media = $facility->media()->find($mediaId);
+            if ($media) {
+                $oldPath = ltrim(str_replace('/storage/', '', parse_url($media->path ?? '', PHP_URL_PATH) ?? ''), '/');
+                if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $media->delete();
+            }
+        }
+
+        $maxOrder = $facility->media()->max('order') ?? 0;
+        foreach ($request->file('gallery', []) as $i => $file) {
+            $facility->media()->create([
+                'path' => '/storage/' . ltrim($file->store('facilities/gallery', 'public'), '/'),
+                'type' => 'image',
+                'order' => $maxOrder + $i + 1,
+            ]);
+        }
+
         return back()->with('success', 'Ruang berjaya dikemas kini.');
     }
 
@@ -150,6 +190,13 @@ class FacilityBookingController extends Controller
         $oldPath = ltrim(str_replace('/storage/', '', parse_url($facility->image_path ?? '', PHP_URL_PATH) ?? ''), '/');
         if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->delete($oldPath);
+        }
+
+        foreach ($facility->media as $media) {
+            $mediaPath = ltrim(str_replace('/storage/', '', parse_url($media->path ?? '', PHP_URL_PATH) ?? ''), '/');
+            if ($mediaPath !== '' && Storage::disk('public')->exists($mediaPath)) {
+                Storage::disk('public')->delete($mediaPath);
+            }
         }
 
         $facility->delete();
@@ -164,7 +211,7 @@ class FacilityBookingController extends Controller
         $validHistoryStatuses = ['pending', 'approved', 'rejected'];
 
         $facilities = Facility::query()
-            ->with('organization:id,name,slug')
+            ->with(['organization:id,name,slug', 'media'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get()
@@ -179,6 +226,11 @@ class FacilityBookingController extends Controller
                 'price_per_unit' => (float) $facility->price_per_unit,
                 'capacity' => $facility->capacity,
                 'image_path' => $facility->image_path,
+                'media' => $facility->media->map(fn ($m) => [
+                    'id' => $m->id,
+                    'path' => $m->path,
+                    'caption' => $m->caption,
+                ])->values(),
             ]);
 
         $myBookings = FacilityBooking::query()
@@ -216,6 +268,7 @@ class FacilityBookingController extends Controller
 
     public function show(Request $request, Facility $facility): Response
     {
+        $facility->load('media');
         $bookings = FacilityBooking::query()
             ->where('facility_id', $facility->id)
             ->whereIn('booking_status', ['pending', 'approved'])
@@ -257,6 +310,11 @@ class FacilityBookingController extends Controller
                 'capacity' => $facility->capacity,
                 'image_path' => $facility->image_path,
                 'is_active' => $facility->is_active,
+                'media' => $facility->media->map(fn ($m) => [
+                    'id' => $m->id,
+                    'path' => $m->path,
+                    'caption' => $m->caption,
+                ])->values(),
             ],
             'bookings' => $bookings,
             'myBookings' => $myBookings,

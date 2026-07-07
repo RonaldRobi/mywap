@@ -427,7 +427,7 @@ class PollController extends Controller
 
         $questions = $poll->questions->map(function ($question) {
             $totalForQuestion = PollAnswer::where('poll_question_id', $question->id)->count();
-            $options = $question->options->map(function ($option) use ($question) {
+            $options = $question->options->map(function ($option) use ($question, $totalForQuestion) {
                 $count = PollAnswer::where('poll_question_id', $question->id)
                     ->where('poll_option_id', $option->id)
                     ->count();

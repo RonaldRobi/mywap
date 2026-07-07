@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -13,7 +14,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const activeTab = ref('broadcast'); // 'broadcast' or 'announcement'
+const activeTab = ref('broadcast');
 
 onMounted(() => {
     const params = new URLSearchParams(window.location.search);
@@ -22,19 +23,112 @@ onMounted(() => {
     }
 });
 
-// ─── Broadcast Notifications (Push/Email) ────────────────────────────────────
+// ─── Push Notification Form ──────────────────────────────────────────────────
 const broadcastForm = useForm({
     title: '',
     content: '',
     target_criteria: 'all',
-    usrah_group_id: '',
+    target_organization_id: props.defaultOrganizationId,
+    recipient_ids: [],
+    notification_channels: ['in_app'],
+    email_use_template: false,
 });
+
+const selectedOrgId = ref(props.defaultOrganizationId);
+
+function onTargetCriteriaChange() {
+    if (broadcastForm.target_criteria === 'organization') {
+        broadcastForm.target_organization_id = selectedOrgId.value;
+    } else {
+        broadcastForm.target_organization_id = null;
+    }
+    if (broadcastForm.target_criteria === 'specific_members') {
+        broadcastForm.recipient_ids = selectedMembers.value.map(m => m.id);
+    } else {
+        broadcastForm.recipient_ids = [];
+        selectedMembers.value = [];
+        memberSearchQuery.value = '';
+    }
+}
+
+function toggleChannel(channel) {
+    const idx = broadcastForm.notification_channels.indexOf(channel);
+    if (idx > -1) {
+        if (broadcastForm.notification_channels.length > 1) {
+            broadcastForm.notification_channels.splice(idx, 1);
+        }
+    } else {
+        broadcastForm.notification_channels.push(channel);
+    }
+}
 
 function submitBroadcast() {
     broadcastForm.post(route('admin.broadcasts.store'), {
         preserveScroll: true,
-        onSuccess: () => broadcastForm.reset('title', 'content', 'target_criteria', 'usrah_group_id'),
+        onSuccess: () => {
+            broadcastForm.reset('title', 'content', 'target_criteria', 'recipient_ids', 'notification_channels', 'email_use_template');
+            selectedMembers.value = [];
+            memberSearchQuery.value = '';
+            memberResults.value = [];
+            broadcastForm.target_organization_id = props.defaultOrganizationId;
+            selectedOrgId.value = props.defaultOrganizationId;
+            broadcastForm.target_criteria = 'all';
+        },
     });
+}
+
+// ─── Multi-Member Search ─────────────────────────────────────────────────────
+const memberSearchQuery = ref('');
+const memberResults = ref([]);
+const selectedMembers = ref([]);
+const memberSearchLoading = ref(false);
+const showMemberDropdown = ref(false);
+let memberDebounceTimer = null;
+
+function onMemberSearchInput(val) {
+    memberSearchQuery.value = val;
+    clearTimeout(memberDebounceTimer);
+    if (val.length < 2) {
+        memberResults.value = [];
+        showMemberDropdown.value = false;
+        return;
+    }
+    memberDebounceTimer = setTimeout(() => {
+        memberSearchLoading.value = true;
+        axios.get('/api/members/search', { params: { q: val } })
+            .then((res) => {
+                const alreadySelected = selectedMembers.value.map(m => m.id);
+                memberResults.value = (res.data || []).filter(m => !alreadySelected.includes(m.id));
+                showMemberDropdown.value = memberResults.value.length > 0;
+            })
+            .catch(() => { memberResults.value = []; })
+            .finally(() => { memberSearchLoading.value = false; });
+    }, 300);
+}
+
+function addMember(member) {
+    if (!selectedMembers.value.find(m => m.id === member.id)) {
+        selectedMembers.value.push(member);
+        broadcastForm.recipient_ids = selectedMembers.value.map(m => m.id);
+    }
+    memberSearchQuery.value = '';
+    memberResults.value = [];
+    showMemberDropdown.value = false;
+}
+
+function removeMember(memberId) {
+    selectedMembers.value = selectedMembers.value.filter(m => m.id !== memberId);
+    broadcastForm.recipient_ids = selectedMembers.value.map(m => m.id);
+}
+
+function onMemberBlur() {
+    setTimeout(() => { showMemberDropdown.value = false; }, 200);
+}
+
+function onMemberFocus() {
+    if (memberResults.value.length > 0) {
+        showMemberDropdown.value = true;
+    }
 }
 
 // ─── Announcements (Pengumuman System) ───────────────────────────────────────
@@ -181,10 +275,10 @@ function undoRemoveImage(imageId) {
 </script>
 
 <template>
-    <Head title="Broadcast & Pengumuman" />
+    <Head title="Push Notification & Pengumuman" />
 
     <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
-        <template #header>Broadcast & Pengumuman</template>
+        <template #header>Push Notification & Pengumuman</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-sm transition-all duration-300">
@@ -198,21 +292,21 @@ function undoRemoveImage(imageId) {
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h2 class="text-3xl font-black tracking-tight text-gray-900">Pusat Hebahan Maklumat</h2>
-                    <p class="text-sm font-medium text-gray-500 mt-1">Urus hebahan notifikasi push dan pengumuman terpapar di Dashboard ahli.</p>
+                    <p class="text-sm font-medium text-gray-500 mt-1">Urus push notification dan pengumuman terpapar di Dashboard ahli.</p>
                 </div>
-                
+
                 <!-- Tab Controls -->
                 <div class="flex items-center rounded-2xl bg-gray-100/80 p-1 border border-gray-200">
-                    <button 
+                    <button
                         @click="activeTab = 'broadcast'"
                         :class="[
                             'px-4 py-2 text-sm font-bold rounded-xl transition-all',
                             activeTab === 'broadcast' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5' : 'text-gray-500 hover:text-gray-700'
                         ]"
                     >
-                        Notifikasi Terus (Push)
+                        Push Notification
                     </button>
-                    <button 
+                    <button
                         @click="activeTab = 'announcement'"
                         :class="[
                             'px-4 py-2 text-sm font-bold rounded-xl transition-all',
@@ -225,53 +319,163 @@ function undoRemoveImage(imageId) {
             </div>
 
             <div v-show="activeTab === 'broadcast'" class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <!-- Push Broadcast Form  -->
+                <!-- Push Notification Form -->
                 <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                     <div class="mb-4">
-                        <h2 class="text-lg font-black text-gray-800">Cipta Hebahan Baharu</h2>
-                        <p class="text-xs text-gray-500">Hebahan akan dihantar terus kepada pengguna berdasarkan kumpulan sasar.</p>
+                        <h2 class="text-lg font-black text-gray-800">Cipta Push Notification Baharu</h2>
+                        <p class="text-xs text-gray-500">Push notification akan dihantar terus kepada pengguna berdasarkan kumpulan sasar.</p>
                     </div>
 
                     <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitBroadcast">
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Tajuk Notifikasi</label>
                             <input v-model="broadcastForm.title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold" required>
+                            <p v-if="broadcastForm.errors.title" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.title }}</p>
                         </div>
 
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kandungan / Mesej</label>
                             <textarea v-model="broadcastForm.content" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all" required></textarea>
+                            <p v-if="broadcastForm.errors.content" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.content }}</p>
                         </div>
 
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kumpulan Sasar</label>
-                            <select v-model="broadcastForm.target_criteria" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
-                                <option value="all">Kesemua Ahli Berdaftar</option>
-                                <option value="unpaid_fees">Ahli Tunggakan Yuran Saja</option>
-                                <option value="specific_usrah">Kumpulan Usrah Spesifik</option>
+                            <select v-model="broadcastForm.target_criteria" @change="onTargetCriteriaChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                                <option value="all">Semua Ahli</option>
+                                <option value="organization">Ahli Organisasi (Wadah, Abim & PKpim) Sahaja</option>
+                                <option value="specific_members">Individu Tertentu (Cari Ahli)</option>
+                            </select>
+                            <p v-if="broadcastForm.errors.target_criteria" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.target_criteria }}</p>
+                        </div>
+
+                        <div v-if="broadcastForm.target_criteria === 'organization' && isSuperadmin">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Pilih Organisasi</label>
+                            <select v-model="selectedOrgId" @change="broadcastForm.target_organization_id = selectedOrgId" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                                <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
                             </select>
                         </div>
 
-                        <div v-if="broadcastForm.target_criteria === 'specific_usrah'">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Pilih Kumpulan Usrah</label>
-                            <select v-model="broadcastForm.usrah_group_id" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
-                                <option value="">Sila Pilih...</option>
-                                <option v-for="group in usrahGroups" :key="group.id" :value="group.id">{{ group.name }}</option>
-                            </select>
-                            <p v-if="broadcastForm.errors.usrah_group_id" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.usrah_group_id }}</p>
+                        <div v-if="broadcastForm.target_criteria === 'organization' && !isSuperadmin" class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Organisasi</label>
+                            <input type="text" :value="organizations[0]?.name ?? ''" disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 font-semibold cursor-not-allowed">
+                        </div>
+
+                        <!-- Multi-Member Search for specific_members -->
+                        <div v-if="broadcastForm.target_criteria === 'specific_members'" class="md:col-span-2">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Cari & Pilih Ahli</label>
+
+                            <div class="relative">
+                                <input
+                                    v-model="memberSearchQuery"
+                                    @input="onMemberSearchInput($event.target.value)"
+                                    @blur="onMemberBlur"
+                                    @focus="onMemberFocus"
+                                    type="text"
+                                    placeholder="Cari nama atau no ahli..."
+                                    class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold"
+                                >
+                                <div v-if="memberSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <svg class="h-4 w-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                </div>
+
+                                <ul v-if="showMemberDropdown" class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white py-1 shadow-lg max-h-48 overflow-y-auto">
+                                    <li
+                                        v-for="member in memberResults"
+                                        :key="member.id"
+                                        @mousedown.prevent="addMember(member)"
+                                        class="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <span class="font-medium">{{ member.name }}</span>
+                                        <span class="text-xs text-gray-400 font-mono">{{ member.member_no }}</span>
+                                    </li>
+                                    <li v-if="memberResults.length === 0 && !memberSearchLoading" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
+                                </ul>
+                            </div>
+
+                            <!-- Selected Members Tags -->
+                            <div v-if="selectedMembers.length" class="mt-3 flex flex-wrap gap-2">
+                                <span
+                                    v-for="member in selectedMembers"
+                                    :key="member.id"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-800"
+                                >
+                                    {{ member.name }}
+                                    <span class="text-[10px] text-blue-400 font-mono">{{ member.member_no }}</span>
+                                    <button @click="removeMember(member.id)" type="button" class="ml-0.5 text-blue-400 hover:text-red-600 transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </span>
+                            </div>
+
+                            <p v-if="broadcastForm.errors.recipient_ids" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.recipient_ids }}</p>
+                        </div>
+
+                        <!-- Notification Channels -->
+                        <div class="md:col-span-2 mt-3">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Saluran Penghantaran</label>
+                            <div class="flex flex-wrap items-center gap-6">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        :checked="broadcastForm.notification_channels.includes('in_app')"
+                                        @change="toggleChannel('in_app')"
+                                        class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                                    >
+                                    <span class="text-sm font-semibold text-gray-700">In-App</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        :checked="broadcastForm.notification_channels.includes('email')"
+                                        @change="toggleChannel('email')"
+                                        class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                                    >
+                                    <span class="text-sm font-semibold text-gray-700">Email</span>
+                                </label>
+                            </div>
+                            <p v-if="broadcastForm.errors.notification_channels" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.notification_channels }}</p>
+                        </div>
+
+                        <!-- Email Template Toggle (only when Email channel is selected) -->
+                        <div v-if="broadcastForm.notification_channels.includes('email')" class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Format Emel</label>
+                            <div class="flex items-center gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        :value="false"
+                                        v-model="broadcastForm.email_use_template"
+                                        class="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                                    >
+                                    <span class="text-sm font-semibold text-gray-700">Kandungan Broadcast</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        :value="true"
+                                        v-model="broadcastForm.email_use_template"
+                                        class="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-900"
+                                    >
+                                    <span class="text-sm font-semibold text-gray-700">Template Khas (Header/Footer)</span>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="md:col-span-2 flex justify-end mt-2">
                             <button type="submit" :disabled="broadcastForm.processing" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-gray-800 transition-all hover:-translate-y-0.5 disabled:opacity-60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                                {{ broadcastForm.processing ? 'Menghantar Proses...' : 'Hantar Hebahan (Broadcast)' }}
+                                {{ broadcastForm.processing ? 'Menghantar...' : 'Hantar Push Notification' }}
                             </button>
                         </div>
                     </form>
                 </section>
 
                 <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                    <h2 class="text-lg font-black text-gray-800 mb-4">Sejarah Hebahan Keluar</h2>
+                    <h2 class="text-lg font-black text-gray-800 mb-4">Sejarah Push Notification Keluar</h2>
                     <div class="space-y-3">
                         <article v-for="item in recentMessages" :key="item.id" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50/50 p-4 hover:border-gray-200 transition-colors">
                             <div class="flex items-start gap-4">
@@ -281,9 +485,17 @@ function undoRemoveImage(imageId) {
                                 <div>
                                     <p class="text-sm font-bold text-gray-800">{{ item.title }}</p>
                                     <p class="mt-0.5 text-xs text-gray-500 font-medium tracking-wide">
-                                        <span class="text-gray-700">{{ item.organization_name }}</span> • 
-                                        Kumpulan: <span class="capitalize">{{ item.target_criteria.replace('_', ' ') }}</span>
-                                        <span v-if="item.usrah_group_name">({{ item.usrah_group_name }})</span>
+                                        <span class="text-gray-700">{{ item.organization_name }}</span> &bull;
+                                        <span class="capitalize">{{ item.target_criteria_label }}</span>
+                                        <span v-if="item.target_criteria === 'organization' && item.target_organization_name">({{ item.target_organization_name }})</span>
+                                        <span v-if="item.target_criteria === 'specific_members' && item.recipient_count">({{ item.recipient_count }} ahli)</span>
+                                    </p>
+                                    <p v-if="item.notification_channels?.length" class="mt-0.5 text-[11px] text-gray-400">
+                                        Saluran:
+                                        <span v-for="(ch, idx) in item.notification_channels" :key="ch" class="inline-flex items-center">
+                                            <span class="font-medium">{{ ch === 'in_app' ? 'In-App' : 'Email' }}</span>
+                                            <span v-if="idx < item.notification_channels.length - 1" class="mx-0.5">+</span>
+                                        </span>
                                     </p>
                                 </div>
                             </div>
@@ -297,7 +509,7 @@ function undoRemoveImage(imageId) {
                         </article>
 
                         <div v-if="!recentMessages.length" class="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-12 text-center">
-                            <p class="text-sm font-bold text-gray-400">Tiada rekod hebahan ditemui.</p>
+                            <p class="text-sm font-bold text-gray-400">Tiada rekod push notification ditemui.</p>
                         </div>
                     </div>
                 </section>
@@ -386,7 +598,7 @@ function undoRemoveImage(imageId) {
                 <!-- Announcements List -->
                 <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                     <h2 class="text-lg font-black text-gray-800 mb-4">Senarai Papan Pengumuman</h2>
-                    
+
                     <div class="space-y-4">
                         <article
                             v-for="item in announcements"
@@ -452,7 +664,7 @@ function undoRemoveImage(imageId) {
                                     </div>
                                 </form>
                             </template>
-                            
+
                             <template v-else>
                                 <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
                                     <div class="flex items-start gap-4 min-w-0">
@@ -472,9 +684,9 @@ function undoRemoveImage(imageId) {
                                             <h3 class="text-[15px] font-black text-gray-900 leading-tight truncate">{{ item.title }}</h3>
                                             <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
                                                 <span class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600">{{ item.organization_name }}</span>
-                                                <span class="text-gray-300">•</span>
+                                                <span class="text-gray-300">&bull;</span>
                                                 <span>{{ item.published_human || 'Draf / Tiada Tarikh' }}</span>
-                                                <span v-if="item.author_name" class="text-gray-300">•</span>
+                                                <span v-if="item.author_name" class="text-gray-300">&bull;</span>
                                                 <span v-if="item.author_name">{{ item.author_name }}</span>
                                             </div>
                                             <p class="mt-2 text-[14px] text-gray-600 whitespace-pre-line leading-relaxed line-clamp-2">{{ item.content }}</p>
@@ -494,7 +706,7 @@ function undoRemoveImage(imageId) {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="flex items-center gap-2 shrink-0 self-start sm:border-l sm:border-gray-100 sm:pl-4">
                                         <button @click="startEditAnnouncement(item)" class="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 focus:ring-2 focus:ring-gray-200 transition-colors" title="Edit">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -510,7 +722,7 @@ function undoRemoveImage(imageId) {
                                 </div>
                             </template>
                         </article>
-                        
+
                         <div v-if="!announcements.length" class="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-12 text-center">
                             <p class="text-sm font-bold text-gray-400">Tiada papan pengumuman ditemui.</p>
                         </div>

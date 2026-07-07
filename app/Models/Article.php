@@ -13,6 +13,7 @@ class Article extends Model
 
     protected $casts = [
         'is_published' => 'boolean',
+        'is_featured' => 'boolean',
         'published_at' => 'datetime',
     ];
 
@@ -34,5 +35,25 @@ class Article extends Model
     public function reactions()
     {
         return $this->hasMany(ArticleReaction::class);
+    }
+
+    public function media()
+    {
+        return $this->hasMany(ArticleMedia::class)->orderBy('order');
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(ArticleCategory::class, 'article_article_category');
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(ArticleTag::class, 'article_article_tag');
+    }
+
+    public function meta()
+    {
+        return $this->hasMany(ArticleMeta::class);
     }
 }

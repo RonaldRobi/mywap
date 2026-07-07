@@ -40,4 +40,10 @@ class Branch extends Model
     {
         return $this->hasMany(User::class, 'branch_id');
     }
+
+    public function admins(): HasMany
+    {
+        return $this->hasMany(User::class, 'branch_id')
+            ->whereHas('roles', fn ($q) => $q->where('name', 'Admin Cawangan'));
+    }
 }

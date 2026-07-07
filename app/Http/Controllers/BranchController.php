@@ -26,7 +26,7 @@ class BranchController extends Controller
 
         $organizations = Organization::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('id', $user->current_organization_id))
-            ->with(['branches' => fn ($q) => $q->withCount('members')->orderBy('state')])
+            ->with(['branches' => fn ($q) => $q->withCount('members')->with('admins')->orderBy('state')])
             ->orderBy('sort_order')
             ->orderBy('min_age')
             ->get()
@@ -46,6 +46,12 @@ class BranchController extends Controller
                     'logo_path'    => $b->logo_path,
                     'is_active'    => $b->is_active,
                     'member_count' => $b->members_count,
+                    'admins'       => $b->admins->map(fn ($admin) => [
+                        'id'        => $admin->id,
+                        'name'      => $admin->name,
+                        'email'     => $admin->email,
+                        'member_no' => $admin->member_no,
+                    ])->values(),
                 ])->values(),
             ]);
 
@@ -182,5 +188,55 @@ class BranchController extends Controller
         $branch->delete();
 
         return back()->with('success', 'Cawangan berjaya dipadam!');
+    }
+
+    /**
+     * Assign Admin Cawangan role to a user within this branch.
+     */
+    public function storeAdmin(Request $request, Branch $branch): RedirectResponse
+    {
+        $user = Auth::user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+
+        if (! $isSuperadmin && $branch->organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'user_id' => ['required', 'exists:users,id'],
+        ]);
+
+        $target = \App\Models\User::withoutGlobalScopes()->findOrFail($data['user_id']);
+
+        if ((int) $target->branch_id !== (int) $branch->id) {
+            return back()->with('error', 'Ahli tersebut bukan dalam cawangan ini.');
+        }
+
+        $target->assignRole('Admin Cawangan');
+
+        return back()->with('success', 'Admin cawangan berjaya ditambah!');
+    }
+
+    /**
+     * Remove Admin Cawangan role from a user.
+     */
+    public function destroyAdmin(Branch $branch, \App\Models\User $admin): RedirectResponse
+    {
+        $user = Auth::user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+
+        if (! $isSuperadmin && $branch->organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        $target = \App\Models\User::withoutGlobalScopes()->findOrFail($admin->id);
+
+        if (! $target->hasRole('Admin Cawangan')) {
+            return back()->with('error', 'Ahli tersebut bukan admin cawangan.');
+        }
+
+        $target->removeRole('Admin Cawangan');
+
+        return back()->with('success', 'Admin cawangan berjaya dibuang!');
     }
 }

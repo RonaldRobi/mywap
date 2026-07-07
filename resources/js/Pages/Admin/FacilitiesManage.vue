@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     isSuperadmin: Boolean,
@@ -25,10 +25,12 @@ const form = useForm({
     price_per_unit: 0,
     capacity: null,
     image: null,
+    gallery: [],
     is_active: true,
 });
 
 const editingId = ref(null);
+const existingMedia = ref([]);
 const editForm = useForm({
     organization_id: props.defaultOrganizationId,
     name: '',
@@ -38,19 +40,37 @@ const editForm = useForm({
     price_per_unit: 0,
     capacity: null,
     image: null,
+    gallery: [],
+    delete_media: [],
     is_active: true,
 });
+
+function selectGallery(e) {
+    form.gallery = Array.from(e.target.files);
+}
+
+function selectEditGallery(e) {
+    editForm.gallery = [...editForm.gallery, ...Array.from(e.target.files)];
+}
+
+function removeEditGalleryFile(index) {
+    editForm.gallery.splice(index, 1);
+}
 
 function submit() {
     form.post(route('admin.facilities.store'), {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: () => form.reset('name', 'description', 'location', 'type', 'price_per_unit', 'capacity', 'image', 'is_active'),
+        onSuccess: () => {
+            form.reset('name', 'description', 'location', 'type', 'price_per_unit', 'capacity', 'image', 'is_active');
+            form.gallery = [];
+        },
     });
 }
 
 function startEdit(item) {
     editingId.value = item.id;
+    existingMedia.value = item.media || [];
     editForm.organization_id = item.organization_id;
     editForm.name = item.name;
     editForm.description = item.description ?? '';
@@ -59,12 +79,22 @@ function startEdit(item) {
     editForm.price_per_unit = item.price_per_unit;
     editForm.capacity = item.capacity;
     editForm.image = null;
+    editForm.gallery = [];
+    editForm.delete_media = [];
     editForm.is_active = !!item.is_active;
 }
 
 function cancelEdit() {
     editingId.value = null;
+    existingMedia.value = [];
     editForm.reset();
+    editForm.gallery = [];
+    editForm.delete_media = [];
+}
+
+function deleteExistingMedia(mediaId) {
+    editForm.delete_media.push(mediaId);
+    existingMedia.value = existingMedia.value.filter(m => m.id !== mediaId);
 }
 
 function saveEdit(item) {
@@ -79,6 +109,15 @@ function removeItem(item) {
     if (!confirm('Padam ruang ini?')) return;
     useForm({}).delete(route('admin.facilities.destroy', item.id), { preserveScroll: true });
 }
+
+const allImages = computed(() => {
+    return (item) => {
+        const images = [];
+        if (item.image_path) images.push({ id: 'cover', path: item.image_path, caption: null });
+        (item.media || []).forEach(m => images.push(m));
+        return images;
+    };
+});
 </script>
 
 <template>
@@ -142,8 +181,14 @@ function removeItem(item) {
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Imej Ruang</label>
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Imej Cover</label>
                         <input type="file" accept="image/*" @change="form.image = $event.target.files[0]" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Galeri</label>
+                        <input type="file" accept="image/*" multiple @change="selectGallery" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
+                        <p class="mt-1 text-xs text-gray-400">{{ form.gallery.length }} fail dipilih</p>
                     </div>
 
                     <div class="md:col-span-2">
@@ -159,7 +204,21 @@ function removeItem(item) {
 
                 <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <article v-for="item in facilities" :key="item.id" class="rounded-2xl border border-gray-100 bg-white p-4">
-                        <img v-if="item.image_path" :src="item.image_path" :alt="item.name" class="mb-3 aspect-video w-full rounded-xl border border-gray-200 object-cover">
+                        <div v-if="allImages(item).length" class="mb-3 overflow-hidden rounded-xl border border-gray-200">
+                            <div class="grid gap-px bg-gray-200" :class="allImages(item).length === 1 ? 'grid-cols-1' : 'grid-cols-2'">
+                                <img
+                                    v-for="(img, i) in allImages(item).slice(0, 4)"
+                                    :key="img.id"
+                                    :src="img.path"
+                                    :alt="item.name"
+                                    class="object-cover"
+                                    :class="i === 0 && allImages(item).length === 3 ? 'row-span-2 h-full' : allImages(item).length === 1 ? 'aspect-video w-full' : 'aspect-square w-full'"
+                                >
+                            </div>
+                            <div v-if="allImages(item).length > 4" class="bg-gray-100 px-3 py-1.5 text-center text-xs text-gray-500">
+                                +{{ allImages(item).length - 4 }} lagi
+                            </div>
+                        </div>
 
                         <template v-if="editingId === item.id">
                             <form class="space-y-2" @submit.prevent="saveEdit(item)">
@@ -176,7 +235,32 @@ function removeItem(item) {
                                 <input v-model.number="editForm.capacity" type="number" min="1" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                 <label class="flex items-center gap-2 text-xs text-gray-600"><input v-model="editForm.is_active" type="checkbox" class="rounded border-gray-300"> Aktif</label>
                                 <textarea v-model="editForm.description" rows="2" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs"></textarea>
-                                <input type="file" accept="image/*" @change="editForm.image = $event.target.files[0]" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
+
+                                <div class="rounded-lg border border-gray-100 bg-gray-50 p-2 space-y-1">
+                                    <p class="text-[11px] font-semibold text-gray-500">Cover Imej</p>
+                                    <input type="file" accept="image/*" @change="editForm.image = $event.target.files[0]" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
+                                </div>
+
+                                <div class="rounded-lg border border-gray-100 bg-gray-50 p-2 space-y-1">
+                                    <p class="text-[11px] font-semibold text-gray-500">Galeri Sedia Ada</p>
+                                    <div v-if="existingMedia.length" class="flex flex-wrap gap-1">
+                                        <div v-for="m in existingMedia" :key="m.id" class="group relative">
+                                            <img :src="m.path" class="h-12 w-12 rounded-lg border border-gray-200 object-cover">
+                                            <button @click.prevent="deleteExistingMedia(m.id)" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white opacity-0 group-hover:opacity-100">×</button>
+                                        </div>
+                                    </div>
+                                    <p v-else class="text-xs text-gray-400">Tiada</p>
+
+                                    <p class="text-[11px] font-semibold text-gray-500">Tambah Galeri</p>
+                                    <input type="file" accept="image/*" multiple @change="selectEditGallery" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
+                                    <div v-if="editForm.gallery.length" class="flex flex-wrap gap-1">
+                                        <span v-for="(_, i) in editForm.gallery" :key="i" class="inline-flex items-center gap-0.5 rounded-lg bg-gray-200 px-1.5 py-0.5 text-[10px]">
+                                            Imej {{ i + 1 }}
+                                            <button @click.prevent="removeEditGalleryFile(i)" class="text-red-600">×</button>
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <div class="flex items-center gap-2">
                                     <button type="submit" :disabled="editForm.processing" class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Update</button>
                                     <button type="button" @click="cancelEdit" class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700">Cancel</button>
@@ -187,7 +271,7 @@ function removeItem(item) {
                         <template v-else>
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ item.organization_name }}</p>
                             <h3 class="mt-1 text-base font-black text-gray-800">{{ item.name }}</h3>
-                            <p class="mt-1 text-sm text-gray-600">{{ item.description || '—' }}</p>
+                            <p class="mt-1 text-sm text-gray-600 line-clamp-2">{{ item.description || '—' }}</p>
                             <p class="mt-2 text-xs text-gray-500">Lokasi: <span class="font-semibold text-gray-700">{{ item.location || '—' }}</span></p>
                             <p class="text-xs text-gray-500">Jenis: <span class="font-semibold text-gray-700">{{ item.type }}</span></p>
                             <p class="text-xs text-gray-500">Harga: <span class="font-semibold text-gray-700">RM {{ Number(item.price_per_unit).toFixed(2) }}</span></p>

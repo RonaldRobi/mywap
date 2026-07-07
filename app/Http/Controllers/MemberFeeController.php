@@ -112,7 +112,7 @@ class MemberFeeController extends Controller
         $years = range(now()->year - 10, now()->year + 1);
 
         $orgIds = $isSuperadmin
-            ? Organization::pluck('id', 'fee_amount')
+            ? Organization::pluck('fee_amount', 'id')
             : [$orgId => Organization::find($orgId)?->fee_amount ?? 0];
 
         $expectedAmount = 0;

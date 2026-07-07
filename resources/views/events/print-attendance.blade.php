@@ -246,7 +246,7 @@
             <div class="sig-inner">
                 <div class="sig-line">
                     Diluluskan oleh<br>
-                    <strong>{{ $event->organization->name }}</strong>
+                    <strong>{{ $event->organization?->name ?? 'Semua Organisasi' }}</strong>
                 </div>
             </div>
         </div>

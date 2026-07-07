@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Article;
+use App\Models\ArticleCategory;
+use App\Models\ArticleTag;
 use App\Models\ArticleComment;
 use App\Models\ArticleReaction;
 use App\Models\Organization;
@@ -120,6 +122,19 @@ class ArticleDemoSeeder extends Seeder
                     'user_id'    => $members->random()->id,
                     'content'    => 'Semoga terus istiqamah menyampaikan ilmu yang bermanfaat.',
                 ],
+            );
+        }
+
+        // Assign categories & tags
+        $categories = ArticleCategory::all();
+        $tags = ArticleTag::all();
+
+        foreach ($articleAll as $article) {
+            $article->categories()->sync(
+                $categories->random(min(2, $categories->count()))->pluck('id')
+            );
+            $article->tags()->sync(
+                $tags->random(min(3, $tags->count()))->pluck('id')
             );
         }
 

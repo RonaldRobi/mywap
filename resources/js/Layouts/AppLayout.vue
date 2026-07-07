@@ -296,7 +296,7 @@ const navItems = computed(() => [
     },
     {
         label:  'Artikel',
-        href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.manage') : route('articles.index'),
+        href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.index') : route('articles.index'),
         active: route().current('articles.*') || route().current('admin.articles.*'),
         colorClass: 'text-blue-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -440,12 +440,12 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M12 12a4 4 0 100-8 4 4 0 000 8zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>`,
     }, {
-        label: 'Siaran',
+        label: 'Push Notification',
         href: route('admin.broadcasts.index', { tab: 'broadcast' }),
         active: route().current('admin.broadcasts.*') && (page.url.includes('tab=broadcast') || !page.url.includes('tab=')),
         colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>`,
     }, {
         label: 'Pengumuman',

@@ -85,6 +85,12 @@ function submitComment() {
                             👎 Tidak Suka ({{ post.dislikes_count }})
                         </button>
                     </div>
+
+                    <div v-if="post.can_edit" class="mt-4 flex gap-2 border-t border-gray-100 pt-4">
+                        <Link :href="route('admin.news.manage')" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                            Edit Info Ini
+                        </Link>
+                    </div>
                 </div>
             </article>
 
