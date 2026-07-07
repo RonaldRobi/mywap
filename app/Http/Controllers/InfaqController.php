@@ -516,6 +516,47 @@ SVG;
         );
     }
 
+    public function donors(Infaq $infaq): Response
+    {
+        $donations = InfaqDonation::query()
+            ->where('infaq_id', $infaq->id)
+            ->with('user:id,name,email')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (InfaqDonation $d) => [
+                'id'                => $d->id,
+                'donor_name'        => $d->is_anonymous ? 'Hamba Allah' : ($d->donor_name ?? $d->user?->name ?? 'Tanpa Nama'),
+                'donor_email'       => $d->donor_email,
+                'donor_phone'       => $d->donor_phone,
+                'amount'            => (float) $d->amount,
+                'status'            => $d->status,
+                'reference'         => $d->reference,
+                'is_anonymous'      => $d->is_anonymous,
+                'is_recurring'      => $d->is_recurring,
+                'frequency'         => $d->frequency,
+                'recurring_status'  => $d->recurring_status,
+                'prayer_message'    => $d->prayer_message,
+                'wants_updates'     => $d->wants_updates,
+                'created_at'        => $d->created_at->format('d M Y, h:i A'),
+                'created_at_iso'    => $d->created_at->toISOString(),
+            ]);
+
+        return Inertia::render('Superadmin/InfaqDonors', [
+            'infaq' => [
+                'id'               => $infaq->id,
+                'title'            => $infaq->title,
+                'slug'             => $infaq->slug,
+                'type'             => $infaq->type,
+                'target_amount'    => (float) $infaq->target_amount,
+                'collected_amount' => (float) $infaq->collected_amount,
+                'progress_percent' => $infaq->progress_percent,
+                'organization_name'=> $infaq->organization?->name ?? 'Global',
+                'public_url'       => $infaq->public_url,
+            ],
+            'donations' => $donations,
+        ]);
+    }
+
     public function success(Request $request, $year, $month, $day, Infaq $infaq): Response
     {
         return Inertia::render('Infaq/Success', [

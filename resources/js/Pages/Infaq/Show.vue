@@ -1,32 +1,32 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import SocialShareButtons from '@/Components/SocialShareButtons.vue';
+import InfaqCard from '@/Components/InfaqCard.vue';
 
 const props = defineProps({
-    infaq: {
-        type: Object,
-        required: true,
-    },
-    recentDonations: {
-        type: Array,
-        default: () => [],
-    },
-    relatedInfaqs: {
-        type: Array,
-        default: () => [],
-    },
+    infaq: { type: Object, required: true },
+    recentDonations: { type: Array, default: () => [] },
+    relatedInfaqs: { type: Array, default: () => [] },
 });
 
 const page = usePage();
 const systemLogo = computed(() => page.props.brand?.system_logo_path ?? null);
 
+const activeTab = ref('description');
+const showLightbox = ref(false);
+const showFaq = ref(false);
+const linkCopied = ref(false);
+const animatedAmount = ref(0);
+
+const tabs = [
+    { key: 'description', label: 'Tentang Kempen', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z' },
+    { key: 'donors', label: 'Sumbangan Terkini', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { key: 'faq', label: 'Soalan Lazim', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+];
+
 function formatCurrency(value) {
-    return new Intl.NumberFormat('ms-MY', {
-        style: 'currency',
-        currency: 'MYR',
-        maximumFractionDigits: 2,
-    }).format(value ?? 0);
+    return new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR', maximumFractionDigits: 2 }).format(value ?? 0);
 }
 
 function formatCompact(value) {
@@ -40,9 +40,7 @@ const ogTitle = computed(() => props.infaq.title);
 const ogDescription = computed(() => (props.infaq.description || 'Jom menyumbang bersama kami.').substring(0, 200));
 const ogImage = computed(() => {
     if (props.infaq.image_path) {
-        return props.infaq.image_path.startsWith('http')
-            ? props.infaq.image_path
-            : window.location.origin + props.infaq.image_path;
+        return props.infaq.image_path.startsWith('http') ? props.infaq.image_path : window.location.origin + props.infaq.image_path;
     }
     return '';
 });
@@ -60,7 +58,6 @@ const sharePreviewUrl = computed(() => {
     return route('share.infaq', props.infaq.slug || props.infaq.id, true);
 });
 
-const linkCopied = ref(false);
 async function copyShareLink() {
     try {
         await navigator.clipboard.writeText(sharePreviewUrl.value);
@@ -78,7 +75,29 @@ async function copyShareLink() {
     }
 }
 
-const showFaq = ref(false);
+// Animated counting
+onMounted(() => {
+    const target = props.infaq.collected_amount || 0;
+    const duration = 1200;
+    const start = performance.now();
+    function animate(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        animatedAmount.value = Math.round(target * eased * 100) / 100;
+        if (progress < 1) requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+});
+
+watch(() => props.infaq.collected_amount, (val) => {
+    animatedAmount.value = val;
+});
+
+// Keyboard support for lightbox
+function onKeydown(e) {
+    if (e.key === 'Escape' && showLightbox.value) showLightbox.value = false;
+}
 </script>
 
 <template>
@@ -94,9 +113,9 @@ const showFaq = ref(false);
         <meta name="twitter:image" :content="ogImage" />
     </Head>
 
-    <div class="min-h-screen bg-slate-50 font-sans text-slate-900 pb-28 md:pb-0">
-        <!-- Minimal Navigation -->
-        <nav class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
+    <div class="min-h-screen bg-slate-50 font-sans text-slate-900 pb-28 md:pb-0" @keydown="onKeydown">
+        <!-- Navigation -->
+        <nav class="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
             <div class="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
                 <Link href="/" class="flex items-center">
                     <img v-if="systemLogo" :src="systemLogo" alt="Logo" class="h-8 w-auto" />
@@ -117,14 +136,19 @@ const showFaq = ref(false);
                     <!-- Infaq Details Card -->
                     <article class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
                         <!-- Hero Image with Impact Stats Overlay -->
-                        <div class="bg-gray-100 w-full relative">
+                        <div class="bg-gray-100 w-full relative cursor-pointer" @click="infaq.image_path && (showLightbox = true)">
                             <div v-if="infaq.image_path" class="aspect-[16/9] md:aspect-[16/7] w-full">
-                                <img :src="infaq.image_path" :alt="infaq.title" class="h-full w-full object-cover">
+                                <img :src="infaq.image_path" :alt="infaq.title" class="h-full w-full object-cover transition duration-300 hover:brightness-105">
                             </div>
                             <div v-else class="aspect-[16/9] md:aspect-[16/7] w-full bg-gradient-to-br from-emerald-600 to-emerald-900 flex items-center justify-center">
                                 <svg class="w-20 h-20 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                             </div>
                             <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent"></div>
+
+                            <!-- Zoom icon hint -->
+                            <div v-if="infaq.image_path" class="absolute top-4 right-4 bg-white/20 backdrop-blur-sm rounded-lg p-2 text-white/80 opacity-0 hover:opacity-100 transition-opacity duration-200">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                            </div>
 
                             <!-- Hero Content Overlay -->
                             <div class="absolute bottom-0 left-0 right-0 p-6 md:p-8">
@@ -146,7 +170,7 @@ const showFaq = ref(false);
                                 <div class="flex flex-wrap gap-6 md:gap-8">
                                     <div>
                                         <p class="text-xs font-bold text-white/60 uppercase tracking-wider">Terkumpul</p>
-                                        <p class="text-xl md:text-2xl font-black text-white">{{ formatCurrency(infaq.collected_amount) }}</p>
+                                        <p class="text-xl md:text-2xl font-black text-white">{{ formatCurrency(animatedAmount) }}</p>
                                     </div>
                                     <div v-if="infaq.type === 'progress' && infaq.target_amount">
                                         <p class="text-xs font-bold text-white/60 uppercase tracking-wider">Matlamat</p>
@@ -160,6 +184,16 @@ const showFaq = ref(false);
                             </div>
                         </div>
 
+                        <!-- Lightbox Modal -->
+                        <Teleport to="body">
+                            <div v-if="showLightbox && infaq.image_path" class="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4" @click="showLightbox = false">
+                                <button @click.stop="showLightbox = false" class="absolute top-4 right-4 text-white/70 hover:text-white transition p-2 z-10">
+                                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                                <img :src="infaq.image_path" :alt="infaq.title" class="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" @click.stop />
+                            </div>
+                        </Teleport>
+
                         <!-- Progress Bar (below image, full width) -->
                         <div v-if="infaq.type === 'progress' && infaq.target_amount" class="px-6 md:px-8 pt-4">
                             <div class="flex items-center justify-between text-sm font-semibold text-slate-500 mb-1.5">
@@ -167,10 +201,11 @@ const showFaq = ref(false);
                                 <span>Dari matlamat</span>
                             </div>
                             <div class="h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-emerald-500 transition-all duration-1000" :style="{ width: infaq.progress_percent + '%' }"></div>
+                                <div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-1000" :style="{ width: infaq.progress_percent + '%' }"></div>
                             </div>
                         </div>
 
+                        <!-- Tabbed Content Section -->
                         <div class="p-6 md:p-8">
                             <!-- Trust Badges Strip -->
                             <div class="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-slate-100">
@@ -214,61 +249,119 @@ const showFaq = ref(false);
                                 </div>
                             </div>
 
-                            <!-- Description -->
-                            <h2 class="text-xl font-black text-slate-900 mb-4">Tentang Kempen Ini</h2>
-                            <p class="text-base leading-relaxed text-slate-600 whitespace-pre-line">{{ infaq.description || 'Tiada maklumat lanjut buat masa ini.' }}</p>
-
-                            <!-- Impact Section -->
-                            <div class="mt-8 p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200">
-                                <h3 class="font-black text-emerald-900 mb-3 flex items-center gap-2">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                    Impak Sumbangan Anda
-                                </h3>
-                                <p class="text-sm text-emerald-800 leading-relaxed">
-                                    Setiap ringgit yang disumbangkan akan disalurkan sepenuhnya kepada program-program yang telah dirancang. 
-                                    Kami komited untuk memastikan ketelusan dalam setiap perbelanjaan dan akan memberikan laporan berkala 
-                                    kepada para penyumbang. Semoga setiap sumbangan menjadi ladang pahala yang berpanjangan.
-                                </p>
+                            <!-- Tab Navigation -->
+                            <div class="flex border-b border-slate-200 gap-0 mb-6">
+                                <button
+                                    v-for="tab in tabs"
+                                    :key="tab.key"
+                                    @click="activeTab = tab.key"
+                                    :class="['flex items-center gap-2 px-4 py-3 text-sm font-bold transition border-b-2 -mb-[1px]', activeTab === tab.key ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-400 hover:text-slate-600']"
+                                >
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" :d="tab.icon"/></svg>
+                                    {{ tab.label }}
+                                </button>
                             </div>
 
-                            <!-- FAQ Section -->
-                            <div class="mt-8 pt-6 border-t border-slate-100">
-                                <button @click="showFaq = !showFaq" class="flex items-center justify-between w-full text-left">
-                                    <h3 class="font-black text-slate-900">Soalan Lazim</h3>
-                                    <svg class="h-5 w-5 text-slate-400 transition" :class="showFaq ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                <div v-if="showFaq" class="mt-4 space-y-4">
-                                    <div class="rounded-xl bg-slate-50 p-4">
-                                        <p class="font-bold text-slate-800 text-sm mb-1">Bagaimana saya tahu sumbangan saya sampai?</p>
-                                        <p class="text-sm text-slate-600">Kami akan menghantar kemas kini berkala melalui emel. Anda juga boleh melihat jumlah terkumpul dikemaskini secara langsung di halaman ini.</p>
-                                    </div>
-                                    <div class="rounded-xl bg-slate-50 p-4">
-                                        <p class="font-bold text-slate-800 text-sm mb-1">Adakah saya akan menerima resit?</p>
-                                        <p class="text-sm text-slate-600">Ya, resit digital akan dihantar ke emel yang anda daftarkan selepas pembayaran berjaya.</p>
-                                    </div>
-                                    <div class="rounded-xl bg-slate-50 p-4">
-                                        <p class="font-bold text-slate-800 text-sm mb-1">Bolehkah saya sumbang secara anonymous?</p>
-                                        <p class="text-sm text-slate-600">Ya, anda boleh tandakan pilihan "Jangan paparkan nama saya" semasa mengisi maklumat sumbangan.</p>
-                                    </div>
-                                    <div v-if="infaq.allow_recurring" class="rounded-xl bg-slate-50 p-4">
-                                        <p class="font-bold text-slate-800 text-sm mb-1">Bagaimana sumbangan bulanan berfungsi?</p>
-                                        <p class="text-sm text-slate-600">Anda akan membuat pengesahan autodebit sekali melalui FPX. Selepas itu, jumlah yang sama akan didebit secara automatik setiap bulan tanpa perlu masuk semula. Anda boleh berhenti bila-bila masa dengan menghubungi pihak pengurusan.</p>
-                                    </div>
-                                    <div class="rounded-xl bg-slate-50 p-4">
-                                        <p class="font-bold text-slate-800 text-sm mb-1">Adakah pembayaran selamat?</p>
-                                        <p class="text-sm text-slate-600">Kami menggunakan perkhidmatan FPX dan kad kredit/debit yang disulitkan dengan teknologi SSL. Data peribadi anda dijamin selamat.</p>
-                                    </div>
+                            <!-- Tab: Description -->
+                            <div v-if="activeTab === 'description'" class="space-y-6">
+                                <h2 class="text-xl font-black text-slate-900 mb-4">Tentang Kempen Ini</h2>
+                                <p class="text-base leading-relaxed text-slate-600 whitespace-pre-line">{{ infaq.description || 'Tiada maklumat lanjut buat masa ini.' }}</p>
+
+                                <!-- Impact Section -->
+                                <div class="mt-8 p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200">
+                                    <h3 class="font-black text-emerald-900 mb-3 flex items-center gap-2">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        Impak Sumbangan Anda
+                                    </h3>
+                                    <p class="text-sm text-emerald-800 leading-relaxed">
+                                        Setiap ringgit yang disumbangkan akan disalurkan sepenuhnya kepada program-program yang telah dirancang. 
+                                        Kami komited untuk memastikan ketelusan dalam setiap perbelanjaan dan akan memberikan laporan berkala 
+                                        kepada para penyumbang. Semoga setiap sumbangan menjadi ladang pahala yang berpanjangan.
+                                    </p>
+                                </div>
+
+                                <!-- Share Section -->
+                                <div class="pt-6 border-t border-slate-100">
+                                    <p class="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Kongsikan Kempen Ini</p>
+                                    <SocialShareButtons
+                                        :title="infaq.title"
+                                        :text="infaq.description || 'Jom menyumbang bersama kami.'"
+                                        :url="sharePreviewUrl"
+                                    />
                                 </div>
                             </div>
 
-                            <!-- Share Section -->
-                            <div class="mt-8 pt-6 border-t border-slate-100">
-                                <p class="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Kongsikan Kempen Ini</p>
-                                <SocialShareButtons
-                                    :title="infaq.title"
-                                    :text="infaq.description || 'Jom menyumbang bersama kami.'"
-                                    :url="sharePreviewUrl"
-                                />
+                            <!-- Tab: Donors -->
+                            <div v-if="activeTab === 'donors'" class="space-y-4">
+                                <h2 class="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
+                                    <svg class="h-5 w-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
+                                    {{ infaq.total_donors }} Orang Telah Menyumbang
+                                </h2>
+
+                                <div
+                                    v-for="donation in recentDonations"
+                                    :key="donation.id"
+                                    class="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors"
+                                >
+                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-black text-base shrink-0 shadow-sm">
+                                        {{ donation.donor_name.charAt(0).toUpperCase() }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-2 mb-0.5">
+                                            <p class="text-sm font-bold text-slate-800">{{ donation.donor_name }}</p>
+                                            <p class="text-sm font-black text-emerald-600 shrink-0">{{ formatCurrency(donation.amount) }}</p>
+                                        </div>
+                                        <p class="text-xs text-slate-400">{{ donation.created_at }}</p>
+                                        <p v-if="donation.prayer_message" class="text-sm text-slate-600 italic mt-2 leading-relaxed pl-3 border-l-2 border-emerald-200">
+                                            "{{ donation.prayer_message }}"
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p v-if="!recentDonations.length" class="text-center text-sm font-bold text-slate-500 py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                    <span class="block text-3xl mb-2">&#128591;</span>
+                                    Jadilah penyumbang pertama untuk kempen ini!
+                                </p>
+
+                                <!-- Share Section under donors -->
+                                <div class="pt-6 border-t border-slate-100">
+                                    <p class="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Kongsikan Kempen Ini</p>
+                                    <SocialShareButtons
+                                        :title="infaq.title"
+                                        :text="infaq.description || 'Jom menyumbang bersama kami.'"
+                                        :url="sharePreviewUrl"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Tab: FAQ -->
+                            <div v-if="activeTab === 'faq'" class="space-y-4">
+                                <h2 class="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
+                                    <svg class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    Soalan Lazim
+                                </h2>
+                                <div class="space-y-3">
+                                    <div class="rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200 transition-colors">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Bagaimana saya tahu sumbangan saya sampai?</p>
+                                        <p class="text-sm text-slate-600">Kami akan menghantar kemas kini berkala melalui emel. Anda juga boleh melihat jumlah terkumpul dikemaskini secara langsung di halaman ini.</p>
+                                    </div>
+                                    <div class="rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200 transition-colors">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Adakah saya akan menerima resit?</p>
+                                        <p class="text-sm text-slate-600">Ya, resit digital akan dihantar ke emel yang anda daftarkan selepas pembayaran berjaya.</p>
+                                    </div>
+                                    <div class="rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200 transition-colors">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Bolehkah saya sumbang secara anonymous?</p>
+                                        <p class="text-sm text-slate-600">Ya, anda boleh tandakan pilihan "Jangan paparkan nama saya" semasa mengisi maklumat sumbangan.</p>
+                                    </div>
+                                    <div v-if="infaq.allow_recurring" class="rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200 transition-colors">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Bagaimana sumbangan bulanan berfungsi?</p>
+                                        <p class="text-sm text-slate-600">Anda akan membuat pengesahan autodebit sekali melalui FPX. Selepas itu, jumlah yang sama akan didebit secara automatik setiap bulan tanpa perlu masuk semula. Anda boleh berhenti bila-bila masa dengan menghubungi pihak pengurusan.</p>
+                                    </div>
+                                    <div class="rounded-xl bg-slate-50 border border-slate-100 p-4 hover:border-emerald-200 transition-colors">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Adakah pembayaran selamat?</p>
+                                        <p class="text-sm text-slate-600">Kami menggunakan perkhidmatan FPX yang disulitkan dengan teknologi SSL. Data peribadi anda dijamin selamat.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </article>
@@ -277,18 +370,7 @@ const showFaq = ref(false);
                     <div v-if="relatedInfaqs.length" class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-sm">
                         <h2 class="text-xl font-black text-slate-900 mb-6">Saranan Kempen Lainnya</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <Link v-for="item in relatedInfaqs" :key="item.id" :href="item.public_url" class="group block overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 hover:shadow-md transition">
-                                <div class="aspect-video bg-gray-200 relative overflow-hidden">
-                                    <img v-if="item.image_path" :src="item.image_path" class="w-full h-full object-cover transition duration-500 group-hover:scale-110">
-                                    <div v-else class="w-full h-full bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center">
-                                        <svg class="w-10 h-10 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    </div>
-                                </div>
-                                <div class="p-4">
-                                    <h3 class="font-bold text-slate-800 line-clamp-2 mb-2 group-hover:text-emerald-600 transition">{{ item.title }}</h3>
-                                    <p class="text-sm font-bold text-emerald-600">{{ formatCurrency(item.collected_amount) }} Terkumpul</p>
-                                </div>
-                            </Link>
+                            <InfaqCard v-for="item in relatedInfaqs" :key="item.id" :infaq="item" />
                         </div>
                     </div>
                 </div>
@@ -300,14 +382,14 @@ const showFaq = ref(false);
                         <div class="rounded-3xl border border-gray-100 bg-white p-6 md:p-8 shadow-lg shadow-emerald-900/5">
                             <div class="mb-6">
                                 <p class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Terkumpul</p>
-                                <h2 class="text-3xl font-black text-emerald-600 mb-2">{{ formatCurrency(infaq.collected_amount) }}</h2>
+                                <h2 class="text-3xl font-black text-emerald-600 mb-2">{{ formatCurrency(animatedAmount) }}</h2>
                                 <template v-if="infaq.type === 'progress' && infaq.target_amount">
                                     <div class="flex items-center justify-between text-sm font-semibold text-slate-500 mb-2">
                                         <span>{{ infaq.progress_percent }}%</span>
                                         <span>Matlamat: {{ formatCurrency(infaq.target_amount) }}</span>
                                     </div>
                                     <div class="h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                                        <div class="h-full rounded-full bg-emerald-500 transition-all duration-1000" :style="{ width: infaq.progress_percent + '%' }"></div>
+                                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-1000" :style="{ width: infaq.progress_percent + '%' }"></div>
                                     </div>
                                 </template>
                             </div>
@@ -315,16 +397,16 @@ const showFaq = ref(false);
                             <div class="space-y-3">
                                 <Link
                                     :href="infaq.public_url + '/donate'"
-                                    class="block w-full text-center rounded-xl bg-slate-900 px-4 py-4 text-sm font-black uppercase tracking-wider text-white transition shadow-sm hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5"
+                                    class="block w-full text-center rounded-xl bg-slate-900 px-4 py-4 text-sm font-black uppercase tracking-wider text-white transition shadow-sm hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
                                 >
                                     Sumbang Sekarang
                                 </Link>
 
                                 <div class="grid grid-cols-2 gap-2">
-                                    <Link :href="infaq.public_url + '/donate'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 transition">RM30</Link>
-                                    <Link :href="infaq.public_url + '/donate'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 transition">RM50</Link>
-                                    <Link :href="infaq.public_url + '/donate'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 transition">RM100</Link>
-                                    <Link :href="infaq.public_url + '/donate'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 transition">RM200</Link>
+                                    <Link :href="infaq.public_url + '/donate?amount=30'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/50 transition">RM10</Link>
+                                    <Link :href="infaq.public_url + '/donate?amount=50'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/50 transition">RM30</Link>
+                                    <Link :href="infaq.public_url + '/donate?amount=100'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/50 transition">RM50</Link>
+                                    <Link :href="infaq.public_url + '/donate?amount=200'" class="block text-center py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50/50 transition">RM100</Link>
                                 </div>
 
                                 <p class="text-center text-xs font-semibold text-slate-400 flex items-center justify-center gap-1">
@@ -363,31 +445,47 @@ const showFaq = ref(false);
                             </div>
                         </div>
 
-                        <!-- Recent Donors -->
+                        <!-- Recent Donors Sidebar (compact) -->
                         <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                             <h3 class="font-black text-slate-900 mb-4 flex items-center gap-2">
                                 <svg class="h-5 w-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
                                 Sumbangan Terkini
                             </h3>
-                            <div class="space-y-4">
+
+                            <!-- Stacked Avatars Bar -->
+                            <div v-if="recentDonations.length" class="flex -space-x-2 mb-4">
                                 <div
-                                    v-for="donation in recentDonations"
+                                    v-for="(d, i) in recentDonations.slice(0, 6)"
+                                    :key="d.id"
+                                    class="h-9 w-9 rounded-full ring-2 ring-white flex items-center justify-center text-xs font-black text-white shadow-sm"
+                                    :style="{ backgroundColor: `hsl(${(i * 60) % 360}, 60%, 55%)`, zIndex: 6 - i }"
+                                >
+                                    {{ d.donor_name.charAt(0).toUpperCase() }}
+                                </div>
+                                <div v-if="infaq.total_donors > 6" class="h-9 w-9 rounded-full ring-2 ring-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 z-0">
+                                    +{{ infaq.total_donors - 6 }}
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div
+                                    v-for="donation in recentDonations.slice(0, 5)"
                                     :key="donation.id"
-                                    class="border-b border-slate-50 pb-4 last:border-0 last:pb-0"
+                                    class="border-b border-slate-50 pb-3 last:border-0 last:pb-0"
                                 >
                                     <div class="flex items-center justify-between mb-1">
-                                        <div class="flex items-center gap-3 min-w-0">
-                                            <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-sm shrink-0">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0">
                                                 {{ donation.donor_name.charAt(0).toUpperCase() }}
                                             </div>
                                             <div class="min-w-0">
-                                                <p class="text-sm font-bold text-slate-800 truncate">{{ donation.donor_name }}</p>
-                                                <p class="text-xs font-semibold text-slate-400">{{ donation.created_at }}</p>
+                                                <p class="text-xs font-bold text-slate-800 truncate">{{ donation.donor_name }}</p>
+                                                <p class="text-[10px] font-semibold text-slate-400">{{ donation.created_at }}</p>
                                             </div>
                                         </div>
-                                        <p class="text-sm font-black text-emerald-600 shrink-0 ml-2">{{ formatCurrency(donation.amount) }}</p>
+                                        <p class="text-xs font-black text-emerald-600 shrink-0 ml-2">{{ formatCurrency(donation.amount) }}</p>
                                     </div>
-                                    <p v-if="donation.prayer_message" class="text-xs text-slate-500 italic mt-1 ml-13 pl-13 border-l-2 border-emerald-200 pl-3">"{{ donation.prayer_message }}"</p>
+                                    <p v-if="donation.prayer_message" class="text-xs text-slate-500 italic mt-1 ml-10 pl-2.5 border-l-2 border-emerald-200 line-clamp-2">"{{ donation.prayer_message }}"</p>
                                 </div>
 
                                 <p v-if="!recentDonations.length" class="text-center text-sm font-medium text-slate-500 py-4 bg-slate-50 rounded-2xl">Jadilah penyumbang pertama!</p>
@@ -403,7 +501,7 @@ const showFaq = ref(false);
             <div class="flex items-center gap-3">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-slate-500">Terkumpul</p>
-                    <p class="text-lg font-black text-emerald-600">{{ formatCurrency(infaq.collected_amount) }}</p>
+                    <p class="text-lg font-black text-emerald-600">{{ formatCurrency(animatedAmount) }}</p>
                 </div>
                 <Link
                     :href="infaq.public_url + '/donate'"

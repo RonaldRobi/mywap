@@ -71,6 +71,14 @@
       "_vue-vendor-DwUoWNfm.js"
     ]
   },
+  "_InfaqCard-Cxqge_4u.js": {
+    "file": "assets/InfaqCard-Cxqge_4u.js",
+    "name": "InfaqCard",
+    "imports": [
+      "_inertia-vendor-f5D2jSnp.js",
+      "_vue-vendor-DwUoWNfm.js"
+    ]
+  },
   "_InputError-8voSpZKl.js": {
     "file": "assets/InputError-8voSpZKl.js",
     "name": "InputError",
@@ -958,7 +966,7 @@
     ]
   },
   "resources/js/Pages/Infaq/Donate.vue": {
-    "file": "assets/Donate-8l5alQxj.js",
+    "file": "assets/Donate-Bo4McS6K.js",
     "name": "Donate",
     "src": "resources/js/Pages/Infaq/Donate.vue",
     "isDynamicEntry": true,
@@ -968,38 +976,41 @@
     ]
   },
   "resources/js/Pages/Infaq/Index.vue": {
-    "file": "assets/Index-BmSsg5yT.js",
+    "file": "assets/Index-DdKrCHVA.js",
     "name": "Index",
     "src": "resources/js/Pages/Infaq/Index.vue",
     "isDynamicEntry": true,
     "imports": [
+      "_vue-vendor-DwUoWNfm.js",
       "_inertia-vendor-f5D2jSnp.js",
-      "_vue-vendor-DwUoWNfm.js"
-    ],
-    "css": [
-      "assets/AppLayout-BD17Evkk.css"
+      "_InfaqCard-Cxqge_4u.js"
     ]
   },
   "resources/js/Pages/Infaq/Show.vue": {
-    "file": "assets/Show-ByZ-JTCE.js",
+    "file": "assets/Show-D2_Hbyka.js",
     "name": "Show",
     "src": "resources/js/Pages/Infaq/Show.vue",
     "isDynamicEntry": true,
     "imports": [
+      "_vue-vendor-DwUoWNfm.js",
       "_inertia-vendor-f5D2jSnp.js",
       "_SocialShareButtons-ZA4_Jk7Z.js",
-      "_vue-vendor-DwUoWNfm.js"
+      "_InfaqCard-Cxqge_4u.js"
     ]
   },
   "resources/js/Pages/Infaq/Success.vue": {
-    "file": "assets/Success-DHFOiMmv.js",
+    "file": "assets/Success-DpgJ1v3C.js",
     "name": "Success",
     "src": "resources/js/Pages/Infaq/Success.vue",
     "isDynamicEntry": true,
     "imports": [
       "_inertia-vendor-f5D2jSnp.js",
       "_SocialShareButtons-ZA4_Jk7Z.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js",
       "_vue-vendor-DwUoWNfm.js"
+    ],
+    "css": [
+      "assets/Success-j7alsRKW.css"
     ]
   },
   "resources/js/Pages/Info/Index.vue": {
@@ -1393,8 +1404,24 @@
       "assets/AppLayout-BD17Evkk.css"
     ]
   },
+  "resources/js/Pages/Superadmin/InfaqDonors.vue": {
+    "file": "assets/InfaqDonors-Ci7X8wz7.js",
+    "name": "InfaqDonors",
+    "src": "resources/js/Pages/Superadmin/InfaqDonors.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vue-vendor-DwUoWNfm.js",
+      "_inertia-vendor-f5D2jSnp.js",
+      "_AppLayout-Begcx2Uj.js",
+      "_ChatBot-DmalMIMW.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js"
+    ],
+    "css": [
+      "assets/AppLayout-BD17Evkk.css"
+    ]
+  },
   "resources/js/Pages/Superadmin/InfaqManage.vue": {
-    "file": "assets/InfaqManage-wilXjDe8.js",
+    "file": "assets/InfaqManage-Ce3lkvrV.js",
     "name": "InfaqManage",
     "src": "resources/js/Pages/Superadmin/InfaqManage.vue",
     "isDynamicEntry": true,
@@ -1547,7 +1574,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CLZu5aPB.js",
+    "file": "assets/app-Hns-NwNC.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1637,6 +1664,7 @@
       "resources/js/Pages/Public/Card.vue",
       "resources/js/Pages/Superadmin/BannerManage.vue",
       "resources/js/Pages/Superadmin/Fees.vue",
+      "resources/js/Pages/Superadmin/InfaqDonors.vue",
       "resources/js/Pages/Superadmin/InfaqManage.vue",
       "resources/js/Pages/Superadmin/LogoSettings.vue",
       "resources/js/Pages/Superadmin/OrganizationManage.vue",
@@ -1649,7 +1677,7 @@
       "resources/js/Pages/Welcome.vue"
     ],
     "css": [
-      "assets/app-BLIWMu_D.css"
+      "assets/app-DQhX1JRi.css"
     ]
   }
 }

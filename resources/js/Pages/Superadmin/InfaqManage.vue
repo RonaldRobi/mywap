@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import SocialShareButtons from '@/Components/SocialShareButtons.vue';
@@ -342,6 +342,10 @@ function formatMYR(val) {
 
                                 <!-- Actions -->
                                 <div class="flex shrink-0 gap-2 sm:flex-col">
+                                    <Link :href="route('superadmin.infaq.donors', item.slug)"
+                                        class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 text-center">
+                                        Penderma
+                                    </Link>
                                     <button @click="openShare(item)"
                                         class="rounded-xl border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50">
                                         Kongsi

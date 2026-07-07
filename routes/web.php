@@ -154,6 +154,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('/superadmin/infaq/{infaq}', [InfaqController::class, 'update'])->name('superadmin.infaq.update');
         Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
         Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
+        Route::get('/superadmin/infaq/{infaq}/donors', [InfaqController::class, 'donors'])->name('superadmin.infaq.donors');
     });
 
     // Superadmin-only: fee management + all transactions
