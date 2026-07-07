@@ -402,8 +402,8 @@ const navItems = computed(() => [
     },
     ...(isSuperadmin.value || isAdmin.value || isMember.value ? [{
         label:  'Infaq',
-        href:   isSuperadmin.value ? route('superadmin.infaq.index') : route('infaq.index'),
-        active: isSuperadmin.value
+        href:   (isSuperadmin.value || isAdmin.value) ? route('superadmin.infaq.index') : route('infaq.index'),
+        active: (isSuperadmin.value || isAdmin.value)
             ? route().current('superadmin.infaq.*')
             : (route().current('infaq.index') || route().current('infaq.show') || route().current('infaq.donate*') || route().current('infaq.success')),
         colorClass: 'text-emerald-500',

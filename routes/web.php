@@ -146,6 +146,14 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/popups', [PopupController::class, 'store'])->name('admin.popups.store');
         Route::put('/admin/popups/{popup}', [PopupController::class, 'update'])->name('admin.popups.update');
         Route::delete('/admin/popups/{popup}', [PopupController::class, 'destroy'])->name('admin.popups.destroy');
+
+        // Infaq management (Admin & Superadmin)
+        Route::get('/superadmin/infaq', [InfaqController::class, 'manage'])->name('superadmin.infaq.index');
+        Route::post('/superadmin/infaq', [InfaqController::class, 'store'])->name('superadmin.infaq.store');
+        Route::post('/superadmin/infaq/seed-demo', [InfaqController::class, 'seedDemo'])->name('superadmin.infaq.seed');
+        Route::put('/superadmin/infaq/{infaq}', [InfaqController::class, 'update'])->name('superadmin.infaq.update');
+        Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
+        Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
     });
 
     // Superadmin-only: fee management + all transactions
@@ -160,13 +168,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/dashboard-banners/seed-demo', [DashboardBannerController::class, 'seedDemo'])->name('superadmin.banners.seed');
         Route::put('/superadmin/dashboard-banners/{dashboardBanner}', [DashboardBannerController::class, 'update'])->name('superadmin.banners.update');
         Route::delete('/superadmin/dashboard-banners/{dashboardBanner}', [DashboardBannerController::class, 'destroy'])->name('superadmin.banners.destroy');
-        // Infaq management (Superadmin only)
-        Route::get('/superadmin/infaq', [InfaqController::class, 'manage'])->name('superadmin.infaq.index');
-        Route::post('/superadmin/infaq', [InfaqController::class, 'store'])->name('superadmin.infaq.store');
-        Route::post('/superadmin/infaq/seed-demo', [InfaqController::class, 'seedDemo'])->name('superadmin.infaq.seed');
-        Route::put('/superadmin/infaq/{infaq}', [InfaqController::class, 'update'])->name('superadmin.infaq.update');
-        Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
-        Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
+
         Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
         Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
