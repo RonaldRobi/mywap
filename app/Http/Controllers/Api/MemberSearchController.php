@@ -18,7 +18,7 @@ class MemberSearchController extends Controller
         }
 
         $members = User::query()
-            ->when($request->query('branch_id'), fn ($query, $branchId) => $query->where('branch_id', $branchId))
+            ->when($request->query('organization_id'), fn ($query, $orgId) => $query->where('current_organization_id', $orgId))
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', '%' . $q . '%')
                     ->orWhere('member_no', 'like', '%' . $q . '%');

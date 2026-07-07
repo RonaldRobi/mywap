@@ -175,6 +175,7 @@ class InformationHubAdminController extends Controller
                 'emergency_contact_name' => $u->emergency_contact_name,
                 'emergency_contact_phone' => $u->emergency_contact_phone,
                 'role' => $u->roles->pluck('name')->first() ?? 'Member',
+                'has_role_admin_cawangan' => $u->roles->pluck('name')->contains('Admin Cawangan'),
                 'is_active' => (bool) $u->is_active,
                 'transition_history' => $u->transitionHistory->map(fn ($h) => [
                     'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
@@ -286,6 +287,7 @@ class InformationHubAdminController extends Controller
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
             'is_public_in_directory' => ['nullable', 'boolean'],
+            'is_branch_admin'        => ['nullable', 'boolean'],
         ]);
 
         $originalMemberNo = $user->getOriginal('member_no');
@@ -334,6 +336,14 @@ class InformationHubAdminController extends Controller
                 'changed_by' => $authUser->id,
                 'change_type' => 'admin_direct',
             ]);
+        }
+
+        if ($request->has('is_branch_admin')) {
+            if ($request->boolean('is_branch_admin')) {
+                $user->assignRole('Admin Cawangan');
+            } else {
+                $user->removeRole('Admin Cawangan');
+            }
         }
 
         return back()->with('success', 'Profil ahli berjaya dikemas kini.');
@@ -671,7 +681,7 @@ class InformationHubAdminController extends Controller
         $this->authorizeOrganizationAccess($request->user(), $user->current_organization_id ?? 0);
 
         $data = $request->validate([
-            'role' => ['required', 'string', 'in:Admin,Member'],
+            'role' => ['required', 'string', 'in:Admin,Admin Cawangan,Member'],
         ]);
 
         // Prevent Superadmin from being demoted or others from becoming Superadmin through this route

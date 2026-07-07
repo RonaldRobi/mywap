@@ -316,6 +316,7 @@ const editForm = useForm({
     emergency_contact_name: '',
     emergency_contact_phone: '',
     is_public_in_directory: true,
+    is_branch_admin: false,
 });
 
 function startEdit() {
@@ -346,6 +347,7 @@ function startEdit() {
     editForm.emergency_contact_name = m.emergency_contact_name ?? '';
     editForm.emergency_contact_phone = m.emergency_contact_phone ?? '';
     editForm.is_public_in_directory = m.is_public_in_directory ?? true;
+    editForm.is_branch_admin = m.has_role_admin_cawangan ?? false;
     editing.value = true;
 }
 
@@ -727,6 +729,7 @@ async function finishImport() {
                                         <span v-else-if="member.fee_status === 'life_member'" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Seumur Hidup</span>
                                         <span v-else-if="member.fee_status === 'exempted'" class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">Dikecualikan</span>
                                         <span v-else class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Tertunggak</span>
+                                        <span v-if="member.has_role_admin_cawangan" class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">Admin Cawangan</span>
                                         <span class="text-[11px] text-gray-400">{{ member.branch_name }}</span>
                                     </div>
                                 </td>
@@ -739,11 +742,13 @@ async function finishImport() {
                                         :class="{
                                             'bg-emerald-50 text-emerald-700 border-emerald-200': member.role === 'Admin',
                                             'bg-blue-50 text-blue-700 border-blue-200': member.role === 'Member',
-                                            'bg-yellow-50 text-yellow-700 border-yellow-200': member.role === 'Superadmin'
+                                            'bg-yellow-50 text-yellow-700 border-yellow-200': member.role === 'Superadmin',
+                                            'bg-teal-50 text-teal-700 border-teal-200': member.role === 'Admin Cawangan',
                                         }"
                                     >
                                         <option value="Member">Ahli</option>
                                         <option value="Admin">Admin</option>
+                                        <option v-if="!isSuperadmin" value="Admin Cawangan">Admin Cawangan</option>
                                         <option v-if="member.role === 'Superadmin'" value="Superadmin" disabled>Superadmin</option>
                                     </select>
                                 </td>
@@ -1327,6 +1332,16 @@ async function finishImport() {
                                         <input v-model="editForm.emergency_contact_phone" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0" placeholder="0123456789">
                                     </div>
                                 </div>
+                            </div>
+
+                            <div v-if="isSuperadmin" class="p-4 rounded-2xl border border-teal-100 bg-teal-50/50">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input v-model="editForm.is_branch_admin" type="checkbox" class="rounded border-teal-300 text-teal-600 focus:ring-teal-500" />
+                                    <div>
+                                        <p class="text-sm font-semibold text-teal-800">Lantik sebagai Admin Cawangan</p>
+                                        <p class="text-xs text-teal-600 mt-0.5">Ahli akan menjadi admin untuk cawangan yang dipilih di atas.</p>
+                                    </div>
+                                </label>
                             </div>
 
                             <div v-if="editForm.errors" class="space-y-1">

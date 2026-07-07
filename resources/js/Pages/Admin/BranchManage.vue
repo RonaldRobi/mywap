@@ -181,7 +181,7 @@ function openAdminManage(branch) {
 function searchBranchMembers(val) {
     if (!managingAdminsBranch.value) return;
     adminSearchLoading.value = true;
-    axios.get('/api/members/search', { params: { q: val, branch_id: managingAdminsBranch.value.id } })
+    axios.get('/api/members/search', { params: { q: val, organization_id: managingAdminsBranch.value.organization_id } })
         .then((res) => {
             const existingIds = new Set((managingAdminsBranch.value?.admins || []).map(a => a.id));
             adminSearchResults.value = (res.data || []).filter(m => !existingIds.has(m.id));

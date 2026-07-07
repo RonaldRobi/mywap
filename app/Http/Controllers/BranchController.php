@@ -37,16 +37,17 @@ class BranchController extends Controller
                 'color_theme' => $org->color_theme,
                 'logo_path'   => $org->logo_path,
                 'branches'    => $org->branches->map(fn (Branch $b) => [
-                    'id'           => $b->id,
-                    'name'         => $b->name,
-                    'state'        => $b->state,
-                    'address'      => $b->address,
-                    'phone'        => $b->phone,
-                    'email'        => $b->email,
-                    'logo_path'    => $b->logo_path,
-                    'is_active'    => $b->is_active,
-                    'member_count' => $b->members_count,
-                    'admins'       => $b->admins->map(fn ($admin) => [
+                    'id'              => $b->id,
+                    'organization_id' => $b->organization_id,
+                    'name'            => $b->name,
+                    'state'           => $b->state,
+                    'address'         => $b->address,
+                    'phone'           => $b->phone,
+                    'email'           => $b->email,
+                    'logo_path'       => $b->logo_path,
+                    'is_active'       => $b->is_active,
+                    'member_count'    => $b->members_count,
+                    'admins'          => $b->admins->map(fn ($admin) => [
                         'id'        => $admin->id,
                         'name'      => $admin->name,
                         'email'     => $admin->email,
@@ -209,7 +210,11 @@ class BranchController extends Controller
         $target = \App\Models\User::withoutGlobalScopes()->findOrFail($data['user_id']);
 
         if ((int) $target->branch_id !== (int) $branch->id) {
-            return back()->with('error', 'Ahli tersebut bukan dalam cawangan ini.');
+            if (! $target->branch_id) {
+                $target->update(['branch_id' => $branch->id]);
+            } else {
+                return back()->with('error', 'Ahli tersebut bukan dalam cawangan ini.');
+            }
         }
 
         $target->assignRole('Admin Cawangan');

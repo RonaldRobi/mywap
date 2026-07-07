@@ -236,7 +236,7 @@
     ]
   },
   "resources/js/Pages/Admin/BranchManage.vue": {
-    "file": "assets/BranchManage-BTN3J_la.js",
+    "file": "assets/BranchManage-ZUZx4FIG.js",
     "name": "BranchManage",
     "src": "resources/js/Pages/Admin/BranchManage.vue",
     "isDynamicEntry": true,
@@ -365,7 +365,7 @@
     ]
   },
   "resources/js/Pages/Admin/InformationHubManage.vue": {
-    "file": "assets/InformationHubManage-kJ6s02lY.js",
+    "file": "assets/InformationHubManage-C9RwMNpq.js",
     "name": "InformationHubManage",
     "src": "resources/js/Pages/Admin/InformationHubManage.vue",
     "isDynamicEntry": true,
@@ -1531,7 +1531,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-B9SD8Am0.js",
+    "file": "assets/app-CMn9S4KK.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1632,7 +1632,7 @@
       "resources/js/Pages/Welcome.vue"
     ],
     "css": [
-      "assets/app-D-wKocJx.css"
+      "assets/app-BQKqFT3P.css"
     ]
   }
 }
