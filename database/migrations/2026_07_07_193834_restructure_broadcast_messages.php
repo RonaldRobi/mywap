@@ -55,7 +55,14 @@ return new class extends Migration
                 $table->dropIndex(['organization_id', 'target_criteria']);
             });
 
-            DB::statement("ALTER TABLE broadcast_messages MODIFY COLUMN target_criteria ENUM('all', 'organization', 'specific_members') NOT NULL DEFAULT 'all'");
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement("DO $$ BEGIN CREATE TYPE broadcast_target_criteria AS ENUM ('all', 'organization', 'specific_members'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria TYPE broadcast_target_criteria USING target_criteria::broadcast_target_criteria");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET DEFAULT 'all'");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET NOT NULL");
+            } else {
+                DB::statement("ALTER TABLE broadcast_messages MODIFY COLUMN target_criteria ENUM('all', 'organization', 'specific_members') NOT NULL DEFAULT 'all'");
+            }
 
             Schema::table('broadcast_messages', function (Blueprint $table) {
                 $table->foreignId('target_organization_id')->nullable()->after('organization_id')->constrained('organizations')->nullOnDelete();
@@ -106,7 +113,14 @@ return new class extends Migration
                 $table->foreignId('usrah_group_id')->nullable()->constrained('usrah_groups')->nullOnDelete();
             });
 
-            DB::statement("ALTER TABLE broadcast_messages MODIFY COLUMN target_criteria ENUM('all', 'unpaid_fees', 'specific_usrah') NOT NULL DEFAULT 'all'");
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement("DO $$ BEGIN CREATE TYPE broadcast_target_criteria_old AS ENUM ('all', 'unpaid_fees', 'specific_usrah'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria TYPE broadcast_target_criteria_old USING target_criteria::broadcast_target_criteria_old");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET DEFAULT 'all'");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET NOT NULL");
+            } else {
+                DB::statement("ALTER TABLE broadcast_messages MODIFY COLUMN target_criteria ENUM('all', 'unpaid_fees', 'specific_usrah') NOT NULL DEFAULT 'all'");
+            }
         }
 
         DB::table('broadcast_messages')
