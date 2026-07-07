@@ -57,6 +57,7 @@ return new class extends Migration
 
             if (DB::getDriverName() === 'pgsql') {
                 DB::statement("DO $$ BEGIN CREATE TYPE broadcast_target_criteria AS ENUM ('all', 'organization', 'specific_members'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria DROP DEFAULT");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria TYPE broadcast_target_criteria USING target_criteria::broadcast_target_criteria");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET DEFAULT 'all'");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET NOT NULL");
@@ -115,6 +116,7 @@ return new class extends Migration
 
             if (DB::getDriverName() === 'pgsql') {
                 DB::statement("DO $$ BEGIN CREATE TYPE broadcast_target_criteria_old AS ENUM ('all', 'unpaid_fees', 'specific_usrah'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;");
+                DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria DROP DEFAULT");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria TYPE broadcast_target_criteria_old USING target_criteria::broadcast_target_criteria_old");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET DEFAULT 'all'");
                 DB::statement("ALTER TABLE broadcast_messages ALTER COLUMN target_criteria SET NOT NULL");
