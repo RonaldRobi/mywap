@@ -265,6 +265,7 @@ class InformationHubAdminController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'ic_number' => ['nullable', 'string', 'max:32', \Illuminate\Validation\Rule::unique('users', 'ic_number')->ignore($user->id)],
+            'member_no' => $isSuperadmin ? ['nullable', 'string', 'max:12', \Illuminate\Validation\Rule::unique('users', 'member_no')->ignore($user->id)] : ['prohibited'],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
@@ -287,16 +288,32 @@ class InformationHubAdminController extends Controller
             'is_public_in_directory' => ['nullable', 'boolean'],
         ]);
 
+        $originalMemberNo = $user->getOriginal('member_no');
         $originalBranchId = $user->getOriginal('branch_id');
+
+        if ($isSuperadmin && !empty($validated['member_no'])) {
+            $no = Str::upper(trim($validated['member_no']));
+            $validated['member_no'] = $no;
+            $seq = (int) preg_replace('/^[A-Z]+/', '', $no);
+            if ($seq > 0) {
+                $validated['member_no_sequence'] = $seq;
+            }
+        }
+
         $user->update($validated);
+
+        $desc = 'Profil ahli dikemas kini.';
+        if ($isSuperadmin && !empty($validated['member_no']) && $validated['member_no'] !== $originalMemberNo) {
+            $desc = "No Ahli ditukar dari {$originalMemberNo} ke {$validated['member_no']}.";
+        }
 
         ActivityLog::create([
             'user_id' => $authUser->id,
             'organization_id' => $user->current_organization_id,
             'target_type' => User::class,
             'target_id' => $user->id,
-            'action' => 'update_profile',
-            'description' => 'Profil ahli dikemas kini.',
+            'action' => $desc !== 'Profil ahli dikemas kini.' ? 'update_member_no' : 'update_profile',
+            'description' => $desc,
         ]);
 
         // If admin changed branch directly → bypass: auto-reject pending + record audit

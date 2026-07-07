@@ -365,7 +365,7 @@
     ]
   },
   "resources/js/Pages/Admin/InformationHubManage.vue": {
-    "file": "assets/InformationHubManage-BBgXAAc9.js",
+    "file": "assets/InformationHubManage-kJ6s02lY.js",
     "name": "InformationHubManage",
     "src": "resources/js/Pages/Admin/InformationHubManage.vue",
     "isDynamicEntry": true,
@@ -1531,7 +1531,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CsD2Cc3J.js",
+    "file": "assets/app-B9SD8Am0.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -1632,7 +1632,7 @@
       "resources/js/Pages/Welcome.vue"
     ],
     "css": [
-      "assets/app-KkOu-9Cc.css"
+      "assets/app-D-wKocJx.css"
     ]
   }
 }

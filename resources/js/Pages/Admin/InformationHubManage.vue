@@ -295,6 +295,7 @@ const editForm = useForm({
     email: '',
     phone: '',
     ic_number: '',
+    member_no: '',
     dob: '',
     gender: '',
     marital_status: '',
@@ -324,6 +325,7 @@ function startEdit() {
     editForm.email = m.email ?? '';
     editForm.phone = m.phone ?? '';
     editForm.ic_number = maskedPreviewToRaw(m.ic_number) ?? '';
+    editForm.member_no = m.member_no ?? '';
     editForm.dob = m.dob ?? '';
     editForm.gender = m.gender ?? '';
     editForm.marital_status = m.marital_status ?? '';
@@ -1208,6 +1210,10 @@ async function finishImport() {
                                     <div class="col-span-2">
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Email</label>
                                         <input v-model="editForm.email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0" required>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">No Ahli <span v-if="!isSuperadmin" class="text-gray-300">(readonly)</span></label>
+                                        <input v-model="editForm.member_no" :readonly="!isSuperadmin" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0 disabled:bg-gray-50 disabled:text-gray-400">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">No IC</label>
