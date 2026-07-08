@@ -295,10 +295,68 @@ class EventController extends Controller
             ->map(fn ($e) => $this->serializeEvent($e, $user?->id));
 
         return Inertia::render('Events/Show', [
-            'event' => $eventArr,
-            'comments' => $comments,
+            'event'         => $eventArr,
+            'comments'      => $comments,
             'relatedEvents' => $relatedEvents,
+            'organizations' => $user->hasRole('Superadmin')
+                ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
+                : [],
         ]);
+    }
+
+    /**
+     * update()
+     *
+     * Update an existing event.  Only Admin / Superadmin may call this.
+     * Non-superadmins may only edit events that belong to their organisation.
+     */
+    public function update(Request $request, Event $event): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+
+        $isSuperadmin = $request->user()->hasRole('Superadmin');
+
+        // Non-superadmin: must own the event
+        if (! $isSuperadmin && $event->organization_id !== (int) $request->user()->current_organization_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'organization_id'  => ['nullable', 'integer', 'exists:organizations,id'],
+            'title'            => ['required', 'string', 'max:255'],
+            'description'      => ['nullable', 'string', 'max:4000'],
+            'type'             => ['required', 'in:physical,online'],
+            'location_or_link' => ['nullable', 'string', 'max:255'],
+            'start_time'       => ['required', 'date'],
+            'end_time'         => ['required', 'date', 'after:start_time'],
+            'featured_image'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        // Replace image only if a new one is uploaded
+        if ($request->hasFile('featured_image')) {
+            // Delete old image
+            if ($event->featured_image_path) {
+                Storage::disk('public')->delete($event->featured_image_path);
+            }
+            $data['featured_image_path'] = $request->file('featured_image')->store('events', 'public');
+        }
+        unset($data['featured_image']);
+
+        $event->update([
+            'organization_id'    => $isSuperadmin
+                ? ($data['organization_id'] ?? null)
+                : $event->organization_id,
+            'title'              => $data['title'],
+            'description'        => $data['description'] ?? null,
+            'type'               => $data['type'],
+            'location_or_link'   => $data['location_or_link'] ?? null,
+            'start_time'         => $data['start_time'],
+            'end_time'           => $data['end_time'],
+            'featured_image_path' => $data['featured_image_path'] ?? $event->featured_image_path,
+        ]);
+
+        return redirect()->route('events.show', $event->slug)
+            ->with('success', 'Program berjaya dikemas kini.');
     }
 
     public function store(Request $request): RedirectResponse

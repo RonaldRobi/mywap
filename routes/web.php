@@ -341,7 +341,8 @@ Route::middleware('auth')->group(function () {
 
     // ─── Admin / Staff Only ──────────────────────────────────────────────────
     Route::middleware('role:Admin|Superadmin')->group(function () {
-           Route::post('/events', [EventController::class, 'store'])->name('events.store');
+        Route::post('/events', [EventController::class, 'store'])->name('events.store');
+        Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
         Route::get('/events/{event}/qr', [EventController::class, 'showQr'])
              ->name('events.qr');
         Route::get('/events/{event}/print', [EventController::class, 'printAttendance'])

@@ -8,6 +8,7 @@ const props = defineProps({
     event: { type: Object, required: true },
     comments: { type: Array, default: () => [] },
     relatedEvents: { type: Array, default: () => [] },
+    organizations: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -101,6 +102,52 @@ function submitComment() {
     commentForm.post(route('events.comments.store', props.event.id), {
         preserveScroll: true,
         onSuccess: () => commentForm.reset('content'),
+    });
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────
+
+// Convert ISO string to datetime-local value (YYYY-MM-DDTHH:mm)
+function toDatetimeLocal(iso) {
+    if (!iso) return '';
+    return iso.slice(0, 16);
+}
+
+const editModalOpen = ref(false);
+const editForm = useForm({
+    organization_id: props.event.organization?.id ?? '',
+    title: props.event.title,
+    description: props.event.description ?? '',
+    type: props.event.type,
+    location_or_link: props.event.location_or_link ?? '',
+    start_time: toDatetimeLocal(props.event.start_time),
+    end_time: toDatetimeLocal(props.event.end_time),
+    featured_image: null,
+    _method: 'PUT',
+});
+
+function openEditModal() {
+    // Re-sync fields with latest event data each time the modal opens
+    editForm.organization_id = props.event.organization?.id ?? '';
+    editForm.title = props.event.title;
+    editForm.description = props.event.description ?? '';
+    editForm.type = props.event.type;
+    editForm.location_or_link = props.event.location_or_link ?? '';
+    editForm.start_time = toDatetimeLocal(props.event.start_time);
+    editForm.end_time = toDatetimeLocal(props.event.end_time);
+    editForm.featured_image = null;
+    editForm.clearErrors();
+    editModalOpen.value = true;
+}
+
+function closeEditModal() {
+    editModalOpen.value = false;
+}
+
+function submitEdit() {
+    editForm.post(route('events.update', { event: props.event.id }), {
+        preserveScroll: true,
+        onSuccess: () => closeEditModal(),
     });
 }
 
@@ -371,7 +418,17 @@ function eventShareUrl() {
             <div v-if="isSuperadmin" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6 space-y-4">
                 <h2 class="text-lg font-black text-gray-900">Pengurusan Program</h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <!-- Edit button -->
+                    <button
+                        @click="openEditModal"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Edit Program
+                    </button>
                     <a
                         :href="route('events.qr', { event: event.id })"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 transition-colors"
@@ -556,5 +613,113 @@ function eventShareUrl() {
                 </div>
             </Transition>
         </Teleport>
+        <!-- ════════════════════════════════════════════════════════════════════ -->
+        <!--  EDIT PROGRAM MODAL                                                -->
+        <!-- ════════════════════════════════════════════════════════════════════ -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="editModalOpen"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+                    @click.self="closeEditModal"
+                >
+                    <div class="w-full max-w-2xl rounded-3xl border border-white/50 bg-white/95 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4 shrink-0">
+                            <h3 class="text-base font-black text-gray-800">Edit Program</h3>
+                            <button @click="closeEditModal" class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <form class="space-y-4 p-5 overflow-y-auto" @submit.prevent="submitEdit">
+                            <!-- Organization (Superadmin only) -->
+                            <div v-if="organizations.length" class="space-y-1">
+                                <label class="text-xs font-semibold text-gray-500">Organisasi</label>
+                                <select v-model="editForm.organization_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                    <option value="">Semua Organisasi</option>
+                                    <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+                                </select>
+                                <p v-if="editForm.errors.organization_id" class="text-xs text-red-500">{{ editForm.errors.organization_id }}</p>
+                            </div>
+
+                            <!-- Title -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-gray-500">Tajuk *</label>
+                                <input v-model="editForm.title" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0" required>
+                                <p v-if="editForm.errors.title" class="text-xs text-red-500">{{ editForm.errors.title }}</p>
+                            </div>
+
+                            <!-- Type + Location -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Jenis *</label>
+                                    <select v-model="editForm.type" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                        <option value="physical">Fizikal</option>
+                                        <option value="online">Dalam Talian</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Lokasi / Pautan</label>
+                                    <input v-model="editForm.location_or_link" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                    <p v-if="editForm.errors.location_or_link" class="text-xs text-red-500">{{ editForm.errors.location_or_link }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Start + End Time -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Masa Mula *</label>
+                                    <input v-model="editForm.start_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0" required>
+                                    <p v-if="editForm.errors.start_time" class="text-xs text-red-500">{{ editForm.errors.start_time }}</p>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Masa Tamat *</label>
+                                    <input v-model="editForm.end_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0" required>
+                                    <p v-if="editForm.errors.end_time" class="text-xs text-red-500">{{ editForm.errors.end_time }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-gray-500">Penerangan</label>
+                                <textarea v-model="editForm.description" rows="3" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0"></textarea>
+                                <p v-if="editForm.errors.description" class="text-xs text-red-500">{{ editForm.errors.description }}</p>
+                            </div>
+
+                            <!-- Featured Image -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-gray-500">Gambar Utama (biarkan kosong untuk kekalkan)</label>
+                                <input
+                                    type="file"
+                                    accept="image/jpg,image/jpeg,image/png,image/webp"
+                                    class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                                    @change="editForm.featured_image = $event.target.files?.[0] ?? null"
+                                >
+                                <p v-if="editForm.errors.featured_image" class="text-xs text-red-500">{{ editForm.errors.featured_image }}</p>
+                            </div>
+
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button type="button" @click="closeEditModal" class="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                                    Batal
+                                </button>
+                                <button type="submit" :disabled="editForm.processing" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                                    {{ editForm.processing ? 'Menyimpan...' : 'Simpan Perubahan' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
     </AppLayout>
 </template>
