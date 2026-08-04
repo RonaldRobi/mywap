@@ -25,7 +25,7 @@ class ExportController extends Controller
         $total = (clone $query)->count();
 
         $states = (clone $query)
-            ->selectRaw('COALESCE(NULLIF(state, ""), "Tidak Dinyatakan") as state, COUNT(*) as total')
+            ->selectRaw("COALESCE(NULLIF(state, ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
             ->groupBy('state')
             ->orderByDesc('total')
             ->orderBy('state')

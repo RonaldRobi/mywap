@@ -190,7 +190,7 @@ class DashboardController extends Controller
 
         $membersByState = User::withoutGlobalScopes()
             ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->selectRaw('COALESCE(NULLIF(state, ""), "Tidak Dinyatakan") as state, COUNT(*) as total')
+            ->selectRaw("COALESCE(NULLIF(state, ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
             ->groupBy('state')
             ->orderByDesc('total')
             ->orderBy('state')
