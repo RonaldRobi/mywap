@@ -20,6 +20,7 @@ class Facility extends Model
         'location',
         'type',
         'price_per_unit',
+        'member_price_per_unit',
         'capacity',
         'image_path',
         'is_active',
@@ -29,6 +30,7 @@ class Facility extends Model
     {
         return [
             'price_per_unit' => 'decimal:2',
+            'member_price_per_unit' => 'decimal:2',
             'capacity' => 'integer',
             'is_active' => 'boolean',
         ];

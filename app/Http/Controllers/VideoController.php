@@ -30,6 +30,7 @@ class VideoController extends Controller
                 'youtube_id' => $video->youtube_id,
                 'thumbnail_url' => $video->thumbnail_url,
                 'embed_url' => $video->embed_url,
+                'is_live' => $video->is_live,
                 'organization_id' => $video->organization_id,
                 'organization_name' => $video->organization?->name ?? 'Global',
                 'created_at' => $video->created_at->diffForHumans(),
@@ -52,6 +53,7 @@ class VideoController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'youtube_url' => ['required', 'string', 'max:500'],
+            'is_live' => ['boolean'],
         ]);
 
         $youtubeId = $this->extractYoutubeId($data['youtube_url']);
@@ -65,6 +67,7 @@ class VideoController extends Controller
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
+            'is_live' => (bool) ($data['is_live'] ?? false),
         ]);
 
         return back()->with('success', 'Video berjaya ditambah.');
@@ -83,6 +86,7 @@ class VideoController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'youtube_url' => ['required', 'string', 'max:500'],
+            'is_live' => ['boolean'],
         ]);
 
         $youtubeId = $this->extractYoutubeId($data['youtube_url']);
@@ -96,6 +100,7 @@ class VideoController extends Controller
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
+            'is_live' => (bool) ($data['is_live'] ?? false),
         ]);
 
         return back()->with('success', 'Video berjaya dikemas kini.');
@@ -146,6 +151,7 @@ class VideoController extends Controller
             '/youtu\.be\/([a-zA-Z0-9_-]{11})/',
             '/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/',
             '/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/',
         ];
 
         foreach ($patterns as $pattern) {

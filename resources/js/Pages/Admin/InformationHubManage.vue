@@ -653,7 +653,7 @@ async function finishImport() {
                     <div class="relative md:w-48 shrink-0">
                         <select v-model="feeStatusFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
                             <option value="">Semua Status Yuran</option>
-                            <option value="paid">Lunas</option>
+                            <option value="paid">Selesai</option>
                             <option value="due">Tertunggak</option>
                             <option value="life_member">Seumur Hidup</option>
                             <option value="exempted">Dikecualikan</option>
@@ -725,7 +725,7 @@ async function finishImport() {
                                         {{ member.organization_name }}
                                     </span>
                                     <div class="mt-1 flex items-center gap-1.5">
-                                        <span v-if="member.fee_status === 'paid'" class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">Lunas</span>
+                                        <span v-if="member.fee_status === 'paid'" class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">Selesai</span>
                                         <span v-else-if="member.fee_status === 'life_member'" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Seumur Hidup</span>
                                         <span v-else-if="member.fee_status === 'exempted'" class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">Dikecualikan</span>
                                         <span v-else class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Tertunggak</span>
@@ -1161,7 +1161,7 @@ async function finishImport() {
                                     </div>
                                     <div class="p-4 flex items-center justify-between">
                                         <div>
-                                            <span v-if="selectedMember.fee_status === 'paid'" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Lunas</span>
+                                            <span v-if="selectedMember.fee_status === 'paid'" class="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Selesai</span>
                                             <span v-else-if="selectedMember.fee_status === 'life_member'" class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Seumur Hidup</span>
                                             <span v-else-if="selectedMember.fee_status === 'exempted'" class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Dikecualikan</span>
                                             <span v-else class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Tertunggak</span>

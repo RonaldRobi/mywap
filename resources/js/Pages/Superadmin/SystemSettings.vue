@@ -68,6 +68,26 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    mailMailer: {
+        type: String,
+        default: 'log',
+    },
+    mailSmtpHost: {
+        type: String,
+        default: '',
+    },
+    mailSmtpPort: {
+        type: String,
+        default: '',
+    },
+    mailSmtpUsername: {
+        type: String,
+        default: '',
+    },
+    mailSmtpEncryption: {
+        type: String,
+        default: '',
+    },
 });
 
 const form = useForm({
@@ -164,6 +184,38 @@ const resendForm = useForm({
     mail_from_name: props.mailFromName || '',
 });
 
+const mailForm = useForm({
+    mail_mailer: props.mailMailer || 'log',
+    mail_from_address: props.mailFromAddress || '',
+    mail_from_name: props.mailFromName || '',
+    resend_api_key: '',
+    mail_smtp_host: props.mailSmtpHost || '',
+    mail_smtp_port: props.mailSmtpPort || '',
+    mail_smtp_username: props.mailSmtpUsername || '',
+    mail_smtp_password: '',
+    mail_smtp_encryption: props.mailSmtpEncryption || '',
+});
+
+function saveMailSettings() {
+    mailForm.post(route('superadmin.settings.mail.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            mailForm.reset('resend_api_key');
+            mailForm.reset('mail_smtp_password');
+        },
+    });
+}
+
+const testMailForm = useForm({
+    test_email: props.adminContactEmail || '',
+});
+
+function sendTestMail() {
+    testMailForm.post(route('superadmin.settings.mail.test'), {
+        preserveScroll: true,
+    });
+}
+
 const geminiForm = useForm({
     gemini_api_key: '',
 });
@@ -179,6 +231,12 @@ function saveResendKey() {
         preserveScroll: true,
     });
 }
+
+const mailerLabels = {
+    resend: 'Resend (API)',
+    smtp:   'SMTP (Gmail, Outlook, dll.)',
+    log:    'Log (Ujian — tiada emel sebenar)',
+};
 
 onBeforeUnmount(() => {
     if (splashPreviewUrl.value) {
@@ -415,40 +473,110 @@ onBeforeUnmount(() => {
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-black text-gray-800">Kunci API Resend</h2>
-                <p class="mt-1 text-xs text-gray-500">Digunakan untuk menghantar emel OTP dan pemberitahuan sistem. Dapatkan kunci dari <strong>resend.com</strong>.</p>
+                <h2 class="text-lg font-black text-gray-800">Tetapan Emel (Mailer)</h2>
+                <p class="mt-1 text-xs text-gray-500">Pilih cara sistem menghantar emel (OTP, jemputan borang, pemberitahuan). Tetapan ini menggantikan <strong>MAIL_MAILER</strong> dalam fail .env.</p>
 
-                <form class="mt-4 space-y-3" @submit.prevent="saveResendKey">
-                    <p v-if="hasResendKey" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                        ✓ Kunci API telah disimpan sebelumnya. Masukkan kunci baru untuk menggantikan, atau kosongkan untuk memadam.
-                    </p>
-
+                <form class="mt-4 space-y-3" @submit.prevent="saveMailSettings">
                     <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-gray-500">Kunci API</span>
-                        <input v-model="resendForm.resend_api_key" type="password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="hasResendKey ? 'Klik untuk tukar (kunci sedia ada dikekalkan)' : 're_xxxxxxxxxxxxxx'">
-                        <p v-if="resendForm.errors.resend_api_key" class="mt-1 text-xs text-red-500">{{ resendForm.errors.resend_api_key }}</p>
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Kaedah Penghantaran</span>
+                        <select v-model="mailForm.mail_mailer" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                            <option value="resend">Resend (API) — disyorkan untuk production</option>
+                            <option value="smtp">SMTP (Gmail, Outlook, dll.)</option>
+                            <option value="log">Log (Ujian — tiada emel sebenar)</option>
+                        </select>
+                        <p v-if="mailForm.errors.mail_mailer" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_mailer }}</p>
                     </label>
 
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-gray-500">Emel Pengirim (From Address)</span>
-                        <input v-model="resendForm.mail_from_address" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="onboarding@resend.dev">
-                        <p v-if="resendForm.errors.mail_from_address" class="mt-1 text-xs text-red-500">{{ resendForm.errors.mail_from_address }}</p>
-                    </label>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-semibold text-gray-500">Emel Pengirim (From Address)</span>
+                            <input v-model="mailForm.mail_from_address" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="onboarding@resend.dev">
+                            <p v-if="mailForm.errors.mail_from_address" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_from_address }}</p>
+                        </label>
 
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-gray-500">Nama Pengirim (From Name)</span>
-                        <input v-model="resendForm.mail_from_name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="myWAP">
-                        <p v-if="resendForm.errors.mail_from_name" class="mt-1 text-xs text-red-500">{{ resendForm.errors.mail_from_name }}</p>
-                    </label>
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-semibold text-gray-500">Nama Pengirim (From Name)</span>
+                            <input v-model="mailForm.mail_from_name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="myWAP">
+                            <p v-if="mailForm.errors.mail_from_name" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_from_name }}</p>
+                        </label>
+                    </div>
+
+                    <!-- Resend fields -->
+                    <template v-if="mailForm.mail_mailer === 'resend'">
+                        <p v-if="hasResendKey" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                            ✓ Kunci API telah disimpan. Masukkan kunci baru untuk menggantikan, atau biarkan kosong untuk kekalkan yang sedia ada.
+                        </p>
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-semibold text-gray-500">Kunci API Resend</span>
+                            <input v-model="mailForm.resend_api_key" type="password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="hasResendKey ? 'Biarkan kosong untuk kekalkan' : 're_xxxxxxxxxxxxxx'">
+                            <p v-if="mailForm.errors.resend_api_key" class="mt-1 text-xs text-red-500">{{ mailForm.errors.resend_api_key }}</p>
+                        </label>
+                    </template>
+
+                    <!-- SMTP fields -->
+                    <template v-if="mailForm.mail_mailer === 'smtp'">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-semibold text-gray-500">SMTP Host</span>
+                                <input v-model="mailForm.mail_smtp_host" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" placeholder="smtp.gmail.com">
+                                <p v-if="mailForm.errors.mail_smtp_host" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_smtp_host }}</p>
+                            </label>
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-semibold text-gray-500">SMTP Port</span>
+                                <input v-model="mailForm.mail_smtp_port" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" placeholder="587">
+                                <p v-if="mailForm.errors.mail_smtp_port" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_smtp_port }}</p>
+                            </label>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-semibold text-gray-500">Username</span>
+                                <input v-model="mailForm.mail_smtp_username" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="nama@example.com">
+                                <p v-if="mailForm.errors.mail_smtp_username" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_smtp_username }}</p>
+                            </label>
+                            <label class="block">
+                                <span class="mb-1 block text-xs font-semibold text-gray-500">Password</span>
+                                <input v-model="mailForm.mail_smtp_password" type="password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="mailForm.mail_smtp_password ? '' : 'Biarkan kosong untuk kekalkan'">
+                                <p v-if="mailForm.errors.mail_smtp_password" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_smtp_password }}</p>
+                            </label>
+                        </div>
+                        <label class="block">
+                            <span class="mb-1 block text-xs font-semibold text-gray-500">Encryption</span>
+                            <select v-model="mailForm.mail_smtp_encryption" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                                <option value="tls">TLS</option>
+                                <option value="ssl">SSL</option>
+                                <option value="">Tiada</option>
+                            </select>
+                        </label>
+                    </template>
 
                     <button
                         type="submit"
-                        :disabled="resendForm.processing"
+                        :disabled="mailForm.processing"
                         class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
                     >
-                        {{ resendForm.processing ? 'Menyimpan...' : 'Simpan Tetapan Emel' }}
+                        {{ mailForm.processing ? 'Menyimpan...' : 'Simpan Tetapan Emel' }}
                     </button>
                 </form>
+
+                <!-- Test email -->
+                <div class="mt-6 border-t border-gray-100 pt-4">
+                    <p class="text-sm font-semibold text-gray-700">Hantar Emel Ujian</p>
+                    <p class="mt-0.5 text-xs text-gray-500">Sahkan konfigurasi berfungsi dengan menghantar emel ujian.</p>
+                    <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                        <label class="flex-1">
+                            <span class="mb-1 block text-xs font-semibold text-gray-500">Emel Ujian</span>
+                            <input v-model="testMailForm.test_email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="admin@example.com" required>
+                            <p v-if="testMailForm.errors.test_email" class="mt-1 text-xs text-red-500">{{ testMailForm.errors.test_email }}</p>
+                        </label>
+                        <button
+                            type="button"
+                            :disabled="testMailForm.processing"
+                            class="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                        >
+                            {{ testMailForm.processing ? 'Menghantar...' : 'Hantar Emel Ujian' }}
+                        </button>
+                    </div>
+                </div>
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SocialShareButtons from '@/Components/SocialShareButtons.vue';
@@ -113,9 +113,58 @@ function toDatetimeLocal(iso) {
     return iso.slice(0, 16);
 }
 
+// Format a JS Date into a datetime-local value using LOCAL time
+function toDatetimeLocalFromDate(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Detect the tempoh preset from an existing event's start/end times
+function detectDuration(startIso, endIso) {
+    if (!startIso || !endIso) return 'khas';
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'khas';
+
+    const sameDay = start.getFullYear() === end.getFullYear()
+        && start.getMonth() === end.getMonth()
+        && start.getDate() === end.getDate();
+
+    if (sameDay) {
+        if (end.getHours() === 12 && end.getMinutes() === 0 && start.getHours() < 12) return 'separuh';
+        if (end.getHours() === 18 && end.getMinutes() === 0 && start.getHours() >= 12) return 'separuh';
+        if (end.getHours() === 17 && end.getMinutes() === 0) return 'satu';
+    }
+    return 'khas';
+}
+
+const duration = ref(detectDuration(props.event.start_time, props.event.end_time));
+
+function applyDurationPreset() {
+    const value = duration.value;
+    const start = editForm.start_time;
+    if (!start) return;
+
+    const startDate = new Date(start);
+    if (isNaN(startDate.getTime())) return;
+
+    const end = new Date(startDate);
+    if (value === 'separuh') {
+        end.setHours(startDate.getHours() < 12 ? 12 : 18, 0, 0, 0);
+    } else if (value === 'satu') {
+        end.setHours(17, 0, 0, 0);
+    }
+
+    if (value !== 'khas') {
+        editForm.end_time = toDatetimeLocalFromDate(end);
+    }
+}
+
+// Auto-fill masa tamat apabila masa mula diubah dan masa tamat masih kosong.
 const editModalOpen = ref(false);
 const editForm = useForm({
-    organization_id: props.event.organization?.id ?? '',
+    organization_id: props.event.organization?.id ?? null,
     title: props.event.title,
     description: props.event.description ?? '',
     type: props.event.type,
@@ -126,9 +175,15 @@ const editForm = useForm({
     _method: 'PUT',
 });
 
+watch(editForm.start_time, () => {
+    if (duration.value !== 'khas' && !editForm.end_time) {
+        applyDurationPreset();
+    }
+});
+
 function openEditModal() {
     // Re-sync fields with latest event data each time the modal opens
-    editForm.organization_id = props.event.organization?.id ?? '';
+    editForm.organization_id = props.event.organization?.id ?? null;
     editForm.title = props.event.title;
     editForm.description = props.event.description ?? '';
     editForm.type = props.event.type;
@@ -136,6 +191,7 @@ function openEditModal() {
     editForm.start_time = toDatetimeLocal(props.event.start_time);
     editForm.end_time = toDatetimeLocal(props.event.end_time);
     editForm.featured_image = null;
+    duration.value = detectDuration(props.event.start_time, props.event.end_time);
     editForm.clearErrors();
     editModalOpen.value = true;
 }
@@ -418,7 +474,7 @@ function eventShareUrl() {
             <div v-if="isSuperadmin" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6 space-y-4">
                 <h2 class="text-lg font-black text-gray-900">Pengurusan Program</h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <!-- Edit button -->
                     <button
                         @click="openEditModal"
@@ -437,6 +493,16 @@ function eventShareUrl() {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
                         </svg>
                         Papar QR Kehadiran
+                    </a>
+                    <a
+                        :href="route('events.qr.download', { event: event.id })"
+                        download
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Muat Turun QR
                     </a>
                     <a
                         :href="route('events.print', { event: event.id })"
@@ -672,6 +738,16 @@ function eventShareUrl() {
                                     <input v-model="editForm.location_or_link" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
                                     <p v-if="editForm.errors.location_or_link" class="text-xs text-red-500">{{ editForm.errors.location_or_link }}</p>
                                 </div>
+                            </div>
+
+                            <!-- Tempoh -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-gray-500">Tempoh</label>
+                                <select v-model="duration" @change="applyDurationPreset" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                    <option value="separuh">Separuh Hari</option>
+                                    <option value="satu">1 Hari</option>
+                                    <option value="khas">Tempoh Khas (Tetapkan Sendiri)</option>
+                                </select>
                             </div>
 
                             <!-- Start + End Time -->

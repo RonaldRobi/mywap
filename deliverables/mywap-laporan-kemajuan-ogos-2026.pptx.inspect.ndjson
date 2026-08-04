@@ -1,0 +1,187 @@
+{"kind":"deck","id":"pr/nkfh9r","name":"Deck"}
+{"kind":"layout","layoutId":"10025ddc-f464-4109-9d22-49716fc4d423","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"18a7efcd-6906-4a27-b799-47b3ef421a82","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/7ylga6","slide":1,"title":"Laporan Kemajuan Projek","textShapes":18}
+{"kind":"shape","id":"sh/grmdkjel","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"shape","id":"sh/fqdwbed0","slide":1,"bbox":[920,0,360,720]}
+{"kind":"shape","id":"sh/up4vi9wv","slide":1,"bbox":[882,0,38,720]}
+{"kind":"textbox","id":"sh/pgfeh8vi","slide":1,"text":"Laporan Kemajuan Projek","textPreview":"Laporan Kemajuan Projek","textChars":23,"textLines":1,"bbox":[72,86,520,58]}
+{"kind":"textbox","id":"sh/4fmdo3ex","slide":1,"text":"myWAP","textPreview":"myWAP","textChars":5,"textLines":1,"bbox":[72,150,480,80]}
+{"kind":"textbox","id":"sh/3edwfydc","slide":1,"text":"Timeline pembangunan, status semasa, dan pelan penyelesaian bayaran sebelum muktamar September 2026.","textPreview":"Timeline pembangunan, status semasa, dan pelan penyelesaian bayaran sebelum muktamar September 2026.","textChars":100,"textLines":1,"bbox":[72,238,690,100]}
+{"kind":"shape","id":"sh/2t4vmtwr","slide":1,"bbox":[72,382,770,180]}
+{"kind":"textbox","id":"sh/5kbe54vy","slide":1,"text":"Status Ringkas","textPreview":"Status Ringkas","textChars":14,"textLines":1,"bbox":[102,410,220,30]}
+{"kind":"textbox","id":"sh/kj2dczed","slide":1,"text":"• Pembangunan web apps telah siap dari sudut fungsi utama.","textPreview":"• Pembangunan web apps telah siap dari sudut fungsi utama.","textChars":58,"textLines":1,"bbox":[102,452,680,34]}
+{"kind":"textbox","id":"sh/6do72pk7","slide":1,"text":"• Fasa semasa tertumpu kepada minor polish, testing dan deployment readiness.","textPreview":"• Fasa semasa tertumpu kepada minor polish, testing dan deployment readiness.","textChars":77,"textLines":1,"bbox":[102,486,680,34]}
+{"kind":"textbox","id":"sh/reh8bals","slide":1,"text":"• Fasa seterusnya ialah setup native apps dan submission ke App Store serta Play Store.","textPreview":"• Fasa seterusnya ialah setup native apps dan submission ke App Store serta Play Store.","textChars":87,"textLines":1,"bbox":[102,520,680,34]}
+{"kind":"textbox","id":"sh/sfqp4f2d","slide":1,"text":"Tarikh mula projek","textPreview":"Tarikh mula projek","textChars":18,"textLines":1,"bbox":[960,110,220,22]}
+{"kind":"textbox","id":"sh/tgzqdk3y","slide":1,"text":"14 Mei 2026","textPreview":"14 Mei 2026","textChars":11,"textLines":1,"bbox":[960,136,220,36]}
+{"kind":"textbox","id":"sh/eh876pkj","slide":1,"text":"Status setakat","textPreview":"Status setakat","textChars":14,"textLines":1,"bbox":[960,210,220,22]}
+{"kind":"textbox","id":"sh/fih8fulo","slide":1,"text":"4 Ogos 2026","textPreview":"4 Ogos 2026","textChars":11,"textLines":1,"bbox":[960,236,220,36]}
+{"kind":"textbox","id":"sh/g3qp8z29","slide":1,"text":"Nilai projek","textPreview":"Nilai projek","textChars":12,"textLines":1,"bbox":[960,310,220,22]}
+{"kind":"textbox","id":"sh/14zqh43u","slide":1,"text":"RM35,200","textPreview":"RM35,200","textChars":8,"textLines":1,"bbox":[960,336,220,36]}
+{"kind":"textbox","id":"sh/25sra9kf","slide":1,"text":"Bayaran diterima","textPreview":"Bayaran diterima","textChars":16,"textLines":1,"bbox":[960,412,220,22]}
+{"kind":"textbox","id":"sh/3618jul0","slide":1,"text":"RM13,866.67","textPreview":"RM13,866.67","textChars":11,"textLines":1,"bbox":[960,438,250,36]}
+{"kind":"textbox","id":"sh/za1ore18","slide":1,"text":"Baki semasa","textPreview":"Baki semasa","textChars":11,"textLines":1,"bbox":[960,512,220,22]}
+{"kind":"textbox","id":"sh/y9s7y90n","slide":1,"text":"RM21,333.33","textPreview":"RM21,333.33","textChars":11,"textLines":1,"bbox":[960,538,250,36]}
+{"kind":"textbox","id":"sh/lcj6t4jy","slide":1,"text":"Disediakan untuk semakan pihak pengurusan dan penjadualan kutipan sebelum muktamar.","textPreview":"Disediakan untuk semakan pihak pengurusan dan penjadualan kutipan sebelum muktamar.","textChars":83,"textLines":1,"bbox":[72,632,740,24]}
+{"kind":"notes","id":"nt/7ylga6","slide":1,"text":""}
+{"kind":"slide","id":"sl/nxs7ay","slide":2,"title":"Timeline Projek Berdasarkan Modul Sebenar","textShapes":31}
+{"kind":"textbox","id":"sh/83etwre9","slide":2,"text":"Timeline Projek Berdasarkan Modul Sebenar","textPreview":"Timeline Projek Berdasarkan Modul Sebenar","textChars":41,"textLines":1,"bbox":[64,44,760,44]}
+{"kind":"textbox","id":"sh/725s3mxo","slide":2,"text":"Audit dibuat daripada struktur modul, routes, controllers, pages Vue dan dokumen status projek.","textPreview":"Audit dibuat daripada struktur modul, routes, controllers, pages Vue dan dokumen status projek.","textChars":95,"textLines":1,"bbox":[64,88,780,32]}
+{"kind":"shape","id":"sh/m1wbuhw3","slide":2,"bbox":[64,126,1152,2]}
+{"kind":"textbox","id":"sh/h87u9wfq","slide":2,"text":"Pecahan Modul","textPreview":"Pecahan Modul","textChars":13,"textLines":1,"bbox":[64,150,220,30]}
+{"kind":"textbox","id":"sh/w7yt0re5","slide":2,"text":"• Auth, OTP, onboarding & profile","textPreview":"• Auth, OTP, onboarding & profile","textChars":33,"textLines":1,"bbox":[64,196,236,31]}
+{"kind":"textbox","id":"sh/v65c7mxk","slide":2,"text":"• Member card, directory & transition","textPreview":"• Member card, directory & transition","textChars":37,"textLines":1,"bbox":[64,227,236,31]}
+{"kind":"textbox","id":"sh/u5wbyhwz","slide":2,"text":"• Events, QR attendance & usrah","textPreview":"• Events, QR attendance & usrah","textChars":31,"textLines":1,"bbox":[64,258,236,31]}
+{"kind":"textbox","id":"sh/xc3axcf6","slide":2,"text":"• Infaq, yuran, finance dashboard","textPreview":"• Infaq, yuran, finance dashboard","textChars":33,"textLines":1,"bbox":[64,289,236,31]}
+{"kind":"textbox","id":"sh/cbuto7y1","slide":2,"text":"• Products, orders & referral system","textPreview":"• Products, orders & referral system","textChars":36,"textLines":1,"bbox":[64,320,236,31]}
+{"kind":"textbox","id":"sh/q5gjipwz","slide":2,"text":"• Broadcast, polls, popups & content hub","textPreview":"• Broadcast, polls, popups & content hub","textChars":40,"textLines":1,"bbox":[64,351,236,31]}
+{"kind":"shape","id":"sh/b6p0baxk","slide":2,"bbox":[338,146,110,32]}
+{"kind":"textbox","id":"sh/c7i1kfe5","slide":2,"text":"14-31 Mei","textPreview":"14-31 Mei","textChars":9,"textLines":1,"bbox":[346,153,94,20]}
+{"kind":"shape","id":"sh/d8ridkfq","slide":2,"bbox":[448,146,110,32]}
+{"kind":"textbox","id":"sh/y90j6pwb","slide":2,"text":"1-15 Jun","textPreview":"1-15 Jun","textChars":8,"textLines":1,"bbox":[456,153,94,20]}
+{"kind":"shape","id":"sh/za90fuxg","slide":2,"bbox":[558,146,110,32]}
+{"kind":"textbox","id":"sh/0bi18ze1","slide":2,"text":"16-30 Jun","textPreview":"16-30 Jun","textChars":9,"textLines":1,"bbox":[566,153,94,20]}
+{"kind":"shape","id":"sh/lcrih4vm","slide":2,"bbox":[668,146,110,32]}
+{"kind":"textbox","id":"sh/md0ja9w7","slide":2,"text":"1-15 Jul","textPreview":"1-15 Jul","textChars":8,"textLines":1,"bbox":[676,153,94,20]}
+{"kind":"shape","id":"sh/nytkjuds","slide":2,"bbox":[778,146,110,32]}
+{"kind":"textbox","id":"sh/j2t07et0","slide":2,"text":"16-31 Jul","textPreview":"16-31 Jul","textChars":9,"textLines":1,"bbox":[786,153,94,20]}
+{"kind":"shape","id":"sh/i1kzy9cf","slide":2,"bbox":[888,146,140,32]}
+{"kind":"textbox","id":"sh/54bi94bq","slide":2,"text":"1 Ogos - 9 Sep","textPreview":"1 Ogos - 9 Sep","textChars":14,"textLines":1,"bbox":[896,153,124,20]}
+{"kind":"textbox","id":"sh/k32h0zu5","slide":2,"text":"Asas sistem","textPreview":"Asas sistem","textChars":11,"textLines":1,"bbox":[190,203,134,24]}
+{"kind":"shape","id":"sh/vet03uto","slide":2,"bbox":[338,237,690,1]}
+{"kind":"shape","id":"sh/ad0zupc3","slide":2,"bbox":[338,182,1,0]}
+{"kind":"shape","id":"sh/x0bi54bu","slide":2,"bbox":[448,182,1,0]}
+{"kind":"shape","id":"sh/wf2hwzu9","slide":2,"bbox":[558,182,1,0]}
+{"kind":"shape","id":"sh/na90zuts","slide":2,"bbox":[668,182,1,0]}
+{"kind":"shape","id":"sh/m90zqpc7","slide":2,"bbox":[778,182,1,0]}
+{"kind":"shape","id":"sh/s3e5kr6t","slide":2,"bbox":[888,182,1,0]}
+{"kind":"shape","id":"sh/d4n6dwne","slide":2,"bbox":[346,196,204,32]}
+{"kind":"textbox","id":"sh/q1cnihon","slide":2,"text":"Setup stack, DB, role & organisasi","textPreview":"Setup stack, DB, role & organisasi","textChars":34,"textLines":1,"bbox":[358,203,180,18]}
+{"kind":"textbox","id":"sh/r25obm58","slide":2,"text":"Core membership","textPreview":"Core membership","textChars":15,"textLines":1,"bbox":[190,257,134,24]}
+{"kind":"shape","id":"sh/07epob6p","slide":2,"bbox":[338,291,690,1]}
+{"kind":"shape","id":"sh/18n6hwna","slide":2,"bbox":[338,236,1,0]}
+{"kind":"shape","id":"sh/e5wnm1oz","slide":2,"bbox":[448,236,1,0]}
+{"kind":"shape","id":"sh/f65of654","slide":2,"bbox":[558,236,1,0]}
+{"kind":"shape","id":"sh/gbu5c76l","slide":2,"bbox":[668,236,1,0]}
+{"kind":"shape","id":"sh/hc365cn6","slide":2,"bbox":[778,236,1,0]}
+{"kind":"shape","id":"sh/94z61wrm","slide":2,"bbox":[888,236,1,0]}
+{"kind":"shape","id":"sh/83qp8ra1","slide":2,"bbox":[456,250,204,32]}
+{"kind":"textbox","id":"sh/7ixoz69g","slide":2,"text":"Register, OTP, profile, card, directory","textPreview":"Register, OTP, profile, card, directory","textChars":39,"textLines":1,"bbox":[468,257,180,18]}
+{"kind":"textbox","id":"sh/mho761sv","slide":2,"text":"Member modules","textPreview":"Member modules","textChars":14,"textLines":1,"bbox":[190,311,134,24]}
+{"kind":"shape","id":"sh/lgf6xwrq","slide":2,"bbox":[338,345,690,1]}
+{"kind":"shape","id":"sh/0f6p4ra5","slide":2,"bbox":[338,290,1,0]}
+{"kind":"shape","id":"sh/zexovm9k","slide":2,"bbox":[448,290,1,0]}
+{"kind":"shape","id":"sh/ydon2hsz","slide":2,"bbox":[558,290,1,0]}
+{"kind":"shape","id":"sh/dcf6tcre","slide":2,"bbox":[668,290,1,0]}
+{"kind":"shape","id":"sh/cbm507at","slide":2,"bbox":[778,290,1,0]}
+{"kind":"shape","id":"sh/2hk3ud8r","slide":2,"bbox":[888,290,1,0]}
+{"kind":"shape","id":"sh/3it43ipc","slide":2,"bbox":[566,304,204,32]}
+{"kind":"textbox","id":"sh/oj2lwnqx","slide":2,"text":"Announcements, library, events, usrah, infaq","textPreview":"Announcements, library, events, usrah, infaq","textChars":44,"textLines":1,"bbox":[578,311,180,18]}
+{"kind":"textbox","id":"sh/pkvm5s7i","slide":2,"text":"Commerce & engagement","textPreview":"Commerce & engagement","textChars":21,"textLines":1,"bbox":[190,365,134,24]}
+{"kind":"shape","id":"sh/edk3qd8v","slide":2,"bbox":[338,399,690,1]}
+{"kind":"shape","id":"sh/fet4zip0","slide":2,"bbox":[338,344,1,0]}
+{"kind":"shape","id":"sh/gf2lsnql","slide":2,"bbox":[448,344,1,0]}
+{"kind":"shape","id":"sh/1gbm1876","slide":2,"bbox":[558,344,1,0]}
+{"kind":"shape","id":"sh/6p03mt8j","slide":2,"bbox":[668,344,1,0]}
+{"kind":"shape","id":"sh/rq9kvyp4","slide":2,"bbox":[778,344,1,0]}
+{"kind":"shape","id":"sh/vi5s7a1k","slide":2,"bbox":[888,344,1,0]}
+{"kind":"shape","id":"sh/ahwre5kz","slide":2,"bbox":[676,358,94,32]}
+{"kind":"textbox","id":"sh/xkna90jq","slide":2,"text":"Products, referral, polls, video, popup","textPreview":"Products, referral, polls, video, popup","textChars":39,"textLines":1,"bbox":[688,365,70,18]}
+{"kind":"textbox","id":"sh/wje9gf25","slide":2,"text":"Admin & finance","textPreview":"Admin & finance","textChars":15,"textLines":1,"bbox":[190,419,134,24]}
+{"kind":"shape","id":"sh/jm5sba1w","slide":2,"bbox":[338,453,690,1]}
+{"kind":"shape","id":"sh/ilwri5kb","slide":2,"bbox":[338,398,1,0]}
+{"kind":"shape","id":"sh/587adkjm","slide":2,"bbox":[448,398,1,0]}
+{"kind":"shape","id":"sh/kne9kf2h","slide":2,"bbox":[558,398,1,0]}
+{"kind":"shape","id":"sh/zql8zqlc","slide":2,"bbox":[668,398,1,0]}
+{"kind":"shape","id":"sh/epcr6lkr","slide":2,"bbox":[778,398,1,0]}
+{"kind":"shape","id":"sh/4vqpgrip","slide":2,"bbox":[888,398,1,0]}
+{"kind":"shape","id":"sh/pwz69wza","slide":2,"bbox":[676,412,204,32]}
+{"kind":"textbox","id":"sh/2t87eh0j","slide":2,"text":"Import ahli, yuran, laporan, dashboard","textPreview":"Import ahli, yuran, laporan, dashboard","textChars":38,"textLines":1,"bbox":[688,419,180,18]}
+{"kind":"textbox","id":"sh/3uho7mh4","slide":2,"text":"Finalisation web","textPreview":"Finalisation web","textChars":16,"textLines":1,"bbox":[190,473,134,24]}
+{"kind":"shape","id":"sh/grqpc7it","slide":2,"bbox":[338,507,690,1]}
+{"kind":"shape","id":"sh/hsz65cje","slide":2,"bbox":[338,452,1,0]}
+{"kind":"shape","id":"sh/up87ax0n","slide":2,"bbox":[448,452,1,0]}
+{"kind":"shape","id":"sh/fqho3218","slide":2,"bbox":[558,452,1,0]}
+{"kind":"shape","id":"sh/0napobix","slide":2,"bbox":[668,452,1,0]}
+{"kind":"shape","id":"sh/lo3qhgzi","slide":2,"bbox":[778,452,1,0]}
+{"kind":"shape","id":"sh/9on2h8rm","slide":2,"bbox":[888,452,1,0]}
+{"kind":"shape","id":"sh/8nelo3ah","slide":2,"bbox":[786,466,234,32]}
+{"kind":"textbox","id":"sh/72lkfi9w","slide":2,"text":"QA, bug fixing, polish, testing","textPreview":"QA, bug fixing, polish, testing","textChars":31,"textLines":1,"bbox":[798,473,210,18]}
+{"kind":"textbox","id":"sh/m1cjmdsb","slide":2,"text":"Native apps","textPreview":"Native apps","textChars":11,"textLines":1,"bbox":[190,527,134,24]}
+{"kind":"shape","id":"sh/hsn2lsry","slide":2,"bbox":[338,561,690,1]}
+{"kind":"shape","id":"sh/wrelsnqd","slide":2,"bbox":[338,506,1,0]}
+{"kind":"shape","id":"sh/vq5kji9s","slide":2,"bbox":[448,506,1,0]}
+{"kind":"shape","id":"sh/upw3qds7","slide":2,"bbox":[558,506,1,0]}
+{"kind":"shape","id":"sh/xw329oru","slide":2,"bbox":[668,506,1,0]}
+{"kind":"shape","id":"sh/cva1gja9","slide":2,"bbox":[778,506,1,0]}
+{"kind":"shape","id":"sh/218zap8r","slide":2,"bbox":[888,506,1,0]}
+{"kind":"shape","id":"sh/n2h0jupc","slide":2,"bbox":[896,520,124,32]}
+{"kind":"textbox","id":"sh/o3qhczqx","slide":2,"text":"Setup wrapper, packaging, store submission","textPreview":"Setup wrapper, packaging, store submission","textChars":42,"textLines":1,"bbox":[908,527,100,18]}
+{"kind":"shape","id":"sh/p4jil47i","slide":2,"bbox":[64,590,1152,80]}
+{"kind":"textbox","id":"sh/a5sze983","slide":2,"text":"Rumusan status","textPreview":"Rumusan status","textChars":14,"textLines":1,"bbox":[92,614,180,24]}
+{"kind":"textbox","id":"sh/b610nepo","slide":2,"text":"Web apps telah siap dari segi fungsi utama. Tempoh semasa digunakan untuk minor polish dan testing, manakala minggu berikutnya difokuskan kepada native app setup, packaging, dan submission ke App Store serta Play Store sebelum buffer semakan muktamar.","textPreview":"Web apps telah siap dari segi fungsi utama. Tempoh semasa digunakan untuk minor polish dan testing, manakala minggu berikutnya difokuskan...","textChars":251,"textLines":1,"bbox":[240,610,930,38]}
+{"kind":"notes","id":"nt/nxs7ay","slide":2,"text":""}
+{"kind":"slide","id":"sl/52791s","slide":3,"title":"Status Bayaran dan Cadangan Ansuran","textShapes":43}
+{"kind":"textbox","id":"sh/3ap4b25g","slide":3,"text":"Status Bayaran dan Cadangan Ansuran","textPreview":"Status Bayaran dan Cadangan Ansuran","textChars":35,"textLines":1,"bbox":[64,44,760,44]}
+{"kind":"textbox","id":"sh/oby5476l","slide":3,"text":"Pecahan semasa menunjukkan baki RM21,333.33 yang dicadangkan selesai sebelum muktamar September 2026.","textPreview":"Pecahan semasa menunjukkan baki RM21,333.33 yang dicadangkan selesai sebelum muktamar September 2026.","textChars":101,"textLines":1,"bbox":[64,88,780,32]}
+{"kind":"shape","id":"sh/pc7mdcn6","slide":3,"bbox":[64,126,1152,2]}
+{"kind":"shape","id":"sh/adgn6xor","slide":3,"bbox":[64,156,348,188]}
+{"kind":"textbox","id":"sh/bep4f25c","slide":3,"text":"Ringkasan Kewangan","textPreview":"Ringkasan Kewangan","textChars":18,"textLines":1,"bbox":[92,184,220,24]}
+{"kind":"textbox","id":"sh/cfi5876x","slide":3,"text":"Nilai Projek","textPreview":"Nilai Projek","textChars":12,"textLines":1,"bbox":[92,230,120,20]}
+{"kind":"textbox","id":"sh/xgrmhcni","slide":3,"text":"RM35,200.00","textPreview":"RM35,200.00","textChars":11,"textLines":1,"bbox":[92,250,220,30]}
+{"kind":"textbox","id":"sh/6hw3udon","slide":3,"text":"Bayaran Diterima","textPreview":"Bayaran Diterima","textChars":16,"textLines":1,"bbox":[92,294,140,20]}
+{"kind":"textbox","id":"sh/ri543i58","slide":3,"text":"RM13,866.67","textPreview":"RM13,866.67","textChars":11,"textLines":1,"bbox":[92,314,220,30]}
+{"kind":"textbox","id":"sh/fexwjyhk","slide":3,"text":"Baki Semasa","textPreview":"Baki Semasa","textChars":11,"textLines":1,"bbox":[92,358,110,20]}
+{"kind":"textbox","id":"sh/edovatgz","slide":3,"text":"RM21,333.33","textPreview":"RM21,333.33","textChars":11,"textLines":1,"bbox":[92,378,220,30]}
+{"kind":"shape","id":"sh/10feloza","slide":3,"bbox":[444,156,772,246]}
+{"kind":"textbox","id":"sh/gz6dc3y5","slide":3,"text":"Kemajuan Bayaran Mengikut Pihak","textPreview":"Kemajuan Bayaran Mengikut Pihak","textChars":31,"textLines":1,"bbox":[472,184,320,24]}
+{"kind":"textbox","id":"sh/radcfeh8","slide":3,"text":"WADAH","textPreview":"WADAH","textChars":5,"textLines":1,"bbox":[472,226,170,24]}
+{"kind":"textbox","id":"sh/694v690n","slide":3,"text":"Jumlah: RM17,600.00","textPreview":"Jumlah: RM17,600.00","textChars":19,"textLines":1,"bbox":[648,227,210,22]}
+{"kind":"shape","id":"sh/tcfuhoze","slide":3,"bbox":[472,260,650,18]}
+{"kind":"shape","id":"sh/sb6d8jit","slide":3,"bbox":[472,260,369.32,18]}
+{"kind":"textbox","id":"sh/j6dcbehc","slide":3,"text":"Telah dibayar: RM10,000.00","textPreview":"Telah dibayar: RM10,000.00","textChars":26,"textLines":1,"bbox":[472,288,250,20]}
+{"kind":"textbox","id":"sh/i54v290r","slide":3,"text":"Baki: RM7,600.00","textPreview":"Baki: RM7,600.00","textChars":16,"textLines":1,"bbox":[732,288,220,20]}
+{"kind":"textbox","id":"sh/mhkvu9kj","slide":3,"text":"ABIM","textPreview":"ABIM","textChars":4,"textLines":1,"bbox":[472,294,170,24]}
+{"kind":"textbox","id":"sh/n2twne14","slide":3,"text":"Jumlah: RM14,080.00","textPreview":"Jumlah: RM14,080.00","textChars":19,"textLines":1,"bbox":[648,295,210,22]}
+{"kind":"shape","id":"sh/832dwz2p","slide":3,"bbox":[472,328,650,18]}
+{"kind":"shape","id":"sh/94vep4ja","slide":3,"bbox":[472,328,108.33,18]}
+{"kind":"textbox","id":"sh/a54fy9kv","slide":3,"text":"Telah dibayar: RM2,346.67","textPreview":"Telah dibayar: RM2,346.67","textChars":25,"textLines":1,"bbox":[472,356,250,20]}
+{"kind":"textbox","id":"sh/v6dwre10","slide":3,"text":"Baki: RM11,733.33","textPreview":"Baki: RM11,733.33","textChars":17,"textLines":1,"bbox":[732,356,220,20]}
+{"kind":"textbox","id":"sh/w7mx0j2l","slide":3,"text":"PKPIM","textPreview":"PKPIM","textChars":5,"textLines":1,"bbox":[472,362,170,24]}
+{"kind":"textbox","id":"sh/h8vetoj6","slide":3,"text":"Jumlah: RM3,520.00","textPreview":"Jumlah: RM3,520.00","textChars":18,"textLines":1,"bbox":[648,363,210,22]}
+{"kind":"shape","id":"sh/i94f2tkr","slide":3,"bbox":[472,396,650,18]}
+{"kind":"shape","id":"sh/jadwvy1c","slide":3,"bbox":[472,396,280.68,18]}
+{"kind":"textbox","id":"sh/t4zyls3e","slide":3,"text":"Telah dibayar: RM1,520.00","textPreview":"Telah dibayar: RM1,520.00","textChars":25,"textLines":1,"bbox":[472,424,250,20]}
+{"kind":"textbox","id":"sh/s3qhsnmt","slide":3,"text":"Baki: RM2,000.00","textPreview":"Baki: RM2,000.00","textChars":16,"textLines":1,"bbox":[732,424,220,20]}
+{"kind":"shape","id":"sh/r2xgjil8","slide":3,"bbox":[64,432,1152,220]}
+{"kind":"textbox","id":"sh/61ozqd43","slide":3,"text":"Cadangan Jadual Ansuran Sebelum Muktamar","textPreview":"Cadangan Jadual Ansuran Sebelum Muktamar","textChars":40,"textLines":1,"bbox":[92,458,430,26]}
+{"kind":"shape","id":"sh/1szips3q","slide":3,"bbox":[92,500,132,34]}
+{"kind":"textbox","id":"sh/grqhwnm5","slide":3,"text":"Tarikh","textPreview":"Tarikh","textChars":6,"textLines":1,"bbox":[100,508,116,18]}
+{"kind":"shape","id":"sh/f6hgnilk","slide":3,"bbox":[252,500,122,34]}
+{"kind":"textbox","id":"sh/e58zux4z","slide":3,"text":"Pihak","textPreview":"Pihak","textChars":5,"textLines":1,"bbox":[260,508,106,18]}
+{"kind":"shape","id":"sh/pwjitc3m","slide":3,"bbox":[402,500,176,34]}
+{"kind":"textbox","id":"sh/ovah07m1","slide":3,"text":"Cadangan Bayaran","textPreview":"Cadangan Bayaran","textChars":16,"textLines":1,"bbox":[410,508,160,18]}
+{"kind":"shape","id":"sh/0ru1sb69","slide":3,"bbox":[618,500,548,34]}
+{"kind":"textbox","id":"sh/ls32lgnu","slide":3,"text":"Rasional","textPreview":"Rasional","textChars":8,"textLines":1,"bbox":[626,508,532,18]}
+{"kind":"textbox","id":"sh/ypcjq1o3","slide":3,"text":"15 Ogos 2026","textPreview":"15 Ogos 2026","textChars":12,"textLines":1,"bbox":[100,540,116,18]}
+{"kind":"textbox","id":"sh/zqlkj65o","slide":3,"text":"WADAH","textPreview":"WADAH","textChars":5,"textLines":1,"bbox":[260,540,106,18]}
+{"kind":"textbox","id":"sh/cnu1or6d","slide":3,"text":"RM7,600.00","textPreview":"RM7,600.00","textChars":10,"textLines":1,"bbox":[410,540,160,18]}
+{"kind":"textbox","id":"sh/do32hwny","slide":3,"text":"Menjelaskan baki selepas web apps siap dan native setup bermula","textPreview":"Menjelaskan baki selepas web apps siap dan native setup bermula","textChars":63,"textLines":1,"bbox":[626,540,532,18]}
+{"kind":"shape","id":"sh/qlsjmho7","slide":3,"bbox":[92,562,1084,1]}
+{"kind":"textbox","id":"sh/bmlkfm5s","slide":3,"text":"22 Ogos 2026","textPreview":"22 Ogos 2026","textChars":12,"textLines":1,"bbox":[100,568,116,18]}
+{"kind":"textbox","id":"sh/wjel0v6h","slide":3,"text":"PKPIM","textPreview":"PKPIM","textChars":5,"textLines":1,"bbox":[260,568,106,18]}
+{"kind":"textbox","id":"sh/xkn2t0n2","slide":3,"text":"RM2,000.00","textPreview":"RM2,000.00","textChars":10,"textLines":1,"bbox":[410,568,160,18]}
+{"kind":"textbox","id":"sh/re94jup4","slide":3,"text":"Menyelesaikan baki semasa fasa build dan packaging","textPreview":"Menyelesaikan baki semasa fasa build dan packaging","textChars":50,"textLines":1,"bbox":[626,568,532,18]}
+{"kind":"shape","id":"sh/6d0nqp8j","slide":3,"bbox":[92,590,1084,1]}
+{"kind":"textbox","id":"sh/tgrml47a","slide":3,"text":"31 Ogos 2026","textPreview":"31 Ogos 2026","textChars":12,"textLines":1,"bbox":[100,596,116,18]}
+{"kind":"textbox","id":"sh/sfi5szqp","slide":3,"text":"ABIM","textPreview":"ABIM","textChars":4,"textLines":1,"bbox":[260,596,106,18]}
+{"kind":"textbox","id":"sh/fi9onupg","slide":3,"text":"RM5,866.67","textPreview":"RM5,866.67","textChars":10,"textLines":1,"bbox":[410,596,160,18]}
+{"kind":"textbox","id":"sh/eh0nup8v","slide":3,"text":"Bayaran pertama sebelum submission store selesai","textPreview":"Bayaran pertama sebelum submission store selesai","textChars":48,"textLines":1,"bbox":[626,596,532,18]}
+{"kind":"shape","id":"sh/1kr6p476","slide":3,"bbox":[92,618,1084,1]}
+{"kind":"textbox","id":"sh/gji5wzq1","slide":3,"text":"7 September 2026","textPreview":"7 September 2026","textChars":16,"textLines":1,"bbox":[100,624,116,18]}
+{"kind":"textbox","id":"sh/vmp4rapw","slide":3,"text":"ABIM","textPreview":"ABIM","textChars":4,"textLines":1,"bbox":[260,624,106,18]}
+{"kind":"textbox","id":"sh/alwni58b","slide":3,"text":"RM5,866.66","textPreview":"RM5,866.66","textChars":10,"textLines":1,"bbox":[410,624,160,18]}
+{"kind":"textbox","id":"sh/ydoz6xwb","slide":3,"text":"Bayaran akhir sebelum buffer muktamar","textPreview":"Bayaran akhir sebelum buffer muktamar","textChars":37,"textLines":1,"bbox":[626,624,532,18]}
+{"kind":"shape","id":"sh/zexgf2dw","slide":3,"bbox":[92,646,1084,1]}
+{"kind":"notes","id":"nt/52791s","slide":3,"text":""}

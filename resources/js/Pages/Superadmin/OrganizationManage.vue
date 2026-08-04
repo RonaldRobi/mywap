@@ -30,6 +30,12 @@ const editForms = Object.fromEntries(
             bayarcash_portal_key: organization.bayarcash_portal_key ?? '',
             bayarcash_secret_key: organization.bayarcash_secret_key ?? '',
             bayarcash_environment: organization.bayarcash_environment ?? 'sandbox',
+            website_url: organization.website_url ?? '',
+            facebook_url: organization.facebook_url ?? '',
+            instagram_url: organization.instagram_url ?? '',
+            twitter_url: organization.twitter_url ?? '',
+            youtube_url: organization.youtube_url ?? '',
+            tiktok_url: organization.tiktok_url ?? '',
         }),
     ])
 );
@@ -181,6 +187,38 @@ function updateOrganizationLogo(organization) {
                                         <option value="sandbox">Sandbox (Ujian)</option>
                                         <option value="live">Live (Produksi)</option>
                                     </select>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">Pautan & Media Sosial</summary>
+                            <div class="space-y-3 border-t border-gray-100 p-3">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Laman Web (URL)</label>
+                                    <input v-model="editForms[organization.id].website_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://www.contoh.com">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Facebook</label>
+                                        <input v-model="editForms[organization.id].facebook_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://facebook.com/...">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Instagram</label>
+                                        <input v-model="editForms[organization.id].instagram_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://instagram.com/...">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Twitter / X</label>
+                                        <input v-model="editForms[organization.id].twitter_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://x.com/...">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">YouTube</label>
+                                        <input v-model="editForms[organization.id].youtube_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://youtube.com/@...">
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">TikTok</label>
+                                        <input v-model="editForms[organization.id].tiktok_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://tiktok.com/@...">
+                                    </div>
                                 </div>
                             </div>
                         </details>

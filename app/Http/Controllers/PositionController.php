@@ -146,4 +146,16 @@ class PositionController extends Controller
 
         return response()->json($categories);
     }
+
+    public function members(Request $request, OrganizationPosition $position): \Illuminate\Http\JsonResponse
+    {
+        $members = \App\Models\User::withoutGlobalScopes()
+            ->where('current_organization_id', $request->user()->current_organization_id)
+            ->where('position', $position->name)
+            ->select('id', 'name', 'email', 'phone', 'branch_name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['position' => $position->name, 'members' => $members]);
+    }
 }

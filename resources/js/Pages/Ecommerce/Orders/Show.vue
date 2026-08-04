@@ -12,6 +12,8 @@ const props = defineProps({
 
 const page = usePage();
 
+const isLoggedIn = computed(() => !!page.props.auth.user);
+
 const isAdmin = computed(() => {
     return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin'].includes(role));
 });
@@ -183,8 +185,8 @@ const grandTotal = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Pay Button (for pending orders) -->
-                    <div v-if="order.status === 'pending'" class="mt-6">
+                    <!-- Pay Button (for pending orders, logged-in users only) -->
+                    <div v-if="order.status === 'pending' && isLoggedIn" class="mt-6">
                         <Link
                             :href="route('orders.pay', order.id)"
                             class="w-full inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
@@ -194,11 +196,14 @@ const grandTotal = computed(() => {
                     </div>
 
                     <div class="mt-6 border-t border-gray-100 pt-5">
-                        <Link :href="route('orders.index')" class="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl inline-flex items-center">
+                        <Link
+                            :href="isLoggedIn ? route('orders.index') : route('mall.index')"
+                            class="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl inline-flex items-center"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
-                            Kembali ke Senarai
+                            {{ isLoggedIn ? 'Kembali ke Senarai' : 'Kembali ke Mall' }}
                         </Link>
                     </div>
                 </div>

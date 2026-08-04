@@ -124,6 +124,7 @@ function resetFilters() {
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-1">
                                     <a :href="route('events.qr', { event: event.id })" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50">QR</a>
+                                    <a :href="route('events.qr.download', { event: event.id })" download class="rounded-lg px-2.5 py-1 text-xs font-semibold text-teal-600 hover:bg-teal-50">QR PNG</a>
                                     <a :href="route('events.print', { event: event.id })" target="_blank" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50">Senarai</a>
                                     <a :href="route('events.show', { slug: event.slug })" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">Lihat</a>
                                 </div>

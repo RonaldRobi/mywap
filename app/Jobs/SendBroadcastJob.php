@@ -30,6 +30,10 @@ class SendBroadcastJob implements ShouldQueue
             $query->where('current_organization_id', $message->target_organization_id);
         }
 
+        if ($message->target_criteria === 'branch') {
+            $query->where('branch_id', $message->branch_id);
+        }
+
         if ($message->target_criteria === 'specific_members') {
             $query->whereIn('id', $message->recipient_ids ?? []);
         }

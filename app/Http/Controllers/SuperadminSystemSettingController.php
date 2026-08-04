@@ -33,6 +33,11 @@ class SuperadminSystemSettingController extends Controller
             'hasGeminiKey' => $setting && $setting->gemini_api_key ? true : false,
             'mailFromAddress' => $setting?->mail_from_address ?? '',
             'mailFromName' => $setting?->mail_from_name ?? '',
+            'mailMailer' => $setting?->mail_mailer ?? 'log',
+            'mailSmtpHost' => $setting?->mail_smtp_host ?? '',
+            'mailSmtpPort' => $setting?->mail_smtp_port ?? '',
+            'mailSmtpUsername' => $setting?->mail_smtp_username ?? '',
+            'mailSmtpEncryption' => $setting?->mail_smtp_encryption ?? '',
             'canManageSystemLogo' => $canManageSystemLogo,
         ]);
     }
@@ -100,6 +105,113 @@ class SuperadminSystemSettingController extends Controller
         config($mailConfig);
 
         return back()->with('success', 'Tetapan emel berjaya disimpan.');
+    }
+
+    public function updateMailSettings(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'mail_mailer' => ['required', 'in:resend,log,smtp'],
+            'mail_from_address' => ['nullable', 'email', 'max:255'],
+            'mail_from_name' => ['nullable', 'string', 'max:255'],
+            'resend_api_key' => ['nullable', 'string', 'max:255'],
+            'mail_smtp_host' => ['nullable', 'string', 'max:255'],
+            'mail_smtp_port' => ['nullable', 'string', 'max:10'],
+            'mail_smtp_username' => ['nullable', 'string', 'max:255'],
+            'mail_smtp_password' => ['nullable', 'string', 'max:255'],
+            'mail_smtp_encryption' => ['nullable', 'in:tls,ssl,null,'],
+        ]);
+
+        $setting = AppSetting::singleton();
+
+        $updateData = [
+            'mail_mailer' => $data['mail_mailer'],
+            'mail_from_address' => $data['mail_from_address'] ?: null,
+            'mail_from_name' => $data['mail_from_name'] ?: null,
+        ];
+
+        // Only replace the Resend key if a non-empty value was sent
+        if ($request->filled('resend_api_key')) {
+            $updateData['resend_api_key'] = $data['resend_api_key'];
+        }
+
+        // SMTP fields — allow clearing
+        $updateData['mail_smtp_host'] = $data['mail_smtp_host'] ?: null;
+        $updateData['mail_smtp_port'] = $data['mail_smtp_port'] ?: null;
+        $updateData['mail_smtp_username'] = $data['mail_smtp_username'] ?: null;
+        $updateData['mail_smtp_encryption'] = $data['mail_smtp_encryption'] ?: null;
+
+        // Only replace SMTP password if a non-empty value was sent
+        if ($request->filled('mail_smtp_password')) {
+            $updateData['mail_smtp_password'] = $data['mail_smtp_password'];
+        }
+
+        $setting->update($updateData);
+
+        // Rebuild runtime mail config so the next email uses the new driver.
+        $mailConfig = [];
+
+        if ($data['mail_mailer'] === 'resend' && $setting->resend_api_key) {
+            $mailConfig = [
+                'mail.default' => 'resend',
+                'mail.mailers.resend.key' => $setting->resend_api_key,
+                'services.resend.key' => $setting->resend_api_key,
+                'resend.api_key' => $setting->resend_api_key,
+            ];
+        } elseif ($data['mail_mailer'] === 'smtp') {
+            $mailConfig = [
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.host' => $setting->mail_smtp_host,
+                'mail.mailers.smtp.port' => $setting->mail_smtp_port,
+                'mail.mailers.smtp.encryption' => $setting->mail_smtp_encryption,
+                'mail.mailers.smtp.username' => $setting->mail_smtp_username,
+                'mail.mailers.smtp.password' => $setting->mail_smtp_password,
+            ];
+        } else {
+            $mailConfig = ['mail.default' => 'log'];
+        }
+
+        if ($setting->mail_from_address) {
+            $mailConfig['mail.from.address'] = $setting->mail_from_address;
+            $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
+        }
+
+        config($mailConfig);
+
+        return back()->with('success', 'Tetapan mailer berjaya disimpan.');
+    }
+
+    public function testMail(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'test_email' => ['required', 'email'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $appName = $setting->app_name ?? config('app.name');
+
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                "Ini adalah emel ujian daripada {$appName}. Konfigurasi emel berfungsi dengan baik.",
+                function ($message) use ($data, $setting, $appName) {
+                    $message->to($data['test_email'])
+                        ->subject('Emel Ujian ' . $appName);
+                }
+            );
+
+            return back()->with('success', 'Emel ujian berjaya dihantar ke ' . $data['test_email'] . '.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Mail test failed', ['error' => $e->getMessage()]);
+
+            return back()->with('error', 'Gagal menghantar emel ujian: ' . $e->getMessage());
+        }
     }
 
     public function updateSystemLogo(Request $request): RedirectResponse

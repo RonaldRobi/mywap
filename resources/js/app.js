@@ -5,6 +5,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { locale, t, toggleLocale, setLocale } from './i18n';
 
 createInertiaApp({
     title: (title, page) => {
@@ -20,6 +21,7 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .provide('i18n', { locale, t, toggleLocale, setLocale })
             .mount(el);
     },
     progress: {

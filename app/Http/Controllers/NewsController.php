@@ -350,6 +350,15 @@ class NewsController extends Controller
         return back()->with('success', 'Kategori info terkini berjaya ditambah.');
     }
 
+    public function destroyCategory(Request $request, NewsCategory $category): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+
+        $category->delete();
+
+        return back()->with('success', 'Kategori info terkini berjaya dipadam.');
+    }
+
     private function canViewPost($user, NewsPost $newsPost): bool
     {
         $isPublished = (bool) $newsPost->is_published;

@@ -2,19 +2,20 @@
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted, Teleport, Transition } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { t, locale } from '@/i18n';
 
 const profileMenuOpen = ref(false);
 
 const timeGreeting = computed(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Selamat Pagi';
-    if (hour >= 12 && hour < 14) return 'Selamat Tengah Hari';
-    if (hour >= 14 && hour < 18) return 'Selamat Petang';
-    return 'Selamat Malam';
+    if (hour >= 5 && hour < 12) return t('Selamat Pagi');
+    if (hour >= 12 && hour < 14) return t('Selamat Tengah Hari');
+    if (hour >= 14 && hour < 18) return t('Selamat Petang');
+    return t('Selamat Malam');
 });
 const todayDate = computed(() => {
     const d = new Date();
-    return d.toLocaleDateString('ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(locale.value === 'en' ? 'en-MY' : 'ms-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 });
 
 const props = defineProps({
@@ -99,7 +100,6 @@ function popupButtonClick(url) {
     if (url) window.location.href = url;
 }
 
-const payForm = useForm({});
 const infaqForms = ref({});
 const booksScroller = ref(null);
 const openVideo = ref(null);
@@ -131,7 +131,7 @@ const activeBannerIndex = ref(0);
 const bannerHovered = ref(false);
 const carouselItems = computed(() => {
     if (props.banners.length) return props.banners;
-    return [{ id: 0, title: 'Selamat datang ke myWAP', image_path: null }];
+    return [{ id: 0, title: t('Selamat datang ke myWAP'), image_path: null }];
 });
 let bannerTimer;
 function advanceBanner() {
@@ -155,9 +155,6 @@ function initials(name) {
     return (name || 'U').split(' ').slice(0, 2).map(v => v[0]).join('').toUpperCase();
 }
 
-function payFee() {
-    payForm.post(route('member.pay.fee'), { preserveScroll: true });
-}
 function formatCurrency(value) {
     return new Intl.NumberFormat('ms-MY', {
         style: 'currency', currency: 'MYR', maximumFractionDigits: 2,
@@ -190,7 +187,7 @@ function scrollBooks(direction) {
 </script>
 
 <template>
-    <Head title="Member Dashboard" />
+    <Head :title="locale === 'en' ? 'Member Dashboard' : 'Paparan Pemuka Ahli'" />
     <AppLayout :hide-mobile-bell="true" :hide-mobile-header="true">
         <div class="min-h-screen bg-[#F5F7F6] pb-6 overflow-x-hidden">
 
@@ -244,10 +241,9 @@ function scrollBooks(direction) {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
-                                        Profil Saya
+                                        {{ t('Profil Saya') }}
                                     </Link>
-                                    <div class="my-1 border-t border-gray-100"></div>
-                                    <Link
+                                    <div class="my-1 border-t border-gray-100"></div>                                    <Link
                                         :href="route('logout')"
                                         method="post"
                                         as="button"
@@ -257,7 +253,7 @@ function scrollBooks(direction) {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                         </svg>
-                                        Log Keluar
+                                        {{ t('Log Keluar') }}
                                     </Link>
                                 </div>
                             </transition>
@@ -300,7 +296,7 @@ function scrollBooks(direction) {
                                     <div class="absolute bottom-14 left-1/2 -translate-x-1/2 z-10">
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-white border border-white/30 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                            Buka Link
+                                            {{ t('Buka Link') }}
                                         </span>
                                     </div>
                                 </a>
@@ -322,37 +318,37 @@ function scrollBooks(direction) {
 
                 <!-- ═══ 3. PINTASTAN — fintech style ═══ -->
                 <section>
-                    <h2 class="text-sm font-bold text-gray-900 mb-3">Pintasan</h2>
+                    <h2 class="text-sm font-bold text-gray-900 mb-3">{{ t('Pintasan') }}</h2>
                     <div class="grid grid-cols-4 gap-2.5">
                         <Link :href="route('member.financial.overview')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
                             <div class="w-14 h-14 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200/60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                             </div>
-                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Yuran Saya</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">{{ t('Yuran Saya') }}</p>
                         </Link>
                         <Link :href="route('member.facilities.index')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
                             <div class="w-14 h-14 mx-auto bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200/60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
                             </div>
-                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Tempah</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">{{ t('Tempah') }}</p>
                         </Link>
                         <Link :href="route('news.index')" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
                             <div class="w-14 h-14 mx-auto bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200/60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/></svg>
                             </div>
-                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Info</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">{{ t('Info') }}</p>
                         </Link>
                         <Link v-if="firstInfaqUrl" :href="firstInfaqUrl" class="bg-white px-2 py-3 rounded-[22px] shadow-[0_2px_10px_rgba(0,0,0,0.04),0_1px_3px_rgba(0,0,0,0.02)] text-center hover:-translate-y-0.5 active:scale-95 transition-all">
                             <div class="w-14 h-14 mx-auto bg-gradient-to-br from-rose-400 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200/60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
                             </div>
-                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">Infaq</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-800 leading-tight">{{ t('Infaq') }}</p>
                         </Link>
                         <div v-else class="bg-white/60 px-2 py-3 rounded-[22px] shadow-sm text-center opacity-50">
                             <div class="w-14 h-14 mx-auto bg-gradient-to-br from-rose-300 to-rose-400 rounded-2xl flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0v4M5 11h14l-1 9H6l-1-9z"/></svg>
                             </div>
-                            <p class="mt-2 text-[11px] font-semibold text-gray-400">Infaq</p>
+                            <p class="mt-2 text-[11px] font-semibold text-gray-400">{{ t('Infaq') }}</p>
                         </div>
                     </div>
                 </section>
@@ -398,14 +394,14 @@ function scrollBooks(direction) {
                                     <span v-else class="text-[8px] font-black text-white/80">MW</span>
                                 </div>
                                 <div class="flex flex-col">
-                                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 leading-none">Kad Ahli</p>
+                                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-white/50 leading-none">{{ t('Kad Ahli') }}</p>
                                     <p class="text-[10px] font-semibold text-white/70 leading-tight">myWAP</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2.5 py-1">
                                     <img v-if="member.organization?.logo_path" :src="member.organization.logo_path" :alt="member.organization?.name" class="h-5 w-5 rounded-full object-cover border border-white/30">
-                                    <span class="text-[10px] font-semibold text-white/90 max-w-[90px] truncate">{{ member.organization?.name || 'Organisasi' }}</span>
+                                    <span class="text-[10px] font-semibold text-white/90 max-w-[90px] truncate">{{ member.organization?.name || t('Organisasi') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -429,7 +425,7 @@ function scrollBooks(direction) {
                                 <h3 class="text-lg font-extrabold text-white truncate tracking-tight">{{ member.name }}</h3>
                                 <p class="text-[11px] text-white/50 mt-0.5 font-medium">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 inline -mt-0.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    Ahli sejak {{ member.member_since || '—' }}
+                                    {{ t('Ahli sejak {n}', { n: member.member_since || '—' }) }}
                                 </p>
                                 <div class="flex flex-wrap gap-1.5 mt-2">
                                     <span v-if="member.email" class="inline-flex items-center gap-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 px-2 py-0.5 text-[10px] text-white/80">
@@ -445,20 +441,13 @@ function scrollBooks(direction) {
                         </div>
 
                         <!-- Glassmorphism stats row -->
-                        <div class="grid grid-cols-3 gap-2 mt-4">
+                        <div class="grid grid-cols-2 gap-2 mt-4">
                             <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
-                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Yuran</p>
-                                <div class="flex items-center justify-center gap-1 mt-1">
-                                    <div :class="['w-1.5 h-1.5 rounded-full shrink-0', feeStatus.status === 'active' ? 'bg-emerald-400' : 'bg-red-400']"></div>
-                                    <p class="text-[13px] font-bold">{{ feeStatus.status === 'active' ? 'Aktif' : 'Tunggak' }}</p>
-                                </div>
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">{{ t('Cawangan Ahli') }}</p>
+                                <p class="mt-1 text-[13px] font-bold line-clamp-1">{{ member.branch_name || '—' }}</p>
                             </div>
                             <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
-                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Usrah</p>
-                                <p class="mt-1 text-[13px] font-bold line-clamp-1">{{ usrah?.name || '—' }}</p>
-                            </div>
-                            <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
-                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">Sejak</p>
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">{{ t('Sejak') }}</p>
                                 <p class="mt-1 text-[13px] font-bold">{{ member.member_since || '—' }}</p>
                             </div>
                         </div>
@@ -467,7 +456,7 @@ function scrollBooks(direction) {
                         <div class="mt-4 flex items-center justify-end">
                             <Link :href="route('member.card')" class="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 px-3.5 py-1.5 text-[11px] font-semibold text-white/80 hover:text-white transition-all duration-300 group/btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                Lihat Kad Penuh
+                                {{ t('Lihat Kad Penuh') }}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-transform duration-300 group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                             </Link>
                         </div>
@@ -482,11 +471,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Video</h2>
-                                <p class="text-[11px] text-gray-500">Tonton video terkini</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Video') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Tonton video terkini') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('member.videos.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('member.videos.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <button
@@ -504,7 +493,7 @@ function scrollBooks(direction) {
                                     </div>
                                 </div>
                                 <div class="absolute top-3 left-3 z-10">
-                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-gray-800 shadow-sm">Video</span>
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-gray-800 shadow-sm">{{ t('Video') }}</span>
                                 </div>
                                 <div class="absolute bottom-3 left-3 right-3 z-10">
                                     <h3 class="text-sm font-bold text-white line-clamp-2 drop-shadow-sm">{{ item.title }}</h3>
@@ -522,11 +511,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Kempen Infaq</h2>
-                                <p class="text-[11px] text-gray-500">Salurkan sumbangan anda</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Kempen Infaq') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Salurkan sumbangan anda') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('infaq.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('infaq.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in featuredInfaq" :key="`infaq-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -536,7 +525,7 @@ function scrollBooks(direction) {
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                 <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10">
                                     <span class="inline-flex rounded-full px-1.5 py-0.5 md:px-2 md:py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/20 backdrop-blur-md text-white border border-white/20">
-                                        {{ item.type === 'progress' ? 'Kutipan Dana' : 'Derma Bebas' }}
+                                        {{ item.type === 'progress' ? t('Kutipan Dana') : t('Derma Bebas') }}
                                     </span>
                                     <h3 class="text-xs md:text-sm font-bold text-white mt-1 line-clamp-1 group-hover:underline">{{ item.title }}</h3>
                                 </div>
@@ -544,7 +533,7 @@ function scrollBooks(direction) {
                             <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
                                 <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
                                     <span class="font-semibold" :class="theme.accentText">{{ formatCurrency(item.collected_amount) }}</span>
-                                    <span>daripada {{ formatCurrency(item.target_amount || 0) }}</span>
+                                    <span>{{ t('daripada {n}', { n: formatCurrency(item.target_amount || 0) }) }}</span>
                                 </div>
                                 <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                                     <div class="h-1.5 rounded-full transition-all duration-700" :class="theme.accent" :style="{ width: (item.progress_percent || 0) + '%' }"></div>
@@ -567,11 +556,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Program</h2>
-                                <p class="text-[11px] text-gray-500">Acara dan aktiviti akan datang</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Program') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Acara dan aktiviti akan datang') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('events.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('events.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div v-if="upcomingEvents.length" class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="event in upcomingEvents" :key="`event-${event.id}`" class="w-[170px] h-[230px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -582,7 +571,7 @@ function scrollBooks(direction) {
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                                     <div class="absolute top-2 left-2 md:top-3 md:left-3 z-10">
                                         <span class="inline-flex rounded-full px-1.5 py-0.5 md:px-2 md:py-0.5 text-[10px] font-bold uppercase tracking-wide bg-white/90 backdrop-blur-md text-gray-800 border border-white/20 shadow-sm">
-                                            {{ event.type === 'physical' ? 'Fizikal' : 'Online' }}
+                                            {{ event.type === 'physical' ? t('Fizikal') : 'Online' }}
                                         </span>
                                     </div>
                                     <div class="absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-10 hidden md:block">
@@ -593,12 +582,12 @@ function scrollBooks(direction) {
                                     <h3 class="text-xs font-bold text-gray-900 leading-snug line-clamp-2 block md:hidden mb-1.5">{{ event.title }}</h3>
                                     <div class="block md:hidden space-y-0.5">
                                         <div class="text-[11px] text-gray-500">{{ event.start_formatted }}</div>
-                                        <div class="text-[11px] text-gray-400 truncate">{{ event.type === 'physical' ? (event.location_or_link || 'Fizikal') : 'Online' }}</div>
+                                        <div class="text-[11px] text-gray-400 truncate">{{ event.type === 'physical' ? (event.location_or_link || t('Fizikal')) : 'Online' }}</div>
                                     </div>
                                     <div class="hidden md:flex items-center gap-2 text-[13px] text-gray-500">
                                         <span>{{ event.start_formatted }}</span>
                                         <span class="text-gray-300">·</span>
-                                        <span class="truncate">{{ event.type === 'physical' ? (event.location_or_link || 'Fizikal') : 'Online' }}</span>
+                                        <span class="truncate">{{ event.type === 'physical' ? (event.location_or_link || t('Fizikal')) : 'Online' }}</span>
                                     </div>
                                 </div>
                             </Link>
@@ -610,8 +599,8 @@ function scrollBooks(direction) {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                         </div>
-                        <p class="text-sm font-semibold text-gray-700">Tiada program akan datang</p>
-                        <p class="text-xs text-gray-400 mt-1">Tekan Lihat Semua untuk terokai program lepas</p>
+                        <p class="text-sm font-semibold text-gray-700">{{ t('Tiada program akan datang') }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ t('Tekan Lihat Semua untuk terokai program lepas') }}</p>
                     </div>
                 </section>
 
@@ -623,11 +612,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Undian &amp; Survey</h2>
-                                <p class="text-[11px] text-gray-500">{{ activePolls.filter(p => !p.has_responded).length }} belum dijawab</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Undian & Survey') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('{n} belum dijawab', { n: activePolls.filter(p => !p.has_responded).length }) }}</p>
                             </div>
                         </div>
-                        <Link :href="route('member.polls.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('member.polls.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div class="flex gap-3 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <div v-for="poll in activePolls" :key="poll.id" class="min-w-[280px] md:min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm shrink-0">
@@ -652,24 +641,24 @@ function scrollBooks(direction) {
                                         </div>
                                         <span class="text-[10px] font-semibold text-gray-600 w-6 text-right shrink-0">{{ opt.count }}</span>
                                     </div>
-                                    <p v-if="poll.options_preview.length > 3" class="text-[10px] text-gray-400">+{{ poll.options_preview.length - 3 }} lagi</p>
+                                    <p v-if="poll.options_preview.length > 3" class="text-[10px] text-gray-400">{{ t('+{n} lagi', { n: poll.options_preview.length - 3 }) }}</p>
                                 </div>
 
                                 <div v-else-if="!poll.has_responded && poll.options_preview.length" class="flex flex-wrap gap-1 mb-3">
                                     <span v-for="opt in poll.options_preview.slice(0, 3)" :key="opt.id" class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600">{{ opt.text }}</span>
-                                    <span v-if="poll.options_preview.length > 3" class="rounded-lg border border-dashed border-gray-300 px-2 py-0.5 text-[10px] font-medium text-gray-400">+{{ poll.options_preview.length - 3 }}</span>
+                                    <span v-if="poll.options_preview.length > 3" class="rounded-lg border border-dashed border-gray-300 px-2 py-0.5 text-[10px] font-medium text-gray-400">{{ t('+{n} lagi', { n: poll.options_preview.length - 3 }) }}</span>
                                 </div>
 
                                 <div class="flex items-center justify-between pt-2 border-t border-gray-50">
                                     <div class="flex items-center gap-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         <span class="text-xs font-bold text-gray-700 tabular-nums">{{ poll.response_count }}</span>
-                                        <span class="text-[10px] text-gray-400">respon</span>
+                                        <span class="text-[10px] text-gray-400">{{ t('respon') }}</span>
                                     </div>
                                     <Link :href="poll.has_responded ? route('member.polls.results', poll.id) : route('member.polls.show', poll.id)" :class="['rounded-xl px-3 py-1.5 text-xs font-bold transition-all', poll.has_responded ? 'border border-emerald-200 text-emerald-700' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm hover:shadow-md']">
-                                        <span v-if="poll.has_responded">Lihat Keputusan</span>
+                                        <span v-if="poll.has_responded">{{ t('Lihat Keputusan') }}</span>
                                         <span v-else class="flex items-center gap-1">
-                                            Jawab
+                                            {{ t('Jawab') }}
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                         </span>
                                     </Link>
@@ -679,11 +668,11 @@ function scrollBooks(direction) {
                     </div>
                 </section>
 
-                <!-- ═══ 9. AKTIVITI + 10. STATUS YURAN ═══ -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- ═══ 9. AKTIVITI ═══ -->
+                <div class="grid grid-cols-1 gap-4">
                     <section class="bg-white rounded-3xl p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-sm font-bold text-gray-900">Aktiviti Saya</h2>
+                            <h2 class="text-sm font-bold text-gray-900">{{ t('Aktiviti Saya') }}</h2>
                         </div>
                         <div class="space-y-3">
                             <div class="flex items-center gap-2.5">
@@ -691,8 +680,8 @@ function scrollBooks(direction) {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>
                                 </span>
                                 <div class="min-w-0">
-                                    <p class="text-[11px] text-gray-500">Usrah</p>
-                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ usrah?.name || 'Belum ditetapkan kumpulan' }}</p>
+                                    <p class="text-[11px] text-gray-500">{{ t('Usrah') }}</p>
+                                    <p class="text-sm font-semibold text-gray-800 truncate">{{ usrah?.name || t('Belum ditetapkan kumpulan') }}</p>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between gap-2">
@@ -701,40 +690,15 @@ function scrollBooks(direction) {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="text-[11px] text-gray-500">Tempahan Ruang</p>
-                                        <p class="text-sm font-semibold text-gray-800 truncate">Semak ruang &amp; buat tempahan</p>
+                                        <p class="text-[11px] text-gray-500">{{ t('Tempahan Ruang') }}</p>
+                                        <p class="text-sm font-semibold text-gray-800 truncate">{{ t('Semak ruang & buat tempahan') }}</p>
                                     </div>
                                 </div>
-                                <Link :href="route('member.facilities.index')" class="shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">Tempah</Link>
+                                <Link :href="route('member.facilities.index')" class="shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100">{{ t('Tempah') }}</Link>
                             </div>
                         </div>
                     </section>
 
-                    <section class="bg-white rounded-3xl p-4 shadow-sm">
-                        <div class="flex items-center justify-between gap-2">
-                            <h2 class="text-sm font-bold text-gray-900">Status Yuran</h2>
-                            <Link :href="route('member.financial.overview')" class="text-xs font-semibold" :class="theme.accentText">Bayaran</Link>
-                        </div>
-                        <div class="mt-3 rounded-2xl bg-gray-50 p-4">
-                            <div class="flex items-center justify-between">
-                                <p class="text-xs font-semibold text-gray-700">Yuran Tahunan</p>
-                                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold" :class="feeStatus.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
-                                    {{ feeStatus.status === 'active' ? 'Aktif' : 'Tertunggak' }}
-                                </span>
-                            </div>
-                            <template v-if="feeStatus.status === 'active'">
-                                <p class="mt-3 text-xs text-gray-600">Keahlian anda aktif.</p>
-                                <p v-if="feeStatus.last_reference" class="mt-1.5 text-[11px] font-mono text-gray-400">Ref: {{ feeStatus.last_reference }}</p>
-                            </template>
-                            <template v-else>
-                                <p class="mt-3 text-xs text-gray-600">Yuran tahunan perlu diperbaharui.</p>
-                                <p class="mt-1 text-2xl font-black text-gray-900">{{ formatCurrency(feeStatus.amount_due) }}</p>
-                                <button @click="payFee" :disabled="payForm.processing" :class="[theme.accent, 'mt-3 w-full rounded-xl py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60 shadow-sm']">
-                                    {{ payForm.processing ? 'Memproses...' : 'Bayar Sekarang' }}
-                                </button>
-                            </template>
-                        </div>
-                    </section>
                 </div>
 
                 <!-- ═══ 11. BERITA ═══ -->
@@ -745,11 +709,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Berita Untuk Anda</h2>
-                                <p class="text-[11px] text-gray-500">Ikuti perkembangan terkini</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Berita Untuk Anda') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Ikuti perkembangan terkini') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('news.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Buka Feed</Link>
+                        <Link :href="route('news.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Buka Feed') }}</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -764,7 +728,7 @@ function scrollBooks(direction) {
                                         <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
                                     </div>
                                     <h4 class="mt-1 line-clamp-2 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
-                                    <p class="mt-0.5 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || 'Tekan untuk baca lanjut.' }}</p>
+                                    <p class="mt-0.5 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || t('Tekan untuk baca lanjut.') }}</p>
                                 </div>
                             </Link>
                         </article>
@@ -779,11 +743,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Artikel</h2>
-                                <p class="text-[11px] text-gray-500">Ilmu dan informasi bermanfaat</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Artikel') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Ilmu dan informasi bermanfaat') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('articles.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('articles.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
                         <article v-for="item in latestArticles" :key="`article-${item.id}`" class="w-[170px] h-[220px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
@@ -813,11 +777,11 @@ function scrollBooks(direction) {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                             </div>
                             <div>
-                                <h2 class="text-sm font-bold text-gray-900">Pustaka</h2>
-                                <p class="text-[11px] text-gray-500">Koleksi buku dan rujukan</p>
+                                <h2 class="text-sm font-bold text-gray-900">{{ t('Pustaka') }}</h2>
+                                <p class="text-[11px] text-gray-500">{{ t('Koleksi buku dan rujukan') }}</p>
                             </div>
                         </div>
-                        <Link :href="route('member.library')" class="text-xs font-semibold shrink-0" :class="theme.accentText">Lihat Semua</Link>
+                        <Link :href="route('member.library')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Lihat Semua') }}</Link>
                     </div>
                     <div v-if="libraryBooks.length" class="flex items-center gap-2">
                         <button @click="scrollBooks('left')" class="hidden md:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-base text-gray-500 transition hover:bg-gray-50">‹</button>
@@ -837,7 +801,7 @@ function scrollBooks(direction) {
                         <button @click="scrollBooks('right')" class="hidden md:inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-base text-gray-500 transition hover:bg-gray-50">›</button>
                     </div>
                     <div v-else class="rounded-2xl bg-gray-50 px-4 py-6 text-center text-xs text-gray-500">
-                        Tiada buku terkini dalam pustaka.
+                        {{ t('Tiada buku terkini dalam pustaka.') }}
                     </div>
                 </section>
 
@@ -864,7 +828,7 @@ function scrollBooks(direction) {
                     </div>
                     <p class="mt-3 text-lg font-bold text-white">{{ openVideo.title }}</p>
                     <button @click="closeVideo" class="mt-3 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20 transition">
-                        Tutup
+                        {{ t('Tutup') }}
                     </button>
                 </div>
             </div>

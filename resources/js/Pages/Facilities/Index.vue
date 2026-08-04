@@ -20,6 +20,14 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    isMember: {
+        type: Boolean,
+        default: false,
+    },
+    authUser: {
+        type: Object,
+        default: null,
+    },
 });
 
 const historyStatus = ref(props.historyFilters?.status ?? '');
@@ -53,15 +61,15 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Head title="Tempahan Ruang" />
+    <Head title="Perkhidmatan & Fasiliti" />
 
     <AppLayout>
-        <template #header>Tempahan Ruang</template>
+        <template #header>Tempah Perkhidmatan/Fasiliti</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-black text-gray-900">Senarai Ruang</h1>
-                <p class="mt-1 text-sm text-gray-500">Semua ahli boleh lihat ruang aktif merentas organisasi dan membuat tempahan.</p>
+                <h1 class="text-2xl font-black text-gray-900">Perkhidmatan & Fasiliti</h1>
+                <p class="mt-1 text-sm text-gray-500">Tempah ruang perkhidmatan/fasiliti — ahli dan orang luar boleh membuat tempahan.</p>
             </div>
 
             <div v-if="facilities.length === 0" class="rounded-2xl border border-gray-100 bg-white p-12 text-center">
@@ -118,11 +126,11 @@ onMounted(async () => {
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span class="font-semibold text-gray-700">RM {{ Number(facility.price_per_unit).toFixed(2) }}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                <span>per {{ facility.type === 'daily' ? 'hari' : 'jam' }}</span>
+                                <div>
+                                    <span class="font-semibold text-gray-700">RM {{ Number(facility.price_per_unit).toFixed(2) }}</span>
+                                    <span class="text-gray-400">/ {{ facility.type === 'daily' ? 'hari' : 'jam' }}</span>
+                                    <p v-if="facility.member_price_per_unit != null" class="text-[10px] font-semibold text-emerald-600">Ahli: RM {{ Number(facility.member_price_per_unit).toFixed(2) }}</p>
+                                </div>
                             </div>
                         </div>
 
@@ -139,7 +147,7 @@ onMounted(async () => {
                 </article>
             </div>
 
-            <section id="booking-history" class="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <section v-if="authUser" id="booking-history" class="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                 <h2 class="text-lg font-black text-gray-900">Sejarah Tempahan Saya</h2>
                 <p class="mt-1 text-xs text-gray-500">20 rekod terkini tempahan anda.</p>
 

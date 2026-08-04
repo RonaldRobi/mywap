@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Order;
+use App\Models\User;
 
 class OrderPolicy
 {
@@ -14,9 +14,16 @@ class OrderPolicy
 
     public function view(User $user, Order $order)
     {
-        if ($user->hasRole('Superadmin')) return true;
-        if ($user->hasRole('Admin') && $order->organisasi_id == $user->organisasi_id) return true;
-        if ($order->user_id == $user->id) return true;
+        if ($user->hasRole('Superadmin')) {
+            return true;
+        }
+        if ($user->hasRole('Admin') && $order->organisasi_id == $user->current_organization_id) {
+            return true;
+        }
+        if ($order->user_id == $user->id) {
+            return true;
+        }
+
         return false;
     }
 
@@ -27,8 +34,13 @@ class OrderPolicy
 
     public function update(User $user, Order $order)
     {
-        if ($user->hasRole('Superadmin')) return true;
-        if ($user->hasRole('Admin') && $order->organisasi_id == $user->organisasi_id) return true;
+        if ($user->hasRole('Superadmin')) {
+            return true;
+        }
+        if ($user->hasRole('Admin') && $order->organisasi_id == $user->current_organization_id) {
+            return true;
+        }
+
         return false;
     }
 }

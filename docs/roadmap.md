@@ -1,6 +1,6 @@
 # Roadmap — myWAP (MyMarhalah)
 
-> Last updated: 2026-06-13 (Session 5: Finance One-Stop Center)
+> Last updated: 2026-08-04 (Session 7: Transaction UX + Donor Tracking + Form Builder + Mail Config)
 > Use this file to record architecture decisions, task status, and future plans.
 
 ---
@@ -8,6 +8,10 @@
 ## Status Semasa
 
 - ✅ Fee module complete — lihat `docs/project-status.md`
+- ✅ Transaction detection (search/filter/export) + BayarCash idempotency
+- ✅ Donor tracking & deduplication + global donor pages
+- ✅ Form Builder (borang) module — pengganti Google Forms
+- ✅ Mailer config (resend/smtp/log) dari superadmin panel
 
 ## Architecture Decisions (Session 5: Fee Module)
 
@@ -47,6 +51,18 @@
 - **Mail from address from DB**: `app_settings.mail_from_address` / `mail_from_name` — boleh config dari dashboard.
 - **CSRF token via Inertia shared props**: `HandleInertiaRequests` tambah `csrf_token` untuk fetch() calls.
 - **First-time login detection**: `users.first_login_at` column. Kalau null, kena guna "Log Masuk Kali Pertama" flow.
+
+## Architecture Decisions (Session 7: Transaction UX + Donor + Forms + Mail)
+
+- **Transaction search**: Search by `reference`, `description`, `gateway_ref`, atau `user.name`/`email` (LIKE). Date range via `whereDate`. `withQueryString()` untuk kekalkan filter pada pagination.
+- **CSV export hormat filter**: `PaymentController::exportCsv()` guna filter sama (status/org/type/search/date) — konsisten dengan paparan. Limit 5000 rows.
+- **BayarCash idempotency**: Semua callback (one-time, DD authorization) semak `status` terminal sebelum proses. Elak double-count bila gateway hantar callback pendua. `handleRecurringTransaction` cipta child donation + payment dalam `DB::transaction`.
+- **Donor deduplication**: `DonorService::findOrCreate()` — match guna `user_id` → `email` → `phone` (urutan prioriti). Bukan guna name (boleh tipu/duplicate). `donor_id` nullable FK pada `infaq_donations`.
+- **Donor stats increment**: Bila donation disahkan (bukan masa create), update `total_donated`/`donation_count`/`last_donated_at`. Ini penting untuk pending → confirmed flow (BayarCash).
+- **Form Builder data model**: `forms` (meta) → `form_questions` (JSON options) → `form_responses` (submission) → `form_answers` (value per question). Flat value column (string) dengan `implode(', ')` untuk checkbox — senang export.
+- **Public form access**: `share_token` (32-char rawak) bukan ID numerik — elak enumerasi. Route `/borang/{token}` di luar auth middleware (sesiapa boleh isi). `allow_public` toggle untuk kawal.
+- **Form recipient emails**: `recipient_emails` JSON column. Send via `FormInvitationNotification` (queued, ShouldQueue) guna `Notification::route('mail', $email)`. Template `form_invitation` dalam DB.
+- **Mailer config dari DB**: `app_settings.mail_mailer` (resend/smtp/log). SMTP credentials encrypted cast. `AppServiceProvider` load setiap boot — tak perlu edit `.env` atau restart worker. Test email guna `Mail::raw()`.
 
 ## Task Tracking
 
@@ -123,6 +139,25 @@
 | Table column reorder (No Ahli → Nama → IC) | ✅ Done | Low | UX improvement |
 | FeeDemoSeeder (12 members, various status) | ✅ Done | High | Realistic demo data |
 | 4 migrations baru | ✅ Done | High | proof_to_payments, fee_imports, activity_logs, org_id_activity_logs |
+| **Session 7: Transaction UX + Donor + Forms + Mail** | | | |
+| Transaction search (nama/emel/rujukan) — Admin & Superadmin | ✅ Done | High | LIKE search + withQueryString |
+| Transaction date range filter (Dari/Hingga) | ✅ Done | Medium | whereDate pada created_at |
+| Type badges berwarna + status label BM | ✅ Done | Low | Yuran/Infaq/Pesanan |
+| Export CSV transaksi (hormat filter) | ✅ Done | Medium | Admin + Superadmin routes |
+| BayarCash callback idempotency | ✅ Done | High | Elak double-count/duplikasi |
+| Donor table + model + migration | ✅ Done | High | donors + donor_id FK |
+| DonorService deduplication (user_id/email/phone) | ✅ Done | High | findOrCreate + incrementDonor |
+| Integrasi donor ke InfaqController + BayarCashController | ✅ Done | High | Semua donation auto-link |
+| Global donor pages (senarai + detail) | ✅ Done | High | /admin/donors + /admin/donors/{id} |
+| Backfill command app:backfill-donors | ✅ Done | Medium | Populate data sedia ada |
+| Form Builder migrations + models | ✅ Done | High | 4 tables (forms/questions/responses/answers) |
+| Form Builder controller (CRUD + responses + export) | ✅ Done | High | 9 jenis soalan |
+| Form Builder UI (Builder/Index/Responses/Public) | ✅ Done | High | Reorder, dynamic fields |
+| Public form submission tanpa login | ✅ Done | High | /borang/{token} |
+| Recipient emails + hantar jemputan borang | ✅ Done | Medium | FormInvitationNotification |
+| Mailer config dari superadmin (resend/smtp/log) | ✅ Done | High | mail_mailer + SMTP fields |
+| Test email button | ✅ Done | Medium | Mail::raw + error handling |
+| Navigation links (Borang, Penderma) | ✅ Done | Low | Sidebar Kandungan + Kewangan |
 
 ## Next Steps
 
@@ -136,3 +171,6 @@
 - Receipt/invoice generation for fee payments — auto-send via email
 - Monthly Collection Chart — line/bar trend (current chart is simple)
 - Payment Proof Watermark — overlay sistem authenticity
+- Form Builder enhancements: conditional logic, file upload soalan, drag-and-drop builder, response analytics (charts)
+- Donor recognition/rewards (ranking, tahniah mesej), donor segments
+- WhatsApp/Telegram share untuk borang (QR + link)

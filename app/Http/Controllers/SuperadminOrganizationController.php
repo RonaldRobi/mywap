@@ -22,8 +22,8 @@ class SuperadminOrganizationController extends Controller
             ->orderBy($hasSortOrderColumn ? 'sort_order' : 'min_age')
             ->orderBy('min_age')
             ->get($hasLogoColumn && $hasSortOrderColumn
-                ? ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'logo_path', 'sort_order', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment']
-                : ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment'])
+                ? ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'logo_path', 'sort_order', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment', 'website_url', 'facebook_url', 'instagram_url', 'twitter_url', 'youtube_url', 'tiktok_url']
+                : ['id', 'name', 'slug', 'color_theme', 'min_age', 'max_age', 'bayarcash_api_token', 'bayarcash_portal_key', 'bayarcash_secret_key', 'bayarcash_environment', 'website_url', 'facebook_url', 'instagram_url', 'twitter_url', 'youtube_url', 'tiktok_url'])
             ->map(fn (Organization $organization) => [
                 'id' => $organization->id,
                 'name' => $organization->name,
@@ -38,6 +38,12 @@ class SuperadminOrganizationController extends Controller
                 'bayarcash_portal_key' => $organization->bayarcash_portal_key,
                 'bayarcash_secret_key' => $organization->bayarcash_secret_key,
                 'bayarcash_environment' => $organization->bayarcash_environment,
+                'website_url' => $organization->website_url,
+                'facebook_url' => $organization->facebook_url,
+                'instagram_url' => $organization->instagram_url,
+                'twitter_url' => $organization->twitter_url,
+                'youtube_url' => $organization->youtube_url,
+                'tiktok_url' => $organization->tiktok_url,
             ])
             ->values();
 
@@ -64,6 +70,12 @@ class SuperadminOrganizationController extends Controller
             'bayarcash_portal_key' => ['nullable', 'string', 'max:255'],
             'bayarcash_secret_key' => ['nullable', 'string', 'max:255'],
             'bayarcash_environment' => ['nullable', 'in:sandbox,live'],
+            'website_url' => ['nullable', 'string', 'max:500', 'url'],
+            'facebook_url' => ['nullable', 'string', 'max:500', 'url'],
+            'instagram_url' => ['nullable', 'string', 'max:500', 'url'],
+            'twitter_url' => ['nullable', 'string', 'max:500', 'url'],
+            'youtube_url' => ['nullable', 'string', 'max:500', 'url'],
+            'tiktok_url' => ['nullable', 'string', 'max:500', 'url'],
         ]);
 
         $payload = [
@@ -75,6 +87,12 @@ class SuperadminOrganizationController extends Controller
             'bayarcash_portal_key' => $data['bayarcash_portal_key'] ?? null,
             'bayarcash_secret_key' => $data['bayarcash_secret_key'] ?? null,
             'bayarcash_environment' => $data['bayarcash_environment'] ?? 'sandbox',
+            'website_url' => $data['website_url'] ?? null,
+            'facebook_url' => $data['facebook_url'] ?? null,
+            'instagram_url' => $data['instagram_url'] ?? null,
+            'twitter_url' => $data['twitter_url'] ?? null,
+            'youtube_url' => $data['youtube_url'] ?? null,
+            'tiktok_url' => $data['tiktok_url'] ?? null,
         ];
 
         if ($hasSortOrderColumn) {

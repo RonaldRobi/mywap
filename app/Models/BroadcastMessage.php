@@ -14,6 +14,7 @@ class BroadcastMessage extends Model
     protected $fillable = [
         'organization_id',
         'target_organization_id',
+        'branch_id',
         'title',
         'content',
         'target_criteria',

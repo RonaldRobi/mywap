@@ -1,0 +1,30 @@
+Project source notes for myWAP official progress deck
+
+Audience:
+- Client-side leadership / project stakeholders
+
+Communication job:
+- By the end, stakeholders should understand that the web platform is functionally complete, native app preparation is the next delivery phase, and the remaining balance should be cleared before the September 2026 muktamar.
+
+Primary inputs supplied by user:
+- Project start date: 14 May 2026
+- Status on 4 August 2026: web apps complete, minor polish and testing in progress
+- Next target: native apps setup and upload to App Store / Play Store next week
+- Total project value: RM35,200.00
+- Payments received:
+  - WADAH: RM10,000.00 on 14/05/2026
+  - ABIM: RM2,346.67 on 16/07/2026
+  - PKPIM: RM1,520.00 on 22/07/2026
+- Cost split:
+  - WADAH 50% = RM17,600.00
+  - ABIM 40% = RM14,080.00
+  - PKPIM 10% = RM3,520.00
+
+Codebase audit references:
+- docs/project-status.md
+- docs/roadmap.md
+- routes/web.php
+- resources/js/Pages/*
+- app/Http/Controllers/*
+
+No external research used.

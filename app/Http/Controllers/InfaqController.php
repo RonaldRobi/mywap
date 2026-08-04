@@ -7,6 +7,7 @@ use App\Models\InfaqDonation;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Services\BayarCashService;
+use App\Services\DonorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class InfaqController extends Controller
 {
     public function __construct(
         protected BayarCashService $bayarCashService,
+        protected DonorService $donorService,
     ) {}
 
     // ─── Superadmin: list all infaq ─────────────────────────────────────────
@@ -440,6 +442,13 @@ SVG;
                 'next_billing_date'=> $nextBilling,
                 'recurring_status' => $isRecurring ? 'pending' : null,
             ]);
+
+            // Deduplicate donor
+            $donor = $this->donorService->findOrCreate($donation);
+            $donation->update(['donor_id' => $donor->id]);
+            if (! $useBayarCash && $donation->status === 'confirmed') {
+                $this->donorService->incrementDonor($donor, (float) $data['amount']);
+            }
 
             $paymentRef = ($isRecurring ? 'DDR-' : 'INFQ-') . strtoupper(Str::random(8));
 

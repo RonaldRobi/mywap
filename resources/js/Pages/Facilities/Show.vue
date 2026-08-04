@@ -16,27 +16,57 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    isMember: {
+        type: Boolean,
+        default: false,
+    },
+    authUser: {
+        type: Object,
+        default: null,
+    },
 });
 
 const form = useForm({
-    start_datetime: '',
-    end_datetime: '',
+    date: '',
+    start_time: '',
+    end_time: '',
+    contact_name: props.authUser?.name ?? '',
+    contact_phone: props.authUser?.phone ?? '',
 });
 
-const estimatedPrice = computed(() => {
-    if (!form.start_datetime || !form.end_datetime) return null;
-    const start = new Date(form.start_datetime);
-    const end = new Date(form.end_datetime);
-    if (end <= start) return null;
-    const diffMinutes = Math.ceil((end.getTime() - start.getTime()) / 60000);
-    if (diffMinutes <= 0) return null;
-    const price = Number(props.facility.price_per_unit);
-    if (props.facility.type === 'daily') {
-        const units = Math.ceil(diffMinutes / 1440);
-        return units * price;
+// Kadar harga yang terpakai: ahli → Harga Ahli (jika ditetapkan), selain itu Harga Umum
+const rate = computed(() => {
+    const memberPrice = Number(props.facility.member_price_per_unit);
+    if (props.isMember && props.facility.member_price_per_unit != null && !isNaN(memberPrice)) {
+        return memberPrice;
     }
-    const units = Math.ceil(diffMinutes / 60);
-    return units * price;
+    return Number(props.facility.price_per_unit);
+});
+
+const rateLabel = computed(() =>
+    props.isMember && props.facility.member_price_per_unit != null ? 'Harga Ahli' : 'Harga Umum'
+);
+
+function buildEndDatetime() {
+    if (!form.date || !form.start_time || !form.end_time) return '';
+    const start = new Date(`${form.date}T${form.start_time}`);
+    const end = new Date(`${form.date}T${form.end_time}`);
+    if (end <= start) end.setDate(end.getDate() + 1);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+}
+
+const estimatedPrice = computed(() => {
+    if (!form.date || !form.start_time || !form.end_time) return null;
+    const start = new Date(`${form.date}T${form.start_time}`);
+    let end = new Date(`${form.date}T${form.end_time}`);
+    if (end <= start) end.setDate(end.getDate() + 1);
+    const diffMinutes = Math.ceil((end - start) / 60000);
+    if (diffMinutes <= 0) return null;
+    if (props.facility.type === 'daily') {
+        return Math.ceil(diffMinutes / 1440) * rate.value;
+    }
+    return Math.ceil(diffMinutes / 60) * rate.value;
 });
 
 const lightboxImage = ref(null);
@@ -56,18 +86,27 @@ const allGalleryImages = computed(() => {
 });
 
 function submitBooking() {
-    form.post(route('member.facilities.book', props.facility.id), {
-        preserveScroll: true,
-        onSuccess: () => form.reset(),
-    });
+    if (!form.date || !form.start_time || !form.end_time) return;
+    const endDatetime = buildEndDatetime();
+    if (!endDatetime) return;
+    form
+        .transform((data) => ({
+            ...data,
+            start_datetime: `${form.date}T${form.start_time}`,
+            end_datetime: endDatetime,
+        }))
+        .post(route('member.facilities.book', props.facility.id), {
+            preserveScroll: true,
+            onSuccess: () => form.reset('date', 'start_time', 'end_time'),
+        });
 }
 </script>
 
 <template>
-    <Head :title="`Tempahan - ${facility.name}`" />
+    <Head :title="`Perkhidmatan - ${facility.name}`" />
 
     <AppLayout>
-        <template #header>Tempahan Ruang</template>
+        <template #header>Tempah Perkhidmatan/Fasiliti</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-6">
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -75,7 +114,7 @@ function submitBooking() {
             </div>
 
             <nav class="flex items-center gap-2 text-sm">
-                <Link :href="route('member.facilities.index')" class="font-semibold text-gray-400 hover:text-gray-600 transition-colors">Senarai Ruang</Link>
+                <Link :href="route('member.facilities.index')" class="font-semibold text-gray-400 hover:text-gray-600 transition-colors">Perkhidmatan/Fasiliti</Link>
                 <svg class="h-3.5 w-3.5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 <span class="font-semibold text-gray-900">{{ facility.name }}</span>
             </nav>
@@ -127,7 +166,8 @@ function submitBooking() {
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Harga</p>
                                     <p class="font-semibold text-gray-800">RM {{ Number(facility.price_per_unit).toFixed(2) }}</p>
-                                    <p class="text-[11px] text-gray-400">per {{ facility.type === 'daily' ? 'hari' : 'jam' }}</p>
+                                    <p class="text-[11px] text-gray-400">Harga Umum • per {{ facility.type === 'daily' ? 'hari' : 'jam' }}</p>
+                                    <p v-if="facility.member_price_per_unit != null" class="text-[11px] font-semibold text-emerald-600">Ahli: RM {{ Number(facility.member_price_per_unit).toFixed(2) }}</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-2">
@@ -193,7 +233,7 @@ function submitBooking() {
                         </div>
                     </section>
 
-                    <section class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <section v-if="authUser" class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                         <h2 class="text-lg font-black text-gray-900">Tempahan Saya Untuk Ruang Ini</h2>
                         <div class="mt-4 overflow-x-auto">
                             <table class="min-w-full text-sm">
@@ -239,14 +279,42 @@ function submitBooking() {
                         <h2 class="text-lg font-black text-gray-900">Buat Tempahan</h2>
                         <form class="mt-4 space-y-4" @submit.prevent="submitBooking">
                             <div>
-                                <label class="mb-1.5 block text-xs font-semibold text-gray-500">Masa Mula</label>
-                                <input v-model="form.start_datetime" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" required>
+                                <label class="mb-1.5 block text-xs font-semibold text-gray-500">Tarikh</label>
+                                <input v-model="form.date" type="date" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" required>
                                 <p v-if="form.errors.start_datetime" class="mt-1 text-xs text-red-600">{{ form.errors.start_datetime }}</p>
                             </div>
-                            <div>
-                                <label class="mb-1.5 block text-xs font-semibold text-gray-500">Masa Tamat</label>
-                                <input v-model="form.end_datetime" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" required>
-                                <p v-if="form.errors.end_datetime" class="mt-1 text-xs text-red-600">{{ form.errors.end_datetime }}</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-semibold text-gray-500">Masa Mula</label>
+                                    <input v-model="form.start_time" type="time" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" required>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-semibold text-gray-500">Masa Tamat</label>
+                                    <input v-model="form.end_time" type="time" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" required>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-gray-400">Jika masa tamat lebih awal daripada masa mula, ia dianggap tamat pada keesokan hari.</p>
+
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-semibold text-gray-500">Nama</label>
+                                    <input v-model="form.contact_name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" :required="!isMember" placeholder="Nama penuh anda">
+                                    <p v-if="form.errors.contact_name" class="mt-1 text-xs text-red-600">{{ form.errors.contact_name }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-semibold text-gray-500">Nombor Telefon</label>
+                                    <input v-model="form.contact_phone" type="tel" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-500 focus:ring-0" :required="!isMember" placeholder="01X-XXXXXXX">
+                                    <p v-if="form.errors.contact_phone" class="mt-1 text-xs text-red-600">{{ form.errors.contact_phone }}</p>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl bg-gray-50 px-4 py-3 text-xs text-gray-500">
+                                <span class="font-semibold">{{ rateLabel }}</span>:
+                                <span class="font-bold text-gray-800">RM {{ rate.toFixed(2) }}</span>
+                                per {{ facility.type === 'daily' ? 'hari' : 'jam' }}
+                                <span v-if="!isMember && facility.member_price_per_unit != null" class="block mt-1 text-emerald-600">
+                                    💡 Log masuk sebagai ahli untuk Harga Ahli (RM {{ Number(facility.member_price_per_unit).toFixed(2) }}).
+                                </span>
                             </div>
 
                             <div v-if="estimatedPrice !== null" class="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
@@ -265,7 +333,7 @@ function submitBooking() {
             <div class="pb-4">
                 <Link :href="route('member.facilities.index')" class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                    Kembali ke Senarai Ruang
+                    Kembali ke Perkhidmatan/Fasiliti
                 </Link>
             </div>
         </div>

@@ -14,6 +14,7 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'member_price',
         'postage_cost',
         'stock',
         'category_id',

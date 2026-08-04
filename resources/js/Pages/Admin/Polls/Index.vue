@@ -74,6 +74,7 @@ function handleDelete() {
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-1">
                                     <a :href="route('admin.polls.results', poll.id)" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">Keputusan</a>
+                                    <a :href="route('admin.polls.qr', poll.id)" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">QR</a>
                                     <a v-if="poll.response_count === 0" :href="route('admin.polls.edit', poll.id)" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">Edit</a>
                                     <a :href="route('admin.polls.export', poll.id)" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-100">CSV</a>
                                     <button @click="confirmDelete(poll.id)" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50">Padam</button>

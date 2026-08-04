@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class EventController extends Controller
@@ -118,6 +119,7 @@ class EventController extends Controller
             'featured_image_url'  => $event->featured_image_url,
             'google_calendar_url' => $event->google_calendar_url,
             'organization'        => [
+                'id'          => $event->organization?->id ?? null,
                 'name'        => $event->organization?->name ?? 'Semua Organisasi',
                 'slug'        => $event->organization?->slug ?? 'semua',
                 'color_theme' => $event->organization?->color_theme ?? '#334155',
@@ -143,7 +145,10 @@ class EventController extends Controller
         $search = $request->input('search');
         $typeFilter = $request->input('type');
 
-        $query = Event::with(['organization', 'rsvps.user']);
+        $query = Event::with([
+            'organization',
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScopes(),
+        ]);
 
         if ($tab === 'past') {
             $query->where('start_time', '<', now())->orderBy('start_time', 'desc');
@@ -237,7 +242,10 @@ class EventController extends Controller
     {
         $user = $request->user();
 
-        $event = Event::with(['organization', 'rsvps.user'])
+        $event = Event::with([
+            'organization',
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScopes(),
+        ])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -344,7 +352,7 @@ class EventController extends Controller
 
         $event->update([
             'organization_id'    => $isSuperadmin
-                ? ($data['organization_id'] ?? null)
+                ? ($data['organization_id'] ?: null)
                 : $event->organization_id,
             'title'              => $data['title'],
             'description'        => $data['description'] ?? null,
@@ -387,7 +395,7 @@ class EventController extends Controller
 
         Event::create([
             'organization_id' => $isSuperadmin
-                ? ($data['organization_id'] ?? null)
+                ? ($data['organization_id'] ?: null)
                 : (int) $request->user()->current_organization_id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
@@ -483,6 +491,84 @@ class EventController extends Controller
     }
 
     /**
+     * downloadQr()
+     *
+     * Returns the attendance QR code as a downloadable PNG image.
+     * Prefers the Imagick backend when available, otherwise falls back to a
+     * pure-GD renderer so PNG export works even without Imagick installed.
+     */
+    public function downloadQr(Event $event): \Symfony\Component\HttpFoundation\Response
+    {
+        $png = extension_loaded('imagick')
+            ? QrCode::format('png')
+                ->size(1024)
+                ->margin(2)
+                ->errorCorrection('H')
+                ->generate($event->attendance_url)
+            : $this->qrPngGd($event->attendance_url, 1024, 4, 'H');
+
+        $filename = 'qr-' . Str::slug($event->title) . '-' . $event->id . '.png';
+
+        return response($png, 200, [
+            'Content-Type'        => 'image/png',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * qrPngGd()
+     *
+     * Renders a QR code to PNG using only the GD extension (no Imagick).
+     * Reads the module matrix from BaconQrCode and draws it with GD primitives.
+     */
+    private function qrPngGd(string $text, int $size = 1024, int $margin = 4, string $errorCorrection = 'H'): string
+    {
+        $ecLevel = match (strtoupper($errorCorrection)) {
+            'L' => \BaconQrCode\Common\ErrorCorrectionLevel::L(),
+            'M' => \BaconQrCode\Common\ErrorCorrectionLevel::M(),
+            'Q' => \BaconQrCode\Common\ErrorCorrectionLevel::Q(),
+            default => \BaconQrCode\Common\ErrorCorrectionLevel::H(),
+        };
+
+        $matrix = \BaconQrCode\Encoder\Encoder::encode($text, $ecLevel)->getMatrix();
+        $modules = $matrix->getWidth();
+        $total = $modules + ($margin * 2);
+
+        $scale = (int) floor($size / $total);
+        if ($scale < 1) {
+            $scale = 1;
+        }
+        $pixelSize = $total * $scale;
+
+        $image = imagecreatetruecolor($pixelSize, $pixelSize);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $black = imagecolorallocate($image, 0, 0, 0);
+        imagefilledrectangle($image, 0, 0, $pixelSize, $pixelSize, $white);
+
+        for ($y = 0; $y < $modules; $y++) {
+            for ($x = 0; $x < $modules; $x++) {
+                if ($matrix->get($x, $y)) {
+                    imagefilledrectangle(
+                        $image,
+                        ($x + $margin) * $scale,
+                        ($y + $margin) * $scale,
+                        (($x + $margin) * $scale) + $scale - 1,
+                        (($y + $margin) * $scale) + $scale - 1,
+                        $black
+                    );
+                }
+            }
+        }
+
+        ob_start();
+        imagepng($image);
+        $png = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $png;
+    }
+
+    /**
      * recordAttendance()
      *
      * The endpoint embedded in the QR code URL.
@@ -537,9 +623,28 @@ class EventController extends Controller
     {
         $rsvps = $event->rsvps()
             ->attended()
-            ->with('user:id,name,phone,email')
+            ->with(['user:id,name,phone,email' => fn ($q) => $q->withoutGlobalScopes()])
             ->get();
 
         return view('events.print-attendance', compact('event', 'rsvps'));
+    }
+
+    /**
+     * destroy()
+     *
+     * Soft-deletes an event.  Only the owning admin/superadmin can delete.
+     */
+    public function destroy(Request $request, Event $event): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user->hasRole('Superadmin') || $event->organization_id === (int) $user->current_organization_id,
+            403
+        );
+
+        $event->delete();
+
+        return redirect()->route('events.index')->with('success', 'Program berjaya dipadam.');
     }
 }

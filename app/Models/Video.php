@@ -15,7 +15,13 @@ class Video extends Model
         'title',
         'youtube_url',
         'youtube_id',
+        'is_live',
     ];
+
+    protected function casts(): array
+    {
+        return ['is_live' => 'boolean'];
+    }
 
     public function organization(): BelongsTo
     {

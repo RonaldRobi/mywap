@@ -1,6 +1,6 @@
 # Project Status — myWAP (MyMarhalah)
 
-> Last updated: 2026-06-13 (Session 6: Public Registration + Referral System)
+> Last updated: 2026-08-04 (Session 7: Transaction UX + Donor Tracking + Form Builder + Mail Config)
 > Stack: Laravel 12 + Vue 3 (Inertia) + TailwindCSS 3 + SQLite (dev)
 
 ---
@@ -56,8 +56,10 @@
 ### Infaq (Donations)
 - Campaign CRUD (superadmin)
 - Public listing with calendar-date URLs
-- Donation form: FPX redirect (ToyyibPay), anonymous toggle, prayer message
+- Donation form: BayarCash FPX redirect, anonymous toggle, prayer message
+- Recurring donations via BayarCash Direct Debit (bulanan/mingguan/tahunan)
 - Success/thank-you page
+- Donor tracking & deduplication (lihat seksyen Donor Tracking di atas)
 
 ### Referral System (Ahli Jemput)
 - Public referral link: `/daftar?ref={member_no}` — auto-fill "Dirujuk Oleh" dalam registration form
@@ -69,11 +71,12 @@
 - `referred_by_user_id` FK pada users table — track siapa rujuk siapa
 
 ### Email Notifications (Registration)
-- 3 email templates guna DB `email_templates` (editable dari superadmin):
+- 4 email templates guna DB `email_templates` (editable dari superadmin):
   - `registration_received` — hantar ke user lepas submit form (sebelum bayar)
   - `registration_activated` — hantar ke user lepas payment success (welcome + login link)
   - `new_member_alert` — hantar ke admin contact lepas ahli baru daftar + bayar
-- Guna `AppServiceProvider::configureMailFromSettings()` — Resend mail runtime config
+  - `form_invitation` — hantar jemputan borang ke emel penerima (dengan button "Buka Borang")
+- Guna `AppServiceProvider::configureMailFromSettings()` — mail runtime config (resend/smtp/log) dari DB
 
 ### E-Commerce
 - Products CRUD (categories, images, search, stock)
@@ -113,6 +116,44 @@
 - **Clickable Names** — opens slide-over with member's complete financial history
 - **Export (PDF/Excel/CSV)** — comprehensive PDF report with cover + stats + table + signature
 - **Filter by Year + Organization** — superadmin scope
+
+### Transaction Detection & Management ✅
+- **Search box** — cari transaksi ikut nama ahli, emel, rujukan, atau description (Admin & Superadmin)
+- **Date range filter** — Dari/Hingga untuk sempitkan julat tarikh
+- **Type badges berwarna** — Yuran (biru), Infaq (hijau), Pesanan (ungu) untuk kenal pasti jenis transaksi sepintas lalu
+- **Status label BM** — Menunggu / Berjaya / Gagal / Dipulangkan (ganti value raw)
+- **Export CSV** — button pada kedua-dua halaman (`admin.transactions.export.csv`, `superadmin.transactions.export.csv`), hormat semua filter aktif
+- **BayarCash callback idempotency** — callback pendua tidak diproses semula jika payment sudah `successful`/`failed`/`refunded` (elak double-count, duplikasi donasi)
+
+### Donor Tracking & Management ✅
+- **Donor model + table** — rekod penderma unik merentas semua kempen infaq
+- **Auto-deduplikasi** — `DonorService::findOrCreate()` padankan guna `user_id` → `email` → `phone`
+- **Statistik penderma** — `total_donated`, `donation_count`, `last_donated_at` di-increment setiap donation disahkan (termasuk kitaran recurring)
+- **Halaman Senarai Penderma** (`/admin/donors`) — search (nama/emel/telefon), sort (tertinggi/terkini/kerap), 4 summary cards
+- **Halaman Detail Penderma** (`/admin/donors/{donor}`) — profil, statistik (jumlah/disahkan/kerap/berkala), sejarah sumbangan penuh dengan pautan ke kempen
+- **Backfill command** — `php artisan app:backfill-donors` untuk populate donor dari data InfaqDonation sedia ada
+- **Integrasi** — `InfaqController`, `BayarCashController` (authorization, recurring transaction) auto-link `donor_id` ke setiap donation
+
+### Form Builder (Borang) ✅
+- **Pengganti Google Forms** — bina borang tersuai terus dalam sistem (selesaikan aduan "GForm terlampau banyak")
+- **9 jenis soalan** — text, textarea, number, email, phone, date, select, radio, checkbox
+- **Konfigurasi soalan** — options, required, placeholder, help_text, sort order (move up/down), add/remove
+- **Attach ke Program** — `event_id` pada form untuk kaitkan borang dengan event/program tertentu
+- **Attach ke Pertubuhan** — `organization_id` (Superadmin boleh assign, Admin auto-scoped)
+- **Public link** — `/borang/{token}` (share_token 32-char rawak), tak perlu login untuk isi
+- **Emel penerima** — senarai `recipient_emails` (JSON), hantar borang terus ke emel AJK/penyertaan via `FormInvitationNotification` (Resend/SMTP)
+- **Response viewer** — `/admin/forms/{form}/responses` — jadual semua jawapan paginated
+- **Export CSV** respons — `admin.forms.export`
+- **UI** — `Admin/Forms/Index` (senarai + Jawapan/Hantar/Edit/Padam), `Admin/Forms/Builder` (drag-reorder, dynamic fields), `Admin/Forms/Responses`, `Forms/Public` (public submission)
+- **Sidebar** — link "Borang" bawah seksyen Kandungan (Admin/Superadmin)
+
+### Mail Configuration from Superadmin Panel ✅
+- **Kaedah penghantaran** — dropdown `mail_mailer`: `resend` | `smtp` | `log` (ganti `MAIL_MAILER` dalam `.env`)
+- **SMTP fields** — host, port, username, password (encrypted cast), encryption (TLS/SSL/Tiada)
+- **Resend API key** — password field, kekal jika dikosongkan
+- **From address/name** — `mail_from_address` / `mail_from_name`
+- **Test email button** — hantar emel ujian ke sebarang emel untuk sahkan konfigurasi
+- **Dynamic config** — `AppServiceProvider::configureMailFromSettings()` baca dari DB setiap boot — terpakai untuk request + queued mail (tak perlu restart worker)
 
 ### Superadmin Tools
 
@@ -186,7 +227,7 @@
 
 ---
 
-## 🗄️ Database Schema (53 migrations)
+## 🗄️ Database Schema (133 migrations)
 
 ### Core
 - `users` — name, email, ic_number, password, phone, dob, gender, marital_status, current_organization_id, branch_id, referred_by_user_id, profile_completed_at, education_level, profession, industry, member_no, wadah_state, address fields, postcode, city, state, emergency_contact_name, emergency_contact_phone, position, topics, legacy fields
@@ -211,7 +252,16 @@
 
 ### Infaq
 - `infaq` — org, title, slug, type, target_amount, collected_amount, is_active, display_order
-- `infaq_donations` — infaq_id, user_id, amount, status, donor info, prayer_message, is_anonymous, wants_updates
+- `infaq_donations` — infaq_id, user_id, **donor_id**, amount, status, donor info, prayer_message, is_anonymous, wants_updates
+
+### Donors
+- `donors` — name, email, phone, user_id, total_donated, donation_count, last_donated_at
+
+### Forms (Borang)
+- `forms` — organization_id, event_id, title, slug, description, is_active, allow_public, share_token, header_image_path, **recipient_emails** (JSON, soft deletes)
+- `form_questions` — form_id, label, type, options (JSON), required, placeholder, help_text, sort_order
+- `form_responses` — form_id, user_id (nullable), respondent_name/email/phone, submitted_at
+- `form_answers` — form_response_id, form_question_id, value (unique per response+question)
 
 ### E-Commerce
 - `categories` — name, description
@@ -239,7 +289,7 @@
 - `postcodes` — postcode (PK), city, state, country (auto-detect lokasi dari poskod)
 
 ### System
-- `app_settings` — singleton: system_logo, splash, admin_contact_email/phone, resend_api_key, mail_from_address/name
+- `app_settings` — singleton: system_logo, splash, admin_contact_email/phone, resend_api_key, gemini_api_key, mail_from_address/name, **mail_mailer**, **mail_smtp_host/port/username/password/encryption**
 - `otp_codes` — user_id, code (6-digit), purpose (login|email_verify), expires_at, used_at
 - `email_templates` — key (unique), subject, body (with {{name}} {{code}} {{purpose}} placeholders)
 - `membership_fees` — user_id, organization_id, year, amount, status (paid/unpaid/exempted/life_member), paid_at, payment_id, notes (tracking yuran tahunan)
@@ -270,9 +320,10 @@
 | Auth | Landing (single login form + first-time + forgot-id inline), Register, RegisterPayment, ForgotPassword, ResetPassword, ConfirmPassword, VerifyEmail |
 | Member | Dashboard, CompleteProfile, Card, Announcements, Library, InformationHub, InfaqShow, Financial/Overview, Referral |
 | Admin | Dashboard, BranchManage, Broadcasts, FacilitiesManage, FacilityBookings, InfoManage, InformationHubManage (stats bar, simplified table, slide-over panel), LibraryManage, Transactions, ArticleManage |
-| Superadmin | SystemSettings (Resend API key + mail from address + admin contact), Transactions, InfaqManage, BannerManage, LogoSettings, Fees, OrganizationManage |
+| Superadmin | SystemSettings (mailer config + Resend/SMTP + test email + admin contact), Transactions, InfaqManage, BannerManage, LogoSettings, Fees, OrganizationManage |
 | Admin | EmailTemplates (subject + body + placeholder guide) |
-| Public | Welcome, Landing, Dashboard |
+| Admin | **Forms/Index**, **Forms/Builder**, **Forms/Responses**, **Donors/Index**, **Donors/Show** |
+| Public | Welcome, Landing, Dashboard, **Forms/Public** (borang submission) |
 | Ecommerce | Products/Index, Products/Show, Products/Create, Products/Edit, Categories/Index, Categories/Create, Categories/Edit, Orders/Index, Orders/Show |
 | Events | Index, AdminAttendance, ShowQr, AttendanceSuccess |
 | Articles | Index, Show |
@@ -288,26 +339,26 @@
 ## 📂 App Structure
 
 | Layer | Count |
-|---|---|---|
-| Controllers (main) | **30** | (AdminFinanceController, MemberFeeController added) |
+|---|---|
+| Controllers (main) | **42** | (AdminFinanceController, MemberFeeController, DonorController, FormController added) |
 | Auth Controllers | 9 |
-| Models | **35** | (FeeImport, ActivityLog, EmailTemplate, OtpCode added) |
+| Models | **63** | (Donor, Form, FormQuestion, FormResponse, FormAnswer added) |
 | Policies | 3 (Product, Category, Order) |
 | Middleware | 2 (HandleInertiaRequests, EnsureProfileIsComplete) |
 | Jobs | 2 (ProcessMembersImport, SendBroadcastJob) |
-| Notifications | **6** | (GeneralBroadcast, MemberTransition, OtpEmail, RegistrationReceived, RegistrationActivated, NewMemberAlert) |
+| Notifications | **9** | (AnnouncementPublished, FeeReminder, FormInvitation, GeneralBroadcast, MemberTransition, NewMemberAlert, OtpEmail, RegistrationActivated, RegistrationReceived) |
 | Events | 1 (UserOrganizationTransitioned) |
 | Listeners | 1 (LogTransitionAndNotify) |
-| Console Commands | **2** | (ProcessAgeTransitions, **GenerateFees**) |
+| Console Commands | **7** | (ProcessAgeTransitions, GenerateFees, BackfillDonors, ImportAbim, ImportPkpim, NotifyAnnualFees, ResetSequences) |
 | Form Requests | 2 (ProfileUpdate, Login) |
 | Imports | **2** | (MembersImport, **FeeImport**) |
-| Services | **2** (FeeService, OtpService) |
+| Services | **4** | (FeeService, OtpService, DonorService, BayarCashService) |
 | Seeders | **25** | (+ **FeeDemoSeeder**) |
 | Sample CSVs | 1 |
-| Blade Views | 7 | (**exports/finance-report.blade.php**, exports/receipt.blade.php added) |
+| Blade Views | **11** | (7 emails incl. form-invitation, 4 exports) |
 | **Enums** | **1** | (**FeeStatus**) |
-| Vue Components | **23** | (**ToastNotification**, **ConfirmDialog** added) |
-| Vue Pages | **~54** | (**Admin/Finance/Index**, **Auth/RegisterPayment**, **Member/Referral** added) |
+| Vue Components | **31** | (**ToastNotification**, **ConfirmDialog** added) |
+| Vue Pages | **100** | (Forms/Index, Forms/Builder, Forms/Responses, Donors/Index, Donors/Show, Forms/Public added) |
 
 ---
 
@@ -320,9 +371,9 @@
 Codebase bersih — tiada TODO/FIXME/HACK aktif dalam source code.
 
 ### Planned (Next)
-- Payment Gateway integration per organization (Bayarcash/ToyyibPay/Billplz)
+- Payment Gateway architecture per org (Bayarcash/ToyyibPay/Billplz — resolver interface)
 - Dual-role popup: bila user ada Admin + Member roles, bagi pilih nak log masuk sebagai mana
-- Email template test button: hantar test email dari dashboard
+- Form Builder enhancements: conditional logic (tunjuk/sembunyi soalan), file upload soalan, drag-and-drop builder
 
 ---
 
@@ -350,7 +401,7 @@ Codebase bersih — tiada TODO/FIXME/HACK aktif dalam source code.
 - **OTP auth flow:** Hanya untuk first-time setup. Guna `otp_codes` table (6-digit, 5 min expiry). Hantar via Resend. Bukan untuk login harian — lepas setup, guna password macam biasa.
 - **Single login form:** Satu input identifier (auto-detect email vs IC). Backend `LoginRequest::authenticate()` try email dulu, then IC/member_no. First-time user yang belum login dapat error khas "Guna Log Masuk Kali Pertama".
 - **CSRF dengan fetch():** `HandleInertiaRequests` share `csrf_token` dalam props. Vue baca dari `usePage().props.csrf_token` dan hantar sebagai `X-CSRF-TOKEN` header.
-- **Dynamic mail config:** `AppServiceProvider::configureMailFromSettings()` baca `app_settings.resend_api_key` + `mail_from_*` dan set config runtime.
+- **Dynamic mail config:** `AppServiceProvider::configureMailFromSettings()` baca `app_settings` (resend_api_key, mail_from_*, **mail_mailer**, **mail_smtp_\***) dan set config runtime setiap boot. Menyokong mailer: `resend` / `smtp` / `log`. Terpakai untuk request biasa dan queued mail.
 - **FeeService pattern:** Service layer pisahkan logic yuran dari controller. `getStatus()` cached by year, `isLifeMember()`/`isExempted()` check across ALL years (perpetual). `markAsPaid/lifeMember/exempted` cleanup unpaid records. `getDueCount()` exclude life_member + exempted across years.
 - **FeeStatus Enum:** PHP 8.1 backed string enum (`unpaid/paid/exempted/life_member`). Cast dalam MembershipFee model. Pencegahan data corruption via type safety.
 - **CSV Import Flow:** Upload → preview (check each user: not_found/exempted/already_paid/ready) → confirm → process in batches. Setiap row match guna IC + (member_no OR original_member_no). Org-scoped.
@@ -360,3 +411,7 @@ Codebase bersih — tiada TODO/FIXME/HACK aktif dalam source code.
 - **Reusable Vue Components:** `ToastNotification.vue` — stacked toasts with auto-dismiss + animations. `ConfirmDialog.vue` — promise-based modal confirm with variant support (danger/primary). Kedua-dua boleh guna di mana-mana component.
 - **Admin Finance Dashboard:** Merged view of `payments` + `infaq_donations` → unified revenue dashboard. Chart.js untuk monthly bar + source donut charts. Comprehensive PDF report (cover → stats → table → signature). Clickable member names open financial history slide-over.
 - **Email templates:** Table `email_templates` dengan key unik. Subject + body stored. Support placeholders `{{name}}`, `{{code}}`, `{{purpose}}`. Boleh edit dari superadmin panel.
+- **BayarCash idempotency:** Callback & direct-debit authorization semak status terminal (`successful`/`failed`/`refunded`) sebelum proses — callback pendua dari gateway tidak akan double-count atau duplikasi donasi/fee.
+- **Donor deduplication:** `DonorService::findOrCreate()` padankan `user_id` → `email` → `phone` (prioriti berurutan). `incrementDonor()` kemas kini total_donated/donation_count/last_donated_at bila donation disahkan.
+- **Form Builder:** Borang guna `share_token` (32-char rawak) untuk public access — URL `/borang/{token}`. Responses disimpan secara berasingan (`form_responses` + `form_answers`) untuk fleksibiliti query & export. `recipient_emails` (JSON) untuk hantar jemputan borang via email.
+- **Mailer config dari DB:** `app_settings.mail_mailer` menentukan driver aktif (resend/smtp/log). SMTP credentials disimpan encrypted cast. Butang test email guna `Mail::raw()` untuk sahkan konfigurasi sebenar.

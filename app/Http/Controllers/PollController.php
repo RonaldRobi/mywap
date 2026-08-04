@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PollController extends Controller
 {
@@ -138,6 +139,58 @@ class PollController extends Controller
 
         return redirect()->route('member.polls.results', $poll->id)
             ->with('success', 'Undian berjaya dihantar.');
+    }
+
+    // ─── Public (anonymous) poll feedback — program poster QR ─────────────────
+
+    public function publicShow(Request $request, Poll $poll): Response
+    {
+        abort_unless($poll->isAvailable(), 404);
+
+        $poll->load(['questions' => fn ($q) => $q->orderBy('sort_order'), 'questions.options' => fn ($o) => $o->orderBy('sort_order')]);
+
+        return Inertia::render('Polls/PublicShow', [
+            'poll' => $this->serializePollForMember($poll),
+        ]);
+    }
+
+    public function publicRespond(Request $request, Poll $poll): RedirectResponse
+    {
+        abort_unless($poll->isAvailable(), 404);
+
+        $validated = $request->validate([
+            'answers' => ['required', 'array'],
+            'answers.*.question_id' => ['required', 'exists:poll_questions,id'],
+            'answers.*.option_ids' => ['required', 'array', 'min:1'],
+            'answers.*.option_ids.*' => ['exists:poll_options,id'],
+        ]);
+
+        $questionIds = $poll->questions()->pluck('id')->toArray();
+        $submittedQuestionIds = collect($validated['answers'])->pluck('question_id')->unique()->toArray();
+        $missing = array_diff($questionIds, $submittedQuestionIds);
+        abort_if(!empty($missing), 422, 'Not all questions answered.');
+
+        DB::transaction(function () use ($poll, $validated) {
+            $response = PollResponse::create([
+                'user_id' => null,
+                'poll_id' => $poll->id,
+                'organization_id' => $poll->organization_id,
+                'submitted_at' => now(),
+            ]);
+
+            foreach ($validated['answers'] as $answer) {
+                foreach ($answer['option_ids'] as $optionId) {
+                    PollAnswer::create([
+                        'poll_response_id' => $response->id,
+                        'poll_question_id' => $answer['question_id'],
+                        'poll_option_id' => $optionId,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('polls.public.show', $poll->id)
+            ->with('success', 'Maklum balas anda berjaya dihantar. Terima kasih!');
     }
 
     public function results(Request $request, Poll $poll): Response
@@ -448,9 +501,9 @@ class PollController extends Controller
         });
 
         $respondents = $poll->responses->map(fn($r) => [
-            'id' => $r->user_id,
-            'name' => $r->user?->name ?? 'Ahli Dibuang',
-            'email' => $r->user?->email ?? '-',
+            'id' => $r->user_id ?? 'anon-' . $r->id,
+            'name' => $r->user_id ? ($r->user?->name ?? 'Ahli Dibuang') : 'Tanpa Nama',
+            'email' => $r->user_id ? ($r->user?->email ?? '-') : '-',
             'submitted_at' => $r->submitted_at->format('d/m/Y H:i'),
         ]);
 
@@ -496,8 +549,8 @@ class PollController extends Controller
 
             foreach ($poll->responses as $response) {
                 $row = [
-                    $response->user?->name ?? 'Ahli Dibuang',
-                    $response->user?->email ?? '-',
+                    $response->user_id ? ($response->user?->name ?? 'Ahli Dibuang') : 'Tanpa Nama',
+                    $response->user_id ? ($response->user?->email ?? '-') : '-',
                     $response->submitted_at->format('d/m/Y H:i'),
                 ];
 
@@ -525,6 +578,60 @@ class PollController extends Controller
 
         return response()->streamDownload($callback, $filename, [
             'Content-Type' => 'text/csv; charset=utf-8',
+        ]);
+    }
+
+    /**
+     * adminQr()
+     *
+     * Displays the program-feedback QR code for a poll. The public URL points
+     * to the anonymous response page so participants can scan the code from a
+     * printed poster without needing to log in.
+     */
+    public function adminQr(Request $request, Poll $poll): Response
+    {
+        $user = $request->user();
+        abort_unless($user->hasRole('Superadmin') || $poll->organization_id === (int) $user->current_organization_id, 403);
+
+        $publicUrl = route('polls.public.show', $poll->id);
+
+        $qrSvg = QrCode::format('svg')
+            ->size(320)
+            ->errorCorrection('H')
+            ->generate($publicUrl);
+
+        return Inertia::render('Admin/Polls/Qr', [
+            'poll' => [
+                'id' => $poll->id,
+                'title' => $poll->title,
+            ],
+            'qrSvg' => (string) $qrSvg,
+            'publicUrl' => $publicUrl,
+        ]);
+    }
+
+    /**
+     * adminQrPng()
+     *
+     * Downloadable high-resolution PNG of the poll QR code, sized for printing
+     * on program posters.
+     */
+    public function adminQrPng(Request $request, Poll $poll): StreamedResponse
+    {
+        $user = $request->user();
+        abort_unless($user->hasRole('Superadmin') || $poll->organization_id === (int) $user->current_organization_id, 403);
+
+        $publicUrl = route('polls.public.show', $poll->id);
+
+        $png = QrCode::format('png')
+            ->size(600)
+            ->margin(2)
+            ->generate($publicUrl);
+
+        return response()->streamDownload(function () use ($png) {
+            echo $png;
+        }, 'undian-' . Str::slug($poll->title) . '-qr.png', [
+            'Content-Type' => 'image/png',
         ]);
     }
 

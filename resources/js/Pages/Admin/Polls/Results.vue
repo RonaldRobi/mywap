@@ -107,6 +107,7 @@ const showRespondents = ref(false);
 
             <div class="flex items-center gap-4">
                 <a :href="route('admin.polls.index')" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700">Kembali</a>
+                <a :href="route('admin.polls.qr', poll.id)" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700">QR</a>
                 <a :href="route('admin.polls.export', poll.id)" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white">Export CSV</a>
             </div>
         </div>

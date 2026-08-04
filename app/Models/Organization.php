@@ -38,6 +38,12 @@ class Organization extends Model
         'bayarcash_portal_key',
         'bayarcash_secret_key',
         'bayarcash_environment',
+        'website_url',
+        'facebook_url',
+        'instagram_url',
+        'twitter_url',
+        'youtube_url',
+        'tiktok_url',
     ];
 
     protected function casts(): array

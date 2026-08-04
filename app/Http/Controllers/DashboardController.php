@@ -158,7 +158,7 @@ class DashboardController extends Controller
 
         $programChart = [
             ['label' => 'Program', 'value' => $eventsCount],
-            ['label' => 'Campaigns', 'value' => $activeCampaigns->count()],
+            ['label' => 'Kempen', 'value' => $activeCampaigns->count()],
             ['label' => 'Infaq', 'value' => $infaqCount],
         ];
 
@@ -188,10 +188,18 @@ class DashboardController extends Controller
             })
             ->count();
 
-        $activeBranches = Branch::query()
-            ->where('is_active', true)
-            ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
-            ->count();
+        $membersByState = User::withoutGlobalScopes()
+            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
+            ->selectRaw('COALESCE(NULLIF(state, ""), "Tidak Dinyatakan") as state, COUNT(*) as total')
+            ->groupBy('state')
+            ->orderByDesc('total')
+            ->orderBy('state')
+            ->get()
+            ->map(fn ($row) => [
+                'state' => $row->state,
+                'count' => (int) $row->total,
+            ])
+            ->values();
 
         $activeMembers = User::withoutGlobalScopes()
             ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
@@ -225,27 +233,13 @@ class DashboardController extends Controller
                 ->count()
             : $feeService->getDueCount($user->current_organization_id, $year);
 
-        $topBranches = Branch::query()
-            ->with(['organization:id,name,slug'])
-            ->withCount('members')
-            ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
-            ->orderByDesc('members_count')
-            ->orderBy('name')
-            ->take(6)
-            ->get()
-            ->map(fn (Branch $branch) => [
-                'id' => $branch->id,
-                'name' => $branch->name,
-                'organization_name' => $branch->organization?->name ?? 'Organisasi',
-                'state' => $branch->state,
-                'members_count' => (int) $branch->members_count,
-            ]);
-
         $alerts = collect();
 
         if ($pendingFacilityBookings > 0) {
             $alerts->push([
                 'type' => $pendingFacilityBookings >= 10 ? 'high' : 'medium',
+                'key' => 'pending_bookings',
+                'count' => $pendingFacilityBookings,
                 'title' => 'Tempahan Ruang Belum Diproses',
                 'description' => "{$pendingFacilityBookings} tempahan masih berstatus pending.",
             ]);
@@ -254,6 +248,8 @@ class DashboardController extends Controller
         if ($feesDueCount > 0) {
             $alerts->push([
                 'type' => $feesDueCount >= 50 ? 'high' : 'medium',
+                'key' => 'fees_due',
+                'count' => $feesDueCount,
                 'title' => 'Yuran Tertunggak',
                 'description' => "{$feesDueCount} ahli belum membuat bayaran yuran untuk tahun ini.",
             ]);
@@ -262,6 +258,8 @@ class DashboardController extends Controller
         if ($eventsThisMonth === 0) {
             $alerts->push([
                 'type' => 'medium',
+                'key' => 'no_programs',
+                'count' => 0,
                 'title' => 'Program Bulan Ini',
                 'description' => 'Tiada program berjadual bulan ini. Pertimbangkan perancangan segera.',
             ]);
@@ -345,13 +343,12 @@ class DashboardController extends Controller
                 'events_this_month' => $eventsThisMonth,
                 'pending_facility_bookings' => $pendingFacilityBookings,
                 'fees_due_count' => $feesDueCount,
-                'active_branches' => $activeBranches,
+                'members_by_state' => $membersByState,
                 'active_members' => $activeMembers,
                 'inactive_members' => $inactiveMembers,
                 'org_member_counts' => $orgMemberCounts,
                 'alerts' => $alerts->values(),
                 'recent_activities' => $recentActivities,
-                'top_branches' => $topBranches,
             ],
             'managementLinks' => [
                 'create_event_url' => route('events.index'),

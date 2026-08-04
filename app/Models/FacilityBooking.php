@@ -13,6 +13,8 @@ class FacilityBooking extends Model
     protected $fillable = [
         'facility_id',
         'user_id',
+        'contact_name',
+        'contact_phone',
         'start_datetime',
         'end_datetime',
         'total_price',

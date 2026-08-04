@@ -2,10 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useCart } from '@/composables/useCart';
+
+const cart = useCart();
 
 const props = defineProps({
     product: { type: Object, required: true },
     relatedProducts: { type: Array, default: () => [] },
+    isMall: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -18,6 +22,17 @@ const showShipping = ref(false);
 const quantity = ref(1);
 
 // ─── Image Gallery ──────────────────────────────────────────────────────────
+
+// Resolve an image path to a usable URL. Handles paths that may or may not
+// already include the /storage/ prefix, and falls back to a placeholder.
+function productImageUrl(path, seed = 'mywap') {
+    if (!path) {
+        return `https://picsum.photos/seed/${seed}/800/600`;
+    }
+    if (/^https?:\/\//.test(path)) return path;
+    if (path.startsWith('/storage/')) return path;
+    return '/storage/' + path.replace(/^\/+/, '');
+}
 
 const allImages = computed(() => {
     const images = [];
@@ -148,6 +163,29 @@ function buyNow() {
         });
 }
 
+function addToBakul() {
+    const snapshot = {};
+    const optionIds = [];
+    const varNames = [];
+    for (const details of Object.values(selectedVariationDetails.value)) {
+        snapshot[details.variation.name] = details.option.name;
+        optionIds.push(details.option.id);
+        varNames.push(details.option.name);
+    }
+
+    const optionId = optionIds[0] ?? null;
+    const varLabel = varNames.length ? varNames.join(', ') : null;
+    const priceAdj = adjustmentsTotal.value;
+
+    cart.add(props.product, quantity.value, {
+        price: displayPrice.value,
+        variation: varLabel,
+        variation_option_id: optionId,
+        variation_snapshot: Object.keys(snapshot).length ? JSON.stringify(snapshot) : null,
+        option_stock: availableStock.value,
+    });
+}
+
 // Clamp quantity on stock change
 watch(availableStock, (stock) => {
     if (quantity.value > stock) {
@@ -178,12 +216,16 @@ watch(availableStock, (stock) => {
                     <div class="aspect-[4/3] bg-gray-50 relative overflow-hidden group">
                         <img
                             v-if="selectedImage"
-                            :src="'/storage/' + selectedImage"
+                            :src="productImageUrl(selectedImage, product.name)"
                             :alt="product.name"
                             class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         >
-                        <div v-else class="flex h-full items-center justify-center text-sm text-gray-400">
-                            Tiada gambar
+                        <div v-else class="relative h-full w-full bg-gray-50">
+                            <img
+                                :src="productImageUrl(null, product.id)"
+                                :alt="product.name"
+                                class="h-full w-full object-cover"
+                            >
                         </div>
                     </div>
                     <!-- Thumbnails -->
@@ -195,7 +237,7 @@ watch(availableStock, (stock) => {
                             class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all"
                             :class="selectedImageIndex === i ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-400'"
                         >
-                            <img :src="'/storage/' + img" alt="" class="h-full w-full object-cover">
+                            <img :src="productImageUrl(img)" alt="" class="h-full w-full object-cover">
                         </button>
                     </div>
                 </div>
@@ -221,6 +263,10 @@ watch(availableStock, (stock) => {
                     <div class="mt-3 flex items-baseline gap-3">
                         <span class="text-3xl font-bold text-gray-900">RM {{ displayPrice.toFixed(2) }}</span>
                         <span v-if="adjustmentsTotal > 0" class="text-sm text-gray-500 line-through">RM {{ basePrice.toFixed(2) }}</span>
+                        <div v-if="product.member_price != null" class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1">
+                            <span class="text-xs font-bold text-amber-700">Harga Ahli: RM {{ Number(product.member_price).toFixed(2) }}</span>
+                            <span class="text-[10px] text-amber-500">(log masuk untuk dapat)</span>
+                        </div>
                     </div>
 
                     <!-- Postage -->
@@ -330,8 +376,17 @@ watch(availableStock, (stock) => {
                             </span>
                         </div>
 
-                        <!-- Buy Button -->
-                        <button
+                        <!-- Buy Buttons -->
+                        <div class="flex flex-col gap-3">
+                            <button
+                                type="button"
+                                @click="addToBakul"
+                                :disabled="!canBuy"
+                                class="w-full flex items-center justify-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                            >
+                                + Tambah ke Bakul
+                            </button>
+                            <button
                             type="button"
                             @click="buyNow"
                             :disabled="!canBuy || buyForm.processing"
@@ -348,6 +403,7 @@ watch(availableStock, (stock) => {
                                 <span class="ml-1 text-emerald-200">RM {{ totalPayable.toFixed(2) }}</span>
                             </span>
                         </button>
+                        </div>
 
                         <p v-if="!allRequiredSelected" class="text-xs text-amber-600">Sila pilih semua variasi yang wajib.</p>
                         <p v-else-if="availableStock < 1" class="text-xs text-red-600">Stok tidak mencukupi.</p>
@@ -413,11 +469,16 @@ watch(availableStock, (stock) => {
                         <div class="aspect-[4/3] bg-gray-100 overflow-hidden">
                             <img
                                 v-if="rp.image"
-                                :src="'/storage/' + rp.image"
+                                :src="productImageUrl(rp.image, rp.name)"
                                 :alt="rp.name"
                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             >
-                            <div v-else class="flex h-full items-center justify-center text-xs text-gray-400">Tiada gambar</div>
+                            <img
+                                v-else
+                                :src="productImageUrl(null, rp.id)"
+                                :alt="rp.name"
+                                class="h-full w-full object-cover"
+                            >
                         </div>
                         <div class="p-3">
                             <h4 class="text-sm font-semibold text-gray-900 truncate">{{ rp.name }}</h4>

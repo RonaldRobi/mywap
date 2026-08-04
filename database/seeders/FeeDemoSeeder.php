@@ -44,7 +44,7 @@ class FeeDemoSeeder extends Seeder
             );
         };
 
-        $createFee = function (User $user, Organization $org, int $year, FeeStatus $status, string $paidAt = null, string $notes = null) {
+        $createFee = function (User $user, Organization $org, int $year, FeeStatus $status, ?string $paidAt = null, ?string $notes = null) {
             return MembershipFee::updateOrCreate(
                 ['user_id' => $user->id, 'year' => $year],
                 [
@@ -57,7 +57,7 @@ class FeeDemoSeeder extends Seeder
             );
         };
 
-        $createPayment = function (User $user, MembershipFee $fee, string $prefix, float $amount, string $proofPath = null) {
+        $createPayment = function (User $user, MembershipFee $fee, string $prefix, float $amount, ?string $proofPath = null) {
             $payment = Payment::create([
                 'user_id' => $user->id,
                 'payable_type' => MembershipFee::class,

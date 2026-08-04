@@ -33,6 +33,12 @@ class AppSetting extends Model
         'gemini_api_key',
         'mail_from_address',
         'mail_from_name',
+        'mail_mailer',
+        'mail_smtp_host',
+        'mail_smtp_port',
+        'mail_smtp_username',
+        'mail_smtp_password',
+        'mail_smtp_encryption',
     ];
 
     protected function casts(): array
@@ -41,6 +47,7 @@ class AppSetting extends Model
             'splash_duration_ms' => 'integer',
             'splash_enabled' => 'boolean',
             'resend_api_key' => 'encrypted',
+            'mail_smtp_password' => 'encrypted',
         ];
     }
 

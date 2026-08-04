@@ -42,7 +42,7 @@ function setFilter(status) {
 }
 
 const filterOptions = [
-    { value: '', label: 'Semua' }, { value: 'paid', label: 'Lunas' },
+    { value: '', label: 'Semua' }, { value: 'paid', label: 'Selesai' },
     { value: 'due', label: 'Tertunggak' }, { value: 'life_member', label: 'Seumur Hidup' },
     { value: 'exempted', label: 'Dikecualikan' },
 ];
@@ -332,7 +332,7 @@ function voidPayment(paymentRef, paymentId) {
 
 // ─── Helpers ───────────────────────────────────────────────────────────
 function formatAmount(v) { return v ? 'RM ' + Number(v).toFixed(2) : '—'; }
-function statusLabel(s) { const m = { paid: 'Lunas', life_member: 'Seumur Hidup', exempted: 'Dikecualikan' }; return m[s] || 'Tertunggak'; }
+function statusLabel(s) { const m = { paid: 'Selesai', life_member: 'Seumur Hidup', exempted: 'Dikecualikan' }; return m[s] || 'Tertunggak'; }
 function statusClass(s) { const m = { paid: 'bg-green-100 text-green-700', life_member: 'bg-blue-100 text-blue-700', exempted: 'bg-gray-100 text-gray-600', unpaid: 'bg-amber-100 text-amber-700' }; return m[s] || 'bg-amber-100 text-amber-700'; }
 function previewStatusLabel(s) { return { ready: 'Sedia', already_paid: 'Sudah Bayar', exempted: 'Dikecualikan', not_found: 'Tidak Ditemui' }[s] || s; }
 function previewStatusClass(s) { return { ready: 'text-green-700 bg-green-50 border-green-200', already_paid: 'text-amber-700 bg-amber-50 border-amber-200', exempted: 'text-gray-600 bg-gray-50 border-gray-200', not_found: 'text-red-700 bg-red-50 border-red-200' }[s] || ''; }
@@ -352,7 +352,7 @@ function previewStatusClass(s) { return { ready: 'text-green-700 bg-green-50 bor
                 </div>
                 <div @click="setFilter('paid')" class="rounded-2xl border border-green-100 bg-green-50 p-4 text-center shadow-sm cursor-pointer hover:bg-green-100 transition-colors">
                     <p class="text-2xl font-black text-green-700">{{ stats.paid }}</p>
-                    <p class="text-xs font-semibold text-green-600">Lunas</p>
+                    <p class="text-xs font-semibold text-green-600">Selesai</p>
                 </div>
                 <div @click="setFilter('due')" class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-center shadow-sm cursor-pointer hover:bg-amber-100 transition-colors">
                     <p class="text-2xl font-black text-amber-700">{{ stats.due }}</p>

@@ -44,6 +44,11 @@ function submitCategory() {
     });
 }
 
+function removeCategory(category) {
+    if (!confirm(`Padam kategori "${category.name}"?`)) return;
+    useForm({}).delete(route('admin.news.categories.destroy', category.id), { preserveScroll: true });
+}
+
 function submitPost() {
     postForm.post(route('admin.news.store'), {
         preserveScroll: true,
@@ -105,6 +110,25 @@ function removePost(post) {
                     <input v-model="categoryForm.icon" type="text" placeholder="Icon (opsyenal)" class="rounded-xl border border-gray-200 px-3 py-2 text-sm">
                     <button type="submit" :disabled="categoryForm.processing" class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white">Tambah</button>
                 </form>
+
+                <div v-if="categories.length" class="mt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Senarai Kategori ({{ categories.length }})</p>
+                    <ul class="space-y-2">
+                        <li v-for="category in categories" :key="category.id" class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <span v-if="category.icon" class="text-base">{{ category.icon }}</span>
+                                <span class="font-semibold text-gray-800">{{ category.name }}</span>
+                            </div>
+                            <button
+                                type="button"
+                                @click="removeCategory(category)"
+                                class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+                            >
+                                Delete
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

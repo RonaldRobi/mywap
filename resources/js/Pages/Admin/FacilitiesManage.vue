@@ -23,6 +23,7 @@ const form = useForm({
     location: '',
     type: 'hourly',
     price_per_unit: 0,
+    member_price_per_unit: null,
     capacity: null,
     image: null,
     gallery: [],
@@ -38,6 +39,7 @@ const editForm = useForm({
     location: '',
     type: 'hourly',
     price_per_unit: 0,
+    member_price_per_unit: null,
     capacity: null,
     image: null,
     gallery: [],
@@ -62,7 +64,7 @@ function submit() {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
-            form.reset('name', 'description', 'location', 'type', 'price_per_unit', 'capacity', 'image', 'is_active');
+            form.reset('name', 'description', 'location', 'type', 'price_per_unit', 'member_price_per_unit', 'capacity', 'image', 'is_active');
             form.gallery = [];
         },
     });
@@ -77,6 +79,7 @@ function startEdit(item) {
     editForm.location = item.location ?? '';
     editForm.type = item.type;
     editForm.price_per_unit = item.price_per_unit;
+    editForm.member_price_per_unit = item.member_price_per_unit ?? null;
     editForm.capacity = item.capacity;
     editForm.image = null;
     editForm.gallery = [];
@@ -121,10 +124,10 @@ const allImages = computed(() => {
 </script>
 
 <template>
-    <Head title="Facility Management" />
+    <Head title="Urus Perkhidmatan/Fasiliti" />
 
     <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
-        <template #header>Facility Management</template>
+        <template #header>Urus Perkhidmatan/Fasiliti</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-6">
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -132,7 +135,7 @@ const allImages = computed(() => {
             </div>
 
             <section class="rounded-3xl border border-gray-100 bg-white/90 p-5 shadow-sm">
-                <h2 class="text-lg font-black text-gray-800">Tambah Ruang</h2>
+                <h2 class="text-lg font-black text-gray-800">Tambah Perkhidmatan/Fasiliti</h2>
 
                 <form class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="submit">
                     <div v-if="isSuperadmin">
@@ -143,7 +146,7 @@ const allImages = computed(() => {
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Nama Ruang</label>
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Nama Perkhidmatan/Fasiliti</label>
                         <input v-model="form.name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" required>
                     </div>
 
@@ -161,8 +164,13 @@ const allImages = computed(() => {
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-xs font-semibold text-gray-500">Harga per Unit (RM)</label>
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Harga Umum per Unit (RM)</label>
                         <input v-model.number="form.price_per_unit" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" required>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Harga Ahli per Unit (RM)</label>
+                        <input v-model.number="form.member_price_per_unit" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Kosong = sama dengan harga umum">
                     </div>
 
                     <div>
@@ -200,7 +208,7 @@ const allImages = computed(() => {
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white/90 p-5 shadow-sm">
-                <h2 class="text-lg font-black text-gray-800">Senarai Ruang</h2>
+                <h2 class="text-lg font-black text-gray-800">Senarai Perkhidmatan/Fasiliti</h2>
 
                 <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <article v-for="item in facilities" :key="item.id" class="rounded-2xl border border-gray-100 bg-white p-4">
@@ -232,6 +240,7 @@ const allImages = computed(() => {
                                     <option value="daily">Daily</option>
                                 </select>
                                 <input v-model.number="editForm.price_per_unit" type="number" step="0.01" min="0" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" required>
+                                <input v-model.number="editForm.member_price_per_unit" type="number" step="0.01" min="0" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" placeholder="Harga Ahli (RM)">
                                 <input v-model.number="editForm.capacity" type="number" min="1" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                 <label class="flex items-center gap-2 text-xs text-gray-600"><input v-model="editForm.is_active" type="checkbox" class="rounded border-gray-300"> Aktif</label>
                                 <textarea v-model="editForm.description" rows="2" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs"></textarea>
@@ -274,7 +283,8 @@ const allImages = computed(() => {
                             <p class="mt-1 text-sm text-gray-600 line-clamp-2">{{ item.description || '—' }}</p>
                             <p class="mt-2 text-xs text-gray-500">Lokasi: <span class="font-semibold text-gray-700">{{ item.location || '—' }}</span></p>
                             <p class="text-xs text-gray-500">Jenis: <span class="font-semibold text-gray-700">{{ item.type }}</span></p>
-                            <p class="text-xs text-gray-500">Harga: <span class="font-semibold text-gray-700">RM {{ Number(item.price_per_unit).toFixed(2) }}</span></p>
+                            <p class="text-xs text-gray-500">Harga Umum: <span class="font-semibold text-gray-700">RM {{ Number(item.price_per_unit).toFixed(2) }}</span></p>
+                            <p v-if="item.member_price_per_unit != null" class="text-xs text-gray-500">Harga Ahli: <span class="font-semibold text-emerald-700">RM {{ Number(item.member_price_per_unit).toFixed(2) }}</span></p>
                             <p class="text-xs text-gray-500">Kapasiti: <span class="font-semibold text-gray-700">{{ item.capacity || '—' }}</span></p>
                             <span class="mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="item.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
                                 {{ item.is_active ? 'Aktif' : 'Tidak aktif' }}
@@ -289,7 +299,7 @@ const allImages = computed(() => {
             </section>
 
             <div>
-                <Link :href="route('admin.facility-bookings.index')" class="text-sm font-semibold text-gray-500 hover:text-gray-700">Lihat Tempahan Ruang →</Link>
+                <Link :href="route('admin.facility-bookings.index')" class="text-sm font-semibold text-gray-500 hover:text-gray-700">Lihat Senarai Tempahan →</Link>
             </div>
         </div>
     </AppLayout>

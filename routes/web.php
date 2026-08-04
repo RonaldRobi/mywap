@@ -1,36 +1,49 @@
 <?php
 
+use App\Http\Controllers\Admin\EmailTemplateController;
+use App\Http\Controllers\Admin\KnowledgeBaseController;
+use App\Http\Controllers\AdminFinanceController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BayarCashController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DirectoryController;
-use App\Http\Controllers\EventController;
-use App\Http\Controllers\FacilityBookingController;
+use App\Http\Controllers\BranchChangeRequestController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardBannerController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeployController;
+use App\Http\Controllers\DirectoryController;
+use App\Http\Controllers\DonorController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExportController;
-use App\Http\Controllers\InfaqController;
+use App\Http\Controllers\FacilityBookingController;
 use App\Http\Controllers\FinancialController;
-use App\Http\Controllers\InformationHubController;
+use App\Http\Controllers\FormController;
+use App\Http\Controllers\InfaqController;
 use App\Http\Controllers\InformationHubAdminController;
-use App\Http\Controllers\MemberDashboardController;
+use App\Http\Controllers\InformationHubController;
 use App\Http\Controllers\MemberCardController;
-use App\Http\Controllers\NewsController;
+use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MemberFeeController;
+use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PollController;
 use App\Http\Controllers\PopupController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\PostcodeController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCardController;
 use App\Http\Controllers\SharePreviewController;
-use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
-use App\Http\Controllers\PositionController;
-use App\Http\Controllers\PostcodeController;
-use App\Http\Controllers\PollController;
-use App\Http\Controllers\DeployController;
 use App\Http\Controllers\UsrahController;
 use App\Http\Controllers\VideoController;
+use App\Models\Infaq;
 use App\Models\Poll;
 use Illuminate\Support\Facades\Route;
 
@@ -63,7 +76,7 @@ Route::post('/bayarcash/callback', [BayarCashController::class, 'callback'])->na
 Route::post('/bayarcash/direct-debit/callback', [BayarCashController::class, 'directDebitCallback'])->name('bayarcash.direct-debit.callback');
 Route::get('/bayarcash/redirect', [BayarCashController::class, 'redirect'])->name('bayarcash.redirect');
 
-Route::get('/s/{infaq:slug}', fn (\App\Models\Infaq $infaq) => redirect()->route('infaq.show', [
+Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show', [
     'year' => $infaq->year,
     'month' => $infaq->month,
     'day' => $infaq->day,
@@ -74,7 +87,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
 
     Route::middleware('role:Superadmin|Admin')->group(function () {
-            Route::get('/admin/attendance', [EventController::class, 'adminAttendance'])->name('admin.attendance');
+        Route::get('/admin/attendance', [EventController::class, 'adminAttendance'])->name('admin.attendance');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');
@@ -97,7 +110,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
         // Admin: monitor-only transactions
         Route::get('/admin/transactions', [PaymentController::class, 'orgTransactions'])->name('admin.transactions');
+        Route::get('/admin/transactions/export/csv', [PaymentController::class, 'exportCsv'])->name('admin.transactions.export.csv');
         Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
+        Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
         Route::get('/admin/usrah', [UsrahController::class, 'adminIndex'])->name('admin.usrah.index');
         Route::post('/admin/usrah/groups', [UsrahController::class, 'storeGroup'])->name('admin.usrah.groups.store');
         Route::put('/admin/usrah/groups/{usrahGroup}', [UsrahController::class, 'updateGroup'])->name('admin.usrah.groups.update');
@@ -120,12 +135,15 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/admin/polls/{poll}', [PollController::class, 'adminDestroy'])->name('admin.polls.destroy');
         Route::get('/admin/polls/{poll}/results', [PollController::class, 'adminResults'])->name('admin.polls.results');
         Route::get('/admin/polls/{poll}/export', [PollController::class, 'exportCsv'])->name('admin.polls.export');
+        Route::get('/admin/polls/{poll}/qr', [PollController::class, 'adminQr'])->name('admin.polls.qr');
+        Route::get('/admin/polls/{poll}/qr.png', [PollController::class, 'adminQrPng'])->name('admin.polls.qr.png');
 
         Route::get('/admin/info-terkini/manage', [NewsController::class, 'manage'])->name('admin.news.manage');
         Route::post('/admin/info-terkini', [NewsController::class, 'store'])->name('admin.news.store');
         Route::put('/admin/info-terkini/{newsPost}', [NewsController::class, 'update'])->name('admin.news.update');
         Route::delete('/admin/info-terkini/{newsPost}', [NewsController::class, 'destroy'])->name('admin.news.destroy');
         Route::post('/admin/info-terkini/categories', [NewsController::class, 'storeCategory'])->name('admin.news.categories.store');
+        Route::delete('/admin/info-terkini/categories/{newsCategory}', [NewsController::class, 'destroyCategory'])->name('admin.news.categories.destroy');
 
         Route::get('/admin/articles', [ArticleController::class, 'adminIndex'])->name('admin.articles.index');
         Route::get('/admin/articles/create', [ArticleController::class, 'adminCreate'])->name('admin.articles.create');
@@ -155,6 +173,21 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
         Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
         Route::get('/superadmin/infaq/{infaq}/donors', [InfaqController::class, 'donors'])->name('superadmin.infaq.donors');
+
+        // Donor management
+        Route::get('/admin/donors', [DonorController::class, 'index'])->name('admin.donors.index');
+        Route::get('/admin/donors/{donor}', [DonorController::class, 'show'])->name('admin.donors.show');
+
+        // Form Builder
+        Route::get('/admin/forms', [FormController::class, 'index'])->name('admin.forms.index');
+        Route::get('/admin/forms/create', [FormController::class, 'create'])->name('admin.forms.create');
+        Route::post('/admin/forms', [FormController::class, 'store'])->name('admin.forms.store');
+        Route::get('/admin/forms/{form}/edit', [FormController::class, 'edit'])->name('admin.forms.edit');
+        Route::put('/admin/forms/{form}', [FormController::class, 'update'])->name('admin.forms.update');
+        Route::delete('/admin/forms/{form}', [FormController::class, 'destroy'])->name('admin.forms.destroy');
+        Route::get('/admin/forms/{form}/responses', [FormController::class, 'responses'])->name('admin.forms.responses');
+        Route::get('/admin/forms/{form}/export', [FormController::class, 'exportResponses'])->name('admin.forms.export');
+        Route::post('/admin/forms/{form}/send', [FormController::class, 'send'])->name('admin.forms.send');
     });
 
     // Superadmin-only: fee management + all transactions
@@ -162,6 +195,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/fees', [PaymentController::class, 'feesConfig'])->name('superadmin.fees.index');
         Route::put('/superadmin/fees/{organization}', [PaymentController::class, 'updateFee'])->name('superadmin.fees.update');
         Route::get('/superadmin/transactions', [PaymentController::class, 'allTransactions'])->name('superadmin.transactions');
+        Route::get('/superadmin/transactions/export/csv', [PaymentController::class, 'exportCsv'])->name('superadmin.transactions.export.csv');
         Route::patch('/superadmin/transactions/{payment}', [PaymentController::class, 'updateTransactionStatus'])->name('superadmin.transactions.update');
         Route::get('/superadmin/pustaka/manage', [InformationHubAdminController::class, 'libraryIndex'])->name('admin.library.manage');
         Route::get('/superadmin/dashboard-banners', [DashboardBannerController::class, 'index'])->name('superadmin.banners.index');
@@ -180,17 +214,19 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/settings/admin-contact', [SuperadminSystemSettingController::class, 'updateAdminContact'])->name('superadmin.settings.admin-contact.update');
         Route::post('/superadmin/settings/chatbot-logo', [SuperadminSystemSettingController::class, 'updateChatbotLogo'])->name('superadmin.settings.chatbot-logo.update');
         Route::post('/superadmin/settings/resend-key', [SuperadminSystemSettingController::class, 'updateResendKey'])->name('superadmin.settings.resend-key.update');
+        Route::post('/superadmin/settings/mail', [SuperadminSystemSettingController::class, 'updateMailSettings'])->name('superadmin.settings.mail.update');
+        Route::post('/superadmin/settings/mail/test', [SuperadminSystemSettingController::class, 'testMail'])->name('superadmin.settings.mail.test');
         Route::post('/superadmin/settings/gemini-key', [SuperadminSystemSettingController::class, 'updateGeminiKey'])->name('superadmin.settings.gemini-key.update');
         Route::post('/superadmin/settings/app-name', [SuperadminSystemSettingController::class, 'updateAppName'])->name('superadmin.settings.app-name.update');
         Route::post('/superadmin/settings/og-image', [SuperadminSystemSettingController::class, 'updateOgImage'])->name('superadmin.settings.og-image.update');
-        Route::get('/superadmin/email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
-        Route::put('/superadmin/email-templates/{emailTemplate}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
+        Route::get('/superadmin/email-templates', [EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
+        Route::put('/superadmin/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
         Route::post('/superadmin/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
 
-        Route::get('/superadmin/knowledge-base', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
-        Route::post('/superadmin/knowledge-base', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'store'])->name('admin.knowledge-base.store');
-        Route::post('/superadmin/knowledge-base/{knowledgeArticle}', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
-        Route::delete('/superadmin/knowledge-base/{knowledgeArticle}', [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
+        Route::get('/superadmin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
+        Route::post('/superadmin/knowledge-base', [KnowledgeBaseController::class, 'store'])->name('admin.knowledge-base.store');
+        Route::post('/superadmin/knowledge-base/{knowledgeArticle}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
+        Route::delete('/superadmin/knowledge-base/{knowledgeArticle}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
 
         Route::redirect('/superadmin/logo-settings', '/superadmin/organizations');
     });
@@ -206,14 +242,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/member/information-hub', [InformationHubController::class, 'announcements'])->name('member.hub');
         Route::get('/member/usrah', [UsrahController::class, 'myGroup'])->name('member.usrah');
         Route::get('/member/card', [MemberCardController::class, 'show'])->name('member.card');
+        Route::get('/member/card/letter', [MemberCardController::class, 'letterPdf'])->name('member.card.letter');
         Route::post('/member/usrah/{usrahGroup}/attendance', [UsrahController::class, 'logAttendance'])->name('member.usrah.attendance.log');
         Route::post('/member/pay-fee', [PaymentController::class, 'payFee'])->name('member.pay.fee');
-        Route::get('/member/facilities', [FacilityBookingController::class, 'index'])->name('member.facilities.index');
-        Route::get('/member/facilities/{facility}', [FacilityBookingController::class, 'show'])->name('member.facilities.show');
-        Route::post('/member/facilities/{facility}/book', [FacilityBookingController::class, 'store'])->name('member.facilities.book');
 
         // Polls / Surveys
-        Route::bind('poll', fn($value) => Poll::withoutGlobalScopes()->findOrFail($value));
+        Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
         Route::get('/member/videos', [VideoController::class, 'memberIndex'])->name('member.videos.index');
         Route::get('/polls', [PollController::class, 'index'])->name('member.polls.index');
         Route::get('/polls/{poll}', [PollController::class, 'show'])->name('member.polls.show');
@@ -229,29 +263,28 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
     // ─── E-Commerce Routes (Inertia, inside dashboard) ───────────────────────
     // Member access: browse products + create/view own orders
-    Route::get('products', [App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
-    Route::resource('orders', App\Http\Controllers\OrderController::class)->only(['index', 'show', 'store']);
-    Route::get('orders/{order}/pay', [App\Http\Controllers\OrderController::class, 'pay'])->name('orders.pay');
+    Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::resource('orders', OrderController::class)->only(['index', 'show', 'store']);
+    Route::get('orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
 
     // Admin/Superadmin: manage catalog + manage orders
     Route::middleware('role:Admin|Superadmin')->group(function () {
-        Route::resource('products', App\Http\Controllers\ProductController::class)->except(['index', 'show']);
+        Route::resource('products', ProductController::class)->except(['index', 'show']);
 
-        Route::resource('categories', App\Http\Controllers\CategoryController::class)->except(['show']);
-        Route::post('orders/{order}/update-status', [App\Http\Controllers\OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+        Route::resource('categories', CategoryController::class)->except(['show']);
+        Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
         // Cawangan (Branch) management — Admin manages own org, Superadmin manages all
-        Route::get('branches', [App\Http\Controllers\BranchController::class, 'index'])->name('branches.index');
-        Route::post('branches', [App\Http\Controllers\BranchController::class, 'store'])->name('branches.store');
-        Route::put('branches/{branch}', [App\Http\Controllers\BranchController::class, 'update'])->name('branches.update');
-        Route::post('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'updateLogo'])->name('branches.logo.update');
-        Route::delete('branches/{branch}/logo', [App\Http\Controllers\BranchController::class, 'deleteLogo'])->name('branches.logo.destroy');
-        Route::delete('branches/{branch}', [App\Http\Controllers\BranchController::class, 'destroy'])->name('branches.destroy');
+        Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
+        Route::put('branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::post('branches/{branch}/logo', [BranchController::class, 'updateLogo'])->name('branches.logo.update');
+        Route::delete('branches/{branch}/logo', [BranchController::class, 'deleteLogo'])->name('branches.logo.destroy');
+        Route::delete('branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
 
         // Branch admin management
-        Route::post('branches/{branch}/admins', [App\Http\Controllers\BranchController::class, 'storeAdmin'])->name('branches.admins.store');
-        Route::delete('branches/{branch}/admins/{user}', [App\Http\Controllers\BranchController::class, 'destroyAdmin'])->name('branches.admins.destroy');
-
+        Route::post('branches/{branch}/admins', [BranchController::class, 'storeAdmin'])->name('branches.admins.store');
+        Route::delete('branches/{branch}/admins/{user}', [BranchController::class, 'destroyAdmin'])->name('branches.admins.destroy');
 
         // Positions management
         Route::get('positions', [PositionController::class, 'index'])->name('positions.index');
@@ -260,13 +293,14 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('positions/{position}', [PositionController::class, 'update'])->name('positions.update');
         Route::patch('positions/{position}/toggle', [PositionController::class, 'toggleActive'])->name('positions.toggle');
         Route::delete('positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
+        Route::get('positions/{position}/members', [PositionController::class, 'members'])->name('positions.members');
 
         // Finance Dashboard
-        Route::get('/admin/finance', [App\Http\Controllers\AdminFinanceController::class, 'index'])->name('admin.finance.index');
-        Route::get('/admin/finance/member/{targetUser}', [App\Http\Controllers\AdminFinanceController::class, 'memberTransactions'])->name('admin.finance.member');
-        Route::get('/admin/finance/export/pdf', [App\Http\Controllers\AdminFinanceController::class, 'exportPdf'])->name('admin.finance.export.pdf');
-        Route::get('/admin/finance/export/excel', [App\Http\Controllers\AdminFinanceController::class, 'exportExcel'])->name('admin.finance.export.excel');
-        Route::get('/admin/finance/export/csv', [App\Http\Controllers\AdminFinanceController::class, 'exportCsv'])->name('admin.finance.export.csv');
+        Route::get('/admin/finance', [AdminFinanceController::class, 'index'])->name('admin.finance.index');
+        Route::get('/admin/finance/member/{targetUser}', [AdminFinanceController::class, 'memberTransactions'])->name('admin.finance.member');
+        Route::get('/admin/finance/export/pdf', [AdminFinanceController::class, 'exportPdf'])->name('admin.finance.export.pdf');
+        Route::get('/admin/finance/export/excel', [AdminFinanceController::class, 'exportExcel'])->name('admin.finance.export.excel');
+        Route::get('/admin/finance/export/csv', [AdminFinanceController::class, 'exportCsv'])->name('admin.finance.export.csv');
 
         // Member fee management
         Route::get('/admin/fees/members', [MemberFeeController::class, 'index'])->name('admin.fees.members');
@@ -295,21 +329,52 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/admin/members/bulk-branch', [InformationHubAdminController::class, 'bulkBranchUpdate'])->name('admin.members.bulk-branch');
     });
 
-    Route::get('products/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
+    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
 
     // Branch change requests — Org Admin, Branch Admin
     Route::middleware('role:Admin|Superadmin|Admin Cawangan')->group(function () {
-        Route::get('branch-change-requests', [App\Http\Controllers\BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
-        Route::post('branch-change-requests/{branchChangeRequest}/approve', [App\Http\Controllers\BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
-        Route::post('branch-change-requests/{branchChangeRequest}/reject', [App\Http\Controllers\BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
+        Route::get('branch-change-requests', [BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
+        Route::post('branch-change-requests/{branchChangeRequest}/approve', [BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
+        Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
     });
 });
 
+// ─── MyWAP Mall — Akses Awam ────────────────────────────────────────────────
+Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1']], function () {
+    Route::get('/', [ProductController::class, 'index'])->name('mall.index');
+    Route::get('/cart', [CartController::class, 'index'])->name('mall.cart');
+    Route::get('/{product}', [ProductController::class, 'show'])->name('mall.show');
+    Route::post('/checkout', [OrderController::class, 'checkout'])->name('mall.checkout');
+    Route::get('/orders/{order}', [OrderController::class, 'showPublic'])->name('mall.order.show');
+});
+
+// ─── Perkhidmatan/Fasiliti — Tempahan Awam (termasuk org luar) ───────────────
+Route::group(['middleware' => ['throttle:60,1']], function () {
+    Route::get('/perkhidmatan', [FacilityBookingController::class, 'index'])->name('member.facilities.index');
+    Route::get('/perkhidmatan/{facility}', [FacilityBookingController::class, 'show'])->name('member.facilities.show');
+    Route::post('/perkhidmatan/{facility}/book', [FacilityBookingController::class, 'store'])->name('member.facilities.book');
+});
 
 // ─── Chatbot API ─────────────────────────────────────────────────────────────
-Route::post('/api/chat', [App\Http\Controllers\ChatController::class, 'send'])
+Route::post('/api/chat', [ChatController::class, 'send'])
     ->name('api.chat.send')
     ->middleware('throttle:30,1');
+
+// ─── Public Forms ─────────────────────────────────────────────────────────
+Route::group(['middleware' => ['throttle:60,1']], function () {
+    Route::get('/borang/{token}', [FormController::class, 'publicShow'])->name('forms.public');
+    Route::post('/borang/{token}', [FormController::class, 'publicSubmit'])->name('forms.public.submit');
+});
+
+// ─── Public Poll Feedback (program poster QR) ────────────────────────────────
+Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
+
+Route::group(['middleware' => ['throttle:60,1']], function () {
+    Route::get('/polls/public/{poll}', [PollController::class, 'publicShow'])
+        ->name('polls.public.show');
+    Route::post('/polls/public/{poll}', [PollController::class, 'publicRespond'])
+        ->name('polls.public.respond');
+});
 
 // ─── Authenticated Member Routes ─────────────────────────────────────────────
 
@@ -337,16 +402,19 @@ Route::middleware('auth')->group(function () {
     // to the authenticated user.  If user is a guest, Laravel redirects to login
     // and stores this URL as the `intended` destination.
     Route::get('/events/{id}/attend/{token}', [EventController::class, 'recordAttendance'])
-         ->name('events.attend');
+        ->name('events.attend');
 
     // ─── Admin / Staff Only ──────────────────────────────────────────────────
     Route::middleware('role:Admin|Superadmin')->group(function () {
         Route::post('/events', [EventController::class, 'store'])->name('events.store');
         Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
         Route::get('/events/{event}/qr', [EventController::class, 'showQr'])
-             ->name('events.qr');
+            ->name('events.qr');
+        Route::get('/events/{event}/qr/download', [EventController::class, 'downloadQr'])
+            ->name('events.qr.download');
         Route::get('/events/{event}/print', [EventController::class, 'printAttendance'])
-             ->name('events.print');
+            ->name('events.print');
     });
 });
 

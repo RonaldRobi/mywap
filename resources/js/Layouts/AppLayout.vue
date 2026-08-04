@@ -6,6 +6,10 @@ import AppSplashScreen from '@/Components/AppSplashScreen.vue';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt.vue';
 import ChatBot from '@/Components/ChatBot.vue';
 import BackButton from '@/Components/BackButton.vue';
+import { locale, t, toggleLocale } from '@/i18n';
+import { useCart } from '@/composables/useCart';
+
+const cart = useCart();
 
 // ─── Auth & Theme ────────────────────────────────────────────────────────────
 
@@ -187,7 +191,7 @@ const memberFacilityChildren = computed(() => {
     if (isMember.value && !isAdmin.value && !isSuperadmin.value) {
         return [
             {
-                label: 'Tempahan Ruang',
+                label: 'Tempah Perkhidmatan/Fasiliti',
                 href: route('member.facilities.index'),
                 active: route().current('member.facilities.*') && queryParam('view') !== 'history',
                 colorClass: 'text-rose-500',
@@ -210,7 +214,7 @@ const adminFacilityChildren = computed(() => {
     if (isAdmin.value || isSuperadmin.value) {
         return [
             {
-                label: 'Urus Ruang',
+                label: 'Urus Perkhidmatan/Fasiliti',
                 href: route('admin.facilities.manage'),
                 active: route().current('admin.facilities.*'),
                 colorClass: 'text-amber-500',
@@ -321,6 +325,15 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
     },
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Borang',
+        href:   route('admin.forms.index'),
+        active: route().current('admin.forms.*'),
+        colorClass: 'text-violet-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>`,
+    }] : []),
 
     // ═══════════════════════════════════
     //  PENGURUSAN AHLI  (Admin/Superadmin)
@@ -411,16 +424,25 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10v10m0-10c1.11 0 2.08.402 2.599 1M12 8c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>`,
     }] : []),
+    ...(isAdmin.value || isSuperadmin.value ? [{
+        label:  'Penderma',
+        href:   route('admin.donors.index'),
+        active: route().current('admin.donors.*'),
+        colorClass: 'text-pink-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>`,
+    }] : []),
 
     // ═══════════════════════════════════
-    //  E-DAGANG  (group)
+    //  MYWAP MALL  (group)
     // ═══════════════════════════════════
     ...(ecommerceChildren.value.length ? [{
         type: 'group',
-        label: 'E-dagang',
+        label: 'MyWAP Mall',
         groupKey: 'ecommerce',
         active: ecommerceActive.value,
-        colorClass: 'text-emerald-500',
+        colorClass: 'text-amber-500',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/></svg>`,
         children: ecommerceChildren.value,
     }] : []),
@@ -485,7 +507,7 @@ const navItems = computed(() => [
     // ═══════════════════════════════════
     ...(adminFacilityChildren.value.length ? [{
         type: 'group',
-        label: 'Kemudahan',
+        label: 'Perkhidmatan/Fasiliti',
         groupKey: 'adminFacilities',
         active: adminFacilitiesActive.value,
         colorClass: 'text-amber-500',
@@ -494,7 +516,7 @@ const navItems = computed(() => [
     }] : []),
     ...(memberFacilityChildren.value.length ? [{
         type: 'group',
-        label: 'Kemudahan',
+        label: 'Perkhidmatan/Fasiliti',
         groupKey: 'facilities',
         active: facilitiesActive.value,
         colorClass: 'text-rose-500',
@@ -655,7 +677,7 @@ const bottomNavItems = computed(() => {
                     <div v-if="item.type === 'section'" class="px-3 pt-5 pb-1.5 mt-1.5 border-t border-gray-100/60">
                         <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400/70">
                             <span class="w-1 h-1 rounded-full" :class="theme.accent"></span>
-                            {{ item.label }}
+                            {{ t(item.label) }}
                         </span>
                     </div>
                     <template v-else-if="item.type === 'group'">
@@ -675,7 +697,7 @@ const bottomNavItems = computed(() => {
                             ></span>
                             <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
                             <transition name="fade">
-                                <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
+                                <span v-if="sidebarOpen" class="truncate">{{ t(item.label) }}</span>
                             </transition>
                             <span class="ms-auto shrink-0 text-gray-400" v-if="sidebarOpen">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200" :class="isGroupOpen(item.groupKey) ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -701,7 +723,7 @@ const bottomNavItems = computed(() => {
                                     :class="['absolute left-0 w-1 h-5 rounded-r-full', theme.accent]"
                                 ></span>
                                 <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
-                                <span class="truncate">{{ child.label }}</span>
+                                <span class="truncate">{{ t(child.label) }}</span>
                             </Link>
                         </div>
                     </template>
@@ -722,7 +744,7 @@ const bottomNavItems = computed(() => {
                         ></span>
                         <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
                         <transition name="fade">
-                            <span v-if="sidebarOpen" class="truncate">{{ item.label }}</span>
+                            <span v-if="sidebarOpen" class="truncate">{{ t(item.label) }}</span>
                         </transition>
                     </Link>
                 </template>
@@ -733,7 +755,7 @@ const bottomNavItems = computed(() => {
                 <button
                     @click="sidebarOpen = !sidebarOpen"
                     class="w-full flex items-center justify-center p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
-                    :title="sidebarOpen ? 'Gulung sidebar' : 'Kembangkan sidebar'"
+                    :title="sidebarOpen ? t('Gulung sidebar') : t('Kembangkan sidebar')"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? '' : 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
@@ -772,11 +794,41 @@ const bottomNavItems = computed(() => {
                             </svg>
                         </button>
                         <h1 class="text-base font-semibold text-gray-800 truncate">
-                            <slot name="header">Papan Pemuka</slot>
+                            <slot name="header">{{ t('Papan Pemuka') }}</slot>
                         </h1>
                     </div>
 
                     <div class="flex items-center gap-2 md:gap-3">
+
+                        <!-- Language Toggle -->
+
+                        <!-- Cart Icon (MyWAP Mall) -->
+                        <a
+                            :href="route('mall.cart')"
+                            class="relative p-2 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                            title="Bakul Beli-belah"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/>
+                            </svg>
+                            <span
+                                v-if="cart.count > 0"
+                                class="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold leading-none"
+                            >{{ cart.count }}</span>
+                        </a>
+                        <!-- Language Toggle -->
+                        <button
+                            @click="toggleLocale"
+                            class="relative p-2 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                            :title="locale === 'ms' ? 'English' : 'Bahasa Melayu'"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-black leading-none px-1 rounded-sm" :class="locale === 'ms' ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'">
+                                {{ locale === 'ms' ? 'BM' : 'EN' }}
+                            </span>
+                        </button>
 
                         <!-- Notification Bell -->
                         <div :class="hideMobileBell ? 'hidden md:block' : ''" class="relative">
@@ -804,8 +856,8 @@ const bottomNavItems = computed(() => {
                                     class="absolute right-0 mt-2 w-80 rounded-2xl border border-white/60 backdrop-blur-md bg-white/90 shadow-lg z-50 overflow-hidden"
                                 >
                                     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                        <p class="text-sm font-bold text-gray-800">Notifikasi</p>
-                                        <span class="text-xs text-gray-500">{{ notifications.unread_count }} belum dibaca</span>
+                                        <p class="text-sm font-bold text-gray-800">{{ t('Notifikasi') }}</p>
+                                        <span class="text-xs text-gray-500">{{ notifications.unread_count }} {{ t('belum dibaca') }}</span>
                                     </div>
                                     <div class="max-h-80 overflow-y-auto">
                                         <div
@@ -814,12 +866,24 @@ const bottomNavItems = computed(() => {
                                             class="px-4 py-3 border-b border-gray-50"
                                             :class="item.is_read ? 'bg-white' : 'bg-blue-50/60'"
                                         >
-                                            <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
-                                            <p class="mt-1 text-xs text-gray-600 line-clamp-2">{{ item.content }}</p>
-                                            <p class="mt-1 text-[11px] text-gray-400">{{ item.created_at }}</p>
+                                            <Link
+                                                v-if="item.action_url"
+                                                :href="item.action_url"
+                                                class="block"
+                                                @click="notifMenuOpen = false"
+                                            >
+                                                <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
+                                                <p class="mt-1 text-xs text-gray-600 line-clamp-2">{{ item.content }}</p>
+                                                <p class="mt-1 text-[11px] text-gray-400">{{ item.created_at }}</p>
+                                            </Link>
+                                            <template v-else>
+                                                <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
+                                                <p class="mt-1 text-xs text-gray-600 line-clamp-2">{{ item.content }}</p>
+                                                <p class="mt-1 text-[11px] text-gray-400">{{ item.created_at }}</p>
+                                            </template>
                                         </div>
                                         <div v-if="!notifications.recent.length" class="px-4 py-8 text-center text-sm text-gray-500">
-                                            Tiada notifikasi.
+                                            {{ t('Tiada notifikasi.') }}
                                         </div>
                                     </div>
                                 </div>
@@ -827,7 +891,7 @@ const bottomNavItems = computed(() => {
                         </div>
 
                         <!-- Profile Dropdown -->
-                        <div class="relative">
+                        <div v-if="user" class="relative">
                             <button
                                 @click="profileMenuOpen = !profileMenuOpen"
                                 class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors"
@@ -867,7 +931,7 @@ const bottomNavItems = computed(() => {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
-                                        Profil Saya
+                                        {{ t('Profil Saya') }}
                                     </Link>
                                     <div class="my-1 border-t border-gray-100"></div>
                                     <Link
@@ -880,7 +944,7 @@ const bottomNavItems = computed(() => {
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                         </svg>
-                                        Log Keluar
+                                        {{ t('Log Keluar') }}
                                     </Link>
                                 </div>
                             </transition>
@@ -897,10 +961,26 @@ const bottomNavItems = computed(() => {
             <!-- ─── FOOTER ──────────────────────────────────────────────────── -->
             <footer class="hidden md:block border-t border-gray-100 bg-white/50 py-4 px-6">
                 <div class="flex items-center justify-between text-xs text-gray-400">
-                    <p>&copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.</p>
-                    <div class="flex gap-4">
-                        <Link :href="route('terms')" class="hover:text-emerald-600 transition">Terma & Syarat</Link>
-                        <Link :href="route('privacy')" class="hover:text-emerald-600 transition">Privasi</Link>
+                    <p>&copy; {{ new Date().getFullYear() }} myWAP. {{ t('Hak Cipta Terpelihara') }}.</p>
+                    <div class="flex items-center gap-4">
+                        <a v-if="org?.website_url" :href="org.website_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition" title="Laman Web">{{ t('Laman Web') }}</a>
+                        <a v-if="org?.facebook_url" :href="org.facebook_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                            <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        </a>
+                        <a v-if="org?.instagram_url" :href="org.instagram_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                            <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                        </a>
+                        <a v-if="org?.twitter_url" :href="org.twitter_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                            <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                        <a v-if="org?.youtube_url" :href="org.youtube_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                            <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </a>
+                        <a v-if="org?.tiktok_url" :href="org.tiktok_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                            <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+                        </a>
+                        <Link :href="route('terms')" class="hover:text-emerald-600 transition">{{ t('Terma & Syarat') }}</Link>
+                        <Link :href="route('privacy')" class="hover:text-emerald-600 transition">{{ t('Privasi') }}</Link>
                     </div>
                 </div>
             </footer>
@@ -946,15 +1026,26 @@ const bottomNavItems = computed(() => {
                         <ApplicationLogo class="w-12 h-12 max-w-[48px] max-h-[48px] shrink-0" />
                         <span class="text-sm font-bold text-gray-800 tracking-tight">myWAP</span>
                     </div>
-                    <button
-                        @click="mobileMenuOpen = false"
-                        class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                        aria-label="Close menu"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <button
+                            @click="toggleLocale"
+                            class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                            aria-label="Toggle language"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                        <button
+                            @click="mobileMenuOpen = false"
+                            class="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                            aria-label="Close menu"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Org badge -->
@@ -971,7 +1062,7 @@ const bottomNavItems = computed(() => {
                     <div v-if="item.type === 'section'" class="px-3 pt-5 pb-1.5 mt-1.5 border-t border-gray-100/60">
                         <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400/70">
                             <span class="w-1 h-1 rounded-full" :class="theme.accent"></span>
-                            {{ item.label }}
+                            {{ t(item.label) }}
                         </span>
                     </div>
                     <template v-else-if="item.type === 'group'">
@@ -990,7 +1081,7 @@ const bottomNavItems = computed(() => {
                                 :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
                             ></span>
                             <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
-                            <span class="truncate">{{ item.label }}</span>
+                            <span class="truncate">{{ t(item.label) }}</span>
                             <span class="ms-auto shrink-0 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200" :class="isGroupOpen(item.groupKey) ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -1016,7 +1107,7 @@ const bottomNavItems = computed(() => {
                                     :class="['absolute left-0 w-1 h-5 rounded-r-full', theme.accent]"
                                 ></span>
                                 <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
-                                <span class="truncate">{{ child.label }}</span>
+                                <span class="truncate">{{ t(child.label) }}</span>
                             </Link>
                         </div>
                     </template>
@@ -1037,7 +1128,7 @@ const bottomNavItems = computed(() => {
                             :class="['absolute left-0 w-1 h-6 rounded-r-full', theme.accent]"
                         ></span>
                         <span class="shrink-0" :class="item.colorClass ?? 'text-gray-400'" v-html="item.icon" />
-                        <span class="truncate">{{ item.label }}</span>
+                        <span class="truncate">{{ t(item.label) }}</span>
                     </Link>
                     </template>
                 </nav>
@@ -1054,7 +1145,7 @@ const bottomNavItems = computed(() => {
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        Log Keluar
+                        {{ t('Log Keluar') }}
                     </Link>
                 </div>
             </aside>
@@ -1075,7 +1166,7 @@ const bottomNavItems = computed(() => {
                     ]"
                 >
                     <span :class="item.active ? theme.accentText : ''" v-html="item.icon" />
-                    {{ item.label }}
+                    {{ t(item.label) }}
                     <!-- Active dot indicator -->
                     <span v-if="item.active" :class="['w-1 h-1 rounded-full', theme.dot]"></span>
                 </Link>
@@ -1087,7 +1178,7 @@ const bottomNavItems = computed(() => {
         <AppSplashScreen />
 
         <!-- AI Chatbot -->
-        <ChatBot />
+        <ChatBot v-if="user" />
     </div>
 </template>
 

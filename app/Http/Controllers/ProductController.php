@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,10 +14,15 @@ class ProductController extends Controller
     {
         $query = Product::with('category', 'organization');
 
+        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
+        if ($request->routeIs('mall.*') || ! $isAdmin) {
+            $query->where('status', true);
+        }
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -49,6 +54,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => $categories,
             'filters' => $request->only(['search', 'category_id', 'sort']),
+            'isMall' => $request->routeIs('mall.*'),
         ]);
     }
 
@@ -56,6 +62,7 @@ class ProductController extends Controller
     {
         $this->authorize('create', Product::class);
         $categories = Category::all();
+
         return Inertia::render('Ecommerce/Products/Create', [
             'categories' => $categories,
         ]);
@@ -69,6 +76,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'member_price' => 'nullable|numeric|min:0',
             'postage_cost' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
@@ -88,9 +96,10 @@ class ProductController extends Controller
 
         $request->validate($rules);
 
-        $data = $request->only('name', 'description', 'price', 'postage_cost', 'stock', 'category_id');
-        $data['organisasi_id'] = Auth::user()->organisasi_id ?? null;
-        $data['status'] = $request->has('status');
+        $data = $request->only('name', 'description', 'price', 'member_price', 'postage_cost', 'stock', 'category_id');
+        $data['organisasi_id'] = Auth::user()->current_organization_id ?? null;
+        $data['member_price'] = ($data['member_price'] ?? null) !== '' ? ($data['member_price'] ?? null) : null;
+        $data['status'] = $request->boolean('status', true);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -109,14 +118,14 @@ class ProductController extends Controller
         $product = Product::create($data);
 
         $variations = $this->parseVariations($request);
-        if (!empty($variations)) {
+        if (! empty($variations)) {
             $this->syncVariations($product, $variations);
         }
 
         return redirect()->route('products.index')->with('success', 'Produk berjaya ditambah!');
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
         $product->load([
             'category',
@@ -133,6 +142,7 @@ class ProductController extends Controller
         return Inertia::render('Ecommerce/Products/Show', [
             'product' => $product,
             'relatedProducts' => $relatedProducts,
+            'isMall' => $request->routeIs('mall.*'),
         ]);
     }
 
@@ -156,6 +166,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'member_price' => 'nullable|numeric|min:0',
             'postage_cost' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
@@ -175,8 +186,9 @@ class ProductController extends Controller
 
         $request->validate($rules);
 
-        $data = $request->only('name', 'description', 'price', 'postage_cost', 'stock', 'category_id');
-        $data['status'] = $request->has('status');
+        $data = $request->only('name', 'description', 'price', 'member_price', 'postage_cost', 'stock', 'category_id');
+        $data['member_price'] = ($data['member_price'] ?? null) !== '' ? ($data['member_price'] ?? null) : null;
+        $data['status'] = $request->boolean('status', true);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -204,6 +216,7 @@ class ProductController extends Controller
     {
         $this->authorize('delete', $product);
         $product->delete();
+
         return redirect()->route('products.index')->with('success', 'Produk berjaya dipadam!');
     }
 
@@ -213,6 +226,7 @@ class ProductController extends Controller
         if (is_string($variations)) {
             return json_decode($variations, true) ?? [];
         }
+
         return $variations ?? [];
     }
 
@@ -229,7 +243,7 @@ class ProductController extends Controller
                 'sort_order' => $vIndex,
             ];
 
-            if (!empty($variation['id'])) {
+            if (! empty($variation['id'])) {
                 $var = $product->variations()->where('id', $variation['id'])->first();
                 if ($var) {
                     $var->update($varData);
@@ -249,13 +263,13 @@ class ProductController extends Controller
             foreach (($variation['options'] ?? []) as $oIndex => $option) {
                 $optData = [
                     'name' => $option['name'],
-                    'price_adjustment' => !empty($option['price_adjustment']) ? $option['price_adjustment'] : null,
-                    'stock' => !empty($option['stock']) ? $option['stock'] : null,
+                    'price_adjustment' => ! empty($option['price_adjustment']) ? $option['price_adjustment'] : null,
+                    'stock' => ! empty($option['stock']) ? $option['stock'] : null,
                     'hex_color' => $option['hex_color'] ?? null,
                     'sort_order' => $oIndex,
                 ];
 
-                if (!empty($option['id'])) {
+                if (! empty($option['id'])) {
                     $opt = $var->options()->where('id', $option['id'])->first();
                     if ($opt) {
                         $opt->update($optData);

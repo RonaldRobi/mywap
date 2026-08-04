@@ -12,6 +12,7 @@ const form = useForm({
     organization_id: null,
     title: '',
     youtube_url: '',
+    is_live: false,
 });
 
 const editingId = ref(null);
@@ -19,12 +20,13 @@ const editForm = useForm({
     organization_id: null,
     title: '',
     youtube_url: '',
+    is_live: false,
 });
 
 function submit() {
     form.post(route('admin.videos.store'), {
         preserveScroll: true,
-        onSuccess: () => form.reset('organization_id', 'title', 'youtube_url'),
+        onSuccess: () => form.reset('organization_id', 'title', 'youtube_url', 'is_live'),
     });
 }
 
@@ -33,6 +35,7 @@ function startEdit(item) {
     editForm.organization_id = item.organization_id;
     editForm.title = item.title;
     editForm.youtube_url = item.youtube_url;
+    editForm.is_live = item.is_live ?? false;
 }
 
 function cancelEdit() {
@@ -55,7 +58,7 @@ function remove(item) {
 }
 
 function previewThumbnail(url) {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/);
     if (match) {
         return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
     }
@@ -98,6 +101,10 @@ function previewThumbnail(url) {
                         <p v-if="form.errors.youtube_url" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.youtube_url }}</p>
                         <img v-if="previewThumbnail(form.youtube_url)" :src="previewThumbnail(form.youtube_url)" class="mt-2 h-20 rounded-lg object-cover border border-gray-200">
                     </div>
+                    <div class="md:col-span-2 flex items-center gap-2">
+                        <input v-model="form.is_live" type="checkbox" id="form_is_live" class="rounded border-gray-300 focus:ring-gray-500">
+                        <label for="form_is_live" class="text-xs font-semibold text-gray-600">Sedang Langsung (LIVE)</label>
+                    </div>
                     <div class="md:col-span-2">
                         <button type="submit" :disabled="form.processing" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
                             {{ form.processing ? 'Menyimpan...' : 'Simpan Video' }}
@@ -121,6 +128,7 @@ function previewThumbnail(url) {
                                 </select>
                                 <input v-model="editForm.youtube_url" type="url" placeholder="https://www.youtube.com/watch?v=..." class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                 <p v-if="editForm.errors.youtube_url" class="text-[11px] font-semibold text-red-600">{{ editForm.errors.youtube_url }}</p>
+                                <label class="flex items-center gap-1.5 mt-1"><input v-model="editForm.is_live" type="checkbox" class="rounded border-gray-300"> <span class="text-[11px] text-gray-600">Sedang Langsung (LIVE)</span></label>
                                 <div class="flex gap-2">
                                     <button type="submit" class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Update</button>
                                     <button type="button" @click="cancelEdit" class="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700">Cancel</button>

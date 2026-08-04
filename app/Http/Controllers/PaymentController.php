@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentController extends Controller
 {
@@ -75,8 +76,25 @@ class PaymentController extends Controller
         if ($request->filled('type')) {
             $query->where('payable_type', $request->type);
         }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('gateway_ref', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                      ->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%"));
+            });
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
 
-        $payments = $query->paginate(25)->through(fn (Payment $p) => [
+        $payments = $query->paginate(25)->withQueryString()->through(fn (Payment $p) => [
             'id'          => $p->id,
             'user_name'   => $p->user?->name,
             'user_email'  => $p->user?->email,
@@ -86,6 +104,7 @@ class PaymentController extends Controller
             'type'        => $p->payable_type,
             'description' => $p->description,
             'reference'   => $p->reference,
+            'gateway'     => $p->gateway,
             'created_at'  => $p->created_at?->toDateTimeString(),
         ]);
 
@@ -100,7 +119,7 @@ class PaymentController extends Controller
             'payments'      => $payments,
             'organizations' => $organizations,
             'summary'       => $summary,
-            'filters'       => $request->only(['status', 'org', 'type']),
+            'filters'       => $request->only(['status', 'org', 'type', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -135,8 +154,25 @@ class PaymentController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('gateway_ref', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                      ->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%"));
+            });
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
 
-        $payments = $query->paginate(25)->through(fn (Payment $p) => [
+        $payments = $query->paginate(25)->withQueryString()->through(fn (Payment $p) => [
             'id'          => $p->id,
             'user_name'   => $p->user?->name,
             'user_email'  => $p->user?->email,
@@ -145,6 +181,7 @@ class PaymentController extends Controller
             'type'        => $p->payable_type,
             'description' => $p->description,
             'reference'   => $p->reference,
+            'gateway'     => $p->gateway,
             'created_at'  => $p->created_at?->toDateTimeString(),
         ]);
 
@@ -163,7 +200,7 @@ class PaymentController extends Controller
             'payments'     => $payments,
             'organization' => ['name' => $user->organization?->name],
             'summary'      => $summary,
-            'filters'      => $request->only(['status']),
+            'filters'      => $request->only(['status', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -231,5 +268,107 @@ class PaymentController extends Controller
         $feeService->markAsPaid($user, $year, $feeAmount, $payment->id);
 
         return back()->with('success', "Pembayaran yuran RM {$feeAmount} berjaya! (Mod dummy — gateway sebenar akan disambung kemudian)");
+    }
+
+    // ─── EXPORT ─────────────────────────────────────────────────────────────────
+
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        $isSuperadmin = $request->user()->hasRole('Superadmin');
+        $user = $request->user()->load('organization');
+
+        $query = Payment::with('user');
+
+        if ($isSuperadmin) {
+            $query->withoutGlobalScopes();
+
+            if ($request->filled('org')) {
+                $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+                    ->where('current_organization_id', (int) $request->org));
+            }
+        } else {
+            $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+                ->where('current_organization_id', $user->current_organization_id));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('type')) {
+            $query->where('payable_type', $request->type);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                      ->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%"));
+            });
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $payments = $query->latest()->limit(5000)->get();
+
+        $filename = 'transaksi-' . now()->format('Y-m-d_His') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($payments, $isSuperadmin) {
+            $file = fopen('php://output', 'w');
+            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, ['#', 'Nama', 'Emel', 'Pertubuhan', 'Jenis', 'Penerangan', 'Amaun (RM)', 'Status', 'Rujukan', 'Gateway', 'Tarikh']);
+
+            foreach ($payments as $p) {
+                fputcsv($file, [
+                    $p->id,
+                    $p->user?->name ?? '—',
+                    $p->user?->email ?? '—',
+                    $isSuperadmin ? ($p->user?->organization?->name ?? '—') : '',
+                    $this->typeLabel($p->payable_type),
+                    $p->description ?? '—',
+                    number_format((float) $p->amount, 2, '.', ''),
+                    $this->statusLabel($p->status),
+                    $p->reference ?? '—',
+                    $p->gateway ?? '—',
+                    $p->created_at?->toDateTimeString() ?? '—',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    private function typeLabel(?string $type): string
+    {
+        return match ($type) {
+            'membership_fee' => 'Yuran Keahlian',
+            'infaq_donation' => 'Infaq / Sumbangan',
+            'order'          => 'Pesanan / Produk',
+            default          => $type ?? '—',
+        };
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            'successful' => 'Berjaya',
+            'pending'    => 'Menunggu',
+            'failed'     => 'Gagal',
+            'refunded'   => 'Dipulangkan',
+            default      => $status,
+        };
     }
 }

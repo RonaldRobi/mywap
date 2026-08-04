@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendBroadcastJob;
+use App\Models\Branch;
 use App\Models\BroadcastMessage;
 use App\Models\Organization;
 use App\Models\Announcement;
@@ -31,6 +32,7 @@ class BroadcastController extends Controller
                 'target_criteria_label' => match ($message->target_criteria) {
                     'all' => 'Semua Ahli',
                     'organization' => 'Ahli Organisasi',
+                    'branch' => 'Ahli Cawangan',
                     'specific_members' => 'Individu Tertentu',
                     default => $message->target_criteria,
                 },
@@ -86,6 +88,13 @@ class BroadcastController extends Controller
             ->orderBy('name')
             ->get();
 
+        $branches = Branch::query()
+            ->where('is_active', true)
+            ->when(!$isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->select('id', 'name', 'organization_id')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Admin/Broadcasts', [
             'recentMessages' => $messages,
             'defaultOrganizationId' => $user->current_organization_id,
@@ -93,6 +102,7 @@ class BroadcastController extends Controller
             'announcements' => $announcements,
             'organizations' => $organizations,
             'usrahGroups' => $usrahGroups,
+            'branches' => $branches,
         ]);
     }
 
@@ -104,8 +114,9 @@ class BroadcastController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
-            'target_criteria' => ['required', 'in:all,organization,specific_members'],
+            'target_criteria' => ['required', 'in:all,organization,branch,specific_members'],
             'target_organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'recipient_ids' => ['nullable', 'array'],
             'recipient_ids.*' => ['integer', 'exists:users,id'],
             'notification_channels' => ['required', 'array', 'min:1'],
@@ -133,6 +144,7 @@ class BroadcastController extends Controller
         $message = BroadcastMessage::create([
             'organization_id' => $user->current_organization_id,
             'target_organization_id' => $targetOrgId,
+            'branch_id' => $data['branch_id'] ?? null,
             'title' => $data['title'],
             'content' => $data['content'],
             'target_criteria' => $data['target_criteria'],

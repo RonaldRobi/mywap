@@ -12,6 +12,7 @@ class InfaqDonation extends Model
     protected $fillable = [
         'infaq_id',
         'user_id',
+        'donor_id',
         'amount',
         'reference',
         'status',
@@ -43,5 +44,10 @@ class InfaqDonation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function donor(): BelongsTo
+    {
+        return $this->belongsTo(Donor::class);
     }
 }

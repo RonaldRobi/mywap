@@ -4,20 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\InfaqDonation;
 use App\Models\Order;
+use App\Models\Organization;
 use App\Models\Payment;
 use App\Services\BayarCashService;
+use App\Services\DonorService;
 use App\Services\FeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BayarCashController extends Controller
 {
     public function __construct(
         protected BayarCashService $bayarCashService,
         protected FeeService $feeService,
+        protected DonorService $donorService,
     ) {
     }
 
@@ -97,6 +101,14 @@ class BayarCashController extends Controller
 
     protected function handleAuthorization(array $data, Payment $payment): JsonResponse
     {
+        if (in_array($payment->status, ['successful', 'failed', 'refunded'])) {
+            Log::info('BayarCash DD authorization: payment already terminal', [
+                'payment_id' => $payment->id,
+                'current_status' => $payment->status,
+            ]);
+            return response()->json(['status' => 'ok', 'already_processed' => true]);
+        }
+
         $isSuccess = ($data['status'] ?? '') === '3' || ($data['status'] ?? '') === '1';
 
         $payment->update([
@@ -110,6 +122,17 @@ class BayarCashController extends Controller
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'confirmed']);
                     $donation->infaq?->increment('collected_amount', $donation->amount);
+
+                    if ($donation->donor_id) {
+                        $donor = \App\Models\Donor::find($donation->donor_id);
+                        if ($donor) {
+                            $donor->update([
+                                'total_donated'   => $donor->total_donated + $donation->amount,
+                                'donation_count'  => $donor->donation_count + 1,
+                                'last_donated_at' => now(),
+                            ]);
+                        }
+                    }
                 }
             });
         }
@@ -146,6 +169,7 @@ class BayarCashController extends Controller
             $childDonation = InfaqDonation::create([
                 'infaq_id'         => $donation->infaq_id,
                 'user_id'          => $donation->user_id,
+                'donor_id'         => $donation->donor_id,
                 'amount'           => $amount,
                 'reference'        => $ref,
                 'status'           => 'confirmed',
@@ -160,6 +184,17 @@ class BayarCashController extends Controller
                 'mandate_ref'      => $donation->mandate_ref,
                 'recurring_status' => 'active',
             ]);
+
+            if ($donation->donor_id) {
+                $donor = \App\Models\Donor::find($donation->donor_id);
+                if ($donor) {
+                    $donor->update([
+                        'total_donated'   => $donor->total_donated + $amount,
+                        'donation_count'  => $donor->donation_count + 1,
+                        'last_donated_at' => now(),
+                    ]);
+                }
+            }
 
             Payment::create([
                 'user_id'         => $donation->user_id,
@@ -226,6 +261,14 @@ class BayarCashController extends Controller
         if (!$valid) {
             Log::warning('BayarCash callback: invalid checksum', ['order_number' => $callbackData['order_number'] ?? null]);
             return response()->json(['status' => 'invalid_checksum']);
+        }
+
+        if (in_array($payment->status, ['successful', 'failed', 'refunded'])) {
+            Log::info('BayarCash callback: payment already in terminal state', [
+                'payment_id' => $payment->id,
+                'current_status' => $payment->status,
+            ]);
+            return response()->json(['status' => 'ok', 'already_processed' => true]);
         }
 
         $isSuccess = $this->bayarCashService->isPaymentSuccessful($callbackData);
@@ -329,6 +372,17 @@ class BayarCashController extends Controller
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'confirmed']);
                     $donation->infaq?->increment('collected_amount', $donation->amount);
+
+                    if ($donation->donor_id) {
+                        $donor = \App\Models\Donor::find($donation->donor_id);
+                        if ($donor) {
+                            $donor->update([
+                                'total_donated'   => $donor->total_donated + $donation->amount,
+                                'donation_count'  => $donor->donation_count + 1,
+                                'last_donated_at' => now(),
+                            ]);
+                        }
+                    }
                 }
             });
         } elseif ($payableType === 'membership_fee') {

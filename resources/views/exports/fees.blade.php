@@ -41,7 +41,7 @@
                     <td>{{ $m->ic_number ?? '—' }}</td>
                     <td>{{ $m->member_no ?? '—' }}</td>
                     <td class="{{ $fee && in_array($fee->status, ['paid','life_member','exempted']) ? 'badge-paid' : 'badge-due' }}">
-                        {{ match($fee?->status) { 'paid' => 'Lunas', 'life_member' => 'Seumur Hidup', 'exempted' => 'Dikecualikan', default => 'Tertunggak' } }}
+                        {{ match($fee?->status) { 'paid' => 'Selesai', 'life_member' => 'Seumur Hidup', 'exempted' => 'Dikecualikan', default => 'Tertunggak' } }}
                     </td>
                     <td>{{ $fee ? number_format((float) $fee->amount, 2) : '0.00' }}</td>
                     <td>{{ $fee?->paid_at?->toDateString() ?? '—' }}</td>
@@ -56,7 +56,7 @@
             $paid = $members->filter(fn($m) => $m->membershipFees->first() && in_array($m->membershipFees->first()->status, ['paid','life_member','exempted']))->count();
         @endphp
         <p><strong>Jumlah Ahli:</strong> {{ $total }}</p>
-        <p><strong>Lunas / Dikecualikan:</strong> {{ $paid }}</p>
+        <p><strong>Selesai / Dikecualikan:</strong> {{ $paid }}</p>
         <p><strong>Tertunggak:</strong> {{ $total - $paid }}</p>
     </div>
 </body>

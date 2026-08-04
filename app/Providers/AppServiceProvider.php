@@ -57,22 +57,35 @@ class AppServiceProvider extends ServiceProvider
 
         try {
             $setting = AppSetting::singleton();
+            $mailer = $setting->mail_mailer ?: 'log';
+            $mailConfig = [];
 
-            if ($key = $setting->resend_api_key) {
+            if ($mailer === 'resend' && $key = $setting->resend_api_key) {
                 $mailConfig = [
                     'mail.default' => 'resend',
                     'mail.mailers.resend.key' => $key,
                     'services.resend.key' => $key,
                     'resend.api_key' => $key,
                 ];
-
-                if ($fromAddress = $setting->mail_from_address) {
-                    $mailConfig['mail.from.address'] = $fromAddress;
-                    $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
-                }
-
-                config($mailConfig);
+            } elseif ($mailer === 'smtp') {
+                $mailConfig = [
+                    'mail.default' => 'smtp',
+                    'mail.mailers.smtp.host' => $setting->mail_smtp_host ?: config('mail.mailers.smtp.host'),
+                    'mail.mailers.smtp.port' => $setting->mail_smtp_port ?: config('mail.mailers.smtp.port'),
+                    'mail.mailers.smtp.encryption' => $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption'),
+                    'mail.mailers.smtp.username' => $setting->mail_smtp_username ?: config('mail.mailers.smtp.username'),
+                    'mail.mailers.smtp.password' => $setting->mail_smtp_password ?: config('mail.mailers.smtp.password'),
+                ];
+            } elseif ($mailer === 'log') {
+                $mailConfig = ['mail.default' => 'log'];
             }
+
+            if ($fromAddress = $setting->mail_from_address) {
+                $mailConfig['mail.from.address'] = $fromAddress;
+                $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
+            }
+
+            config($mailConfig);
         } catch (\Throwable) {
             // Silent fail — settings table may not be ready during early boot
         }

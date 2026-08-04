@@ -1,0 +1,226 @@
+import { ref } from 'vue';
+
+export const locale = ref(
+    typeof window !== 'undefined'
+        ? window.localStorage.getItem('mywap_locale') || 'ms'
+        : 'ms'
+);
+
+const en = {
+    // ─── AppLayout (chrome) ─────────────────────────────────────────────
+    'Papan Pemuka': 'Dashboard',
+    'Kandungan': 'Content',
+    'Program': 'Programs',
+    'Kehadiran': 'Attendance',
+    'Info Terkini': 'Latest News',
+    'Undian': 'Polls',
+    'Artikel': 'Articles',
+    'Video': 'Videos',
+    'Usrah': 'Usrah',
+    'Pengurusan Ahli': 'Member Management',
+    'Ahli': 'Members',
+    'Yuran Ahli': 'Member Fees',
+    'Cawangan': 'Branches',
+    'Jawatan': 'Positions',
+    'Tukar Cawangan': 'Change Branch',
+    'Tukar Cawangan (Bulk)': 'Bulk Change Branch',
+    'Kewangan': 'Finance',
+    'Ringkasan Kewangan': 'Finance Summary',
+    'Yuran & Bayaran': 'Fees & Payments',
+    'Infaq': 'Infaq',
+    'E-dagang': 'E-commerce',
+    'Produk': 'Products',
+    'Kategori': 'Categories',
+    'Pesanan': 'Orders',
+    'Pesanan Saya': 'My Orders',
+    'Kemudahan': 'Facilities',
+    'Tempahan Ruang': 'Facility Booking',
+    'Sejarah Tempahan': 'Booking History',
+    'Urus Ruang': 'Manage Facilities',
+    'Senarai Tempahan': 'Booking List',
+    'Kandungan & Komunikasi': 'Content & Communication',
+    'Popup': 'Popup',
+    'Direktori': 'Directory',
+    'Push Notification': 'Push Notification',
+    'Pengumuman': 'Announcements',
+    'Urus Pustaka': 'Manage Library',
+    'Urus Banner': 'Manage Banners',
+    'Sistem': 'System',
+    'Organisasi': 'Organisation',
+    'Tetapan myWAP': 'myWAP Settings',
+    'Template Emel': 'Email Templates',
+    'Pangkalan Ilmu': 'Knowledge Base',
+    'Sumber & Keahlian': 'Resources & Membership',
+    'Pustaka': 'Library',
+    'Kad Ahli': 'Member Card',
+    'Jemput Ahli': 'Invite Member',
+    'Akaun': 'Account',
+    'Profil': 'Profile',
+    'Perjalanan': 'Journey',
+    'Utama': 'Home',
+    'Kad': 'Card',
+    'Notifikasi': 'Notifications',
+    'belum dibaca': 'unread',
+    'Tiada notifikasi.': 'No notifications.',
+    'Profil Saya': 'My Profile',
+    'Log Keluar': 'Log Out',
+    'Hak Cipta Terpelihara': 'All Rights Reserved',
+    'Terma & Syarat': 'Terms & Conditions',
+    'Privasi': 'Privacy',
+    'Gulung sidebar': 'Collapse sidebar',
+    'Kembangkan sidebar': 'Expand sidebar',
+    'Kembali': 'Back',
+
+    // ─── Admin Dashboard ────────────────────────────────────────────────
+    'Dashboard Pentadbir': 'Admin Dashboard',
+    'Paparan Utama': 'Overview',
+    'Pengurusan ahli dan program organisasi.': 'Member and program management for the organisation.',
+    'Jumlah Ahli': 'Total Members',
+    'Yuran Bulan Ini': "This Month's Fees",
+    'Ahli Aktif': 'Active Members',
+    'Tidak Aktif': 'Inactive Members',
+    'Jumlah Program': 'Total Programs',
+    'Tambah Program Baharu': 'Add New Program',
+    'Urus Program': 'Manage Programs',
+    'Urus Infaq': 'Manage Infaq',
+    'Urus Pusat Maklumat': 'Manage Info Hub',
+    'Urus Usrah': 'Manage Usrah',
+    'Hantar Siaran': 'Send Broadcast',
+    'Lihat Direktori': 'View Directory',
+    'Cipta Program': 'Create Program',
+    'Pecahan Program': 'Program Breakdown',
+    'Kempen': 'Campaigns',
+    'Sorotan Terkini': 'Pulse Monitor',
+    'Ahli Baharu (30h)': 'New Members (30d)',
+    'Program Bulan Ini': 'Programs This Month',
+    'Kalender semasa': 'Current month',
+    'Tempahan Pending': 'Pending Bookings',
+    'Perlu tindakan admin': 'Requires admin action',
+    'Yuran Tertunggak': 'Overdue Fees',
+    'Tahun semasa': 'Current year',
+    'Amaran Tindakan': 'Action Alerts',
+    'Tempahan Ruang Belum Diproses': 'Unprocessed Room Bookings',
+    'Semua Stabil': 'All Clear',
+    'Tiada isu kritikal dikesan buat masa ini.': 'No critical issues detected at the moment.',
+    'Ahli Mengikut Organisasi': 'Members by Organisation',
+    'ahli berdaftar': 'registered members',
+    'Jumlah Ahli Mengikut Negeri': 'Members by State',
+    'Tidak Dinyatakan': 'Not specified',
+    'negeri': 'states',
+    'ahli': 'members',
+    'Muat Turun Laporan': 'Download Report',
+    'Belum ada data ahli untuk dipaparkan.': 'No member data to display yet.',
+    'Aktiviti Terkini': 'Recent Activities',
+    'Belum ada aktiviti direkodkan.': 'No activities recorded yet.',
+    'Senarai Ahli Keseluruhan': 'All Members',
+    'Eksport senarai ahli untuk analisis dan pelaporan.': 'Export the member list for analysis and reporting.',
+    'Eksport ke CSV': 'Export to CSV',
+    'Cipta Kempen': 'Create Campaign',
+    'Tajuk': 'Title',
+    'Jumlah Sasaran': 'Target Amount',
+    'Penerangan': 'Description',
+    'Status': 'Status',
+    'Draf': 'Draft',
+    'Aktif': 'Active',
+    'Tutup': 'Close',
+    'Menyimpan...': 'Saving...',
+    'Simpan Kempen': 'Save Campaign',
+    'baru sahaja': 'just now',
+    '{n} min lalu': '{n} min ago',
+    '{n} jam lalu': '{n} hours ago',
+    '{n} hari lalu': '{n} days ago',
+    '{n} tempahan masih berstatus pending.': '{n} bookings are still pending.',
+    '{n} ahli belum membuat bayaran yuran untuk tahun ini.': "{n} members have not paid this year's fees.",
+    'Tiada program berjadual bulan ini. Pertimbangkan perancangan segera.': 'No programs scheduled this month. Consider planning soon.',
+    'Ahli baharu didaftarkan': 'New member registered',
+    'Bayaran berjaya diterima': 'Payment received successfully',
+    'Tempahan ruang dikemaskini': 'Facility booking updated',
+
+    // ─── Member Dashboard ───────────────────────────────────────────────
+    'Selamat Pagi': 'Good Morning',
+    'Selamat Tengah Hari': 'Good Noon',
+    'Selamat Petang': 'Good Afternoon',
+    'Selamat Malam': 'Good Evening',
+    'Selamat datang ke myWAP': 'Welcome to myWAP',
+    'Pintasan': 'Shortcuts',
+    'Yuran Saya': 'My Fees',
+    'Tempah': 'Book',
+    'Info': 'News',
+    'Yuran': 'Fees',
+    'Sejak': 'Since',
+    'Cawangan Ahli': 'Member Branch',
+    'Ahli sejak {n}': 'Member since {n}',
+    'Lihat Kad Penuh': 'View Full Card',
+    'Tonton video terkini': 'Watch latest videos',
+    'Lihat Semua': 'View All',
+    'Kempen Infaq': 'Infaq Campaign',
+    'Salurkan sumbangan anda': 'Contribute your donation',
+    'daripada {n}': 'of {n}',
+    'Kutipan Dana': 'Fundraising',
+    'Derma Bebas': 'Open Donation',
+    'Acara dan aktiviti akan datang': 'Upcoming events and activities',
+    'Fizikal': 'Physical',
+    'Tiada program akan datang': 'No upcoming programs',
+    'Tekan Lihat Semua untuk terokai program lepas': 'Tap View All to explore past programs',
+    'Undian & Survey': 'Polls & Survey',
+    '{n} belum dijawab': '{n} unanswered',
+    '+{n} lagi': '+{n} more',
+    'respon': 'responses',
+    'Lihat Keputusan': 'View Results',
+    'Jawab': 'Answer',
+    'Aktiviti Saya': 'My Activities',
+    'Belum ditetapkan kumpulan': 'No group assigned yet',
+    'Semak ruang & buat tempahan': 'Check facilities & make a booking',
+    'Status Yuran': 'Fee Status',
+    'Bayaran': 'Payments',
+    'Yuran Tahunan': 'Annual Fee',
+    'Tunggak': 'Overdue',
+    'Tertunggak': 'Overdue',
+    'Keahlian anda aktif.': 'Your membership is active.',
+    'Yuran tahunan perlu diperbaharui.': 'Annual fee needs renewal.',
+    'Memproses...': 'Processing...',
+    'Bayar Sekarang': 'Pay Now',
+    'Berita Untuk Anda': 'News for You',
+    'Ikuti perkembangan terkini': 'Follow the latest updates',
+    'Buka Feed': 'Open Feed',
+    'Tekan untuk baca lanjut.': 'Tap to read more.',
+    'Koleksi buku dan rujukan': 'Book and reference collection',
+    'Tiada buku terkini dalam pustaka.': 'No recent books in the library.',
+    'Buka Link': 'Open Link',
+
+    // ─── Public Poll Feedback ─────────────────────────────────────────────
+    'Maklum Balas': 'Feedback',
+    'Terima kasih!': 'Thank you!',
+    'Maklum balas anda berjaya dihantar.': 'Your feedback was submitted successfully.',
+    'Tamat': 'Ended',
+    'Soalan': 'Question',
+    'Menghantar...': 'Submitting...',
+    'Hantar Maklum Balas': 'Submit Feedback',
+};
+
+export function t(text, params = {}) {
+    if (text === null || text === undefined) return '';
+    let out = String(text);
+    if (locale.value === 'en' && typeof en[out] === 'string') {
+        out = en[out];
+    }
+    if (params && Object.keys(params).length) {
+        for (const [key, value] of Object.entries(params)) {
+            out = out.split(`{${key}}`).join(String(value ?? ''));
+        }
+    }
+    return out;
+}
+
+export function setLocale(lang) {
+    locale.value = lang;
+    try {
+        window.localStorage.setItem('mywap_locale', lang);
+    } catch (e) {
+        /* ignore */
+    }
+}
+
+export function toggleLocale() {
+    setLocale(locale.value === 'ms' ? 'en' : 'ms');
+}

@@ -45,10 +45,10 @@ function updateStatus(bookingId, bookingStatus) {
 </script>
 
 <template>
-    <Head title="Facility Bookings" />
+    <Head title="Senarai Tempahan" />
 
     <AppLayout>
-        <template #header>Facility Bookings</template>
+        <template #header>Senarai Tempahan</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-6">
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -92,9 +92,10 @@ function updateStatus(bookingId, bookingStatus) {
                     <table class="min-w-full text-sm">
                         <thead>
                             <tr class="border-b border-gray-100 text-left text-xs uppercase text-gray-500">
-                                <th class="px-2 py-2">Ruang</th>
+                                <th class="px-2 py-2">Perkhidmatan/Fasiliti</th>
                                 <th class="px-2 py-2">Organisasi</th>
-                                <th class="px-2 py-2">Ahli</th>
+                                <th class="px-2 py-2">Penempah</th>
+                                <th class="px-2 py-2">Contact</th>
                                 <th class="px-2 py-2">Mula</th>
                                 <th class="px-2 py-2">Tamat</th>
                                 <th class="px-2 py-2">Harga</th>
@@ -107,7 +108,14 @@ function updateStatus(bookingId, bookingStatus) {
                             <tr v-for="booking in bookings.data" :key="booking.id" class="border-b border-gray-50">
                                 <td class="px-2 py-2">{{ booking.facility_name }}</td>
                                 <td class="px-2 py-2">{{ booking.organization_name }}</td>
-                                <td class="px-2 py-2">{{ booking.member_name }}</td>
+                                <td class="px-2 py-2">
+                                    <p class="font-semibold">{{ booking.contact_name || booking.member_name || '-' }}</p>
+                                    <p v-if="booking.member_email" class="text-xs text-gray-400">{{ booking.member_email }}</p>
+                                </td>
+                                <td class="px-2 py-2">
+                                    <span v-if="booking.contact_phone" class="text-xs font-medium text-gray-700">{{ booking.contact_phone }}</span>
+                                    <span v-else class="text-xs text-gray-400">—</span>
+                                </td>
                                 <td class="px-2 py-2">{{ booking.start_datetime }}</td>
                                 <td class="px-2 py-2">{{ booking.end_datetime }}</td>
                                 <td class="px-2 py-2">RM {{ Number(booking.total_price).toFixed(2) }}</td>
@@ -136,7 +144,7 @@ function updateStatus(bookingId, bookingStatus) {
                                 </td>
                             </tr>
                             <tr v-if="bookings.data.length === 0">
-                                <td colspan="9" class="px-2 py-4 text-gray-500">Tiada rekod tempahan ditemui.</td>
+                                <td colspan="10" class="px-2 py-4 text-gray-500">Tiada rekod tempahan ditemui.</td>
                             </tr>
                         </tbody>
                     </table>

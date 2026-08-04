@@ -707,6 +707,16 @@ const submit = () => {
                                     Create account
                                 </Link>
                             </p>
+                            <p class="text-center text-xs text-slate-400">
+                                Tanpa akaun? Anda masih boleh
+                                <Link :href="route('member.facilities.index')" class="font-semibold text-emerald-300 hover:text-emerald-200">
+                                    tempah Perkhidmatan/Fasiliti
+                                </Link>
+                                atau melawat
+                                <Link :href="route('mall.index')" class="font-semibold text-amber-300 hover:text-amber-200">
+                                    MyWAP Mall
+                                </Link>.
+                            </p>
                         </div>
                     </Transition>
                 </AccernityCard>

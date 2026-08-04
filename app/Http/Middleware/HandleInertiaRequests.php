@@ -39,7 +39,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
-            $user->loadMissing('organization:id,name,slug,color_theme,logo_path', 'roles', 'branch:id,name');
+            $user->loadMissing('organization:id,name,slug,color_theme,logo_path,website_url,facebook_url,instagram_url,twitter_url,youtube_url,tiktok_url', 'roles', 'branch:id,name');
         }
 
         $appSetting = Cache::rememberForever('app_settings', fn () => Schema::hasTable('app_settings')
@@ -99,6 +99,12 @@ class HandleInertiaRequests extends Middleware
                             'slug'        => $user->organization->slug,
                             'color_theme' => $user->organization->color_theme,
                             'logo_path'   => $this->normalizeStorageUrl($user->organization->logo_path),
+                            'website_url' => $user->organization->website_url,
+                            'facebook_url' => $user->organization->facebook_url,
+                            'instagram_url' => $user->organization->instagram_url,
+                            'twitter_url' => $user->organization->twitter_url,
+                            'youtube_url' => $user->organization->youtube_url,
+                            'tiktok_url' => $user->organization->tiktok_url,
                         ] : null),
                 ] : null,
             ],
@@ -125,6 +131,7 @@ class HandleInertiaRequests extends Middleware
                         'id' => $notification->id,
                         'title' => $notification->data['title'] ?? 'Notifikasi',
                         'content' => $notification->data['content'] ?? '',
+                        'action_url' => $notification->data['action_url'] ?? null,
                         'is_read' => ! is_null($notification->read_at),
                         'created_at' => $notification->created_at?->diffForHumans(),
                     ])->values(),
