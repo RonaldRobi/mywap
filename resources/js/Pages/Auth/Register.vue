@@ -146,18 +146,17 @@ const submit = () => {
                         myWAP
                     </p>
                     <h1 class="mt-5 text-4xl font-black leading-tight text-white xl:text-5xl">
-                        Daftar Akaun Baru,
-                        <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">siap ikut organisasi umur.</span>
+                        <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">Daftar Akaun Baharu</span>
                     </h1>
                     <p class="mt-4 text-sm leading-relaxed text-slate-300">
-                        Isi maklumat asas. Sistem akan tetapkan PKPIM, ABIM atau WADAH secara automatik berdasarkan tarikh lahir dari No IC.
+                        Pendaftaran hanya mengambil beberapa minit. Organisasi keahlian anda akan ditetapkan secara automatik berdasarkan maklumat umur yang diperoleh daripada nombor kad pengenalan.
                     </p>
 
                     <div v-if="organizationLogos.length" class="mt-6 flex flex-wrap items-center gap-4">
                         <div
                             v-for="organization in organizationLogos"
                             :key="organization.id"
-                            class="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm"
+                            class="flex h-24 w-24 items-center justify-center rounded-2xl border border-white/40 bg-white p-3 shadow-lg shadow-black/10 xl:h-28 xl:w-28"
                         >
                             <img
                                 :src="organization.logo_path"

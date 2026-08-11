@@ -8,7 +8,7 @@
             <span class="h-2.5 w-2.5 rounded-full bg-amber-300/80"></span>
             <span class="h-2.5 w-2.5 rounded-full bg-emerald-300/80"></span>
         </div>
-        <div class="relative z-10">
+        <div class="relative z-10 pt-6">
             <slot />
         </div>
     </div>
