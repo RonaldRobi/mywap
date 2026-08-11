@@ -169,6 +169,25 @@ const submit = () => {
             </section>
 
             <section class="w-full lg:w-[500px]">
+                <div v-if="organizationLogos.length" class="mb-5 lg:hidden">
+                    <p class="text-center text-xs leading-relaxed text-slate-300">
+                        Anda sedang mendaftar keahlian untuk salah satu organisasi berikut:
+                    </p>
+                    <div class="mt-3 flex items-center justify-center gap-3">
+                        <div
+                            v-for="organization in organizationLogos"
+                            :key="organization.id"
+                            class="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/40 bg-white p-2 shadow-lg shadow-black/10"
+                        >
+                            <img
+                                :src="organization.logo_path"
+                                :alt="organization.name + ' logo'"
+                                class="h-full w-full object-contain"
+                            >
+                        </div>
+                    </div>
+                </div>
+
                 <AccernityCard>
                     <div class="mb-6">
                         <p class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">Langkah 1 dari 2</p>
