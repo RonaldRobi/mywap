@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use App\Models\ArticleMedia;
 use App\Models\ArticleCategory;
+use App\Models\ArticleComment;
+use App\Models\ArticleMedia;
+use App\Models\ArticleReaction;
 use App\Models\ArticleTag;
 use App\Models\Organization;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ArticleController extends Controller
 {
@@ -67,11 +69,11 @@ class ArticleController extends Controller
             ->where('is_published', true)
             ->where(function ($query) {
                 $query->whereNull('published_at')
-                      ->orWhere('published_at', '<=', now());
+                    ->orWhere('published_at', '<=', now());
             })
             ->latest('published_at')
             ->get()
-            ->map(fn($article) => [
+            ->map(fn ($article) => [
                 'id' => $article->id,
                 'title' => $article->title,
                 'slug' => $article->slug,
@@ -81,7 +83,7 @@ class ArticleController extends Controller
                 'published_date' => $article->published_at ? $article->published_at->format('d M Y') : $article->created_at->format('d M Y'),
                 'public_url' => route('articles.show', $article->slug),
                 'is_featured' => $article->is_featured,
-                'categories' => $article->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
+                'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]),
             ]);
 
         $featured = $articles->where('is_featured', true)->values();
@@ -93,9 +95,9 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function show(\Illuminate\Http\Request $request, Article $article)
+    public function show(Request $request, Article $article)
     {
-        abort_if(!$article->is_published, 404);
+        abort_if(! $article->is_published, 404);
         abort_if($article->published_at && $article->published_at->isFuture(), 404);
 
         $article->load(['author:id,name', 'organization:id,name,slug', 'categories', 'tags', 'media']);
@@ -106,9 +108,12 @@ class ArticleController extends Controller
         $likes = $article->reactions()->where('reaction', 'like')->count();
         $dislikes = $article->reactions()->where('reaction', 'dislike')->count();
         $myReaction = $article->reactions()
-            ->where(function($q) use ($user, $sessionId) {
-                if ($user) $q->where('user_id', $user->id);
-                else $q->where('session_id', $sessionId);
+            ->where(function ($q) use ($user, $sessionId) {
+                if ($user) {
+                    $q->where('user_id', $user->id);
+                } else {
+                    $q->where('session_id', $sessionId);
+                }
             })->value('reaction');
 
         $comments = $article->comments()
@@ -138,17 +143,17 @@ class ArticleController extends Controller
                 'likes_count' => $likes,
                 'dislikes_count' => $dislikes,
                 'my_reaction' => $myReaction,
-                'categories' => $article->categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
-                'tags' => $article->tags->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
-                'gallery' => $article->media->map(fn($m) => ['id' => $m->id, 'path' => $m->path, 'caption' => $m->caption]),
+                'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]),
+                'tags' => $article->tags->map(fn ($t) => ['id' => $t->id, 'name' => $t->name]),
+                'gallery' => $article->media->map(fn ($m) => ['id' => $m->id, 'path' => $m->path, 'caption' => $m->caption]),
             ],
             'comments' => $comments,
         ]);
     }
 
-    public function react(\Illuminate\Http\Request $request, Article $article)
+    public function react(Request $request, Article $article)
     {
-        abort_if(!$article->is_published, 404);
+        abort_if(! $article->is_published, 404);
 
         $data = $request->validate([
             'reaction' => ['required', 'in:like,dislike'],
@@ -157,11 +162,14 @@ class ArticleController extends Controller
         $user = $request->user();
         $sessionId = $request->session()->getId();
 
-        $existing = \App\Models\ArticleReaction::query()
+        $existing = ArticleReaction::query()
             ->where('article_id', $article->id)
-            ->where(function($q) use ($user, $sessionId) {
-                if ($user) $q->where('user_id', $user->id);
-                else $q->where('session_id', $sessionId);
+            ->where(function ($q) use ($user, $sessionId) {
+                if ($user) {
+                    $q->where('user_id', $user->id);
+                } else {
+                    $q->where('session_id', $sessionId);
+                }
             })
             ->first();
 
@@ -170,7 +178,7 @@ class ArticleController extends Controller
         } elseif ($existing) {
             $existing->update(['reaction' => $data['reaction']]);
         } else {
-            \App\Models\ArticleReaction::create([
+            ArticleReaction::create([
                 'article_id' => $article->id,
                 'user_id' => $user?->id,
                 'session_id' => $user ? null : $sessionId,
@@ -181,16 +189,16 @@ class ArticleController extends Controller
         return back()->with('success', 'Reaksi berjaya dikemas kini.');
     }
 
-    public function storeComment(\Illuminate\Http\Request $request, Article $article)
+    public function storeComment(Request $request, Article $article)
     {
-        abort_if(!$article->is_published, 404);
+        abort_if(! $article->is_published, 404);
 
         $data = $request->validate([
             'content' => ['required', 'string', 'max:1500'],
             'anonymous_name' => ['nullable', 'string', 'max:50'],
         ]);
 
-        \App\Models\ArticleComment::create([
+        ArticleComment::create([
             'article_id' => $article->id,
             'user_id' => $request->user()?->id,
             'anonymous_name' => $request->user() ? null : ($data['anonymous_name'] ?? 'Anonim'),
@@ -220,12 +228,12 @@ class ArticleController extends Controller
 
         if ($request->hasFile('cover_image')) {
             $path = $request->file('cover_image')->store('articles', 'public');
-            $validated['cover_image_path'] = '/storage/' . $path;
+            $validated['cover_image_path'] = '/storage/'.$path;
         }
         unset($validated['cover_image']);
 
         $validated['author_id'] = auth()->id();
-        $validated['slug'] = Str::slug($validated['title']) . '-' . uniqid();
+        $validated['slug'] = Str::slug($validated['title']).'-'.uniqid();
         $validated['is_published'] = filter_var($request->input('is_published', false), FILTER_VALIDATE_BOOLEAN);
         $validated['is_featured'] = $request->boolean('is_featured', false);
 
@@ -256,7 +264,7 @@ class ArticleController extends Controller
         foreach ($galleryFiles as $file) {
             $path = $file->store('articles/gallery', 'public');
             $article->media()->create([
-                'path' => '/storage/' . $path,
+                'path' => '/storage/'.$path,
                 'type' => 'image',
             ]);
         }
@@ -287,14 +295,14 @@ class ArticleController extends Controller
                 Storage::disk('public')->delete(str_replace('/storage/', '', $article->cover_image_path));
             }
             $path = $request->file('cover_image')->store('articles', 'public');
-            $validated['cover_image_path'] = '/storage/' . $path;
+            $validated['cover_image_path'] = '/storage/'.$path;
         }
         unset($validated['cover_image']);
 
         $validated['is_published'] = filter_var($request->input('is_published', false), FILTER_VALIDATE_BOOLEAN);
         $validated['is_featured'] = $request->boolean('is_featured', false);
 
-        if ($validated['is_published'] && !$article->published_at) {
+        if ($validated['is_published'] && ! $article->published_at) {
             $validated['published_at'] = now();
         }
 
@@ -321,7 +329,7 @@ class ArticleController extends Controller
         foreach ($galleryFiles as $file) {
             $path = $file->store('articles/gallery', 'public');
             $article->media()->create([
-                'path' => '/storage/' . $path,
+                'path' => '/storage/'.$path,
                 'type' => 'image',
             ]);
         }

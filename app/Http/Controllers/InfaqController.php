@@ -8,6 +8,8 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Services\BayarCashService;
 use App\Services\DonorService;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Webimpian\BayarcashSdk\FpxDirectDebit;
 
 class InfaqController extends Controller
 {
@@ -35,27 +38,27 @@ class InfaqController extends Controller
             ->orderByDesc('id')
             ->get()
             ->map(fn (Infaq $infaq) => [
-                'id'               => $infaq->id,
-                'title'            => $infaq->title,
-                'slug'             => $infaq->slug,
-                'description'      => $infaq->description,
-                'image_path'       => $infaq->image_path,
-                'type'             => $infaq->type,
-                'allow_recurring'  => $infaq->allow_recurring,
-                'target_amount'    => $infaq->target_amount,
+                'id' => $infaq->id,
+                'title' => $infaq->title,
+                'slug' => $infaq->slug,
+                'description' => $infaq->description,
+                'image_path' => $infaq->image_path,
+                'type' => $infaq->type,
+                'allow_recurring' => $infaq->allow_recurring,
+                'target_amount' => $infaq->target_amount,
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
-                'is_active'        => $infaq->is_active,
-                'display_order'    => $infaq->display_order,
-                'organization_id'  => $infaq->organization_id,
-                'organization_name'=> $infaq->organization?->name ?? 'Global',
-                'donations_count'  => $infaq->donations_count,
-                'public_url'       => $infaq->public_url,
+                'is_active' => $infaq->is_active,
+                'display_order' => $infaq->display_order,
+                'organization_id' => $infaq->organization_id,
+                'organization_name' => $infaq->organization?->name ?? 'Global',
+                'donations_count' => $infaq->donations_count,
+                'public_url' => $infaq->public_url,
             ]);
 
         return Inertia::render('Superadmin/InfaqManage', [
             'organizations' => Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug']),
-            'infaqItems'    => $items,
+            'infaqItems' => $items,
         ]);
     }
 
@@ -65,33 +68,33 @@ class InfaqController extends Controller
     {
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title'           => ['required', 'string', 'max:255'],
-            'description'     => ['nullable', 'string', 'max:2000'],
-            'type'            => ['required', 'in:one_off,progress'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'type' => ['required', 'in:one_off,progress'],
             'allow_recurring' => ['nullable', 'boolean'],
-            'target_amount'   => ['nullable', 'numeric', 'min:1', 'max:9999999'],
-            'is_active'       => ['nullable', 'boolean'],
-            'display_order'   => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'infaq_image'     => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
+            'is_active' => ['nullable', 'boolean'],
+            'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
 
         $imagePath = null;
         if ($request->hasFile('infaq_image')) {
             $storedPath = $request->file('infaq_image')->store('infaq', 'public');
-            $imagePath  = '/storage/' . ltrim($storedPath, '/');
+            $imagePath = '/storage/'.ltrim($storedPath, '/');
         }
 
         Infaq::create([
             'organization_id' => $data['organization_id'] ?? null,
-            'title'           => $data['title'],
-            'description'     => $data['description'] ?? null,
-            'image_path'      => $imagePath,
-            'type'            => $data['type'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'image_path' => $imagePath,
+            'type' => $data['type'],
             'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
-            'target_amount'   => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
-            'collected_amount'=> 0,
-            'is_active'       => (bool) ($data['is_active'] ?? true),
-            'display_order'   => (int) ($data['display_order'] ?? 1),
+            'target_amount' => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
+            'collected_amount' => 0,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'display_order' => (int) ($data['display_order'] ?? 1),
         ]);
 
         return back()->with('success', 'Infaq berjaya dicipta.');
@@ -103,14 +106,14 @@ class InfaqController extends Controller
     {
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title'           => ['required', 'string', 'max:255'],
-            'description'     => ['nullable', 'string', 'max:2000'],
-            'type'            => ['required', 'in:one_off,progress'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'type' => ['required', 'in:one_off,progress'],
             'allow_recurring' => ['nullable', 'boolean'],
-            'target_amount'   => ['nullable', 'numeric', 'min:1', 'max:9999999'],
-            'is_active'       => ['nullable', 'boolean'],
-            'display_order'   => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'infaq_image'     => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
+            'is_active' => ['nullable', 'boolean'],
+            'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
 
         $imagePath = $infaq->image_path;
@@ -123,20 +126,20 @@ class InfaqController extends Controller
                     Storage::disk('public')->delete($oldRel);
                 }
             }
-            $newPath   = $request->file('infaq_image')->store('infaq', 'public');
-            $imagePath = '/storage/' . ltrim($newPath, '/');
+            $newPath = $request->file('infaq_image')->store('infaq', 'public');
+            $imagePath = '/storage/'.ltrim($newPath, '/');
         }
 
         $infaq->update([
             'organization_id' => $data['organization_id'] ?? null,
-            'title'           => $data['title'],
-            'description'     => $data['description'] ?? null,
-            'image_path'      => $imagePath,
-            'type'            => $data['type'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'image_path' => $imagePath,
+            'type' => $data['type'],
             'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
-            'target_amount'   => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
-            'is_active'       => (bool) ($data['is_active'] ?? false),
-            'display_order'   => (int) ($data['display_order'] ?? 1),
+            'target_amount' => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
+            'is_active' => (bool) ($data['is_active'] ?? false),
+            'display_order' => (int) ($data['display_order'] ?? 1),
         ]);
 
         return back()->with('success', 'Infaq berjaya dikemas kini.');
@@ -164,41 +167,41 @@ class InfaqController extends Controller
     {
         $seeds = [
             [
-                'title'         => 'Infaq Masjid Al-Iman',
-                'description'   => 'Bantu kami membina kemudahan solat yang lebih selesa untuk komuniti.',
-                'type'          => 'progress',
+                'title' => 'Infaq Masjid Al-Iman',
+                'description' => 'Bantu kami membina kemudahan solat yang lebih selesa untuk komuniti.',
+                'type' => 'progress',
                 'target_amount' => 50000,
                 'collected_amount' => 23750,
                 'display_order' => 1,
             ],
             [
-                'title'         => 'Infaq Anak Yatim Ramadan',
-                'description'   => 'Sumbangan untuk anak-anak yatim sempena bulan Ramadan yang mulia.',
-                'type'          => 'one_off',
+                'title' => 'Infaq Anak Yatim Ramadan',
+                'description' => 'Sumbangan untuk anak-anak yatim sempena bulan Ramadan yang mulia.',
+                'type' => 'one_off',
                 'target_amount' => null,
                 'collected_amount' => 8100,
                 'display_order' => 2,
             ],
             [
-                'title'         => 'Dana Pendidikan Islam',
-                'description'   => 'Tajaan kelas Quran & fardhu ain untuk pelajar kurang berkemampuan.',
-                'type'          => 'progress',
+                'title' => 'Dana Pendidikan Islam',
+                'description' => 'Tajaan kelas Quran & fardhu ain untuk pelajar kurang berkemampuan.',
+                'type' => 'progress',
                 'target_amount' => 15000,
                 'collected_amount' => 9600,
                 'display_order' => 3,
             ],
             [
-                'title'         => 'Infaq Buku & Pustaka',
-                'description'   => 'Sumbangkan untuk pengembangan koleksi buku perpustakaan komuniti.',
-                'type'          => 'progress',
+                'title' => 'Infaq Buku & Pustaka',
+                'description' => 'Sumbangkan untuk pengembangan koleksi buku perpustakaan komuniti.',
+                'type' => 'progress',
                 'target_amount' => 8000,
                 'collected_amount' => 4200,
                 'display_order' => 4,
             ],
             [
-                'title'         => 'Infaq Am — Derma Bebas',
-                'description'   => 'Sumbangan am untuk kegunaan operasi pertubuhan.',
-                'type'          => 'one_off',
+                'title' => 'Infaq Am — Derma Bebas',
+                'description' => 'Sumbangan am untuk kegunaan operasi pertubuhan.',
+                'type' => 'one_off',
                 'target_amount' => null,
                 'collected_amount' => 3300,
                 'display_order' => 5,
@@ -235,25 +238,25 @@ class InfaqController extends Controller
 </svg>
 SVG;
 
-            $filename  = 'infaq/demo_infaq_' . ($i + 1) . '.svg';
+            $filename = 'infaq/demo_infaq_'.($i + 1).'.svg';
             Storage::disk('public')->put($filename, $svg);
-            $imagePath = '/storage/' . ltrim($filename, '/');
+            $imagePath = '/storage/'.ltrim($filename, '/');
 
             Infaq::updateOrCreate(
                 ['title' => $seed['title']],
                 array_merge($seed, [
                     'organization_id' => null,
-                    'image_path'      => $imagePath,
-                    'is_active'       => true,
+                    'image_path' => $imagePath,
+                    'is_active' => true,
                 ])
             );
         }
 
-        return back()->with('success', 'Demo infaq berjaya dijana (' . count($seeds) . ' item).');
+        return back()->with('success', 'Demo infaq berjaya dijana ('.count($seeds).' item).');
     }
 
     // ─── Public: list page ────────────────────────────────────────────────
-    
+
     public function index()
     {
         $infaqs = Infaq::query()
@@ -261,7 +264,7 @@ SVG;
             ->with('organization:id,name')
             ->latest()
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'id' => $item->id,
                 'title' => $item->title,
                 'type' => $item->type,
@@ -275,7 +278,7 @@ SVG;
             ]);
 
         return Inertia::render('Infaq/Index', [
-            'infaqs' => $infaqs
+            'infaqs' => $infaqs,
         ]);
     }
 
@@ -322,7 +325,7 @@ SVG;
             ->latest('id')
             ->take(3)
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'id' => $item->id,
                 'title' => $item->title,
                 'image_path' => $item->image_path,
@@ -375,7 +378,7 @@ SVG;
                 'image_path' => $infaq->image_path,
                 'allow_recurring' => $infaq->allow_recurring,
                 'public_url' => $infaq->public_url,
-            ]
+            ],
         ]);
     }
 
@@ -384,13 +387,13 @@ SVG;
         $isRecurring = $request->boolean('is_recurring') && $infaq->allow_recurring;
 
         $rules = [
-            'amount'         => ['required', 'numeric', 'min:1', 'max:99999'],
-            'donor_name'     => ['required', 'string', 'max:255'],
-            'donor_phone'    => ['required', 'string', 'max:50'],
-            'donor_email'    => ['required', 'email', 'max:255'],
+            'amount' => ['required', 'numeric', 'min:1', 'max:99999'],
+            'donor_name' => ['required', 'string', 'max:255'],
+            'donor_phone' => ['required', 'string', 'max:50'],
+            'donor_email' => ['required', 'email', 'max:255'],
             'prayer_message' => ['nullable', 'string', 'max:400'],
-            'is_anonymous'   => ['boolean'],
-            'wants_updates'  => ['boolean'],
+            'is_anonymous' => ['boolean'],
+            'wants_updates' => ['boolean'],
         ];
 
         if ($isRecurring) {
@@ -403,43 +406,43 @@ SVG;
         $org = $infaq->organization_id ? Organization::find($infaq->organization_id) : null;
         $useBayarCash = $org && $org->hasBayarCashConfig();
 
-        if ($isRecurring && !$useBayarCash) {
+        if ($isRecurring && ! $useBayarCash) {
             return back()->with('error', 'Pembayaran recurring memerlukan gateway BayarCash.');
         }
 
         $frequencyMap = [
-            'monthly' => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_MONTHLY,
-            'weekly'  => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_WEEKLY,
-            'yearly'  => \Webimpian\BayarcashSdk\FpxDirectDebit::MODE_YEARLY,
+            'monthly' => FpxDirectDebit::MODE_MONTHLY,
+            'weekly' => FpxDirectDebit::MODE_WEEKLY,
+            'yearly' => FpxDirectDebit::MODE_YEARLY,
         ];
 
         $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useBayarCash, $isRecurring, $frequencyMap) {
-            $ref = 'INFQ-' . strtoupper(Str::random(10));
+            $ref = 'INFQ-'.strtoupper(Str::random(10));
 
             $nextBilling = null;
             if ($isRecurring) {
                 $nextBilling = match ($data['frequency']) {
                     'monthly' => now()->addMonth()->toDateString(),
-                    'weekly'  => now()->addWeek()->toDateString(),
-                    'yearly'  => now()->addYear()->toDateString(),
+                    'weekly' => now()->addWeek()->toDateString(),
+                    'yearly' => now()->addYear()->toDateString(),
                 };
             }
 
             $donation = InfaqDonation::create([
-                'infaq_id'         => $infaq->id,
-                'user_id'          => $user?->id,
-                'amount'           => $data['amount'],
-                'reference'        => $ref,
-                'status'           => $useBayarCash ? 'pending' : 'confirmed',
-                'donor_name'       => $data['donor_name'],
-                'donor_phone'      => $data['donor_phone'],
-                'donor_email'      => $data['donor_email'],
-                'prayer_message'   => $data['prayer_message'] ?? null,
-                'is_anonymous'     => $data['is_anonymous'] ?? false,
-                'wants_updates'    => $data['wants_updates'] ?? false,
-                'is_recurring'     => $isRecurring,
-                'frequency'        => $isRecurring ? $frequencyMap[$data['frequency']] : null,
-                'next_billing_date'=> $nextBilling,
+                'infaq_id' => $infaq->id,
+                'user_id' => $user?->id,
+                'amount' => $data['amount'],
+                'reference' => $ref,
+                'status' => $useBayarCash ? 'pending' : 'confirmed',
+                'donor_name' => $data['donor_name'],
+                'donor_phone' => $data['donor_phone'],
+                'donor_email' => $data['donor_email'],
+                'prayer_message' => $data['prayer_message'] ?? null,
+                'is_anonymous' => $data['is_anonymous'] ?? false,
+                'wants_updates' => $data['wants_updates'] ?? false,
+                'is_recurring' => $isRecurring,
+                'frequency' => $isRecurring ? $frequencyMap[$data['frequency']] : null,
+                'next_billing_date' => $nextBilling,
                 'recurring_status' => $isRecurring ? 'pending' : null,
             ]);
 
@@ -450,23 +453,23 @@ SVG;
                 $this->donorService->incrementDonor($donor, (float) $data['amount']);
             }
 
-            $paymentRef = ($isRecurring ? 'DDR-' : 'INFQ-') . strtoupper(Str::random(8));
+            $paymentRef = ($isRecurring ? 'DDR-' : 'INFQ-').strtoupper(Str::random(8));
 
             $payment = Payment::create([
-                'user_id'         => $user?->id,
-                'payable_type'    => 'infaq_donation',
-                'payable_id'      => $donation->id,
-                'amount'          => $data['amount'],
-                'status'          => $useBayarCash ? 'pending' : 'successful',
-                'reference'       => $paymentRef,
-                'description'     => $isRecurring
+                'user_id' => $user?->id,
+                'payable_type' => 'infaq_donation',
+                'payable_id' => $donation->id,
+                'amount' => $data['amount'],
+                'status' => $useBayarCash ? 'pending' : 'successful',
+                'reference' => $paymentRef,
+                'description' => $isRecurring
                     ? "Donasi berkala ({$data['frequency']}): {$infaq->title}"
                     : "Donasi: {$infaq->title}",
-                'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
+                'gateway' => $useBayarCash ? 'bayarcash' : 'dummy',
                 'organization_id' => $org?->id,
             ]);
 
-            if (!$useBayarCash) {
+            if (! $useBayarCash) {
                 $infaq->increment('collected_amount', $data['amount']);
             }
 
@@ -503,13 +506,14 @@ SVG;
             }
 
             $payment->update(['status' => 'failed']);
+
             return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
         }
 
         return redirect()->route('infaq.success', [
-            'year'  => $year,
+            'year' => $year,
             'month' => $month,
-            'day'   => $day,
+            'day' => $day,
             'infaq' => $infaq->slug,
         ]);
     }
@@ -545,13 +549,13 @@ SVG;
     private function qrPngGd(string $text, int $size = 300, int $margin = 1, string $errorCorrection = 'H'): string
     {
         $ecLevel = match (strtoupper($errorCorrection)) {
-            'L' => \BaconQrCode\Common\ErrorCorrectionLevel::L(),
-            'M' => \BaconQrCode\Common\ErrorCorrectionLevel::M(),
-            'Q' => \BaconQrCode\Common\ErrorCorrectionLevel::Q(),
-            default => \BaconQrCode\Common\ErrorCorrectionLevel::H(),
+            'L' => ErrorCorrectionLevel::L(),
+            'M' => ErrorCorrectionLevel::M(),
+            'Q' => ErrorCorrectionLevel::Q(),
+            default => ErrorCorrectionLevel::H(),
         };
 
-        $matrix = \BaconQrCode\Encoder\Encoder::encode($text, $ecLevel)->getMatrix();
+        $matrix = Encoder::encode($text, $ecLevel)->getMatrix();
         $modules = $matrix->getWidth();
         $total = $modules + ($margin * 2);
 
@@ -597,34 +601,34 @@ SVG;
             ->orderByDesc('created_at')
             ->get()
             ->map(fn (InfaqDonation $d) => [
-                'id'                => $d->id,
-                'donor_name'        => $d->is_anonymous ? 'Hamba Allah' : ($d->donor_name ?? $d->user?->name ?? 'Tanpa Nama'),
-                'donor_email'       => $d->donor_email,
-                'donor_phone'       => $d->donor_phone,
-                'amount'            => (float) $d->amount,
-                'status'            => $d->status,
-                'reference'         => $d->reference,
-                'is_anonymous'      => $d->is_anonymous,
-                'is_recurring'      => $d->is_recurring,
-                'frequency'         => $d->frequency,
-                'recurring_status'  => $d->recurring_status,
-                'prayer_message'    => $d->prayer_message,
-                'wants_updates'     => $d->wants_updates,
-                'created_at'        => $d->created_at->format('d M Y, h:i A'),
-                'created_at_iso'    => $d->created_at->toISOString(),
+                'id' => $d->id,
+                'donor_name' => $d->is_anonymous ? 'Hamba Allah' : ($d->donor_name ?? $d->user?->name ?? 'Tanpa Nama'),
+                'donor_email' => $d->donor_email,
+                'donor_phone' => $d->donor_phone,
+                'amount' => (float) $d->amount,
+                'status' => $d->status,
+                'reference' => $d->reference,
+                'is_anonymous' => $d->is_anonymous,
+                'is_recurring' => $d->is_recurring,
+                'frequency' => $d->frequency,
+                'recurring_status' => $d->recurring_status,
+                'prayer_message' => $d->prayer_message,
+                'wants_updates' => $d->wants_updates,
+                'created_at' => $d->created_at->format('d M Y, h:i A'),
+                'created_at_iso' => $d->created_at->toISOString(),
             ]);
 
         return Inertia::render('Superadmin/InfaqDonors', [
             'infaq' => [
-                'id'               => $infaq->id,
-                'title'            => $infaq->title,
-                'slug'             => $infaq->slug,
-                'type'             => $infaq->type,
-                'target_amount'    => (float) $infaq->target_amount,
+                'id' => $infaq->id,
+                'title' => $infaq->title,
+                'slug' => $infaq->slug,
+                'type' => $infaq->type,
+                'target_amount' => (float) $infaq->target_amount,
                 'collected_amount' => (float) $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
-                'organization_name'=> $infaq->organization?->name ?? 'Global',
-                'public_url'       => $infaq->public_url,
+                'organization_name' => $infaq->organization?->name ?? 'Global',
+                'public_url' => $infaq->public_url,
             ],
             'donations' => $donations,
         ]);
@@ -641,7 +645,7 @@ SVG;
                 'year' => $year,
                 'month' => $month,
                 'day' => $day,
-            ]
+            ],
         ]);
     }
 }

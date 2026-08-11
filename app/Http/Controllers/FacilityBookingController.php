@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Facility;
 use App\Models\FacilityBooking;
-use App\Models\FacilityMedia;
 use App\Models\Organization;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -86,7 +85,7 @@ class FacilityBookingController extends Controller
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
 
         $imagePath = $request->hasFile('image')
-            ? '/storage/' . ltrim($request->file('image')->store('facilities', 'public'), '/')
+            ? '/storage/'.ltrim($request->file('image')->store('facilities', 'public'), '/')
             : null;
 
         $facility = Facility::create([
@@ -104,7 +103,7 @@ class FacilityBookingController extends Controller
 
         foreach ($request->file('gallery', []) as $i => $file) {
             $facility->media()->create([
-                'path' => '/storage/' . ltrim($file->store('facilities/gallery', 'public'), '/'),
+                'path' => '/storage/'.ltrim($file->store('facilities/gallery', 'public'), '/'),
                 'type' => 'image',
                 'order' => $i,
             ]);
@@ -148,7 +147,7 @@ class FacilityBookingController extends Controller
             }
 
             $newPath = $request->file('image')->store('facilities', 'public');
-            $imagePath = '/storage/' . ltrim($newPath, '/');
+            $imagePath = '/storage/'.ltrim($newPath, '/');
         }
 
         $facility->update([
@@ -178,7 +177,7 @@ class FacilityBookingController extends Controller
         $maxOrder = $facility->media()->max('order') ?? 0;
         foreach ($request->file('gallery', []) as $i => $file) {
             $facility->media()->create([
-                'path' => '/storage/' . ltrim($file->store('facilities/gallery', 'public'), '/'),
+                'path' => '/storage/'.ltrim($file->store('facilities/gallery', 'public'), '/'),
                 'type' => 'image',
                 'order' => $maxOrder + $i + 1,
             ]);

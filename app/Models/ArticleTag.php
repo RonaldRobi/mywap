@@ -14,7 +14,7 @@ class ArticleTag extends Model
     protected static function booted()
     {
         static::creating(function ($tag) {
-            if (!$tag->slug) {
+            if (! $tag->slug) {
                 $tag->slug = Str::slug($tag->name);
             }
         });

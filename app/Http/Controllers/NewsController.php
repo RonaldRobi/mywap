@@ -248,7 +248,7 @@ class NewsController extends Controller
 
         $coverImagePath = null;
         if ($request->hasFile('cover_image')) {
-            $coverImagePath = '/storage/' . ltrim($request->file('cover_image')->store('info', 'public'), '/');
+            $coverImagePath = '/storage/'.ltrim($request->file('cover_image')->store('info', 'public'), '/');
         }
 
         NewsPost::create([
@@ -293,7 +293,7 @@ class NewsController extends Controller
                 Storage::disk('public')->delete($oldPath);
             }
 
-            $coverImagePath = '/storage/' . ltrim($request->file('cover_image')->store('info', 'public'), '/');
+            $coverImagePath = '/storage/'.ltrim($request->file('cover_image')->store('info', 'public'), '/');
         }
 
         $wasPublished = (bool) $newsPost->is_published;

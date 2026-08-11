@@ -8,13 +8,14 @@ use App\Models\Article;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
 use App\Models\Event;
-use App\Models\Popup;
 use App\Models\EventRsvp;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\NewsPost;
 use App\Models\Poll;
+use App\Models\PollAnswer;
 use App\Models\PollResponse;
+use App\Models\Popup;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\FeeService;
@@ -118,7 +119,7 @@ class MemberDashboardController extends Controller
             ->where('start_time', '>=', now())
             ->where(function ($q) use ($user) {
                 $q->whereNull('organization_id')
-                  ->orWhere('organization_id', $user->current_organization_id);
+                    ->orWhere('organization_id', $user->current_organization_id);
             })
             ->orderBy('start_time')
             ->take(5)
@@ -127,6 +128,7 @@ class MemberDashboardController extends Controller
                 $myRsvp = EventRsvp::where('event_id', $e->id)
                     ->where('user_id', $user->id)
                     ->first();
+
                 return [
                     'id' => $e->id,
                     'title' => $e->title,
@@ -196,26 +198,26 @@ class MemberDashboardController extends Controller
             ->where('is_active', true)
             ->where(function ($q) use ($user) {
                 $q->whereNull('organization_id')
-                  ->orWhere('organization_id', $user->current_organization_id);
+                    ->orWhere('organization_id', $user->current_organization_id);
             })
             ->orderBy('display_order')
             ->take(6)
             ->get()
             ->map(fn (Infaq $infaq) => [
-                'id'               => $infaq->id,
-                'title'            => $infaq->title,
-                'description'      => $infaq->description,
-                'image_path'       => $infaq->image_path,
-                'type'             => $infaq->type,
-                'target_amount'    => $infaq->target_amount,
+                'id' => $infaq->id,
+                'title' => $infaq->title,
+                'description' => $infaq->description,
+                'image_path' => $infaq->image_path,
+                'type' => $infaq->type,
+                'target_amount' => $infaq->target_amount,
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
-                'public_url'       => $infaq->public_url,
+                'public_url' => $infaq->public_url,
             ]);
 
         $activePolls = Poll::withoutGlobalScopes()
             ->with(['questions' => function ($q) {
-                $q->orderBy('sort_order')->take(1)->with(['options' => fn($o) => $o->orderBy('sort_order')]);
+                $q->orderBy('sort_order')->take(1)->with(['options' => fn ($o) => $o->orderBy('sort_order')]);
             }])
             ->withCount('responses')
             ->where('is_active', true)
@@ -224,18 +226,18 @@ class MemberDashboardController extends Controller
             })
             ->where(function ($q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
-                  ->orWhere('target_type', 'all_orgs');
+                    ->orWhere('target_type', 'all_orgs');
             })
             ->where(function ($q) use ($user) {
                 $q->where('target_type', 'all')
                     ->orWhere('target_type', 'all_orgs')
                     ->orWhere(function ($q) use ($user) {
                         $q->where('target_type', 'members')
-                            ->whereHas('targetMembers', fn($q) => $q->where('user_id', $user->id));
+                            ->whereHas('targetMembers', fn ($q) => $q->where('user_id', $user->id));
                     })
                     ->orWhere(function ($q) use ($user) {
                         $q->where('target_type', 'usrah')
-                            ->whereHas('targetUsrahGroups.members', fn($q) => $q->where('user_id', $user->id));
+                            ->whereHas('targetUsrahGroups.members', fn ($q) => $q->where('user_id', $user->id));
                     });
             })
             ->latest()
@@ -251,11 +253,12 @@ class MemberDashboardController extends Controller
                 $totalAnswers = 0;
 
                 if ($firstQuestion) {
-                    $totalAnswers = \App\Models\PollAnswer::where('poll_question_id', $firstQuestion->id)->count();
+                    $totalAnswers = PollAnswer::where('poll_question_id', $firstQuestion->id)->count();
                     $optionsPreview = $firstQuestion->options->map(function ($opt) use ($firstQuestion, $totalAnswers) {
-                        $count = \App\Models\PollAnswer::where('poll_question_id', $firstQuestion->id)
+                        $count = PollAnswer::where('poll_question_id', $firstQuestion->id)
                             ->where('poll_option_id', $opt->id)
                             ->count();
+
                         return [
                             'id' => $opt->id,
                             'text' => $opt->option_text,

@@ -2,25 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\MembersImport;
+use App\Jobs\SendAnnouncementJob;
 use App\Models\ActivityLog;
 use App\Models\Announcement;
 use App\Models\AnnouncementImage;
-use App\Jobs\SendAnnouncementJob;
+use App\Models\Branch;
 use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
 use App\Models\LibraryItem;
 use App\Models\Organization;
+use App\Models\OrganizationPosition;
 use App\Models\User;
 use App\Services\FeeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
 
 class InformationHubAdminController extends Controller
@@ -103,11 +109,11 @@ class InformationHubAdminController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('ic_number', 'like', "%{$search}%")
-                  ->orWhere('member_no', 'like', "%{$search}%")
-                  ->orWhere('original_member_no', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('ic_number', 'like', "%{$search}%")
+                    ->orWhere('member_no', 'like', "%{$search}%")
+                    ->orWhere('original_member_no', 'like', "%{$search}%");
             });
         }
 
@@ -130,19 +136,19 @@ class InformationHubAdminController extends Controller
         }
 
         if ($registeredFrom) {
-            $query->where('created_at', '>=', $registeredFrom . ' 00:00:00');
+            $query->where('created_at', '>=', $registeredFrom.' 00:00:00');
         }
 
         if ($registeredTo) {
-            $query->where('created_at', '<=', $registeredTo . ' 23:59:59');
+            $query->where('created_at', '<=', $registeredTo.' 23:59:59');
         }
 
         $branches = $isSuperadmin
-            ? \App\Models\Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
-            : \App\Models\Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+            ? Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
         $members = $query->latest()->paginate($perPage)->withQueryString()
-            ->through(fn(User $u) => [
+            ->through(fn (User $u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
@@ -179,7 +185,7 @@ class InformationHubAdminController extends Controller
                 'is_active' => (bool) $u->is_active,
                 'transition_history' => $u->transitionHistory->map(fn ($h) => [
                     'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
-                    'to'   => $h->toOrganization->name,
+                    'to' => $h->toOrganization->name,
                     'date' => $h->transitioned_at->format('d M Y'),
                     'color' => $h->toOrganization?->color_theme ?? '#6b7280',
                 ])->values(),
@@ -189,9 +195,9 @@ class InformationHubAdminController extends Controller
                     ->values()
                     ->map(fn ($rsvp) => [
                         'title' => $rsvp->event?->title ?? 'Program tidak wujud',
-                        'date'  => $rsvp->attended_at?->format('d M Y'),
-                        'year'  => $rsvp->attended_at?->year,
-                        'org'   => $rsvp->event?->organization?->name ?? '—',
+                        'date' => $rsvp->attended_at?->format('d M Y'),
+                        'year' => $rsvp->attended_at?->year,
+                        'org' => $rsvp->event?->organization?->name ?? '—',
                         'color' => $rsvp->event?->organization?->color_theme ?? '#6b7280',
                     ]),
                 'fee_status' => $u->membershipFees
@@ -199,8 +205,7 @@ class InformationHubAdminController extends Controller
                     ->first()?->status ?? 'unpaid',
             ]);
 
-
-        $positions = \App\Models\OrganizationPosition::where('organization_id', $user->current_organization_id)
+        $positions = OrganizationPosition::where('organization_id', $user->current_organization_id)
             ->orderBy('display_order')->get(['id', 'name']);
 
         $userQuery = User::withoutGlobalScopes()
@@ -248,7 +253,7 @@ class InformationHubAdminController extends Controller
                 'registered_from' => $registeredFrom,
                 'registered_to' => $registeredTo,
                 'per_page' => $perPage,
-            ]
+            ],
         ]);
     }
 
@@ -263,10 +268,10 @@ class InformationHubAdminController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users', 'email')->ignore($user->id)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
-            'ic_number' => ['nullable', 'string', 'max:32', \Illuminate\Validation\Rule::unique('users', 'ic_number')->ignore($user->id)],
-            'member_no' => $isSuperadmin ? ['nullable', 'string', 'max:12', \Illuminate\Validation\Rule::unique('users', 'member_no')->ignore($user->id)] : ['prohibited'],
+            'ic_number' => ['nullable', 'string', 'max:32', Rule::unique('users', 'ic_number')->ignore($user->id)],
+            'member_no' => $isSuperadmin ? ['nullable', 'string', 'max:12', Rule::unique('users', 'member_no')->ignore($user->id)] : ['prohibited'],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
@@ -287,13 +292,13 @@ class InformationHubAdminController extends Controller
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
             'is_public_in_directory' => ['nullable', 'boolean'],
-            'is_branch_admin'        => ['nullable', 'boolean'],
+            'is_branch_admin' => ['nullable', 'boolean'],
         ]);
 
         $originalMemberNo = $user->getOriginal('member_no');
         $originalBranchId = $user->getOriginal('branch_id');
 
-        if ($isSuperadmin && !empty($validated['member_no'])) {
+        if ($isSuperadmin && ! empty($validated['member_no'])) {
             $no = Str::upper(trim($validated['member_no']));
             $validated['member_no'] = $no;
             $seq = (int) preg_replace('/^[A-Z]+/', '', $no);
@@ -305,7 +310,7 @@ class InformationHubAdminController extends Controller
         $user->update($validated);
 
         $desc = 'Profil ahli dikemas kini.';
-        if ($isSuperadmin && !empty($validated['member_no']) && $validated['member_no'] !== $originalMemberNo) {
+        if ($isSuperadmin && ! empty($validated['member_no']) && $validated['member_no'] !== $originalMemberNo) {
             $desc = "No Ahli ditukar dari {$originalMemberNo} ke {$validated['member_no']}.";
         }
 
@@ -373,7 +378,7 @@ class InformationHubAdminController extends Controller
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
 
         $coverPath = $request->hasFile('cover_image')
-            ? '/storage/' . ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/')
+            ? '/storage/'.ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/')
             : null;
 
         $announcement = Announcement::create([
@@ -394,7 +399,7 @@ class InformationHubAdminController extends Controller
             foreach ($request->file('gallery_images') as $order => $image) {
                 $path = $image->store('announcements/gallery', 'public');
                 $announcement->images()->create([
-                    'image_path' => '/storage/' . ltrim($path, '/'),
+                    'image_path' => '/storage/'.ltrim($path, '/'),
                     'display_order' => $order,
                 ]);
             }
@@ -442,7 +447,7 @@ class InformationHubAdminController extends Controller
             if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
                 Storage::disk('public')->delete($oldPath);
             }
-            $coverPath = '/storage/' . ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/');
+            $coverPath = '/storage/'.ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/');
         } elseif ($request->boolean('remove_cover_image')) {
             $oldPath = ltrim(str_replace('/storage/', '', parse_url($announcement->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
             if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
@@ -483,7 +488,7 @@ class InformationHubAdminController extends Controller
             foreach ($request->file('gallery_images') as $order => $image) {
                 $path = $image->store('announcements/gallery', 'public');
                 $announcement->images()->create([
-                    'image_path' => '/storage/' . ltrim($path, '/'),
+                    'image_path' => '/storage/'.ltrim($path, '/'),
                     'display_order' => $maxOrder + 1 + $order,
                 ]);
             }
@@ -530,7 +535,7 @@ class InformationHubAdminController extends Controller
 
         $path = $request->file('pdf_file')->store('library', 'public');
         $coverPath = $request->hasFile('cover_image')
-            ? '/storage/' . ltrim($request->file('cover_image')->store('library/covers', 'public'), '/')
+            ? '/storage/'.ltrim($request->file('cover_image')->store('library/covers', 'public'), '/')
             : null;
 
         LibraryItem::create([
@@ -538,7 +543,7 @@ class InformationHubAdminController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category' => $data['category'] ?? 'Umum',
-            'file_path' => '/storage/' . ltrim($path, '/'),
+            'file_path' => '/storage/'.ltrim($path, '/'),
             'cover_image_path' => $coverPath,
         ]);
 
@@ -575,10 +580,10 @@ class InformationHubAdminController extends Controller
         };
         $padding = $prefix === 'W' ? 4 : 5;
 
-        $max = User::where('member_no', 'like', $prefix . '%')
+        $max = User::where('member_no', 'like', $prefix.'%')
             ->max('member_no_sequence');
         $next = ($max ?? 0) + 1;
-        $memberNo = $prefix . str_pad($next, $padding, '0', STR_PAD_LEFT);
+        $memberNo = $prefix.str_pad($next, $padding, '0', STR_PAD_LEFT);
 
         $user = User::withoutGlobalScopes()->create([
             'name' => $data['name'],
@@ -652,7 +657,7 @@ class InformationHubAdminController extends Controller
             }
 
             $newPath = $request->file('pdf_file')->store('library', 'public');
-            $filePath = '/storage/' . ltrim($newPath, '/');
+            $filePath = '/storage/'.ltrim($newPath, '/');
         }
 
         if ($request->hasFile('cover_image')) {
@@ -662,7 +667,7 @@ class InformationHubAdminController extends Controller
             }
 
             $newCoverPath = $request->file('cover_image')->store('library/covers', 'public');
-            $coverImagePath = '/storage/' . ltrim($newCoverPath, '/');
+            $coverImagePath = '/storage/'.ltrim($newCoverPath, '/');
         }
 
         $libraryItem->update([
@@ -714,7 +719,7 @@ class InformationHubAdminController extends Controller
         $request->merge(['ic_number' => $normalizedIcNumber]);
 
         $data = $request->validate([
-            'ic_number' => ['required', 'string', 'max:32', 'unique:users,ic_number,' . $user->id],
+            'ic_number' => ['required', 'string', 'max:32', 'unique:users,ic_number,'.$user->id],
         ]);
 
         $user->update([
@@ -741,13 +746,18 @@ class InformationHubAdminController extends Controller
             'organization_id' => ['required', 'integer', 'exists:organizations,id'],
         ]);
 
-        $organization = \App\Models\Organization::find($request->organization_id);
+        $organization = Organization::find($request->organization_id);
         $prefix = '';
-        if ($organization->slug === 'wadah') $prefix = 'W';
-        elseif ($organization->slug === 'abim') $prefix = 'A';
-        elseif ($organization->slug === 'pkpim') $prefix = 'P';
+        if ($organization->slug === 'wadah') {
+            $prefix = 'W';
+        } elseif ($organization->slug === 'abim') {
+            $prefix = 'A';
+        } elseif ($organization->slug === 'pkpim') {
+            $prefix = 'P';
+        }
 
         $filePath = $request->file('excel_file')->store('imports', 'local');
+
         return response()->json(['filename' => $filePath, 'prefix' => $prefix]);
     }
 
@@ -766,20 +776,21 @@ class InformationHubAdminController extends Controller
         set_time_limit(120);
 
         try {
-            $import = new \App\Imports\MembersImport(
-                $request->organization_id, 
-                $request->prefix ?? '', 
-                $request->start_row, 
+            $import = new MembersImport(
+                $request->organization_id,
+                $request->prefix ?? '',
+                $request->start_row,
                 $request->chunk_size
             );
-            \Maatwebsite\Excel\Facades\Excel::import($import, $request->filename, 'local');
-            
+            Excel::import($import, $request->filename, 'local');
+
             return response()->json([
                 'processed' => $import->processedCount,
                 'errors' => $import->errors,
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('CHUNK IMPORT ERROR: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            Log::error('CHUNK IMPORT ERROR: '.$e->getMessage()."\n".$e->getTraceAsString());
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -787,9 +798,10 @@ class InformationHubAdminController extends Controller
     public function importFinish(Request $request)
     {
         abort_unless($request->user()?->hasRole('Superadmin'), 403);
-        if ($request->filename && \Illuminate\Support\Facades\Storage::disk('local')->exists($request->filename)) {
-            \Illuminate\Support\Facades\Storage::disk('local')->delete($request->filename);
+        if ($request->filename && Storage::disk('local')->exists($request->filename)) {
+            Storage::disk('local')->delete($request->filename);
         }
+
         return response()->json(['success' => true]);
     }
 
@@ -816,6 +828,7 @@ class InformationHubAdminController extends Controller
         ]);
 
         $status = $user->is_active ? 'diaktifkan' : 'dinyahaktifkan';
+
         return back()->with('success', "Ahli berjaya {$status}.");
     }
 
@@ -840,7 +853,9 @@ class InformationHubAdminController extends Controller
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         if (! $user->hasRole('Superadmin') && $targetUser->current_organization_id !== $user->current_organization_id) {
             abort(403);
@@ -889,9 +904,9 @@ class InformationHubAdminController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('member_no', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('ic_number', 'like', "%{$search}%");
+                    ->orWhere('member_no', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('ic_number', 'like', "%{$search}%");
             });
         }
 
@@ -907,8 +922,8 @@ class InformationHubAdminController extends Controller
             ]);
 
         $branches = $isSuperadmin
-            ? \App\Models\Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id'])
-            : \App\Models\Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id']);
+            ? Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id'])
+            : Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name', 'organization_id']);
 
         return Inertia::render('Admin/BulkBranch', [
             'isSuperadmin' => $isSuperadmin,
@@ -938,7 +953,7 @@ class InformationHubAdminController extends Controller
             'member_ids.*' => ['integer', 'exists:users,id'],
         ]);
 
-        $targetBranch = \App\Models\Branch::find($data['branch_id']);
+        $targetBranch = Branch::find($data['branch_id']);
 
         if (! $isSuperadmin) {
             if ($targetBranch->organization_id !== $authUser->current_organization_id) {
@@ -956,6 +971,7 @@ class InformationHubAdminController extends Controller
         foreach ($members as $member) {
             if ($member->branch_id === $targetBranch->id) {
                 $errors[] = "{$member->name} ({$member->member_no}) sudah berada di cawangan ini.";
+
                 continue;
             }
 
@@ -1030,6 +1046,6 @@ class InformationHubAdminController extends Controller
         $visiblePrefix = mb_substr($normalized, 0, 6);
         $maskedLength = max(0, mb_strlen($normalized) - 6);
 
-        return $visiblePrefix . str_repeat('*', $maskedLength);
+        return $visiblePrefix.str_repeat('*', $maskedLength);
     }
 }

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\FeeStatus;
 use App\Models\MembershipFee;
 use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\FeeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,7 +16,9 @@ class FeeServiceTest extends TestCase
     use RefreshDatabase;
 
     private FeeService $feeService;
+
     private Organization $org;
+
     private User $user;
 
     protected function setUp(): void
@@ -382,9 +385,9 @@ class FeeServiceTest extends TestCase
     {
         $fee = $this->feeService->markAsPaid($this->user, now()->year, 50.00);
 
-        \App\Models\Payment::create([
+        Payment::create([
             'user_id' => $this->user->id,
-            'payable_type' => \App\Models\MembershipFee::class,
+            'payable_type' => MembershipFee::class,
             'payable_id' => $fee->id,
             'amount' => 50.00,
             'status' => 'successful',
@@ -449,9 +452,9 @@ class FeeServiceTest extends TestCase
     {
         $fee = $this->feeService->markAsPaid($this->user, now()->year, 50.00);
 
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             'user_id' => $this->user->id,
-            'payable_type' => \App\Models\MembershipFee::class,
+            'payable_type' => MembershipFee::class,
             'payable_id' => $fee->id,
             'amount' => 50.00,
             'status' => 'successful',
@@ -469,9 +472,9 @@ class FeeServiceTest extends TestCase
     {
         $fee = $this->feeService->markAsPaid($this->user, now()->year, 50.00);
 
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             'user_id' => $this->user->id,
-            'payable_type' => \App\Models\MembershipFee::class,
+            'payable_type' => MembershipFee::class,
             'payable_id' => $fee->id,
             'amount' => 50.00,
             'status' => 'voided',

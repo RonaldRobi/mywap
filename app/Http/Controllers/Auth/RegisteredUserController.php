@@ -144,7 +144,8 @@ class RegisteredUserController extends Controller
         if ($user->email) {
             try {
                 $user->notify(new RegistrationReceived($user));
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
 
         session(['pending_registration_user_id' => $user->id]);
@@ -227,7 +228,8 @@ class RegisteredUserController extends Controller
         if ($user->email) {
             try {
                 $user->notify(new RegistrationActivated($user, route('login')));
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
 
         try {
@@ -236,7 +238,8 @@ class RegisteredUserController extends Controller
                 Notification::route('mail', $adminEmail)
                     ->notify(new NewMemberAlert($user));
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         return redirect()->route('login')->with('status', "Pendaftaran berjaya! No Ahli anda: {$user->member_no}. Sila log masuk kali pertama menggunakan No IC anda.");
     }

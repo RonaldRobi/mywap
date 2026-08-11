@@ -8,7 +8,6 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class FeeService
@@ -142,19 +141,17 @@ class FeeService
 
     public function isLifeMember(User $user): bool
     {
-        return Cache::remember("life_member:{$user->id}", 300, fn () =>
-            MembershipFee::where('user_id', $user->id)
-                ->where('status', 'life_member')
-                ->exists()
+        return Cache::remember("life_member:{$user->id}", 300, fn () => MembershipFee::where('user_id', $user->id)
+            ->where('status', 'life_member')
+            ->exists()
         );
     }
 
     public function isExempted(User $user): bool
     {
-        return Cache::remember("exempted:{$user->id}", 300, fn () =>
-            MembershipFee::where('user_id', $user->id)
-                ->where('status', 'exempted')
-                ->exists()
+        return Cache::remember("exempted:{$user->id}", 300, fn () => MembershipFee::where('user_id', $user->id)
+            ->where('status', 'exempted')
+            ->exists()
         );
     }
 
@@ -181,7 +178,7 @@ class FeeService
             ->get()
             ->map(function (MembershipFee $fee) {
                 $ref = $fee->payment?->reference ?? '';
-                $hasProof = !is_null($fee->payment?->proof_path);
+                $hasProof = ! is_null($fee->payment?->proof_path);
                 $uploadedBy = $fee->payment?->uploaded_by;
 
                 if (str_starts_with($ref, 'DUMMY-')) {

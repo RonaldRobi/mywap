@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\MembershipFee;
 use App\Models\User;
 use App\Notifications\FeeReminderNotification;
 use Illuminate\Console\Command;
@@ -10,6 +9,7 @@ use Illuminate\Console\Command;
 class NotifyAnnualFees extends Command
 {
     protected $signature = 'fees:notify-start-of-year {year? : Tahun yuran (default: tahun semasa)}';
+
     protected $description = 'Send in-app invoice/reminder notifications to members with unpaid annual fees';
 
     public function handle(): int

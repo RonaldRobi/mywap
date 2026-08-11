@@ -36,7 +36,7 @@ class BroadcastMessage extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new OrganizationScope());
+        static::addGlobalScope(new OrganizationScope);
     }
 
     public function organization(): BelongsTo

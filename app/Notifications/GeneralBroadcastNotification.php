@@ -11,9 +11,7 @@ class GeneralBroadcastNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public BroadcastMessage $broadcastMessage)
-    {
-    }
+    public function __construct(public BroadcastMessage $broadcastMessage) {}
 
     public function via(object $notifiable): array
     {
@@ -33,7 +31,7 @@ class GeneralBroadcastNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $message = new MailMessage();
+        $message = new MailMessage;
 
         if ($this->broadcastMessage->email_use_template) {
             return $message

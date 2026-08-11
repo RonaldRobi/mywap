@@ -2,13 +2,15 @@
 
 namespace App\Console\Commands\Traits;
 
+use App\Models\Organization;
+
 trait MemberNoPrefix
 {
     public function prefixForOrg($org): ?string
     {
         return match ($org?->slug) {
             'pkpim' => 'P',
-            'abim'  => 'A',
+            'abim' => 'A',
             'wadah' => 'W',
             default => null,
         };
@@ -16,6 +18,6 @@ trait MemberNoPrefix
 
     public function orgSlugForId(int $orgId): ?string
     {
-        return \App\Models\Organization::find($orgId)?->slug;
+        return Organization::find($orgId)?->slug;
     }
 }

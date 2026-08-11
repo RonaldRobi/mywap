@@ -59,7 +59,7 @@ class SuperadminLogoSettingController extends Controller
 
         $storedPath = $data['system_logo']->store('logos/system', 'public');
         $setting->update([
-            'system_logo_path' => '/storage/' . ltrim($storedPath, '/'),
+            'system_logo_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', 'Logo sistem berjaya dikemas kini.');
@@ -85,7 +85,7 @@ class SuperadminLogoSettingController extends Controller
         $storedPath = $data['organization_logo']->store('logos/organizations', 'public');
 
         $organization->update([
-            'logo_path' => '/storage/' . ltrim($storedPath, '/'),
+            'logo_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', "Logo {$organization->name} berjaya dikemas kini.");

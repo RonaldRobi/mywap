@@ -39,23 +39,23 @@ class LogTransitionAndNotify implements ShouldQueue
 
         // 1 ── Persist transition record ──────────────────────────────────────
         UserTransitionHistory::create([
-            'user_id'              => $user->id,
+            'user_id' => $user->id,
             'from_organization_id' => $event->fromOrganizationId,
-            'to_organization_id'   => $event->toOrganizationId,
-            'transitioned_at'      => now(),
+            'to_organization_id' => $event->toOrganizationId,
+            'transitioned_at' => now(),
         ]);
 
         // 2 ── Notify the member ───────────────────────────────────────────────
         try {
             $user->notify(new MemberTransitionNotification(
                 fromOrgId: $event->fromOrganizationId,
-                toOrgId:   $event->toOrganizationId,
+                toOrgId: $event->toOrganizationId,
             ));
         } catch (\Throwable $e) {
             // Notification failure must never crash the transition pipeline.
             Log::warning('MemberTransitionNotification failed', [
                 'user_id' => $user->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -67,7 +67,7 @@ class LogTransitionAndNotify implements ShouldQueue
     {
         Log::error('LogTransitionAndNotify listener failed', [
             'user_id' => $event->user->id,
-            'error'   => $exception->getMessage(),
+            'error' => $exception->getMessage(),
         ]);
     }
 }

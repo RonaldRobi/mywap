@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Donor;
 use App\Models\InfaqDonation;
 use App\Services\DonorService;
 use Illuminate\Console\Command;
@@ -10,6 +9,7 @@ use Illuminate\Console\Command;
 class BackfillDonors extends Command
 {
     protected $signature = 'app:backfill-donors';
+
     protected $description = 'Backfill donor records from existing InfaqDonation data';
 
     public function handle(DonorService $donorService): int
@@ -20,6 +20,7 @@ class BackfillDonors extends Command
 
         if ($donations->isEmpty()) {
             $this->info('No orphan donations found. All done.');
+
             return self::SUCCESS;
         }
 
@@ -47,6 +48,7 @@ class BackfillDonors extends Command
         $donorService->recalculateAll();
 
         $this->info("Done. Created {$created} new donors, linked {$linked} donations.");
+
         return self::SUCCESS;
     }
 }

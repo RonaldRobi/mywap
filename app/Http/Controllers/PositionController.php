@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OrganizationPosition;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -130,13 +131,14 @@ class PositionController extends Controller
             abort(403);
         }
 
-        $position->update(['is_active' => !$position->is_active]);
+        $position->update(['is_active' => ! $position->is_active]);
 
         $status = $position->is_active ? 'diaktifkan' : 'dinyahaktifkan';
+
         return back()->with('success', "Jawatan berjaya {$status}.");
     }
 
-    public function categories(Request $request): \Illuminate\Http\JsonResponse
+    public function categories(Request $request): JsonResponse
     {
         $categories = OrganizationPosition::where('organization_id', $request->user()->current_organization_id)
             ->whereNotNull('category')
@@ -147,9 +149,9 @@ class PositionController extends Controller
         return response()->json($categories);
     }
 
-    public function members(Request $request, OrganizationPosition $position): \Illuminate\Http\JsonResponse
+    public function members(Request $request, OrganizationPosition $position): JsonResponse
     {
-        $members = \App\Models\User::withoutGlobalScopes()
+        $members = User::withoutGlobalScopes()
             ->where('current_organization_id', $request->user()->current_organization_id)
             ->where('position', $position->name)
             ->select('id', 'name', 'email', 'phone', 'branch_name')

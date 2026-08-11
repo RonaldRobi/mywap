@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Branch;
 use App\Models\BranchChangeRequest;
 use App\Models\EventRsvp;
+use App\Models\OrganizationPosition;
 use App\Models\User;
+use App\Services\FeeService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,8 +18,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-
-use App\Services\FeeService;
 
 class ProfileController extends Controller
 {
@@ -60,52 +61,52 @@ class ProfileController extends Controller
         $history = $user->transitionHistory()
             ->get()
             ->map(fn ($record) => [
-                'id'                   => $record->id,
-                'from_organization'    => $record->fromOrganization
+                'id' => $record->id,
+                'from_organization' => $record->fromOrganization
                     ? ['id' => $record->fromOrganization->id, 'name' => $record->fromOrganization->name, 'slug' => $record->fromOrganization->slug, 'color_theme' => $record->fromOrganization->color_theme]
                     : null,
-                'to_organization'      => ['id' => $record->toOrganization->id, 'name' => $record->toOrganization->name, 'slug' => $record->toOrganization->slug, 'color_theme' => $record->toOrganization->color_theme],
-                'transitioned_at'      => $record->transitioned_at->toISOString(),
-                'transitioned_at_human'=> $record->transitioned_at->translatedFormat('d F Y'),
+                'to_organization' => ['id' => $record->toOrganization->id, 'name' => $record->toOrganization->name, 'slug' => $record->toOrganization->slug, 'color_theme' => $record->toOrganization->color_theme],
+                'transitioned_at' => $record->transitioned_at->toISOString(),
+                'transitioned_at_human' => $record->transitioned_at->translatedFormat('d F Y'),
             ]);
 
-        $feeStatus = app(\App\Services\FeeService::class)->getStatus($user);
+        $feeStatus = app(FeeService::class)->getStatus($user);
 
         return Inertia::render('Profile/Show', [
             'profileUser' => [
-                'id'           => $user->id,
-                'member_no'    => $user->member_no,
-                'name'         => $user->name,
-                'email'        => $user->email,
-                'phone'        => $user->phone,
-                'ic_number'    => $user->ic_number,
-                'roles'        => $user->getRoleNames()->values(),
-                'dob'          => $isSuperadmin ? null : $user->dob?->format('d M Y'),
-                'age'          => $isSuperadmin ? null : $user->dob?->age,
-                'gender'       => $user->gender,
+                'id' => $user->id,
+                'member_no' => $user->member_no,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'ic_number' => $user->ic_number,
+                'roles' => $user->getRoleNames()->values(),
+                'dob' => $isSuperadmin ? null : $user->dob?->format('d M Y'),
+                'age' => $isSuperadmin ? null : $user->dob?->age,
+                'gender' => $user->gender,
                 'marital_status' => $user->marital_status,
                 'education_level' => $user->education_level,
                 'current_profession' => $user->current_profession,
-                'industry'     => $user->industry,
-                'expertise'    => $user->expertise,
-                'topics'       => $user->topics,
-                'position'     => $user->position,
-                'branch_name'  => $user->branch?->name,
-                'locality'     => $user->locality,
-                'address_1'    => $user->address_1,
-                'address_2'    => $user->address_2,
-                'postcode'     => $user->postcode,
-                'city'         => $user->city,
-                'state'        => $user->state,
+                'industry' => $user->industry,
+                'expertise' => $user->expertise,
+                'topics' => $user->topics,
+                'position' => $user->position,
+                'branch_name' => $user->branch?->name,
+                'locality' => $user->locality,
+                'address_1' => $user->address_1,
+                'address_2' => $user->address_2,
+                'postcode' => $user->postcode,
+                'city' => $user->city,
+                'state' => $user->state,
                 'emergency_contact_name' => $user->emergency_contact_name,
                 'emergency_contact_phone' => $user->emergency_contact_phone,
                 'organization' => $user->organization ? [
-                    'id'          => $user->organization->id,
-                    'name'        => $user->organization->name,
-                    'slug'        => $user->organization->slug,
+                    'id' => $user->organization->id,
+                    'name' => $user->organization->name,
+                    'slug' => $user->organization->slug,
                     'color_theme' => $user->organization->color_theme,
                 ] : null,
-                'feeStatus'    => $feeStatus,
+                'feeStatus' => $feeStatus,
             ],
             'history' => $history,
             'attendedPrograms' => $attendedPrograms,
@@ -120,14 +121,14 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $branches = $user->current_organization_id
-            ? \App\Models\Branch::where('organization_id', $user->current_organization_id)
+            ? Branch::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
                 ->orderBy('state')
                 ->get(['id', 'name', 'state'])
             : collect();
 
         $positions = $user->current_organization_id
-            ? \App\Models\OrganizationPosition::where('organization_id', $user->current_organization_id)
+            ? OrganizationPosition::where('organization_id', $user->current_organization_id)
                 ->orderBy('display_order')
                 ->get(['id', 'name'])
             : collect();
@@ -140,9 +141,9 @@ class ProfileController extends Controller
 
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
-            'status'          => session('status'),
-            'branches'        => $branches,
-            'orgPositions'    => $positions,
+            'status' => session('status'),
+            'branches' => $branches,
+            'orgPositions' => $positions,
             'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin']),
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
@@ -257,7 +258,7 @@ class ProfileController extends Controller
             $validated['is_public_in_directory'] = $request->boolean('is_public_in_directory');
 
             // Branch change → create pending request instead of updating directly
-            $submittedBranchId = !empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
+            $submittedBranchId = ! empty($validated['branch_id']) ? (int) $validated['branch_id'] : null;
             $currentBranchId = $request->user()->branch_id;
 
             if ($submittedBranchId !== $currentBranchId && $submittedBranchId) {
@@ -298,7 +299,7 @@ class ProfileController extends Controller
             }
 
             $newPath = $request->file('profile_photo')->store('profiles', 'public');
-            $validated['profile_photo_path'] = '/storage/' . ltrim($newPath, '/');
+            $validated['profile_photo_path'] = '/storage/'.ltrim($newPath, '/');
         }
 
         if (

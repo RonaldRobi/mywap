@@ -12,9 +12,7 @@ class SendAnnouncementJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $announcementId)
-    {
-    }
+    public function __construct(public int $announcementId) {}
 
     public function handle(): void
     {

@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Traits\MemberNoPrefix;
+use App\Events\UserOrganizationTransitioned;
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Console\Command;
 
 /**
@@ -22,7 +25,7 @@ use Illuminate\Console\Command;
  */
 class ProcessAgeTransitions extends Command
 {
-    use \App\Console\Commands\Traits\MemberNoPrefix;
+    use MemberNoPrefix;
 
     protected $signature = 'app:process-age-transitions
                             {--dry-run : Preview transitions without persisting any changes}';
@@ -31,16 +34,16 @@ class ProcessAgeTransitions extends Command
 
     public function handle(): int
     {
-        $isDryRun    = $this->option('dry-run');
+        $isDryRun = $this->option('dry-run');
         $transitioned = 0;
-        $skipped      = 0;
+        $skipped = 0;
 
         $this->info($isDryRun ? '🔍  Dry-run mode — no changes will be saved.' : '⚙️   Processing age transitions...');
 
         // Preload all three organizations to avoid N+1 inside the chunk loop.
-        $organizations = \App\Models\Organization::all()->keyBy('id');
+        $organizations = Organization::all()->keyBy('id');
 
-        \App\Models\User::withoutGlobalScopes()
+        User::withoutGlobalScopes()
             ->whereNotNull('dob')
             ->with('organization', 'roles')
             ->chunkById(500, function ($users) use (
@@ -54,24 +57,26 @@ class ProcessAgeTransitions extends Command
                     // part of member age lifecycle transitions.
                     if ($user->hasRole(['Admin', 'Superadmin'])) {
                         $skipped++;
+
                         continue;
                     }
 
-                    $age            = $user->dob->age;
-                    $correctOrg     = $organizations->first(fn ($org) =>
-                        $org->min_age <= $age
+                    $age = $user->dob->age;
+                    $correctOrg = $organizations->first(fn ($org) => $org->min_age <= $age
                         && ($org->max_age === null || $org->max_age >= $age)
                     );
 
                     if (! $correctOrg) {
                         $this->warn("  ⚠  No organization matched for age {$age} (user #{$user->id})");
                         $skipped++;
+
                         continue;
                     }
 
                     // Member is already in the correct tier — nothing to do.
                     if ($user->current_organization_id === $correctOrg->id) {
                         $skipped++;
+
                         continue;
                     }
 
@@ -83,8 +88,8 @@ class ProcessAgeTransitions extends Command
                     if (! $isDryRun) {
                         // 1. Update member_no: prepend new org prefix
                         $prefix = $this->prefixForOrg($correctOrg);
-                        if ($prefix && $user->member_no && !str_starts_with($user->member_no, $prefix)) {
-                            $user->member_no = $prefix . $user->member_no;
+                        if ($prefix && $user->member_no && ! str_starts_with($user->member_no, $prefix)) {
+                            $user->member_no = $prefix.$user->member_no;
                         }
 
                         // 2. Update the user's active organization.
@@ -99,7 +104,7 @@ class ProcessAgeTransitions extends Command
                         }
 
                         // 3. Fire event — listener handles logging & notification asynchronously.
-                        \App\Events\UserOrganizationTransitioned::dispatch(
+                        UserOrganizationTransitioned::dispatch(
                             $user,
                             $fromOrgId,
                             $correctOrg->id,

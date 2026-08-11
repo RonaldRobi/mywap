@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Donor;
 use App\Models\InfaqDonation;
 use App\Models\Order;
 use App\Models\Organization;
@@ -22,8 +23,7 @@ class BayarCashController extends Controller
         protected BayarCashService $bayarCashService,
         protected FeeService $feeService,
         protected DonorService $donorService,
-    ) {
-    }
+    ) {}
 
     // ─── Direct Debit callbacks ────────────────────────────────────────────
 
@@ -41,29 +41,32 @@ class BayarCashController extends Controller
             ->where('gateway', 'bayarcash')
             ->first();
 
-        if (!$payment || !$payment->organization) {
+        if (! $payment || ! $payment->organization) {
             Log::warning('BayarCash DD callback: payment not found', ['order_number' => $callbackData['order_number'] ?? null]);
+
             return response()->json(['status' => 'not_found']);
         }
 
         $org = $payment->organization;
 
-        if (!$org->hasBayarCashConfig()) {
+        if (! $org->hasBayarCashConfig()) {
             Log::warning('BayarCash DD callback: org missing gateway config', ['org_id' => $org->id]);
+
             return response()->json(['status' => 'misconfigured']);
         }
 
         $valid = $this->bayarCashService->verifyDirectDebitCallback($callbackData, $org);
 
-        if (!$valid) {
+        if (! $valid) {
             Log::warning('BayarCash DD callback: invalid checksum', $callbackData);
+
             return response()->json(['status' => 'invalid_checksum']);
         }
 
         return match ($recordType) {
             'direct_debit_bank_approval' => $this->handleBankApproval($callbackData, $payment),
             'direct_debit_authorization' => $this->handleAuthorization($callbackData, $payment),
-            'direct_debit_transaction'   => $this->handleRecurringTransaction($callbackData, $payment, $org),
+            'direct_debit_transaction' => $this->handleRecurringTransaction($callbackData, $payment, $org),
             default => response()->json(['status' => 'unknown_record_type']),
         };
     }
@@ -72,7 +75,7 @@ class BayarCashController extends Controller
     {
         $donation = InfaqDonation::find($payment->payable_id);
 
-        if (!$donation) {
+        if (! $donation) {
             return response()->json(['status' => 'donation_not_found']);
         }
 
@@ -81,12 +84,12 @@ class BayarCashController extends Controller
         $mandateRef = $data['mandate_reference_number'] ?? null;
 
         $donation->update([
-            'mandate_id'        => $mandateId,
-            'mandate_ref'       => $mandateRef,
-            'recurring_status'  => $approved ? 'active' : 'failed',
+            'mandate_id' => $mandateId,
+            'mandate_ref' => $mandateRef,
+            'recurring_status' => $approved ? 'active' : 'failed',
         ]);
 
-        if (!$approved) {
+        if (! $approved) {
             $payment->update(['status' => 'failed']);
         }
 
@@ -106,13 +109,14 @@ class BayarCashController extends Controller
                 'payment_id' => $payment->id,
                 'current_status' => $payment->status,
             ]);
+
             return response()->json(['status' => 'ok', 'already_processed' => true]);
         }
 
         $isSuccess = ($data['status'] ?? '') === '3' || ($data['status'] ?? '') === '1';
 
         $payment->update([
-            'status'      => $isSuccess ? 'successful' : 'failed',
+            'status' => $isSuccess ? 'successful' : 'failed',
             'gateway_ref' => $data['transaction_id'] ?? $payment->gateway_ref,
         ]);
 
@@ -124,11 +128,11 @@ class BayarCashController extends Controller
                     $donation->infaq?->increment('collected_amount', $donation->amount);
 
                     if ($donation->donor_id) {
-                        $donor = \App\Models\Donor::find($donation->donor_id);
+                        $donor = Donor::find($donation->donor_id);
                         if ($donor) {
                             $donor->update([
-                                'total_donated'   => $donor->total_donated + $donation->amount,
-                                'donation_count'  => $donor->donation_count + 1,
+                                'total_donated' => $donor->total_donated + $donation->amount,
+                                'donation_count' => $donor->donation_count + 1,
                                 'last_donated_at' => now(),
                             ]);
                         }
@@ -149,63 +153,64 @@ class BayarCashController extends Controller
     {
         $isSuccess = ($data['status'] ?? '') === '3' || ($data['status'] ?? '') === '1';
 
-        if (!$isSuccess) {
+        if (! $isSuccess) {
             Log::warning('BayarCash DD recurring transaction failed', $data);
+
             return response()->json(['status' => 'failed']);
         }
 
         $donation = InfaqDonation::with('infaq')->find($originalPayment->payable_id);
 
-        if (!$donation || !$donation->infaq) {
+        if (! $donation || ! $donation->infaq) {
             return response()->json(['status' => 'donation_not_found']);
         }
 
         DB::transaction(function () use ($data, $donation, $org) {
             $amount = (float) ($data['amount'] ?? $donation->amount);
-            $ref = 'INFQ-' . strtoupper(Str::random(10));
-            $paymentRef = 'DDR-' . strtoupper(Str::random(8));
+            $ref = 'INFQ-'.strtoupper(Str::random(10));
+            $paymentRef = 'DDR-'.strtoupper(Str::random(8));
 
             // Create follow-up donation record for this recurring cycle
             $childDonation = InfaqDonation::create([
-                'infaq_id'         => $donation->infaq_id,
-                'user_id'          => $donation->user_id,
-                'donor_id'         => $donation->donor_id,
-                'amount'           => $amount,
-                'reference'        => $ref,
-                'status'           => 'confirmed',
-                'donor_name'       => $donation->donor_name,
-                'donor_phone'      => $donation->donor_phone,
-                'donor_email'      => $donation->donor_email,
-                'is_anonymous'     => $donation->is_anonymous,
-                'wants_updates'    => $donation->wants_updates,
-                'is_recurring'     => true,
-                'frequency'        => $donation->frequency,
-                'mandate_id'       => $donation->mandate_id,
-                'mandate_ref'      => $donation->mandate_ref,
+                'infaq_id' => $donation->infaq_id,
+                'user_id' => $donation->user_id,
+                'donor_id' => $donation->donor_id,
+                'amount' => $amount,
+                'reference' => $ref,
+                'status' => 'confirmed',
+                'donor_name' => $donation->donor_name,
+                'donor_phone' => $donation->donor_phone,
+                'donor_email' => $donation->donor_email,
+                'is_anonymous' => $donation->is_anonymous,
+                'wants_updates' => $donation->wants_updates,
+                'is_recurring' => true,
+                'frequency' => $donation->frequency,
+                'mandate_id' => $donation->mandate_id,
+                'mandate_ref' => $donation->mandate_ref,
                 'recurring_status' => 'active',
             ]);
 
             if ($donation->donor_id) {
-                $donor = \App\Models\Donor::find($donation->donor_id);
+                $donor = Donor::find($donation->donor_id);
                 if ($donor) {
                     $donor->update([
-                        'total_donated'   => $donor->total_donated + $amount,
-                        'donation_count'  => $donor->donation_count + 1,
+                        'total_donated' => $donor->total_donated + $amount,
+                        'donation_count' => $donor->donation_count + 1,
                         'last_donated_at' => now(),
                     ]);
                 }
             }
 
             Payment::create([
-                'user_id'         => $donation->user_id,
-                'payable_type'    => 'infaq_donation',
-                'payable_id'      => $childDonation->id,
-                'amount'          => $amount,
-                'status'          => 'successful',
-                'reference'       => $paymentRef,
-                'description'     => "Donasi berkala (kitaran): {$donation->infaq->title}",
-                'gateway'         => 'bayarcash',
-                'gateway_ref'     => $data['transaction_id'] ?? null,
+                'user_id' => $donation->user_id,
+                'payable_type' => 'infaq_donation',
+                'payable_id' => $childDonation->id,
+                'amount' => $amount,
+                'status' => 'successful',
+                'reference' => $paymentRef,
+                'description' => "Donasi berkala (kitaran): {$donation->infaq->title}",
+                'gateway' => 'bayarcash',
+                'gateway_ref' => $data['transaction_id'] ?? null,
                 'organization_id' => $org->id,
             ]);
 
@@ -244,22 +249,25 @@ class BayarCashController extends Controller
             ->where('gateway', 'bayarcash')
             ->first();
 
-        if (!$payment || !$payment->organization) {
+        if (! $payment || ! $payment->organization) {
             Log::warning('BayarCash callback: payment not found', ['order_number' => $callbackData['order_number'] ?? null]);
+
             return response()->json(['status' => 'not_found']);
         }
 
         $org = $payment->organization;
 
-        if (!$org->hasBayarCashConfig()) {
+        if (! $org->hasBayarCashConfig()) {
             Log::warning('BayarCash callback: org missing gateway config', ['org_id' => $org->id]);
+
             return response()->json(['status' => 'misconfigured']);
         }
 
         $valid = $this->bayarCashService->verifyCallback($callbackData, $org);
 
-        if (!$valid) {
+        if (! $valid) {
             Log::warning('BayarCash callback: invalid checksum', ['order_number' => $callbackData['order_number'] ?? null]);
+
             return response()->json(['status' => 'invalid_checksum']);
         }
 
@@ -268,13 +276,14 @@ class BayarCashController extends Controller
                 'payment_id' => $payment->id,
                 'current_status' => $payment->status,
             ]);
+
             return response()->json(['status' => 'ok', 'already_processed' => true]);
         }
 
         $isSuccess = $this->bayarCashService->isPaymentSuccessful($callbackData);
 
         $payment->update([
-            'status'      => $isSuccess ? 'successful' : 'failed',
+            'status' => $isSuccess ? 'successful' : 'failed',
             'gateway_ref' => $callbackData['transaction_id'] ?? $callbackData['exchange_transaction_id'] ?? $payment->gateway_ref,
         ]);
 
@@ -299,13 +308,15 @@ class BayarCashController extends Controller
             ->where('gateway', 'bayarcash')
             ->first();
 
-        if (!$payment) {
+        if (! $payment) {
             Log::warning('BayarCash redirect: payment not found', ['order_number' => $callbackData['order_number'] ?? null]);
+
             return redirect()->route('dashboard')->with('error', 'Rujukan pembayaran tidak dijumpai.');
         }
 
         if ($payment->status === 'successful') {
             $url = $this->resolveSuccessUrl($payment);
+
             return redirect()->away($url);
         }
 
@@ -341,10 +352,11 @@ class BayarCashController extends Controller
             $donation = InfaqDonation::with('infaq')->find($payableId);
             if ($donation?->infaq) {
                 $infaq = $donation->infaq;
+
                 return route('infaq.success', [
-                    'year'  => $infaq->year,
+                    'year' => $infaq->year,
                     'month' => $infaq->month,
-                    'day'   => $infaq->day,
+                    'day' => $infaq->day,
                     'infaq' => $infaq->slug,
                 ]);
             }
@@ -367,18 +379,18 @@ class BayarCashController extends Controller
         $payableId = $payment->payable_id;
 
         if ($payableType === 'infaq_donation' && $payableId) {
-            DB::transaction(function () use ($payableId, $payment) {
+            DB::transaction(function () use ($payableId) {
                 $donation = InfaqDonation::with('infaq')->find($payableId);
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'confirmed']);
                     $donation->infaq?->increment('collected_amount', $donation->amount);
 
                     if ($donation->donor_id) {
-                        $donor = \App\Models\Donor::find($donation->donor_id);
+                        $donor = Donor::find($donation->donor_id);
                         if ($donor) {
                             $donor->update([
-                                'total_donated'   => $donor->total_donated + $donation->amount,
-                                'donation_count'  => $donor->donation_count + 1,
+                                'total_donated' => $donor->total_donated + $donation->amount,
+                                'donation_count' => $donor->donation_count + 1,
                                 'last_donated_at' => now(),
                             ]);
                         }

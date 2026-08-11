@@ -11,9 +11,7 @@ class AnnouncementPublishedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public Announcement $announcement)
-    {
-    }
+    public function __construct(public Announcement $announcement) {}
 
     public function via(object $notifiable): array
     {

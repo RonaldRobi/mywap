@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Models\Article;
 use App\Models\Event;
 use App\Models\Infaq;
 use App\Models\NewsPost;
@@ -27,7 +28,7 @@ class SharePreviewController extends Controller
         );
     }
 
-    public function article(\App\Models\Article $article): View
+    public function article(Article $article): View
     {
         abort_if(! $article->is_published, 404);
         abort_if($article->published_at && $article->published_at->isFuture(), 404);

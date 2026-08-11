@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,11 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * This model deliberately has NO global scopes — it is a reporting table
  * and must be queryable by Superadmins across all organizations.
  *
- * @property int            $id
- * @property int            $user_id
- * @property int|null       $from_organization_id
- * @property int            $to_organization_id
- * @property \Carbon\Carbon $transitioned_at
+ * @property int $id
+ * @property int $user_id
+ * @property int|null $from_organization_id
+ * @property int $to_organization_id
+ * @property Carbon $transitioned_at
  */
 class UserTransitionHistory extends Model
 {

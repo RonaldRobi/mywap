@@ -21,7 +21,7 @@ class Donor extends Model
     protected function casts(): array
     {
         return [
-            'total_donated'   => 'decimal:2',
+            'total_donated' => 'decimal:2',
             'last_donated_at' => 'datetime',
         ];
     }

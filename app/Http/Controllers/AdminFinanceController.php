@@ -7,12 +7,16 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AdminFinanceController extends Controller
@@ -20,7 +24,9 @@ class AdminFinanceController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
@@ -35,14 +41,18 @@ class AdminFinanceController extends Controller
         $infaqTotal = (float) (clone $infaqQuery)->sum('amount');
 
         $bySource = collect();
-        if ($feeTotal > 0) $bySource->push(['type' => 'Yuran Keahlian', 'total' => $feeTotal]);
-        if ($infaqTotal > 0) $bySource->push(['type' => 'Infaq', 'total' => $infaqTotal]);
+        if ($feeTotal > 0) {
+            $bySource->push(['type' => 'Yuran Keahlian', 'total' => $feeTotal]);
+        }
+        if ($infaqTotal > 0) {
+            $bySource->push(['type' => 'Infaq', 'total' => $infaqTotal]);
+        }
 
         // Monthly chart - single GROUP BY query per source
         $monthExpr = match (DB::connection()->getDriverName()) {
-            'pgsql' => "EXTRACT(MONTH FROM created_at)",
+            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
             'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
-            default => "MONTH(created_at)",
+            default => 'MONTH(created_at)',
         };
 
         $feeMonthly = (clone $paymentQuery)
@@ -67,7 +77,7 @@ class AdminFinanceController extends Controller
         // Merged transactions
         $feeRows = (clone $paymentQuery)->with('user:id,name,member_no')->latest('created_at')->get()
             ->map(fn (Payment $p) => [
-                'id' => 'p-' . $p->id,
+                'id' => 'p-'.$p->id,
                 'user_id' => $p->user_id,
                 'created_at' => $p->created_at?->toISOString(),
                 'member_name' => $p->user?->name ?? '—',
@@ -79,7 +89,7 @@ class AdminFinanceController extends Controller
 
         $infaqRows = (clone $infaqQuery)->with('infaq:id,title', 'user:id,name,member_no')->latest('created_at')->get()
             ->map(fn (InfaqDonation $d) => [
-                'id' => 'i-' . $d->id,
+                'id' => 'i-'.$d->id,
                 'user_id' => $d->user_id,
                 'created_at' => $d->created_at?->toISOString(),
                 'member_name' => $d->user?->name ?? ($d->donor_name ?? 'Tanpa Nama'),
@@ -92,7 +102,7 @@ class AdminFinanceController extends Controller
         $merged = $feeRows->concat($infaqRows)->sortByDesc('created_at')->values();
         $page = (int) $request->input('page', 1);
         $perPage = 25;
-        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginated = new LengthAwarePaginator(
             $merged->forPage($page, $perPage),
             $merged->count(),
             $perPage,
@@ -122,7 +132,9 @@ class AdminFinanceController extends Controller
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
@@ -145,14 +157,17 @@ class AdminFinanceController extends Controller
             'generatedAt' => now(),
         ]);
 
-        $filename = 'laporan-kewangan-' . $year . ($org ? '-' . $org->slug : '') . '.pdf';
+        $filename = 'laporan-kewangan-'.$year.($org ? '-'.$org->slug : '').'.pdf';
+
         return $pdf->download($filename);
     }
 
     public function exportExcel(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
@@ -161,13 +176,15 @@ class AdminFinanceController extends Controller
 
         $merged = $this->mergedTransactions($year, $filterOrgId);
 
-        return Excel::download(new class($merged, $year) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings {
+        return Excel::download(new class($merged, $year) implements FromCollection, WithHeadings
+        {
             public function __construct(protected Collection $merged, protected int $year) {}
+
             public function collection()
             {
                 return $this->merged->map(fn ($r, $i) => [
                     $i + 1,
-                    \Carbon\Carbon::parse($r['created_at'])->format('d/m/Y'),
+                    Carbon::parse($r['created_at'])->format('d/m/Y'),
                     $r['member_name'],
                     $r['member_no'],
                     $r['type'],
@@ -175,14 +192,20 @@ class AdminFinanceController extends Controller
                     $r['reference'] ?? '—',
                 ]);
             }
-            public function headings(): array { return ['#', 'Tarikh', 'Ahli', 'No Ahli', 'Jenis', 'Jumlah (RM)', 'Rujukan']; }
+
+            public function headings(): array
+            {
+                return ['#', 'Tarikh', 'Ahli', 'No Ahli', 'Jenis', 'Jumlah (RM)', 'Rujukan'];
+            }
         }, "transaksi-kewangan-{$year}.xlsx");
     }
 
     public function exportCsv(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
@@ -197,7 +220,7 @@ class AdminFinanceController extends Controller
             foreach ($merged as $i => $r) {
                 fputcsv($handle, [
                     $i + 1,
-                    \Carbon\Carbon::parse($r['created_at'])->format('d/m/Y'),
+                    Carbon::parse($r['created_at'])->format('d/m/Y'),
                     $r['member_name'],
                     $r['member_no'],
                     $r['type'],
@@ -217,10 +240,14 @@ class AdminFinanceController extends Controller
     public function memberTransactions(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $isSuperadmin = $user->hasRole('Superadmin');
-        if (! $isSuperadmin && $targetUser->current_organization_id !== $user->current_organization_id) abort(403);
+        if (! $isSuperadmin && $targetUser->current_organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
 
         $feeRows = Payment::where('user_id', $targetUser->id)
             ->where('status', 'successful')
@@ -274,6 +301,7 @@ class AdminFinanceController extends Controller
         if ($orgId) {
             $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('current_organization_id', $orgId));
         }
+
         return $query;
     }
 
@@ -283,6 +311,7 @@ class AdminFinanceController extends Controller
         if ($orgId) {
             $query->whereHas('infaq', fn ($q) => $q->where('organization_id', $orgId));
         }
+
         return $query;
     }
 

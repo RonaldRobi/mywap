@@ -12,9 +12,7 @@ class SendBroadcastJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $broadcastMessageId)
-    {
-    }
+    public function __construct(public int $broadcastMessageId) {}
 
     public function handle(): void
     {

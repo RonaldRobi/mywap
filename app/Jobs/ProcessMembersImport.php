@@ -2,12 +2,14 @@
 
 namespace App\Jobs;
 
+use App\Imports\MembersImport;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProcessMembersImport implements ShouldQueue
 {
@@ -16,7 +18,9 @@ class ProcessMembersImport implements ShouldQueue
     public $timeout = 3600; // Allow 1 hour for the job to run
 
     protected $filePath;
+
     protected $organizationId;
+
     protected $prefix;
 
     public function __construct($filePath, $organizationId, $prefix)
@@ -32,9 +36,9 @@ class ProcessMembersImport implements ShouldQueue
         set_time_limit(3600);
 
         try {
-            \Maatwebsite\Excel\Facades\Excel::import(
-                new \App\Imports\MembersImport($this->organizationId, $this->prefix), 
-                storage_path('app/' . $this->filePath)
+            Excel::import(
+                new MembersImport($this->organizationId, $this->prefix),
+                storage_path('app/'.$this->filePath)
             );
         } finally {
             // Delete the file after processing to save space

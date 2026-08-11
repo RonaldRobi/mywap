@@ -39,11 +39,14 @@ class PublicCardController extends Controller
 
     private function normalizeUrl(?string $url): ?string
     {
-        if (! $url) return null;
+        if (! $url) {
+            return null;
+        }
         $parsed = parse_url($url, PHP_URL_PATH);
         if (is_string($parsed) && str_starts_with($parsed, '/storage/')) {
             return $parsed;
         }
+
         return $url;
     }
 }

@@ -53,17 +53,17 @@ class HandleInertiaRequests extends Middleware
             'csrf_token' => csrf_token(),
             'flash' => [
                 'success' => $request->session()->get('success'),
-                'error'   => $request->session()->get('error'),
-                'info'    => $request->session()->get('info'),
+                'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
             ],
             'auth' => [
                 'user' => $user ? [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
+                    'id' => $user->id,
+                    'name' => $user->name,
                     'email' => $user->email,
                     'ic_number' => $user->ic_number,
                     'phone' => $user->phone,
-                    'dob'   => $user->dob?->format('Y-m-d'),
+                    'dob' => $user->dob?->format('Y-m-d'),
                     'education_level' => $user->education_level,
                     'current_profession' => $user->current_profession,
                     'industry' => $user->industry,
@@ -94,11 +94,11 @@ class HandleInertiaRequests extends Middleware
                             'color_theme' => '#334155',
                         ]
                         : ($user->organization ? [
-                            'id'          => $user->organization->id,
-                            'name'        => $user->organization->name,
-                            'slug'        => $user->organization->slug,
+                            'id' => $user->organization->id,
+                            'name' => $user->organization->name,
+                            'slug' => $user->organization->slug,
                             'color_theme' => $user->organization->color_theme,
-                            'logo_path'   => $this->normalizeStorageUrl($user->organization->logo_path),
+                            'logo_path' => $this->normalizeStorageUrl($user->organization->logo_path),
                             'website_url' => $user->organization->website_url,
                             'facebook_url' => $user->organization->facebook_url,
                             'instagram_url' => $user->organization->instagram_url,

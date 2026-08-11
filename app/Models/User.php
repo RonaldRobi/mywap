@@ -7,8 +7,8 @@ use App\Models\Scopes\OrganizationScope;
 use App\Support\NormalizesStoragePath;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,17 +22,18 @@ use Spatie\Permission\Traits\HasRoles;
  * all Eloquent queries to users sharing the same current_organization_id as the
  * authenticated user — unless they hold the 'Superadmin' role.
  *
- * @property int         $id
- * @property string      $name
- * @property string      $email
- * @property string|null $dob       Date of Birth — drives the Age Transition Engine
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $dob Date of Birth — drives the Age Transition Engine
  * @property string|null $phone
- * @property int|null    $current_organization_id
+ * @property int|null $current_organization_id
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
+
     use NormalizesStoragePath;
 
     // ─── Mass Assignment ──────────────────────────────────────────────────────
@@ -91,11 +92,11 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'dob'               => 'date',
+            'password' => 'hashed',
+            'dob' => 'date',
             'profile_completed_at' => 'datetime',
             'is_public_in_directory' => 'boolean',
-            'key_in_date'       => 'date',
+            'key_in_date' => 'date',
         ];
     }
 
@@ -111,7 +112,7 @@ class User extends Authenticatable
      */
     protected static function booted(): void
     {
-        static::addGlobalScope(new OrganizationScope());
+        static::addGlobalScope(new OrganizationScope);
     }
 
     // ─── Relationships ────────────────────────────────────────────────────────
@@ -156,8 +157,8 @@ class User extends Authenticatable
     public function transitionHistory()
     {
         return $this->hasMany(UserTransitionHistory::class)
-                    ->with(['fromOrganization', 'toOrganization'])
-                    ->orderBy('transitioned_at', 'asc');
+            ->with(['fromOrganization', 'toOrganization'])
+            ->orderBy('transitioned_at', 'asc');
     }
 
     public function payments(): HasMany
@@ -221,16 +222,22 @@ class User extends Authenticatable
      */
     public static function parseDobFromIc(?string $ic): ?string
     {
-        if (! $ic) return null;
+        if (! $ic) {
+            return null;
+        }
 
         $digits = preg_replace('/[^0-9]/', '', $ic);
-        if (strlen($digits) < 6) return null;
+        if (strlen($digits) < 6) {
+            return null;
+        }
 
         $yy = (int) substr($digits, 0, 2);
         $mm = (int) substr($digits, 2, 2);
         $dd = (int) substr($digits, 4, 2);
 
-        if (! checkdate($mm, $dd, 2000)) return null;
+        if (! checkdate($mm, $dd, 2000)) {
+            return null;
+        }
 
         $yyyy = $yy > 25 ? 1900 + $yy : 2000 + $yy;
 
@@ -243,10 +250,14 @@ class User extends Authenticatable
      */
     public static function guessGenderFromIc(?string $ic): ?string
     {
-        if (! $ic) return null;
+        if (! $ic) {
+            return null;
+        }
 
         $digits = preg_replace('/[^0-9]/', '', $ic);
-        if (strlen($digits) < 11) return null;
+        if (strlen($digits) < 11) {
+            return null;
+        }
 
         $lastDigit = (int) substr($digits, -1);
 

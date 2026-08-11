@@ -14,14 +14,20 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithLimit;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 
-class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithLimit
+class MembersImport implements ToCollection, WithHeadingRow, WithLimit, WithStartRow
 {
     protected $organizationId;
+
     protected $prefix;
+
     protected $startRow;
+
     protected $limit;
+
     protected $padding;
+
     public $processedCount = 0;
+
     public $errors = [];
 
     public function __construct($organizationId, $prefix, $startRow = 2, $limit = 100)
@@ -45,11 +51,12 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
 
     protected function nextMemberNo(): string
     {
-        $max = User::where('member_no', 'like', $this->prefix . '%')
+        $max = User::where('member_no', 'like', $this->prefix.'%')
             ->max('member_no_sequence');
 
         $next = ($max ?? 0) + 1;
-        return $this->prefix . str_pad($next, $this->padding, '0', STR_PAD_LEFT);
+
+        return $this->prefix.str_pad($next, $this->padding, '0', STR_PAD_LEFT);
     }
 
     public function collection(Collection $rows)
@@ -64,38 +71,40 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
 
             if (empty($ic)) {
                 $this->errors[] = "Nama '{$name}' — tiada IC, dilewati.";
+
                 continue;
             }
 
             if (strlen(preg_replace('/[^0-9]/', '', $ic)) < 6) {
                 $this->errors[] = "Nama '{$name}' — IC '{$ic}' tidak sah (minimum 6 digit), dilewati.";
+
                 continue;
             }
 
             // Auto-fill DOB from IC
             $parsedDob = User::parseDobFromIc($ic);
             $rawDob = trim((string) ($row['tarikh_lahir'] ?? ''));
-            $dob = !empty($rawDob) ? (date('Y-m-d', strtotime($rawDob)) ?: $parsedDob) : $parsedDob;
+            $dob = ! empty($rawDob) ? (date('Y-m-d', strtotime($rawDob)) ?: $parsedDob) : $parsedDob;
 
             // Auto-fill gender from IC
             $rawGender = trim((string) ($row['jantina'] ?? ''));
-            $gender = !empty($rawGender)
+            $gender = ! empty($rawGender)
                 ? (in_array(strtolower($rawGender), ['lelaki', 'perempuan']) ? strtolower($rawGender) : User::guessGenderFromIc($ic))
                 : User::guessGenderFromIc($ic);
 
             // Email fallback
             $email = trim((string) ($row['email'] ?? ''));
             if (empty($email)) {
-                $email = strtolower($ic) . '@mywap.my';
+                $email = strtolower($ic).'@mywap.my';
             }
 
             // Branch lookup from Excel column 'cawangan' or 'branch'
             $branchId = null;
             $branchName = trim((string) ($row['cawangan'] ?? $row['branch'] ?? ''));
-            if (!empty($branchName)) {
+            if (! empty($branchName)) {
                 $branch = Branch::where('organization_id', $this->organizationId)
                     ->where('name', $branchName)
-                    ->orWhere('name', 'like', $branchName . '%')
+                    ->orWhere('name', 'like', $branchName.'%')
                     ->first();
                 if ($branch) {
                     $branchId = $branch->id;
@@ -104,7 +113,7 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
 
             // Member number: use provided or auto-generate
             $memberNo = trim((string) ($row['no_ahli'] ?? $row['member_no'] ?? ''));
-            if (!empty($memberNo)) {
+            if (! empty($memberNo)) {
                 $memberNo = $this->ensurePrefix($memberNo);
             }
 
@@ -134,14 +143,14 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
             );
 
             // If this is a new user (no member_no yet), auto-generate one
-            if (!$user->member_no) {
+            if (! $user->member_no) {
                 $newMemberNo = $this->nextMemberNo();
                 $seq = (int) substr($newMemberNo, strlen($this->prefix));
                 $user->update(['member_no' => $newMemberNo, 'member_no_sequence' => $seq]);
             }
 
             // Set original_member_no on first creation
-            if (!$user->original_member_no) {
+            if (! $user->original_member_no) {
                 $user->update(['original_member_no' => $user->member_no]);
             }
 
@@ -172,6 +181,6 @@ class MembersImport implements ToCollection, WithHeadingRow, WithStartRow, WithL
             }
         }
 
-        return $this->prefix . ltrim($no, 'WAPwapr');
+        return $this->prefix.ltrim($no, 'WAPwapr');
     }
 }

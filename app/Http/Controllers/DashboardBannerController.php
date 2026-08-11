@@ -55,7 +55,7 @@ class DashboardBannerController extends Controller
         DashboardBanner::create([
             'organization_id' => $data['organization_id'] ?? null,
             'title' => $data['title'],
-            'image_path' => '/storage/' . ltrim($storedPath, '/'),
+            'image_path' => '/storage/'.ltrim($storedPath, '/'),
             'link_url' => $data['link_url'] ?? null,
             'link_target' => $data['link_target'] ?? '_blank',
             'is_active' => (bool) ($data['is_active'] ?? true),
@@ -86,7 +86,7 @@ class DashboardBannerController extends Controller
             }
 
             $newPath = $request->file('banner_image')->store('dashboard-banners', 'public');
-            $imagePath = '/storage/' . ltrim($newPath, '/');
+            $imagePath = '/storage/'.ltrim($newPath, '/');
         }
 
         $dashboardBanner->update([
@@ -147,19 +147,19 @@ class DashboardBannerController extends Controller
             $safeSubtitle = htmlspecialchars($subtitle, ENT_QUOTES, 'UTF-8');
 
             return "<svg xmlns='http://www.w3.org/2000/svg' width='1080' height='1350'>"
-                . "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>"
-                . "<stop offset='0%' stop-color='{$startColor}'/><stop offset='100%' stop-color='{$endColor}'/>"
-                . "</linearGradient></defs>"
-                . "<rect width='1080' height='1350' fill='url(#g)'/>"
-                . "<circle cx='940' cy='200' r='210' fill='rgba(255,255,255,0.12)'/>"
-                . "<circle cx='180' cy='1120' r='170' fill='rgba(255,255,255,0.10)'/>"
-                . "<rect x='70' y='80' width='940' height='1190' rx='36' fill='rgba(255,255,255,0.10)' stroke='rgba(255,255,255,0.26)'/>"
-                . "<text x='120' y='220' fill='white' font-family='Arial, sans-serif' font-size='38' font-weight='700'>{$safeSubtitle}</text>"
-                . "<foreignObject x='120' y='290' width='840' height='640'>"
-                . "<div xmlns='http://www.w3.org/1999/xhtml' style='font-family:Arial,sans-serif;color:white;font-size:82px;font-weight:900;line-height:1.08;'>{$safeTitle}</div>"
-                . "</foreignObject>"
-                . "<text x='120' y='1220' fill='white' font-family='Arial, sans-serif' font-size='30'>MyMarhalah · Berita Bergambar</text>"
-                . "</svg>";
+                ."<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>"
+                ."<stop offset='0%' stop-color='{$startColor}'/><stop offset='100%' stop-color='{$endColor}'/>"
+                .'</linearGradient></defs>'
+                ."<rect width='1080' height='1350' fill='url(#g)'/>"
+                ."<circle cx='940' cy='200' r='210' fill='rgba(255,255,255,0.12)'/>"
+                ."<circle cx='180' cy='1120' r='170' fill='rgba(255,255,255,0.10)'/>"
+                ."<rect x='70' y='80' width='940' height='1190' rx='36' fill='rgba(255,255,255,0.10)' stroke='rgba(255,255,255,0.26)'/>"
+                ."<text x='120' y='220' fill='white' font-family='Arial, sans-serif' font-size='38' font-weight='700'>{$safeSubtitle}</text>"
+                ."<foreignObject x='120' y='290' width='840' height='640'>"
+                ."<div xmlns='http://www.w3.org/1999/xhtml' style='font-family:Arial,sans-serif;color:white;font-size:82px;font-weight:900;line-height:1.08;'>{$safeTitle}</div>"
+                .'</foreignObject>'
+                ."<text x='120' y='1220' fill='white' font-family='Arial, sans-serif' font-size='30'>MyMarhalah · Berita Bergambar</text>"
+                .'</svg>';
         };
 
         $index = 0;
@@ -178,7 +178,7 @@ class DashboardBannerController extends Controller
                     'title' => $banner['title'],
                 ],
                 [
-                    'image_path' => '/storage/' . ltrim($storagePath, '/'),
+                    'image_path' => '/storage/'.ltrim($storagePath, '/'),
                     'link_url' => $banner['link_url'],
                     'link_target' => '_blank',
                     'is_active' => true,
@@ -206,7 +206,7 @@ class DashboardBannerController extends Controller
                         'title' => $title,
                     ],
                     [
-                        'image_path' => '/storage/' . ltrim($storagePath, '/'),
+                        'image_path' => '/storage/'.ltrim($storagePath, '/'),
                         'link_url' => $template['link_url'],
                         'link_target' => '_blank',
                         'is_active' => true,

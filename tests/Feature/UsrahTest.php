@@ -3,20 +3,22 @@
 namespace Tests\Feature;
 
 use App\Models\Organization;
-use App\Models\UsrahGroup;
-use App\Models\UsrahAttendance;
 use App\Models\User;
+use App\Models\UsrahGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class UsrahTest extends TestCase
 {
     use RefreshDatabase;
 
     private Organization $org;
+
     private User $admin;
+
     private User $member;
+
     private User $naqibUser;
 
     protected function setUp(): void

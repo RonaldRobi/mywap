@@ -31,9 +31,9 @@ class InfaqDonation extends Model
     ];
 
     protected $casts = [
-        'amount'           => 'float',
-        'is_recurring'     => 'boolean',
-        'next_billing_date'=> 'date',
+        'amount' => 'float',
+        'is_recurring' => 'boolean',
+        'next_billing_date' => 'date',
     ];
 
     public function infaq(): BelongsTo

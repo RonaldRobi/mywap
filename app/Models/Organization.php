@@ -13,11 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Represents one of the three NGO tiers: PKPIM (< 20), ABIM (20-29), WADAH (30+).
  * The slug and color_theme columns power dynamic routing and UI accent theming.
  *
- * @property int    $id
+ * @property int $id
  * @property string $name
  * @property string $slug
  * @property string|null $color_theme
- * @property int    $min_age
+ * @property int $min_age
  * @property int|null $max_age
  */
 class Organization extends Model

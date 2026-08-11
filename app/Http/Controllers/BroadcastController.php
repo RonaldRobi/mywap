@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendBroadcastJob;
+use App\Models\Announcement;
 use App\Models\Branch;
 use App\Models\BroadcastMessage;
 use App\Models\Organization;
-use App\Models\Announcement;
 use App\Models\UsrahGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,7 +64,7 @@ class BroadcastController extends Controller
                 'organization_name' => $item->organization?->name,
                 'title' => $item->title,
                 'content' => $item->content,
-                'is_pinned' => (bool)$item->is_pinned,
+                'is_pinned' => (bool) $item->is_pinned,
                 'published_at' => $item->published_at?->toDateTimeString(),
                 'published_human' => $item->published_at?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
                 'cover_image_url' => $item->coverImageUrl(),
@@ -90,7 +90,7 @@ class BroadcastController extends Controller
 
         $branches = Branch::query()
             ->where('is_active', true)
-            ->when(!$isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->select('id', 'name', 'organization_id')
             ->orderBy('name')
             ->get();

@@ -11,6 +11,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::paginate(20);
+
         return Inertia::render('Ecommerce/Categories/Index', [
             'categories' => $categories,
         ]);
@@ -19,6 +20,7 @@ class CategoryController extends Controller
     public function create()
     {
         $this->authorize('create', Category::class);
+
         return Inertia::render('Ecommerce/Categories/Create');
     }
 
@@ -30,12 +32,14 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
         Category::create($request->only('name', 'description'));
+
         return redirect()->route('categories.index')->with('success', 'Kategori berjaya ditambah!');
     }
 
     public function edit(Category $category)
     {
         $this->authorize('update', $category);
+
         return Inertia::render('Ecommerce/Categories/Edit', [
             'category' => $category,
         ]);
@@ -49,6 +53,7 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
         ]);
         $category->update($request->only('name', 'description'));
+
         return redirect()->route('categories.index')->with('success', 'Kategori berjaya dikemaskini!');
     }
 
@@ -56,6 +61,7 @@ class CategoryController extends Controller
     {
         $this->authorize('delete', $category);
         $category->delete();
+
         return redirect()->route('categories.index')->with('success', 'Kategori berjaya dipadam!');
     }
 }

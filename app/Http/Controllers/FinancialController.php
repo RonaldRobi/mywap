@@ -52,7 +52,7 @@ class FinancialController extends Controller
         $suffix = 1;
 
         while (Campaign::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
 

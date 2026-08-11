@@ -28,8 +28,8 @@ class Form extends Model
     protected function casts(): array
     {
         return [
-            'is_active'        => 'boolean',
-            'allow_public'     => 'boolean',
+            'is_active' => 'boolean',
+            'allow_public' => 'boolean',
             'recipient_emails' => 'array',
         ];
     }
@@ -40,7 +40,7 @@ class Form extends Model
 
         static::creating(function (Form $form) {
             if (empty($form->slug)) {
-                $form->slug = Str::slug($form->title) . '-' . Str::lower(Str::random(6));
+                $form->slug = Str::slug($form->title).'-'.Str::lower(Str::random(6));
             }
             if (empty($form->share_token)) {
                 $form->share_token = Str::random(32);

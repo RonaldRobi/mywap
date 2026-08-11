@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\LoadUsrahForUser;
+use App\Models\User;
 use App\Models\UsrahAttendance;
 use App\Models\UsrahGroup;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -194,5 +193,4 @@ class UsrahController extends Controller
 
         return back()->with('success', 'Kehadiran berjaya direkodkan.');
     }
-
 }

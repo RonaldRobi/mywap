@@ -6,13 +6,16 @@ use App\Models\Event;
 use App\Models\EventComment;
 use App\Models\EventRsvp;
 use App\Models\Organization;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class EventController extends Controller
@@ -23,7 +26,7 @@ class EventController extends Controller
      * Returns a paginated list of events with attendance counts for admin view.
      * Filters: search, start date, end date, status (hadir/tidak_hadir)
      */
-    public function adminAttendance(Request $request): \Inertia\Response
+    public function adminAttendance(Request $request): Response
     {
         $user = $request->user();
         $query = Event::with(['organization', 'rsvps']);
@@ -107,25 +110,25 @@ class EventController extends Controller
             : null;
 
         return [
-            'id'                  => $event->id,
-            'title'               => $event->title,
-            'slug'                => $event->slug,
-            'description'         => $event->description,
-            'type'                => $event->type,
-            'location_or_link'    => $event->location_or_link,
-            'start_time'          => $event->start_time->toISOString(),
-            'start_formatted'     => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
-            'end_time'            => $event->end_time->toISOString(),
-            'featured_image_url'  => $event->featured_image_url,
+            'id' => $event->id,
+            'title' => $event->title,
+            'slug' => $event->slug,
+            'description' => $event->description,
+            'type' => $event->type,
+            'location_or_link' => $event->location_or_link,
+            'start_time' => $event->start_time->toISOString(),
+            'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+            'end_time' => $event->end_time->toISOString(),
+            'featured_image_url' => $event->featured_image_url,
             'google_calendar_url' => $event->google_calendar_url,
-            'organization'        => [
-                'id'          => $event->organization?->id ?? null,
-                'name'        => $event->organization?->name ?? 'Semua Organisasi',
-                'slug'        => $event->organization?->slug ?? 'semua',
+            'organization' => [
+                'id' => $event->organization?->id ?? null,
+                'name' => $event->organization?->name ?? 'Semua Organisasi',
+                'slug' => $event->organization?->slug ?? 'semua',
                 'color_theme' => $event->organization?->color_theme ?? '#334155',
             ],
             'rsvp_count' => $event->rsvps->whereIn('status', ['going', 'attended'])->count(),
-            'my_rsvp'    => $myRsvp ? $myRsvp->status : null,
+            'my_rsvp' => $myRsvp ? $myRsvp->status : null,
         ];
     }
 
@@ -166,14 +169,13 @@ class EventController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('location_or_link', 'like', "%{$search}%");
+                    ->orWhere('location_or_link', 'like', "%{$search}%");
             });
         }
 
         if ($typeFilter) {
             $query->where('type', $typeFilter);
         }
-
 
         $events = $query->paginate(12)->withQueryString()->through(
             function (Event $e) use ($user) {
@@ -191,6 +193,7 @@ class EventController extends Controller
                             ];
                         })->values();
                 }
+
                 return $eventArr;
             }
         );
@@ -205,6 +208,7 @@ class EventController extends Controller
                 ->get();
             $attendedEvents = $attended->map(function ($rsvp) {
                 $event = $rsvp->event;
+
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
@@ -294,7 +298,7 @@ class EventController extends Controller
             ->where(function ($q) use ($event) {
                 if ($event->organization_id) {
                     $q->where('organization_id', $event->organization_id)
-                      ->orWhereNull('organization_id');
+                        ->orWhereNull('organization_id');
                 }
             })
             ->orderBy('start_time')
@@ -303,8 +307,8 @@ class EventController extends Controller
             ->map(fn ($e) => $this->serializeEvent($e, $user?->id));
 
         return Inertia::render('Events/Show', [
-            'event'         => $eventArr,
-            'comments'      => $comments,
+            'event' => $eventArr,
+            'comments' => $comments,
             'relatedEvents' => $relatedEvents,
             'organizations' => $user->hasRole('Superadmin')
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
@@ -330,14 +334,14 @@ class EventController extends Controller
         }
 
         $data = $request->validate([
-            'organization_id'  => ['nullable', 'integer', 'exists:organizations,id'],
-            'title'            => ['required', 'string', 'max:255'],
-            'description'      => ['nullable', 'string', 'max:4000'],
-            'type'             => ['required', 'in:physical,online'],
+            'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:4000'],
+            'type' => ['required', 'in:physical,online'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
-            'start_time'       => ['required', 'date'],
-            'end_time'         => ['required', 'date', 'after:start_time'],
-            'featured_image'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'start_time' => ['required', 'date'],
+            'end_time' => ['required', 'date', 'after:start_time'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         // Replace image only if a new one is uploaded
@@ -351,15 +355,15 @@ class EventController extends Controller
         unset($data['featured_image']);
 
         $event->update([
-            'organization_id'    => $isSuperadmin
+            'organization_id' => $isSuperadmin
                 ? ($data['organization_id'] ?: null)
                 : $event->organization_id,
-            'title'              => $data['title'],
-            'description'        => $data['description'] ?? null,
-            'type'               => $data['type'],
-            'location_or_link'   => $data['location_or_link'] ?? null,
-            'start_time'         => $data['start_time'],
-            'end_time'           => $data['end_time'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'type' => $data['type'],
+            'location_or_link' => $data['location_or_link'] ?? null,
+            'start_time' => $data['start_time'],
+            'end_time' => $data['end_time'],
             'featured_image_path' => $data['featured_image_path'] ?? $event->featured_image_path,
         ]);
 
@@ -427,7 +431,7 @@ class EventController extends Controller
 
         EventRsvp::updateOrCreate(
             ['event_id' => $event->id, 'user_id' => $request->user()->id],
-            ['status'   => $validated['status']]
+            ['status' => $validated['status']]
         );
 
         return back()->with('success', 'RSVP berjaya dikemas kini.');
@@ -483,8 +487,8 @@ class EventController extends Controller
         }
 
         return Inertia::render('Events/ShowQr', [
-            'event'         => $this->serializeEvent($event->load('rsvps')),
-            'qrSvg'         => (string) $qrSvg,
+            'event' => $this->serializeEvent($event->load('rsvps')),
+            'qrSvg' => (string) $qrSvg,
             'attendedCount' => $attendedCount,
             'attendanceUrl' => $attendanceUrl,
         ]);
@@ -507,11 +511,11 @@ class EventController extends Controller
                 ->generate($event->attendance_url)
             : $this->qrPngGd($event->attendance_url, 1024, 4, 'H');
 
-        $filename = 'qr-' . Str::slug($event->title) . '-' . $event->id . '.png';
+        $filename = 'qr-'.Str::slug($event->title).'-'.$event->id.'.png';
 
         return response($png, 200, [
-            'Content-Type'        => 'image/png',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -524,13 +528,13 @@ class EventController extends Controller
     private function qrPngGd(string $text, int $size = 1024, int $margin = 4, string $errorCorrection = 'H'): string
     {
         $ecLevel = match (strtoupper($errorCorrection)) {
-            'L' => \BaconQrCode\Common\ErrorCorrectionLevel::L(),
-            'M' => \BaconQrCode\Common\ErrorCorrectionLevel::M(),
-            'Q' => \BaconQrCode\Common\ErrorCorrectionLevel::Q(),
-            default => \BaconQrCode\Common\ErrorCorrectionLevel::H(),
+            'L' => ErrorCorrectionLevel::L(),
+            'M' => ErrorCorrectionLevel::M(),
+            'Q' => ErrorCorrectionLevel::Q(),
+            default => ErrorCorrectionLevel::H(),
         };
 
-        $matrix = \BaconQrCode\Encoder\Encoder::encode($text, $ecLevel)->getMatrix();
+        $matrix = Encoder::encode($text, $ecLevel)->getMatrix();
         $modules = $matrix->getWidth();
         $total = $modules + ($margin * 2);
 
@@ -599,12 +603,12 @@ class EventController extends Controller
 
         return Inertia::render('Events/AttendanceSuccess', [
             'event' => [
-                'id'              => $event->id,
-                'title'           => $event->title,
+                'id' => $event->id,
+                'title' => $event->title,
                 'location_or_link' => $event->location_or_link,
                 'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
-                'organization'    => [
-                    'name'        => $event->organization?->name ?? 'Semua Organisasi',
+                'organization' => [
+                    'name' => $event->organization?->name ?? 'Semua Organisasi',
                     'color_theme' => $event->organization?->color_theme ?? '#334155',
                 ],
             ],
@@ -619,7 +623,7 @@ class EventController extends Controller
      * Returns a bare Blade view (not Inertia) — a print-ready HTML table.
      * Not going through Inertia avoids any JS bundle overhead on print.
      */
-    public function printAttendance(Event $event): \Illuminate\Contracts\View\View
+    public function printAttendance(Event $event): View
     {
         $rsvps = $event->rsvps()
             ->attended()

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Organization;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -22,11 +23,11 @@ class MemberTransitionNotification extends Notification
 
     /**
      * @param  int|null  $fromOrgId  Previous organization ID (null = first join).
-     * @param  int       $toOrgId    New organization ID after transition.
+     * @param  int  $toOrgId  New organization ID after transition.
      */
     public function __construct(
         public readonly ?int $fromOrgId,
-        public readonly int  $toOrgId,
+        public readonly int $toOrgId,
     ) {}
 
     /**
@@ -42,8 +43,8 @@ class MemberTransitionNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $toOrg   = \App\Models\Organization::find($this->toOrgId);
-        $fromOrg = $this->fromOrgId ? \App\Models\Organization::find($this->fromOrgId) : null;
+        $toOrg = Organization::find($this->toOrgId);
+        $fromOrg = $this->fromOrgId ? Organization::find($this->fromOrgId) : null;
 
         $greeting = $fromOrg
             ? "Tahniah! Anda telah berjaya beralih dari {$fromOrg->name} ke {$toOrg->name}."
@@ -65,14 +66,14 @@ class MemberTransitionNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $toOrg = \App\Models\Organization::find($this->toOrgId);
+        $toOrg = Organization::find($this->toOrgId);
 
         return [
-            'type'               => 'organization_transition',
+            'type' => 'organization_transition',
             'from_organization_id' => $this->fromOrgId,
-            'to_organization_id'   => $this->toOrgId,
+            'to_organization_id' => $this->toOrgId,
             'to_organization_name' => $toOrg?->name,
-            'message'            => "Anda kini ahli {$toOrg?->name}.",
+            'message' => "Anda kini ahli {$toOrg?->name}.",
         ];
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class GenerateFees extends Command
 {
     protected $signature = 'fees:generate {year? : Tahun yuran (default: tahun semasa)}';
+
     protected $description = 'Generate annual membership fee records for all organizations';
 
     public function handle(FeeService $feeService): int
@@ -21,6 +22,7 @@ class GenerateFees extends Command
 
         if ($organizations->isEmpty()) {
             $this->warn('No organizations found.');
+
             return self::FAILURE;
         }
 

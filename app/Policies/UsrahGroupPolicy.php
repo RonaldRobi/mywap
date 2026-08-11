@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\UsrahGroup;
 use App\Models\User;
+use App\Models\UsrahGroup;
 
 class UsrahGroupPolicy
 {

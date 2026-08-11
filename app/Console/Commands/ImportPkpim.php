@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class ImportPkpim extends Command
 {
@@ -22,18 +23,21 @@ class ImportPkpim extends Command
 
         if (! file_exists($file)) {
             $this->error("File tak jumpa: {$file}");
+
             return 1;
         }
 
         $pkpim = Organization::where('slug', 'pkpim')->first();
         if (! $pkpim) {
             $this->error('Organisasi PKPIM tak jumpa');
+
             return 1;
         }
 
-        $memberRole = \Spatie\Permission\Models\Role::where('name', 'Member')->first();
+        $memberRole = Role::where('name', 'Member')->first();
         if (! $memberRole) {
             $this->error('Role Member tak jumpa, jalankan db:seed dulu');
+
             return 1;
         }
 
@@ -42,12 +46,13 @@ class ImportPkpim extends Command
         $parsed = $this->parseAll($file);
         if (empty($parsed['records'])) {
             $this->error('CSV kosong atau gagal parse');
+
             return 1;
         }
 
         $this->line("📊 {$parsed['rows']} rekod, {$parsed['branchNames']->count()} cawangan unik");
         if (! empty($parsed['errors'])) {
-            $this->warn('⚠️  ' . count($parsed['errors']) . ' rekod dilewati (IC tak sah)');
+            $this->warn('⚠️  '.count($parsed['errors']).' rekod dilewati (IC tak sah)');
         }
 
         // ── Cari max sequence no ahli P─ ────────────────────────────────
@@ -65,7 +70,7 @@ class ImportPkpim extends Command
             );
             $branchMap[$name] = $branch->id;
         }
-        $this->line('✅ ' . count($branchMap) . ' cawangan sedia');
+        $this->line('✅ '.count($branchMap).' cawangan sedia');
 
         // ── Build records ───────────────────────────────────────────────
         $this->line('🔍 Memeriksa duplikasi IC...');
@@ -82,22 +87,22 @@ class ImportPkpim extends Command
 
         foreach ($parsed['records'] as $r) {
             $seq++;
-            $memberNo = 'P' . str_pad($seq, 5, '0', STR_PAD_LEFT);
+            $memberNo = 'P'.str_pad($seq, 5, '0', STR_PAD_LEFT);
             $branchId = $r['branchName'] ? ($branchMap[$r['branchName']] ?? null) : null;
 
             $record = [
-                'name'                    => $r['name'],
-                'member_no'               => $memberNo,
-                'member_no_sequence'      => $seq,
-                'password'                => $defaultPw,
-                'email'                   => $r['email'],
-                'phone'                   => $r['phone'],
-                'dob'                     => $r['dob'],
-                'gender'                  => $r['gender'],
-                'branch_id'               => $branchId,
-                'notes'                   => $r['notes'],
+                'name' => $r['name'],
+                'member_no' => $memberNo,
+                'member_no_sequence' => $seq,
+                'password' => $defaultPw,
+                'email' => $r['email'],
+                'phone' => $r['phone'],
+                'dob' => $r['dob'],
+                'gender' => $r['gender'],
+                'branch_id' => $branchId,
+                'notes' => $r['notes'],
                 'current_organization_id' => $pkpim->id,
-                'ic_number'               => $r['ic'],
+                'ic_number' => $r['ic'],
             ];
 
             $exists = isset($existingIcs[$r['ic']]);
@@ -111,7 +116,7 @@ class ImportPkpim extends Command
             }
         }
 
-        $this->line("➡️  Baru: " . count($toInsert) . " | Sedia: " . count($toUpdate));
+        $this->line('➡️  Baru: '.count($toInsert).' | Sedia: '.count($toUpdate));
 
         // ── Bulk insert ─────────────────────────────────────────────────
         $insertedCount = 0;
@@ -119,7 +124,9 @@ class ImportPkpim extends Command
         if (! empty($toInsert)) {
             $this->line('⚡ Insert ahli baru...');
             foreach (array_chunk($toInsert, 500) as $chunk) {
-                foreach ($chunk as &$rec) unset($rec['id']);
+                foreach ($chunk as &$rec) {
+                    unset($rec['id']);
+                }
                 DB::table('users')->insert($chunk);
                 $insertedCount += count($chunk);
             }
@@ -152,7 +159,7 @@ class ImportPkpim extends Command
                     DB::table('users')->where('id', $id)->update($rec);
                 }
             }
-            $this->line("✅ " . count($toUpdate) . " ahli dikemaskini");
+            $this->line('✅ '.count($toUpdate).' ahli dikemaskini');
         }
 
         // ── Role ────────────────────────────────────────────────────────
@@ -167,21 +174,23 @@ class ImportPkpim extends Command
 
             $needRole = array_diff($allIds, $existingRole);
             if (! empty($needRole)) {
-                $roleInserts = array_map(fn($uid) => [
+                $roleInserts = array_map(fn ($uid) => [
                     'role_id' => $memberRole->id, 'model_type' => User::class, 'model_id' => $uid,
                 ], $needRole);
                 foreach (array_chunk($roleInserts, 500) as $chunk) {
                     DB::table('model_has_roles')->insertOrIgnore($chunk);
                 }
-                $this->line("✅ Role Member → " . count($needRole) . " ahli");
+                $this->line('✅ Role Member → '.count($needRole).' ahli');
             }
         }
 
         $this->newLine();
-        $this->info("🎉 Selesai! " . ($insertedCount + count($toUpdate)) . " ahli PKPIM diproses");
+        $this->info('🎉 Selesai! '.($insertedCount + count($toUpdate)).' ahli PKPIM diproses');
         if (! empty($parsed['errors'])) {
             $this->warn('⚠️  Rekod dilewati (IC tak sah — sila semak & upload semula):');
-            foreach ($parsed['errors'] as $e) $this->warn("  • {$e}");
+            foreach ($parsed['errors'] as $e) {
+                $this->warn("  • {$e}");
+            }
         }
 
         return 0;
@@ -190,16 +199,23 @@ class ImportPkpim extends Command
     protected function parseAll(string $file): array
     {
         $handle = fopen($file, 'r');
-        if (! $handle) return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        if (! $handle) {
+            return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        }
 
         $headers = fgetcsv($handle);
-        if (! $headers) { fclose($handle); return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []]; }
+        if (! $headers) {
+            fclose($handle);
+
+            return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        }
 
         $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
         $col = array_flip($headers);
 
         if (! isset($col['FullName'], $col['icNumber'])) {
             fclose($handle);
+
             return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
         }
 
@@ -209,17 +225,22 @@ class ImportPkpim extends Command
         $count = 0;
 
         while (($row = fgetcsv($handle)) !== false) {
-            if (count($row) < count($headers)) continue;
+            if (count($row) < count($headers)) {
+                continue;
+            }
 
             $name = $this->clean(trim($row[$col['FullName']] ?? ''));
             $icRaw = $this->clean(trim($row[$col['icNumber']] ?? ''));
             $digits = preg_replace('/[^0-9]/', '', $icRaw);
 
-            if (empty($name) && empty($digits)) continue;
+            if (empty($name) && empty($digits)) {
+                continue;
+            }
 
             if (strlen($digits) < 11) {
                 $persatuan = $this->clean(trim($row[$col['Persatuan'] ?? ''] ?? ''));
                 $errors[] = "{$name} — IC=\"{$icRaw}\" (no telefon?), Persatuan: {$persatuan}";
+
                 continue;
             }
 
@@ -231,19 +252,21 @@ class ImportPkpim extends Command
             $branchNames->push($branchName);
 
             $email = $this->clean(trim($row[$col['email'] ?? ''] ?? ''));
-            if (empty($email)) $email = strtolower($digits) . '@mywap.my';
+            if (empty($email)) {
+                $email = strtolower($digits).'@mywap.my';
+            }
 
             $phone = ltrim($this->clean(trim($row[$col['phoneNo'] ?? ''] ?? '')), "'");
 
             $records[] = [
-                'name'       => $name,
-                'ic'         => $icPadded,
-                'email'      => $email,
-                'phone'      => $phone ?: null,
-                'dob'        => User::parseDobFromIc($digits),
-                'gender'     => User::guessGenderFromIc($digits),
+                'name' => $name,
+                'ic' => $icPadded,
+                'email' => $email,
+                'phone' => $phone ?: null,
+                'dob' => User::parseDobFromIc($digits),
+                'gender' => User::guessGenderFromIc($digits),
                 'branchName' => $branchName,
-                'notes'      => $branchName !== 'Pusat' ? "Persatuan: {$branchName}" : null,
+                'notes' => $branchName !== 'Pusat' ? "Persatuan: {$branchName}" : null,
             ];
         }
 

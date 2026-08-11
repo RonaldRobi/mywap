@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,11 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Pivot between events and users.
  * Status flow: going | maybe | declined → attended (triggered by QR scan).
  *
- * @property int                  $id
- * @property int                  $event_id
- * @property int                  $user_id
- * @property string               $status
- * @property \Carbon\Carbon|null  $attended_at
+ * @property int $id
+ * @property int $event_id
+ * @property int $user_id
+ * @property string $status
+ * @property Carbon|null $attended_at
  */
 class EventRsvp extends Model
 {

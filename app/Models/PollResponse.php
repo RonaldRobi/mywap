@@ -28,7 +28,7 @@ class PollResponse extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new OrganizationScope());
+        static::addGlobalScope(new OrganizationScope);
     }
 
     public function user(): BelongsTo

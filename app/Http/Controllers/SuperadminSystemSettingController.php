@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AppSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -199,19 +201,19 @@ class SuperadminSystemSettingController extends Controller
         $appName = $setting->app_name ?? config('app.name');
 
         try {
-            \Illuminate\Support\Facades\Mail::raw(
+            Mail::raw(
                 "Ini adalah emel ujian daripada {$appName}. Konfigurasi emel berfungsi dengan baik.",
-                function ($message) use ($data, $setting, $appName) {
+                function ($message) use ($data, $appName) {
                     $message->to($data['test_email'])
-                        ->subject('Emel Ujian ' . $appName);
+                        ->subject('Emel Ujian '.$appName);
                 }
             );
 
-            return back()->with('success', 'Emel ujian berjaya dihantar ke ' . $data['test_email'] . '.');
+            return back()->with('success', 'Emel ujian berjaya dihantar ke '.$data['test_email'].'.');
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Mail test failed', ['error' => $e->getMessage()]);
+            Log::error('Mail test failed', ['error' => $e->getMessage()]);
 
-            return back()->with('error', 'Gagal menghantar emel ujian: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghantar emel ujian: '.$e->getMessage());
         }
     }
 
@@ -237,7 +239,7 @@ class SuperadminSystemSettingController extends Controller
         $storedPath = $data['system_logo']->store('logos/system', 'public');
 
         $setting->update([
-            'system_logo_path' => '/storage/' . ltrim($storedPath, '/'),
+            'system_logo_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', 'Logo MyMarhalah berjaya dikemas kini.');
@@ -269,7 +271,7 @@ class SuperadminSystemSettingController extends Controller
             }
 
             $storedPath = $request->file('splash_image')->store('logos/splash', 'public');
-            $splashImagePath = '/storage/' . ltrim($storedPath, '/');
+            $splashImagePath = '/storage/'.ltrim($storedPath, '/');
         }
 
         $setting->update([
@@ -305,7 +307,7 @@ class SuperadminSystemSettingController extends Controller
         $storedPath = $data['chatbot_logo']->store('logos/chatbot', 'public');
 
         $setting->update([
-            'chatbot_logo_path' => '/storage/' . ltrim($storedPath, '/'),
+            'chatbot_logo_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', 'Logo chatbot berjaya dikemas kini.');
@@ -381,7 +383,7 @@ class SuperadminSystemSettingController extends Controller
         $storedPath = $data['og_image']->store('og-images', 'public');
 
         $setting->update([
-            'og_image_path' => '/storage/' . ltrim($storedPath, '/'),
+            'og_image_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', 'Gambar OG (Open Graph) berjaya dikemas kini.');

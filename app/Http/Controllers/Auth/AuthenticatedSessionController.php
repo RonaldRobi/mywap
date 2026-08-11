@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -75,8 +74,8 @@ class AuthenticatedSessionController extends Controller
             ->with('organization')
             ->where(function ($query) use ($normalizedId, $email) {
                 $query->where('ic_number', $normalizedId)
-                      ->orWhere('member_no', $normalizedId)
-                      ->orWhere('email', $email);
+                    ->orWhere('member_no', $normalizedId)
+                    ->orWhere('email', $email);
             })
             ->first();
 
@@ -318,8 +317,8 @@ class AuthenticatedSessionController extends Controller
         return User::withoutGlobalScopes()
             ->where(function ($query) use ($normalizedId, $email) {
                 $query->where('ic_number', $normalizedId)
-                      ->orWhere('member_no', $normalizedId)
-                      ->orWhere('email', $email);
+                    ->orWhere('member_no', $normalizedId)
+                    ->orWhere('email', $email);
             })
             ->first();
     }
@@ -335,15 +334,15 @@ class AuthenticatedSessionController extends Controller
         $domain = $parts[1] ?? '';
 
         $maskedName = strlen($name) > 2
-            ? substr($name, 0, 1) . str_repeat('*', max(strlen($name) - 2, 1)) . substr($name, -1)
-            : $name[0] . '*';
+            ? substr($name, 0, 1).str_repeat('*', max(strlen($name) - 2, 1)).substr($name, -1)
+            : $name[0].'*';
 
         $domainParts = explode('.', $domain);
         $maskedDomain = (count($domainParts) > 0)
-            ? substr($domainParts[0], 0, 1) . str_repeat('*', max(strlen($domainParts[0]) - 1, 1)) . '.' . implode('.', array_slice($domainParts, 1))
+            ? substr($domainParts[0], 0, 1).str_repeat('*', max(strlen($domainParts[0]) - 1, 1)).'.'.implode('.', array_slice($domainParts, 1))
             : $domain;
 
-        return $maskedName . '@' . $maskedDomain;
+        return $maskedName.'@'.$maskedDomain;
     }
 
     private function redirectRouteFor(?User $user): string

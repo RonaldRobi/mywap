@@ -13,17 +13,17 @@ class MemberSearchController extends Controller
     {
         $q = $request->query('q');
 
-        if (!$q || mb_strlen($q) < 2) {
+        if (! $q || mb_strlen($q) < 2) {
             return response()->json([]);
         }
 
         $members = User::query()
             ->when($request->query('organization_id'), fn ($query, $orgId) => $query->where('current_organization_id', $orgId))
             ->where(function ($query) use ($q) {
-                $query->where('name', 'like', '%' . $q . '%')
-                    ->orWhere('member_no', 'like', '%' . $q . '%');
+                $query->where('name', 'like', '%'.$q.'%')
+                    ->orWhere('member_no', 'like', '%'.$q.'%');
             })
-            ->orderByRaw("CASE WHEN member_no LIKE ? THEN 0 ELSE 1 END", [$q . '%'])
+            ->orderByRaw('CASE WHEN member_no LIKE ? THEN 0 ELSE 1 END', [$q.'%'])
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'member_no']);

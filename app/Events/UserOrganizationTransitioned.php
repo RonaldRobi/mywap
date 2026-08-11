@@ -2,11 +2,8 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -23,12 +20,12 @@ class UserOrganizationTransitioned
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * @param  \App\Models\User  $user               The member being transitioned.
-     * @param  int|null          $fromOrganizationId  Previous NGO (null for first-time joins).
-     * @param  int               $toOrganizationId    New NGO after the transition.
+     * @param  User  $user  The member being transitioned.
+     * @param  int|null  $fromOrganizationId  Previous NGO (null for first-time joins).
+     * @param  int  $toOrganizationId  New NGO after the transition.
      */
     public function __construct(
-        public readonly \App\Models\User $user,
+        public readonly User $user,
         public readonly ?int $fromOrganizationId,
         public readonly int $toOrganizationId,
     ) {}

@@ -23,9 +23,9 @@ class ChatController extends Controller
         $articles = KnowledgeArticle::where('is_active', true)
             ->where(function ($q) use ($message) {
                 $q->where('question', 'like', "%{$message}%")
-                  ->orWhere('answer', 'like', "%{$message}%")
-                  ->orWhere('keywords', 'like', "%{$message}%")
-                  ->orWhere('document_content', 'like', "%{$message}%");
+                    ->orWhere('answer', 'like', "%{$message}%")
+                    ->orWhere('keywords', 'like', "%{$message}%")
+                    ->orWhere('document_content', 'like', "%{$message}%");
             })
             ->take(3)
             ->get();
@@ -54,6 +54,7 @@ class ChatController extends Controller
             if ($a->document_content) {
                 $parts[] = "Kandungan dokumen: {$a->document_content}";
             }
+
             return implode("\n", $parts);
         })->implode("\n\n---\n\n");
 
@@ -77,6 +78,7 @@ class ChatController extends Controller
 
         if ($response->failed()) {
             $email = $setting?->admin_contact_email ?? 'admin@mywap.my';
+
             return response()->json([
                 'reply' => "Maaf, saya tidak dapat memproses soalan anda sekarang. Sila cuba sebentar lagi atau emel {$email} untuk bantuan.",
             ], 500);

@@ -16,13 +16,19 @@ use Maatwebsite\Excel\Concerns\WithStartRow;
 class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
 {
     protected int $year;
+
     protected FeeService $feeService;
+
     protected string $proofPath;
+
     protected ?int $importBatchId;
+
     protected ?int $orgId;
 
     public int $successCount = 0;
+
     public int $skipCount = 0;
+
     public array $errors = [];
 
     public function __construct(int $year, FeeService $feeService, string $proofPath = '', ?int $importBatchId = null, ?int $orgId = null)
@@ -48,6 +54,7 @@ class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
             if (empty($ic) && empty($memberNo)) {
                 $this->skipCount++;
                 $this->errors[] = "Row {$this->getCurrentRow()}: IC dan No Ahli kosong — dilewati.";
+
                 continue;
             }
 
@@ -57,12 +64,14 @@ class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
                 $identity = $ic ?: $memberNo;
                 $this->skipCount++;
                 $this->errors[] = "Row {$this->getCurrentRow()}: Ahli {$identity} tidak ditemui — dilewati.";
+
                 continue;
             }
 
             if ($this->feeService->isLifeMember($user) || $this->feeService->isExempted($user)) {
                 $this->skipCount++;
                 $this->errors[] = "Row {$this->getCurrentRow()}: {$user->name} — status dikecualikan/life member.";
+
                 continue;
             }
 
@@ -73,11 +82,12 @@ class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
             if ($existingFee && $existingFee->status === FeeStatus::Paid) {
                 $this->skipCount++;
                 $this->errors[] = "Row {$this->getCurrentRow()}: {$user->name} — sudah dibayar untuk {$this->year}.";
+
                 continue;
             }
 
             $amount = (float) ($row['amount'] ?? $user->organization?->fee_amount ?? 0);
-            $reference = trim((string) ($row['reference'] ?? '')) ?: ('CSV-' . strtoupper(Str::random(8)));
+            $reference = trim((string) ($row['reference'] ?? '')) ?: ('CSV-'.strtoupper(Str::random(8)));
 
             $fee = $this->feeService->markAsPaid($user, $this->year, $amount);
 
@@ -111,14 +121,14 @@ class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
             $query->where('ic_number', $ic)
                 ->where(function ($q) use ($memberNo) {
                     $q->where('member_no', $memberNo)
-                      ->orWhere('original_member_no', $memberNo);
+                        ->orWhere('original_member_no', $memberNo);
                 });
         } elseif ($ic) {
             $query->where('ic_number', $ic);
         } elseif ($memberNo) {
             $query->where(function ($q) use ($memberNo) {
                 $q->where('member_no', $memberNo)
-                  ->orWhere('original_member_no', $memberNo);
+                    ->orWhere('original_member_no', $memberNo);
             });
         }
 

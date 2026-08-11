@@ -72,7 +72,7 @@ class MemberCardController extends Controller
             ],
         ]);
 
-        return $pdf->download('surat-pengesahan-keahlian-' . ($user->member_no ?? $user->id) . '.pdf');
+        return $pdf->download('surat-pengesahan-keahlian-'.($user->member_no ?? $user->id).'.pdf');
     }
 
     private function generateQrSvg(string $url): string
@@ -80,6 +80,7 @@ class MemberCardController extends Controller
         $svg = QrCode::format('svg')->size(200)->margin(1)->generate($url);
         $svg = preg_replace('/^<\?xml.*?\?>\s*/', '', $svg);
         $svg = preg_replace('/\s(width|height)="\d+"/', '', $svg);
+
         return $svg;
     }
 

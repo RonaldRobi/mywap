@@ -22,7 +22,7 @@ class FormQuestion extends Model
     protected function casts(): array
     {
         return [
-            'options'  => 'array',
+            'options' => 'array',
             'required' => 'boolean',
         ];
     }

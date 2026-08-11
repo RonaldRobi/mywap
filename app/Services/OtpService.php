@@ -6,7 +6,6 @@ use App\Models\OtpCode;
 use App\Models\User;
 use App\Notifications\OtpEmail;
 use Carbon\Carbon;
-use Illuminate\Support\Str;
 
 class OtpService
 {

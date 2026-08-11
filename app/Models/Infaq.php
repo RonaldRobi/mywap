@@ -6,6 +6,7 @@ use App\Support\NormalizesStoragePath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Infaq extends Model
 {
@@ -28,11 +29,11 @@ class Infaq extends Model
     ];
 
     protected $casts = [
-        'is_active'        => 'boolean',
-        'allow_recurring'  => 'boolean',
-        'target_amount'    => 'float',
+        'is_active' => 'boolean',
+        'allow_recurring' => 'boolean',
+        'target_amount' => 'float',
         'collected_amount' => 'float',
-        'display_order'    => 'integer',
+        'display_order' => 'integer',
     ];
 
     public function organization(): BelongsTo
@@ -68,11 +69,11 @@ class Infaq extends Model
 
         static::creating(function ($infaq) {
             if (empty($infaq->slug)) {
-                $slug = \Illuminate\Support\Str::slug($infaq->title);
+                $slug = Str::slug($infaq->title);
                 $original = $slug;
                 $counter = 1;
                 while (static::where('slug', $slug)->exists()) {
-                    $slug = $original . '-' . $counter++;
+                    $slug = $original.'-'.$counter++;
                 }
                 $infaq->slug = $slug;
             }

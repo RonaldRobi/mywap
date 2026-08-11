@@ -123,7 +123,7 @@ class SuperadminOrganizationController extends Controller
 
         $storedPath = $data['organization_logo']->store('logos/organizations', 'public');
         $organization->update([
-            'logo_path' => '/storage/' . ltrim($storedPath, '/'),
+            'logo_path' => '/storage/'.ltrim($storedPath, '/'),
         ]);
 
         return back()->with('success', "Logo {$organization->name} berjaya dikemas kini.");

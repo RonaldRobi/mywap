@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,26 +32,26 @@ class BranchController extends Controller
             ->orderBy('min_age')
             ->get()
             ->map(fn (Organization $org) => [
-                'id'          => $org->id,
-                'name'        => $org->name,
-                'slug'        => $org->slug,
+                'id' => $org->id,
+                'name' => $org->name,
+                'slug' => $org->slug,
                 'color_theme' => $org->color_theme,
-                'logo_path'   => $org->logo_path,
-                'branches'    => $org->branches->map(fn (Branch $b) => [
-                    'id'              => $b->id,
+                'logo_path' => $org->logo_path,
+                'branches' => $org->branches->map(fn (Branch $b) => [
+                    'id' => $b->id,
                     'organization_id' => $b->organization_id,
-                    'name'            => $b->name,
-                    'state'           => $b->state,
-                    'address'         => $b->address,
-                    'phone'           => $b->phone,
-                    'email'           => $b->email,
-                    'logo_path'       => $b->logo_path,
-                    'is_active'       => $b->is_active,
-                    'member_count'    => $b->members_count,
-                    'admins'          => $b->admins->map(fn ($admin) => [
-                        'id'        => $admin->id,
-                        'name'      => $admin->name,
-                        'email'     => $admin->email,
+                    'name' => $b->name,
+                    'state' => $b->state,
+                    'address' => $b->address,
+                    'phone' => $b->phone,
+                    'email' => $b->email,
+                    'logo_path' => $b->logo_path,
+                    'is_active' => $b->is_active,
+                    'member_count' => $b->members_count,
+                    'admins' => $b->admins->map(fn ($admin) => [
+                        'id' => $admin->id,
+                        'name' => $admin->name,
+                        'email' => $admin->email,
                         'member_no' => $admin->member_no,
                     ])->values(),
                 ])->values(),
@@ -72,12 +73,12 @@ class BranchController extends Controller
 
         $data = $request->validate([
             'organization_id' => ['required', 'exists:organizations,id'],
-            'name'            => ['required', 'string', 'max:120'],
-            'state'           => ['nullable', 'string', 'max:80'],
-            'address'         => ['nullable', 'string', 'max:500'],
-            'phone'           => ['nullable', 'string', 'max:30'],
-            'email'           => ['nullable', 'email', 'max:120'],
-            'is_active'       => ['boolean'],
+            'name' => ['required', 'string', 'max:120'],
+            'state' => ['nullable', 'string', 'max:80'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:120'],
+            'is_active' => ['boolean'],
         ]);
 
         // Admins can only add branches under their own organisation
@@ -103,11 +104,11 @@ class BranchController extends Controller
         }
 
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:120'],
-            'state'     => ['nullable', 'string', 'max:80'],
-            'address'   => ['nullable', 'string', 'max:500'],
-            'phone'     => ['nullable', 'string', 'max:30'],
-            'email'     => ['nullable', 'email', 'max:120'],
+            'name' => ['required', 'string', 'max:120'],
+            'state' => ['nullable', 'string', 'max:80'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:120'],
             'is_active' => ['boolean'],
         ]);
 
@@ -141,7 +142,7 @@ class BranchController extends Controller
         }
 
         $stored = $request->file('branch_logo')->store('logos/branches', 'public');
-        $branch->update(['logo_path' => '/storage/' . ltrim($stored, '/')]);
+        $branch->update(['logo_path' => '/storage/'.ltrim($stored, '/')]);
 
         return back()->with('success', 'Logo cawangan berjaya dikemaskini!');
     }
@@ -207,7 +208,7 @@ class BranchController extends Controller
             'user_id' => ['required', 'exists:users,id'],
         ]);
 
-        $target = \App\Models\User::withoutGlobalScopes()->findOrFail($data['user_id']);
+        $target = User::withoutGlobalScopes()->findOrFail($data['user_id']);
 
         if ((int) $target->branch_id !== (int) $branch->id) {
             if (! $target->branch_id) {
@@ -225,7 +226,7 @@ class BranchController extends Controller
     /**
      * Remove Admin Cawangan role from a user.
      */
-    public function destroyAdmin(Branch $branch, \App\Models\User $admin): RedirectResponse
+    public function destroyAdmin(Branch $branch, User $admin): RedirectResponse
     {
         $user = Auth::user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -234,7 +235,7 @@ class BranchController extends Controller
             abort(403);
         }
 
-        $target = \App\Models\User::withoutGlobalScopes()->findOrFail($admin->id);
+        $target = User::withoutGlobalScopes()->findOrFail($admin->id);
 
         if (! $target->hasRole('Admin Cawangan')) {
             return back()->with('error', 'Ahli tersebut bukan admin cawangan.');

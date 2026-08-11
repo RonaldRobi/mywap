@@ -41,7 +41,7 @@ class NewsPost extends Model
 
         static::creating(function (NewsPost $post) {
             if (empty($post->slug)) {
-                $post->slug = Str::slug($post->title) . '-' . Str::lower(Str::random(6));
+                $post->slug = Str::slug($post->title).'-'.Str::lower(Str::random(6));
             }
 
             if ($post->is_published && empty($post->published_at)) {

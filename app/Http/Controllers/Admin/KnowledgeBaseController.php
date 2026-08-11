@@ -20,9 +20,9 @@ class KnowledgeBaseController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('question', 'like', "%{$search}%")
-                  ->orWhere('answer', 'like', "%{$search}%")
-                  ->orWhere('keywords', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('answer', 'like', "%{$search}%")
+                    ->orWhere('keywords', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             });
         }
 
@@ -43,7 +43,7 @@ class KnowledgeBaseController extends Controller
             'question' => ['nullable', 'string', 'max:255'],
             'answer' => ['required', 'string'],
             'keywords' => ['nullable', 'string', 'max:255'],
-            'category' => ['nullable', 'string', 'in:' . implode(',', KnowledgeArticle::CATEGORIES)],
+            'category' => ['nullable', 'string', 'in:'.implode(',', KnowledgeArticle::CATEGORIES)],
             'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -57,7 +57,7 @@ class KnowledgeBaseController extends Controller
         if ($request->hasFile('document')) {
             $file = $request->file('document');
             $storedPath = $file->store('knowledge', 'public');
-            $article->document_path = '/storage/' . ltrim($storedPath, '/');
+            $article->document_path = '/storage/'.ltrim($storedPath, '/');
 
             if ($file->getClientOriginalExtension() === 'txt') {
                 $article->document_content = file_get_contents($file->getRealPath());
@@ -83,7 +83,7 @@ class KnowledgeBaseController extends Controller
             'question' => ['nullable', 'string', 'max:255'],
             'answer' => ['nullable', 'string'],
             'keywords' => ['nullable', 'string', 'max:255'],
-            'category' => ['nullable', 'string', 'in:' . implode(',', KnowledgeArticle::CATEGORIES)],
+            'category' => ['nullable', 'string', 'in:'.implode(',', KnowledgeArticle::CATEGORIES)],
             'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -104,7 +104,7 @@ class KnowledgeBaseController extends Controller
 
             $file = $request->file('document');
             $storedPath = $file->store('knowledge', 'public');
-            $article->document_path = '/storage/' . ltrim($storedPath, '/');
+            $article->document_path = '/storage/'.ltrim($storedPath, '/');
 
             if ($file->getClientOriginalExtension() === 'txt') {
                 $article->document_content = file_get_contents($file->getRealPath());
@@ -143,6 +143,7 @@ class KnowledgeBaseController extends Controller
             $pdf = $parser->parseFile($filePath);
             $text = $pdf->getText();
             $text = preg_replace('/\s+/', ' ', $text);
+
             return trim(substr($text, 0, 10000));
         } catch (\Exception $e) {
             return '';

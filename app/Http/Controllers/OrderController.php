@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class OrderController extends Controller
@@ -54,10 +55,20 @@ class OrderController extends Controller
     }
 
     /**
-     * Public order view for guest orders — no auth required.
+     * Public order receipt for guest checkouts.
+     *
+     * Order IDs are sequential, so this endpoint must never serve an arbitrary
+     * order to an arbitrary caller. Access requires either a valid signature
+     * (the link handed to the guest after checkout) or an authenticated user
+     * who owns the order / administers it.
      */
-    public function showPublic(Order $order)
+    public function showPublic(Request $request, Order $order)
     {
+        $user = $request->user();
+        $allowed = $request->hasValidSignature() || ($user && $user->can('view', $order));
+
+        abort_unless($allowed, 403);
+
         $order->load('items.product', 'items.variationOption.variation', 'user', 'payments');
 
         return Inertia::render('Ecommerce/Orders/Show', [
@@ -93,6 +104,10 @@ class OrderController extends Controller
                 $product = $products->get($item['id']);
                 if (! $product) {
                     throw new \Exception('Produk tidak dijumpai.');
+                }
+
+                if (! $product->status) {
+                    throw new \Exception('Produk "'.$product->name.'" tidak lagi dijual.');
                 }
 
                 $quantity = $item['quantity'];
@@ -153,15 +168,19 @@ class OrderController extends Controller
                     'price' => $unitPrice,
                 ];
 
-                // Use product's postage cost
-                if ($product->postage_cost) {
-                    $totalPostage += (float) $product->postage_cost;
+                // Combined postage is the single highest item postage, matching
+                // checkout(). Summing here instead would overcharge anyone
+                // ordering from the dashboard rather than the mall.
+                if ($product->postage_cost && (float) $product->postage_cost > $totalPostage) {
+                    $totalPostage = (float) $product->postage_cost;
                 }
             }
 
+            $sellingOrgId = $products->pluck('organisasi_id')->filter()->first();
+
             $order = Order::create([
                 'user_id' => Auth::id(),
-                'organisasi_id' => Auth::user()->current_organization_id ?? null,
+                'organisasi_id' => $sellingOrgId ?? Auth::user()->current_organization_id,
                 'total' => $total,
                 'postage_cost' => $totalPostage,
                 'status' => 'pending',
@@ -178,7 +197,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return redirect()->route('mall.order.show', $order)->with('success', 'Pesanan berjaya dibuat!');
+            return redirect()->to($order->publicUrl())->with('success', 'Pesanan berjaya dibuat!');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -189,13 +208,52 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $this->authorize('update', $order);
+
         $request->validate([
-            'status' => 'required|string',
-            'tracking_no' => 'nullable|string',
+            'status' => ['required', 'string', Rule::in(Order::STATUSES)],
+            'tracking_no' => 'nullable|string|max:100',
         ]);
-        $order->update($request->only('status', 'tracking_no'));
+
+        $wasCancelled = $order->isCancelled();
+
+        DB::transaction(function () use ($request, $order, $wasCancelled) {
+            $order->update($request->only('status', 'tracking_no'));
+
+            // Stock is decremented at checkout, so cancelling has to give it
+            // back. Without this every cancelled order permanently eats
+            // inventory and the catalogue drifts out of sync with reality.
+            if (! $wasCancelled && $order->isCancelled()) {
+                $this->restoreStock($order);
+            }
+        });
 
         return redirect()->route('orders.show', $order)->with('success', 'Status pesanan dikemaskini!');
+    }
+
+    /**
+     * Return the quantities reserved by an order back to the catalogue.
+     */
+    private function restoreStock(Order $order): void
+    {
+        $order->loadMissing('items');
+
+        foreach ($order->items as $item) {
+            if ($item->product_variation_option_id) {
+                $option = ProductVariationOption::lockForUpdate()->find($item->product_variation_option_id);
+
+                // A null option stock means that option is not tracked
+                // separately, so the product-level counter owns it instead.
+                if ($option && $option->stock !== null) {
+                    $option->increment('stock', $item->quantity);
+
+                    continue;
+                }
+            }
+
+            if ($product = Product::lockForUpdate()->find($item->product_id)) {
+                $product->increment('stock', $item->quantity);
+            }
+        }
     }
 
     public function pay(Order $order): RedirectResponse
@@ -244,7 +302,7 @@ class OrderController extends Controller
 
         $order->update(['status' => 'paid']);
 
-        return redirect()->route('mall.order.show', $order)->with('success', 'Pesanan berjaya dibayar!');
+        return redirect()->to($order->publicUrl())->with('success', 'Pesanan berjaya dibayar!');
     }
 
     /**
@@ -353,9 +411,18 @@ class OrderController extends Controller
                 }
             }
 
+            // Attribute the order to the organisation that actually sells the
+            // goods. Falling back to the buyer's own org left every guest
+            // order with a null organisasi_id, which made it invisible to the
+            // selling org's Admins — only a Superadmin could action them.
+            $sellingOrgId = $products
+                ->pluck('organisasi_id')
+                ->filter()
+                ->first();
+
             $order = Order::create([
                 'user_id' => $user?->id,
-                'organisasi_id' => $user?->current_organization_id ?? null,
+                'organisasi_id' => $sellingOrgId ?? $user?->current_organization_id,
                 'total' => $total,
                 'postage_cost' => $combinedPostage,
                 'status' => 'pending',
@@ -372,7 +439,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return redirect()->route('mall.order.show', $order)->with('success', 'Pesanan berjaya dibuat!');
+            return redirect()->to($order->publicUrl())->with('success', 'Pesanan berjaya dibuat!');
         } catch (\Exception $e) {
             DB::rollBack();
 

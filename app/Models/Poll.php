@@ -35,7 +35,7 @@ class Poll extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new OrganizationScope());
+        static::addGlobalScope(new OrganizationScope);
     }
 
     public function organization(): BelongsTo
@@ -70,6 +70,6 @@ class Poll extends Model
 
     public function isAvailable(): bool
     {
-        return $this->is_active && !$this->isExpired();
+        return $this->is_active && ! $this->isExpired();
     }
 }

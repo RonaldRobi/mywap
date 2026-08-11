@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class ImportAbim extends Command
 {
@@ -22,18 +23,21 @@ class ImportAbim extends Command
 
         if (! file_exists($file)) {
             $this->error("File tak jumpa: {$file}");
+
             return 1;
         }
 
         $abim = Organization::where('slug', 'abim')->first();
         if (! $abim) {
             $this->error('Organisasi ABIM tak jumpa');
+
             return 1;
         }
 
-        $memberRole = \Spatie\Permission\Models\Role::where('name', 'Member')->first();
+        $memberRole = Role::where('name', 'Member')->first();
         if (! $memberRole) {
             $this->error('Role Member tak jumpa, jalankan db:seed dulu');
+
             return 1;
         }
 
@@ -42,6 +46,7 @@ class ImportAbim extends Command
         $parsed = $this->parseAll($file);
         if (empty($parsed['rows'])) {
             $this->error('CSV kosong atau gagal parse');
+
             return 1;
         }
 
@@ -57,7 +62,7 @@ class ImportAbim extends Command
             );
             $branchMap[$name] = $branch->id;
         }
-        $this->line('✅ ' . count($branchMap) . ' cawangan sedia');
+        $this->line('✅ '.count($branchMap).' cawangan sedia');
 
         // ── Build records dengan branch_id ──────────────────────────────
         $this->line('🔍 Memeriksa duplikasi IC...');
@@ -75,21 +80,21 @@ class ImportAbim extends Command
             $branchId = $r['branchName'] ? ($branchMap[$r['branchName']] ?? null) : null;
 
             $record = [
-                'name'                    => $r['name'],
-                'member_no'               => $r['member_no'],
-                'member_no_sequence'      => $r['member_no_seq'],
-                'password'                => $defaultPw,
-                'email'                   => $r['email'],
-                'phone'                   => $r['phone'],
-                'dob'                     => $r['dob'],
-                'gender'                  => $r['gender'],
-                'address_1'               => $r['address_1'],
-                'state'                   => $r['state'],
-                'branch_id'               => $branchId,
-                'registration_year'       => $r['reg_year'],
-                'notes'                   => $r['notes'],
+                'name' => $r['name'],
+                'member_no' => $r['member_no'],
+                'member_no_sequence' => $r['member_no_seq'],
+                'password' => $defaultPw,
+                'email' => $r['email'],
+                'phone' => $r['phone'],
+                'dob' => $r['dob'],
+                'gender' => $r['gender'],
+                'address_1' => $r['address_1'],
+                'state' => $r['state'],
+                'branch_id' => $branchId,
+                'registration_year' => $r['reg_year'],
+                'notes' => $r['notes'],
                 'current_organization_id' => $abim->id,
-                'ic_number'               => $r['ic'],
+                'ic_number' => $r['ic'],
             ];
 
             $exists = isset($existingIcs[$r['ic']]);
@@ -103,7 +108,7 @@ class ImportAbim extends Command
             }
         }
 
-        $this->line("➡️  Baru: " . count($toInsert) . " | Sedia: " . count($toUpdate));
+        $this->line('➡️  Baru: '.count($toInsert).' | Sedia: '.count($toUpdate));
 
         // ── Bulk insert ─────────────────────────────────────────────────
         $insertedCount = 0;
@@ -112,7 +117,9 @@ class ImportAbim extends Command
             $this->line('⚡ Insert ahli baru...');
             $dupSkipped = 0;
             foreach (array_chunk($toInsert, 500) as $chunk) {
-                foreach ($chunk as &$rec) unset($rec['id']);
+                foreach ($chunk as &$rec) {
+                    unset($rec['id']);
+                }
                 $inserted = DB::table('users')->insertOrIgnore($chunk);
                 $insertedCount += count($chunk);
             }
@@ -138,7 +145,9 @@ class ImportAbim extends Command
             }
 
             $msg = "✅ {$insertedCount} ahli baru";
-            if ($dupSkipped) $msg .= " ({$dupSkipped} duplikasi IC dilewati)";
+            if ($dupSkipped) {
+                $msg .= " ({$dupSkipped} duplikasi IC dilewati)";
+            }
             $this->line($msg);
         }
 
@@ -154,7 +163,7 @@ class ImportAbim extends Command
                     DB::table('users')->where('id', $id)->update($rec);
                 }
             }
-            $this->line("✅ " . count($toUpdate) . " ahli dikemaskini");
+            $this->line('✅ '.count($toUpdate).' ahli dikemaskini');
         }
 
         // ── Role ────────────────────────────────────────────────────────
@@ -169,21 +178,23 @@ class ImportAbim extends Command
 
             $needRole = array_diff($allIds, $existingRole);
             if (! empty($needRole)) {
-                $roleInserts = array_map(fn($uid) => [
+                $roleInserts = array_map(fn ($uid) => [
                     'role_id' => $memberRole->id, 'model_type' => User::class, 'model_id' => $uid,
                 ], $needRole);
                 foreach (array_chunk($roleInserts, 500) as $chunk) {
                     DB::table('model_has_roles')->insertOrIgnore($chunk);
                 }
-                $this->line("✅ Role Member → " . count($needRole) . " ahli");
+                $this->line('✅ Role Member → '.count($needRole).' ahli');
             }
         }
 
         $this->newLine();
-        $this->info("🎉 Selesai! " . ($insertedCount + count($toUpdate)) . " ahli ABIM diproses");
+        $this->info('🎉 Selesai! '.($insertedCount + count($toUpdate)).' ahli ABIM diproses');
         if (! empty($parsed['errors'])) {
-            $this->warn('⚠️  ' . count($parsed['errors']) . ' rekod dilewati:');
-            foreach ($parsed['errors'] as $e) $this->warn("  • {$e}");
+            $this->warn('⚠️  '.count($parsed['errors']).' rekod dilewati:');
+            foreach ($parsed['errors'] as $e) {
+                $this->warn("  • {$e}");
+            }
         }
 
         return 0;
@@ -192,10 +203,16 @@ class ImportAbim extends Command
     protected function parseAll(string $file): array
     {
         $handle = fopen($file, 'r');
-        if (! $handle) return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        if (! $handle) {
+            return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        }
 
         $headers = fgetcsv($handle);
-        if (! $headers) { fclose($handle); return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []]; }
+        if (! $headers) {
+            fclose($handle);
+
+            return ['rows' => 0, 'branchNames' => collect(), 'records' => [], 'errors' => []];
+        }
 
         $col = array_flip($headers);
         $branchNames = collect();
@@ -204,7 +221,9 @@ class ImportAbim extends Command
         $count = 0;
 
         while (($row = fgetcsv($handle)) !== false) {
-            if (count($row) < count($headers)) continue;
+            if (count($row) < count($headers)) {
+                continue;
+            }
 
             $nama = $this->clean(trim($row[$col['NAMA']] ?? ''));
             $mykadRaw = $this->clean(trim($row[$col['MYKAD']] ?? ''));
@@ -213,9 +232,12 @@ class ImportAbim extends Command
             $ic = ltrim($mykadRaw, "'");
             $ic = preg_replace('/[^0-9]/', '', $ic);
 
-            if (empty($nama) && empty($ic)) continue;
+            if (empty($nama) && empty($ic)) {
+                continue;
+            }
             if (empty($ic) || strlen($ic) < 6) {
                 $errors[] = "{$nama} — IC {$mykadRaw} tak sah";
+
                 continue;
             }
 
@@ -223,22 +245,24 @@ class ImportAbim extends Command
             $icPadded = str_pad($ic, 12, '0', STR_PAD_RIGHT);
 
             $branchName = $this->extractBranchName($this->clean(trim($row[$col['LOKALITI'] ?? ''] ?? '')));
-            if ($branchName) $branchNames->push($branchName);
+            if ($branchName) {
+                $branchNames->push($branchName);
+            }
 
             $records[] = [
-                'name'        => $nama,
-                'ic'          => $icPadded,
-                'member_no'   => 'A' . $noRuj,
+                'name' => $nama,
+                'ic' => $icPadded,
+                'member_no' => 'A'.$noRuj,
                 'member_no_seq' => (int) $noRuj,
-                'email'       => $this->val($row, $col, 'EMEL', strtolower($ic) . '@mywap.my'),
-                'phone'       => ltrim($this->val($row, $col, 'MOBILE NO', ''), "'") ?: null,
-                'dob'         => User::parseDobFromIc($ic),
-                'gender'      => User::guessGenderFromIc($ic),
-                'address_1'   => $this->cleanAddress($this->val($row, $col, 'ALAMAT', '')),
-                'state'       => $branchName ? $this->normalizeState($branchName) : null,
-                'branchName'  => $branchName,
-                'reg_year'    => $this->parseRegYear($this->val($row, $col, 'TARIKH DAFTAR', '')),
-                'notes'       => $this->wrapNotes($this->val($row, $col, 'PERANAN', '')),
+                'email' => $this->val($row, $col, 'EMEL', strtolower($ic).'@mywap.my'),
+                'phone' => ltrim($this->val($row, $col, 'MOBILE NO', ''), "'") ?: null,
+                'dob' => User::parseDobFromIc($ic),
+                'gender' => User::guessGenderFromIc($ic),
+                'address_1' => $this->cleanAddress($this->val($row, $col, 'ALAMAT', '')),
+                'state' => $branchName ? $this->normalizeState($branchName) : null,
+                'branchName' => $branchName,
+                'reg_year' => $this->parseRegYear($this->val($row, $col, 'TARIKH DAFTAR', '')),
+                'notes' => $this->wrapNotes($this->val($row, $col, 'PERANAN', '')),
             ];
         }
 
@@ -259,16 +283,20 @@ class ImportAbim extends Command
 
     protected function extractBranchName(string $lokality): ?string
     {
-        if (empty($lokality)) return null;
+        if (empty($lokality)) {
+            return null;
+        }
         if (preg_match('/NEGERI\s+(.+?)(?:,|$)/i', $lokality, $m)) {
             return ucwords(strtolower(trim($m[1])));
         }
+
         return 'Pusat';
     }
 
     protected function normalizeState(string $raw): string
     {
         $map = ['K.Lumpur' => 'Kuala Lumpur', 'N.Sembilan' => 'Negeri Sembilan', 'P.Pinang' => 'Pulau Pinang'];
+
         return $map[$raw] ?? $raw;
     }
 
@@ -276,6 +304,7 @@ class ImportAbim extends Command
     {
         $v = isset($col[$key]) ? trim($row[$col[$key]] ?? '') : '';
         $clean = $v !== '' ? $this->clean($v) : '';
+
         return $clean !== '' ? $clean : $default;
     }
 
@@ -286,8 +315,11 @@ class ImportAbim extends Command
 
     protected function parseRegYear(string $v): ?string
     {
-        if (empty($v)) return null;
+        if (empty($v)) {
+            return null;
+        }
         $parts = explode('/', $v);
+
         return count($parts) === 3 ? $parts[2] : null;
     }
 

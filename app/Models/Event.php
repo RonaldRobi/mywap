@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,17 +17,17 @@ use Illuminate\Support\Str;
  * Represents a programme belonging to one NGO tier, or global (Semua) when
  * organization_id is null.
  *
- * @property int              $id
- * @property int|null         $organization_id
- * @property string           $title
- * @property string           $slug
- * @property string|null      $description
- * @property string           $type   ('physical'|'online')
- * @property string|null      $location_or_link
- * @property \Carbon\Carbon   $start_time
- * @property \Carbon\Carbon   $end_time
- * @property string|null      $featured_image_path
- * @property string           $attendance_token
+ * @property int $id
+ * @property int|null $organization_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $description
+ * @property string $type ('physical'|'online')
+ * @property string|null $location_or_link
+ * @property Carbon $start_time
+ * @property Carbon $end_time
+ * @property string|null $featured_image_path
+ * @property string $attendance_token
  */
 class Event extends Model
 {
@@ -42,7 +43,7 @@ class Event extends Model
     {
         return [
             'start_time' => 'datetime',
-            'end_time'   => 'datetime',
+            'end_time' => 'datetime',
         ];
     }
 
@@ -66,7 +67,7 @@ class Event extends Model
             }
 
             if (empty($event->slug)) {
-                $event->slug = Str::slug($event->title) . '-' . Str::lower(Str::random(6));
+                $event->slug = Str::slug($event->title).'-'.Str::lower(Str::random(6));
             }
         });
     }
@@ -79,15 +80,15 @@ class Event extends Model
      */
     public function getGoogleCalendarUrlAttribute(): string
     {
-        $fmt   = 'Ymd\THis\Z';
+        $fmt = 'Ymd\THis\Z';
         $start = $this->start_time->utc()->format($fmt);
-        $end   = $this->end_time->utc()->format($fmt);
+        $end = $this->end_time->utc()->format($fmt);
 
-        return 'https://calendar.google.com/calendar/render?' . http_build_query([
-            'action'   => 'TEMPLATE',
-            'text'     => $this->title,
-            'dates'    => "{$start}/{$end}",
-            'details'  => strip_tags((string) $this->description),
+        return 'https://calendar.google.com/calendar/render?'.http_build_query([
+            'action' => 'TEMPLATE',
+            'text' => $this->title,
+            'dates' => "{$start}/{$end}",
+            'details' => strip_tags((string) $this->description),
             'location' => (string) $this->location_or_link,
         ]);
     }
@@ -102,8 +103,8 @@ class Event extends Model
     public function getFeaturedImageUrlAttribute(): string
     {
         return $this->featured_image_path
-            ? asset('storage/' . $this->featured_image_path)
-            : 'https://placehold.co/800x450/e2e8f0/94a3b8?text=' . urlencode($this->title);
+            ? asset('storage/'.$this->featured_image_path)
+            : 'https://placehold.co/800x450/e2e8f0/94a3b8?text='.urlencode($this->title);
     }
 
     // ─ Relationships ─────────────────────────────────────────────────────────
@@ -121,8 +122,8 @@ class Event extends Model
     public function attendees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'event_rsvps')
-                    ->withPivot(['status', 'attended_at'])
-                    ->withTimestamps();
+            ->withPivot(['status', 'attended_at'])
+            ->withTimestamps();
     }
 
     public function comments(): HasMany

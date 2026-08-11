@@ -84,8 +84,8 @@ class LoginRequest extends FormRequest
 
         $user = User::where(function ($query) use ($normalizedId, $email) {
             $query->where('ic_number', $normalizedId)
-                  ->orWhere('member_no', $normalizedId)
-                  ->orWhere('email', $email);
+                ->orWhere('member_no', $normalizedId)
+                ->orWhere('email', $email);
         })->first();
 
         if (! $user) {

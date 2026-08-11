@@ -345,9 +345,16 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1']], function () {
     Route::get('/', [ProductController::class, 'index'])->name('mall.index');
     Route::get('/cart', [CartController::class, 'index'])->name('mall.cart');
-    Route::get('/{product}', [ProductController::class, 'show'])->name('mall.show');
     Route::post('/checkout', [OrderController::class, 'checkout'])->name('mall.checkout');
-    Route::get('/orders/{order}', [OrderController::class, 'showPublic'])->name('mall.order.show');
+
+    // Signed so guests can open their own receipt while sequential order IDs
+    // cannot be enumerated to read other buyers' names, phones and addresses.
+    // Logged-in owners and admins are let through by the controller instead.
+    Route::get('/orders/{order}', [OrderController::class, 'showPublic'])
+        ->name('mall.order.show');
+
+    // Greedy catch-all: must stay last so it cannot shadow the routes above.
+    Route::get('/{product}', [ProductController::class, 'show'])->name('mall.show');
 });
 
 // ─── Perkhidmatan/Fasiliti — Tempahan Awam (termasuk org luar) ───────────────

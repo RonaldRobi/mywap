@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FeeStatus;
 use App\Imports\FeeImport as FeeImportCsv;
 use App\Models\ActivityLog;
 use App\Models\FeeImport as FeeImportModel;
@@ -11,14 +12,20 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\FeeService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MemberFeeController extends Controller
@@ -42,9 +49,9 @@ class MemberFeeController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('ic_number', 'like', "%{$s}%")
-                  ->orWhere('phone', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%");
+                    ->orWhere('ic_number', 'like', "%{$s}%")
+                    ->orWhere('phone', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%");
             });
         }
 
@@ -86,9 +93,9 @@ class MemberFeeController extends Controller
                 : $feeService->getAdminStats($orgId, $year));
 
         $monthExpr = match (DB::connection()->getDriverName()) {
-            'pgsql' => "EXTRACT(MONTH FROM created_at)",
+            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
             'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
-            default => "MONTH(created_at)",
+            default => 'MONTH(created_at)',
         };
 
         $monthlyTotals = Payment::query()
@@ -146,7 +153,9 @@ class MemberFeeController extends Controller
     public function paymentHistory(Request $request, FeeService $feeService, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         $history = $feeService->getPaymentHistory($targetUser);
@@ -157,7 +166,9 @@ class MemberFeeController extends Controller
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         $logs = ActivityLog::with('user:id,name')
@@ -179,14 +190,18 @@ class MemberFeeController extends Controller
     public function downloadReceipt(Request $request, Payment $payment)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $payment->loadMissing('user.organization');
         $member = $payment->user;
         $this->authorizeOrg($user, $member);
 
         $fee = MembershipFee::where('payment_id', $payment->id)->first();
-        if (! $fee) abort(404);
+        if (! $fee) {
+            abort(404);
+        }
 
         $pdf = Pdf::loadView('exports.receipt', [
             'payment' => $payment,
@@ -194,14 +209,17 @@ class MemberFeeController extends Controller
             'member' => $member,
         ]);
 
-        $filename = 'resit-yuran-' . $fee->year . '-' . ($member->member_no ?? $member->id) . '.pdf';
+        $filename = 'resit-yuran-'.$fee->year.'-'.($member->member_no ?? $member->id).'.pdf';
+
         return $pdf->download($filename);
     }
 
     public function feeDetail(Request $request, User $targetUser, MembershipFee $membershipFee): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         return response()->json([
@@ -209,7 +227,7 @@ class MemberFeeController extends Controller
                 'id' => $membershipFee->id,
                 'year' => $membershipFee->year,
                 'amount' => (float) $membershipFee->amount,
-                'status' => $membershipFee->status instanceof \App\Enums\FeeStatus
+                'status' => $membershipFee->status instanceof FeeStatus
                     ? $membershipFee->status->value
                     : $membershipFee->status,
                 'paid_at' => $membershipFee->paid_at?->toISOString(),
@@ -223,7 +241,9 @@ class MemberFeeController extends Controller
     public function updateMemberFee(Request $request, User $targetUser, MembershipFee $membershipFee): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         $data = $request->validate([
@@ -235,11 +255,17 @@ class MemberFeeController extends Controller
         $oldValues = $membershipFee->only(['amount', 'notes', 'paid_at']);
 
         $updateData = [];
-        if ($request->has('amount')) $updateData['amount'] = (float) $data['amount'];
-        if ($request->has('notes')) $updateData['notes'] = $data['notes'];
-        if ($request->has('paid_at')) $updateData['paid_at'] = $data['paid_at'] ?: null;
+        if ($request->has('amount')) {
+            $updateData['amount'] = (float) $data['amount'];
+        }
+        if ($request->has('notes')) {
+            $updateData['notes'] = $data['notes'];
+        }
+        if ($request->has('paid_at')) {
+            $updateData['paid_at'] = $data['paid_at'] ?: null;
+        }
 
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $membershipFee->update($updateData);
         }
 
@@ -249,23 +275,27 @@ class MemberFeeController extends Controller
         foreach ($updateData as $field => $newVal) {
             $oldVal = $oldValues[$field] ?? null;
             $newVal = $newValues[$field] ?? null;
-            if ($oldVal instanceof \Carbon\Carbon) $oldVal = $oldVal->toISOString();
-            if ($newVal instanceof \Carbon\Carbon) $newVal = $newVal->toISOString();
+            if ($oldVal instanceof Carbon) {
+                $oldVal = $oldVal->toISOString();
+            }
+            if ($newVal instanceof Carbon) {
+                $newVal = $newVal->toISOString();
+            }
             $oldVal = is_numeric($oldVal) ? (float) $oldVal : $oldVal;
             $newVal = is_numeric($newVal) ? (float) $newVal : $newVal;
             if ($oldVal !== $newVal) {
-                $changes[] = "$field: " . (is_null($oldVal) ? 'kosong' : $oldVal) . ' → ' . (is_null($newVal) ? 'kosong' : $newVal);
+                $changes[] = "$field: ".(is_null($oldVal) ? 'kosong' : $oldVal).' → '.(is_null($newVal) ? 'kosong' : $newVal);
             }
         }
 
-        if (!empty($changes)) {
+        if (! empty($changes)) {
             ActivityLog::create([
                 'user_id' => $user->id,
                 'organization_id' => $user->current_organization_id,
                 'target_type' => MembershipFee::class,
                 'target_id' => $membershipFee->id,
                 'action' => 'update_fee',
-                'description' => "Yuran {$targetUser->name} tahun {$membershipFee->year} dikemaskini: " . implode('; ', $changes),
+                'description' => "Yuran {$targetUser->name} tahun {$membershipFee->year} dikemaskini: ".implode('; ', $changes),
                 'old_values' => $oldValues,
                 'new_values' => $newValues,
             ]);
@@ -277,7 +307,9 @@ class MemberFeeController extends Controller
     public function reversePayment(Request $request, Payment $payment): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $targetUser = $payment->user;
         $this->authorizeOrg($user, $targetUser);
@@ -328,11 +360,13 @@ class MemberFeeController extends Controller
     public function manualPayment(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $data = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
-            'year' => ['required', 'integer', 'min:2000', 'max:' . (now()->year + 1)],
+            'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'reference' => ['nullable', 'string', 'max:100'],
             'proof' => ['required', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'],
@@ -345,7 +379,7 @@ class MemberFeeController extends Controller
             return response()->json(['success' => false, 'message' => 'Ahli ini dikecualikan / life member.'], 422);
         }
 
-        $ref = $data['reference'] ?? ('MANUAL-' . strtoupper(Str::random(8)));
+        $ref = $data['reference'] ?? ('MANUAL-'.strtoupper(Str::random(8)));
         if ($data['reference'] && Payment::where('reference', $data['reference'])->exists()) {
             return response()->json(['success' => false, 'message' => 'Nombor rujukan ini telah digunakan. Sila guna rujukan lain.'], 422);
         }
@@ -385,21 +419,34 @@ class MemberFeeController extends Controller
     public function previewImport(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt,xlsx'],
-            'year' => ['required', 'integer', 'min:2000', 'max:' . (now()->year + 1)],
+            'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
         ]);
 
         $year = (int) $request->year;
         $rows = [];
 
-        Excel::import(new class($rows) implements \Maatwebsite\Excel\Concerns\ToCollection, \Maatwebsite\Excel\Concerns\WithHeadingRow, \Maatwebsite\Excel\Concerns\WithStartRow {
+        Excel::import(new class($rows) implements ToCollection, WithHeadingRow, WithStartRow
+        {
             public $rows;
-            public function __construct(array &$rows) { $this->rows = &$rows; }
-            public function startRow(): int { return 2; }
-            public function collection(\Illuminate\Support\Collection $collection) {
+
+            public function __construct(array &$rows)
+            {
+                $this->rows = &$rows;
+            }
+
+            public function startRow(): int
+            {
+                return 2;
+            }
+
+            public function collection(Collection $collection)
+            {
                 $this->rows = $collection->take(50)->map(fn ($r) => [
                     'ic_number' => $r['ic_number'] ?? '',
                     'no_ahli' => $r['no_ahli'] ?? '',
@@ -453,11 +500,13 @@ class MemberFeeController extends Controller
     public function processImport(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt,xlsx'],
-            'year' => ['required', 'integer', 'min:2000', 'max:' . (now()->year + 1)],
+            'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
             'proof' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'],
         ]);
 
@@ -488,7 +537,7 @@ class MemberFeeController extends Controller
         } catch (\Exception $e) {
             $importBatch->update(['errors' => ['error' => $e->getMessage()]]);
 
-            return response()->json(['success' => false, 'message' => 'Import gagal: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Import gagal: '.$e->getMessage()], 500);
         }
 
         ActivityLog::create([
@@ -515,7 +564,9 @@ class MemberFeeController extends Controller
     public function exportCsv(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $year = (int) $request->input('year', now()->year);
         $members = $this->exportQuery($request, $year)->get();
@@ -547,22 +598,35 @@ class MemberFeeController extends Controller
     public function exportExcel(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $year = (int) $request->input('year', now()->year);
         $members = $this->exportQuery($request, $year)->get();
 
-        return Excel::download(new class($members, $year) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings {
+        return Excel::download(new class($members, $year) implements FromCollection, WithHeadings
+        {
             public function __construct(protected $members, protected int $year) {}
-            public function collection() { return $this->members; }
-            public function headings(): array { return ['Nama', 'No IC', 'No Ahli', 'Organisasi', 'Status', 'Jumlah', 'Tarikh Bayar', 'Rujukan']; }
+
+            public function collection()
+            {
+                return $this->members;
+            }
+
+            public function headings(): array
+            {
+                return ['Nama', 'No IC', 'No Ahli', 'Organisasi', 'Status', 'Jumlah', 'Tarikh Bayar', 'Rujukan'];
+            }
         }, "yuran-{$year}.xlsx");
     }
 
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $year = (int) $request->input('year', now()->year);
         $members = $this->exportQuery($request, $year)->get();
@@ -592,7 +656,9 @@ class MemberFeeController extends Controller
     public function toggleLifeMember(Request $request, FeeService $feeService, User $targetUser): RedirectResponse
     {
         $user = $request->user();
-        if (! $user->hasRole('Superadmin')) abort(403);
+        if (! $user->hasRole('Superadmin')) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         if ($feeService->isLifeMember($targetUser)) {
@@ -611,7 +677,9 @@ class MemberFeeController extends Controller
         }
 
         $org = $targetUser->organization;
-        if (! $org) return back()->with('error', 'Ahli tiada organisasi.');
+        if (! $org) {
+            return back()->with('error', 'Ahli tiada organisasi.');
+        }
 
         $feeService->markAsLifeMember($targetUser, $org);
 
@@ -630,7 +698,9 @@ class MemberFeeController extends Controller
     public function markExempted(Request $request, FeeService $feeService, User $targetUser): RedirectResponse
     {
         $user = $request->user();
-        if (! $user->hasRole('Superadmin')) abort(403);
+        if (! $user->hasRole('Superadmin')) {
+            abort(403);
+        }
         $this->authorizeOrg($user, $targetUser);
 
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
@@ -651,7 +721,9 @@ class MemberFeeController extends Controller
     public function generateFees(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) abort(403);
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
 
         $year = (int) $request->input('year', now()->year);
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -667,7 +739,7 @@ class MemberFeeController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "{$total} rekod yuran bagi tahun {$year} berjaya dijana untuk " . ($isSuperadmin ? 'semua organisasi.' : $orgs->first()?->name . '.'),
+            'message' => "{$total} rekod yuran bagi tahun {$year} berjaya dijana untuk ".($isSuperadmin ? 'semua organisasi.' : $orgs->first()?->name.'.'),
             'count' => $total,
         ]);
     }

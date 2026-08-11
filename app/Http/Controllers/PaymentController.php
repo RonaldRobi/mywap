@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Models\Payment;
-use App\Models\User;
 use App\Services\BayarCashService;
 use App\Services\FeeService;
 use Illuminate\Http\RedirectResponse;
@@ -28,12 +27,12 @@ class PaymentController extends Controller
     public function feesConfig(): Response
     {
         $organizations = Organization::withCount('members')->orderBy('min_age')->get()->map(fn (Organization $org) => [
-            'id'         => $org->id,
-            'name'       => $org->name,
-            'slug'       => $org->slug,
-            'color_theme'=> $org->color_theme,
-            'min_age'    => $org->min_age,
-            'max_age'    => $org->max_age,
+            'id' => $org->id,
+            'name' => $org->name,
+            'slug' => $org->slug,
+            'color_theme' => $org->color_theme,
+            'min_age' => $org->min_age,
+            'max_age' => $org->max_age,
             'fee_amount' => (float) $org->fee_amount,
             'member_count' => $org->members_count,
         ]);
@@ -80,11 +79,11 @@ class PaymentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('gateway_ref', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
-                      ->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%"));
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('gateway_ref', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%"));
             });
         }
         if ($request->filled('date_from')) {
@@ -95,31 +94,31 @@ class PaymentController extends Controller
         }
 
         $payments = $query->paginate(25)->withQueryString()->through(fn (Payment $p) => [
-            'id'          => $p->id,
-            'user_name'   => $p->user?->name,
-            'user_email'  => $p->user?->email,
-            'org_name'    => $p->user?->organization?->name,
-            'amount'      => (float) $p->amount,
-            'status'      => $p->status,
-            'type'        => $p->payable_type,
+            'id' => $p->id,
+            'user_name' => $p->user?->name,
+            'user_email' => $p->user?->email,
+            'org_name' => $p->user?->organization?->name,
+            'amount' => (float) $p->amount,
+            'status' => $p->status,
+            'type' => $p->payable_type,
             'description' => $p->description,
-            'reference'   => $p->reference,
-            'gateway'     => $p->gateway,
-            'created_at'  => $p->created_at?->toDateTimeString(),
+            'reference' => $p->reference,
+            'gateway' => $p->gateway,
+            'created_at' => $p->created_at?->toDateTimeString(),
         ]);
 
         $organizations = Organization::orderBy('min_age')->get(['id', 'name']);
         $summary = [
-            'total'      => Payment::withoutGlobalScopes()->sum('amount'),
+            'total' => Payment::withoutGlobalScopes()->sum('amount'),
             'successful' => Payment::withoutGlobalScopes()->where('status', 'successful')->sum('amount'),
-            'pending'    => Payment::withoutGlobalScopes()->where('status', 'pending')->count(),
+            'pending' => Payment::withoutGlobalScopes()->where('status', 'pending')->count(),
         ];
 
         return Inertia::render('Superadmin/Transactions', [
-            'payments'      => $payments,
+            'payments' => $payments,
             'organizations' => $organizations,
-            'summary'       => $summary,
-            'filters'       => $request->only(['status', 'org', 'type', 'search', 'date_from', 'date_to']),
+            'summary' => $summary,
+            'filters' => $request->only(['status', 'org', 'type', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -158,11 +157,11 @@ class PaymentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('gateway_ref', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
-                      ->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%"));
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('gateway_ref', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%"));
             });
         }
         if ($request->filled('date_from')) {
@@ -173,34 +172,34 @@ class PaymentController extends Controller
         }
 
         $payments = $query->paginate(25)->withQueryString()->through(fn (Payment $p) => [
-            'id'          => $p->id,
-            'user_name'   => $p->user?->name,
-            'user_email'  => $p->user?->email,
-            'amount'      => (float) $p->amount,
-            'status'      => $p->status,
-            'type'        => $p->payable_type,
+            'id' => $p->id,
+            'user_name' => $p->user?->name,
+            'user_email' => $p->user?->email,
+            'amount' => (float) $p->amount,
+            'status' => $p->status,
+            'type' => $p->payable_type,
             'description' => $p->description,
-            'reference'   => $p->reference,
-            'gateway'     => $p->gateway,
-            'created_at'  => $p->created_at?->toDateTimeString(),
+            'reference' => $p->reference,
+            'gateway' => $p->gateway,
+            'created_at' => $p->created_at?->toDateTimeString(),
         ]);
 
         $summary = [
             'total_collected' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScopes()
-                    ->where('current_organization_id', $user->current_organization_id))
+                ->where('current_organization_id', $user->current_organization_id))
                 ->where('status', 'successful')
                 ->sum('amount'),
             'pending_count' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScopes()
-                    ->where('current_organization_id', $user->current_organization_id))
+                ->where('current_organization_id', $user->current_organization_id))
                 ->where('status', 'pending')
                 ->count(),
         ];
 
         return Inertia::render('Admin/Transactions', [
-            'payments'     => $payments,
+            'payments' => $payments,
             'organization' => ['name' => $user->organization?->name],
-            'summary'      => $summary,
-            'filters'      => $request->only(['status', 'search', 'date_from', 'date_to']),
+            'summary' => $summary,
+            'filters' => $request->only(['status', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -238,14 +237,14 @@ class PaymentController extends Controller
         $useBayarCash = $org && $org->hasBayarCashConfig();
 
         $payment = Payment::create([
-            'user_id'         => $user->id,
-            'payable_type'    => 'membership_fee',
-            'payable_id'      => null,
-            'amount'          => $feeAmount,
-            'status'          => $useBayarCash ? 'pending' : 'successful',
-            'reference'       => $useBayarCash ? 'FEE-' . strtoupper(Str::random(8)) : 'DUMMY-' . strtoupper(Str::random(8)),
-            'description'     => "Yuran keahlian {$org?->name} {$year}",
-            'gateway'         => $useBayarCash ? 'bayarcash' : 'dummy',
+            'user_id' => $user->id,
+            'payable_type' => 'membership_fee',
+            'payable_id' => null,
+            'amount' => $feeAmount,
+            'status' => $useBayarCash ? 'pending' : 'successful',
+            'reference' => $useBayarCash ? 'FEE-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
+            'description' => "Yuran keahlian {$org?->name} {$year}",
+            'gateway' => $useBayarCash ? 'bayarcash' : 'dummy',
             'organization_id' => $org?->id,
         ]);
 
@@ -262,6 +261,7 @@ class PaymentController extends Controller
             }
 
             $payment->update(['status' => 'failed']);
+
             return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
         }
 
@@ -301,10 +301,10 @@ class PaymentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
-                      ->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%"));
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%"));
             });
         }
         if ($request->filled('date_from')) {
@@ -316,16 +316,16 @@ class PaymentController extends Controller
 
         $payments = $query->latest()->limit(5000)->get();
 
-        $filename = 'transaksi-' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'transaksi-'.now()->format('Y-m-d_His').'.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($payments, $isSuperadmin) {
             $file = fopen('php://output', 'w');
-            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             fputcsv($file, ['#', 'Nama', 'Emel', 'Pertubuhan', 'Jenis', 'Penerangan', 'Amaun (RM)', 'Status', 'Rujukan', 'Gateway', 'Tarikh']);
 
@@ -356,8 +356,8 @@ class PaymentController extends Controller
         return match ($type) {
             'membership_fee' => 'Yuran Keahlian',
             'infaq_donation' => 'Infaq / Sumbangan',
-            'order'          => 'Pesanan / Produk',
-            default          => $type ?? '—',
+            'order' => 'Pesanan / Produk',
+            default => $type ?? '—',
         };
     }
 
@@ -365,10 +365,10 @@ class PaymentController extends Controller
     {
         return match ($status) {
             'successful' => 'Berjaya',
-            'pending'    => 'Menunggu',
-            'failed'     => 'Gagal',
-            'refunded'   => 'Dipulangkan',
-            default      => $status,
+            'pending' => 'Menunggu',
+            'failed' => 'Gagal',
+            'refunded' => 'Dipulangkan',
+            default => $status,
         };
     }
 }

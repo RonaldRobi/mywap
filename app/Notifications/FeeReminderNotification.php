@@ -2,7 +2,6 @@
 
 namespace App\Notifications;
 
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -15,8 +14,7 @@ class FeeReminderNotification extends Notification
         public int $year,
         public float $amount,
         public string $organizationName,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -28,8 +26,8 @@ class FeeReminderNotification extends Notification
         return [
             'title' => "Yuran Keahlian {$this->year}",
             'content' => "Yuran tahunan {$this->year} untuk {$this->organizationName}: RM "
-                . number_format($this->amount, 2)
-                . ". Sila lengkapkan pembayaran anda.",
+                .number_format($this->amount, 2)
+                .'. Sila lengkapkan pembayaran anda.',
             'amount' => $this->amount,
             'fee_year' => $this->year,
             'action_url' => route('member.financial.overview'),
@@ -42,7 +40,7 @@ class FeeReminderNotification extends Notification
             ->subject("Yuran Keahlian {$this->year}")
             ->greeting("Salam {$notifiable->name},")
             ->line("Yuran tahunan {$this->year} untuk {$this->organizationName} ialah RM "
-                . number_format($this->amount, 2) . '.')
+                .number_format($this->amount, 2).'.')
             ->line('Sila lengkapkan pembayaran yuran anda sebelum tarikh yang ditetapkan.')
             ->action('Bayar Sekarang', route('member.financial.overview'))
             ->line('Sekian, terima kasih.');

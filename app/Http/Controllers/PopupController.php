@@ -17,7 +17,7 @@ class PopupController extends Controller
 
         $popups = Popup::query()
             ->with('organization:id,name,slug')
-            ->when($user->hasRole('Admin') && !$user->hasRole('Superadmin'), function ($query) use ($user) {
+            ->when($user->hasRole('Admin') && ! $user->hasRole('Superadmin'), function ($query) use ($user) {
                 $query->where('organization_id', $user->current_organization_id);
             })
             ->orderBy('display_order')
@@ -67,7 +67,7 @@ class PopupController extends Controller
 
         if ($request->hasFile('image')) {
             $storedPath = $request->file('image')->store('popups', 'public');
-            $imagePath = '/storage/' . ltrim($storedPath, '/');
+            $imagePath = '/storage/'.ltrim($storedPath, '/');
         }
 
         Popup::create([
@@ -82,8 +82,8 @@ class PopupController extends Controller
             'popup_size' => $data['popup_size'] ?? 'md',
             'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'display_order' => (int) ($data['display_order'] ?? 1),
-            'start_at' => !empty($data['start_at']) ? $data['start_at'] : null,
-            'end_at' => !empty($data['end_at']) ? $data['end_at'] : null,
+            'start_at' => ! empty($data['start_at']) ? $data['start_at'] : null,
+            'end_at' => ! empty($data['end_at']) ? $data['end_at'] : null,
         ]);
 
         return back()->with('success', 'Popup berjaya dibuat.');
@@ -117,7 +117,7 @@ class PopupController extends Controller
             }
 
             $newPath = $request->file('image')->store('popups', 'public');
-            $imagePath = '/storage/' . ltrim($newPath, '/');
+            $imagePath = '/storage/'.ltrim($newPath, '/');
         }
 
         $popup->update([
@@ -131,8 +131,8 @@ class PopupController extends Controller
             'popup_size' => $data['popup_size'] ?? 'md',
             'is_active' => filter_var($data['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'display_order' => (int) ($data['display_order'] ?? 1),
-            'start_at' => !empty($data['start_at']) ? $data['start_at'] : null,
-            'end_at' => !empty($data['end_at']) ? $data['end_at'] : null,
+            'start_at' => ! empty($data['start_at']) ? $data['start_at'] : null,
+            'end_at' => ! empty($data['end_at']) ? $data['end_at'] : null,
         ]);
 
         return back()->with('success', 'Popup berjaya dikemas kini.');
@@ -151,5 +151,4 @@ class PopupController extends Controller
 
         return back()->with('success', 'Popup berjaya dipadam.');
     }
-
 }

@@ -194,10 +194,16 @@ class ProductController extends Controller
             'images' => 'nullable|array|max:6',
             'images.*' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
             'variations' => 'nullable|array',
+            // The `id` keys must be declared, otherwise validate() strips them
+            // from the validated payload and syncVariations() recreates every
+            // row on each edit — which nulls order_items.product_variation_option_id
+            // and loses the variant recorded against past orders.
+            'variations.*.id' => 'nullable|integer',
             'variations.*.name' => 'required|string|max:255',
             'variations.*.type' => 'required|in:select,color',
             'variations.*.required' => 'nullable|boolean',
             'variations.*.options' => 'nullable|array',
+            'variations.*.options.*.id' => 'nullable|integer',
             'variations.*.options.*.name' => 'required|string|max:255',
             'variations.*.options.*.price_adjustment' => 'nullable|numeric',
             'variations.*.options.*.stock' => 'nullable|integer|min:0',
@@ -350,10 +356,16 @@ class ProductController extends Controller
             $submittedOptionIds = [];
 
             foreach (($variation['options'] ?? []) as $oIndex => $option) {
+                // Use a null/'' check rather than empty(): a stock of 0 means
+                // "out of stock", but empty() would coerce it to null, which
+                // this schema treats as "unlimited stock" and would let buyers
+                // keep ordering a sold-out option.
                 $optData = [
                     'name' => $option['name'],
-                    'price_adjustment' => ! empty($option['price_adjustment']) ? $option['price_adjustment'] : null,
-                    'stock' => ! empty($option['stock']) ? $option['stock'] : null,
+                    'price_adjustment' => $this->nullableDecimal($option['price_adjustment'] ?? null),
+                    'stock' => ($option['stock'] ?? null) === null || $option['stock'] === ''
+                        ? null
+                        : (int) $option['stock'],
                     'hex_color' => $option['hex_color'] ?? null,
                     'sort_order' => $oIndex,
                 ];

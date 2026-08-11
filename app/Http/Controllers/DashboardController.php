@@ -2,24 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\LoadUsrahForUser;
+use App\Models\Article;
 use App\Models\Campaign;
-use App\Models\EventRsvp;
+use App\Models\DashboardBanner;
 use App\Models\Event;
+use App\Models\EventRsvp;
 use App\Models\FacilityBooking;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
-use App\Models\Payment;
-use App\Models\Branch;
 use App\Models\NewsPost;
-use App\Models\DashboardBanner;
-use App\Actions\LoadUsrahForUser;
-use App\Models\UsrahGroup;
-use App\Models\User;
 use App\Models\Organization;
+use App\Models\Payment;
+use App\Models\User;
 use App\Services\FeeService;
+use Illuminate\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,7 +67,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $articles = \App\Models\Article::query()
+        $articles = Article::query()
             ->where('is_published', true)
             ->latest('published_at')
             ->take(3)
@@ -84,7 +83,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $organizations = \App\Models\Organization::query()
+        $organizations = Organization::query()
             ->where('slug', '!=', 'management')
             ->orderBy('sort_order')
             ->get(['id', 'name', 'slug', 'color_theme', 'logo_path', 'min_age', 'max_age']);
@@ -152,7 +151,7 @@ class DashboardController extends Controller
         $infaqCount = Infaq::query()
             ->when(! $isSuperadmin, fn ($query) => $query->where(function ($q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
-                  ->orWhereNull('organization_id');
+                    ->orWhereNull('organization_id');
             }))
             ->count();
 
@@ -275,7 +274,7 @@ class DashboardController extends Controller
 
         foreach ($latestMembers as $member) {
             $recentActivities->push([
-                'id' => 'member-' . $member->id,
+                'id' => 'member-'.$member->id,
                 'type' => 'member',
                 'title' => 'Ahli baharu didaftarkan',
                 'description' => $member->name,
@@ -296,10 +295,10 @@ class DashboardController extends Controller
 
         foreach ($latestPayments as $payment) {
             $recentActivities->push([
-                'id' => 'payment-' . $payment->id,
+                'id' => 'payment-'.$payment->id,
                 'type' => 'payment',
                 'title' => 'Bayaran berjaya diterima',
-                'description' => strtoupper((string) $payment->payable_type) . ' · RM ' . number_format((float) $payment->amount, 2),
+                'description' => strtoupper((string) $payment->payable_type).' · RM '.number_format((float) $payment->amount, 2),
                 'created_at' => $payment->created_at?->toDateTimeString(),
             ]);
         }
@@ -314,10 +313,10 @@ class DashboardController extends Controller
 
         foreach ($latestBookings as $booking) {
             $recentActivities->push([
-                'id' => 'booking-' . $booking->id,
+                'id' => 'booking-'.$booking->id,
                 'type' => 'booking',
                 'title' => 'Tempahan ruang dikemaskini',
-                'description' => 'Status: ' . ucfirst((string) $booking->booking_status),
+                'description' => 'Status: '.ucfirst((string) $booking->booking_status),
                 'created_at' => $booking->created_at?->toDateTimeString(),
             ]);
         }
@@ -436,9 +435,9 @@ class DashboardController extends Controller
                 ],
             ],
             'feeStatus' => [
-                'status'      => $feeIsActive ? 'active' : 'due',
-                'amount_due'  => $feeIsActive ? 0 : $feeAmount,
-                'last_paid_at'=> $latestFeePayment?->created_at?->toISOString(),
+                'status' => $feeIsActive ? 'active' : 'due',
+                'amount_due' => $feeIsActive ? 0 : $feeAmount,
+                'last_paid_at' => $latestFeePayment?->created_at?->toISOString(),
                 'last_reference' => $latestFeePayment?->reference,
             ],
             'nextEvent' => $nextEventRsvp ? [

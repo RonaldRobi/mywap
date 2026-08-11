@@ -29,7 +29,7 @@ class BranchChangeRequestController extends Controller
         } elseif ($isBranchAdmin) {
             $query->whereHas('user', function ($q) use ($user) {
                 $q->where('current_organization_id', $user->current_organization_id)
-                  ->where('branch_id', $user->branch_id);
+                    ->where('branch_id', $user->branch_id);
             });
         } else {
             $query->whereHas('user', function ($q) use ($user) {
