@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Organization;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -65,13 +65,13 @@ class ProductController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $this->authorize('create', Product::class);
-        $categories = Category::all();
 
         return Inertia::render('Ecommerce/Products/Create', [
-            'categories' => $categories,
+            'categories' => Category::orderBy('name')->get(),
+            ...$this->organizationProps($request),
         ]);
     }
 
@@ -84,10 +84,14 @@ class ProductController extends Controller
         // otherwise the `array` rule rejects every submission.
         $this->normalizeVariations($request);
 
-        $validated = $request->validate($this->productRules(), [], $this->validationAttributes());
+        $validated = $request->validate(
+            $this->productRules($request),
+            [],
+            $this->validationAttributes()
+        );
 
         $data = $this->productPayload($request, $validated);
-        $data['organisasi_id'] = Auth::user()->current_organization_id ?? null;
+        $data['organisasi_id'] = $this->resolveOrganisationId($request);
         $data['images'] = $this->storeExtraImages($request);
 
         if ($request->hasFile('image')) {
@@ -126,15 +130,15 @@ class ProductController extends Controller
         ]);
     }
 
-    public function edit(Product $product)
+    public function edit(Request $request, Product $product)
     {
         $this->authorize('update', $product);
-        $categories = Category::all();
         $product->load('category', 'variations.options');
 
         return Inertia::render('Ecommerce/Products/Edit', [
             'product' => $product,
-            'categories' => $categories,
+            'categories' => Category::orderBy('name')->get(),
+            ...$this->organizationProps($request),
         ]);
     }
 
@@ -144,9 +148,20 @@ class ProductController extends Controller
 
         $this->normalizeVariations($request);
 
-        $validated = $request->validate($this->productRules(), [], $this->validationAttributes());
+        $validated = $request->validate(
+            $this->productRules($request),
+            [],
+            $this->validationAttributes()
+        );
 
         $data = $this->productPayload($request, $validated);
+
+        // Only a Superadmin may move a product between organisations; an org
+        // Admin's product always stays with their own org, so we leave
+        // organisasi_id untouched for them.
+        if ($request->user()->hasRole('Superadmin')) {
+            $data['organisasi_id'] = $this->resolveOrganisationId($request, $product->organisasi_id);
+        }
 
         if ($request->hasFile('image')) {
             $this->deleteImage($product->image);
@@ -180,9 +195,9 @@ class ProductController extends Controller
     /**
      * Validation rules shared by store() and update().
      */
-    private function productRules(): array
+    private function productRules(Request $request): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
@@ -209,6 +224,15 @@ class ProductController extends Controller
             'variations.*.options.*.stock' => 'nullable|integer|min:0',
             'variations.*.options.*.hex_color' => 'nullable|string|max:7',
         ];
+
+        // A Superadmin has no organisation of their own, so they must state
+        // which org sells (and gets paid for) the product. An org Admin's
+        // product is always their own org, so they never send this field.
+        if ($request->user()?->hasRole('Superadmin')) {
+            $rules['organisasi_id'] = ['required', 'integer', 'exists:organizations,id'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -218,6 +242,7 @@ class ProductController extends Controller
     {
         return [
             'name' => 'nama produk',
+            'organisasi_id' => 'organisasi penjual',
             'price' => 'harga',
             'member_price' => 'harga ahli',
             'postage_cost' => 'kos pos',
@@ -226,6 +251,52 @@ class ProductController extends Controller
             'image' => 'gambar utama',
             'images' => 'gambar tambahan',
         ];
+    }
+
+    /**
+     * Props that drive the "selling organisation" picker in the product form.
+     *
+     * The picker is Superadmin-only; org Admins are locked to their own org.
+     * Each option carries whether the org has a live payment gateway so the
+     * UI can warn before a product is published to an org that cannot be paid.
+     */
+    private function organizationProps(Request $request): array
+    {
+        $isSuperadmin = $request->user()->hasRole('Superadmin');
+
+        if (! $isSuperadmin) {
+            return ['isSuperadmin' => false, 'organizations' => []];
+        }
+
+        $organizations = Organization::orderBy('name')->get()->map(fn (Organization $org) => [
+            'id' => $org->id,
+            'name' => $org->name,
+            'gateway' => $org->activeGateway(),
+            'has_gateway' => $org->activeGateway() !== null,
+        ]);
+
+        return [
+            'isSuperadmin' => true,
+            'organizations' => $organizations,
+        ];
+    }
+
+    /**
+     * Decide which organisation owns (and gets paid for) the product.
+     *
+     * - Superadmin: the org they explicitly chose in the form.
+     * - Org Admin:  always their own current organisation, ignoring any
+     *   organisasi_id in the request so they cannot assign to another org.
+     */
+    private function resolveOrganisationId(Request $request, ?int $fallback = null): ?int
+    {
+        $user = $request->user();
+
+        if ($user->hasRole('Superadmin')) {
+            return $request->integer('organisasi_id') ?: $fallback;
+        }
+
+        return $user->current_organization_id ?? $fallback;
     }
 
     /**

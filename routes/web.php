@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BayarCashController;
+use App\Http\Controllers\DokuController;
 use App\Http\Controllers\BranchChangeRequestController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BroadcastController;
@@ -75,6 +76,9 @@ Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::
 Route::post('/bayarcash/callback', [BayarCashController::class, 'callback'])->name('bayarcash.callback');
 Route::post('/bayarcash/direct-debit/callback', [BayarCashController::class, 'directDebitCallback'])->name('bayarcash.direct-debit.callback');
 Route::get('/bayarcash/redirect', [BayarCashController::class, 'redirect'])->name('bayarcash.redirect');
+
+Route::post('/doku/callback', [DokuController::class, 'callback'])->name('doku.callback');
+Route::match(['get', 'post'], '/doku/redirect', [DokuController::class, 'redirect'])->name('doku.redirect');
 
 Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show', [
     'year' => $infaq->year,

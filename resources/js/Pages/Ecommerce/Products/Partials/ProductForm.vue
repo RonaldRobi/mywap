@@ -16,6 +16,9 @@ const props = defineProps({
     submitUrl: { type: String, required: true },
     cancelUrl: { type: String, required: true },
     submitLabel: { type: String, default: 'Simpan Produk' },
+    // Superadmin only: the list of organisations the product can be sold under.
+    organizations: { type: Array, default: () => [] },
+    isSuperadmin: { type: Boolean, default: false },
 });
 
 const isEdit = computed(() => !!props.product);
@@ -28,6 +31,8 @@ const form = useForm({
     postage_cost: props.product?.postage_cost ?? '',
     stock: props.product?.stock ?? 0,
     category_id: props.product?.category_id ?? props.categories?.[0]?.id ?? null,
+    // Only meaningful for Superadmin; org Admins never send this.
+    organisasi_id: props.product?.organisasi_id ?? null,
     status: props.product ? !!props.product.status : true,
     image: null,
     images: [],
@@ -151,6 +156,18 @@ const stockState = computed(() => {
     if (n <= 0) return { label: 'Kehabisan stok', tone: 'bg-red-50 text-red-700 ring-red-200' };
     if (n <= 5) return { label: `Stok rendah (${n})`, tone: 'bg-amber-50 text-amber-700 ring-amber-200' };
     return { label: `${n} dalam stok`, tone: 'bg-emerald-50 text-emerald-700 ring-emerald-200' };
+});
+
+/* ── Selling organisation (Superadmin only) ────────────────────────── */
+
+const selectedOrg = computed(() =>
+    props.organizations.find((o) => Number(o.id) === Number(form.organisasi_id)) ?? null
+);
+
+// A product sold under an org with no live gateway cannot collect payment.
+const orgGatewayWarning = computed(() => {
+    if (!props.isSuperadmin || !selectedOrg.value) return false;
+    return !selectedOrg.value.has_gateway;
 });
 
 function submit() {
@@ -456,6 +473,43 @@ const inputClass =
                                 </span>
                             </span>
                         </label>
+                    </section>
+
+                    <!-- Selling organisation (Superadmin only) -->
+                    <section v-if="isSuperadmin" class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <h2 class="mb-1 text-sm font-bold text-gray-900">
+                            Organisasi Penjual <span class="text-red-500">*</span>
+                        </h2>
+                        <p class="mb-3 text-xs text-gray-500">
+                            Bayaran produk ini akan masuk ke gateway pembayaran organisasi yang dipilih.
+                        </p>
+
+                        <select v-model="form.organisasi_id" :class="inputClass" required>
+                            <option :value="null" disabled>— Pilih organisasi —</option>
+                            <option v-for="o in organizations" :key="o.id" :value="o.id">
+                                {{ o.name }}{{ o.has_gateway ? '' : ' (tiada gateway)' }}
+                            </option>
+                        </select>
+
+                        <!-- Gateway readiness feedback -->
+                        <div
+                            v-if="selectedOrg && !orgGatewayWarning"
+                            class="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-600"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Gateway aktif: {{ selectedOrg.gateway }}
+                        </div>
+                        <div
+                            v-else-if="orgGatewayWarning"
+                            class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                        >
+                            <span class="font-bold">Amaran:</span>
+                            {{ selectedOrg.name }} belum menetapkan gateway pembayaran. Pembeli tidak akan dapat membayar produk ini sehingga gateway dikonfigurasikan.
+                        </div>
+
+                        <p v-if="form.errors.organisasi_id" class="mt-1 text-xs font-medium text-red-600">{{ form.errors.organisasi_id }}</p>
                     </section>
 
                     <!-- Category -->

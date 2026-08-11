@@ -19,6 +19,7 @@ class Infaq extends Model
         'title',
         'slug',
         'description',
+        'external_url',
         'image_path',
         'type',
         'allow_recurring',
@@ -44,6 +45,15 @@ class Infaq extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(InfaqDonation::class);
+    }
+
+    /**
+     * Whether this campaign links out to an external payment page (e.g. a DOKU
+     * Payment Link) instead of using myWAP's internal donation flow.
+     */
+    public function getIsExternalAttribute(): bool
+    {
+        return filled($this->external_url);
     }
 
     /**
@@ -110,5 +120,5 @@ class Infaq extends Model
         ]);
     }
 
-    protected $appends = ['year', 'month', 'day', 'public_url'];
+    protected $appends = ['year', 'month', 'day', 'public_url', 'is_external'];
 }

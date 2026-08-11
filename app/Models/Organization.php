@@ -38,6 +38,11 @@ class Organization extends Model
         'bayarcash_portal_key',
         'bayarcash_secret_key',
         'bayarcash_environment',
+        'payment_gateway',
+        'doku_client_id',
+        'doku_api_key',
+        'doku_secret_key',
+        'doku_environment',
         'website_url',
         'facebook_url',
         'instagram_url',
@@ -50,6 +55,10 @@ class Organization extends Model
     {
         return [
             'fee_amount' => 'decimal:2',
+            // DOKU credentials are sensitive: encrypt at rest. BayarCash keys
+            // stay as-is to avoid breaking existing plaintext-stored values.
+            'doku_api_key' => 'encrypted',
+            'doku_secret_key' => 'encrypted',
         ];
     }
 
@@ -58,6 +67,54 @@ class Organization extends Model
         return filled($this->bayarcash_api_token)
             && filled($this->bayarcash_portal_key)
             && filled($this->bayarcash_secret_key);
+    }
+
+    public function hasDokuConfig(): bool
+    {
+        return filled($this->doku_client_id)
+            && filled($this->doku_api_key)
+            && filled($this->doku_secret_key);
+    }
+
+    /**
+     * Resolve which gateway this organisation actively collects money through.
+     *
+     * Priority:
+     *  1. Explicit `payment_gateway` selection (if that gateway is configured).
+     *  2. Whichever gateway happens to be fully configured.
+     *  3. null when nothing is configured (caller falls back to "dummy").
+     */
+    public function activeGateway(): ?string
+    {
+        $selected = $this->payment_gateway;
+
+        if ($selected === 'doku' && $this->hasDokuConfig()) {
+            return 'doku';
+        }
+
+        if ($selected === 'bayarcash' && $this->hasBayarCashConfig()) {
+            return 'bayarcash';
+        }
+
+        // No explicit (or misconfigured) selection: use whatever is ready.
+        if ($this->hasDokuConfig()) {
+            return 'doku';
+        }
+
+        if ($this->hasBayarCashConfig()) {
+            return 'bayarcash';
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether recurring / direct-debit donations are supported for this org.
+     * Only BayarCash FPX Direct Debit supports recurring in this app.
+     */
+    public function supportsRecurring(): bool
+    {
+        return $this->activeGateway() === 'bayarcash';
     }
 
     // ─── Relationships ──────────────────────────────────────────────────────────

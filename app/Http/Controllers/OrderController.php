@@ -8,7 +8,7 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariationOption;
-use App\Services\BayarCashService;
+use App\Services\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +20,7 @@ use Inertia\Inertia;
 class OrderController extends Controller
 {
     public function __construct(
-        protected BayarCashService $bayarCashService,
+        protected PaymentGatewayManager $gateways,
     ) {}
 
     public function index()
@@ -108,6 +108,10 @@ class OrderController extends Controller
 
                 if (! $product->status) {
                     throw new \Exception('Produk "'.$product->name.'" tidak lagi dijual.');
+                }
+
+                if (! $product->organisasi_id) {
+                    throw new \Exception('Produk "'.$product->name.'" belum ditetapkan kepada mana-mana organisasi penjual.');
                 }
 
                 $quantity = $item['quantity'];
@@ -267,7 +271,7 @@ class OrderController extends Controller
         $user = Auth::user();
         $orgId = $order->organisasi_id ?? $user->current_organization_id;
         $org = Organization::find($orgId);
-        $useBayarCash = $org && $org->hasBayarCashConfig();
+        $useGateway = $this->gateways->isLive($org);
 
         $grandTotal = (float) $order->total + (float) $order->postage_cost;
 
@@ -276,19 +280,21 @@ class OrderController extends Controller
             'payable_type' => 'order',
             'payable_id' => $order->id,
             'amount' => $grandTotal,
-            'status' => $useBayarCash ? 'pending' : 'successful',
-            'reference' => $useBayarCash ? 'ORD-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
+            'status' => $useGateway ? 'pending' : 'successful',
+            'reference' => $useGateway ? 'ORD-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
             'description' => "Pesanan #{$order->id}",
-            'gateway' => $useBayarCash ? 'bayarcash' : 'dummy',
+            'gateway' => $this->gateways->gatewayFor($org),
             'organization_id' => $org?->id,
         ]);
 
-        if ($useBayarCash && $org) {
-            $url = $this->bayarCashService->createPaymentIntent(
+        if ($useGateway && $org) {
+            $url = $this->gateways->createPaymentRedirect(
                 $org,
                 $payment,
                 $user->name,
                 $user->email,
+                $user->phone ?? null,
+                "Pesanan #{$order->id}",
             );
 
             if ($url) {
@@ -351,6 +357,12 @@ class OrderController extends Controller
                 // crafted request) could buy a product the admin unpublished.
                 if (! $product->status) {
                     throw new \Exception('Produk "'.$product->name.'" tidak lagi dijual.');
+                }
+
+                // A product with no selling organisation has no payment gateway
+                // to receive the money, so it must not be purchasable.
+                if (! $product->organisasi_id) {
+                    throw new \Exception('Produk "'.$product->name.'" belum ditetapkan kepada mana-mana organisasi penjual.');
                 }
 
                 $quantity = $item['quantity'];

@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'bayarcash/callback',
+            'bayarcash/direct-debit/callback',
+            'doku/callback',
+            'doku/redirect',
             '__deploy/*',
         ]);
 

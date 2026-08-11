@@ -13,6 +13,14 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    organizations: {
+        type: Array,
+        default: () => [],
+    },
+    isSuperadmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const confirmingDelete = ref(false);
@@ -31,6 +39,8 @@ function destroy() {
         <ProductForm
             :product="product"
             :categories="categories"
+            :organizations="organizations"
+            :is-superadmin="isSuperadmin"
             :submit-url="route('products.update', product.id)"
             :cancel-url="route('products.index')"
             submit-label="Kemaskini Produk"

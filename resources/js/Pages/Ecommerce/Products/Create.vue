@@ -8,6 +8,14 @@ defineProps({
         type: Array,
         required: true,
     },
+    organizations: {
+        type: Array,
+        default: () => [],
+    },
+    isSuperadmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 </script>
 
@@ -19,6 +27,8 @@ defineProps({
 
         <ProductForm
             :categories="categories"
+            :organizations="organizations"
+            :is-superadmin="isSuperadmin"
             :submit-url="route('products.store')"
             :cancel-url="route('products.index')"
             submit-label="Simpan Produk"

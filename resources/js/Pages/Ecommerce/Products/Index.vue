@@ -241,7 +241,19 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
 
                     <!-- Body -->
                     <div class="flex flex-1 flex-col p-3">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ product.category?.name ?? 'Umum' }}</p>
+                        <div class="flex items-center justify-between gap-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ product.category?.name ?? 'Umum' }}</p>
+                            <!-- Superadmin catalogue: which org sells this + gateway warning -->
+                            <span
+                                v-if="isAdmin && !isMall && product.organization"
+                                class="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold text-gray-600"
+                            >{{ product.organization.name }}</span>
+                            <span
+                                v-else-if="isAdmin && !isMall && !product.organisasi_id"
+                                class="shrink-0 rounded-md bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-700"
+                                title="Tiada organisasi penjual — pembeli tidak boleh membayar"
+                            >TIADA ORG</span>
+                        </div>
                         <Link :href="productHref(product.id)" class="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-gray-900 hover:text-amber-600">
                             {{ product.name }}
                         </Link>

@@ -106,6 +106,7 @@ class ProductEditLiveTest extends TestCase
                 'price' => '120.00',
                 'stock' => '8',
                 'category_id' => (string) $this->category->id,
+                'organisasi_id' => (string) $this->orgA->id,
                 'status' => '1',
                 'variations' => '[]',
             ])
@@ -168,6 +169,7 @@ class ProductEditLiveTest extends TestCase
                 'price' => '99.90',
                 'stock' => '10',
                 'category_id' => (string) $this->category->id,
+                'organisasi_id' => (string) $this->orgA->id,
                 'status' => '1',
                 'variations' => $payload,
             ])
@@ -194,6 +196,7 @@ class ProductEditLiveTest extends TestCase
                 'price' => '99.90',
                 'stock' => '10',
                 'category_id' => (string) $this->category->id,
+                'organisasi_id' => (string) $this->orgA->id,
                 'status' => '1',
                 'variations' => '[]',
             ])
@@ -216,6 +219,7 @@ class ProductEditLiveTest extends TestCase
                 'price' => '99.90',
                 'stock' => '10',
                 'category_id' => (string) $this->category->id,
+                'organisasi_id' => (string) $this->orgA->id,
                 'status' => '1',
                 'variations' => '[]',
             ])

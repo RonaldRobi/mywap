@@ -380,7 +380,8 @@ function onKeydown(e) {
                     <div class="sticky top-24 space-y-6">
                         <!-- Donation Card -->
                         <div class="rounded-3xl border border-gray-100 bg-white p-6 md:p-8 shadow-lg shadow-emerald-900/5">
-                            <div class="mb-6">
+                            <!-- Progress block: hidden for external (DOKU) campaigns -->
+                            <div v-if="!infaq.is_external" class="mb-6">
                                 <p class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Terkumpul</p>
                                 <h2 class="text-3xl font-black text-emerald-600 mb-2">{{ formatCurrency(animatedAmount) }}</h2>
                                 <template v-if="infaq.type === 'progress' && infaq.target_amount">
@@ -394,7 +395,25 @@ function onKeydown(e) {
                                 </template>
                             </div>
 
-                            <div class="space-y-3">
+                            <!-- External (DOKU) campaign: single link-out button -->
+                            <div v-if="infaq.is_external" class="space-y-3">
+                                <a
+                                    :href="infaq.external_url"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-4 text-sm font-black uppercase tracking-wider text-white transition shadow-sm hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                                >
+                                    Sumbang Sekarang
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                                <p class="text-center text-xs font-semibold text-slate-400 flex items-center justify-center gap-1">
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+                                    Bayaran dikendalikan oleh {{ infaq.organization_name }} via DOKU
+                                </p>
+                            </div>
+
+                            <!-- Internal donation flow -->
+                            <div v-else class="space-y-3">
                                 <Link
                                     :href="infaq.public_url + '/donate'"
                                     class="block w-full text-center rounded-xl bg-slate-900 px-4 py-4 text-sm font-black uppercase tracking-wider text-white transition shadow-sm hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
@@ -499,11 +518,25 @@ function onKeydown(e) {
         <!-- Sticky Mobile CTA -->
         <div class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 p-3 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] md:hidden">
             <div class="flex items-center gap-3">
-                <div class="flex-1 min-w-0">
+                <div v-if="!infaq.is_external" class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-slate-500">Terkumpul</p>
                     <p class="text-lg font-black text-emerald-600">{{ formatCurrency(animatedAmount) }}</p>
                 </div>
+                <div v-else class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-500 truncate">{{ infaq.title }}</p>
+                    <p class="text-xs text-slate-400">via DOKU</p>
+                </div>
+                <a
+                    v-if="infaq.is_external"
+                    :href="infaq.external_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="shrink-0 rounded-xl bg-slate-900 px-6 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg hover:bg-slate-800 transition active:scale-95"
+                >
+                    Sumbang Sekarang
+                </a>
                 <Link
+                    v-else
                     :href="infaq.public_url + '/donate'"
                     class="shrink-0 rounded-xl bg-slate-900 px-6 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg hover:bg-slate-800 transition active:scale-95"
                 >

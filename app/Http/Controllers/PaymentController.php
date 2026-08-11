@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Models\Payment;
-use App\Services\BayarCashService;
 use App\Services\FeeService;
+use App\Services\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class PaymentController extends Controller
 {
     public function __construct(
-        protected BayarCashService $bayarCashService,
+        protected PaymentGatewayManager $gateways,
     ) {}
 
     // ─── SUPERADMIN ──────────────────────────────────────────────────────────────
@@ -234,26 +234,28 @@ class PaymentController extends Controller
         }
 
         $org = $user->organization;
-        $useBayarCash = $org && $org->hasBayarCashConfig();
+        $useGateway = $this->gateways->isLive($org);
 
         $payment = Payment::create([
             'user_id' => $user->id,
             'payable_type' => 'membership_fee',
             'payable_id' => null,
             'amount' => $feeAmount,
-            'status' => $useBayarCash ? 'pending' : 'successful',
-            'reference' => $useBayarCash ? 'FEE-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
+            'status' => $useGateway ? 'pending' : 'successful',
+            'reference' => $useGateway ? 'FEE-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
             'description' => "Yuran keahlian {$org?->name} {$year}",
-            'gateway' => $useBayarCash ? 'bayarcash' : 'dummy',
+            'gateway' => $this->gateways->gatewayFor($org),
             'organization_id' => $org?->id,
         ]);
 
-        if ($useBayarCash && $org) {
-            $url = $this->bayarCashService->createPaymentIntent(
+        if ($useGateway && $org) {
+            $url = $this->gateways->createPaymentRedirect(
                 $org,
                 $payment,
                 $user->name,
                 $user->email,
+                $user->phone ?? null,
+                "Yuran keahlian {$org?->name} {$year}",
             );
 
             if ($url) {

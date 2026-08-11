@@ -26,10 +26,15 @@ const editForms = Object.fromEntries(
             min_age: organization.min_age,
             max_age: organization.max_age,
             sort_order: organization.sort_order,
+            payment_gateway: organization.payment_gateway ?? '',
             bayarcash_api_token: organization.bayarcash_api_token ?? '',
             bayarcash_portal_key: organization.bayarcash_portal_key ?? '',
             bayarcash_secret_key: organization.bayarcash_secret_key ?? '',
             bayarcash_environment: organization.bayarcash_environment ?? 'sandbox',
+            doku_client_id: organization.doku_client_id ?? '',
+            doku_api_key: organization.doku_api_key ?? '',
+            doku_secret_key: organization.doku_secret_key ?? '',
+            doku_environment: organization.doku_environment ?? 'sandbox',
             website_url: organization.website_url ?? '',
             facebook_url: organization.facebook_url ?? '',
             instagram_url: organization.instagram_url ?? '',
@@ -46,6 +51,11 @@ const logoForms = Object.fromEntries(
         useForm({ organization_logo: null }),
     ])
 );
+
+const dokuWebhookUrl = computed(() => {
+    if (typeof window === 'undefined') return '/doku/callback';
+    return `${window.location.origin}/doku/callback`;
+});
 
 const sortedOrganizations = computed(() =>
     [...props.organizations].sort((left, right) => {
@@ -79,7 +89,7 @@ function updateOrganizationLogo(organization) {
         <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900">Organization Management</h1>
-                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, logo, umur tier, warna tema, susunan paparan, BayarCash payment gateway, dan semak jumlah ahli.</p>
+                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, logo, umur tier, warna tema, susunan paparan, payment gateway (BayarCash / DOKU), dan semak jumlah ahli.</p>
             </div>
 
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -166,6 +176,22 @@ function updateOrganizationLogo(organization) {
                             <input v-model.number="editForms[organization.id].sort_order" type="number" min="1" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
                         </div>
 
+                        <div class="rounded-xl border border-gray-200 p-3">
+                            <label class="mb-1 block text-xs font-semibold text-gray-500">Payment Gateway Aktif</label>
+                            <select v-model="editForms[organization.id].payment_gateway" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                                <option value="">Auto (guna yang dikonfigur)</option>
+                                <option value="bayarcash">BayarCash (FPX + Direct Debit)</option>
+                                <option value="doku">DOKU (FPX + E-Wallet)</option>
+                            </select>
+                            <p class="mt-1 text-[11px] text-gray-500">
+                                Gateway yang akan menerima wang untuk organisasi ini.
+                                <span v-if="organization.active_gateway" class="font-semibold text-emerald-600">Sedang aktif: {{ organization.active_gateway.toUpperCase() }}</span>
+                                <span v-else class="font-semibold text-amber-600">Tiada gateway dikonfigur — mod dummy.</span>
+                            </p>
+                            <p v-if="editForms[organization.id].errors.payment_gateway" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.payment_gateway }}</p>
+                            <p class="mt-1 text-[11px] text-amber-600">Nota: Sumbangan berkala (recurring) hanya disokong oleh BayarCash.</p>
+                        </div>
+
                         <details class="rounded-xl border border-gray-200">
                             <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">BayarCash Payment Gateway</summary>
                             <div class="space-y-3 border-t border-gray-100 p-3">
@@ -188,6 +214,38 @@ function updateOrganizationLogo(organization) {
                                         <option value="live">Live (Produksi)</option>
                                     </select>
                                 </div>
+                            </div>
+                        </details>
+
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">DOKU Payment Gateway</summary>
+                            <div class="space-y-3 border-t border-gray-100 p-3">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Client ID</label>
+                                    <input v-model="editForms[organization.id].doku_client_id" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="BRN-XXXX-XXXXXXXXXX">
+                                    <p v-if="editForms[organization.id].errors.doku_client_id" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.doku_client_id }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">API Key</label>
+                                    <input v-model="editForms[organization.id].doku_api_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="doku_ak_...">
+                                    <p v-if="editForms[organization.id].errors.doku_api_key" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.doku_api_key }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Secret Key</label>
+                                    <input v-model="editForms[organization.id].doku_secret_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Secret key untuk signature (disulitkan)">
+                                    <p v-if="editForms[organization.id].errors.doku_secret_key" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.doku_secret_key }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Environment</label>
+                                    <select v-model="editForms[organization.id].doku_environment" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                                        <option value="sandbox">Sandbox (Ujian)</option>
+                                        <option value="production">Production (Produksi)</option>
+                                    </select>
+                                </div>
+                                <p class="text-[11px] text-gray-500">
+                                    Webhook URL (Notification): salin ke DOKU Back Office &rarr; Settings &rarr; Webhook:
+                                    <code class="rounded bg-gray-100 px-1 py-0.5 text-[10px]">{{ dokuWebhookUrl }}</code>
+                                </p>
                             </div>
                         </details>
 

@@ -33,7 +33,13 @@ function formatCurrency(value) {
                 <h3 class="text-base font-black text-slate-900 group-hover:text-emerald-600 transition line-clamp-1 mb-1">{{ infaq.title }}</h3>
                 <p v-if="infaq.days_running" class="text-xs text-slate-500">{{ infaq.days_running }} hari berjalan</p>
             </div>
-            <div class="shrink-0 text-right">
+            <div v-if="infaq.is_external" class="shrink-0 text-right">
+                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    Sumbang
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </span>
+            </div>
+            <div v-else class="shrink-0 text-right">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Terkumpul</p>
                 <p class="text-lg font-black text-emerald-600">{{ formatCurrency(infaq.collected_amount) }}</p>
                 <template v-if="infaq.target_amount">
@@ -68,7 +74,15 @@ function formatCurrency(value) {
 
             <h3 class="text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-emerald-600 transition line-clamp-2">{{ infaq.title }}</h3>
 
-            <div class="mt-auto pt-4 border-t border-slate-50 space-y-3">
+            <!-- External (DOKU) campaign: simple CTA, no progress figures -->
+            <div v-if="infaq.is_external" class="mt-auto pt-4 border-t border-slate-50">
+                <span class="flex items-center justify-center gap-1.5 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white group-hover:bg-slate-800 transition">
+                    Sumbang Sekarang
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </span>
+            </div>
+
+            <div v-else class="mt-auto pt-4 border-t border-slate-50 space-y-3">
                 <div class="flex justify-between items-end">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terkumpul</p>

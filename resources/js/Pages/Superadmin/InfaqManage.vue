@@ -57,6 +57,7 @@ const createForm = useForm({
     organization_id: '',
     title:           '',
     description:     '',
+    external_url:    '',
     type:            'one_off',
     allow_recurring: false,
     target_amount:   '',
@@ -93,6 +94,7 @@ function getEditForm(item) {
             organization_id: item.organization_id ?? '',
             title:           item.title,
             description:     item.description ?? '',
+            external_url:    item.external_url ?? '',
             type:            item.type,
             allow_recurring: item.allow_recurring ?? false,
             target_amount:   item.target_amount ?? '',
@@ -198,6 +200,15 @@ function formatMYR(val) {
                                 <label class="block text-xs font-semibold text-gray-600 mb-1">Penerangan</label>
                                 <textarea v-model="createForm.description" rows="2" placeholder="Huraian ringkas infaq ini..."
                                     class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 outline-none transition resize-none"></textarea>
+                            </div>
+
+                            <!-- External payment URL (DOKU link) -->
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Pautan Bayaran Luar (DOKU)</label>
+                                <input v-model="createForm.external_url" type="url" placeholder="https://... (kosongkan jika guna flow derma dalaman myWAP)"
+                                    class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 outline-none transition"/>
+                                <p class="mt-1 text-[11px] text-gray-500">Jika diisi, kempen ini akan bawa user terus ke pautan DOKU. Flow derma dalaman, progress bar & senarai penderma tidak digunakan.</p>
+                                <p v-if="createForm.errors.external_url" class="mt-1 text-xs text-red-500">{{ createForm.errors.external_url }}</p>
                             </div>
 
                             <!-- Organisation -->
@@ -377,6 +388,13 @@ function formatMYR(val) {
                                             <label class="block text-xs font-semibold text-gray-600 mb-1">Penerangan</label>
                                             <textarea v-model="getEditForm(item).description" rows="2"
                                                 class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 outline-none resize-none"></textarea>
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pautan Bayaran Luar (DOKU)</label>
+                                            <input v-model="getEditForm(item).external_url" type="url" placeholder="https://... (kosongkan untuk flow dalaman)"
+                                                class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0 outline-none"/>
+                                            <p class="mt-1 text-[11px] text-gray-500">Diisi = kempen bawa terus ke DOKU (tiada progress bar/derma dalaman).</p>
+                                            <p v-if="getEditForm(item).errors.external_url" class="mt-1 text-xs text-red-500">{{ getEditForm(item).errors.external_url }}</p>
                                         </div>
                                         <div>
                                             <label class="block text-xs font-semibold text-gray-600 mb-1">Organisasi</label>

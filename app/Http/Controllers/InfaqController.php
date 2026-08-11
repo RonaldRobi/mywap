@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Services\BayarCashService;
 use App\Services\DonorService;
+use App\Services\PaymentGatewayManager;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,7 @@ class InfaqController extends Controller
     public function __construct(
         protected BayarCashService $bayarCashService,
         protected DonorService $donorService,
+        protected PaymentGatewayManager $gateways,
     ) {}
 
     // ─── Superadmin: list all infaq ─────────────────────────────────────────
@@ -42,6 +44,8 @@ class InfaqController extends Controller
                 'title' => $infaq->title,
                 'slug' => $infaq->slug,
                 'description' => $infaq->description,
+                'external_url' => $infaq->external_url,
+                'is_external' => $infaq->is_external,
                 'image_path' => $infaq->image_path,
                 'type' => $infaq->type,
                 'allow_recurring' => $infaq->allow_recurring,
@@ -70,6 +74,7 @@ class InfaqController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'external_url' => ['nullable', 'url', 'max:1000'],
             'type' => ['required', 'in:one_off,progress'],
             'allow_recurring' => ['nullable', 'boolean'],
             'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
@@ -77,6 +82,8 @@ class InfaqController extends Controller
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
+
+        $isExternal = filled($data['external_url'] ?? null);
 
         $imagePath = null;
         if ($request->hasFile('infaq_image')) {
@@ -88,9 +95,11 @@ class InfaqController extends Controller
             'organization_id' => $data['organization_id'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'external_url' => $data['external_url'] ?? null,
             'image_path' => $imagePath,
             'type' => $data['type'],
-            'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
+            // External campaigns never use internal recurring donation.
+            'allow_recurring' => $isExternal ? false : (bool) ($data['allow_recurring'] ?? false),
             'target_amount' => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
             'collected_amount' => 0,
             'is_active' => (bool) ($data['is_active'] ?? true),
@@ -108,6 +117,7 @@ class InfaqController extends Controller
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'external_url' => ['nullable', 'url', 'max:1000'],
             'type' => ['required', 'in:one_off,progress'],
             'allow_recurring' => ['nullable', 'boolean'],
             'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
@@ -115,6 +125,8 @@ class InfaqController extends Controller
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ]);
+
+        $isExternal = filled($data['external_url'] ?? null);
 
         $imagePath = $infaq->image_path;
 
@@ -134,9 +146,10 @@ class InfaqController extends Controller
             'organization_id' => $data['organization_id'] ?? null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'external_url' => $data['external_url'] ?? null,
             'image_path' => $imagePath,
             'type' => $data['type'],
-            'allow_recurring' => (bool) ($data['allow_recurring'] ?? false),
+            'allow_recurring' => $isExternal ? false : (bool) ($data['allow_recurring'] ?? false),
             'target_amount' => $data['type'] === 'progress' ? ($data['target_amount'] ?? null) : null,
             'is_active' => (bool) ($data['is_active'] ?? false),
             'display_order' => (int) ($data['display_order'] ?? 1),
@@ -273,6 +286,8 @@ SVG;
                 'progress_percent' => $item->progress_percent,
                 'image_path' => $item->image_path,
                 'public_url' => $item->public_url,
+                'is_external' => $item->is_external,
+                'external_url' => $item->external_url,
                 'organization_name' => $item->organization?->name,
                 'days_running' => max(1, (int) abs(now()->diffInDays($item->created_at))),
             ]);
@@ -347,6 +362,8 @@ SVG;
                 'target_amount' => $infaq->target_amount,
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
+                'is_external' => $infaq->is_external,
+                'external_url' => $infaq->external_url,
                 'organization_name' => $infaq->organization?->name ?? 'Pengurusan myWAP',
                 'organization_slug' => $infaq->organization?->slug,
                 'organization_logo' => $infaq->organization?->logo_path,
@@ -365,9 +382,14 @@ SVG;
 
     // ─── Member: submit a donation ───────────────────────────────────────────
 
-    public function donateForm(Request $request, $year, $month, $day, Infaq $infaq): Response
+    public function donateForm(Request $request, $year, $month, $day, Infaq $infaq)
     {
         abort_unless((bool) $infaq->is_active, 404);
+
+        // External campaigns have no internal donation form — send them to DOKU.
+        if ($infaq->is_external) {
+            return redirect()->away($infaq->external_url);
+        }
 
         $infaq->load('organization:id,name');
 
@@ -384,6 +406,11 @@ SVG;
 
     public function donate(Request $request, $year, $month, $day, Infaq $infaq): RedirectResponse
     {
+        // External campaigns are handled entirely on the external (DOKU) page.
+        if ($infaq->is_external) {
+            return redirect()->away($infaq->external_url);
+        }
+
         $isRecurring = $request->boolean('is_recurring') && $infaq->allow_recurring;
 
         $rules = [
@@ -404,10 +431,11 @@ SVG;
 
         $user = $request->user();
         $org = $infaq->organization_id ? Organization::find($infaq->organization_id) : null;
-        $useBayarCash = $org && $org->hasBayarCashConfig();
+        $useGateway = $this->gateways->isLive($org);
 
-        if ($isRecurring && ! $useBayarCash) {
-            return back()->with('error', 'Pembayaran recurring memerlukan gateway BayarCash.');
+        // Recurring / Direct Debit is only supported by BayarCash FPX Direct Debit.
+        if ($isRecurring && ! ($org && $org->supportsRecurring())) {
+            return back()->with('error', 'Sumbangan berkala hanya tersedia untuk gateway BayarCash. Sila pilih sumbangan sekali sahaja.');
         }
 
         $frequencyMap = [
@@ -416,7 +444,9 @@ SVG;
             'yearly' => FpxDirectDebit::MODE_YEARLY,
         ];
 
-        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useBayarCash, $isRecurring, $frequencyMap) {
+        $gatewayName = $this->gateways->gatewayFor($org);
+
+        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useGateway, $gatewayName, $isRecurring, $frequencyMap) {
             $ref = 'INFQ-'.strtoupper(Str::random(10));
 
             $nextBilling = null;
@@ -433,7 +463,7 @@ SVG;
                 'user_id' => $user?->id,
                 'amount' => $data['amount'],
                 'reference' => $ref,
-                'status' => $useBayarCash ? 'pending' : 'confirmed',
+                'status' => $useGateway ? 'pending' : 'confirmed',
                 'donor_name' => $data['donor_name'],
                 'donor_phone' => $data['donor_phone'],
                 'donor_email' => $data['donor_email'],
@@ -449,7 +479,7 @@ SVG;
             // Deduplicate donor
             $donor = $this->donorService->findOrCreate($donation);
             $donation->update(['donor_id' => $donor->id]);
-            if (! $useBayarCash && $donation->status === 'confirmed') {
+            if (! $useGateway && $donation->status === 'confirmed') {
                 $this->donorService->incrementDonor($donor, (float) $data['amount']);
             }
 
@@ -460,28 +490,29 @@ SVG;
                 'payable_type' => 'infaq_donation',
                 'payable_id' => $donation->id,
                 'amount' => $data['amount'],
-                'status' => $useBayarCash ? 'pending' : 'successful',
+                'status' => $useGateway ? 'pending' : 'successful',
                 'reference' => $paymentRef,
                 'description' => $isRecurring
                     ? "Donasi berkala ({$data['frequency']}): {$infaq->title}"
                     : "Donasi: {$infaq->title}",
-                'gateway' => $useBayarCash ? 'bayarcash' : 'dummy',
+                'gateway' => $gatewayName,
                 'organization_id' => $org?->id,
             ]);
 
-            if (! $useBayarCash) {
+            if (! $useGateway) {
                 $infaq->increment('collected_amount', $data['amount']);
             }
 
             return $donation;
         });
 
-        if ($useBayarCash && $org) {
+        if ($useGateway && $org) {
             $payment = Payment::where('payable_type', 'infaq_donation')
                 ->where('payable_id', $donation->id)
                 ->first();
 
             if ($isRecurring) {
+                // Recurring is BayarCash-only (guarded above via supportsRecurring()).
                 $url = $this->bayarCashService->createDirectDebitEnrollment(
                     $org,
                     $donation,
@@ -492,12 +523,14 @@ SVG;
                     $frequencyMap[$data['frequency']],
                 );
             } else {
-                $url = $this->bayarCashService->createPaymentIntent(
+                // One-time donation: route through whichever gateway the org uses.
+                $url = $this->gateways->createPaymentRedirect(
                     $org,
                     $payment,
                     $data['donor_name'],
                     $data['donor_email'],
                     $data['donor_phone'],
+                    "Donasi: {$infaq->title}",
                 );
             }
 
