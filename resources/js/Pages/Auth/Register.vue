@@ -56,6 +56,10 @@ function guessGenderFromIc(ic) {
     return parseInt(digits.slice(-1)) % 2 === 1 ? 'Lelaki' : 'Perempuan';
 }
 
+const organizationLogos = computed(() =>
+    props.organizations.filter((organization) => organization.logo_path)
+);
+
 const inferredDob = computed(() => form.ic_number ? parseDobFromIc(form.ic_number) : '');
 const inferredGender = computed(() => form.ic_number ? guessGenderFromIc(form.ic_number) : '');
 
@@ -148,6 +152,20 @@ const submit = () => {
                     <p class="mt-4 text-sm leading-relaxed text-slate-300">
                         Isi maklumat asas. Sistem akan tetapkan PKPIM, ABIM atau WADAH secara automatik berdasarkan tarikh lahir dari No IC.
                     </p>
+
+                    <div v-if="organizationLogos.length" class="mt-6 flex flex-wrap items-center gap-4">
+                        <div
+                            v-for="organization in organizationLogos"
+                            :key="organization.id"
+                            class="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm"
+                        >
+                            <img
+                                :src="organization.logo_path"
+                                :alt="organization.name + ' logo'"
+                                class="h-full w-full object-contain"
+                            >
+                        </div>
+                    </div>
                 </div>
             </section>
 

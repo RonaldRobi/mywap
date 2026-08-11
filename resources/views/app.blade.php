@@ -24,19 +24,41 @@
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
 
-        @if (request()->routeIs('login'))
+        @if (request()->routeIs('login', 'register'))
             @php
-                $ogImage = $page['props']['brand']['og_image_path'] ?? $page['props']['brand']['system_logo_path'] ?? asset('images/og-login.png');
+                $appName = config('app.name', 'myWAP');
+                $rawOgImage = $page['props']['brand']['og_image_path']
+                    ?? $page['props']['brand']['system_logo_path']
+                    ?? asset('images/og-login.png');
+
+                // WhatsApp/Facebook require an ABSOLUTE https URL for og:image.
+                // Stored paths come through as relative "/storage/..." so promote them
+                // to a full URL rooted at the current host.
+                $ogImage = \Illuminate\Support\Str::startsWith($rawOgImage, ['http://', 'https://'])
+                    ? $rawOgImage
+                    : url($rawOgImage);
+
+                if (request()->routeIs('register')) {
+                    $ogTitle = 'Daftar Akaun Baru - '.$appName;
+                    $ogDescription = 'Daftar sebagai ahli PKPIM, ABIM atau WADAH. Sistem tetapkan organisasi anda secara automatik ikut umur.';
+                } else {
+                    $ogTitle = 'Log Masuk - '.$appName;
+                    $ogDescription = 'Log masuk ke akaun '.$appName.' anda.';
+                }
             @endphp
-            <meta property="og:title" content="Login - {{ config('app.name') }}" />
-            <meta property="og:description" content="Log masuk ke akaun myWAP anda" />
+            <meta property="og:title" content="{{ $ogTitle }}" />
+            <meta property="og:description" content="{{ $ogDescription }}" />
             <meta property="og:image" content="{{ $ogImage }}" />
+            <meta property="og:image:secure_url" content="{{ $ogImage }}" />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
             <meta property="og:url" content="{{ url()->current() }}" />
             <meta property="og:type" content="website" />
-            <meta property="og:site_name" content="{{ config('app.name') }}" />
+            <meta property="og:site_name" content="{{ $appName }}" />
+            <meta name="description" content="{{ $ogDescription }}" />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="Login - {{ config('app.name') }}" />
-            <meta name="twitter:description" content="Log masuk ke akaun myWAP anda" />
+            <meta name="twitter:title" content="{{ $ogTitle }}" />
+            <meta name="twitter:description" content="{{ $ogDescription }}" />
             <meta name="twitter:image" content="{{ $ogImage }}" />
         @endif
     </head>

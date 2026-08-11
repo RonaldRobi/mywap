@@ -274,7 +274,7 @@ SVG;
     {
         $infaqs = Infaq::query()
             ->where('is_active', true)
-            ->with('organization:id,name')
+            ->with('organization:id,name,slug')
             ->latest()
             ->get()
             ->map(fn ($item) => [
@@ -288,12 +288,32 @@ SVG;
                 'public_url' => $item->public_url,
                 'is_external' => $item->is_external,
                 'external_url' => $item->external_url,
+                'organization_id' => $item->organization_id,
                 'organization_name' => $item->organization?->name,
+                'organization_slug' => $item->organization?->slug,
                 'days_running' => max(1, (int) abs(now()->diffInDays($item->created_at))),
             ]);
 
+        // Only list organizations that actually have at least one active campaign,
+        // so the filter never shows an empty tab.
+        $orgIdsWithCampaigns = $infaqs->pluck('organization_id')->filter()->unique();
+
+        $organizations = Organization::query()
+            ->whereIn('id', $orgIdsWithCampaigns)
+            ->orderBy('sort_order')
+            ->orderBy('min_age')
+            ->get(['id', 'name', 'slug'])
+            ->map(fn ($org) => [
+                'id' => $org->id,
+                'name' => $org->name,
+                'slug' => $org->slug,
+            ])
+            ->values();
+
         return Inertia::render('Infaq/Index', [
             'infaqs' => $infaqs,
+            'organizations' => $organizations,
+            'hasGlobal' => $infaqs->whereNull('organization_id')->isNotEmpty(),
         ]);
     }
 

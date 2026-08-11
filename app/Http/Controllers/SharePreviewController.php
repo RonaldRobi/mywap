@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Event;
 use App\Models\Infaq;
 use App\Models\NewsPost;
+use App\Models\Product;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -67,6 +68,39 @@ class SharePreviewController extends Controller
             redirectUrl: route('events.show', $event->slug, true),
             type: 'article'
         );
+    }
+
+    public function product(Product $product): View
+    {
+        // Drafts are not shareable; only published mall items get a preview.
+        abort_if(! $product->status, 404);
+
+        return $this->renderPreview(
+            title: $product->name,
+            description: Str::limit(strip_tags((string) $product->description), 160)
+                ?: 'Lihat produk ini di myWAP Mall.',
+            imageUrl: $this->productImageUrl($product->image),
+            pageUrl: route('share.product', $product, true),
+            redirectUrl: route('mall.show', $product, true),
+            type: 'product'
+        );
+    }
+
+    /**
+     * Product images are stored as bare relative paths (e.g. "products/x.jpg").
+     * Promote them to an absolute "/storage/..." URL for social crawlers.
+     */
+    private function productImageUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', '/storage/'])) {
+            return $this->absoluteUrl($path);
+        }
+
+        return $this->absoluteUrl('/storage/'.ltrim($path, '/'));
     }
 
     private function renderPreview(

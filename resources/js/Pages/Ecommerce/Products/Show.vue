@@ -4,6 +4,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useCart } from '@/composables/useCart';
 import { productImageUrl, onImageError, formatPrice } from '@/composables/useProductImage';
+import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const cart = useCart();
 
@@ -271,6 +272,17 @@ watch(availableStock, (stock) => {
                         Kos Pos: {{ formatPrice(postageCost) }}
                     </div>
                     <div v-else class="mt-1 text-sm text-emerald-600 font-semibold">Percuma Pos</div>
+
+                    <!-- Share -->
+                    <div v-if="isMall" class="mt-5 border-t border-gray-100 pt-4">
+                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Kongsikan Produk Ini</p>
+                        <SocialShareButtons
+                            :title="product.name"
+                            text="Lihat produk ini di myWAP Mall."
+                            :url="route('share.product', product.id, true)"
+                            compact
+                        />
+                    </div>
 
                     <!-- Variations -->
                     <div v-for="variation in product.variations" :key="variation.id" class="mt-5">

@@ -8,10 +8,13 @@ const systemLogo = computed(() => page.props.brand?.system_logo_path ?? null);
 
 const props = defineProps({
     infaqs: { type: Array, required: true },
+    organizations: { type: Array, default: () => [] },
+    hasGlobal: { type: Boolean, default: false },
 });
 
 const searchQuery = ref('');
 const activeTypeFilter = ref('all');
+const activeOrgFilter = ref('all');
 const sortBy = ref('newest');
 const viewMode = ref('grid');
 
@@ -32,6 +35,23 @@ const sortOptions = [
     { value: 'most_progress', label: 'Kemajuan Tertinggi' },
 ];
 
+// Organisation filter tabs: "Semua" + each org that has campaigns + "Global" (no org).
+const orgFilters = computed(() => {
+    const tabs = [{ value: 'all', label: 'Semua Organisasi' }];
+    props.organizations.forEach(org => {
+        tabs.push({ value: String(org.id), label: org.name });
+    });
+    if (props.hasGlobal) {
+        tabs.push({ value: 'global', label: 'Umum' });
+    }
+    return tabs;
+});
+
+// Hide the org filter row entirely when there's nothing meaningful to filter by.
+const showOrgFilter = computed(() =>
+    props.organizations.length > 0 && orgFilters.value.length > 2
+);
+
 const filteredInfaqs = computed(() => {
     let items = [...props.infaqs];
 
@@ -41,6 +61,14 @@ const filteredInfaqs = computed(() => {
             i.title.toLowerCase().includes(q) ||
             (i.organization_name && i.organization_name.toLowerCase().includes(q))
         );
+    }
+
+    if (activeOrgFilter.value !== 'all') {
+        if (activeOrgFilter.value === 'global') {
+            items = items.filter(i => !i.organization_id);
+        } else {
+            items = items.filter(i => String(i.organization_id) === activeOrgFilter.value);
+        }
     }
 
     if (activeTypeFilter.value !== 'all') {
@@ -152,8 +180,20 @@ watch(searchQuery, () => {});
                     </div>
                 </div>
 
+                <!-- Organisation Filter Chips -->
+                <div v-if="showOrgFilter" class="flex flex-wrap items-center gap-2">
+                    <button
+                        v-for="f in orgFilters"
+                        :key="f.value"
+                        @click="activeOrgFilter = f.value"
+                        :class="['rounded-full px-4 py-1.5 text-xs font-bold tracking-wide transition', activeOrgFilter === f.value ? 'bg-emerald-600 text-white shadow' : 'bg-white border border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-700']"
+                    >
+                        {{ f.label }}
+                    </button>
+                </div>
+
                 <!-- Type Filter Chips -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button
                         v-for="f in typeFilters"
                         :key="f.value"
@@ -189,7 +229,7 @@ watch(searchQuery, () => {});
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 mb-1">Tiada Hasil Carian</h3>
                 <p class="text-sm text-slate-500 mb-4">Tiada kempen sepadan dengan kriteria carian anda.</p>
-                <button @click="searchQuery = ''; activeTypeFilter = 'all'" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition">
+                <button @click="searchQuery = ''; activeTypeFilter = 'all'; activeOrgFilter = 'all'" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     Tetapkan Semula
                 </button>

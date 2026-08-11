@@ -54,6 +54,7 @@ Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->n
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
+Route::get('/share/produk/{product}', [SharePreviewController::class, 'product'])->name('share.product')->middleware('throttle:30,1');
 Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');

@@ -37,7 +37,7 @@ class RegisteredUserController extends Controller
 
         $organizations = Organization::query()
             ->orderBy('min_age')
-            ->get(['id', 'name', 'slug', 'min_age', 'max_age', 'fee_amount', 'color_theme']);
+            ->get(['id', 'name', 'slug', 'min_age', 'max_age', 'fee_amount', 'color_theme', 'logo_path']);
 
         $branches = Branch::query()
             ->with('organization')
