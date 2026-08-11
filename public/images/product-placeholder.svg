@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600" role="img" aria-label="Tiada gambar produk">
+  <rect width="600" height="600" fill="#f4f4f5"/>
+  <g fill="none" stroke="#d4d4d8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M186 246h228a18 18 0 0 1 18 18v132a18 18 0 0 1-18 18H186a18 18 0 0 1-18-18V264a18 18 0 0 1 18-18Z"/>
+    <path d="M168 366l66-60 54 48 60-54 84 72"/>
+    <circle cx="252" cy="294" r="20"/>
+  </g>
+  <text x="300" y="470" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600" fill="#a1a1aa" text-anchor="middle">Tiada Gambar</text>
+</svg>

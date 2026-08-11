@@ -28,7 +28,44 @@ class Product extends Model
     {
         return [
             'images' => 'array',
+            'status' => 'boolean',
+            'price' => 'decimal:2',
+            'member_price' => 'decimal:2',
+            'postage_cost' => 'decimal:2',
+            'stock' => 'integer',
         ];
+    }
+
+    /**
+     * Only products that are published to the mall.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
+    /**
+     * Price a given user pays, honouring the member price when set.
+     */
+    public function priceFor(?User $user = null): float
+    {
+        if ($user && $this->member_price !== null) {
+            return (float) $this->member_price;
+        }
+
+        return (float) $this->price;
+    }
+
+    /**
+     * Main image plus gallery images, de-duplicated.
+     *
+     * @return array<int, string>
+     */
+    public function getGalleryAttribute(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_merge([$this->image], $this->images ?? [])
+        )));
     }
 
     public function category()

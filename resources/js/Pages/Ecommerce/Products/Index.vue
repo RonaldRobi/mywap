@@ -3,13 +3,28 @@ import { computed, ref, watch } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useCart } from '@/composables/useCart';
+import { productImageUrl, onImageError, formatPrice, discountPercent } from '@/composables/useProductImage';
 
 const cart = useCart();
+
+// Products with variations must be configured on the detail page, so the
+// quick-add button links through instead of guessing an option for the buyer.
+const justAdded = ref(null);
 
 function addToCart(product, event) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (product.variations_count > 0) {
+        router.visit(productHref(product.id));
+        return;
+    }
+
     cart.add(product, 1);
+    justAdded.value = product.id;
+    setTimeout(() => {
+        if (justAdded.value === product.id) justAdded.value = null;
+    }, 1600);
 }
 
 const props = defineProps({
@@ -65,17 +80,15 @@ function selectSort(value) {
     sort.value = value;
 }
 
-// Resolve an image path to a usable URL; falls back to a stable placeholder.
-function productImageUrl(path, seed = 'mywap') {
-    if (!path) {
-        return `https://picsum.photos/seed/${encodeURIComponent(String(seed))}/600/600`;
-    }
-    if (/^https?:\/\//.test(path)) return path;
-    if (path.startsWith('/storage/')) return path;
-    return '/storage/' + path.replace(/^\/+/, '');
-}
-
 const showResults = computed(() => props.products.data.length > 0);
+
+const hasActiveFilters = computed(() => !!search.value || !!category_id.value);
+
+function clearFilters() {
+    search.value = '';
+    category_id.value = '';
+    sort.value = 'latest';
+}
 
 const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', id);
 </script>
@@ -196,16 +209,30 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
                     <!-- Image -->
                     <Link :href="productHref(product.id)" class="relative block aspect-square overflow-hidden bg-gray-100">
                         <img
-                            :src="productImageUrl(product.image, product.id)"
+                            :src="productImageUrl(product.image)"
                             :alt="product.name"
                             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             loading="lazy"
+                            @error="onImageError"
                         />
                         <!-- Member price badge -->
                         <span
-                            v-if="product.member_price != null && Number(product.member_price) < Number(product.price)"
+                            v-if="discountPercent(product.price, product.member_price)"
                             class="absolute left-2 top-2 rounded-lg bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
-                        >JIMAT {{ (((Number(product.price) - Number(product.member_price)) / Number(product.price)) * 100).toFixed(0) }}%</span>
+                        >JIMAT {{ discountPercent(product.price, product.member_price) }}%</span>
+
+                        <!-- Draft badge, admin catalogue only -->
+                        <span
+                            v-if="isAdmin && !isMall && !product.status"
+                            class="absolute right-2 top-2 rounded-lg bg-gray-900/80 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm"
+                        >DRAF</span>
+
+                        <!-- Low stock nudge -->
+                        <span
+                            v-else-if="product.stock > 0 && product.stock <= 5"
+                            class="absolute right-2 top-2 rounded-lg bg-white/95 px-2 py-0.5 text-[10px] font-bold text-red-600 shadow-sm"
+                        >{{ product.stock }} tinggal</span>
+
                         <!-- Out of stock overlay -->
                         <div v-if="product.stock <= 0" class="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
                             <span class="rounded-full bg-gray-900 px-3 py-1 text-xs font-bold text-white">Kehabisan Stok</span>
@@ -221,8 +248,8 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
 
                         <div class="mt-auto pt-2.5">
                             <div class="flex items-baseline gap-1.5">
-                                <span class="text-base font-black text-gray-900">RM {{ Number(product.price ?? 0).toFixed(2) }}</span>
-                                <span v-if="product.member_price != null" class="text-[10px] font-semibold text-amber-600">Ahli RM {{ Number(product.member_price).toFixed(2) }}</span>
+                                <span class="text-base font-black text-gray-900">{{ formatPrice(product.price) }}</span>
+                                <span v-if="product.member_price != null" class="text-[10px] font-semibold text-amber-600">Ahli {{ formatPrice(product.member_price) }}</span>
                             </div>
 
                             <div class="mt-2.5 flex items-center gap-2">
@@ -230,9 +257,12 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
                                     v-if="!isAdmin"
                                     @click="addToCart(product, $event)"
                                     :disabled="product.stock <= 0"
-                                    class="relative z-10 flex-1 rounded-xl bg-gray-900 px-2 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                                    class="relative z-10 flex-1 rounded-xl px-2 py-2 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                                    :class="justAdded === product.id ? 'bg-emerald-600' : 'bg-gray-900 hover:bg-amber-600'"
                                 >
-                                    + Bakul
+                                    <span v-if="justAdded === product.id">✓ Ditambah</span>
+                                    <span v-else-if="product.variations_count > 0">Pilih pilihan</span>
+                                    <span v-else>+ Bakul</span>
                                 </button>
                                 <Link
                                     v-if="isAdmin"
@@ -265,8 +295,27 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
                 </div>
                 <h3 class="text-base font-bold text-gray-900">Tiada produk ditemui</h3>
                 <p class="mx-auto mt-1 max-w-sm text-sm text-gray-500">
-                    {{ search || category_id ? 'Cuba tukar carian atau kategori anda.' : 'Belum ada sebarang produk ditambah untuk masa ini.' }}
+                    {{ hasActiveFilters ? 'Cuba tukar carian atau kategori anda.' : 'Belum ada sebarang produk ditambah untuk masa ini.' }}
                 </p>
+
+                <button
+                    v-if="hasActiveFilters"
+                    class="mt-4 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                    @click="clearFilters"
+                >
+                    Kosongkan penapis
+                </button>
+
+                <Link
+                    v-else-if="isAdmin"
+                    :href="route('products.create')"
+                    class="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-amber-600"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Tambah produk pertama
+                </Link>
             </div>
 
             <!-- ═══ PAGINATION ═══ -->

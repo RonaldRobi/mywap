@@ -3,8 +3,13 @@ import { computed, ref, watch } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useCart } from '@/composables/useCart';
+import { productImageUrl, onImageError, formatPrice } from '@/composables/useProductImage';
 
 const cart = useCart();
+
+// Confirmation state for "add to cart" so the buyer gets clear feedback
+// instead of the button silently doing nothing visible.
+const addedToCart = ref(false);
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -23,23 +28,16 @@ const quantity = ref(1);
 
 // ─── Image Gallery ──────────────────────────────────────────────────────────
 
-// Resolve an image path to a usable URL. Handles paths that may or may not
-// already include the /storage/ prefix, and falls back to a placeholder.
-function productImageUrl(path, seed = 'mywap') {
-    if (!path) {
-        return `https://picsum.photos/seed/${seed}/800/600`;
-    }
-    if (/^https?:\/\//.test(path)) return path;
-    if (path.startsWith('/storage/')) return path;
-    return '/storage/' + path.replace(/^\/+/, '');
-}
-
 const allImages = computed(() => {
     const images = [];
     if (props.product.image) images.push(props.product.image);
     if (props.product.images?.length) images.push(...props.product.images);
     return images;
 });
+
+// Keep sibling links inside whichever storefront the buyer came from.
+const showHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', id);
+const backHref = computed(() => route(props.isMall ? 'mall.index' : 'products.index'));
 
 const selectedImageIndex = ref(0);
 const selectedImage = computed(() => {
@@ -184,6 +182,9 @@ function addToBakul() {
         variation_snapshot: Object.keys(snapshot).length ? JSON.stringify(snapshot) : null,
         option_stock: availableStock.value,
     });
+
+    addedToCart.value = true;
+    setTimeout(() => (addedToCart.value = false), 2500);
 }
 
 // Clamp quantity on stock change
@@ -213,20 +214,13 @@ watch(availableStock, (stock) => {
                 <!-- Left: Image Gallery -->
                 <div class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
                     <!-- Main Image -->
-                    <div class="aspect-[4/3] bg-gray-50 relative overflow-hidden group">
+                    <div class="aspect-square bg-gray-50 relative overflow-hidden group">
                         <img
-                            v-if="selectedImage"
-                            :src="productImageUrl(selectedImage, product.name)"
+                            :src="productImageUrl(selectedImage)"
                             :alt="product.name"
                             class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            @error="onImageError"
                         >
-                        <div v-else class="relative h-full w-full bg-gray-50">
-                            <img
-                                :src="productImageUrl(null, product.id)"
-                                :alt="product.name"
-                                class="h-full w-full object-cover"
-                            >
-                        </div>
                     </div>
                     <!-- Thumbnails -->
                     <div v-if="allImages.length > 1" class="flex gap-2 border-t border-gray-100 p-3 overflow-x-auto">
@@ -237,7 +231,7 @@ watch(availableStock, (stock) => {
                             class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all"
                             :class="selectedImageIndex === i ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-200 hover:border-gray-400'"
                         >
-                            <img :src="productImageUrl(img)" alt="" class="h-full w-full object-cover">
+                            <img :src="productImageUrl(img)" alt="" class="h-full w-full object-cover" @error="onImageError">
                         </button>
                     </div>
                 </div>
@@ -249,11 +243,11 @@ watch(availableStock, (stock) => {
                         <span class="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             {{ product.category?.name }}
                         </span>
+                        <!-- Publication state is an admin concern; buyers never see it. -->
                         <span
-                            v-if="product.status"
-                            class="ml-2 inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
-                        >Aktif</span>
-                        <span v-else class="ml-2 inline-block rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Tidak Aktif</span>
+                            v-if="isAdmin && !product.status"
+                            class="ml-2 inline-block rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700"
+                        >Draf — tidak kelihatan kepada pembeli</span>
                     </div>
 
                     <!-- Name -->
@@ -261,11 +255,11 @@ watch(availableStock, (stock) => {
 
                     <!-- Price -->
                     <div class="mt-3 flex items-baseline gap-3">
-                        <span class="text-3xl font-bold text-gray-900">RM {{ displayPrice.toFixed(2) }}</span>
-                        <span v-if="adjustmentsTotal > 0" class="text-sm text-gray-500 line-through">RM {{ basePrice.toFixed(2) }}</span>
+                        <span class="text-3xl font-bold text-gray-900">{{ formatPrice(displayPrice) }}</span>
+                        <span v-if="adjustmentsTotal > 0" class="text-sm text-gray-500 line-through">{{ formatPrice(basePrice) }}</span>
                         <div v-if="product.member_price != null" class="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1">
-                            <span class="text-xs font-bold text-amber-700">Harga Ahli: RM {{ Number(product.member_price).toFixed(2) }}</span>
-                            <span class="text-[10px] text-amber-500">(log masuk untuk dapat)</span>
+                            <span class="text-xs font-bold text-amber-700">Harga Ahli: {{ formatPrice(product.member_price) }}</span>
+                            <span v-if="!user" class="text-[10px] text-amber-500">(log masuk untuk dapat)</span>
                         </div>
                     </div>
 
@@ -274,7 +268,7 @@ watch(availableStock, (stock) => {
                         <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
-                        Kos Pos: RM {{ postageCost.toFixed(2) }}
+                        Kos Pos: {{ formatPrice(postageCost) }}
                     </div>
                     <div v-else class="mt-1 text-sm text-emerald-600 font-semibold">Percuma Pos</div>
 
@@ -376,6 +370,23 @@ watch(availableStock, (stock) => {
                             </span>
                         </div>
 
+                        <!-- Added-to-cart confirmation -->
+                        <div
+                            v-if="addedToCart"
+                            class="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3"
+                            role="status"
+                        >
+                            <span class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Ditambah ke bakul
+                            </span>
+                            <Link :href="route('mall.cart')" class="shrink-0 text-sm font-bold text-emerald-700 underline hover:text-emerald-900">
+                                Lihat bakul
+                            </Link>
+                        </div>
+
                         <!-- Buy Buttons -->
                         <div class="flex flex-col gap-3">
                             <button
@@ -400,7 +411,7 @@ watch(availableStock, (stock) => {
                             <span v-if="buyForm.processing">Memproses...</span>
                             <span v-else>
                                 Beli Sekarang
-                                <span class="ml-1 text-emerald-200">RM {{ totalPayable.toFixed(2) }}</span>
+                                <span class="ml-1 text-emerald-200">{{ formatPrice(totalPayable) }}</span>
                             </span>
                         </button>
                         </div>
@@ -463,26 +474,21 @@ watch(availableStock, (stock) => {
                     <Link
                         v-for="rp in relatedProducts"
                         :key="rp.id"
-                        :href="route('products.show', rp.id)"
+                        :href="showHref(rp.id)"
                         class="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all hover:shadow-md"
                     >
-                        <div class="aspect-[4/3] bg-gray-100 overflow-hidden">
+                        <div class="aspect-square bg-gray-100 overflow-hidden">
                             <img
-                                v-if="rp.image"
-                                :src="productImageUrl(rp.image, rp.name)"
+                                :src="productImageUrl(rp.image)"
                                 :alt="rp.name"
                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            >
-                            <img
-                                v-else
-                                :src="productImageUrl(null, rp.id)"
-                                :alt="rp.name"
-                                class="h-full w-full object-cover"
+                                loading="lazy"
+                                @error="onImageError"
                             >
                         </div>
                         <div class="p-3">
                             <h4 class="text-sm font-semibold text-gray-900 truncate">{{ rp.name }}</h4>
-                            <p class="mt-1 text-sm font-bold text-gray-900">RM {{ parseFloat(rp.price).toFixed(2) }}</p>
+                            <p class="mt-1 text-sm font-bold text-gray-900">{{ formatPrice(rp.price) }}</p>
                         </div>
                     </Link>
                 </div>
@@ -490,7 +496,7 @@ watch(availableStock, (stock) => {
 
             <!-- Admin Edit -->
             <div class="mt-6 flex flex-wrap items-center justify-between gap-2">
-                <Link :href="route('products.index')" class="text-sm font-semibold text-gray-700 hover:underline">
+                <Link :href="backHref" class="text-sm font-semibold text-gray-700 hover:underline">
                     ← Kembali
                 </Link>
                 <Link

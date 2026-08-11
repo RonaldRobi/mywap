@@ -6,17 +6,24 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with('category', 'organization');
+        $query = Product::with('category', 'organization')->withCount('variations');
 
+        $isMall = $request->routeIs('mall.*');
         $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
-        if ($request->routeIs('mall.*') || ! $isAdmin) {
-            $query->where('status', true);
+
+        // Buyers only ever see published products. Admins keep drafts visible
+        // inside the catalogue so a newly saved draft is never "missing".
+        if ($isMall || ! $isAdmin) {
+            $query->active();
+        } elseif ($request->filled('status')) {
+            $query->where('status', $request->boolean('status'));
         }
 
         if ($request->filled('search')) {
@@ -48,13 +55,13 @@ class ProductController extends Controller
         }
 
         $products = $query->paginate(12)->withQueryString();
-        $categories = Category::all();
+        $categories = Category::orderBy('name')->get();
 
         return Inertia::render('Ecommerce/Products/Index', [
             'products' => $products,
             'categories' => $categories,
-            'filters' => $request->only(['search', 'category_id', 'sort']),
-            'isMall' => $request->routeIs('mall.*'),
+            'filters' => $request->only(['search', 'category_id', 'sort', 'status']),
+            'isMall' => $isMall,
         ]);
     }
 
@@ -72,70 +79,43 @@ class ProductController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        $rules = [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'member_price' => 'nullable|numeric|min:0',
-            'postage_cost' => 'nullable|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|max:2048',
-            'variations' => 'nullable|array',
-            'variations.*.name' => 'required|string|max:255',
-            'variations.*.type' => 'required|in:select,color',
-            'variations.*.required' => 'boolean',
-            'variations.*.options' => 'nullable|array',
-            'variations.*.options.*.name' => 'required|string|max:255',
-            'variations.*.options.*.price_adjustment' => 'nullable|numeric',
-            'variations.*.options.*.stock' => 'nullable|integer|min:0',
-            'variations.*.options.*.hex_color' => 'nullable|string|max:7',
-        ];
+        // The Inertia form posts as multipart/form-data, so `variations` arrives
+        // as a JSON string. Decode it back into an array *before* validating,
+        // otherwise the `array` rule rejects every submission.
+        $this->normalizeVariations($request);
 
-        $request->validate($rules);
+        $validated = $request->validate($this->productRules(), [], $this->validationAttributes());
 
-        $data = $request->only('name', 'description', 'price', 'member_price', 'postage_cost', 'stock', 'category_id');
+        $data = $this->productPayload($request, $validated);
         $data['organisasi_id'] = Auth::user()->current_organization_id ?? null;
-        $data['member_price'] = ($data['member_price'] ?? null) !== '' ? ($data['member_price'] ?? null) : null;
-        $data['status'] = $request->boolean('status', true);
+        $data['images'] = $this->storeExtraImages($request);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
-        $extraImages = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $img) {
-                if ($img) {
-                    $extraImages[] = $img->store('products', 'public');
-                }
-            }
-        }
-        $data['images'] = $extraImages;
-
         $product = Product::create($data);
-
-        $variations = $this->parseVariations($request);
-        if (! empty($variations)) {
-            $this->syncVariations($product, $variations);
-        }
+        $this->syncVariations($product, $validated['variations'] ?? []);
 
         return redirect()->route('products.index')->with('success', 'Produk berjaya ditambah!');
     }
 
     public function show(Request $request, Product $product)
     {
+        // Drafts are previewable by admins only; buyers get a 404 rather than
+        // a page for something that is not on sale.
+        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
+        abort_if(! $product->status && ! $isAdmin, 404);
+
         $product->load([
             'category',
             'organization',
             'variations.options',
         ]);
 
-        $relatedProducts = Product::where('category_id', $product->category_id)
+        $relatedProducts = Product::active()
+            ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->where('status', true)
             ->limit(4)
             ->get();
 
@@ -162,52 +142,29 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $rules = [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'member_price' => 'nullable|numeric|min:0',
-            'postage_cost' => 'nullable|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|max:2048',
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|max:2048',
-            'variations' => 'nullable|array',
-            'variations.*.name' => 'required|string|max:255',
-            'variations.*.type' => 'required|in:select,color',
-            'variations.*.required' => 'boolean',
-            'variations.*.options' => 'nullable|array',
-            'variations.*.options.*.name' => 'required|string|max:255',
-            'variations.*.options.*.price_adjustment' => 'nullable|numeric',
-            'variations.*.options.*.stock' => 'nullable|integer|min:0',
-            'variations.*.options.*.hex_color' => 'nullable|string|max:7',
-        ];
+        $this->normalizeVariations($request);
 
-        $request->validate($rules);
+        $validated = $request->validate($this->productRules(), [], $this->validationAttributes());
 
-        $data = $request->only('name', 'description', 'price', 'member_price', 'postage_cost', 'stock', 'category_id');
-        $data['member_price'] = ($data['member_price'] ?? null) !== '' ? ($data['member_price'] ?? null) : null;
-        $data['status'] = $request->boolean('status', true);
+        $data = $this->productPayload($request, $validated);
 
         if ($request->hasFile('image')) {
+            $this->deleteImage($product->image);
             $data['image'] = $request->file('image')->store('products', 'public');
+        } elseif ($request->boolean('remove_image')) {
+            $this->deleteImage($product->image);
+            $data['image'] = null;
         }
 
         if ($request->hasFile('images')) {
-            $extraImages = [];
-            foreach ($request->file('images') as $img) {
-                if ($img) {
-                    $extraImages[] = $img->store('products', 'public');
-                }
+            foreach (($product->images ?? []) as $old) {
+                $this->deleteImage($old);
             }
-            $data['images'] = $extraImages;
+            $data['images'] = $this->storeExtraImages($request);
         }
 
         $product->update($data);
-
-        $variations = $this->parseVariations($request);
-        $this->syncVariations($product, $variations);
+        $this->syncVariations($product, $validated['variations'] ?? []);
 
         return redirect()->route('products.index')->with('success', 'Produk berjaya dikemaskini!');
     }
@@ -220,14 +177,146 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produk berjaya dipadam!');
     }
 
-    private function parseVariations(Request $request): array
+    /**
+     * Validation rules shared by store() and update().
+     */
+    private function productRules(): array
     {
-        $variations = $request->input('variations');
-        if (is_string($variations)) {
-            return json_decode($variations, true) ?? [];
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'member_price' => 'nullable|numeric|min:0|lte:price',
+            'postage_cost' => 'nullable|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
+            'images' => 'nullable|array|max:6',
+            'images.*' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
+            'variations' => 'nullable|array',
+            'variations.*.name' => 'required|string|max:255',
+            'variations.*.type' => 'required|in:select,color',
+            'variations.*.required' => 'nullable|boolean',
+            'variations.*.options' => 'nullable|array',
+            'variations.*.options.*.name' => 'required|string|max:255',
+            'variations.*.options.*.price_adjustment' => 'nullable|numeric',
+            'variations.*.options.*.stock' => 'nullable|integer|min:0',
+            'variations.*.options.*.hex_color' => 'nullable|string|max:7',
+        ];
+    }
+
+    /**
+     * Human-readable attribute names so validation errors read well in the UI.
+     */
+    private function validationAttributes(): array
+    {
+        return [
+            'name' => 'nama produk',
+            'price' => 'harga',
+            'member_price' => 'harga ahli',
+            'postage_cost' => 'kos pos',
+            'stock' => 'stok',
+            'category_id' => 'kategori',
+            'image' => 'gambar utama',
+            'images' => 'gambar tambahan',
+        ];
+    }
+
+    /**
+     * Build the column payload common to store() and update().
+     */
+    private function productPayload(Request $request, array $validated): array
+    {
+        $data = [
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'price' => $validated['price'],
+            'stock' => $validated['stock'],
+            'category_id' => $validated['category_id'],
+            'status' => $request->boolean('status', true),
+        ];
+
+        $data['member_price'] = $this->nullableDecimal($validated['member_price'] ?? null);
+        $data['postage_cost'] = $this->nullableDecimal($validated['postage_cost'] ?? null);
+
+        return $data;
+    }
+
+    private function nullableDecimal($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
         }
 
-        return $variations ?? [];
+        return (string) $value;
+    }
+
+    /**
+     * Persist the extra gallery images and return their relative paths.
+     *
+     * @return array<int, string>
+     */
+    private function storeExtraImages(Request $request): array
+    {
+        $paths = [];
+
+        foreach ((array) $request->file('images', []) as $img) {
+            if ($img) {
+                $paths[] = $img->store('products', 'public');
+            }
+        }
+
+        return $paths;
+    }
+
+    private function deleteImage(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    /**
+     * The Vue forms submit `variations` as a JSON string because the request is
+     * sent as multipart/form-data (needed for the file inputs). Decode it back
+     * into a real array and merge it into the request so the nested validation
+     * rules apply instead of being silently skipped.
+     */
+    private function normalizeVariations(Request $request): void
+    {
+        $variations = $request->input('variations');
+
+        if (is_string($variations)) {
+            $decoded = json_decode($variations, true);
+            $variations = json_last_error() === JSON_ERROR_NONE && is_array($decoded) ? $decoded : [];
+        }
+
+        $variations = array_values(array_filter(
+            (array) $variations,
+            fn ($v) => is_array($v) && filled($v['name'] ?? null)
+        ));
+
+        foreach ($variations as $i => $variation) {
+            $options = array_values(array_filter(
+                (array) ($variation['options'] ?? []),
+                fn ($o) => is_array($o) && filled($o['name'] ?? null)
+            ));
+
+            $variations[$i]['options'] = array_map(function ($option) {
+                $option['price_adjustment'] = $this->nullableDecimal($option['price_adjustment'] ?? null);
+                $option['stock'] = ($option['stock'] ?? '') === '' ? null : $option['stock'];
+                $option['hex_color'] = filled($option['hex_color'] ?? null) ? $option['hex_color'] : null;
+
+                return $option;
+            }, $options);
+
+            $variations[$i]['required'] = filter_var(
+                $variation['required'] ?? true,
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+
+        $request->merge(['variations' => $variations]);
     }
 
     private function syncVariations(Product $product, array $variations): void

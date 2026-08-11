@@ -289,6 +289,12 @@ class OrderController extends Controller
                     throw new \Exception('Produk tidak dijumpai.');
                 }
 
+                // Drafts are not purchasable. Without this a stale cart (or a
+                // crafted request) could buy a product the admin unpublished.
+                if (! $product->status) {
+                    throw new \Exception('Produk "'.$product->name.'" tidak lagi dijual.');
+                }
+
                 $quantity = $item['quantity'];
                 $unitPrice = (float) $product->price;
                 $variationSnapshot = null;
