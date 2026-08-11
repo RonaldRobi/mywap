@@ -171,7 +171,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/infaq/seed-demo', [InfaqController::class, 'seedDemo'])->name('superadmin.infaq.seed');
         Route::put('/superadmin/infaq/{infaq}', [InfaqController::class, 'update'])->name('superadmin.infaq.update');
         Route::delete('/superadmin/infaq/{infaq}', [InfaqController::class, 'destroy'])->name('superadmin.infaq.destroy');
-        Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCode'])->name('superadmin.infaq.qr');
+        Route::get('/superadmin/infaq/{infaq}/qr', [InfaqController::class, 'qrCodeSuperadmin'])->name('superadmin.infaq.qr');
         Route::get('/superadmin/infaq/{infaq}/donors', [InfaqController::class, 'donors'])->name('superadmin.infaq.donors');
 
         // Donor management
@@ -219,6 +219,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/settings/gemini-key', [SuperadminSystemSettingController::class, 'updateGeminiKey'])->name('superadmin.settings.gemini-key.update');
         Route::post('/superadmin/settings/app-name', [SuperadminSystemSettingController::class, 'updateAppName'])->name('superadmin.settings.app-name.update');
         Route::post('/superadmin/settings/og-image', [SuperadminSystemSettingController::class, 'updateOgImage'])->name('superadmin.settings.og-image.update');
+        Route::post('/superadmin/settings/login-image', [SuperadminSystemSettingController::class, 'updateLoginImage'])->name('superadmin.settings.login-image.update');
+        Route::delete('/superadmin/settings/login-image', [SuperadminSystemSettingController::class, 'removeLoginImage'])->name('superadmin.settings.login-image.remove');
         Route::get('/superadmin/email-templates', [EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
         Route::put('/superadmin/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
         Route::post('/superadmin/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');

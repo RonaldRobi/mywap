@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -23,9 +24,23 @@ class AuthenticatedSessionController extends Controller
 {
     public function create(): Response
     {
+        $loginImagePath = null;
+
+        if (Schema::hasTable('app_settings')) {
+            $rawPath = AppSetting::singleton()->login_image_path;
+
+            if ($rawPath) {
+                $parsedPath = parse_url($rawPath, PHP_URL_PATH);
+                $loginImagePath = is_string($parsedPath) && str_starts_with($parsedPath, '/storage/')
+                    ? $parsedPath
+                    : $rawPath;
+            }
+        }
+
         return Inertia::render('Landing', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'loginImagePath' => $loginImagePath,
         ]);
     }
 

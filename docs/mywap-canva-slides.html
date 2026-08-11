@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Status Projek MyWAP</title>
+  <style>
+    :root {
+      --ink: #17211d;
+      --muted: #61716b;
+      --paper: #f7f1e5;
+      --white: #fffdf7;
+      --green: #164b3e;
+      --mint: #d9ebdf;
+      --gold: #c89839;
+      --clay: #b95f40;
+      --blue: #386a82;
+      --line: #d9cfbc;
+      --soft: rgba(255, 253, 247, .78);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #e7dfcf;
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", sans-serif;
+    }
+
+    .page {
+      width: 1600px;
+      height: 900px;
+      position: relative;
+      overflow: hidden;
+      padding: 66px 78px 62px;
+      background:
+        radial-gradient(circle at 92% 8%, rgba(200, 152, 57, .22), transparent 24%),
+        linear-gradient(135deg, #fffaf0 0%, #f5eedf 58%, #e8deca 100%);
+      page-break-after: always;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 26px;
+      border: 1.5px solid rgba(22, 75, 62, .22);
+      pointer-events: none;
+    }
+
+    .kicker {
+      color: var(--gold);
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1, h2 {
+      color: var(--green);
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      width: 980px;
+      margin-top: 18px;
+      font-size: 72px;
+      line-height: 1.02;
+    }
+
+    h2 {
+      margin-top: 12px;
+      font-size: 48px;
+      line-height: 1.06;
+    }
+
+    h3 {
+      color: var(--green);
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 900;
+    }
+
+    .lead {
+      width: 920px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1.36;
+      font-weight: 550;
+    }
+
+    .footer {
+      position: absolute;
+      right: 78px;
+      bottom: 32px;
+      color: rgba(23, 33, 29, .55);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 18px;
+      position: absolute;
+      left: 78px;
+      right: 78px;
+      top: 365px;
+    }
+
+    .metric {
+      min-height: 148px;
+      padding: 22px 24px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+
+    .metric .num {
+      color: var(--clay);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 48px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .metric p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.3;
+      font-weight: 580;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      position: absolute;
+      left: 78px;
+      right: 78px;
+      bottom: 82px;
+    }
+
+    .module {
+      min-height: 126px;
+      padding: 18px 18px 16px;
+      background: rgba(255, 253, 247, .82);
+      border: 1px solid var(--line);
+    }
+
+    .module p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16.5px;
+      line-height: 1.26;
+      font-weight: 550;
+    }
+
+    .response-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 34px;
+    }
+
+    .response-card {
+      min-height: 205px;
+      padding: 20px 21px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      background: var(--mint);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+    }
+
+    .response-card p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 17.5px;
+      line-height: 1.28;
+      font-weight: 560;
+    }
+
+    .dense-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .dense-card {
+      min-height: 140px;
+      padding: 18px 20px;
+      background: rgba(255, 253, 247, .82);
+      border-left: 7px solid var(--gold);
+      border-top: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dense-card p {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.28;
+      font-weight: 550;
+    }
+
+    .gantt {
+      margin-top: 28px;
+      padding: 18px 18px 14px;
+      background: rgba(255, 253, 247, .74);
+      border: 1px solid var(--line);
+    }
+
+    .gantt-head,
+    .gantt-row {
+      display: grid;
+      grid-template-columns: 300px repeat(8, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .gantt-head {
+      color: var(--green);
+      font-size: 15px;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .gantt-head div:first-child { text-align: left; }
+
+    .gantt-row {
+      min-height: 55px;
+      border-top: 1px solid rgba(217, 207, 188, .75);
+      position: relative;
+    }
+
+    .task {
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.15;
+      font-weight: 850;
+    }
+
+    .cell {
+      height: 26px;
+      background: rgba(217, 207, 188, .36);
+      position: relative;
+    }
+
+    .bar {
+      height: 26px;
+      border-radius: 0;
+    }
+
+    .bar.green { background: var(--green); }
+    .bar.gold { background: var(--gold); }
+    .bar.clay { background: var(--clay); }
+    .bar.blue { background: var(--blue); }
+    .bar.mint { background: #82aa95; }
+    .bar.future { background: repeating-linear-gradient(45deg, #164b3e, #164b3e 8px, #c89839 8px, #c89839 16px); }
+
+    .milestone {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .milestone div {
+      padding: 14px 15px;
+      background: var(--green);
+      color: var(--white);
+      font-size: 16px;
+      line-height: 1.26;
+      font-weight: 700;
+    }
+
+    .payment-layout {
+      display: grid;
+      grid-template-columns: 1fr 430px;
+      gap: 34px;
+      margin-top: 34px;
+      align-items: start;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 253, 247, .82);
+      border: 1px solid var(--line);
+    }
+
+    th {
+      padding: 15px 16px;
+      background: var(--green);
+      color: var(--white);
+      font-size: 17px;
+      text-align: left;
+    }
+
+    td {
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    td small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .summary-card {
+      padding: 26px;
+      background: var(--white);
+      border: 1px solid var(--line);
+    }
+
+    .money-big {
+      margin-top: 12px;
+      color: var(--clay);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 54px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .progress {
+      width: 100%;
+      height: 24px;
+      margin-top: 22px;
+      background: #e4dbc9;
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      width: 39.4%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--clay));
+    }
+
+    .summary-card p {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.32;
+      font-weight: 560;
+    }
+
+    .callout {
+      position: absolute;
+      left: 78px;
+      right: 78px;
+      bottom: 70px;
+      padding: 22px 28px;
+      background: var(--mint);
+      border-left: 8px solid var(--gold);
+      color: var(--green);
+      font-size: 24px;
+      line-height: 1.32;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <section class="page" data-document-role="page" data-label="Status Eksekutif" data-speaker-notes="Buka dengan gambaran bahawa projek bukan lagi di fasa bina asas. Web app sudah siap fungsi utama, sedang minor polish/testing, dan mobile app menjadi fasa seterusnya.">
+    <div class="kicker">MyWAP Project Status</div>
+    <h1>Status Penambahbaikan Sistem dan Kesediaan Deployment</h1>
+    <p class="lead">Sejak permulaan projek pada 14 Mei 2026, MyWAP telah bergerak daripada setup asas kepada sistem web lengkap melibatkan keahlian, organisasi, program, kewangan, kandungan, transaksi, borang, penderma, fasiliti dan migrasi data ahli.</p>
+    <div class="status-strip">
+      <div class="metric">
+        <div class="num">Siap</div>
+        <p>Web app telah lengkap dari sudut fungsi utama dan integrasi modul. Fokus semasa ialah polish, bug fixing, UAT dan regression testing.</p>
+      </div>
+      <div class="metric">
+        <div class="num">9,947</div>
+        <p>Rekod ahli terlibat dalam kerja migrasi, pembersihan data, validasi dan penyelarasan organisasi.</p>
+      </div>
+      <div class="metric">
+        <div class="num">Next</div>
+        <p>Fasa mobile app berasaskan Flutter, packaging Android/iOS, store assets dan submission ke Play Store/App Store.</p>
+      </div>
+    </div>
+    <div class="module-grid">
+      <div class="module"><h3>Keahlian</h3><p>Profil, kad ahli, surat pengesahan PDF, no ahli dan dashboard ahli.</p></div>
+      <div class="module"><h3>Organisasi</h3><p>Roles admin/superadmin, cawangan, negeri, AJK/jawatan dan data organisasi.</p></div>
+      <div class="module"><h3>Program</h3><p>Acara, tempoh program, QR kehadiran, attendance dan borang program.</p></div>
+      <div class="module"><h3>Kewangan</h3><p>Yuran, infaq, transaksi, resit, audit trail, penderma dan BayarCash.</p></div>
+      <div class="module"><h3>Komuniti</h3><p>Usrah, undian awam, broadcast cawangan, video live dan info terkini.</p></div>
+      <div class="module"><h3>Fasiliti</h3><p>Tempahan awam, contact penempah, harga ahli/umum dan pengurusan slot.</p></div>
+      <div class="module"><h3>MyWAP Mall</h3><p>Produk, harga ahli, cart, guest checkout, postage gabungan dan pesanan.</p></div>
+      <div class="module"><h3>Borang</h3><p>Form builder, 9 jenis soalan, pautan awam, emel jemputan dan eksport CSV.</p></div>
+      <div class="module"><h3>Mailer</h3><p>Tetapan Resend/SMTP/Log dari panel superadmin dan emel ujian.</p></div>
+      <div class="module"><h3>Dashboard</h3><p>BM/EN, statistik negeri, laporan CSV dan paparan lebih sesuai ikut role.</p></div>
+    </div>
+    <div class="footer">Status setakat 4 Ogos 2026</div>
+  </section>
+
+  <section class="page" data-document-role="page" data-label="Respon Tester" data-speaker-notes="Slide ini menjawab permintaan status penambahbaikan sistem daripada komen tester. Tekankan bahawa komen telah diterjemah menjadi perubahan fungsi sebenar, bukan kosmetik sahaja.">
+    <div class="kicker">Respon Maklum Balas Tester</div>
+    <h2>Penambahbaikan Yang Telah Dilaksanakan Berdasarkan Komen Semakan</h2>
+    <div class="response-grid">
+      <div class="response-card">
+        <span class="tag">Dashboard & Bahasa</span>
+        <h3>BM/EN + statistik negeri</h3>
+        <p>Sistem i18n ringan dibina, butang tukar bahasa ditambah, menu/header/footer diterjemah, dan paparan “Cawangan Aktif” diganti kepada “Jumlah Ahli Mengikut Negeri”.</p>
+      </div>
+      <div class="response-card">
+        <span class="tag">Program & QR</span>
+        <h3>Tempoh, update & QR kehadiran</h3>
+        <p>Dropdown tempoh separuh hari/1 hari/custom, bug kemaskini program dibaiki, QR PNG 1024px ditambah, dan attendance semua organisasi dipaparkan tepat.</p>
+      </div>
+      <div class="response-card">
+        <span class="tag">Undian Awam</span>
+        <h3>Maklum balas tanpa login</h3>
+        <p>Route awam `/polls/public/{poll}` dibina, respon anonim dibenarkan, halaman QR admin disediakan, serta muat turun PNG untuk poster program.</p>
+      </div>
+      <div class="response-card">
+        <span class="tag">Ahli & Yuran</span>
+        <h3>Lebih sopan untuk ahli</h3>
+        <p>Kad “Yuran Tertunggak” dibuang dari dashboard ahli, “Usrah” ditukar kepada “Cawangan Ahli”, notifikasi yuran tahunan ditambah dan “Lunas” diseragamkan kepada “Selesai”.</p>
+      </div>
+      <div class="response-card">
+        <span class="tag">Dokumen Ahli</span>
+        <h3>Surat pengesahan PDF</h3>
+        <p>Butang Surat Pengesahan ditambah pada kad ahli, lengkap dengan maklumat ahli, organisasi, cawangan, negeri, emel, telefon dan ruang tandatangan rasmi.</p>
+      </div>
+      <div class="response-card">
+        <span class="tag">Info & Video</span>
+        <h3>Kategori + YouTube Live</h3>
+        <p>Padam kategori Info Terkini dibina secara selamat, dan format YouTube `/live/` kini diterima untuk simpanan, preview thumbnail dan embed video.</p>
+      </div>
+    </div>
+    <div class="footer">Fokus: menyelesaikan isu sebenar yang dibangkitkan semasa testing</div>
+  </section>
+
+  <section class="page" data-document-role="page" data-label="Modul Teknikal" data-speaker-notes="Slide ini tunjuk skop teknikal yang lebih berat: transaksi, penderma, borang, fasiliti, mall, mailer dan migrasi.">
+    <div class="kicker">Technical Completion Scope</div>
+    <h2>Modul Tambahan dan Fix Kritikal Yang Telah Disiapkan</h2>
+    <div class="dense-grid">
+      <div class="dense-card">
+        <h3>Transaksi: carian, filter, eksport & idempotency</h3>
+        <p>Admin/superadmin boleh cari nama, emel, rujukan dan penerangan; tapis tarikh; eksport CSV; lihat badge jenis/status BM. Callback BayarCash kini idempotent untuk elak transaksi pendua.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Penderma: donor tracking merentas kempen</h3>
+        <p>Jadual Donor, deduplikasi emel/telefon/akaun, statistik sumbangan, senarai penderma, detail sejarah kempen dan command backfill untuk data sedia ada.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Borang: pengganti Google Forms</h3>
+        <p>CRUD borang, 9 jenis soalan, soalan wajib, susunan, pautan awam token, attach program/organisasi, emel penerima, paparan jawapan dan eksport CSV.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Perkhidmatan/Fasiliti: tempahan awam</h3>
+        <p>Tempahan dibuka kepada orang luar, medan contact, harga ahli/umum, borang tarikh + masa, pengiraan harga langsung dan senarai admin dengan contact penempah.</p>
+      </div>
+      <div class="dense-card">
+        <h3>MyWAP Mall: cart, guest checkout & harga ahli</h3>
+        <p>Bakul localStorage, badge troli, harga ahli, checkout tetamu, public order view, postage gabungan dan fix route lama yang menyebabkan dashboard blank.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Mailer & komunikasi organisasi</h3>
+        <p>Tetapan emel Resend/SMTP/Log dari panel superadmin, emel ujian, social/website link organisasi, broadcast ikut cawangan dan penanda live stream.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Migrasi data ahli berskala besar</h3>
+        <p>Semakan struktur legasi, import, pembersihan, validasi dan pemetaan organisasi melibatkan 9,947 rekod ahli bagi memastikan dashboard dan laporan lebih tepat.</p>
+      </div>
+      <div class="dense-card">
+        <h3>Regression & UAT readiness</h3>
+        <p>Checklist testing disediakan merangkumi dashboard, QR, program, yuran, surat PDF, fasiliti, mall, transaksi, donor, form builder dan mailer.</p>
+      </div>
+    </div>
+    <div class="footer">Skop ini menunjukkan web app berada pada fasa akhir penstabilan, bukan fasa pembangunan awal</div>
+  </section>
+
+  <section class="page" data-document-role="page" data-label="Gantt Timeline" data-speaker-notes="Gunakan slide ini untuk menunjukkan progres teknikal dari 14 Mei hingga sekarang. Bar terakhir menunjukkan fasa mobile yang bergantung kepada kesinambungan bayaran.">
+    <div class="kicker">Gantt Chart Timeline</div>
+    <h2>Gerak Kerja Projek MyWAP: 14 Mei 2026 Hingga Pra-Muktamar</h2>
+    <div class="gantt">
+      <div class="gantt-head">
+        <div>Workstream</div>
+        <div>Mei W3</div><div>Mei W4</div><div>Jun W1</div><div>Jun W2</div><div>Jun W3</div><div>Jul W1</div><div>Jul W3</div><div>Ogos W1-W2</div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Kick-off, skop, database, roles & organisasi</div>
+        <div class="bar green"></div><div class="bar green"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Keahlian, auth, OTP, onboarding & profil</div>
+        <div class="cell"></div><div class="bar gold"></div><div class="bar gold"></div><div class="bar gold"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Migrasi, cleansing & validasi 9,947 rekod ahli</div>
+        <div class="cell"></div><div class="cell"></div><div class="bar clay"></div><div class="bar clay"></div><div class="bar clay"></div><div class="bar clay"></div><div class="cell"></div><div class="cell"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Program, QR attendance, undian, video & kandungan</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="bar blue"></div><div class="bar blue"></div><div class="bar blue"></div><div class="bar blue"></div><div class="cell"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Yuran, infaq, transaksi, donor & audit trail</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="bar mint"></div><div class="bar mint"></div><div class="bar mint"></div><div class="cell"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Fasiliti, MyWAP Mall, form builder & mailer</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="bar gold"></div><div class="bar gold"></div><div class="bar gold"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Maklum balas tester, bug fixing, polish & UAT</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="bar clay"></div><div class="bar clay"></div>
+      </div>
+      <div class="gantt-row">
+        <div class="task">Flutter native app, signing & store submission</div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="bar future"></div>
+      </div>
+    </div>
+    <div class="milestone">
+      <div>Web app: fungsi utama siap dan sedang final polish/testing.</div>
+      <div>UAT: fokus kepada kestabilan, regression dan pembetulan isu tester.</div>
+      <div>Mobile: conversion Flutter + Android/iOS build ialah fasa seterusnya.</div>
+      <div>Store review: perlu buffer masa sebelum Muktamar.</div>
+    </div>
+    <div class="footer">Bar berjalur menunjukkan fasa seterusnya yang perlu dimulakan segera</div>
+  </section>
+
+  <section class="page" data-document-role="page" data-label="Bayaran dan Fasa Mobile" data-speaker-notes="Bentangkan bayaran secara profesional. Ayat callout sengaja diplomatik: bukan mendesak secara kasar, tetapi mengaitkan baki bayaran dengan keperluan teknikal mobile deployment.">
+    <div class="kicker">Payment & Deployment Readiness</div>
+    <h2>Status Bayaran dan Keperluan Penyelesaian Baki Sebelum Fasa Mobile</h2>
+    <div class="payment-layout">
+      <table>
+        <thead>
+          <tr><th>Organisasi</th><th>Komitmen</th><th>Dibayar</th><th>Baki</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>WADAH<small>50% jumlah projek</small></td>
+            <td>RM17,600.00</td>
+            <td>RM10,000.00<small>14 Mei 2026</small></td>
+            <td>RM7,600.00</td>
+          </tr>
+          <tr>
+            <td>ABIM<small>40% jumlah projek</small></td>
+            <td>RM14,080.00</td>
+            <td>RM2,346.67<small>16 Julai 2026</small></td>
+            <td>RM11,733.33</td>
+          </tr>
+          <tr>
+            <td>PKPIM<small>10% jumlah projek</small></td>
+            <td>RM3,520.00</td>
+            <td>RM1,520.00<small>22 Julai 2026</small></td>
+            <td>RM2,000.00</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="summary-card">
+        <h3>Jumlah Projek</h3>
+        <div class="money-big">RM35,200</div>
+        <p>Diterima setakat ini: <strong>RM13,866.67</strong></p>
+        <div class="progress"><span></span></div>
+        <p>Kutipan semasa sekitar <strong>39.4%</strong>. Baki keseluruhan: <strong>RM21,333.33</strong>.</p>
+        <p>Keperluan seterusnya: Flutter conversion, store assets, signing, compliance, submission dan review Android/iOS.</p>
+      </div>
+    </div>
+    <div class="callout">Untuk memastikan sasaran sebelum Muktamar lebih realistik, penyelesaian baki dalam tempoh terdekat akan memberi ruang kerja yang mencukupi bagi deployment mobile app, semakan store dan pembetulan akhir selepas review.</div>
+    <div class="footer">Jumlah diterima: RM13,866.67 | Baki: RM21,333.33</div>
+  </section>
+</body>
+</html>

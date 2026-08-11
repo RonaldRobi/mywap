@@ -16,6 +16,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    loginImagePath: {
+        type: String,
+        default: null,
+    },
     chatbotLogoPath: {
         type: String,
         default: null,
@@ -98,6 +102,10 @@ const ogForm = useForm({
     og_image: null,
 });
 
+const loginImageForm = useForm({
+    login_image: null,
+});
+
 const chatbotForm = useForm({
     chatbot_logo: null,
 });
@@ -124,6 +132,24 @@ function uploadOgImage() {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => ogForm.reset('og_image'),
+    });
+}
+
+function uploadLoginImage() {
+    loginImageForm.post(route('superadmin.settings.login-image.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => loginImageForm.reset('login_image'),
+    });
+}
+
+function removeLoginImage() {
+    if (! confirm('Buang gambar halaman log masuk?')) {
+        return;
+    }
+
+    loginImageForm.delete(route('superadmin.settings.login-image.remove'), {
+        preserveScroll: true,
     });
 }
 
@@ -343,6 +369,47 @@ onBeforeUnmount(() => {
                         >
                             {{ ogForm.processing ? 'Memuat naik...' : 'Simpan Gambar OG' }}
                         </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Gambar Halaman Log Masuk</h2>
+                <p class="mt-1 text-xs text-gray-500">Gambar yang dipaparkan pada panel kiri halaman log masuk. Cadangan saiz: <strong>1200 × 800px</strong> (nisbah 3:2), format JPG/PNG/WEBP. Jika tiada gambar, panel akan memaparkan reka bentuk lalai.</p>
+
+                <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div class="flex h-32 w-56 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+                        <img v-if="loginImagePath" :src="loginImagePath" alt="Gambar Log Masuk" class="h-28 w-52 rounded-xl object-cover">
+                        <span v-else class="text-xs font-semibold text-gray-400">Tiada gambar</span>
+                    </div>
+
+                    <form class="flex-1 space-y-2" @submit.prevent="uploadLoginImage">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            :disabled="!canManageSystemLogo"
+                            @change="loginImageForm.login_image = $event.target.files[0]"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                        >
+                        <p v-if="loginImageForm.errors.login_image" class="text-xs text-red-500">{{ loginImageForm.errors.login_image }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                type="submit"
+                                :disabled="loginImageForm.processing || !canManageSystemLogo"
+                                class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                            >
+                                {{ loginImageForm.processing ? 'Memuat naik...' : 'Simpan Gambar' }}
+                            </button>
+                            <button
+                                v-if="loginImagePath"
+                                type="button"
+                                :disabled="loginImageForm.processing || !canManageSystemLogo"
+                                @click="removeLoginImage"
+                                class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                            >
+                                Buang Gambar
+                            </button>
+                        </div>
                     </form>
                 </div>
             </section>

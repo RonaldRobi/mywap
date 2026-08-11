@@ -23,6 +23,10 @@ defineProps({
     status: {
         type: String,
     },
+    loginImagePath: {
+        type: String,
+        default: null,
+    },
 });
 
 const form = useForm({
@@ -331,43 +335,42 @@ const sendResetLink = () => {
     <Head title="myWAP" />
 
     <AuroraBackground>
-        <div class="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-3 py-6 sm:px-4 sm:py-10 md:px-8">
+        <div class="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-3 py-6 sm:px-4 sm:py-10 md:px-8 lg:items-center">
             <div class="grid w-full grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
                 <section class="hidden rounded-[32px] border border-white/10 bg-white/5 p-10 text-white backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
                     <div>
                         <p class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100">
-                            Lifecycle Membership
+                            PKPIM &middot; ABIM &middot; WADAH
                         </p>
                         <h1 class="mt-5 text-5xl font-black tracking-tight">myWAP</h1>
                         <p class="mt-4 max-w-lg text-sm leading-relaxed text-slate-200">
-                            Platform pengurusan keahlian berfasa untuk PKPIM, ABIM dan WADAH dengan automasi transisi umur.
+                            Platform pengurusan keahlian bersepadu untuk PKPIM, ABIM dan WADAH dalam satu ekosistem digital.
                         </p>
+
+                        <div
+                            v-if="loginImagePath"
+                            class="mt-7 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl shadow-slate-950/40"
+                        >
+                            <img
+                                :src="loginImagePath"
+                                alt=""
+                                class="aspect-[3/2] w-full object-cover"
+                                loading="lazy"
+                            >
+                        </div>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-3 gap-3 text-center">
-                            <div class="rounded-2xl border border-indigo-300/15 bg-indigo-400/10 p-3 backdrop-blur-sm">
-                                <p class="text-[10px] font-semibold uppercase text-indigo-200">PKPIM</p>
-                                <p class="mt-1 text-xs font-bold text-white">&lt; 20</p>
-                            </div>
-                            <div class="rounded-2xl border border-emerald-300/15 bg-emerald-400/10 p-3 backdrop-blur-sm">
-                                <p class="text-[10px] font-semibold uppercase text-emerald-200">ABIM</p>
-                                <p class="mt-1 text-xs font-bold text-white">20 - 29</p>
-                            </div>
-                            <div class="rounded-2xl border border-amber-300/15 bg-amber-400/10 p-3 backdrop-blur-sm">
-                                <p class="text-[10px] font-semibold uppercase text-amber-200">WADAH</p>
-                                <p class="mt-1 text-xs font-bold text-white">30+</p>
-                            </div>
-                        </div>
-
-                        <div class="rounded-3xl border border-white/10 bg-slate-950/30 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Unified access</p>
-                            <div class="mt-3 grid grid-cols-3 gap-2">
-                                <div class="h-16 rounded-2xl bg-gradient-to-b from-cyan-400/20 to-transparent"></div>
-                                <div class="h-16 rounded-2xl bg-gradient-to-b from-emerald-400/20 to-transparent"></div>
-                                <div class="h-16 rounded-2xl bg-gradient-to-b from-violet-400/20 to-transparent"></div>
-                            </div>
-                        </div>
+                    <div class="mt-8 rounded-3xl border border-white/10 bg-slate-950/30 p-5">
+                        <p class="text-sm font-semibold text-white">Belum menjadi ahli?</p>
+                        <p class="mt-1 text-xs leading-relaxed text-slate-300">
+                            Daftar dalam beberapa minit. Organisasi anda ditentukan automatik mengikut umur.
+                        </p>
+                        <Link
+                            :href="route('register')"
+                            class="mt-4 block w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-slate-100"
+                        >
+                            Daftar Jadi Ahli Baru
+                        </Link>
                     </div>
                 </section>
 
@@ -380,16 +383,33 @@ const sendResetLink = () => {
                     </div>
 
                     <div class="relative z-10 mb-5 lg:hidden">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">Lifecycle Membership</p>
-                        <h1 class="mt-1 text-3xl font-black text-slate-900">myWAP</h1>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[11px] sm:tracking-[0.25em]">
+                            PKPIM &middot; ABIM &middot; WADAH
+                        </p>
+                        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">myWAP</h1>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-600">
+                            Platform pengurusan keahlian bersepadu untuk PKPIM, ABIM dan WADAH dalam satu ekosistem digital.
+                        </p>
+
+                        <div
+                            v-if="loginImagePath"
+                            class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm"
+                        >
+                            <img
+                                :src="loginImagePath"
+                                alt=""
+                                class="aspect-[16/9] w-full object-cover sm:aspect-[3/2]"
+                                loading="lazy"
+                            >
+                        </div>
                     </div>
 
                     <div class="relative z-10">
-                        <h2 class="text-3xl font-black text-slate-900">Log Masuk</h2>
+                        <h2 class="text-2xl font-black text-slate-900 sm:text-3xl">Log Masuk</h2>
                         <p class="mt-1 text-sm text-slate-500">Akses papan pemuka mengikut peranan anda.</p>
                     </div>
 
-                    <div v-if="status" class="relative z-10 mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                    <div v-if="status" class="relative z-10 mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
                         {{ status }}
                     </div>
 
@@ -451,35 +471,49 @@ const sendResetLink = () => {
                                 </button>
                             </form>
 
-                            <div class="space-y-2 text-center text-sm">
+                            <div class="text-center text-sm">
                                 <button
                                     type="button"
-                                    class="block w-full font-semibold text-emerald-700 hover:text-emerald-600"
-                                    @click="resetFlow(); flow = 'first-time'"
-                                >
-                                    Log Masuk Kali Pertama
-                                </button>
-                                <button
-                                    type="button"
-                                    class="block w-full font-semibold text-slate-600 hover:text-slate-500"
+                                    class="font-semibold text-slate-600 hover:text-slate-500"
                                     @click="resetFlow(); flow = 'forgot-id'"
                                 >
                                     Lupa Kata Laluan / ID Ahli
                                 </button>
                             </div>
 
-                            <p class="text-center text-sm text-slate-500 pt-2 border-t border-slate-200">
-                                <Link :href="route('infaq.index')" class="font-semibold text-emerald-700 hover:text-emerald-600">Kempen Sumbangan</Link>
-                                <span class="mx-2 text-slate-300">|</span>
-                                <Link :href="route('articles.index')" class="font-semibold text-slate-600 hover:text-slate-500">Artikel</Link>
-                            </p>
+                            <!-- Belum ada akaun? -->
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                                <p class="text-center text-sm font-semibold text-slate-900">Belum ada akaun?</p>
 
-                            <p class="text-center text-sm text-slate-500">
-                                Pengguna baru?
-                                <Link :href="route('register')" class="font-semibold text-cyan-700 hover:text-cyan-600">
-                                    Daftar akaun
+                                <Link
+                                    :href="route('register')"
+                                    class="mt-3 block w-full rounded-3xl bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-600"
+                                >
+                                    Daftar Jadi Ahli Baru
                                 </Link>
-                            </p>
+                                <p class="mt-2 text-center text-xs text-slate-500">
+                                    Untuk anda yang belum pernah menjadi ahli PKPIM, ABIM atau WADAH.
+                                </p>
+
+                                <div class="my-3 border-t border-slate-200"></div>
+
+                                <button
+                                    type="button"
+                                    class="block w-full rounded-3xl border border-emerald-600 px-4 py-3 text-center text-base font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                                    @click="resetFlow(); flow = 'first-time'"
+                                >
+                                    Aktifkan Akaun Ahli Sedia Ada
+                                </button>
+                                <p class="mt-2 text-center text-xs text-slate-500">
+                                    Untuk ahli berdaftar yang belum pernah log masuk ke myWAP.
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-slate-200 pt-3 text-center text-sm text-slate-500">
+                                <Link :href="route('infaq.index')" class="font-semibold text-emerald-700 hover:text-emerald-600">Kempen Sumbangan</Link>
+                                <span class="text-slate-300">|</span>
+                                <Link :href="route('articles.index')" class="font-semibold text-slate-600 hover:text-slate-500">Artikel</Link>
+                            </div>
                         </div>
 
                         <!-- ─── FIRST-TIME SETUP ────────────────────────────── -->
@@ -487,17 +521,21 @@ const sendResetLink = () => {
                             <div class="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    class="rounded-3xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                                    class="shrink-0 rounded-3xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
                                     @click="resetFlow()"
                                 >
                                     Kembali
                                 </button>
-                                <h3 class="text-lg font-bold text-slate-900">Log Masuk Kali Pertama</h3>
+                                <h3 class="text-base font-bold text-slate-900 sm:text-lg">Aktifkan Akaun Ahli Sedia Ada</h3>
                             </div>
 
                             <!-- Step 1: IC -->
                             <div v-if="ftStep === 'ic'" class="space-y-4">
                                 <p class="text-sm text-slate-600">Masukkan No Kad Pengenalan / Passport untuk memulakan persediaan akaun.</p>
+                                <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                    Bahagian ini untuk <strong>ahli yang sudah berdaftar</strong>. Jika anda belum pernah menjadi ahli,
+                                    sila <Link :href="route('register')" class="font-semibold underline hover:text-amber-900">daftar jadi ahli baru</Link>.
+                                </p>
                                 <div class="relative">
                                     <input
                                         id="ft_ic"
@@ -629,12 +667,12 @@ const sendResetLink = () => {
                             <div class="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    class="rounded-3xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                                    class="shrink-0 rounded-3xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
                                     @click="resetFlow()"
                                 >
                                     Kembali
                                 </button>
-                                <h3 class="text-lg font-bold text-slate-900">Lupa Kata Laluan / ID Ahli</h3>
+                                <h3 class="text-base font-bold text-slate-900 sm:text-lg">Lupa Kata Laluan / ID Ahli</h3>
                             </div>
 
                             <!-- Step 1: IC -->
@@ -737,17 +775,39 @@ const sendResetLink = () => {
                     <Modal :show="showFirstTimePrompt" @close="closeFirstTimePrompt" maxWidth="md">
                         <div class="p-6">
                             <h2 class="text-xl font-bold text-slate-900">Selamat Datang ke myWAP</h2>
-                            <p class="mt-3 text-sm leading-relaxed text-slate-600">
-                                Jika ini adalah log masuk kali pertama anda, sila tekan butang
-                                <button @click="promptGoFirstTime" class="font-semibold text-emerald-700 underline hover:text-emerald-600">
-                                    'Log Masuk Kali Pertama'
+                            <p class="mt-2 text-sm text-slate-600">Pilih keadaan yang sesuai dengan anda:</p>
+
+                            <div class="mt-4 space-y-3">
+                                <Link
+                                    :href="route('register')"
+                                    class="block rounded-2xl border border-cyan-200 bg-cyan-50 p-4 transition hover:border-cyan-300 hover:bg-cyan-100"
+                                >
+                                    <p class="text-sm font-bold text-slate-900">Saya belum menjadi ahli</p>
+                                    <p class="mt-1 text-xs leading-relaxed text-slate-600">
+                                        Daftar sebagai ahli baru PKPIM, ABIM atau WADAH.
+                                    </p>
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    @click="promptGoFirstTime"
+                                    class="block w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left transition hover:border-emerald-300 hover:bg-emerald-100"
+                                >
+                                    <p class="text-sm font-bold text-slate-900">Saya ahli, tapi belum pernah log masuk</p>
+                                    <p class="mt-1 text-xs leading-relaxed text-slate-600">
+                                        Aktifkan akaun anda dengan No Kad Pengenalan dan emel.
+                                    </p>
                                 </button>
-                                di bawah borang log masuk untuk persediaan akaun.
-                            </p>
-                            <p class="mt-2 text-sm text-slate-600">Pengguna sedia ada boleh log masuk seperti biasa.</p>
-                            <div class="mt-6 flex justify-end">
-                                <button @click="closeFirstTimePrompt" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-                                    OK, Faham
+
+                                <button
+                                    type="button"
+                                    @click="closeFirstTimePrompt"
+                                    class="block w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300 hover:bg-slate-100"
+                                >
+                                    <p class="text-sm font-bold text-slate-900">Saya sudah ada akaun</p>
+                                    <p class="mt-1 text-xs leading-relaxed text-slate-600">
+                                        Terus log masuk seperti biasa.
+                                    </p>
                                 </button>
                             </div>
                         </div>
@@ -755,14 +815,32 @@ const sendResetLink = () => {
 
                     <Modal :show="showIcNotFoundModal" @close="showIcNotFoundModal = false" maxWidth="md">
                         <div class="p-6">
-                            <h2 class="text-xl font-bold text-slate-900">Ahli Tidak Dijumpai</h2>
+                            <h2 class="text-xl font-bold text-slate-900">Rekod Ahli Tidak Dijumpai</h2>
                             <p class="mt-3 text-sm leading-relaxed text-slate-600">
-                                No IC/Pasport yang anda masukkan tidak ditemui dalam sistem.
-                                Sila hubungi <strong>urusetia organisasi</strong> masing-masing untuk bantuan lanjut.
+                                No Kad Pengenalan / Passport yang anda masukkan tiada dalam rekod keahlian kami.
                             </p>
+
+                            <div class="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+                                <p class="text-sm font-semibold text-slate-900">Belum pernah menjadi ahli?</p>
+                                <p class="mt-1 text-sm text-slate-600">
+                                    Anda boleh mendaftar sekarang. Organisasi anda ditentukan automatik mengikut umur.
+                                </p>
+                                <Link
+                                    :href="route('register')"
+                                    class="mt-3 block w-full rounded-xl bg-cyan-700 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-cyan-600"
+                                >
+                                    Daftar Jadi Ahli Baru
+                                </Link>
+                            </div>
+
+                            <p class="mt-4 text-sm leading-relaxed text-slate-600">
+                                Jika anda pasti sudah berdaftar sebagai ahli, sila semak semula nombor anda atau
+                                hubungi <strong>urusetia organisasi</strong> anda untuk bantuan.
+                            </p>
+
                             <div class="mt-6 flex justify-end">
-                                <button @click="showIcNotFoundModal = false" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-                                    OK
+                                <button @click="showIcNotFoundModal = false" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                                    Cuba Nombor Lain
                                 </button>
                             </div>
                         </div>

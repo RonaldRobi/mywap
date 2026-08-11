@@ -20,6 +20,7 @@ class AppSetting extends Model
     protected $fillable = [
         'app_name',
         'og_image_path',
+        'login_image_path',
         'system_logo_path',
         'splash_image_path',
         'splash_background_color',
