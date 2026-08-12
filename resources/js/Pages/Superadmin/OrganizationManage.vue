@@ -364,7 +364,7 @@ function updateOrganizationLogo(organization) {
                                         class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-2"
                                     >
                                         <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-200">
-                                            <img v-if="member.image_path" :src="member.image_path" :alt="member.name" class="h-full w-full object-cover">
+                                            <img v-if="member.image_path" :src="member.image_path" :alt="member.name" class="h-full w-full object-cover object-center">
                                             <div v-else class="grid h-full w-full place-items-center text-sm font-black text-gray-400">
                                                 {{ (member.name || '?').charAt(0).toUpperCase() }}
                                             </div>

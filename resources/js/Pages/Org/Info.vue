@@ -289,12 +289,12 @@ function confirmDelete() {
                         </div>
 
                         <!-- Photo -->
-                        <div class="aspect-square w-full overflow-hidden bg-gray-100">
+                        <div class="aspect-[3/4] w-full overflow-hidden bg-gray-100">
                             <img
                                 v-if="member.image_path"
                                 :src="member.image_path"
                                 :alt="member.name"
-                                class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                                class="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.03]"
                             >
                             <div v-else class="grid h-full w-full place-items-center bg-emerald-50 text-4xl font-black text-emerald-600">
                                 {{ (member.name || '?').charAt(0).toUpperCase() }}
