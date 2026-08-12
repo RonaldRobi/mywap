@@ -72,12 +72,10 @@ const theme = computed(() =>
 );
 
 const colorHoverMap = {
-    'text-slate-500': 'hover:bg-slate-50/70',
-    'text-blue-500':  'hover:bg-blue-50/70',
-    'text-violet-500':'hover:bg-violet-50/70',
-    'text-emerald-500':'hover:bg-emerald-50/70',
-    'text-amber-500': 'hover:bg-amber-50/70',
-    'text-rose-500':  'hover:bg-rose-50/70',
+    'text-[#071525]': 'hover:bg-[#E4EBE5]',
+    'text-[#123D2A]': 'hover:bg-[#E4EBE5]',
+    'text-[#2F6B32]': 'hover:bg-[#EDF5EE]',
+    'text-[#6FBF8A]': 'hover:bg-[#E4EBE5]',
 };
 
 const props = defineProps({
@@ -144,21 +142,21 @@ const ecommerceChildren = computed(() => {
                 label: 'Produk',
                 href: route('products.index'),
                 active: route().current('products.*'),
-                colorClass: 'text-emerald-500',
+                colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>`,
             },
             {
                 label: 'Kategori',
                 href: route('categories.index'),
                 active: route().current('categories.*'),
-                colorClass: 'text-emerald-500',
+                colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>`,
             },
             {
                 label: 'Pesanan',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
-                colorClass: 'text-emerald-500',
+                colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
         ];
@@ -170,14 +168,14 @@ const ecommerceChildren = computed(() => {
                 label: 'Produk',
                 href: route('products.index'),
                 active: route().current('products.*'),
-                colorClass: 'text-emerald-500',
+                colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>`,
             },
             {
                 label: 'Pesanan Saya',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
-                colorClass: 'text-emerald-500',
+                colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
         ];
@@ -194,14 +192,14 @@ const memberFacilityChildren = computed(() => {
                 label: 'Tempah Perkhidmatan/Fasiliti',
                 href: route('member.facilities.index'),
                 active: route().current('member.facilities.*') && queryParam('view') !== 'history',
-                colorClass: 'text-rose-500',
+                colorClass: 'text-[#123D2A]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
             },
             {
                 label: 'Sejarah Tempahan',
                 href: route('member.facilities.index', { view: 'history' }),
                 active: route().current('member.facilities.index') && queryParam('view') === 'history',
-                colorClass: 'text-rose-500',
+                colorClass: 'text-[#123D2A]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
             },
         ];
@@ -217,14 +215,14 @@ const adminFacilityChildren = computed(() => {
                 label: 'Urus Perkhidmatan/Fasiliti',
                 href: route('admin.facilities.manage'),
                 active: route().current('admin.facilities.*'),
-                colorClass: 'text-amber-500',
+                colorClass: 'text-[#071525]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
             },
             {
                 label: 'Senarai Tempahan',
                 href: route('admin.facility-bookings.index'),
                 active: route().current('admin.facility-bookings.*'),
-                colorClass: 'text-amber-500',
+                colorClass: 'text-[#071525]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
             },
         ];
@@ -252,7 +250,7 @@ const navItems = computed(() => [
         label:  'Papan Pemuka',
         href:   route('dashboard'),
         active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>`,
@@ -266,7 +264,7 @@ const navItems = computed(() => [
         label:  'Program',
         href:   route('events.index'),
         active: route().current('events.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>`,
@@ -275,7 +273,7 @@ const navItems = computed(() => [
         label:  'Kehadiran',
         href:   route('admin.attendance'),
         active: route().current('admin.attendance'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>`,
@@ -284,7 +282,7 @@ const navItems = computed(() => [
         label:  'Info Terkini',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.news.manage') : route('news.index'),
         active: route().current('news.*') || route().current('admin.news.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 21H9a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2zM7 7H5a2 2 0 00-2 2v10a2 2 0 002 2h2M12 7h5M12 11h5M12 15h5"/>
                 </svg>`,
@@ -293,7 +291,7 @@ const navItems = computed(() => [
         label:  'Undian',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.polls.index') : route('member.polls.index'),
         active: route().current('*polls.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>`,
@@ -302,7 +300,7 @@ const navItems = computed(() => [
         label:  'Artikel',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.index') : route('articles.index'),
         active: route().current('articles.*') || route().current('admin.articles.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
                 </svg>`,
@@ -311,7 +309,7 @@ const navItems = computed(() => [
         label:  'Video',
         href:   isAdmin.value || isSuperadmin.value ? route('admin.videos.manage') : route('member.videos.index'),
         active: route().current('admin.videos.*') || route().current('member.videos.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>`,
@@ -320,7 +318,7 @@ const navItems = computed(() => [
         label:  'Usrah',
         href:   isMember.value ? route('member.usrah') : route('admin.usrah.index'),
         active: route().current('member.usrah') || route().current('admin.usrah.*'),
-        colorClass: 'text-blue-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
@@ -329,7 +327,7 @@ const navItems = computed(() => [
         label:  'Borang',
         href:   route('admin.forms.index'),
         active: route().current('admin.forms.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>`,
@@ -343,7 +341,7 @@ const navItems = computed(() => [
         label:  'Ahli',
         href:   route('admin.hub.manage'),
         active: route().current('admin.hub.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>`,
@@ -351,38 +349,38 @@ const navItems = computed(() => [
         label:  'Yuran Ahli',
         href:   route('admin.fees.members'),
         active: route().current('admin.fees.members'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
     }, {
         label:  'Cawangan',
         href:   route('branches.index'),
         active: route().current('branches.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
     }, {
         label:  'Jawatan',
         href:   route('positions.index'),
         active: route().current('positions.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
     }, {
         label:  'Tukar Cawangan',
         href:   route('branch-change-requests.index'),
         active: route().current('branch-change-requests.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     }, {
         label:  'Tukar Cawangan (Bulk)',
         href:   route('admin.bulk-branch'),
         active: route().current('admin.bulk-branch'),
-        colorClass: 'text-indigo-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     }] : []),
     ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
         label:  'Tukar Cawangan',
         href:   route('branch-change-requests.index'),
         active: route().current('branch-change-requests.*'),
-        colorClass: 'text-violet-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     }] : []),
 
@@ -394,7 +392,7 @@ const navItems = computed(() => [
         label:  'Ringkasan Kewangan',
         href:   route('admin.finance.index'),
         active: route().current('admin.finance.*'),
-        colorClass: 'text-emerald-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
     }] : []),
     {
@@ -408,7 +406,7 @@ const navItems = computed(() => [
              || route().current('superadmin.transactions')
              || route().current('admin.transactions')
              || route().current('member.financial.overview'),
-        colorClass: 'text-emerald-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>`,
@@ -419,7 +417,7 @@ const navItems = computed(() => [
         active: (isSuperadmin.value || isAdmin.value)
             ? route().current('superadmin.infaq.*')
             : (route().current('infaq.index') || route().current('infaq.show') || route().current('infaq.donate*') || route().current('infaq.success')),
-        colorClass: 'text-emerald-500',
+        colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.12-3 2.5S10.343 13 12 13s3 1.12 3 2.5S13.657 18 12 18m0-10v10m0-10c1.11 0 2.08.402 2.599 1M12 8c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>`,
@@ -428,7 +426,7 @@ const navItems = computed(() => [
         label:  'Penderma',
         href:   route('admin.donors.index'),
         active: route().current('admin.donors.*'),
-        colorClass: 'text-pink-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>`,
@@ -442,7 +440,7 @@ const navItems = computed(() => [
         label: 'MyWAP Mall',
         groupKey: 'ecommerce',
         active: ecommerceActive.value,
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 7H19M7 13l-2-8m5 15a1 1 0 100-2 1 1 0 000 2zm10 0a1 1 0 100-2 1 1 0 000 2z"/></svg>`,
         children: ecommerceChildren.value,
     }] : []),
@@ -455,7 +453,7 @@ const navItems = computed(() => [
         label:  'Popup',
         href:   route('admin.popups.index'),
         active: route().current('admin.popups.*'),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 9l5-5 5 5m-5-5v12"/>
                 </svg>`,
@@ -463,7 +461,7 @@ const navItems = computed(() => [
         label:  'Direktori',
         href:   route('directory.index'),
         active: route().current('directory.index'),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M12 12a4 4 0 100-8 4 4 0 000 8zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>`,
@@ -471,7 +469,7 @@ const navItems = computed(() => [
         label: 'Push Notification',
         href: route('admin.broadcasts.index', { tab: 'broadcast' }),
         active: route().current('admin.broadcasts.*') && (page.url.includes('tab=broadcast') || !page.url.includes('tab=')),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>`,
@@ -479,7 +477,7 @@ const navItems = computed(() => [
         label: 'Pengumuman',
         href: route('admin.broadcasts.index', { tab: 'announcement' }),
         active: route().current('admin.broadcasts.*') && page.url.includes('tab=announcement'),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/>
                 </svg>`,
@@ -488,7 +486,7 @@ const navItems = computed(() => [
         label:  'Urus Pustaka',
         href:   route('admin.library.manage'),
         active: route().current('admin.library.manage'),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
@@ -496,7 +494,7 @@ const navItems = computed(() => [
         label:  'Urus Banner',
         href:   route('superadmin.banners.index'),
         active: route().current('superadmin.banners.*'),
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 3v18m10-18v18"/>
                 </svg>`,
@@ -510,7 +508,7 @@ const navItems = computed(() => [
         label: 'Perkhidmatan/Fasiliti',
         groupKey: 'adminFacilities',
         active: adminFacilitiesActive.value,
-        colorClass: 'text-amber-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
         children: adminFacilityChildren.value,
     }] : []),
@@ -519,7 +517,7 @@ const navItems = computed(() => [
         label: 'Perkhidmatan/Fasiliti',
         groupKey: 'facilities',
         active: facilitiesActive.value,
-        colorClass: 'text-rose-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
         children: memberFacilityChildren.value,
     }] : []),
@@ -532,7 +530,7 @@ const navItems = computed(() => [
         label:  'Organisasi',
         href:   route('superadmin.organizations.index'),
         active: route().current('superadmin.organizations.*'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
                 </svg>`,
@@ -540,7 +538,7 @@ const navItems = computed(() => [
         label:  'Tetapan myWAP',
         href:   route('superadmin.settings.index'),
         active: route().current('superadmin.settings.*'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.36 2.36 1.724 1.724 0 001.065 2.572 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.36 2.36 1.724 1.724 0 00-2.572 1.065 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.36-2.36 1.724 1.724 0 00-1.065-2.572 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.36-2.36 1.724 1.724 0 002.572-1.065z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -549,7 +547,7 @@ const navItems = computed(() => [
         label:  'Template Emel',
         href:   route('admin.email-templates.index'),
         active: route().current('admin.email-templates.*'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>`,
@@ -557,7 +555,7 @@ const navItems = computed(() => [
         label:  'Pangkalan Ilmu',
         href:   route('admin.knowledge-base.index'),
         active: route().current('admin.knowledge-base.*'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
                 </svg>`,
@@ -571,25 +569,25 @@ const navItems = computed(() => [
         label: 'Pustaka',
         href: route('member.library'),
         active: route().current('member.library'),
-        colorClass: 'text-rose-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
     }, {
         label: 'Pengumuman',
         href: route('member.announcements'),
         active: route().current('member.announcements') || route().current('member.hub'),
-        colorClass: 'text-rose-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/></svg>`,
     }, {
         label: 'Kad Ahli',
         href: route('member.card'),
         active: route().current('member.card'),
-        colorClass: 'text-rose-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8h18M7 15h1m3 0h2m-9 5h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`,
     }, {
         label: 'Jemput Ahli',
         href: route('member.referral'),
         active: route().current('member.referral'),
-        colorClass: 'text-rose-500',
+        colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>`,
     }] : []),
 
@@ -601,7 +599,7 @@ const navItems = computed(() => [
         label:  'Profil',
         href:   route('profile.edit'),
         active: route().current('profile.edit'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>`,
@@ -610,7 +608,7 @@ const navItems = computed(() => [
         label:  'Perjalanan',
         href:   route('profile.show'),
         active: route().current('profile.show'),
-        colorClass: 'text-slate-500',
+        colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>`,
@@ -654,14 +652,9 @@ const bottomNavItems = computed(() => {
             ]"
         >
             <!-- Logo / Brand -->
-            <div class="flex items-center gap-3 px-4 h-16 border-b border-gray-100 shrink-0">
-                <MovementBranding compact :mini="true" />
-                <transition name="fade">
-                    <div v-if="sidebarOpen" class="min-w-0 border-l border-[#D5E3D8] pl-3">
-                        <p class="truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#123D2A]">Ekosistem Gerakan</p>
-                        <p class="truncate text-[10px] font-bold text-[#2F6B32]">myWAP · Platform Digital</p>
-                    </div>
-                </transition>
+            <div class="flex justify-center px-3 pt-4 pb-3 border-b border-gray-100 shrink-0">
+                <MovementBranding v-if="sidebarOpen" stacked />
+                <MovementBranding v-else compact :mini="true" />
             </div>
 
             <!-- Organisation badge -->
@@ -866,7 +859,7 @@ const bottomNavItems = computed(() => {
                                             v-for="item in notifications.recent"
                                             :key="item.id"
                                             class="px-4 py-3 border-b border-gray-50"
-                                            :class="item.is_read ? 'bg-white' : 'bg-blue-50/60'"
+                                            :class="item.is_read ? 'bg-white' : 'bg-[#EDF5EE]'"
                                         >
                                             <Link
                                                 v-if="item.action_url"
@@ -970,24 +963,24 @@ const bottomNavItems = computed(() => {
                 <div class="flex items-center justify-between text-xs text-gray-400 pt-4">
                     <p>&copy; {{ new Date().getFullYear() }} myWAP. {{ t('Hak Cipta Terpelihara') }}.</p>
                     <div class="flex items-center gap-4">
-                        <a v-if="org?.website_url" :href="org.website_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition" title="Laman Web">{{ t('Laman Web') }}</a>
-                        <a v-if="org?.facebook_url" :href="org.facebook_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                        <a v-if="org?.website_url" :href="org.website_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition" title="Laman Web">{{ t('Laman Web') }}</a>
+                        <a v-if="org?.facebook_url" :href="org.facebook_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition">
                             <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                         </a>
-                        <a v-if="org?.instagram_url" :href="org.instagram_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                        <a v-if="org?.instagram_url" :href="org.instagram_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition">
                             <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
                         </a>
-                        <a v-if="org?.twitter_url" :href="org.twitter_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                        <a v-if="org?.twitter_url" :href="org.twitter_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition">
                             <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                         </a>
-                        <a v-if="org?.youtube_url" :href="org.youtube_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                        <a v-if="org?.youtube_url" :href="org.youtube_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition">
                             <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                         </a>
-                        <a v-if="org?.tiktok_url" :href="org.tiktok_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition">
+                        <a v-if="org?.tiktok_url" :href="org.tiktok_url" target="_blank" rel="noopener" class="hover:text-[#2F6B32] transition">
                             <svg class="w-3.5 h-3.5 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
                         </a>
-                        <Link :href="route('terms')" class="hover:text-emerald-600 transition">{{ t('Terma & Syarat') }}</Link>
-                        <Link :href="route('privacy')" class="hover:text-emerald-600 transition">{{ t('Privasi') }}</Link>
+                        <Link :href="route('terms')" class="hover:text-[#2F6B32] transition">{{ t('Terma & Syarat') }}</Link>
+                        <Link :href="route('privacy')" class="hover:text-[#2F6B32] transition">{{ t('Privasi') }}</Link>
                     </div>
                 </div>
             </footer>

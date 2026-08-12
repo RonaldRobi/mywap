@@ -4,6 +4,7 @@ import { computed } from 'vue';
 const props = defineProps({
     compact: { type: Boolean, default: false },
     mini: { type: Boolean, default: false },
+    stacked: { type: Boolean, default: false },
     light: { type: Boolean, default: false },
     part: {
         type: String,
@@ -75,6 +76,18 @@ const tone = computed(() => props.light
         <div v-if="!mini" class="hidden min-w-0 sm:block">
             <p class="truncate text-[10px] font-black uppercase tracking-[0.13em] text-[#123D2A]">PKPIM · ABIM · WADAH</p>
             <p class="truncate text-[9px] font-medium text-[#2F6B32]">Ekosistem Gerakan</p>
+        </div>
+    </div>
+
+    <div v-else-if="stacked" class="flex flex-col items-center gap-2.5">
+        <div class="flex items-center gap-1.5 rounded-xl border border-[#D5E3D8] bg-white p-2" aria-label="Logo PKPIM ABIM WADAH">
+            <span v-for="organization in organizations" :key="organization.name" class="flex h-11 w-11 items-center justify-center bg-white p-1">
+                <img :src="organization.logo" :alt="`Logo ${organization.name}`" class="h-full w-full object-contain">
+            </span>
+        </div>
+        <div class="text-center">
+            <p class="text-[10px] font-black uppercase tracking-[0.16em] text-[#123D2A]">Ekosistem Gerakan</p>
+            <p class="mt-0.5 text-[9px] font-bold text-[#2F6B32]">myWAP · Platform Digital</p>
         </div>
     </div>
 
