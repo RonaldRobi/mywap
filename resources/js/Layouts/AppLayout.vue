@@ -260,6 +260,15 @@ const navItems = computed(() => [
     //  KANDUNGAN
     // ═══════════════════════════════════
     { type: 'section', label: 'Kandungan' },
+    ...(org.value?.id ? [{
+        label:  `Info ${org.value.name}`,
+        href:   route('org.info'),
+        active: route().current('org.info') || route().current('org.chart.*'),
+        colorClass: 'text-[#123D2A]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
+                </svg>`,
+    }] : []),
     {
         label:  'Program',
         href:   route('events.index'),

@@ -31,6 +31,7 @@ use App\Http\Controllers\MemberFeeController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrganizationInfoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PopupController;
@@ -212,6 +213,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
         Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
+        Route::post('/superadmin/organizations/{organization}/chart', [SuperadminOrganizationController::class, 'storeChartMember'])->name('superadmin.organizations.chart.store');
+        Route::put('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'updateChartMember'])->name('superadmin.organizations.chart.update');
+        Route::delete('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'destroyChartMember'])->name('superadmin.organizations.chart.destroy');
 
         Route::get('/superadmin/settings', [SuperadminSystemSettingController::class, 'index'])->name('superadmin.settings.index');
         Route::post('/superadmin/settings/system-logo', [SuperadminSystemSettingController::class, 'updateSystemLogo'])->name('superadmin.settings.system-logo.update');
@@ -418,6 +422,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/events/{id}/attend/{token}', [EventController::class, 'recordAttendance'])
         ->name('events.attend');
 
+    // ─── Info Organisasi (Maklumat + Carta Organisasi) ──────────────────────
+    Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');
+
     // ─── Admin / Staff Only ──────────────────────────────────────────────────
     Route::middleware('role:Admin|Superadmin')->group(function () {
         Route::post('/events', [EventController::class, 'store'])->name('events.store');
@@ -429,6 +436,14 @@ Route::middleware('auth')->group(function () {
             ->name('events.qr.download');
         Route::get('/events/{event}/print', [EventController::class, 'printAttendance'])
             ->name('events.print');
+    });
+
+    // ─── Info Organisasi — pengurusan (Admin/Superadmin sahaja) ─────────────
+    Route::middleware('role:Admin|Superadmin')->group(function () {
+        Route::put('/info-organisasi', [OrganizationInfoController::class, 'updateDescription'])->name('org.info.update');
+        Route::post('/info-organisasi/carta', [OrganizationInfoController::class, 'storeChartMember'])->name('org.chart.store');
+        Route::put('/info-organisasi/carta/{member}', [OrganizationInfoController::class, 'updateChartMember'])->name('org.chart.update');
+        Route::delete('/info-organisasi/carta/{member}', [OrganizationInfoController::class, 'destroyChartMember'])->name('org.chart.destroy');
     });
 });
 

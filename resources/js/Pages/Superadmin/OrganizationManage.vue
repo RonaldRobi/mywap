@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     organizations: {
@@ -22,6 +22,7 @@ const editForms = Object.fromEntries(
         organization.id,
         useForm({
             name: organization.name,
+            description: organization.description ?? '',
             color_theme: organization.color_theme,
             min_age: organization.min_age,
             max_age: organization.max_age,
@@ -51,6 +52,63 @@ const logoForms = Object.fromEntries(
         useForm({ organization_logo: null }),
     ])
 );
+
+// ─── Carta Organisasi ─────────────────────────────────────────────────────
+const chartAddForms = Object.fromEntries(
+    props.organizations.map((organization) => [
+        organization.id,
+        useForm({ name: '', position: '', email: '', image: null }),
+    ])
+);
+
+const editingChart = ref(null);
+const chartEditForm = useForm({ name: '', position: '', email: '', image: null });
+const confirmDeleteChart = ref(null);
+
+function openEditChart(organizationId, member) {
+    editingChart.value = { organizationId, member };
+    chartEditForm.reset();
+    chartEditForm.clearErrors();
+    Object.assign(chartEditForm, {
+        name: member.name,
+        position: member.position,
+        email: member.email || '',
+        image: null,
+    });
+}
+
+function closeEditChart() {
+    editingChart.value = null;
+    chartEditForm.reset();
+}
+
+function submitAddChart(organization) {
+    chartAddForms[organization.id].post(route('superadmin.organizations.chart.store', organization.id), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => chartAddForms[organization.id].reset(),
+    });
+}
+
+function submitEditChart(organization) {
+    chartEditForm.put(route('superadmin.organizations.chart.update', [organization.id, editingChart.value.member.id]), {
+        preserveScroll: true,
+        onSuccess: closeEditChart,
+    });
+}
+
+function requestDeleteChart(member) {
+    confirmDeleteChart.value = member;
+}
+
+function confirmDeleteChartMember() {
+    const member = confirmDeleteChart.value;
+    useForm({}).delete(route('superadmin.organizations.chart.destroy', [member.organization_id, member.id]), {
+        preserveScroll: true,
+        onSuccess: () => { confirmDeleteChart.value = null; },
+        onError: () => { confirmDeleteChart.value = null; },
+    });
+}
 
 const dokuWebhookUrl = computed(() => {
     if (typeof window === 'undefined') return '/doku/callback';
@@ -89,7 +147,7 @@ function updateOrganizationLogo(organization) {
         <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
             <div>
                 <h1 class="text-2xl font-black text-gray-900">Organization Management</h1>
-                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, logo, umur tier, warna tema, susunan paparan, payment gateway (BayarCash / DOKU), dan semak jumlah ahli.</p>
+                <p class="mt-1 text-sm text-gray-500">Urus nama organisasi, penerangan (Info), logo, umur tier, warna tema, susunan paparan, payment gateway (BayarCash / DOKU), Carta Organisasi, dan semak jumlah ahli.</p>
             </div>
 
             <div v-if="$page.props.flash?.success" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -153,6 +211,17 @@ function updateOrganizationLogo(organization) {
                             <label class="mb-1 block text-xs font-semibold text-gray-500">Nama Organisasi</label>
                             <input v-model="editForms[organization.id].name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
                             <p v-if="editForms[organization.id].errors.name" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.name }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-gray-500">Penerangan (Info Organisasi)</label>
+                            <textarea
+                                v-model="editForms[organization.id].description"
+                                rows="4"
+                                class="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0"
+                                placeholder="Penerangan ringkas tentang organisasi — dipaparkan pada page Info."
+                            ></textarea>
+                            <p v-if="editForms[organization.id].errors.description" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.description }}</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -281,6 +350,85 @@ function updateOrganizationLogo(organization) {
                             </div>
                         </details>
 
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">
+                                Carta Organisasi
+                                <span class="ml-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ organization.chart_members.length }}</span>
+                            </summary>
+                            <div class="space-y-4 border-t border-gray-100 p-3">
+                                <!-- List -->
+                                <div v-if="organization.chart_members.length" class="space-y-2">
+                                    <div
+                                        v-for="member in organization.chart_members"
+                                        :key="member.id"
+                                        class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-2"
+                                    >
+                                        <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-200">
+                                            <img v-if="member.image_path" :src="member.image_path" :alt="member.name" class="h-full w-full object-cover">
+                                            <div v-else class="grid h-full w-full place-items-center text-sm font-black text-gray-400">
+                                                {{ (member.name || '?').charAt(0).toUpperCase() }}
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate text-sm font-semibold text-gray-900">{{ member.name }}</p>
+                                            <p class="truncate text-xs text-gray-500">{{ member.position }}</p>
+                                            <a v-if="member.email" :href="`mailto:${member.email}`" class="text-[11px] font-medium text-emerald-700 hover:underline">{{ member.email }}</a>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            @click="openEditChart(organization.id, member)"
+                                            class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-gray-500 shadow-sm hover:text-gray-800"
+                                            title="Edit"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            @click="requestDeleteChart({ ...member, organization_id: organization.id })"
+                                            class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-red-500 shadow-sm hover:text-red-600"
+                                            title="Padam"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p v-else class="text-xs text-gray-400">Tiada entri carta organisasi untuk organisasi ini.</p>
+
+                                <!-- Edit form -->
+                                <div v-if="editingChart && editingChart.organizationId === organization.id" class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <p class="text-xs font-bold text-emerald-800">Edit — {{ editingChart.member.name }}</p>
+                                        <button type="button" @click="closeEditChart" class="text-xs font-semibold text-gray-500 hover:text-gray-800">Batal</button>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <input v-model="chartEditForm.name" type="text" placeholder="Nama" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                        <input v-model="chartEditForm.position" type="text" placeholder="Jawatan" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                        <input v-model="chartEditForm.email" type="email" placeholder="Emel" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                        <input type="file" accept="image/jpeg,image/png,image/webp" @change="chartEditForm.image = $event.target.files[0]" class="w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
+                                        <button type="button" @click="submitEditChart(organization)" :disabled="chartEditForm.processing" class="w-full rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                                            {{ chartEditForm.processing ? 'Menyimpan...' : 'Kemas Kini' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Add form -->
+                                <form @submit.prevent="submitAddChart(organization)" class="space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                    <p class="text-xs font-bold text-gray-600">Tambah Ahli Baharu</p>
+                                    <input v-model="chartAddForms[organization.id].name" type="text" placeholder="Nama" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                    <p v-if="chartAddForms[organization.id].errors.name" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.name }}</p>
+                                    <input v-model="chartAddForms[organization.id].position" type="text" placeholder="Jawatan" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                    <p v-if="chartAddForms[organization.id].errors.position" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.position }}</p>
+                                    <input v-model="chartAddForms[organization.id].email" type="email" placeholder="Emel (mailto)" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                    <p v-if="chartAddForms[organization.id].errors.email" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.email }}</p>
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" @change="chartAddForms[organization.id].image = $event.target.files[0]" class="w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
+                                    <p v-if="chartAddForms[organization.id].errors.image" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.image }}</p>
+                                    <button type="submit" :disabled="chartAddForms[organization.id].processing" class="w-full rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
+                                        {{ chartAddForms[organization.id].processing ? 'Menyimpan...' : 'Tambah' }}
+                                    </button>
+                                </form>
+                            </div>
+                        </details>
+
                         <button
                             type="submit"
                             :disabled="editForms[organization.id].processing"
@@ -292,5 +440,32 @@ function updateOrganizationLogo(organization) {
                 </article>
             </div>
         </div>
+
+        <!-- ── Confirm Delete Chart Modal ─────────────────────────────────── -->
+        <transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition ease-in duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="confirmDeleteChart" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="confirmDeleteChart = null">
+                <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl" @click.stop>
+                    <h3 class="text-base font-bold text-gray-900">Padam entri carta?</h3>
+                    <p class="mt-2 text-sm text-gray-600">
+                        Anda pasti mahu memadam <strong>"{{ confirmDeleteChart.name }}"</strong> daripada Carta Organisasi? Tindakan ini tidak boleh dibatalkan.
+                    </p>
+                    <div class="mt-5 flex items-center gap-3">
+                        <button @click="confirmDeleteChartMember" class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors">
+                            Ya, Padam
+                        </button>
+                        <button @click="confirmDeleteChart = null" class="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
     </AppLayout>
 </template>

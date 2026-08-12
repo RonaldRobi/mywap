@@ -16,20 +16,20 @@ const props = defineProps({
 const organizations = [
     {
         name: 'PKPIM',
-        age: '15–25 Tahun',
-        audience: 'Pelajar & Mahasiswa Islam',
+        fullName: 'Persatuan Kebangsaan Pelajar Islam Malaysia',
+        description: 'wadah untuk pelajar dan mahasiswa Islam, sekitar umur 15–25 tahun, yang membina kefahaman Islam, kepimpinan, intelektualisme dan kesedaran sosial dalam kalangan generasi muda.',
         logo: '/storage/logos/organizations/zratUgj9brjqSZMoHiHh8BeyXdUl3Uy2SrgWEph1.png',
     },
     {
         name: 'ABIM',
-        age: '25–40 Tahun',
-        audience: 'Belia Islam',
+        fullName: 'Angkatan Belia Islam Malaysia',
+        description: 'gerakan belia Islam, sekitar umur 25–40 tahun, yang menggerakkan dakwah, pembangunan kepimpinan, ilmu, khidmat masyarakat dan pembinaan masyarakat madani.',
         logo: '/storage/logos/organizations/hREFAvHpwkZILTQczpAomZ0nyoEq4F2JxweJ1zeU.png',
     },
     {
         name: 'WADAH',
-        age: '40+ Tahun',
-        audience: 'Pencerdasan Umat',
+        fullName: 'Wadah Pencerdasan Umat Malaysia',
+        description: 'wadah untuk masyarakat dan generasi yang lebih matang, khususnya 40 tahun ke atas, yang meneruskan agenda pencerdasan umat, kepimpinan, pemikiran dan khidmat kepada masyarakat.',
         logo: '/storage/logos/organizations/TQphsffDuK8ikn8duJ5LNTSIqBb5PnYfwZGlMMl4.png',
     },
 ];
@@ -109,18 +109,27 @@ const tone = computed(() => props.light
         </template>
 
         <template v-if="showDetails">
-            <div class="grid gap-2.5" :class="showHeader ? 'mt-5' : ''">
+            <div class="grid gap-3" :class="showHeader ? 'mt-5' : ''">
                 <article
                     v-for="organization in organizations"
                     :key="organization.name"
-                    class="flex items-center justify-between gap-3 rounded-xl border px-4 py-3"
+                    class="rounded-xl border p-4"
                     :class="tone.card"
                 >
-                    <div class="min-w-0">
-                        <h2 class="text-base font-black tracking-wide" :class="tone.name">{{ organization.name }}</h2>
-                        <p class="mt-0.5 truncate text-xs" :class="tone.audience">{{ organization.audience }}</p>
+                    <div class="flex items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <h2 class="text-sm font-black tracking-wide leading-snug sm:text-base" :class="tone.age">
+                                {{ organization.name }}
+                                <span class="text-[11px] font-semibold sm:text-xs">({{ organization.fullName }})</span>
+                            </h2>
+                            <p class="mt-1 text-xs leading-relaxed" :class="tone.audience">
+                                {{ organization.description }}
+                            </p>
+                        </div>
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#D5E3D8] bg-white p-1.5">
+                            <img :src="organization.logo" :alt="`Logo ${organization.name}`" class="h-full w-full object-contain">
+                        </span>
                     </div>
-                    <span class="shrink-0 text-[11px] font-bold" :class="tone.age">{{ organization.age }}</span>
                 </article>
             </div>
 

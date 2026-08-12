@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Organization;
+use App\Models\OrganizationChartMember;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,7 @@ class SuperadminOrganizationController extends Controller
 
         $organizations = Organization::query()
             ->withCount('members')
+            ->with('chartMembers')
             ->orderBy($hasSortOrderColumn ? 'sort_order' : 'min_age')
             ->orderBy('min_age')
             ->get()
@@ -27,11 +29,20 @@ class SuperadminOrganizationController extends Controller
                 'name' => $organization->name,
                 'slug' => $organization->slug,
                 'color_theme' => $organization->color_theme,
+                'description' => $organization->description,
                 'min_age' => $organization->min_age,
                 'max_age' => $organization->max_age,
                 'logo_path' => $hasLogoColumn ? $this->normalizeStorageUrl($organization->logo_path) : null,
                 'sort_order' => $hasSortOrderColumn ? $organization->sort_order : null,
                 'member_count' => $organization->members_count,
+                'chart_members' => $organization->chartMembers->map(fn ($m) => [
+                    'id' => $m->id,
+                    'name' => $m->name,
+                    'position' => $m->position,
+                    'email' => $m->email,
+                    'image_path' => $m->image_path,
+                    'display_order' => $m->display_order,
+                ]),
                 'payment_gateway' => $organization->payment_gateway,
                 'active_gateway' => $organization->activeGateway(),
                 'bayarcash_api_token' => $organization->bayarcash_api_token,
@@ -66,6 +77,7 @@ class SuperadminOrganizationController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'color_theme' => ['nullable', 'string', 'max:20'],
             'min_age' => ['required', 'integer', 'min:0', 'max:120'],
             'max_age' => ['nullable', 'integer', 'min:0', 'max:120', 'gte:min_age'],
@@ -89,6 +101,7 @@ class SuperadminOrganizationController extends Controller
 
         $payload = [
             'name' => $data['name'],
+            'description' => $data['description'] ?? null,
             'color_theme' => $data['color_theme'] ?? null,
             'min_age' => (int) $data['min_age'],
             'max_age' => $data['max_age'] !== null ? (int) $data['max_age'] : null,
@@ -156,5 +169,90 @@ class SuperadminOrganizationController extends Controller
         }
 
         return $url;
+    }
+
+    // ─── Carta Organisasi (Superadmin) ──────────────────────────────────────
+
+    public function storeChartMember(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $this->validateChartMember($request);
+
+        $imagePath = null;
+        if (! empty($data['image'])) {
+            $imagePath = $data['image']->store("org-chart/{$organization->slug}", 'public');
+        }
+
+        $organization->chartMembers()->create([
+            'name' => $data['name'],
+            'position' => $data['position'],
+            'email' => $data['email'] ?? null,
+            'image_path' => $imagePath ? '/storage/'.ltrim($imagePath, '/') : null,
+            'display_order' => $data['display_order'] ?? 0,
+        ]);
+
+        return back()->with('success', "Entri carta {$organization->name} berjaya ditambah.");
+    }
+
+    public function updateChartMember(Request $request, Organization $organization, OrganizationChartMember $member): RedirectResponse
+    {
+        if ($member->organization_id !== $organization->id) {
+            abort(403);
+        }
+
+        $data = $this->validateChartMember($request);
+
+        $payload = [
+            'name' => $data['name'],
+            'position' => $data['position'],
+            'email' => $data['email'] ?? null,
+            'display_order' => $data['display_order'] ?? 0,
+        ];
+
+        if (! empty($data['image'])) {
+            $this->deleteChartImage($member->image_path);
+
+            $imagePath = $data['image']->store("org-chart/{$organization->slug}", 'public');
+            $payload['image_path'] = '/storage/'.ltrim($imagePath, '/');
+        }
+
+        $member->update($payload);
+
+        return back()->with('success', "Entri carta {$organization->name} berjaya dikemas kini.");
+    }
+
+    public function destroyChartMember(Request $request, Organization $organization, OrganizationChartMember $member): RedirectResponse
+    {
+        if ($member->organization_id !== $organization->id) {
+            abort(403);
+        }
+
+        $this->deleteChartImage($member->image_path);
+        $member->delete();
+
+        return back()->with('success', "Entri carta {$organization->name} berjaya dipadam.");
+    }
+
+    private function validateChartMember(Request $request): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'position' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'display_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+    }
+
+    private function deleteChartImage(?string $imagePath): void
+    {
+        if (! $imagePath) {
+            return;
+        }
+
+        $storedPath = ltrim(str_replace('/storage/', '', parse_url((string) $imagePath, PHP_URL_PATH) ?? ''), '/');
+
+        if ($storedPath !== '' && Storage::disk('public')->exists($storedPath)) {
+            Storage::disk('public')->delete($storedPath);
+        }
     }
 }

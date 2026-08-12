@@ -29,6 +29,7 @@ class Organization extends Model
         'name',
         'slug',
         'color_theme',
+        'description',
         'logo_path',
         'sort_order',
         'min_age',
@@ -165,6 +166,11 @@ class Organization extends Model
     public function positions(): HasMany
     {
         return $this->hasMany(OrganizationPosition::class)->orderBy('display_order');
+    }
+
+    public function chartMembers(): HasMany
+    {
+        return $this->hasMany(OrganizationChartMember::class)->orderBy('display_order');
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
