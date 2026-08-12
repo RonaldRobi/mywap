@@ -1,12 +1,11 @@
 <script setup>
 import Checkbox from '@/Components/Checkbox.vue';
-import AccernityCard from '@/Components/ui/AccernityCard.vue';
-import AuroraBackground from '@/Components/ui/AuroraBackground.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Modal from '@/Components/Modal.vue';
+import MovementBranding from '@/Components/MovementBranding.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -248,64 +247,26 @@ const submit = () => {
 </script>
 
 <template>
-    <AuroraBackground>
+    <div class="min-h-screen bg-[#F4F6F1]">
         <Head title="Log in" />
 
-        <div class="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-5 sm:px-4 sm:py-6 md:px-8 md:py-10 lg:flex-row lg:items-center lg:gap-8">
-
-            <section class="hidden flex-1 lg:block">
-                <div class="max-w-xl">
-                    <p class="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-sm">
-                        myWAP
-                    </p>
-                    <h1 class="mt-5 text-4xl font-black leading-tight text-white xl:text-5xl">
-                        Komuniti Islamik,
-                        <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">lebih teratur & berdaya.</span>
-                    </h1>
-                    <p class="mt-4 text-sm leading-relaxed text-slate-300">
-                        Urus program, infaq, pustaka dan perkembangan ahli dalam satu platform moden.
-                    </p>
-
-                    <div class="mt-8 grid grid-cols-3 gap-3">
-                        <div class="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                            <p class="text-xs text-slate-300">Program</p>
-                            <p class="mt-1 text-xl font-black text-white">Live</p>
-                        </div>
-                        <div class="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                            <p class="text-xs text-slate-300">Infaq</p>
-                            <p class="mt-1 text-xl font-black text-white">Smart</p>
-                        </div>
-                        <div class="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
-                            <p class="text-xs text-slate-300">Members</p>
-                            <p class="mt-1 text-xl font-black text-white">Connected</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                        <div class="flex items-center justify-between text-xs text-slate-300">
-                            <span>Platform Focus</span>
-                            <span class="rounded-full bg-cyan-400/15 px-2 py-1 text-cyan-200">Aurora Background</span>
-                        </div>
-                        <div class="mt-3 h-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-3">
-                            <div class="grid h-full grid-cols-3 gap-2">
-                                <div class="rounded-xl bg-gradient-to-b from-emerald-400/20 to-transparent"></div>
-                                <div class="rounded-xl bg-gradient-to-b from-indigo-400/20 to-transparent"></div>
-                                <div class="rounded-xl bg-gradient-to-b from-cyan-400/20 to-transparent"></div>
-                            </div>
-                        </div>
-                    </div>
+        <main class="grid min-h-screen lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
+            <section class="identity-panel relative overflow-hidden bg-[#071525] px-4 py-6 sm:px-8 sm:py-8 lg:flex lg:min-h-screen lg:items-stretch lg:px-10 lg:py-10 xl:px-14">
+                <div class="relative z-10 mx-auto w-full max-w-4xl">
+                    <MovementBranding />
                 </div>
             </section>
 
-            <section class="w-full lg:w-[460px]">
-                <AccernityCard>
+            <section class="flex items-center bg-[#F4F6F1] px-4 py-10 sm:px-8 lg:px-10 xl:px-16">
+                <div class="login-card mx-auto w-full max-w-md border border-[#6FBF8A] border-t-4 border-t-[#2F6B32] bg-[#F4F6F1] p-5 shadow-[0_18px_55px_rgba(7,21,37,0.12)] sm:p-8">
                     <div class="mb-6">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">Welcome Back</p>
-                        <h2 class="mt-1 text-2xl font-black text-white sm:text-3xl">Sign in to continue</h2>
-                        <p class="mt-1 text-sm text-slate-300">Masukkan butiran akaun anda untuk akses dashboard.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F6B32]">Platform digital ekosistem gerakan</p>
+                        <p class="mt-2 text-lg font-black tracking-tight text-[#123D2A]">myWAP</p>
+                        <h2 class="mt-5 text-2xl font-black text-[#071525] sm:text-3xl">Log Masuk</h2>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-600">Akses keahlian, program dan khidmat gerakan PKPIM, ABIM dan WADAH.</p>
                     </div>
 
-                    <div v-if="status" class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                    <div v-if="status" class="mb-4 rounded-xl border border-[#6FBF8A] bg-[#EDF5EE] px-3 py-2 text-sm font-medium text-[#123D2A]">
                         {{ status }}
                     </div>
 
@@ -314,7 +275,7 @@ const submit = () => {
                             <div v-if="step === 'role'" class="space-y-4">
                                 <button
                                     type="button"
-                                    class="w-full rounded-xl border border-cyan-200/40 bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/15"
+                                    class="w-full rounded-xl bg-[#2F6B32] px-4 py-3 text-left text-sm font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A]"
                                     @click="selectFlow('admin')"
                                 >
                                     Log Masuk Admin
@@ -322,7 +283,7 @@ const submit = () => {
 
                                 <button
                                     type="button"
-                                    class="w-full rounded-xl border border-emerald-200/40 bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white transition hover:bg-white/15"
+                                    class="w-full rounded-xl bg-[#2F6B32] px-4 py-3 text-left text-sm font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A]"
                                     @click="selectFlow('member')"
                                 >
                                     Log Masuk Ahli
@@ -335,7 +296,7 @@ const submit = () => {
                                     <TextInput
                                         id="email"
                                         type="email"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="form.email"
                                         required
                                         autofocus
@@ -350,7 +311,7 @@ const submit = () => {
                                     <TextInput
                                         id="password"
                                         type="password"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="form.password"
                                         required
                                         autocomplete="current-password"
@@ -368,7 +329,7 @@ const submit = () => {
                                     <Link
                                         v-if="canResetPassword"
                                         :href="route('password.request')"
-                                        class="text-sm font-medium text-cyan-200 hover:text-cyan-100"
+                                        class="text-sm font-medium text-[#2F6B32] hover:text-[#123D2A]"
                                     >
                                         Forgot password?
                                     </Link>
@@ -377,13 +338,13 @@ const submit = () => {
                                 <div class="flex gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="goToRoleSelection"
                                     >
                                         Kembali
                                     </button>
                                     <PrimaryButton
-                                        class="flex-1 justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/35 hover:bg-slate-900"
+                                        class="flex-1 justify-center rounded-xl bg-[#2F6B32] px-4 py-2.5 text-sm font-semibold text-white shadow-none hover:bg-[#123D2A]"
                                         :class="{ 'opacity-25': form.processing }"
                                         :disabled="form.processing"
                                     >
@@ -398,7 +359,7 @@ const submit = () => {
                                     <TextInput
                                         id="ic_number"
                                         type="text"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="form.ic_number"
                                         required
                                         autofocus
@@ -412,13 +373,13 @@ const submit = () => {
                                 <div class="flex gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="goToRoleSelection"
                                     >
                                         Kembali
                                     </button>
                                     <PrimaryButton
-                                        class="flex-1 justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+                                        class="flex-1 justify-center rounded-xl bg-[#2F6B32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#123D2A]"
                                         :class="{ 'opacity-25': memberCheckProcessing }"
                                         :disabled="memberCheckProcessing"
                                         @click="checkMember"
@@ -429,7 +390,7 @@ const submit = () => {
                             </div>
 
                             <form v-else-if="step === 'member-password'" @submit.prevent="submit" class="space-y-4">
-                                <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                <div class="rounded-2xl border border-[#6FBF8A] bg-[#F4F6F1] p-4 text-sm text-[#123D2A]">
                                     <p class="font-semibold">
                                         Anda adalah ahli {{ memberOrganization?.name }}
                                     </p>
@@ -446,7 +407,7 @@ const submit = () => {
                                     <TextInput
                                         id="password_member"
                                         type="password"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="form.password"
                                         required
                                         autocomplete="current-password"
@@ -467,7 +428,7 @@ const submit = () => {
                                     <div class="mt-3 flex items-center justify-center gap-6">
                                         <button
                                             type="button"
-                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-cyan-300"
+                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-[#2F6B32]"
                                             @click="showBiometricAlert('faceid')"
                                         >
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7">
@@ -484,7 +445,7 @@ const submit = () => {
 
                                         <button
                                             type="button"
-                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-cyan-300"
+                                            class="flex flex-col items-center gap-1 text-slate-300 transition hover:text-[#2F6B32]"
                                             @click="showBiometricAlert('touchid')"
                                         >
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7">
@@ -503,7 +464,7 @@ const submit = () => {
                                     <Transition name="biometric-fade">
                                         <div
                                             v-if="biometricAlert"
-                                            class="mt-3 rounded-lg border border-cyan-200/30 bg-cyan-500/10 px-3 py-2 text-center text-xs text-cyan-100"
+                                            class="mt-3 rounded-lg border border-[#6FBF8A]/40 bg-[#DCECDF] px-3 py-2 text-center text-xs text-[#123D2A]"
                                         >
                                             <template v-if="biometricAlert === 'faceid'">Face ID</template>
                                             <template v-else>Touch ID</template>
@@ -521,7 +482,7 @@ const submit = () => {
                                     <Link
                                         v-if="canResetPassword"
                                         :href="route('password.request')"
-                                        class="text-sm font-medium text-cyan-200 hover:text-cyan-100"
+                                        class="text-sm font-medium text-[#2F6B32] hover:text-[#123D2A]"
                                     >
                                         Forgot password?
                                     </Link>
@@ -530,13 +491,13 @@ const submit = () => {
                                 <div class="flex gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="step = 'member-id'"
                                     >
                                         Kembali
                                     </button>
                                     <PrimaryButton
-                                        class="flex-1 justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/35 hover:bg-slate-900"
+                                        class="flex-1 justify-center rounded-xl bg-[#2F6B32] px-4 py-2.5 text-sm font-semibold text-white shadow-none hover:bg-[#123D2A]"
                                         :class="{ 'opacity-25': form.processing }"
                                         :disabled="form.processing"
                                     >
@@ -546,7 +507,7 @@ const submit = () => {
                             </form>
 
                             <div v-else-if="step === 'member-otp-send'" class="space-y-4">
-                                <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                <div class="rounded-2xl border border-[#6FBF8A] bg-[#F4F6F1] p-4 text-sm text-[#123D2A]">
                                     <p class="font-semibold">
                                         Log Masuk Kali Pertama
                                     </p>
@@ -560,7 +521,7 @@ const submit = () => {
                                     <TextInput
                                         id="otp_email"
                                         type="email"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="otpForm.email"
                                         required
                                         placeholder="nama@domain.com"
@@ -577,13 +538,13 @@ const submit = () => {
                                 <div class="flex gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="step = 'member-id'"
                                     >
                                         Kembali
                                     </button>
                                     <PrimaryButton
-                                        class="flex-1 justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+                                        class="flex-1 justify-center rounded-xl bg-[#2F6B32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#123D2A]"
                                         :class="{ 'opacity-25': otpProcessing }"
                                         :disabled="otpProcessing"
                                         @click="sendOtp"
@@ -594,7 +555,7 @@ const submit = () => {
                             </div>
 
                             <div v-else-if="step === 'member-otp-verify'" class="space-y-4">
-                                <div class="rounded-2xl border border-emerald-200/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                                <div class="rounded-2xl border border-[#6FBF8A] bg-[#F4F6F1] p-4 text-sm text-[#123D2A]">
                                     <p class="font-semibold">
                                         Sahkan OTP & Cipta Kata Laluan
                                     </p>
@@ -608,7 +569,7 @@ const submit = () => {
                                     <TextInput
                                         id="otp_code"
                                         type="text"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 text-center text-lg tracking-widest focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full text-center text-lg tracking-widest focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="otpForm.code"
                                         required
                                         maxlength="6"
@@ -621,7 +582,7 @@ const submit = () => {
                                     <TextInput
                                         id="otp_password"
                                         type="password"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="otpForm.password"
                                         required
                                         minlength="8"
@@ -634,7 +595,7 @@ const submit = () => {
                                     <TextInput
                                         id="otp_password_confirmation"
                                         type="password"
-                                        class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-emerald-300 focus:ring-emerald-300"
+                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="otpForm.password_confirmation"
                                         required
                                         placeholder="Taip semula kata laluan"
@@ -646,13 +607,13 @@ const submit = () => {
                                 <div class="flex gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="step = 'member-otp-send'"
                                     >
                                         Kembali
                                     </button>
                                     <PrimaryButton
-                                        class="flex-1 justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600"
+                                        class="flex-1 justify-center rounded-xl bg-[#2F6B32] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#123D2A]"
                                         :class="{ 'opacity-25': otpProcessing }"
                                         :disabled="otpProcessing"
                                         @click="verifyOtp"
@@ -663,11 +624,11 @@ const submit = () => {
                             </div>
 
                             <div v-else-if="step === 'member-otp-blocked'" class="space-y-4">
-                                <div class="rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                                <div class="rounded-2xl border border-[#6FBF8A] bg-[#EDF5EE] p-4 text-sm text-[#123D2A]">
                                     <p class="font-semibold">
                                         Permintaan Log Masuk Kali Pertama Telah Dihantar
                                     </p>
-                                    <p class="mt-3 text-amber-200/80 leading-relaxed">
+                                    <p class="mt-3 leading-relaxed text-[#2F6B32]">
                                         Anda telah pun menghantar permintaan log masuk kali pertama.
                                         Sila gunakan pautan <strong>'Lupa Kata Laluan'</strong> di bawah untuk menetapkan semula kata laluan.
                                     </p>
@@ -675,7 +636,7 @@ const submit = () => {
 
                                 <div class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
                                     <p v-if="memberMaskedEmail">
-                                        Pautan reset akan dihantar ke emel: <span class="font-medium text-amber-200">{{ memberMaskedEmail }}</span>
+                                        Pautan reset akan dihantar ke emel: <span class="font-medium text-[#2F6B32]">{{ memberMaskedEmail }}</span>
                                     </p>
                                     <p v-else>
                                         Sila hubungi urusetia organisasi untuk bantuan lanjut.
@@ -686,14 +647,14 @@ const submit = () => {
                                     <Link
                                         v-if="canResetPassword"
                                         :href="route('password.request')"
-                                        class="block w-full rounded-xl bg-amber-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-500"
+                                        class="block w-full rounded-xl bg-[#2F6B32] px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-[#123D2A]"
                                     >
                                         Lupa Kata Laluan
                                     </Link>
 
                                     <button
                                         type="button"
-                                        class="w-full rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                        class="login-secondary w-full rounded-xl px-4 py-2 text-sm font-semibold transition"
                                         @click="goToRoleSelection"
                                     >
                                         Kembali ke Pilihan Log Masuk
@@ -703,7 +664,7 @@ const submit = () => {
 
                             <p class="text-center text-sm text-slate-300">
                                 New here?
-                                <Link :href="route('register')" class="font-semibold text-cyan-200 hover:text-cyan-100">
+                                <Link :href="route('register')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">
                                     Create account
                                 </Link>
                             </p>
@@ -713,16 +674,20 @@ const submit = () => {
                                     tempah Perkhidmatan/Fasiliti
                                 </Link>
                                 atau melawat
-                                <Link :href="route('mall.index')" class="font-semibold text-amber-300 hover:text-amber-200">
+                                <Link :href="route('mall.index')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">
                                     MyWAP Mall
                                 </Link>.
                             </p>
                         </div>
                     </Transition>
-                </AccernityCard>
+                    <div class="mt-6 border-t border-[#D5E3D8] pt-4 text-center">
+                        <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2F6B32]">Platform rasmi ekosistem</p>
+                        <p class="mt-1 text-xs font-black tracking-[0.12em] text-[#123D2A]">PKPIM · ABIM · WADAH</p>
+                    </div>
+                </div>
             </section>
-        </div>
-    </AuroraBackground>
+        </main>
+    </div>
 
     <Modal :show="showIcNotFoundModal" @close="showIcNotFoundModal = false" maxWidth="md">
         <div class="p-6">
@@ -732,7 +697,7 @@ const submit = () => {
                 Sila hubungi <strong>urusetia organisasi</strong> masing-masing untuk bantuan lanjut.
             </p>
             <div class="mt-6 flex justify-end">
-                <button @click="showIcNotFoundModal = false" class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                <button @click="showIcNotFoundModal = false" class="rounded-xl bg-[#2F6B32] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#123D2A]">
                     OK
                 </button>
             </div>
@@ -761,5 +726,52 @@ const submit = () => {
 .biometric-fade-leave-to {
     opacity: 0;
     transform: translateY(6px);
+}
+
+.login-card :deep(.text-slate-200) { color: #123d2a; }
+.login-card :deep(.text-slate-300) { color: #52645a; }
+.login-card :deep(.text-slate-400) { color: #718078; }
+.login-card :deep(.text-emerald-300) { color: #2f6b32; }
+.login-card :deep(.text-emerald-100),
+.login-card :deep(.text-emerald-200\/80),
+.login-card :deep(.text-emerald-200) { color: #123d2a; }
+.login-card :deep(.bg-white\/5) { background: #edf5ee; }
+.login-card :deep(.border-white\/10),
+.login-card :deep(.border-emerald-200\/30) { border-color: #b8d9c0; }
+.login-card :deep(input) { border-color: #6fbf8a; background: #f4f6f1; color: #071525; }
+.login-card :deep(input::placeholder) { color: #91a097; }
+.login-card :deep(.border-white\/20) { border-color: #c8d8cb; color: #123d2a; }
+
+.login-secondary {
+    border: 1px solid #6fbf8a;
+    color: #2f6b32;
+    background: transparent;
+}
+
+.login-secondary:hover {
+    background: #f4f6f1;
+    border-color: #2f6b32;
+}
+
+.identity-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.045;
+    background-image:
+        linear-gradient(30deg, #6fbf8a 12%, transparent 12.5%, transparent 87%, #6fbf8a 87.5%, #6fbf8a),
+        linear-gradient(150deg, #6fbf8a 12%, transparent 12.5%, transparent 87%, #6fbf8a 87.5%, #6fbf8a),
+        linear-gradient(30deg, #6fbf8a 12%, transparent 12.5%, transparent 87%, #6fbf8a 87.5%, #6fbf8a),
+        linear-gradient(150deg, #6fbf8a 12%, transparent 12.5%, transparent 87%, #6fbf8a 87.5%, #6fbf8a);
+    background-position: 0 0, 0 0, 36px 62px, 36px 62px;
+    background-size: 72px 124px;
+}
+
+.identity-panel::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 8px;
+    background: #2f6b32;
 }
 </style>

@@ -1,9 +1,8 @@
 <script setup>
-import AccernityCard from '@/Components/ui/AccernityCard.vue';
-import AuroraBackground from '@/Components/ui/AuroraBackground.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import MemberSearch from '@/Components/MemberSearch.vue';
+import MovementBranding from '@/Components/MovementBranding.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -136,91 +135,56 @@ const submit = () => {
 </script>
 
 <template>
-    <AuroraBackground>
+    <div class="auth-canvas min-h-screen">
         <Head title="Daftar Akaun" />
 
-        <div class="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-5 sm:px-4 sm:py-6 md:px-8 md:py-10 lg:flex-row lg:items-center lg:gap-8">
-            <section class="hidden flex-1 lg:block">
-                <div class="max-w-xl">
-                    <p class="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200 backdrop-blur-sm">
-                        myWAP
-                    </p>
-                    <h1 class="mt-5 text-4xl font-black leading-tight text-white xl:text-5xl">
-                        <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">Daftar Akaun Baharu</span>
-                    </h1>
-                    <p class="mt-4 text-sm leading-relaxed text-slate-300">
-                        Pendaftaran hanya mengambil beberapa minit. Organisasi keahlian anda akan ditetapkan secara automatik berdasarkan maklumat umur yang diperoleh daripada nombor kad pengenalan.
-                    </p>
+        <div class="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-3 py-4 sm:px-4 sm:py-10 md:px-8 lg:items-center">
+            <div class="grid w-full grid-cols-1 gap-3 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+                <section class="order-1 rounded-2xl border border-[#D5E3D8] bg-white/85 p-3 shadow-[0_6px_24px_rgba(7,21,37,0.05)] backdrop-blur-sm sm:p-6 lg:hidden">
+                    <MovementBranding light part="header" />
+                </section>
 
-                    <div v-if="organizationLogos.length" class="mt-6 flex flex-wrap items-center gap-4">
-                        <div
-                            v-for="organization in organizationLogos"
-                            :key="organization.id"
-                            class="flex h-24 w-24 items-center justify-center rounded-2xl border border-white/40 bg-white p-3 shadow-lg shadow-black/10 xl:h-28 xl:w-28"
-                        >
-                            <img
-                                :src="organization.logo_path"
-                                :alt="organization.name + ' logo'"
-                                class="h-full w-full object-contain"
-                            >
-                        </div>
-                    </div>
-                </div>
-            </section>
+                <section class="order-3 hidden rounded-2xl border border-[#D5E3D8] bg-white/70 p-5 sm:p-6 lg:order-1 lg:block lg:bg-white/75 lg:p-8">
+                    <MovementBranding light />
+                </section>
 
-            <section class="w-full lg:w-[500px]">
-                <div v-if="organizationLogos.length" class="mb-5 lg:hidden">
-                    <p class="text-center text-xs leading-relaxed text-slate-300">
-                        Anda sedang mendaftar keahlian untuk salah satu organisasi berikut:
-                    </p>
-                    <div class="mt-3 flex items-center justify-center gap-3">
-                        <div
-                            v-for="organization in organizationLogos"
-                            :key="organization.id"
-                            class="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/40 bg-white p-2 shadow-lg shadow-black/10"
-                        >
-                            <img
-                                :src="organization.logo_path"
-                                :alt="organization.name + ' logo'"
-                                class="h-full w-full object-contain"
-                            >
-                        </div>
-                    </div>
-                </div>
+                <section class="order-4 rounded-2xl border border-[#D5E3D8] bg-white/85 p-5 shadow-[0_6px_24px_rgba(7,21,37,0.05)] backdrop-blur-sm sm:p-6 lg:hidden">
+                    <MovementBranding light part="details" />
+                </section>
 
-                <AccernityCard>
+                <section class="order-2 rounded-2xl border border-[#D5E3D8] bg-white p-5 shadow-[0_18px_50px_rgba(7,21,37,0.10)] sm:p-7 lg:order-2 lg:p-8">
                     <div class="mb-6">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100">Langkah 1 dari 2</p>
-                        <h2 class="mt-1 text-2xl font-black text-white sm:text-3xl">Daftar Akaun</h2>
-                        <p class="mt-1 text-sm text-slate-300">Lengkapkan butiran di bawah. Kata laluan akan ditetapkan semasa log masuk kali pertama.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F6B32]">Langkah 1 dari 2</p>
+                        <h2 class="mt-2 text-2xl font-black text-[#071525] sm:text-3xl">Daftar Akaun</h2>
+                        <p class="mt-1 text-sm text-[#4A5A50]">Lengkapkan butiran di bawah. Kata laluan akan ditetapkan semasa log masuk kali pertama.</p>
                     </div>
 
                     <form @submit.prevent="submit" class="space-y-4">
                         <div>
-                            <InputLabel for="ic_number" value="No Kad Pengenalan / Passport" class="!text-slate-200" />
+                            <InputLabel for="ic_number" value="No Kad Pengenalan / Passport" class="!text-[#123D2A]" />
                             <TextInput
                                 id="ic_number"
                                 type="text"
-                                class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                 v-model="form.ic_number"
                                 autofocus
                                 placeholder="Contoh: 980512101234 / A1234567"
                             />
                             <InputError class="mt-2" :message="form.errors.ic_number" />
-                            <p v-if="icLength > 0 && icLength < 12" class="mt-1 text-xs text-amber-300">
+                            <p v-if="icLength > 0 && icLength < 12" class="mt-1 text-xs text-[#8A6418]">
                                 Format IC Malaysia: 12 digit (tanpa sengkang). Passport: 6+ aksara.
                             </p>
-                            <p v-if="icLength >= 12 && inferredDob" class="mt-1 text-xs text-emerald-200">
+                            <p v-if="icLength >= 12 && inferredDob" class="mt-1 text-xs text-[#2F6B32]">
                                 Tarikh lahir: {{ inferredDob }} &middot; Jantina: {{ inferredGender }}
                             </p>
                         </div>
 
                         <div>
-                            <InputLabel for="name" value="Nama Penuh" class="!text-slate-200" />
+                            <InputLabel for="name" value="Nama Penuh" class="!text-[#123D2A]" />
                             <TextInput
                                 id="name"
                                 type="text"
-                                class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                 v-model="form.name"
                                 autocomplete="name"
                                 placeholder="Contoh: Ahmad Firdaus"
@@ -229,26 +193,26 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <InputLabel for="email" value="Email" class="!text-slate-200" />
+                            <InputLabel for="email" value="Email" class="!text-[#123D2A]" />
                             <TextInput
                                 id="email"
                                 type="email"
-                                class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                 v-model="form.email"
                                 autocomplete="email"
                                 placeholder="nama@domain.com"
                             />
                             <InputError class="mt-2" :message="form.errors.email" />
-                            <p class="mt-1 text-xs text-slate-400">Emel ini akan digunakan untuk menghantar kod OTP semasa log masuk kali pertama.</p>
+                            <p class="mt-1 text-xs text-[#4A5A50]">Emel ini akan digunakan untuk menghantar kod OTP semasa log masuk kali pertama.</p>
                         </div>
 
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <InputLabel for="phone" value="No. Telefon" class="!text-slate-200" />
+                                <InputLabel for="phone" value="No. Telefon" class="!text-[#123D2A]" />
                                 <TextInput
                                     id="phone"
                                     type="text"
-                                    class="mt-1 block w-full border-white/15 bg-white/10 text-white placeholder:text-slate-300/80 focus:border-cyan-300 focus:ring-cyan-300"
+                                    class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                     v-model="form.phone"
                                     autocomplete="tel"
                                     placeholder="Contoh: 0123456789"
@@ -257,39 +221,39 @@ const submit = () => {
                             </div>
 
                             <div>
-                                <InputLabel for="dob" value="Tarikh Lahir" class="!text-slate-200" />
+                                <InputLabel for="dob" value="Tarikh Lahir" class="!text-[#123D2A]" />
                                 <TextInput
                                     id="dob"
                                     type="date"
-                                    class="mt-1 block w-full border-white/15 bg-white/10 text-white focus:border-cyan-300 focus:ring-cyan-300"
+                                    class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                     v-model="form.dob"
                                     autocomplete="bday"
                                 />
                                 <InputError class="mt-2" :message="form.errors.dob" />
-                                <p v-if="inferredDob" class="mt-1 text-xs text-slate-400">Auto dari No IC. Boleh ubah jika salah.</p>
+                                <p v-if="inferredDob" class="mt-1 text-xs text-[#4A5A50]">Auto dari No IC. Boleh ubah jika salah.</p>
                             </div>
                         </div>
 
-                        <div v-if="inferredOrganization" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                        <div v-if="inferredOrganization" class="rounded-2xl border border-[#6FBF8A] bg-[#EAF1EA] p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-emerald-200">Organisasi Dikesan</p>
-                                    <p class="mt-1 text-lg font-black text-white">{{ inferredOrganization.name }}</p>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-[#2F6B32]">Organisasi Dikesan</p>
+                                    <p class="mt-1 text-lg font-black text-[#071525]">{{ inferredOrganization.name }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-emerald-200">Yuran Tahunan</p>
-                                    <p class="mt-1 text-lg font-black text-white">RM {{ Number(inferredOrganization.fee_amount).toFixed(2) }}</p>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-[#2F6B32]">Yuran Tahunan</p>
+                                    <p class="mt-1 text-lg font-black text-[#071525]">RM {{ Number(inferredOrganization.fee_amount).toFixed(2) }}</p>
                                 </div>
                             </div>
-                            <p v-if="inferredAge !== null" class="mt-2 text-xs text-emerald-100">Umur dikesan: {{ inferredAge }} tahun</p>
+                            <p v-if="inferredAge !== null" class="mt-2 text-xs text-[#123D2A]">Umur dikesan: {{ inferredAge }} tahun</p>
                         </div>
 
                         <div v-if="filteredBranches.length > 0 && inferredOrganization">
-                            <InputLabel for="branch_id" value="Cawangan" class="!text-slate-200" />
+                            <InputLabel for="branch_id" value="Cawangan" class="!text-[#123D2A]" />
                             <select
                                 id="branch_id"
                                 v-model="form.branch_id"
-                                class="mt-1 block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white focus:border-cyan-300 focus:ring-cyan-300"
+                                class="mt-1 block w-full rounded-xl border border-[#C8D8CB] bg-white px-4 py-3 text-[#071525] focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                             >
                                 <option value="">Pilih Cawangan</option>
                                 <option v-for="branch in filteredBranches" :key="branch.id" :value="branch.id">
@@ -299,36 +263,36 @@ const submit = () => {
                             <InputError class="mt-2" :message="form.errors.branch_id" />
                         </div>
 
-                        <div v-if="inferredOrganization && filteredBranches.length === 0" class="rounded-xl border border-white/10 bg-white/5 p-3">
-                            <p class="text-xs text-slate-400">Cawangan: <span class="font-semibold text-slate-300">Tidak Berkenaan</span></p>
+                        <div v-if="inferredOrganization && filteredBranches.length === 0" class="rounded-xl border border-[#D5E3D8] bg-[#F4F6F1] p-3">
+                            <p class="text-xs text-[#4A5A50]">Cawangan: <span class="font-semibold text-[#123D2A]">Tidak Berkenaan</span></p>
                         </div>
 
                         <div v-if="inferredOrganization">
-                            <InputLabel for="member_search" value="Dirujuk Oleh (Pilihan)" class="!text-slate-200" />
+                            <InputLabel for="member_search" value="Dirujuk Oleh (Pilihan)" class="!text-[#123D2A]" />
                             <MemberSearch
                                 id="member_search"
                                 v-model="selectedReferrer"
                                 placeholder="Cari nama atau no ahli..."
                             />
-                            <p v-if="selectedReferrer" class="mt-1 text-xs text-cyan-200">{{ selectedReferrer.name }} ({{ selectedReferrer.member_no }})</p>
+                            <p v-if="selectedReferrer" class="mt-1 text-xs text-[#2F6B32]">{{ selectedReferrer.name }} ({{ selectedReferrer.member_no }})</p>
                         </div>
 
                         <button
-                            class="w-full justify-center rounded-xl bg-slate-950 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-black/35 hover:bg-slate-900 disabled:opacity-50"
+                            class="w-full justify-center rounded-xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-50"
                             :disabled="form.processing"
                         >
                             {{ form.processing ? 'Mendaftar...' : 'Daftar & Teruskan ke Bayaran' }}
                         </button>
 
-                        <p class="text-center text-sm text-slate-300">
+                        <p class="text-center text-sm text-[#4A5A50]">
                             Sudah ada akaun?
-                            <Link :href="route('login')" class="font-semibold text-cyan-200 hover:text-cyan-100">
+                            <Link :href="route('login')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">
                                 Log masuk
                             </Link>
                         </p>
                     </form>
-                </AccernityCard>
-            </section>
+                </section>
+            </div>
         </div>
-    </AuroraBackground>
+    </div>
 </template>

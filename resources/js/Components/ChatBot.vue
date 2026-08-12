@@ -223,7 +223,7 @@ function restoreChat() {
     <button
         v-if="dismissed"
         @click="restoreChat"
-        class="fixed z-50 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-lg opacity-60 transition-all hover:scale-105 hover:opacity-100"
+        class="fixed z-50 flex h-8 w-8 items-center justify-center rounded-full bg-[#2F6B32] text-white shadow-lg opacity-70 transition-all hover:scale-105 hover:bg-[#123D2A] hover:opacity-100"
         :style="{ left: btnX + 'px', top: btnY + 'px' }"
         title="Buka semula chatbot"
     >
@@ -247,7 +247,7 @@ function restoreChat() {
             :style="{ left: panelStyle.left + 'px', top: panelStyle.top + 'px', height: PANEL_H + 'px', maxHeight: 'calc(100vh - 120px)' }"
         >
             <!-- Header -->
-            <div class="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-3 text-white">
+            <div class="flex items-center justify-between rounded-t-2xl bg-[#123D2A] px-4 py-3 text-white">
                 <div class="flex items-center gap-2.5">
                     <img
                         v-if="chatbotLogo"
@@ -350,8 +350,8 @@ function restoreChat() {
             @touchstart="startDrag"
             class="relative flex h-14 w-14 touch-none items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95"
             :class="open
-                ? 'bg-gradient-to-br from-indigo-600 to-purple-700'
-                : 'bg-gradient-to-br from-indigo-500 to-purple-600'"
+                ? 'bg-[#123D2A]'
+                : 'bg-[#2F6B32]'"
             :title="open ? 'Tutup chatbot' : 'Buka chatbot MyWAP AI'"
         >
             <!-- Close badge -->

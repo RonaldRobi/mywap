@@ -1,6 +1,6 @@
 <script setup>
-import AuroraBackground from '@/Components/ui/AuroraBackground.vue';
 import Modal from '@/Components/Modal.vue';
+import MovementBranding from '@/Components/MovementBranding.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -334,82 +334,28 @@ const sendResetLink = () => {
 <template>
     <Head title="myWAP" />
 
-    <AuroraBackground>
-        <div class="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-3 py-6 sm:px-4 sm:py-10 md:px-8 lg:items-center">
-            <div class="grid w-full grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
-                <section class="hidden rounded-[32px] border border-white/10 bg-white/5 p-10 text-white backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
-                    <div>
-                        <p class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100">
-                            PKPIM &middot; ABIM &middot; WADAH
-                        </p>
-                        <h1 class="mt-5 text-5xl font-black tracking-tight">myWAP</h1>
-                        <p class="mt-4 max-w-lg text-sm leading-relaxed text-slate-200">
-                            Platform pengurusan keahlian bersepadu untuk PKPIM, ABIM dan WADAH dalam satu ekosistem digital.
-                        </p>
-
-                        <div
-                            v-if="loginImagePath"
-                            class="mt-7 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/30 shadow-2xl shadow-slate-950/40"
-                        >
-                            <img
-                                :src="loginImagePath"
-                                alt=""
-                                class="aspect-[3/2] w-full object-cover"
-                                loading="lazy"
-                            >
-                        </div>
-                    </div>
-
-                    <div class="mt-8 rounded-3xl border border-white/10 bg-slate-950/30 p-5">
-                        <p class="text-sm font-semibold text-white">Belum menjadi ahli?</p>
-                        <p class="mt-1 text-xs leading-relaxed text-slate-300">
-                            Daftar dalam beberapa minit. Organisasi anda ditentukan automatik mengikut umur.
-                        </p>
-                        <Link
-                            :href="route('register')"
-                            class="mt-4 block w-full rounded-2xl bg-white px-4 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-slate-100"
-                        >
-                            Daftar Jadi Ahli Baru
-                        </Link>
-                    </div>
+    <div class="auth-canvas min-h-screen">
+        <div class="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-3 py-4 sm:px-4 sm:py-10 md:px-8 lg:items-center">
+            <div class="grid w-full grid-cols-1 gap-3 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+                <section class="order-1 rounded-2xl border border-[#D5E3D8] bg-white/85 p-3 shadow-[0_6px_24px_rgba(7,21,37,0.05)] backdrop-blur-sm sm:p-6 lg:hidden">
+                    <MovementBranding light part="header" />
                 </section>
 
-                <section class="relative overflow-hidden rounded-[30px] border border-white/55 bg-white/90 p-5 shadow-[0_22px_60px_rgba(2,6,23,0.35)] backdrop-blur-md sm:p-7 lg:p-8">
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/40 via-white/25 to-white/15"></div>
-                    <div class="relative z-10 mb-6 flex gap-2">
-                        <span class="h-3 w-3 rounded-full bg-rose-300/90"></span>
-                        <span class="h-3 w-3 rounded-full bg-amber-300/90"></span>
-                        <span class="h-3 w-3 rounded-full bg-emerald-300/90"></span>
-                    </div>
+                <section class="order-3 hidden rounded-2xl border border-[#D5E3D8] bg-white/70 p-5 sm:p-6 lg:order-1 lg:block lg:bg-white/75 lg:p-8">
+                    <MovementBranding light />
+                </section>
 
-                    <div class="relative z-10 mb-5 lg:hidden">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[11px] sm:tracking-[0.25em]">
-                            PKPIM &middot; ABIM &middot; WADAH
-                        </p>
-                        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">myWAP</h1>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-600">
-                            Platform pengurusan keahlian bersepadu untuk PKPIM, ABIM dan WADAH dalam satu ekosistem digital.
-                        </p>
+                <section class="order-4 rounded-2xl border border-[#D5E3D8] bg-white/85 p-5 shadow-[0_6px_24px_rgba(7,21,37,0.05)] backdrop-blur-sm sm:p-6 lg:hidden">
+                    <MovementBranding light part="details" />
+                </section>
 
-                        <div
-                            v-if="loginImagePath"
-                            class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm"
-                        >
-                            <img
-                                :src="loginImagePath"
-                                alt=""
-                                class="aspect-[16/9] w-full object-cover sm:aspect-[3/2]"
-                                loading="lazy"
-                            >
-                        </div>
-                    </div>
-
+                <section class="order-2 rounded-2xl border border-[#D5E3D8] bg-white p-5 shadow-[0_18px_50px_rgba(7,21,37,0.10)] sm:p-7 lg:order-2 lg:p-8">
                     <div class="relative z-10">
-                        <h2 class="text-2xl font-black text-slate-900 sm:text-3xl">Log Masuk</h2>
-                        <p class="mt-1 text-sm text-slate-500">Akses papan pemuka mengikut peranan anda.</p>
+                        <h2 class="text-2xl font-black text-[#071525] sm:text-3xl">Log Masuk</h2>
+                        <p class="mt-1 text-sm text-[#4A5A50]">Akses papan pemuka mengikut peranan anda.</p>
                     </div>
 
-                    <div v-if="status" class="relative z-10 mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                    <div v-if="status" class="relative z-10 mt-4 rounded-xl border border-[#6FBF8A] bg-[#EAF1EA] px-3 py-2 text-sm font-medium text-[#123D2A]">
                         {{ status }}
                     </div>
 
@@ -424,12 +370,12 @@ const sendResetLink = () => {
                                         @input="updateIdentifier($event.target.value)"
                                         type="text"
                                         autocomplete="username"
-                                        class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-cyan-400 focus:bg-white focus:ring-0"
+                                        class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-[#2F6B32] focus:bg-white focus:ring-0"
                                         placeholder="No Kad Pengenalan / Emel"
                                     >
                                     <label
                                         for="identifier"
-                                        class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-cyan-600"
+                                        class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-[#2F6B32]"
                                     >
                                         No Kad Pengenalan / Emel
                                     </label>
@@ -441,12 +387,12 @@ const sendResetLink = () => {
                                         v-model="form.password"
                                         type="password"
                                         autocomplete="current-password"
-                                        class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-cyan-400 focus:bg-white focus:ring-0"
+                                        class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-[#2F6B32] focus:bg-white focus:ring-0"
                                         placeholder="Kata Laluan"
                                     >
                                     <label
                                         for="password"
-                                        class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-cyan-600"
+                                        class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-[#2F6B32]"
                                     >
                                         Kata Laluan
                                     </label>
@@ -458,14 +404,14 @@ const sendResetLink = () => {
                                 <p v-if="form.errors.password" class="text-xs text-red-500">{{ form.errors.password }}</p>
 
                                 <label class="inline-flex items-center gap-2 text-sm text-slate-500">
-                                    <input v-model="form.remember" type="checkbox" class="rounded border-slate-300 text-cyan-600 focus:ring-cyan-400">
+                                    <input v-model="form.remember" type="checkbox" class="rounded border-slate-300 text-[#2F6B32] focus:ring-[#6FBF8A]">
                                     Ingat saya
                                 </label>
 
                                 <button
                                     type="submit"
                                     :disabled="form.processing"
-                                    class="w-full rounded-3xl bg-slate-950 px-4 py-3.5 text-lg font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:bg-slate-900 disabled:opacity-60"
+                                    class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3.5 text-lg font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                 >
                                     {{ form.processing ? 'Memproses...' : 'Log Masuk' }}
                                 </button>
@@ -487,7 +433,7 @@ const sendResetLink = () => {
 
                                 <Link
                                     :href="route('register')"
-                                    class="mt-3 block w-full rounded-3xl bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-600"
+                                    class="mt-3 block w-full rounded-3xl bg-[#123D2A] px-4 py-3 text-center text-base font-semibold text-[#F4F6F1] transition hover:bg-[#071525]"
                                 >
                                     Daftar Jadi Ahli Baru
                                 </Link>
@@ -499,7 +445,7 @@ const sendResetLink = () => {
 
                                 <button
                                     type="button"
-                                    class="block w-full rounded-3xl border border-emerald-600 px-4 py-3 text-center text-base font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                                    class="block w-full rounded-3xl border border-[#2F6B32] px-4 py-3 text-center text-base font-semibold text-[#2F6B32] transition hover:bg-[#F4F6F1]"
                                     @click="resetFlow(); flow = 'first-time'"
                                 >
                                     Aktifkan Akaun Ahli Sedia Ada
@@ -510,7 +456,7 @@ const sendResetLink = () => {
                             </div>
 
                             <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-slate-200 pt-3 text-center text-sm text-slate-500">
-                                <Link :href="route('infaq.index')" class="font-semibold text-emerald-700 hover:text-emerald-600">Kempen Sumbangan</Link>
+                                <Link :href="route('infaq.index')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">Kempen Sumbangan</Link>
                                 <span class="text-slate-300">|</span>
                                 <Link :href="route('articles.index')" class="font-semibold text-slate-600 hover:text-slate-500">Artikel</Link>
                             </div>
@@ -555,7 +501,7 @@ const sendResetLink = () => {
                                 <button
                                     type="button"
                                     :disabled="ftProcessing"
-                                    class="w-full rounded-3xl bg-emerald-700 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-600 disabled:opacity-60"
+                                    class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="ftLookup"
                                 >
                                     {{ ftProcessing ? 'Menyemak...' : 'Seterusnya' }}
@@ -588,7 +534,7 @@ const sendResetLink = () => {
                                 <button
                                     type="button"
                                     :disabled="ftProcessing"
-                                    class="w-full rounded-3xl bg-emerald-700 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-600 disabled:opacity-60"
+                                    class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="ftSendOtp"
                                 >
                                     {{ ftProcessing ? 'Menghantar...' : 'Hantar Kod' }}
@@ -654,7 +600,7 @@ const sendResetLink = () => {
                                 <button
                                     type="button"
                                     :disabled="ftProcessing || ftCode.length !== 6"
-                                    class="w-full rounded-3xl bg-slate-950 px-4 py-3 text-base font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:bg-slate-900 disabled:opacity-60"
+                                    class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="ftVerifyOtp"
                                 >
                                     {{ ftProcessing ? 'Mengesahkan...' : 'Log Masuk' }}
@@ -755,7 +701,7 @@ const sendResetLink = () => {
                                 <button
                                     type="button"
                                     :disabled="resetLinkSending"
-                                    class="block w-full rounded-3xl bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white shadow-lg transition hover:bg-cyan-600 disabled:opacity-60"
+                                    class="block w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-center text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="sendResetLink"
                                 >
                                     {{ resetLinkSending ? 'Menghantar...' : 'Hantar Reset Kata Laluan' }}
@@ -780,7 +726,7 @@ const sendResetLink = () => {
                             <div class="mt-4 space-y-3">
                                 <Link
                                     :href="route('register')"
-                                    class="block rounded-2xl border border-cyan-200 bg-cyan-50 p-4 transition hover:border-cyan-300 hover:bg-cyan-100"
+                                    class="block rounded-2xl border border-[#6FBF8A] bg-[#F4F6F1] p-4 transition hover:border-[#2F6B32] hover:bg-[#EAF1EA]"
                                 >
                                     <p class="text-sm font-bold text-slate-900">Saya belum menjadi ahli</p>
                                     <p class="mt-1 text-xs leading-relaxed text-slate-600">
@@ -820,14 +766,14 @@ const sendResetLink = () => {
                                 No Kad Pengenalan / Passport yang anda masukkan tiada dalam rekod keahlian kami.
                             </p>
 
-                            <div class="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+                            <div class="mt-5 rounded-2xl border border-[#6FBF8A] bg-[#F4F6F1] p-4">
                                 <p class="text-sm font-semibold text-slate-900">Belum pernah menjadi ahli?</p>
                                 <p class="mt-1 text-sm text-slate-600">
                                     Anda boleh mendaftar sekarang. Organisasi anda ditentukan automatik mengikut umur.
                                 </p>
                                 <Link
                                     :href="route('register')"
-                                    class="mt-3 block w-full rounded-xl bg-cyan-700 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-cyan-600"
+                                    class="mt-3 block w-full rounded-xl bg-[#123D2A] px-4 py-3 text-center text-sm font-semibold text-[#F4F6F1] transition hover:bg-[#071525]"
                                 >
                                     Daftar Jadi Ahli Baru
                                 </Link>
@@ -848,7 +794,7 @@ const sendResetLink = () => {
                 </section>
             </div>
         </div>
-    </AuroraBackground>
+    </div>
 </template>
 
 <style scoped>

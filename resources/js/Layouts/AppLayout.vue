@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import MovementBranding from '@/Components/MovementBranding.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt.vue';
 import ChatBot from '@/Components/ChatBot.vue';
@@ -34,36 +34,36 @@ function queryParam(key) {
  */
 const themeMap = {
     management: {
-        accent:     'bg-slate-500',
-        accentText: 'text-slate-600',
-        accentBg:   'bg-slate-50',
-        badge:      'bg-slate-100 text-slate-700',
-        dot:        'bg-slate-500',
-        ring:       'ring-slate-400',
+        accent:     'bg-[#071525]',
+        accentText: 'text-[#071525]',
+        accentBg:   'bg-[#F4F6F1]',
+        badge:      'bg-[#E4EBE5] text-[#071525]',
+        dot:        'bg-[#071525]',
+        ring:       'ring-[#123D2A]',
     },
     pkpim: {
-        accent:     'bg-indigo-500',
-        accentText: 'text-indigo-600',
-        accentBg:   'bg-indigo-50',
-        badge:      'bg-indigo-100 text-indigo-700',
-        dot:        'bg-indigo-500',
-        ring:       'ring-indigo-400',
+        accent:     'bg-[#6FBF8A]',
+        accentText: 'text-[#2F6B32]',
+        accentBg:   'bg-[#EDF5EE]',
+        badge:      'bg-[#DCECDF] text-[#123D2A]',
+        dot:        'bg-[#6FBF8A]',
+        ring:       'ring-[#6FBF8A]',
     },
     abim: {
-        accent:     'bg-emerald-500',
-        accentText: 'text-emerald-600',
-        accentBg:   'bg-emerald-50',
-        badge:      'bg-emerald-100 text-emerald-700',
-        dot:        'bg-emerald-500',
-        ring:       'ring-emerald-400',
+        accent:     'bg-[#2F6B32]',
+        accentText: 'text-[#2F6B32]',
+        accentBg:   'bg-[#EDF5EE]',
+        badge:      'bg-[#DCECDF] text-[#123D2A]',
+        dot:        'bg-[#2F6B32]',
+        ring:       'ring-[#2F6B32]',
     },
     wadah: {
-        accent:     'bg-amber-500',
-        accentText: 'text-amber-600',
-        accentBg:   'bg-amber-50',
-        badge:      'bg-amber-100 text-amber-700',
-        dot:        'bg-amber-500',
-        ring:       'ring-amber-400',
+        accent:     'bg-[#123D2A]',
+        accentText: 'text-[#123D2A]',
+        accentBg:   'bg-[#E4EBE5]',
+        badge:      'bg-[#D5E3D8] text-[#071525]',
+        dot:        'bg-[#123D2A]',
+        ring:       'ring-[#123D2A]',
     },
 };
 
@@ -641,7 +641,7 @@ const bottomNavItems = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 flex flex-col">
+    <div class="min-h-screen bg-[#F4F6F1] flex flex-col">
 
         <!-- ══════════════════════════════════════════════════════════════════ -->
         <!--  DESKTOP SIDEBAR  (hidden on mobile)                             -->
@@ -650,16 +650,17 @@ const bottomNavItems = computed(() => {
             :class="[
                 'hidden md:flex flex-col fixed inset-y-0 left-0 z-40 transition-all duration-300',
                 sidebarOpen ? 'w-64' : 'w-16',
-                'bg-white border-r border-gray-100 shadow-sm'
+                'bg-white border-r border-[#DDE5DF] shadow-sm'
             ]"
         >
             <!-- Logo / Brand -->
             <div class="flex items-center gap-3 px-4 h-16 border-b border-gray-100 shrink-0">
-                <ApplicationLogo class="w-8 h-8 shrink-0" />
+                <MovementBranding compact :mini="true" />
                 <transition name="fade">
-                    <span v-if="sidebarOpen" class="text-sm font-bold text-gray-800 tracking-tight truncate">
-                        myWAP
-                    </span>
+                    <div v-if="sidebarOpen" class="min-w-0 border-l border-[#D5E3D8] pl-3">
+                        <p class="truncate text-[9px] font-black uppercase tracking-[0.12em] text-[#123D2A]">Ekosistem Gerakan</p>
+                        <p class="truncate text-[10px] font-bold text-[#2F6B32]">myWAP · Platform Digital</p>
+                    </div>
                 </transition>
             </div>
 
@@ -774,7 +775,7 @@ const bottomNavItems = computed(() => {
             ]"
         >
             <!-- ─── TOP HEADER (glassmorphism) ─────────────────────────────── -->
-            <header :class="[hideMobileHeader ? 'hidden md:block' : '', 'sticky top-0 z-30 backdrop-blur-md bg-white/70 border-b border-gray-100/80 shadow-sm']">
+            <header :class="[hideMobileHeader ? 'hidden md:block' : '', 'sticky top-0 z-30 backdrop-blur-md bg-white/90 border-b border-[#DDE5DF] shadow-sm']">
                 <div class="flex items-center justify-between h-16 px-4 md:px-6">
 
                     <!-- Left: back button + hamburger (mobile) + page title -->
@@ -793,6 +794,7 @@ const bottomNavItems = computed(() => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
                         </button>
+                        <MovementBranding compact :mini="true" class="shrink-0 md:hidden" />
                         <h1 class="text-base font-semibold text-gray-800 truncate">
                             <slot name="header">{{ t('Papan Pemuka') }}</slot>
                         </h1>
@@ -825,7 +827,7 @@ const bottomNavItems = computed(() => {
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-black leading-none px-1 rounded-sm" :class="locale === 'ms' ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'">
+                            <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded-sm bg-[#2F6B32] px-1 text-[8px] font-black leading-none text-white">
                                 {{ locale === 'ms' ? 'BM' : 'EN' }}
                             </span>
                         </button>
@@ -960,7 +962,12 @@ const bottomNavItems = computed(() => {
 
             <!-- ─── FOOTER ──────────────────────────────────────────────────── -->
             <footer class="hidden md:block border-t border-gray-100 bg-white/50 py-4 px-6">
-                <div class="flex items-center justify-between text-xs text-gray-400">
+                <div class="flex flex-col items-center gap-2 border-b border-[#D5E3D8] pb-5">
+                    <MovementBranding compact />
+                    <p class="mt-1 text-sm font-black text-[#123D2A]">Tiga wadah, satu keluarga gerakan.</p>
+                    <p class="text-[11px] font-bold tracking-[0.18em] text-[#2F6B32]">PKPIM <span class="text-[#6FBF8A]">→</span> ABIM <span class="text-[#6FBF8A]">→</span> WADAH</p>
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-400 pt-4">
                     <p>&copy; {{ new Date().getFullYear() }} myWAP. {{ t('Hak Cipta Terpelihara') }}.</p>
                     <div class="flex items-center gap-4">
                         <a v-if="org?.website_url" :href="org.website_url" target="_blank" rel="noopener" class="hover:text-emerald-600 transition" title="Laman Web">{{ t('Laman Web') }}</a>
@@ -1022,9 +1029,12 @@ const bottomNavItems = computed(() => {
             >
                 <!-- Drawer header: logo + close button -->
                 <div class="flex items-center justify-between px-4 h-16 border-b border-gray-100 shrink-0">
-                    <div class="flex items-center gap-3">
-                        <ApplicationLogo class="w-12 h-12 max-w-[48px] max-h-[48px] shrink-0" />
-                        <span class="text-sm font-bold text-gray-800 tracking-tight">myWAP</span>
+                    <div class="flex min-w-0 items-center gap-2.5">
+                        <MovementBranding compact :mini="true" class="shrink-0" />
+                        <div class="min-w-0 border-l border-[#D5E3D8] pl-2.5">
+                            <p class="truncate text-[10px] font-black uppercase tracking-[0.08em] text-[#123D2A]">myWAP</p>
+                            <p class="truncate text-[9px] font-bold text-[#2F6B32]">Ekosistem Gerakan</p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-1">
                         <button

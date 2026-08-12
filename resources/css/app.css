@@ -2,10 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    color-scheme: light;
+    --movement-navy: #071525;
+    --movement-dark-green: #123d2a;
+    --movement-green: #2f6b32;
+    --movement-soft-green: #6fbf8a;
+    --movement-off-white: #f4f6f1;
+}
+
+body {
+    background: var(--movement-off-white);
+    color: var(--movement-navy);
+}
+
+::selection {
+    background: #b8d9c0;
+    color: var(--movement-navy);
+}
+
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* ─── Auth canvas: light premium gradient + seamless arabesque islimi ─── */
+.auth-canvas {
+    position: relative;
+    isolation: isolate;
+    background-color: #fafbf8;
+    background-image:
+        radial-gradient(1100px 620px at 12% -8%, rgba(111, 191, 138, 0.22), transparent 62%),
+        radial-gradient(900px 520px at 105% 4%, rgba(47, 107, 50, 0.12), transparent 58%),
+        radial-gradient(760px 560px at 48% 112%, rgba(18, 61, 42, 0.1), transparent 60%),
+        linear-gradient(155deg, #ffffff 0%, #f7faf6 42%, #edf4ec 100%);
+}
+
+.auth-canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%20viewBox='0%200%20120%20120'%3E%3Cg%20fill='none'%20stroke='%23123D2A'%20stroke-width='1.7'%20stroke-linecap='round'%3E%3Cpath%20d='M0%2060%20C20%2040%2040%2040%2060%2060%20C80%2080%20100%2080%20120%2060'/%3E%3Cpath%20d='M60%200%20C40%2020%2040%2040%2060%2060%20C80%2080%2080%20100%2060%20120'/%3E%3Cpath%20d='M30%2050%20C22%2043%2022%2035%2030%2031%20C38%2035%2038%2043%2030%2050%20Z'/%3E%3Cpath%20d='M50%2030%20C43%2022%2035%2022%2031%2030%20C35%2038%2043%2038%2050%2030%20Z'/%3E%3Cpath%20d='M90%2070%20C82%2077%2082%2085%2090%2089%20C98%2085%2098%2077%2090%2070%20Z'/%3E%3Cpath%20d='M70%2090%20C77%2082%2085%2082%2089%2090%20C85%2098%2077%2098%2070%2090%20Z'/%3E%3Ccircle%20cx='60'%20cy='60'%20r='3.4'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 132px 132px;
+    -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, #000 62%, rgba(0, 0, 0, 0.35) 88%, transparent 100%);
+    mask-image: radial-gradient(circle at 50% 30%, #000 0%, #000 62%, rgba(0, 0, 0, 0.35) 88%, transparent 100%);
+}
+
+.auth-canvas > * {
+    position: relative;
+    z-index: 1;
 }

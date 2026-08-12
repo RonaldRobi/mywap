@@ -12,8 +12,8 @@
             <div class="beam beam-3"></div>
 
             <div class="absolute -top-24 -left-16 h-80 w-80 rounded-full bg-emerald-500/25 blur-3xl animate-float-slow"></div>
-            <div class="absolute top-1/4 -right-24 h-96 w-96 rounded-full bg-indigo-500/25 blur-3xl animate-float-medium"></div>
-            <div class="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl animate-float-slow"></div>
+            <div class="absolute top-1/4 -right-24 h-96 w-96 rounded-full bg-[#2F6B32]/25 blur-3xl animate-float-medium"></div>
+            <div class="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[#6FBF8A]/20 blur-3xl animate-float-slow"></div>
 
             <div class="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:48px_48px]"></div>
             <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
