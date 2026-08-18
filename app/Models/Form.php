@@ -72,4 +72,9 @@ class Form extends Model
     {
         return route('forms.public', ['token' => $this->share_token]);
     }
+
+    public function getShareUrlAttribute(): string
+    {
+        return route('share.form', $this, true);
+    }
 }

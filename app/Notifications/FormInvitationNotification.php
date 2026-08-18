@@ -17,7 +17,13 @@ class FormInvitationNotification extends Notification implements ShouldQueue
     public function __construct(
         public Form $form,
         public string $recipientName = '',
-    ) {}
+    ) {
+        // Ensure recipientName is never null — the on-demand notifiable
+        // (Notification::route) has no ->name property, so we must have a fallback.
+        if ($this->recipientName === '') {
+            $this->recipientName = 'Penerima';
+        }
+    }
 
     public function via(object $notifiable): array
     {

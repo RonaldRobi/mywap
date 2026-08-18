@@ -31,6 +31,7 @@ const formData = reactive({
     allow_public:   props.form?.allow_public ?? true,
     organization_id: props.form?.organization_id ?? '',
     event_id:       props.form?.event_id ?? '',
+    header_image:   null,
     recipient_emails: props.form?.recipient_emails?.length
         ? [...props.form.recipient_emails]
         : [''],
@@ -106,9 +107,15 @@ function save() {
     };
 
     if (isEditing) {
-        router.put(route('admin.forms.update', props.form.id), payload, { onFinish: () => { busy.saving = false; } });
+        router.post(route('admin.forms.update', props.form.id), { ...payload, _method: 'PUT' }, {
+            forceFormData: true,
+            onFinish: () => { busy.saving = false; },
+        });
     } else {
-        router.post(route('admin.forms.store'), payload, { onFinish: () => { busy.saving = false; } });
+        router.post(route('admin.forms.store'), payload, {
+            forceFormData: true,
+            onFinish: () => { busy.saving = false; },
+        });
     }
 }
 
@@ -165,6 +172,22 @@ const valid = computed(() => {
                     </div>
                 </div>
 
+                <!-- Header Image -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Gambar Header (Opsional)</label>
+                    <p class="text-xs text-gray-400 mb-1">Gambar ini dipaparkan di bahagian atas borang dan sebagai OG image apabila dikongsi di media sosial.</p>
+                    <input
+                        type="file"
+                        accept="image/jpg,image/jpeg,image/png,image/webp"
+                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                        @change="formData.header_image = $event.target.files?.[0] ?? null"
+                    />
+                    <div v-if="isEditing && form?.header_image_path" class="mt-2">
+                        <img :src="'/storage/' + form.header_image_path" class="h-24 rounded-lg object-cover" alt="Header semasa" />
+                        <p class="text-xs text-gray-400 mt-1">Gambar semasa. Biarkan kosong untuk kekalkan.</p>
+                    </div>
+                </div>
+
                 <div class="flex gap-4">
                     <label class="flex items-center gap-2 text-sm">
                         <input type="checkbox" v-model="formData.is_active" class="rounded border-gray-300" /> Aktif
@@ -194,6 +217,7 @@ const valid = computed(() => {
                             <button @click="removeRecipientEmail(ei)" class="text-xs text-red-400 hover:text-red-600">✕</button>
                         </div>
                     </div>
+                    <p class="text-xs text-gray-400 mt-2">Anda juga boleh hantar ke semua ahli organisasi dari senarai borang.</p>
                 </div>
             </div>
 

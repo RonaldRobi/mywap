@@ -55,6 +55,7 @@ Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->n
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
+Route::get('/share/borang/{form}', [SharePreviewController::class, 'form'])->name('share.form')->middleware('throttle:30,1');
 Route::get('/share/produk/{product}', [SharePreviewController::class, 'product'])->name('share.product')->middleware('throttle:30,1');
 Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
 
@@ -194,6 +195,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/forms/{form}/responses', [FormController::class, 'responses'])->name('admin.forms.responses');
         Route::get('/admin/forms/{form}/export', [FormController::class, 'exportResponses'])->name('admin.forms.export');
         Route::post('/admin/forms/{form}/send', [FormController::class, 'send'])->name('admin.forms.send');
+        Route::post('/admin/forms/{form}/send-all-members', [FormController::class, 'sendToAllMembers'])->name('admin.forms.send-all-members');
+        Route::get('/admin/forms/{form}/qr', [FormController::class, 'showQr'])->name('admin.forms.qr');
+        Route::get('/admin/forms/{form}/qr.png', [FormController::class, 'downloadQrPng'])->name('admin.forms.qr.png');
     });
 
     // Superadmin-only: fee management + all transactions

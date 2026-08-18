@@ -8,6 +8,7 @@ use App\Models\FormAnswer;
 use App\Models\FormQuestion;
 use App\Models\FormResponse;
 use App\Models\Organization;
+use App\Models\User;
 use App\Notifications\FormInvitationNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormController extends Controller
@@ -59,6 +61,7 @@ class FormController extends Controller
             'organization_name' => $f->organization?->name,
             'event_title' => $f->event?->title,
             'public_url' => $f->public_url,
+            'share_url' => $f->share_url,
             'updated_at' => $f->updated_at?->toDateTimeString(),
         ]);
 
@@ -107,6 +110,7 @@ class FormController extends Controller
             'allow_public' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
             'event_id' => ['nullable', 'exists:events,id'],
+            'header_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'recipient_emails' => ['nullable', 'array'],
             'recipient_emails.*' => ['email'],
             'questions' => ['required', 'array', 'min:1'],
@@ -118,7 +122,11 @@ class FormController extends Controller
             'questions.*.help_text' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $form = DB::transaction(function () use ($data, $user, $isSuperadmin) {
+        $form = DB::transaction(function () use ($data, $user, $isSuperadmin, $request) {
+            $headerImagePath = $request->hasFile('header_image')
+                ? $request->file('header_image')->store('forms', 'public')
+                : null;
+
             $form = Form::create([
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
@@ -126,6 +134,7 @@ class FormController extends Controller
                 'allow_public' => $data['allow_public'] ?? true,
                 'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
                 'event_id' => $data['event_id'] ?? null,
+                'header_image_path' => $headerImagePath,
                 'recipient_emails' => collect($data['recipient_emails'] ?? [])
                     ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
                     ->unique()
@@ -180,6 +189,7 @@ class FormController extends Controller
                 'organization_id' => $form->organization_id,
                 'event_id' => $form->event_id,
                 'share_token' => $form->share_token,
+                'header_image_path' => $form->header_image_path,
                 'recipient_emails' => $form->recipient_emails ?? [],
                 'questions' => $form->questions->map(fn ($q) => [
                     'id' => $q->id,
@@ -210,6 +220,7 @@ class FormController extends Controller
             'allow_public' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
             'event_id' => ['nullable', 'exists:events,id'],
+            'header_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'recipient_emails' => ['nullable', 'array'],
             'recipient_emails.*' => ['email'],
             'questions' => ['required', 'array', 'min:1'],
@@ -222,8 +233,8 @@ class FormController extends Controller
             'questions.*.help_text' => ['nullable', 'string', 'max:500'],
         ]);
 
-        DB::transaction(function () use ($form, $data, $isSuperadmin) {
-            $form->update([
+        DB::transaction(function () use ($form, $data, $isSuperadmin, $request) {
+            $updateData = [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
                 'is_active' => $data['is_active'] ?? $form->is_active,
@@ -235,7 +246,18 @@ class FormController extends Controller
                     ->unique()
                     ->values()
                     ->all(),
-            ]);
+            ];
+
+            // Handle header image upload
+            if ($request->hasFile('header_image')) {
+                // Delete old image if exists
+                if ($form->header_image_path) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($form->header_image_path);
+                }
+                $updateData['header_image_path'] = $request->file('header_image')->store('forms', 'public');
+            }
+
+            $form->update($updateData);
 
             $keptIds = [];
 
@@ -378,7 +400,7 @@ class FormController extends Controller
             'recipient_name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $recipientName = $request->input('recipient_name', '');
+        $recipientName = $request->input('recipient_name', '') ?: 'Penerima';
 
         foreach ($emails as $email) {
             Notification::route('mail', $email)
@@ -386,6 +408,90 @@ class FormController extends Controller
         }
 
         return back()->with('success', "Borang dihantar ke {$emails->count()} emel penerima.");
+    }
+
+    public function sendToAllMembers(Request $request, Form $form): RedirectResponse
+    {
+        $user = $request->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+
+        // Determine which organization's members to send to
+        $orgId = $form->organization_id ?? $user->current_organization_id;
+
+        if (! $orgId && ! $isSuperadmin) {
+            return back()->with('error', 'Tiada organisasi dikaitkan dengan borang ini.');
+        }
+
+        $query = User::query()->where('is_active', true);
+
+        if ($orgId) {
+            $query->where('current_organization_id', $orgId);
+        }
+
+        $emails = $query->pluck('email')
+            ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return back()->with('error', 'Tiada ahli aktif dijumpai untuk dihantar.');
+        }
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)
+                ->notify(new FormInvitationNotification($form, 'Ahli'));
+        }
+
+        return back()->with('success', "Borang dihantar ke {$emails->count()} ahli.");
+    }
+
+    public function showQr(Request $request, Form $form): Response
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->hasRole('Superadmin')
+            || $form->organization_id === (int) $user->current_organization_id,
+            403
+        );
+
+        $publicUrl = $form->public_url;
+
+        $qrSvg = QrCode::format('svg')
+            ->size(320)
+            ->errorCorrection('H')
+            ->generate($publicUrl);
+
+        return Inertia::render('Admin/Forms/Qr', [
+            'form' => [
+                'id' => $form->id,
+                'title' => $form->title,
+            ],
+            'qrSvg' => (string) $qrSvg,
+            'publicUrl' => $publicUrl,
+        ]);
+    }
+
+    public function downloadQrPng(Request $request, Form $form): StreamedResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->hasRole('Superadmin')
+            || $form->organization_id === (int) $user->current_organization_id,
+            403
+        );
+
+        $publicUrl = $form->public_url;
+
+        $png = QrCode::format('png')
+            ->size(600)
+            ->margin(2)
+            ->generate($publicUrl);
+
+        return response()->streamDownload(function () use ($png) {
+            echo $png;
+        }, 'borang-'.Str::slug($form->title).'-qr.png', [
+            'Content-Type' => 'image/png',
+        ]);
     }
 
     // ─── PUBLIC ──────────────────────────────────────────────────────────────
@@ -405,6 +511,9 @@ class FormController extends Controller
                 'description' => $form->description,
                 'share_token' => $form->share_token,
                 'organization_name' => $form->organization?->name,
+                'header_image_url' => $form->header_image_path
+                    ? asset('storage/'.$form->header_image_path)
+                    : null,
                 'questions' => $form->questions
                     ->sortBy('sort_order')
                     ->map(fn ($q) => [

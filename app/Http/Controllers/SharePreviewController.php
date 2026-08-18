@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AppSetting;
 use App\Models\Article;
 use App\Models\Event;
+use App\Models\Form;
 use App\Models\Infaq;
 use App\Models\NewsPost;
 use App\Models\Product;
@@ -66,6 +67,25 @@ class SharePreviewController extends Controller
             imageUrl: $this->absoluteUrl($event->featured_image_url),
             pageUrl: route('share.event', $event, true),
             redirectUrl: route('events.show', $event->slug, true),
+            type: 'article'
+        );
+    }
+
+    public function form(Form $form): View
+    {
+        abort_if(! $form->is_active, 404);
+
+        // Use the form's header image if available, otherwise fall back to the global OG image / logo
+        $imageUrl = $form->header_image_path
+            ? $this->absoluteUrl('/storage/'.$form->header_image_path)
+            : null;
+
+        return $this->renderPreview(
+            title: $form->title,
+            description: $form->description ?: 'Sila isi borang ini.',
+            imageUrl: $imageUrl,
+            pageUrl: route('share.form', $form, true),
+            redirectUrl: route('forms.public', ['token' => $form->share_token], true),
             type: 'article'
         );
     }
