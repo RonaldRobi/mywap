@@ -16,7 +16,7 @@ const form = useForm({
     title: props.event?.title ?? '',
     description: props.event?.description ?? '',
     type: props.event?.type ?? 'physical',
-    status: props.event?.status ?? 'draft',
+    status: props.event?.status ?? 'published',
     category: props.event?.category ?? 'muktamar',
     location_or_link: props.event?.location_or_link ?? '',
     start_time: props.event?.start_time ?? '',

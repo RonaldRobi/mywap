@@ -67,7 +67,7 @@ const createProgramForm = useForm({
     title: '',
     description: '',
     type: 'physical',
-    status: 'draft',
+    status: 'published',
     category: 'lain',
     location_or_link: '',
     start_time: '',

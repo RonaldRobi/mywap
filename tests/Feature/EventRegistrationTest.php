@@ -837,8 +837,34 @@ class EventRegistrationTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $event = Event::where('title', 'Program Default')->firstOrFail();
-        $this->assertSame('draft', $event->status->value);
+        $this->assertSame('published', $event->status->value);
         $this->assertSame('lain', $event->category->value);
+    }
+
+    public function test_newly_created_event_appears_in_member_program_list(): void
+    {
+        $this->actingAs($this->admin);
+
+        $this->post(route('admin.events.store'), [
+            'title' => 'Program Baru Muncul',
+            'description' => 'desc',
+            'type' => 'physical',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+            'organizations' => [$this->org->id],
+        ])->assertSessionHasNoErrors();
+
+        $event = Event::where('title', 'Program Baru Muncul')->firstOrFail();
+        $this->assertSame('published', $event->status->value);
+
+        // Ahli organisasi melihat event yang baru dicipta.
+        $this->actingAs($this->member);
+        $this->get(route('events.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Events/Index')
+                ->has('events.data', 1));
     }
 
     public function test_update_event_syncs_organizations_via_legacy_organization_ids(): void
