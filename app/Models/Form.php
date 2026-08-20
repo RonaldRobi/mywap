@@ -18,6 +18,9 @@ class Form extends Model
         'title',
         'slug',
         'description',
+        'price',
+        'payment_required',
+        'terms',
         'is_active',
         'allow_public',
         'share_token',
@@ -31,6 +34,8 @@ class Form extends Model
             'is_active' => 'boolean',
             'allow_public' => 'boolean',
             'recipient_emails' => 'array',
+            'payment_required' => 'boolean',
+            'price' => 'decimal:2',
         ];
     }
 
@@ -66,6 +71,11 @@ class Form extends Model
     public function responses(): HasMany
     {
         return $this->hasMany(FormResponse::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
     }
 
     public function getPublicUrlAttribute(): string

@@ -7,9 +7,11 @@ use App\Models\InfaqDonation;
 use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Payment;
+use App\Models\Registration;
 use App\Services\BayarCashService;
 use App\Services\DonorService;
 use App\Services\FeeService;
+use App\Services\RegistrationPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -370,6 +372,13 @@ class BayarCashController extends Controller
             return route('orders.show', $payableId);
         }
 
+        if ($payableType === 'registration' && $payableId) {
+            $registration = Registration::find($payableId);
+            if ($registration) {
+                return route('registrations.success', $registration);
+            }
+        }
+
         return route('dashboard');
     }
 
@@ -405,6 +414,8 @@ class BayarCashController extends Controller
             }
         } elseif ($payableType === 'order' && $payableId) {
             Order::where('id', $payableId)->update(['status' => 'paid']);
+        } elseif ($payableType === 'registration') {
+            app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }
     }
 }

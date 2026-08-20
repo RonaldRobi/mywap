@@ -12,8 +12,10 @@ use App\Models\User;
 use App\Notifications\FormInvitationNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,7 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormController extends Controller
 {
-    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox'];
+    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file'];
 
     // ─── ADMIN ──────────────────────────────────────────────────────────────
 
@@ -60,7 +62,9 @@ class FormController extends Controller
             'recipient_count' => count($f->recipient_emails ?? []),
             'organization_name' => $f->organization?->name,
             'event_title' => $f->event?->title,
-            'public_url' => $f->public_url,
+            'public_url' => $f->event_id
+                ? route('events.register.public', $f->share_token)
+                : $f->public_url,
             'share_url' => $f->share_url,
             'updated_at' => $f->updated_at?->toDateTimeString(),
         ]);
@@ -95,6 +99,8 @@ class FormController extends Controller
             'organizations' => $organizations,
             'events' => $events,
             'questionTypes' => self::QUESTION_TYPES,
+            'preselectedEventId' => (int) $request->input('event_id', 0) ?: null,
+            'backTo' => $request->input('back_to'),
         ]);
     }
 
@@ -106,6 +112,9 @@ class FormController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'payment_required' => ['boolean'],
+            'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
             'allow_public' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
@@ -130,6 +139,9 @@ class FormController extends Controller
             $form = Form::create([
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
+                'price' => $data['price'] ?? null,
+                'payment_required' => $data['payment_required'] ?? false,
+                'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'allow_public' => $data['allow_public'] ?? true,
                 'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
@@ -158,6 +170,11 @@ class FormController extends Controller
             return $form;
         });
 
+        if ($backTo = $request->input('back_to')) {
+            return redirect()->to($backTo)
+                ->with('success', "Borang \"{$form->title}\" berjaya dicipta.");
+        }
+
         return redirect()->route('admin.forms.index')
             ->with('success', "Borang \"{$form->title}\" berjaya dicipta.");
     }
@@ -184,6 +201,9 @@ class FormController extends Controller
                 'id' => $form->id,
                 'title' => $form->title,
                 'description' => $form->description,
+                'price' => $form->price,
+                'payment_required' => $form->payment_required,
+                'terms' => $form->terms,
                 'is_active' => $form->is_active,
                 'allow_public' => $form->allow_public,
                 'organization_id' => $form->organization_id,
@@ -216,6 +236,9 @@ class FormController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'payment_required' => ['boolean'],
+            'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
             'allow_public' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
@@ -237,6 +260,9 @@ class FormController extends Controller
             $updateData = [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
+                'price' => $data['price'] ?? null,
+                'payment_required' => $data['payment_required'] ?? $form->payment_required,
+                'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? $form->is_active,
                 'allow_public' => $data['allow_public'] ?? $form->allow_public,
                 'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $form->organization_id,
@@ -252,7 +278,7 @@ class FormController extends Controller
             if ($request->hasFile('header_image')) {
                 // Delete old image if exists
                 if ($form->header_image_path) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($form->header_image_path);
+                    Storage::disk('public')->delete($form->header_image_path);
                 }
                 $updateData['header_image_path'] = $request->file('header_image')->store('forms', 'public');
             }
@@ -293,6 +319,11 @@ class FormController extends Controller
 
             $form->questions()->whereNotIn('id', $keptIds)->delete();
         });
+
+        if ($backTo = $request->input('back_to')) {
+            return redirect()->to($backTo)
+                ->with('success', "Borang \"{$form->title}\" berjaya dikemaskini.");
+        }
 
         return redirect()->route('admin.forms.index')
             ->with('success', "Borang \"{$form->title}\" berjaya dikemaskini.");
@@ -509,6 +540,10 @@ class FormController extends Controller
                 'id' => $form->id,
                 'title' => $form->title,
                 'description' => $form->description,
+                'price' => $form->price,
+                'payment_required' => $form->payment_required,
+                'terms' => $form->terms,
+                'event_id' => $form->event_id,
                 'share_token' => $form->share_token,
                 'organization_name' => $form->organization?->name,
                 'header_image_url' => $form->header_image_path
@@ -547,6 +582,19 @@ class FormController extends Controller
         foreach ($form->questions as $q) {
             $key = "answers.{$q->id}";
             $rule = $q->required ? ['required'] : ['nullable'];
+
+            if ($q->type === 'file') {
+                $rule[] = 'file';
+                $rule[] = 'mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip';
+                $rule[] = 'max:10240';
+            } elseif (in_array($q->type, ['email'])) {
+                $rule[] = 'email';
+            } elseif (in_array($q->type, ['number'])) {
+                $rule[] = 'numeric';
+            } elseif (in_array($q->type, ['date'])) {
+                $rule[] = 'date';
+            }
+
             $rules[$key] = $rule;
         }
 
@@ -563,10 +611,14 @@ class FormController extends Controller
             ]);
 
             foreach ($data['answers'] as $questionId => $value) {
+                $stored = $value instanceof UploadedFile
+                    ? $value->store('form-uploads', 'public')
+                    : (is_array($value) ? implode(', ', $value) : (string) $value);
+
                 FormAnswer::create([
                     'form_response_id' => $response->id,
                     'form_question_id' => $questionId,
-                    'value' => is_array($value) ? implode(', ', $value) : (string) $value,
+                    'value' => $stored,
                 ]);
             }
         });

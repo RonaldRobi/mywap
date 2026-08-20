@@ -10,8 +10,9 @@ use Webimpian\BayarcashSdk\Bayarcash;
  * Resolves which payment gateway an organisation uses and delegates the
  * "create a one-time payment redirect" call to the correct service.
  *
- * This is the single place that knows how to branch between BayarCash and DOKU
- * for one-time payments (orders, membership fees, one-time infaq donations).
+ * This is the single place that knows how to branch between BayarCash, DOKU
+ * and senangPay for one-time payments (orders, membership fees, one-time
+ * infaq donations, event registrations).
  *
  * Recurring / Direct Debit is intentionally NOT handled here — only BayarCash
  * supports it, and InfaqController calls BayarCashService directly for that.
@@ -21,6 +22,7 @@ class PaymentGatewayManager
     public function __construct(
         protected BayarCashService $bayarCash,
         protected DokuService $doku,
+        protected SenangPayService $senangPay,
     ) {}
 
     /**
@@ -42,6 +44,28 @@ class PaymentGatewayManager
     }
 
     /**
+     * Maklumat branding untuk paparan pembayaran (nama, tagline, logo, kaedah).
+     * Data diambil dari config/payment-gateways.php — tidak dihardcode di
+     * frontend, supaya gateway masa hadapan cukup dengan menambah config.
+     *
+     * @return array{key: string, name: string, tagline: string, logo: string|null, methods: string}
+     */
+    public function branding(?Organization $org): array
+    {
+        $gateway = $this->gatewayFor($org);
+
+        $config = config("payment-gateways.{$gateway}", []);
+
+        return [
+            'key' => $gateway,
+            'name' => $config['name'] ?? ucfirst($gateway),
+            'tagline' => $config['tagline'] ?? 'Pembayaran dalam talian yang selamat',
+            'logo' => isset($config['logo']) ? url($config['logo']) : null,
+            'methods' => $config['methods'] ?? 'Pembayaran dalam talian',
+        ];
+    }
+
+    /**
      * Create a one-time payment for the given (already persisted) Payment row
      * and return the URL to redirect the payer to.
      *
@@ -58,6 +82,14 @@ class PaymentGatewayManager
         string $description = 'Payment',
     ): ?string {
         return match ($this->gatewayFor($org)) {
+            'senangpay' => $this->senangPay->createPaymentIntent(
+                $org,
+                $payment,
+                $payerName,
+                $payerEmail,
+                $payerPhone,
+                $description,
+            ),
             'doku' => $this->doku->createCheckout(
                 $org,
                 $payment,

@@ -201,6 +201,11 @@ class User extends Authenticatable
         return $this->hasMany(EventRsvp::class);
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**

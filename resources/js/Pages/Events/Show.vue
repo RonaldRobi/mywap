@@ -9,6 +9,8 @@ const props = defineProps({
     comments: { type: Array, default: () => [] },
     relatedEvents: { type: Array, default: () => [] },
     organizations: { type: Array, default: () => [] },
+    registrationForms: { type: Array, default: () => [] },
+    myRegistration: { type: Object, default: null },
 });
 
 const page = usePage();
@@ -424,6 +426,49 @@ function eventShareUrl() {
 
                 <div v-else class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
                     Akaun pentadbir menggunakan mod pengurusan kehadiran (QR + senarai peserta hadir) di bawah.
+                </div>
+            </div>
+
+            <!-- ─── Pendaftaran (Registration) ─────────────────────────────── -->
+            <div v-if="registrationForms.length" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6">
+                <h2 class="text-lg font-black text-gray-900 mb-1">Pendaftaran</h2>
+                <p class="text-sm text-gray-500 mb-4">Daftar sebagai peserta event ini.</p>
+
+                <div v-if="myRegistration" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 mb-4">
+                    <p class="text-sm text-emerald-800">
+                        Anda telah mendaftar — <span class="font-mono font-bold">{{ myRegistration.registration_no }}</span>
+                        <span class="ml-1">({{ myRegistration.status_label }})</span>
+                    </p>
+                    <a :href="route('member.registrations')" class="text-xs font-semibold text-emerald-700 underline mt-1 inline-block">Lihat Pendaftaran Saya</a>
+                </div>
+
+                <div class="space-y-3">
+                    <div v-for="f in registrationForms" :key="f.id" class="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                        <div>
+                            <p class="font-bold text-gray-800">{{ f.title }}</p>
+                            <p v-if="f.description" class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ f.description }}</p>
+                            <p v-if="f.payment_required && f.price" class="text-xs font-bold text-emerald-600 mt-1">RM {{ Number(f.price).toFixed(2) }}</p>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                            <a
+                                :href="f.register_url"
+                                :disabled="!!myRegistration"
+                                class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Daftar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin: pautan senarai pendaftaran -->
+                <div v-if="isSuperadmin" class="mt-4 flex flex-wrap gap-2">
+                    <a :href="route('admin.events.registrations', event.id)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                        Senarai Pendaftaran
+                    </a>
+                    <a :href="route('admin.attendance')" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                        Dashboard Kehadiran
+                    </a>
                 </div>
             </div>
 

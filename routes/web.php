@@ -4,8 +4,8 @@ use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\BayarCashController;
-use App\Http\Controllers\DokuController;
 use App\Http\Controllers\BranchChangeRequestController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BroadcastController;
@@ -16,6 +16,7 @@ use App\Http\Controllers\DashboardBannerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\DirectoryController;
+use App\Http\Controllers\DokuController;
 use App\Http\Controllers\DonorController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExportController;
@@ -40,6 +41,8 @@ use App\Http\Controllers\PostcodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCardController;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\SenangPayController;
 use App\Http\Controllers\SharePreviewController;
 use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
@@ -83,6 +86,10 @@ Route::get('/bayarcash/redirect', [BayarCashController::class, 'redirect'])->nam
 Route::post('/doku/callback', [DokuController::class, 'callback'])->name('doku.callback');
 Route::match(['get', 'post'], '/doku/redirect', [DokuController::class, 'redirect'])->name('doku.redirect');
 
+Route::get('/senangpay/pay/{payment}', [SenangPayController::class, 'pay'])->name('senangpay.pay');
+Route::post('/senangpay/callback', [SenangPayController::class, 'callback'])->name('senangpay.callback');
+Route::get('/senangpay/redirect', [SenangPayController::class, 'redirect'])->name('senangpay.redirect');
+
 Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show', [
     'year' => $infaq->year,
     'month' => $infaq->month,
@@ -94,7 +101,17 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
 
     Route::middleware('role:Superadmin|Admin')->group(function () {
-        Route::get('/admin/attendance', [EventController::class, 'adminAttendance'])->name('admin.attendance');
+        Route::get('/admin/attendance', [AttendanceController::class, 'adminIndex'])->name('admin.attendance');
+        Route::get('/admin/attendance/export/excel', [AttendanceController::class, 'exportExcel'])->name('admin.attendance.export.excel');
+        Route::get('/admin/attendance/export/pdf', [AttendanceController::class, 'exportPdf'])->name('admin.attendance.export.pdf');
+        Route::get('/admin/events', [EventController::class, 'adminIndex'])->name('admin.events.index');
+        Route::get('/admin/events/create', [EventController::class, 'create'])->name('admin.events.create');
+        Route::post('/admin/events', [EventController::class, 'storeAdmin'])->name('admin.events.store');
+        Route::get('/admin/events/{event}', [EventController::class, 'showAdmin'])->name('admin.events.show');
+        Route::get('/admin/events/{event}/edit', [EventController::class, 'edit'])->name('admin.events.edit');
+        Route::put('/admin/events/{event}', [EventController::class, 'updateAdmin'])->name('admin.events.update');
+        Route::get('/admin/events/{event}/registrations', [RegistrationController::class, 'adminIndex'])->name('admin.events.registrations');
+        Route::patch('/admin/events/registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('admin.events.registrations.update');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');
@@ -248,6 +265,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
     Route::middleware('role:Member')->group(function () {
         Route::get('/member/dashboard', [MemberDashboardController::class, 'index'])->name('member.dashboard');
+        Route::get('/member/registrations', [RegistrationController::class, 'memberIndex'])->name('member.registrations');
         Route::get('/member/financial/overview', [FinancialController::class, 'memberOverview'])->name('member.financial.overview');
         Route::get('/member/referral', [MemberDashboardController::class, 'referral'])->name('member.referral');
         Route::get('/member/announcements', [InformationHubController::class, 'announcements'])->name('member.announcements');
@@ -388,6 +406,20 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
     Route::post('/borang/{token}', [FormController::class, 'publicSubmit'])->name('forms.public.submit');
 });
 
+// ─── Public Event Registration (bukan ahli, tanpa login) ───────────────────
+Route::group(['middleware' => ['throttle:60,1']], function () {
+    Route::get('/daftar/{token}', [RegistrationController::class, 'publicCreate'])->name('events.register.public');
+    Route::post('/daftar/{token}', [RegistrationController::class, 'publicStore'])->name('events.register.public.store');
+});
+
+// ─── QR Kehadiran (SATU QR Event — ahli & bukan ahli) ──────────────────────
+Route::group(['middleware' => ['throttle:120,1']], function () {
+    Route::match(['get', 'post'], '/events/{id}/attend/{token}', [AttendanceController::class, 'scan'])
+        ->name('events.attend');
+    Route::post('/events/{id}/attend/{token}/identify', [AttendanceController::class, 'guestIdentify'])
+        ->name('events.attend.identify');
+});
+
 // ─── Public Poll Feedback (program poster QR) ────────────────────────────────
 Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
 
@@ -420,11 +452,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
 
-    // QR Attendance scan endpoint — auth required so we can attribute the scan
-    // to the authenticated user.  If user is a guest, Laravel redirects to login
-    // and stores this URL as the `intended` destination.
-    Route::get('/events/{id}/attend/{token}', [EventController::class, 'recordAttendance'])
-        ->name('events.attend');
+    // Registration Event — daftar oleh ahli
+    Route::get('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'create'])->name('events.register');
+    Route::post('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'store'])->name('events.register.store');
+    Route::get('/registrations/{registration:registration_no}/success', [RegistrationController::class, 'success'])->name('registrations.success');
 
     // ─── Info Organisasi (Maklumat + Carta Organisasi) ──────────────────────
     Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');

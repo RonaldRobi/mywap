@@ -20,6 +20,12 @@ function initAnswers() {
 initAnswers();
 
 function submit() {
+    // Borang yang dikaitkan dengan event = borang pendaftaran event.
+    // Alihkan tetamu ke halaman pendaftaran (yang mencipta Registration).
+    if (props.form.event_id) {
+        window.location.href = route('events.register.public', { token: props.form.share_token });
+        return;
+    }
     responseForm.post(route('forms.public.submit', { token: props.form.share_token ?? window.location.pathname.split('/').pop() }));
 }
 </script>
@@ -127,7 +133,7 @@ function submit() {
                     :disabled="responseForm.processing"
                     class="w-full rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                    {{ responseForm.processing ? 'Menghantar...' : 'Hantar' }}
+                    {{ responseForm.processing ? 'Menghantar...' : (form.event_id ? 'Teruskan ke Pendaftaran Event' : 'Hantar') }}
                 </button>
 
                 <p class="text-center text-xs text-gray-400">

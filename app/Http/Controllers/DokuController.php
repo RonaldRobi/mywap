@@ -6,8 +6,10 @@ use App\Models\Donor;
 use App\Models\InfaqDonation;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Registration;
 use App\Services\DokuService;
 use App\Services\FeeService;
+use App\Services\RegistrationPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -202,6 +204,8 @@ class DokuController extends Controller
             }
         } elseif ($payableType === 'order' && $payableId) {
             Order::where('id', $payableId)->update(['status' => 'paid']);
+        } elseif ($payableType === 'registration') {
+            app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }
     }
 
@@ -230,6 +234,13 @@ class DokuController extends Controller
 
         if ($payableType === 'order' && $payableId) {
             return route('orders.show', $payableId);
+        }
+
+        if ($payableType === 'registration' && $payableId) {
+            $registration = Registration::find($payableId);
+            if ($registration) {
+                return route('registrations.success', $registration);
+            }
         }
 
         return route('dashboard');

@@ -44,6 +44,9 @@ class Organization extends Model
         'doku_api_key',
         'doku_secret_key',
         'doku_environment',
+        'senangpay_merchant_id',
+        'senangpay_secret_key',
+        'senangpay_environment',
         'website_url',
         'facebook_url',
         'instagram_url',
@@ -60,6 +63,7 @@ class Organization extends Model
             // stay as-is to avoid breaking existing plaintext-stored values.
             'doku_api_key' => 'encrypted',
             'doku_secret_key' => 'encrypted',
+            'senangpay_secret_key' => 'encrypted',
         ];
     }
 
@@ -77,6 +81,12 @@ class Organization extends Model
             && filled($this->doku_secret_key);
     }
 
+    public function hasSenangPayConfig(): bool
+    {
+        return filled($this->senangpay_merchant_id)
+            && filled($this->senangpay_secret_key);
+    }
+
     /**
      * Resolve which gateway this organisation actively collects money through.
      *
@@ -89,6 +99,10 @@ class Organization extends Model
     {
         $selected = $this->payment_gateway;
 
+        if ($selected === 'senangpay' && $this->hasSenangPayConfig()) {
+            return 'senangpay';
+        }
+
         if ($selected === 'doku' && $this->hasDokuConfig()) {
             return 'doku';
         }
@@ -98,6 +112,10 @@ class Organization extends Model
         }
 
         // No explicit (or misconfigured) selection: use whatever is ready.
+        if ($this->hasSenangPayConfig()) {
+            return 'senangpay';
+        }
+
         if ($this->hasDokuConfig()) {
             return 'doku';
         }

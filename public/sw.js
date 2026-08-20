@@ -1,5 +1,5 @@
 // MyWAP Service Worker — Basic caching strategy
-const CACHE_NAME = 'mymarhalah-v1';
+const CACHE_NAME = 'mywap-v2';
 const PRECACHE_URLS = [
     '/offline.html',
 ];
@@ -33,8 +33,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         fetch(event.request)
             .then((response) => {
-                // Cache successful responses for later
-                if (response.ok) {
+                // Cache successful responses for later (skip Vite dev HMR URLs)
+                if (response.ok && !event.request.url.includes('/@vite/')) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
                 }

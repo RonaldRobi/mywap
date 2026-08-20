@@ -36,6 +36,9 @@ const editForms = Object.fromEntries(
             doku_api_key: organization.doku_api_key ?? '',
             doku_secret_key: organization.doku_secret_key ?? '',
             doku_environment: organization.doku_environment ?? 'sandbox',
+            senangpay_merchant_id: organization.senangpay_merchant_id ?? '',
+            senangpay_secret_key: organization.senangpay_secret_key ?? '',
+            senangpay_environment: organization.senangpay_environment ?? 'sandbox',
             website_url: organization.website_url ?? '',
             facebook_url: organization.facebook_url ?? '',
             instagram_url: organization.instagram_url ?? '',
@@ -113,6 +116,11 @@ function confirmDeleteChartMember() {
 const dokuWebhookUrl = computed(() => {
     if (typeof window === 'undefined') return '/doku/callback';
     return `${window.location.origin}/doku/callback`;
+});
+
+const senangpayCallbackUrl = computed(() => {
+    if (typeof window === 'undefined') return '/senangpay/callback';
+    return `${window.location.origin}/senangpay/callback`;
 });
 
 const sortedOrganizations = computed(() =>
@@ -251,6 +259,7 @@ function updateOrganizationLogo(organization) {
                                 <option value="">Auto (guna yang dikonfigur)</option>
                                 <option value="bayarcash">BayarCash (FPX + Direct Debit)</option>
                                 <option value="doku">DOKU (FPX + E-Wallet)</option>
+                                <option value="senangpay">senangPay (FPX + QR Pay)</option>
                             </select>
                             <p class="mt-1 text-[11px] text-gray-500">
                                 Gateway yang akan menerima wang untuk organisasi ini.
@@ -314,6 +323,34 @@ function updateOrganizationLogo(organization) {
                                 <p class="text-[11px] text-gray-500">
                                     Webhook URL (Notification): salin ke DOKU Back Office &rarr; Settings &rarr; Webhook:
                                     <code class="rounded bg-gray-100 px-1 py-0.5 text-[10px]">{{ dokuWebhookUrl }}</code>
+                                </p>
+                            </div>
+                        </details>
+
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">senangPay Payment Gateway</summary>
+                            <div class="space-y-3 border-t border-gray-100 p-3">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Merchant ID</label>
+                                    <input v-model="editForms[organization.id].senangpay_merchant_id" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="cth. 14222653788472">
+                                    <p v-if="editForms[organization.id].errors.senangpay_merchant_id" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.senangpay_merchant_id }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Secret Key</label>
+                                    <input v-model="editForms[organization.id].senangpay_secret_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Dari Dashboard &rarr; Settings &rarr; Profile (disulitkan)">
+                                    <p v-if="editForms[organization.id].errors.senangpay_secret_key" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.senangpay_secret_key }}</p>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Environment</label>
+                                    <select v-model="editForms[organization.id].senangpay_environment" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
+                                        <option value="sandbox">Sandbox (Ujian — dev2.senangpay.my)</option>
+                                        <option value="production">Production (Produksi — app.senangpay.my)</option>
+                                    </select>
+                                </div>
+                                <p class="text-[11px] text-gray-500">
+                                    Menyokong FPX &amp; QR Pay melalui hosted page senangPay.
+                                    Callback URL:
+                                    <code class="rounded bg-gray-100 px-1 py-0.5 text-[10px">{{ senangpayCallbackUrl }}</code>
                                 </p>
                             </div>
                         </details>

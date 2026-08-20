@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\EventCategory;
+use App\Enums\EventStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +39,7 @@ class Event extends Model
         'organization_id', 'title', 'slug', 'description', 'type',
         'location_or_link', 'start_time', 'end_time',
         'featured_image_path', 'attendance_token',
+        'status', 'category',
     ];
 
     protected function casts(): array
@@ -44,6 +47,8 @@ class Event extends Model
         return [
             'start_time' => 'datetime',
             'end_time' => 'datetime',
+            'status' => EventStatus::class,
+            'category' => EventCategory::class,
         ];
     }
 
@@ -129,5 +134,46 @@ class Event extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(EventComment::class)->latest();
+    }
+
+    /**
+     * Organisasi terlibat (many-to-many). `organization_id` kekal sebagai
+     * pemilik/owner; pivot ini menyenaraikan semua organisasi yang terlibat
+     * dalam satu event (cth Muktamar Nasional: ABIM + PKPIM + WADAH).
+     */
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'event_organization')
+            ->withTimestamps();
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
+    public function forms(): HasMany
+    {
+        return $this->hasMany(Form::class);
+    }
+
+    public function activeForms(): HasMany
+    {
+        return $this->hasMany(Form::class)->where('is_active', true);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === EventStatus::Published;
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->status === EventStatus::Closed;
     }
 }
