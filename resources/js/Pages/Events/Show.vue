@@ -11,6 +11,8 @@ const props = defineProps({
     organizations: { type: Array, default: () => [] },
     registrationForms: { type: Array, default: () => [] },
     myRegistration: { type: Object, default: null },
+    statuses: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -170,6 +172,8 @@ const editForm = useForm({
     title: props.event.title,
     description: props.event.description ?? '',
     type: props.event.type,
+    status: props.event.status ?? 'draft',
+    category: props.event.category ?? 'lain',
     location_or_link: props.event.location_or_link ?? '',
     start_time: toDatetimeLocal(props.event.start_time),
     end_time: toDatetimeLocal(props.event.end_time),
@@ -189,6 +193,8 @@ function openEditModal() {
     editForm.title = props.event.title;
     editForm.description = props.event.description ?? '';
     editForm.type = props.event.type;
+    editForm.status = props.event.status ?? 'draft';
+    editForm.category = props.event.category ?? 'lain';
     editForm.location_or_link = props.event.location_or_link ?? '';
     editForm.start_time = toDatetimeLocal(props.event.start_time);
     editForm.end_time = toDatetimeLocal(props.event.end_time);
@@ -782,6 +788,22 @@ function eventShareUrl() {
                                     <label class="text-xs font-semibold text-gray-500">Lokasi / Pautan</label>
                                     <input v-model="editForm.location_or_link" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
                                     <p v-if="editForm.errors.location_or_link" class="text-xs text-red-500">{{ editForm.errors.location_or_link }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Status + Kategori -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Kategori</label>
+                                    <select v-model="editForm.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                        <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Status</label>
+                                    <select v-model="editForm.status" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
+                                        <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+                                    </select>
                                 </div>
                             </div>
 

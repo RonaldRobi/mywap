@@ -106,7 +106,7 @@ onUnmounted(() => { clearInterval(pollInterval); });
 
             <!-- QR Code (server-rendered SVG) -->
             <div
-                class="p-3 rounded-2xl border-2 border-gray-100"
+                class="p-3 rounded-2xl border-2 border-gray-100 [&_svg]:block [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full"
                 v-html="qrSvg"
             ></div>
 

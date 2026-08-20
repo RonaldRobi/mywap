@@ -773,4 +773,71 @@ class EventRegistrationTest extends TestCase
                 ->has('forms', 1)
                 ->whereNotNull('forms.0.qr_svg'));
     }
+
+    public function test_admin_can_update_published_event(): void
+    {
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $response = $this->put(route('admin.events.update', $event->id), [
+            'title' => 'Tajuk Baharu Test',
+            'description' => 'desc baru',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'seminar',
+            'location_or_link' => 'Kuala Lumpur',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+            'organizations' => [$this->org->id],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Tajuk Baharu Test']);
+        $this->assertSame('seminar', $event->refresh()->category->value);
+    }
+
+    public function test_update_event_without_status_and_category_preserves_them(): void
+    {
+        // Reproduksi bug sebenar: modal edit lama (page Program) tidak hantar
+        // status/category — perubahan mesti tetap disimpan.
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $response = $this->put(route('events.update', $event->id), [
+            'title' => 'Tajuk Tanpa Status',
+            'description' => 'desc',
+            'type' => 'physical',
+            'location_or_link' => 'Melaka',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Tajuk Tanpa Status']);
+        $this->assertSame('published', $event->refresh()->status->value);
+        $this->assertSame('muktamar', $event->refresh()->category->value);
+    }
+
+    public function test_create_event_without_status_and_category_defaults(): void
+    {
+        $this->actingAs($this->admin);
+
+        $this->post(route('events.store'), [
+            'title' => 'Program Default',
+            'description' => 'desc',
+            'type' => 'physical',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+        ])->assertSessionHasNoErrors();
+
+        $event = Event::where('title', 'Program Default')->firstOrFail();
+        $this->assertSame('draft', $event->status->value);
+        $this->assertSame('lain', $event->category->value);
+    }
 }

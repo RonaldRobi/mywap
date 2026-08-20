@@ -172,6 +172,10 @@ class EventController extends Controller
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
             'attendedEvents' => $attendedEvents,
+            'statuses' => collect(EventStatus::cases())
+                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'categories' => collect(EventCategory::cases())
+                ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
     }
 
@@ -279,6 +283,10 @@ class EventController extends Controller
             'organizations' => $user->hasRole('Superadmin')
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
+            'statuses' => collect(EventStatus::cases())
+                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'categories' => collect(EventCategory::cases())
+                ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
     }
 
@@ -294,8 +302,8 @@ class EventController extends Controller
 
         $isSuperadmin = $request->user()->hasRole('Superadmin');
 
-        // Non-superadmin: must own the event
-        if (! $isSuperadmin && $event->organization_id !== (int) $request->user()->current_organization_id) {
+        // Non-superadmin: must own the event (owner org ATAU organisasi terlibat).
+        if (! $isSuperadmin && ! $this->adminOwnsEvent($request->user(), $event)) {
             abort(403);
         }
 
@@ -304,8 +312,9 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
-            'status' => ['required', 'in:draft,published,closed'],
-            'category' => ['required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
+            // Optional — borang lama (modal Program) tidak hantar field ini.
+            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
@@ -331,8 +340,8 @@ class EventController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'type' => $data['type'],
-            'status' => $data['status'],
-            'category' => $data['category'],
+            'status' => $data['status'] ?? $event->status->value,
+            'category' => $data['category'] ?? $event->category->value,
             'location_or_link' => $data['location_or_link'] ?? null,
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
@@ -360,8 +369,8 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
-            'status' => ['required', 'in:draft,published,closed'],
-            'category' => ['required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
+            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
@@ -382,8 +391,8 @@ class EventController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'type' => $data['type'],
-            'status' => $data['status'],
-            'category' => $data['category'],
+            'status' => $data['status'] ?? 'draft',
+            'category' => $data['category'] ?? 'lain',
             'location_or_link' => $data['location_or_link'] ?? null,
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
@@ -621,8 +630,8 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
-            'status' => ['required', 'in:draft,published,closed'],
-            'category' => ['required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
+            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
@@ -643,8 +652,8 @@ class EventController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'type' => $data['type'],
-            'status' => $data['status'],
-            'category' => $data['category'],
+            'status' => $data['status'] ?? $event?->status?->value ?? 'draft',
+            'category' => $data['category'] ?? $event?->category?->value ?? 'lain',
             'location_or_link' => $data['location_or_link'] ?? null,
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],

@@ -33,7 +33,7 @@ function copyUrl() {
                 <p class="mt-1 text-xs text-gray-500">Imbas kod QR untuk membuka borang tanpa perlu log masuk. Sesuai untuk dikongsi di media sosial atau dicetak pada poster.</p>
 
                 <div class="mx-auto mt-6 w-56 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
-                    <div v-html="qrSvg"></div>
+                    <div class="[&_svg]:block [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full" v-html="qrSvg"></div>
                 </div>
 
                 <div class="mt-5 flex items-center gap-2">

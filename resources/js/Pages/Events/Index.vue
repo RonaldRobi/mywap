@@ -24,6 +24,14 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    statuses: {
+        type: Array,
+        default: () => [],
+    },
+    categories: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const page = usePage();
@@ -59,6 +67,8 @@ const createProgramForm = useForm({
     title: '',
     description: '',
     type: 'physical',
+    status: 'draft',
+    category: 'lain',
     location_or_link: '',
     start_time: '',
     end_time: '',
@@ -506,6 +516,21 @@ watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
                                 <div class="space-y-1">
                                     <label class="text-xs font-semibold text-gray-500">Lokasi / Link</label>
                                     <input v-model="createProgramForm.location_or_link" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Kategori</label>
+                                    <select v-model="createProgramForm.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                                        <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-xs font-semibold text-gray-500">Status</label>
+                                    <select v-model="createProgramForm.status" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                                        <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+                                    </select>
                                 </div>
                             </div>
 
