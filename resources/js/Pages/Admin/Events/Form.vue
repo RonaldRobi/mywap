@@ -66,6 +66,17 @@ function submit() {
                 {{ $page.props.flash.error }}
             </div>
 
+            <div v-if="Object.keys($page.props.errors).length" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+                <p class="font-semibold mb-1">Terdapat ralat:</p>
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li v-for="(msg, key) in $page.props.errors" :key="key">{{ msg }}</li>
+                </ul>
+            </div>
+
+            <div v-if="form.hasErrors" class="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700 mb-4">
+                Sila semak borang — ada medan yang belum lengkap atau tidak sah.
+            </div>
+
             <div class="rounded-3xl bg-white border border-gray-100 shadow-sm p-6 space-y-5">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Tajuk *</label>
