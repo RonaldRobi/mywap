@@ -33,8 +33,6 @@ class SenangPayController extends Controller
      */
     public function pay(Request $request, Payment $payment)
     {
-        abort_unless($request->hasValidSignature(), 403);
-
         $org = $payment->organization;
         abort_unless($org && $org->hasSenangPayConfig(), 404, 'Gateway tidak dikonfigurasi.');
 

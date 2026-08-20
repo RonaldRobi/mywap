@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Organization;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 
 /**
  * senangPay — Hosted Payment Page integration.
@@ -122,11 +121,9 @@ class SenangPayService
             'gateway_url' => $payload['url'],
         ]);
 
-        return URL::temporarySignedRoute(
-            'senangpay.pay',
-            now()->addHour(),
-            ['payment' => $payment->id],
-        );
+        // Halaman auto-POST ke senangPay. Tiada signed route — ia menyebabkan
+        // 403/blank di belakang proxy (scheme http/https tak konsisten).
+        return route('senangpay.pay', ['payment' => $payment->id]);
     }
 
     /**

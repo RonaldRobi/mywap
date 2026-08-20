@@ -950,4 +950,24 @@ class EventRegistrationTest extends TestCase
 
         $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Tajuk Spoofing']);
     }
+
+    public function test_senangpay_pay_page_accessible_without_signature(): void
+    {
+        $org = $this->makeSenangPayOrg();
+
+        $payment = Payment::create([
+            'payable_type' => Registration::class,
+            'payable_id' => null,
+            'amount' => 30.00,
+            'status' => 'pending',
+            'reference' => 'REG-PAYPAGE01',
+            'description' => 'Pendaftaran: Event',
+            'gateway' => 'senangpay',
+            'organization_id' => $org->id,
+        ]);
+
+        $this->get(route('senangpay.pay', ['payment' => $payment->id]))
+            ->assertOk()
+            ->assertSee('senangPay');
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Log;
 use Webimpian\BayarcashSdk\Bayarcash;
 
 /**
@@ -82,32 +83,42 @@ class PaymentGatewayManager
         string $description = 'Payment',
         string $paymentMethod = 'fpx',
     ): ?string {
-        return match ($this->gatewayFor($org)) {
-            'senangpay' => $this->senangPay->createPaymentIntent(
-                $org,
-                $payment,
-                $payerName,
-                $payerEmail,
-                $payerPhone,
-                $description,
-            ),
-            'doku' => $this->doku->createCheckout(
-                $org,
-                $payment,
-                $payerName,
-                $payerEmail,
-                $payerPhone,
-                $description,
-            ),
-            'bayarcash' => $this->bayarCash->createPaymentIntent(
-                $org,
-                $payment,
-                $payerName,
-                $payerEmail,
-                $payerPhone,
-                $paymentMethod === 'duitnow_qr' ? Bayarcash::DUITNOW_QR : Bayarcash::FPX,
-            ),
-            default => null,
-        };
+        try {
+            return match ($this->gatewayFor($org)) {
+                'senangpay' => $this->senangPay->createPaymentIntent(
+                    $org,
+                    $payment,
+                    $payerName,
+                    $payerEmail,
+                    $payerPhone,
+                    $description,
+                ),
+                'doku' => $this->doku->createCheckout(
+                    $org,
+                    $payment,
+                    $payerName,
+                    $payerEmail,
+                    $payerPhone,
+                    $description,
+                ),
+                'bayarcash' => $this->bayarCash->createPaymentIntent(
+                    $org,
+                    $payment,
+                    $payerName,
+                    $payerEmail,
+                    $payerPhone,
+                    $paymentMethod === 'duitnow_qr' ? Bayarcash::DUITNOW_QR : Bayarcash::FPX,
+                ),
+                default => null,
+            };
+        } catch (\Throwable $e) {
+            Log::error('createPaymentRedirect gagal', [
+                'gateway' => $this->gatewayFor($org),
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }
