@@ -80,6 +80,7 @@ class PaymentGatewayManager
         string $payerEmail,
         ?string $payerPhone = null,
         string $description = 'Payment',
+        string $paymentMethod = 'fpx',
     ): ?string {
         return match ($this->gatewayFor($org)) {
             'senangpay' => $this->senangPay->createPaymentIntent(
@@ -104,7 +105,7 @@ class PaymentGatewayManager
                 $payerName,
                 $payerEmail,
                 $payerPhone,
-                Bayarcash::FPX,
+                $paymentMethod === 'duitnow_qr' ? Bayarcash::DUITNOW_QR : Bayarcash::FPX,
             ),
             default => null,
         };

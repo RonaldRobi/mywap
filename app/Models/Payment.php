@@ -24,6 +24,7 @@ class Payment extends Model
         'gateway',
         'gateway_ref',
         'gateway_url',
+        'channel',
         'organization_id',
     ];
 

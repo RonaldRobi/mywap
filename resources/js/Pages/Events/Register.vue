@@ -24,6 +24,7 @@ const featuredImage = computed(() => props.form.header_image_url || props.event.
 // tiada field peserta auto dijana.
 const registerForm = useForm({
     answers: {},
+    payment_method: 'fpx',
 });
 
 function copyLink() {
@@ -50,7 +51,7 @@ initAnswers();
 function submit() {
     const routeName = props.isGuest ? 'events.register.public.store' : 'events.register.store';
     const params = props.isGuest
-        ? { token: props.form.share_token }
+        ? { token: props.form.share_token || window.location.pathname.split('/').pop() }
         : { event: props.event.slug, form: props.form.id };
 
     registerForm.post(route(routeName, params), {
@@ -189,6 +190,33 @@ function submit() {
                     </div>
 
                     <PaymentGatewayBadge v-if="paymentGateway" :gateway="paymentGateway" />
+
+                    <!-- Pilih kaedah bayaran -->
+                    <div class="pt-1">
+                        <p class="text-xs font-semibold text-gray-600 mb-2">Pilih kaedah bayaran:</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label
+                                class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition"
+                                :class="registerForm.payment_method === 'fpx' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                            >
+                                <input type="radio" v-model="registerForm.payment_method" value="fpx" class="text-indigo-600 border-gray-300" />
+                                <span>
+                                    <span class="block font-semibold text-gray-800">FPX</span>
+                                    <span class="block text-[11px] text-gray-400">Internet Banking</span>
+                                </span>
+                            </label>
+                            <label
+                                class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition"
+                                :class="registerForm.payment_method === 'duitnow_qr' ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                            >
+                                <input type="radio" v-model="registerForm.payment_method" value="duitnow_qr" class="text-indigo-600 border-gray-300" />
+                                <span>
+                                    <span class="block font-semibold text-gray-800">QR Pay</span>
+                                    <span class="block text-[11px] text-gray-400">Imbas &amp; bayar</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Terms -->

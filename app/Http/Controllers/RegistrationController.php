@@ -211,13 +211,13 @@ class RegistrationController extends Controller
                 ->with('success', 'Pendaftaran berjaya! No Pendaftaran: '.$registration->registration_no);
         }
 
-        return $this->initiatePayment($registration, $form, $event);
+        return $this->initiatePayment($registration, $form, $event, $data['payment_method'] ?? 'fpx');
     }
 
     /**
      * Cipta Payment dan redirect ke gateway (atau tandakan berjaya dalam mod dummy).
      */
-    protected function initiatePayment(Registration $registration, Form $form, Event $event): RedirectResponse
+    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx'): RedirectResponse
     {
         $org = $form->organization
             ?? ($event->organization_id ? $event->organization : null);
@@ -232,6 +232,7 @@ class RegistrationController extends Controller
             'description' => 'Pendaftaran: '.$event->title,
             'gateway' => $org ? $this->gateways->gatewayFor($org) : 'dummy',
             'organization_id' => $org?->id,
+            'channel' => $paymentMethod,
         ]);
 
         if ($useGateway && $org) {
@@ -242,6 +243,7 @@ class RegistrationController extends Controller
                 $registration->email ?: ($registration->name.'@mywap.my'),
                 $registration->phone,
                 'Pendaftaran: '.$event->title,
+                $paymentMethod,
             );
 
             if ($url) {
@@ -424,6 +426,7 @@ class RegistrationController extends Controller
     {
         $rules = [
             'answers' => ['required', 'array'],
+            'payment_method' => ['nullable', 'in:fpx,duitnow_qr'],
         ];
 
         foreach ($form->questions as $q) {
@@ -551,6 +554,7 @@ class RegistrationController extends Controller
             'payment_required' => $form->payment_required,
             'terms' => $form->terms,
             'organization_name' => $form->organization?->name,
+            'share_token' => $form->share_token,
             'header_image_url' => $form->header_image_path
                 ? asset('storage/'.$form->header_image_path)
                 : null,

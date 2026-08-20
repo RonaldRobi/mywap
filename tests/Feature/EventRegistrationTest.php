@@ -494,9 +494,48 @@ class EventRegistrationTest extends TestCase
         $response->assertStatus(302);
         $response->assertSessionHasNoErrors();
 
-        $event = Event::withoutGlobalScopes()->where('title', 'Muktamar Gabungan')->firstOrFail();
+        $event = Event::where('title', 'Muktamar Gabungan')->firstOrFail();
         $this->assertTrue($event->organizations->contains($this->org));
         $this->assertTrue($event->organizations->contains($this->otherOrg));
+    }
+
+    public function test_registration_sends_payment_method_channel(): void
+    {
+        $org = $this->makeSenangPayOrg();
+        $event = Event::create([
+            'organization_id' => $org->id,
+            'title' => 'Event Channel',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'muktamar',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(2),
+        ]);
+        $event->organizations()->sync([$org->id]);
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $org->id,
+            'title' => 'Borang Channel',
+            'price' => 30.00,
+            'payment_required' => true,
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+        FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'sort_order' => 0]);
+
+        $this->actingAs($this->member);
+
+        $this->post(route('events.register.store', ['event' => $event->slug, 'form' => $form->id]), [
+            'payment_method' => 'duitnow_qr',
+            'answers' => [$form->questions->first()->id => 'Ali'],
+        ])->assertRedirect();
+
+        $payment = Payment::where('payable_type', Registration::class)->latest()->firstOrFail();
+        $this->assertSame('duitnow_qr', $payment->channel);
+        $this->assertSame('senangpay', $payment->gateway);
     }
 
     public function test_admin_can_delete_own_event_and_its_forms(): void
@@ -740,7 +779,8 @@ class EventRegistrationTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Events/Register')
                 ->where('canShare', false)
-                ->whereNull('qrSvg'));
+                ->whereNull('qrSvg')
+                ->where('form.share_token', $form->share_token));
     }
 
     public function test_admin_events_index_includes_form_url(): void
