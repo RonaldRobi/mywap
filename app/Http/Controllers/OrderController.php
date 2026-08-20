@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class OrderController extends Controller
 {
@@ -260,7 +261,7 @@ class OrderController extends Controller
         }
     }
 
-    public function pay(Order $order): RedirectResponse
+    public function pay(Order $order): Response
     {
         $this->authorize('view', $order);
 
@@ -298,7 +299,7 @@ class OrderController extends Controller
             );
 
             if ($url) {
-                return redirect()->away($url);
+                return Inertia::location($url);
             }
 
             $payment->update(['status' => 'failed']);

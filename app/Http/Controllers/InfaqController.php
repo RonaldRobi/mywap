@@ -408,7 +408,7 @@ SVG;
 
         // External campaigns have no internal donation form — send them to DOKU.
         if ($infaq->is_external) {
-            return redirect()->away($infaq->external_url);
+            return Inertia::location($infaq->external_url);
         }
 
         $infaq->load('organization:id,name');
@@ -424,11 +424,11 @@ SVG;
         ]);
     }
 
-    public function donate(Request $request, $year, $month, $day, Infaq $infaq): RedirectResponse
+    public function donate(Request $request, $year, $month, $day, Infaq $infaq): \Symfony\Component\HttpFoundation\Response
     {
         // External campaigns are handled entirely on the external (DOKU) page.
         if ($infaq->is_external) {
-            return redirect()->away($infaq->external_url);
+            return Inertia::location($infaq->external_url);
         }
 
         $isRecurring = $request->boolean('is_recurring') && $infaq->allow_recurring;
@@ -555,7 +555,7 @@ SVG;
             }
 
             if ($url) {
-                return redirect()->away($url);
+                return Inertia::location($url);
             }
 
             $payment->update(['status' => 'failed']);

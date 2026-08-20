@@ -77,7 +77,7 @@ class RegistrationController extends Controller
     /**
      * Ahli menghantar pendaftaran.
      */
-    public function store(Request $request, Event $event, Form $form): RedirectResponse
+    public function store(Request $request, Event $event, Form $form): \Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
         $form->load('questions');
@@ -136,7 +136,7 @@ class RegistrationController extends Controller
     /**
      * Bukan ahli menghantar pendaftaran.
      */
-    public function publicStore(Request $request, string $token): RedirectResponse
+    public function publicStore(Request $request, string $token): \Symfony\Component\HttpFoundation\Response
     {
         $form = Form::where('share_token', $token)
             ->where('is_active', true)
@@ -158,7 +158,7 @@ class RegistrationController extends Controller
      * Cipta Registration + FormResponse + FormAnswers, dan proses bayaran
      * jika borang mewajibkan bayaran.
      */
-    protected function processRegistration(Form $form, Event $event, array $data, ?User $user): RedirectResponse
+    protected function processRegistration(Form $form, Event $event, array $data, ?User $user): \Symfony\Component\HttpFoundation\Response
     {
         $participant = $this->mapAnswersToParticipant($form, $data['answers'] ?? []);
 
@@ -217,7 +217,7 @@ class RegistrationController extends Controller
     /**
      * Cipta Payment dan redirect ke gateway (atau tandakan berjaya dalam mod dummy).
      */
-    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx'): RedirectResponse
+    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx'): \Symfony\Component\HttpFoundation\Response
     {
         $org = $form->organization
             ?? ($event->organization_id ? $event->organization : null);
@@ -247,7 +247,7 @@ class RegistrationController extends Controller
             );
 
             if ($url) {
-                return redirect()->away($url);
+                return Inertia::location($url);
             }
 
             $payment->update(['status' => 'failed']);

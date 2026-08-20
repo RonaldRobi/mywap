@@ -208,7 +208,7 @@ class PaymentController extends Controller
     /**
      * Member: initiate a membership fee payment via BayarCash or dummy fallback.
      */
-    public function payFee(Request $request, FeeService $feeService): RedirectResponse
+    public function payFee(Request $request, FeeService $feeService): \Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user()->load('organization');
 
@@ -259,7 +259,7 @@ class PaymentController extends Controller
             );
 
             if ($url) {
-                return redirect()->away($url);
+                return Inertia::location($url);
             }
 
             $payment->update(['status' => 'failed']);
