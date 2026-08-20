@@ -116,7 +116,8 @@ function save() {
     };
 
     if (isEditing) {
-        router.put(route('admin.forms.update', props.form.id), payload, {
+        // Multipart PUT tidak di-parse PHP — guna POST + method spoofing.
+        router.post(route('admin.forms.update', props.form.id), { ...payload, _method: 'PUT' }, {
             forceFormData: true,
             onFinish: () => { busy.saving = false; },
         });

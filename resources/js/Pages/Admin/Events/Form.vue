@@ -51,19 +51,21 @@ function submit() {
         if (!payload.featured_image) {
             delete payload.featured_image;
         }
+        // Multipart PUT tidak di-parse oleh PHP — guna POST + method spoofing.
+        if (isEditing) {
+            payload._method = 'PUT';
+        }
         return payload;
     });
 
-    const options = {
+    const url = isEditing
+        ? route('admin.events.update', props.event.id)
+        : route('admin.events.store');
+
+    form.post(url, {
         forceFormData: true,
         onSuccess: () => (isEditing ? form.reset('featured_image') : form.reset()),
-    };
-
-    if (isEditing) {
-        form.put(route('admin.events.update', props.event.id), options);
-    } else {
-        form.post(route('admin.events.store'), options);
-    }
+    });
 }
 </script>
 

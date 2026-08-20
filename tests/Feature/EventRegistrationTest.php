@@ -887,4 +887,27 @@ class EventRegistrationTest extends TestCase
         $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Event Dengan Pivot']);
         $this->assertTrue($event->organizations->contains($this->org));
     }
+
+    public function test_update_event_via_post_method_spoofing_works(): void
+    {
+        // Frontend hantar POST + _method=PUT (multipart PUT tidak di-parse PHP).
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $this->post(route('admin.events.update', $event->id), [
+            '_method' => 'PUT',
+            'title' => 'Tajuk Spoofing',
+            'description' => 'desc',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'seminar',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+            'organizations' => [$this->org->id],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Tajuk Spoofing']);
+    }
 }
