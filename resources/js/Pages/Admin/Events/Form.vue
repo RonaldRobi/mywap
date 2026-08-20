@@ -1,5 +1,6 @@
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -34,23 +35,34 @@ function toggleOrg(id) {
     }
 }
 
+const invalidTimes = computed(() => {
+    if (!form.start_time || !form.end_time) return false;
+    return new Date(form.end_time).getTime() <= new Date(form.start_time).getTime();
+});
+
 function submit() {
+    if (invalidTimes.value) return;
+
     // Backend jangkakan `organizations` (pivot organisasi terlibat).
-    const payload = {
-        ...form.data(),
-        organizations: form.organization_ids,
+    form.transform((data) => {
+        const payload = { ...data, organizations: data.organization_ids || [] };
+        delete payload.organization_ids;
+        // Jangan hantar featured_image kosong (elak ralat "failed to upload").
+        if (!payload.featured_image) {
+            delete payload.featured_image;
+        }
+        return payload;
+    });
+
+    const options = {
+        forceFormData: true,
+        onSuccess: () => (isEditing ? form.reset('featured_image') : form.reset()),
     };
 
     if (isEditing) {
-        router.put(route('admin.events.update', props.event.id), payload, {
-            forceFormData: true,
-            onSuccess: () => form.reset('featured_image'),
-        });
+        form.put(route('admin.events.update', props.event.id), options);
     } else {
-        router.post(route('admin.events.store'), payload, {
-            forceFormData: true,
-            onSuccess: () => form.reset(),
-        });
+        form.post(route('admin.events.store'), options);
     }
 }
 </script>
@@ -168,11 +180,13 @@ function submit() {
                 </div>
 
                 <div class="flex gap-3 pt-2">
-                    <button @click="submit" :disabled="form.processing" class="flex-1 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50">
+                    <button @click="submit" :disabled="form.processing || invalidTimes" class="flex-1 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50">
                         {{ form.processing ? 'Menyimpan...' : (isEditing ? 'Kemas Kini Event' : 'Cipta Event') }}
                     </button>
                     <a :href="route('admin.events.index')" class="rounded-2xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50">Batal</a>
                 </div>
+
+                <p v-if="invalidTimes" class="text-xs text-red-500">Masa Tamat mesti selepas Masa Mula.</p>
             </div>
         </div>
     </AppLayout>
