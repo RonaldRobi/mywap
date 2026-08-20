@@ -178,7 +178,6 @@ const editForm = useForm({
     start_time: toDatetimeLocal(props.event.start_time),
     end_time: toDatetimeLocal(props.event.end_time),
     featured_image: null,
-    _method: 'PUT',
 });
 
 watch(editForm.start_time, () => {
@@ -209,7 +208,7 @@ function closeEditModal() {
 }
 
 function submitEdit() {
-    editForm.post(route('events.update', { event: props.event.id }), {
+    editForm.put(route('events.update', { event: props.event.id }), {
         preserveScroll: true,
         onSuccess: () => closeEditModal(),
     });

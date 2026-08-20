@@ -840,4 +840,25 @@ class EventRegistrationTest extends TestCase
         $this->assertSame('draft', $event->status->value);
         $this->assertSame('lain', $event->category->value);
     }
+
+    public function test_update_event_syncs_organizations_via_legacy_organization_ids(): void
+    {
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $this->put(route('admin.events.update', $event->id), [
+            'title' => 'Event Dengan Pivot',
+            'description' => 'desc',
+            'type' => 'physical',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth()->toDateTimeString(),
+            'end_time' => now()->addMonth()->addHours(2)->toDateTimeString(),
+            'organization_ids' => [$this->org->id],
+        ])->assertSessionHasNoErrors();
+
+        $event->refresh();
+        $this->assertDatabaseHas('events', ['id' => $event->id, 'title' => 'Event Dengan Pivot']);
+        $this->assertTrue($event->organizations->contains($this->org));
+    }
 }

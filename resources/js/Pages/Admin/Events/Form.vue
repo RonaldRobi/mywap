@@ -35,10 +35,14 @@ function toggleOrg(id) {
 }
 
 function submit() {
-    const payload = { ...form.data() };
+    // Backend jangkakan `organizations` (pivot organisasi terlibat).
+    const payload = {
+        ...form.data(),
+        organizations: form.organization_ids,
+    };
 
     if (isEditing) {
-        router.post(route('admin.events.update', props.event.id), { ...payload, _method: 'PUT' }, {
+        router.put(route('admin.events.update', props.event.id), payload, {
             forceFormData: true,
             onSuccess: () => form.reset('featured_image'),
         });

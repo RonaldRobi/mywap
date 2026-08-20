@@ -852,7 +852,8 @@ class EventController extends Controller
      */
     private function syncOrganizations(Event $event, Request $request, bool $isSuperadmin): void
     {
-        $orgIds = collect($request->input('organizations', []))
+        // Terima `organizations` (semasa) ATAU `organization_ids` (borang lama).
+        $orgIds = collect($request->input('organizations', $request->input('organization_ids', [])))
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();

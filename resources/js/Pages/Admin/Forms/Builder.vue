@@ -116,7 +116,7 @@ function save() {
     };
 
     if (isEditing) {
-        router.post(route('admin.forms.update', props.form.id), { ...payload, _method: 'PUT' }, {
+        router.put(route('admin.forms.update', props.form.id), payload, {
             forceFormData: true,
             onFinish: () => { busy.saving = false; },
         });
