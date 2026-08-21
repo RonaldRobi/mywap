@@ -82,9 +82,15 @@ class DokuController extends Controller
         );
 
         if (! $valid) {
-            Log::warning('DOKU notification: invalid signature', ['invoice_number' => $invoiceNumber]);
+            // Signature DOKU tidak padan (kemungkinan perbezaan format/body).
+            // JANGAN tolak — reconcile via retrieveStatus (disahkan guna kunci API kita)
+            // supaya status sebenar tetap dikemas kini walaupun signature berbeza.
+            Log::warning('DOKU notification: invalid signature — reconcile via retrieveStatus', [
+                'invoice_number' => $invoiceNumber,
+                'payment_id' => $payment->id,
+            ]);
 
-            return response()->json(['status' => 'invalid_signature'], 401);
+            return $this->reconcileViaRetrieve($payment, 'invalid_signature');
         }
 
         // Idempotency: never re-process a terminal payment.
@@ -129,14 +135,62 @@ class DokuController extends Controller
     }
 
     /**
+     * Rekonsiliasi bayaran terus dari DOKU (server-to-server) menggunakan
+     * Retrieve API. Digunakan apabila signature webhook tidak dapat disahkan —
+     * status diambil dari DOKU secara disahkan, bukan dari body webhook.
+     */
+    protected function reconcileViaRetrieve(Payment $payment, string $reason): JsonResponse
+    {
+        $org = $payment->organization;
+
+        if (! $org || ! $org->hasDokuConfig() || ! $payment->gateway_ref) {
+            Log::warning('DOKU reconcileViaRetrieve: tidak dapat (tiada konfigurasi/gateway_ref)', [
+                'payment_id' => $payment->id,
+                'reason' => $reason,
+            ]);
+
+            return response()->json(['status' => 'unable_to_reconcile'], 422);
+        }
+
+        $status = $this->doku->retrieveStatus($org, $payment->gateway_ref);
+
+        if ($this->doku->isSuccessStatus($status)) {
+            if ($payment->status !== 'successful') {
+                $payment->update(['status' => 'successful']);
+                $this->handleSuccessfulPayment($payment);
+            }
+
+            Log::info('DOKU reconcileViaRetrieve: SUCCESS', ['payment_id' => $payment->id, 'reason' => $reason]);
+
+            return response()->json(['status' => 'ok', 'reconciled' => true]);
+        }
+
+        if ($this->doku->isFailedStatus($status)) {
+            $payment->update(['status' => 'failed']);
+
+            Log::info('DOKU reconcileViaRetrieve: FAILED', ['payment_id' => $payment->id, 'reason' => $reason]);
+
+            return response()->json(['status' => 'ok', 'reconciled' => true]);
+        }
+
+        Log::info('DOKU reconcileViaRetrieve: status belum terminal', ['payment_id' => $payment->id, 'status' => $status]);
+
+        return response()->json(['status' => 'ok', 'reconciled' => false]);
+    }
+
+    /**
      * Browser redirect back from DOKU's hosted checkout page. The webhook is the
      * source of truth; here we only route the user to the right result page.
      */
     public function redirect(Request $request): RedirectResponse
     {
+        Log::info('DOKU redirect received', ['query' => $request->query(), 'all' => $request->all()]);
+
         $invoiceNumber = $request->input('invoice_number')
             ?? $request->input('order.invoice_number')
-            ?? $request->input('reference');
+            ?? $request->input('reference')
+            ?? $request->input('order_number')
+            ?? $request->input('id');
 
         $payment = null;
 
@@ -148,7 +202,8 @@ class DokuController extends Controller
         }
 
         if (! $payment) {
-            return redirect()->route('dashboard');
+            // Jangan redirect ke dashboard (memerlukan login) — hantar ke landing awam.
+            return redirect()->to('/')->with('info', 'Pembayaran sedang diproses. Status akan dikemas kini sebentar lagi.');
         }
 
         // If the webhook hasn't landed yet, reconcile synchronously via Retrieve
