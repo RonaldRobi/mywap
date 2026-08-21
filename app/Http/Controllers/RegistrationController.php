@@ -12,6 +12,7 @@ use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\User;
 use App\Services\PaymentGatewayManager;
+use App\Services\RegistrationPaymentService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -286,6 +287,13 @@ class RegistrationController extends Controller
 
         abort_unless($allowed, 403);
 
+        // Rekonsiliasi bayaran DOKU yang masih pending supaya status kemas kini
+        // jika bayaran sebenarnya sudah berjaya di DOKU.
+        if ($payment = $registration->latestPayment) {
+            app(RegistrationPaymentService::class)->reconcileDokuPayment($payment);
+            $registration->load('latestPayment');
+        }
+
         return Inertia::render('Events/RegistrationSuccess', [
             'registration' => [
                 'registration_no' => $registration->registration_no,
@@ -319,9 +327,19 @@ class RegistrationController extends Controller
         $registrations = Registration::with(['event.organization', 'latestPayment', 'attendance'])
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn (Registration $r) => $this->serialize($r));
+            ->paginate(15);
+
+        // Rekonsiliasi bayaran DOKU yang masih pending (had: maksimum beberapa
+        // panggilan API supaya halaman tidak perlahan).
+        $service = app(RegistrationPaymentService::class);
+        $registrations->getCollection()
+            ->filter(fn (Registration $r) => $r->latestPayment
+                && $r->latestPayment->status === 'pending'
+                && $r->latestPayment->gateway === 'doku')
+            ->take(5)
+            ->each(fn (Registration $r) => $service->reconcileDokuPayment($r->latestPayment));
+
+        $registrations->getCollection()->transform(fn (Registration $r) => $this->serialize($r));
 
         return Inertia::render('Member/Registrations', [
             'registrations' => $registrations,
