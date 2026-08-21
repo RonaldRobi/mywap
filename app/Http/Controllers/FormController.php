@@ -569,11 +569,17 @@ class FormController extends Controller
 
     // ─── PUBLIC ──────────────────────────────────────────────────────────────
 
-    public function publicShow(string $token): Response
+    public function publicShow(string $token): Response|RedirectResponse
     {
         $form = Form::where('share_token', $token)
             ->where('is_active', true)
             ->firstOrFail();
+
+        // Borang pendaftaran event → terus ke halaman daftar (bukan borang generik),
+        // supaya public & ahli mengalami aliran yang sama (isi → bayaran).
+        if ($form->event_id) {
+            return redirect()->route('events.register.public', $form->share_token);
+        }
 
         $form->load(['questions' => fn ($q) => $q->orderBy('sort_order'), 'organization:id,name']);
 

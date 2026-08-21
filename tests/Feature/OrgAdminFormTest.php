@@ -218,6 +218,26 @@ class OrgAdminFormTest extends TestCase
         $this->assertSame('Johor - Johor Utara', $answer->value);
     }
 
+    public function test_event_form_public_link_redirects_to_register_page(): void
+    {
+        $event = Event::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Program Redirect',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'muktamar',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(2),
+        ]);
+        $form = Form::create(['event_id' => $event->id, 'organization_id' => $this->orgA->id, 'title' => 'Borang Event', 'is_active' => true, 'allow_public' => true]);
+
+        // Link generik /borang/{token} untuk borang event → terus ke halaman daftar.
+        $this->get(route('forms.public', $form->share_token))
+            ->assertRedirect(route('events.register.public', $form->share_token));
+    }
+
     public function test_branch_options_fall_back_to_event_org_when_form_org_null(): void
     {
         Branch::create(['organization_id' => $this->orgA->id, 'name' => 'Johor Utara', 'state' => 'Johor', 'is_active' => true]);

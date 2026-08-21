@@ -61,6 +61,35 @@
             <meta name="twitter:description" content="{{ $ogDescription }}" />
             <meta name="twitter:image" content="{{ $ogImage }}" />
         @endif
+
+        @if (request()->routeIs('events.register.public', 'forms.public'))
+            @php
+                $appName = config('app.name', 'myWAP');
+                $formProps = $page['props']['form'] ?? [];
+                $ogTitle = $formProps['title'] ?? ($page['props']['event']['title'] ?? $appName);
+                $ogDescription = $formProps['description'] ?? 'Sila isi borang pendaftaran ini.';
+                $rawOgImage = $formProps['header_image_url']
+                    ?? $page['props']['event']['featured_image_url']
+                    ?? $page['props']['brand']['og_image_path']
+                    ?? $page['props']['brand']['system_logo_path']
+                    ?? asset('images/og-login.png');
+                $ogImage = \Illuminate\Support\Str::startsWith($rawOgImage, ['http://', 'https://'])
+                    ? $rawOgImage
+                    : url($rawOgImage);
+            @endphp
+            <meta property="og:title" content="{{ $ogTitle }}" />
+            <meta property="og:description" content="{{ \Illuminate\Support\Str::limit(strip_tags((string) $ogDescription), 200) }}" />
+            <meta property="og:image" content="{{ $ogImage }}" />
+            <meta property="og:image:secure_url" content="{{ $ogImage }}" />
+            <meta property="og:url" content="{{ url()->current() }}" />
+            <meta property="og:type" content="website" />
+            <meta property="og:site_name" content="{{ $appName }}" />
+            <meta name="description" content="{{ \Illuminate\Support\Str::limit(strip_tags((string) $ogDescription), 200) }}" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="{{ $ogTitle }}" />
+            <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit(strip_tags((string) $ogDescription), 200) }}" />
+            <meta name="twitter:image" content="{{ $ogImage }}" />
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia

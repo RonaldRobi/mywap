@@ -80,12 +80,17 @@ class SharePreviewController extends Controller
             ? $this->absoluteUrl('/storage/'.$form->header_image_path)
             : null;
 
+        // Borang pendaftaran event → teruskan ke halaman daftar.
+        $redirectUrl = $form->event_id
+            ? route('events.register.public', $form->share_token, true)
+            : route('forms.public', ['token' => $form->share_token], true);
+
         return $this->renderPreview(
             title: $form->title,
             description: $form->description ?: 'Sila isi borang ini.',
             imageUrl: $imageUrl,
             pageUrl: route('share.form', $form, true),
-            redirectUrl: route('forms.public', ['token' => $form->share_token], true),
+            redirectUrl: $redirectUrl,
             type: 'article'
         );
     }
