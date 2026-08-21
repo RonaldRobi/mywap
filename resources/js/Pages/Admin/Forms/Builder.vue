@@ -26,6 +26,7 @@ const typeLabels = {
     radio:     'Radio',
     checkbox:  'Checkbox',
     file:      'Muat Naik Fail',
+    branch:    'Negeri & Cawangan',
 };
 
 const formData = reactive({
@@ -312,6 +313,10 @@ const valid = computed(() => {
                         </div>
                         <button @click="addOption(q)" class="text-xs text-indigo-500 hover:text-indigo-600">+ Tambah pilihan</button>
                     </div>
+
+                    <p v-if="q.type === 'branch'" class="text-xs text-gray-400 pl-2">
+                        Pilihan Negeri &amp; Cawangan dijana automatik daripada cawangan organisasi borang ini.
+                    </p>
                 </div>
             </div>
 
@@ -386,6 +391,16 @@ const valid = computed(() => {
                             >
                                 <option>{{ q.placeholder || 'Pilih...' }}</option>
                             </select>
+
+                            <div v-else-if="q.type === 'branch'" class="space-y-2">
+                                <select disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                                    <option>Pilih Negeri...</option>
+                                </select>
+                                <select disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                                    <option>Pilih Cawangan...</option>
+                                </select>
+                                <p class="text-[11px] text-gray-400">Pilihan dijana dari cawangan organisasi.</p>
+                            </div>
 
                             <div v-else-if="q.type === 'radio'" class="space-y-1.5">
                                 <label v-for="opt in q.options.filter(o => o.trim())" :key="opt" class="flex items-center gap-2 text-sm">

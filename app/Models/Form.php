@@ -78,6 +78,32 @@ class Form extends Model
         return $this->hasMany(Registration::class);
     }
 
+    /**
+     * Pilihan Negeri → Cawangan untuk soalan jenis "branch".
+     * Dijana daripada cawangan aktif organisasi borang (dikumpul ikut negeri).
+     */
+    public function branchOptions(): array
+    {
+        if (! $this->organization_id) {
+            return [];
+        }
+
+        return Branch::where('organization_id', $this->organization_id)
+            ->where('is_active', true)
+            ->orderBy('state')
+            ->orderBy('name')
+            ->get(['id', 'name', 'state'])
+            ->groupBy('state')
+            ->map(fn ($branches) => [
+                'state' => $branches->first()->state,
+                'branches' => $branches
+                    ->map(fn ($b) => ['id' => $b->id, 'name' => $b->name])
+                    ->values(),
+            ])
+            ->values()
+            ->all();
+    }
+
     public function getPublicUrlAttribute(): string
     {
         return route('forms.public', ['token' => $this->share_token]);

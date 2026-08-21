@@ -555,6 +555,7 @@ class RegistrationController extends Controller
             'terms' => $form->terms,
             'organization_name' => $form->organization?->name,
             'share_token' => $form->share_token,
+            'branch_options' => $form->branchOptions(),
             'header_image_url' => $form->header_image_path
                 ? asset('storage/'.$form->header_image_path)
                 : null,

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PaymentGatewayBadge from '@/Components/PaymentGatewayBadge.vue';
@@ -25,6 +25,19 @@ const featuredImage = computed(() => props.form.header_image_url || props.event.
 const registerForm = useForm({
     answers: {},
 });
+
+// Negeri yang dipilih bagi setiap soalan jenis "branch" (untuk dropdown cawangan).
+const selectedState = reactive({});
+
+function stateBranches(qId) {
+    const state = selectedState[qId];
+    const opt = (props.form.branch_options || []).find(o => o.state === state);
+    return opt?.branches ?? [];
+}
+
+function onStateChange(qId) {
+    registerForm.answers[qId] = '';
+}
 
 function copyLink() {
     const url = props.publicUrl || window.location.href;
@@ -151,6 +164,28 @@ function submit() {
                         <option value="">{{ q.placeholder || 'Pilih...' }}</option>
                         <option v-for="opt in q.options" :key="opt" :value="opt">{{ opt }}</option>
                     </select>
+
+                    <!-- Negeri & Cawangan -->
+                    <div v-else-if="q.type === 'branch'" class="space-y-2">
+                        <select
+                            v-model="selectedState[q.id]"
+                            @change="onStateChange(q.id)"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
+                        >
+                            <option value="">Pilih Negeri...</option>
+                            <option v-for="opt in form.branch_options" :key="opt.state" :value="opt.state">{{ opt.state }}</option>
+                        </select>
+
+                        <select
+                            v-model="registerForm.answers[q.id]"
+                            :disabled="!selectedState[q.id]"
+                            :required="q.required"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 disabled:bg-gray-50 disabled:text-gray-400"
+                        >
+                            <option value="">Pilih Cawangan...</option>
+                            <option v-for="b in stateBranches(q.id)" :key="b.id" :value="`${selectedState[q.id]} - ${b.name}`">{{ b.name }}</option>
+                        </select>
+                    </div>
 
                     <div v-else-if="q.type === 'radio'" class="space-y-1.5">
                         <label v-for="opt in q.options" :key="opt" class="flex items-center gap-2 text-sm cursor-pointer">

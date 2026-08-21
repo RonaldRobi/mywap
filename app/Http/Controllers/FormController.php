@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormController extends Controller
 {
-    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file'];
+    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file', 'branch'];
 
     // ─── ADMIN ──────────────────────────────────────────────────────────────
 
@@ -90,7 +90,12 @@ class FormController extends Controller
             : [];
 
         $events = Event::query()
-            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when(! $isSuperadmin, function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('organization_id', $user->current_organization_id)
+                        ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $user->current_organization_id));
+                });
+            })
             ->orderByDesc('start_time')
             ->get(['id', 'title', 'start_time']);
 
@@ -130,6 +135,8 @@ class FormController extends Controller
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
         $form = DB::transaction(function () use ($data, $user, $isSuperadmin, $request) {
             $headerImagePath = $request->hasFile('header_image')
@@ -181,18 +188,26 @@ class FormController extends Controller
 
     public function edit(Form $form): Response
     {
+        $this->assertCanManageForm($form);
+
+        $user = request()->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+
         $form->load(['questions' => function ($q) {
             $q->orderBy('sort_order');
         }, 'organization', 'event']);
-        $user = request()->user();
-        $isSuperadmin = $user->hasRole('Superadmin');
 
         $organizations = $isSuperadmin
             ? Organization::orderBy('min_age')->get(['id', 'name'])
             : [];
 
         $events = Event::query()
-            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when(! $isSuperadmin, function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('organization_id', $user->current_organization_id)
+                        ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $user->current_organization_id));
+                });
+            })
             ->orderByDesc('start_time')
             ->get(['id', 'title', 'start_time']);
 
@@ -230,6 +245,8 @@ class FormController extends Controller
 
     public function update(Request $request, Form $form): RedirectResponse
     {
+        $this->assertCanManageForm($form);
+
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
 
@@ -255,6 +272,8 @@ class FormController extends Controller
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
         DB::transaction(function () use ($form, $data, $isSuperadmin, $request) {
             $updateData = [
@@ -331,6 +350,8 @@ class FormController extends Controller
 
     public function destroy(Form $form): RedirectResponse
     {
+        $this->assertCanManageForm($form);
+
         $title = $form->title;
         $form->delete();
 
@@ -340,6 +361,8 @@ class FormController extends Controller
 
     public function responses(Form $form): Response
     {
+        $this->assertCanManageForm($form);
+
         $form->load('questions');
 
         $responses = $form->responses()
@@ -371,6 +394,7 @@ class FormController extends Controller
 
     public function exportResponses(Form $form): StreamedResponse
     {
+        $this->assertCanManageForm($form);
         $form->load('questions');
 
         $responses = $form->responses()
@@ -418,6 +442,7 @@ class FormController extends Controller
 
     public function send(Request $request, Form $form): RedirectResponse
     {
+        $this->assertCanManageForm($form);
         $emails = collect($form->recipient_emails ?? [])
             ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
             ->unique()
@@ -443,6 +468,7 @@ class FormController extends Controller
 
     public function sendToAllMembers(Request $request, Form $form): RedirectResponse
     {
+        $this->assertCanManageForm($form);
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
 
@@ -478,6 +504,7 @@ class FormController extends Controller
 
     public function showQr(Request $request, Form $form): Response
     {
+        $this->assertCanManageForm($form);
         $user = $request->user();
         abort_unless(
             $user->hasRole('Superadmin')
@@ -504,6 +531,7 @@ class FormController extends Controller
 
     public function downloadQrPng(Request $request, Form $form): StreamedResponse
     {
+        $this->assertCanManageForm($form);
         $user = $request->user();
         abort_unless(
             $user->hasRole('Superadmin')
@@ -546,6 +574,7 @@ class FormController extends Controller
                 'event_id' => $form->event_id,
                 'share_token' => $form->share_token,
                 'organization_name' => $form->organization?->name,
+                'branch_options' => $form->branchOptions(),
                 'header_image_url' => $form->header_image_path
                     ? asset('storage/'.$form->header_image_path)
                     : null,
@@ -624,5 +653,39 @@ class FormController extends Controller
         });
 
         return redirect()->back()->with('success', 'Respons anda telah diterima. Terima kasih!');
+    }
+
+    /**
+     * Org admin hanya boleh urus borang organisasi sendiri. Superadmin bebas.
+     */
+    private function assertCanManageForm(Form $form): void
+    {
+        $user = request()->user();
+        if (! $user->hasRole('Superadmin') && $form->organization_id !== (int) $user->current_organization_id) {
+            abort(403);
+        }
+    }
+
+    /**
+     * Org admin hanya boleh mengaitkan borang dengan event organisasi sendiri
+     * (atau organisasi terlibat dalam pivot). Superadmin bebas.
+     */
+    private function assertEventAllowedForOrg(?int $eventId, $user, bool $isSuperadmin): void
+    {
+        if ($isSuperadmin || ! $eventId) {
+            return;
+        }
+
+        $event = Event::find($eventId);
+
+        if (! $event) {
+            return;
+        }
+
+        $ownOrg = (int) $user->current_organization_id;
+        $belongs = (int) $event->organization_id === $ownOrg
+            || $event->organizations()->where('organizations.id', $ownOrg)->exists();
+
+        abort_unless($belongs, 403);
     }
 }

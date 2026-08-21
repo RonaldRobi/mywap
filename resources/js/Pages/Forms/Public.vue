@@ -1,4 +1,5 @@
 <script setup>
+import { reactive } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({ form: Object });
@@ -9,6 +10,18 @@ const responseForm = useForm({
     respondent_phone: '',
     answers: {},
 });
+
+const selectedState = reactive({});
+
+function stateBranches(qId) {
+    const state = selectedState[qId];
+    const opt = (props.form.branch_options || []).find(o => o.state === state);
+    return opt?.branches ?? [];
+}
+
+function onStateChange(qId) {
+    responseForm.answers[qId] = '';
+}
 
 function initAnswers() {
     for (const q of props.form.questions) {
@@ -108,6 +121,27 @@ function submit() {
                         <option value="">{{ q.placeholder || 'Pilih...' }}</option>
                         <option v-for="opt in q.options" :key="opt" :value="opt">{{ opt }}</option>
                     </select>
+
+                    <!-- Negeri & Cawangan -->
+                    <div v-else-if="q.type === 'branch'" class="space-y-2">
+                        <select
+                            v-model="selectedState[q.id]"
+                            @change="onStateChange(q.id)"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
+                        >
+                            <option value="">Pilih Negeri...</option>
+                            <option v-for="opt in form.branch_options" :key="opt.state" :value="opt.state">{{ opt.state }}</option>
+                        </select>
+                        <select
+                            v-model="responseForm.answers[q.id]"
+                            :disabled="!selectedState[q.id]"
+                            :required="q.required"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400"
+                        >
+                            <option value="">Pilih Cawangan...</option>
+                            <option v-for="b in stateBranches(q.id)" :key="b.id" :value="`${selectedState[q.id]} - ${b.name}`">{{ b.name }}</option>
+                        </select>
+                    </div>
 
                     <!-- Radio -->
                     <div v-else-if="q.type === 'radio'" class="space-y-1.5">
