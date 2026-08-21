@@ -40,7 +40,11 @@ class DokuController extends Controller
         $rawBody = $request->getContent();
         $data = $request->json()->all();
 
-        Log::info('DOKU notification received', ['body' => $data]);
+        Log::info('DOKU notification received', ['body' => $data, 'headers' => [
+            'client_id' => $request->header('Client-Id'),
+            'request_timestamp' => $request->header('Request-Timestamp'),
+            'signature' => $request->header('Signature'),
+        ]]);
 
         // Locate our payment via the invoice_number we sent (= payment reference).
         $invoiceNumber = data_get($data, 'order.invoice_number');
@@ -65,11 +69,14 @@ class DokuController extends Controller
         }
 
         // Verify DOKU's signature over the exact raw body.
+        $requestTarget = '/'.ltrim($request->path(), '/');
+        $requestTarget = rtrim($requestTarget, '/') ?: '/';
+
         $valid = $this->doku->verifyNotificationSignature(
             $org,
             (string) $request->header('Client-Id'),
             (string) $request->header('Request-Timestamp'),
-            '/'.ltrim($request->path(), '/'),
+            $requestTarget,
             $rawBody,
             $request->header('Signature'),
         );

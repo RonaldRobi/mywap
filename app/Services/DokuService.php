@@ -94,15 +94,46 @@ class DokuService
         ?string $providedSignature,
     ): bool {
         if (blank($providedSignature) || blank($org->doku_secret_key)) {
+            Log::warning('DOKU signature check: missing secret/signature', [
+                'has_signature' => filled($providedSignature),
+                'has_secret' => filled($org->doku_secret_key),
+            ]);
+
             return false;
         }
 
-        $expected = $this->generateSignature(
-            $org->doku_secret_key,
-            $this->stringToSign($clientId, $timestamp, $requestTarget, $this->digest($rawBody)),
-        );
+        $digest = $this->digest($rawBody);
 
-        return hash_equals($expected, $providedSignature);
+        // DOKU mungkin menghantar Request-Target dengan/tanpa trailing slash
+        // atau leading slash — cuba beberapa varian supaya tak tersasar.
+        $candidates = [
+            $requestTarget,
+            rtrim($requestTarget, '/'),
+            rtrim($requestTarget, '/').'/',
+            ltrim($requestTarget, '/'),
+        ];
+
+        foreach (array_unique($candidates) as $candidate) {
+            $expected = $this->generateSignature(
+                $org->doku_secret_key,
+                $this->stringToSign($clientId, $timestamp, $candidate, $digest),
+            );
+
+            if (hash_equals($expected, $providedSignature)) {
+                return true;
+            }
+        }
+
+        Log::warning('DOKU signature MISMATCH', [
+            'client_id' => $clientId,
+            'request_timestamp' => $timestamp,
+            'request_target' => $requestTarget,
+            'candidates' => array_values(array_unique($candidates)),
+            'raw_body_length' => strlen($rawBody),
+            'provided_signature' => $providedSignature,
+        ]);
+
+        return false;
     }
 
     // ─── Create Checkout ────────────────────────────────────────────────────
