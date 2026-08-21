@@ -246,6 +246,10 @@ class RegistrationController extends Controller
             'channel' => $paymentMethod,
         ]);
 
+        // Jejak rujukan pembayaran dalam session supaya gateway redirect balik
+        // (tanpa invoice_number) boleh kenal pasti pendaftaran pengguna ini.
+        session(['last_payment_reference' => $payment->reference]);
+
         if ($useGateway && $org) {
             $url = $this->gateways->createPaymentRedirect(
                 $org,

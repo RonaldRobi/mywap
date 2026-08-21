@@ -372,7 +372,7 @@ class BayarCashController extends Controller
             return route('orders.show', $payableId);
         }
 
-        if ($payableType === 'registration' && $payableId) {
+        if ($payableType === Registration::class && $payableId) {
             $registration = Registration::find($payableId);
             if ($registration) {
                 return route('registrations.success', $registration);
@@ -414,7 +414,7 @@ class BayarCashController extends Controller
             }
         } elseif ($payableType === 'order' && $payableId) {
             Order::where('id', $payableId)->update(['status' => 'paid']);
-        } elseif ($payableType === 'registration') {
+        } elseif ($payableType === Registration::class) {
             app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }
     }

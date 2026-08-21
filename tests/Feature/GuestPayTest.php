@@ -8,6 +8,8 @@ use App\Models\FormQuestion;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Registration;
+use App\Services\DokuService;
+use App\Services\RegistrationPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -116,5 +118,60 @@ class GuestPayTest extends TestCase
         $this->get(route('registrations.success', $registration))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Events/RegistrationSuccess'));
+    }
+
+    public function test_successful_doku_payment_auto_confirms_registration(): void
+    {
+        $org = Organization::factory()->create([
+            'payment_gateway' => 'doku',
+            'doku_client_id' => 'SNP-0001-001',
+            'doku_api_key' => 'key',
+            'doku_secret_key' => 'secret',
+            'doku_environment' => 'sandbox',
+        ]);
+        $event = Event::create([
+            'organization_id' => $org->id,
+            'title' => 'Event Auto Confirm',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'muktamar',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(2),
+        ]);
+        $form = Form::create(['event_id' => $event->id, 'organization_id' => $org->id, 'title' => 'Borang Berbayar', 'payment_required' => true, 'price' => 10.00, 'is_active' => true, 'allow_public' => true]);
+
+        $registration = Registration::create([
+            'event_id' => $event->id,
+            'form_id' => $form->id,
+            'organization_id' => $org->id,
+            'name' => 'Ali',
+            'email' => 'ali@example.com',
+            'status' => 'pending',
+        ]);
+
+        $payment = Payment::create([
+            'payable_type' => Registration::class,
+            'payable_id' => $registration->id,
+            'amount' => 10.00,
+            'status' => 'pending',
+            'reference' => 'REG-AUTO1',
+            'gateway' => 'doku',
+            'gateway_ref' => 'uuid-ref-123',
+            'organization_id' => $org->id,
+        ]);
+
+        $this->mock(DokuService::class, function ($mock) {
+            $mock->shouldReceive('retrieveStatus')->andReturn('SUCCESS');
+            $mock->shouldReceive('isSuccessStatus')->andReturnUsing(fn ($s) => $s === 'SUCCESS');
+            $mock->shouldReceive('isFailedStatus')->andReturn(false);
+        });
+
+        app(RegistrationPaymentService::class)->reconcileDokuPayment($payment);
+
+        $this->assertSame('successful', $payment->refresh()->status);
+        $this->assertSame('confirmed', $registration->refresh()->status->value);
+        $this->assertNotNull($registration->refresh()->confirmation_sent_at);
     }
 }

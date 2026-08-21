@@ -190,7 +190,10 @@ class DokuController extends Controller
             ?? $request->input('order.invoice_number')
             ?? $request->input('reference')
             ?? $request->input('order_number')
-            ?? $request->input('id');
+            ?? $request->input('id')
+            // DOKU mungkin redirect tanpa sebarang param — guna rujukan yang
+            // disimpan dalam session semasa initiate payment.
+            ?? session('last_payment_reference');
 
         $payment = null;
 
@@ -266,7 +269,7 @@ class DokuController extends Controller
             }
         } elseif ($payableType === 'order' && $payableId) {
             Order::where('id', $payableId)->update(['status' => 'paid']);
-        } elseif ($payableType === 'registration') {
+        } elseif ($payableType === Registration::class) {
             app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }
     }
@@ -298,7 +301,7 @@ class DokuController extends Controller
             return route('orders.show', $payableId);
         }
 
-        if ($payableType === 'registration' && $payableId) {
+        if ($payableType === Registration::class && $payableId) {
             $registration = Registration::find($payableId);
             if ($registration) {
                 return route('registrations.success', $registration);
