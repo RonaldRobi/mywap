@@ -84,11 +84,18 @@ class Form extends Model
      */
     public function branchOptions(): array
     {
-        if (! $this->organization_id) {
+        $orgId = $this->organization_id;
+
+        // Jika borang tiada org, guna org pemilik event (borang pendaftaran event).
+        if (! $orgId && $this->event) {
+            $orgId = $this->event->organization_id;
+        }
+
+        if (! $orgId) {
             return [];
         }
 
-        return Branch::where('organization_id', $this->organization_id)
+        return Branch::where('organization_id', $orgId)
             ->where('is_active', true)
             ->orderBy('state')
             ->orderBy('name')

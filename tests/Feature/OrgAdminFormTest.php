@@ -217,4 +217,31 @@ class OrgAdminFormTest extends TestCase
         $answer = $registration->form->responses()->first()->answers()->where('form_question_id', $q->id)->firstOrFail();
         $this->assertSame('Johor - Johor Utara', $answer->value);
     }
+
+    public function test_branch_options_fall_back_to_event_org_when_form_org_null(): void
+    {
+        Branch::create(['organization_id' => $this->orgA->id, 'name' => 'Johor Utara', 'state' => 'Johor', 'is_active' => true]);
+
+        $event = Event::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Program Org A',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'muktamar',
+            'location_or_link' => 'KL',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(2),
+        ]);
+        // Form tiada org — patut fallback ke org event.
+        $form = Form::create(['event_id' => $event->id, 'organization_id' => null, 'title' => 'Borang No Org', 'is_active' => true, 'allow_public' => true]);
+        FormQuestion::create(['form_id' => $form->id, 'label' => 'Negeri', 'type' => 'branch', 'required' => true, 'sort_order' => 0]);
+
+        $this->get(route('events.register.public', $form->share_token))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Events/Register')
+                ->has('form.branch_options', 1)
+                ->where('form.branch_options.0.state', 'Johor'));
+    }
 }

@@ -138,7 +138,13 @@ class FormController extends Controller
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
-        $form = DB::transaction(function () use ($data, $user, $isSuperadmin, $request) {
+        // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
+        $organizationId = $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id;
+        if (! $organizationId && ! empty($data['event_id'])) {
+            $organizationId = Event::find($data['event_id'])?->organization_id;
+        }
+
+        $form = DB::transaction(function () use ($data, $request, $organizationId) {
             $headerImagePath = $request->hasFile('header_image')
                 ? $request->file('header_image')->store('forms', 'public')
                 : null;
@@ -151,7 +157,7 @@ class FormController extends Controller
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'allow_public' => $data['allow_public'] ?? true,
-                'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
+                'organization_id' => $organizationId,
                 'event_id' => $data['event_id'] ?? null,
                 'header_image_path' => $headerImagePath,
                 'recipient_emails' => collect($data['recipient_emails'] ?? [])
@@ -275,7 +281,15 @@ class FormController extends Controller
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
-        DB::transaction(function () use ($form, $data, $isSuperadmin, $request) {
+        // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
+        $organizationId = $isSuperadmin
+            ? ($data['organization_id'] ?? $form->organization_id)
+            : $form->organization_id;
+        if (! $organizationId && ! empty($data['event_id'])) {
+            $organizationId = Event::find($data['event_id'])?->organization_id;
+        }
+
+        DB::transaction(function () use ($form, $data, $request, $organizationId) {
             $updateData = [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
@@ -284,7 +298,7 @@ class FormController extends Controller
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? $form->is_active,
                 'allow_public' => $data['allow_public'] ?? $form->allow_public,
-                'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $form->organization_id,
+                'organization_id' => $organizationId,
                 'event_id' => $data['event_id'] ?? $form->event_id,
                 'recipient_emails' => collect($data['recipient_emails'] ?? [])
                     ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
