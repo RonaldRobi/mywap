@@ -101,13 +101,42 @@ function submit() {
                     <h1 class="text-xl font-black text-gray-900">{{ event.title }}</h1>
                 </div>
 
-                <div v-if="featuredImage" class="bg-gray-100 overflow-hidden flex items-center justify-center">
-                    <img :src="featuredImage" :alt="event.title" class="w-full max-h-[400px] object-contain" />
+                <div v-if="featuredImage" class="bg-gray-100 overflow-hidden">
+                    <img :src="featuredImage" :alt="event.title" class="w-full h-auto block" />
                 </div>
 
                 <div class="p-6 pt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-                    <p class="text-gray-500">{{ event.start_formatted }}</p>
-                    <p class="text-gray-400">{{ event.organization_name }}</p>
+                    <p class="flex items-center gap-1.5 text-gray-600">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        {{ event.start_date }}
+                    </p>
+                    <p v-if="event.location_or_link" class="flex items-center gap-1.5 text-gray-500">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        {{ event.location_or_link }}
+                    </p>
+                </div>
+
+                <div v-if="event.google_calendar_url || event.maps_url" class="px-6 pb-6 flex flex-wrap gap-2">
+                    <a
+                        v-if="event.google_calendar_url"
+                        :href="event.google_calendar_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+                    >
+                        <svg class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                        Tambah ke Google Calendar
+                    </a>
+                    <a
+                        v-if="event.maps_url"
+                        :href="event.maps_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                        Arah ke Venue
+                    </a>
                 </div>
             </div>
 

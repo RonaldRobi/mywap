@@ -60,8 +60,8 @@ function submit() {
             <!-- Form -->
             <div v-else class="space-y-0">
                 <!-- Header Image -->
-                <div v-if="form.header_image_url" class="rounded-t-3xl overflow-hidden flex items-center justify-center bg-gray-100">
-                    <img :src="form.header_image_url" :alt="form.title" class="w-full max-h-[400px] object-contain" />
+                <div v-if="form.header_image_url" class="rounded-t-3xl overflow-hidden bg-gray-100">
+                    <img :src="form.header_image_url" :alt="form.title" class="w-full h-auto block" />
                 </div>
 
                 <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl p-8 shadow-sm space-y-6" :class="form.header_image_url ? 'rounded-t-none border-t-0' : ''">

@@ -66,9 +66,14 @@ class RegistrationController extends Controller
                 'id' => $event->id,
                 'title' => $event->title,
                 'slug' => $event->slug,
-                'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'start_date' => $event->start_time->locale('ms')->isoFormat('D MMMM YYYY'),
                 'organization_name' => $event->organization?->name ?? 'Semua Organisasi',
                 'featured_image_url' => $event->featured_image_url,
+                'location_or_link' => $event->location_or_link,
+                'google_calendar_url' => $event->google_calendar_url,
+                'maps_url' => $event->location_or_link
+                    ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($event->location_or_link)
+                    : null,
             ],
             'paymentGateway' => $this->resolvePaymentGateway($form, $event),
         ]);
@@ -121,9 +126,14 @@ class RegistrationController extends Controller
                 'id' => $form->event->id,
                 'title' => $form->event->title,
                 'slug' => $form->event->slug,
-                'start_formatted' => $form->event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'start_date' => $form->event->start_time->locale('ms')->isoFormat('D MMMM YYYY'),
                 'organization_name' => $form->event->organization?->name ?? 'Semua Organisasi',
                 'featured_image_url' => $form->event->featured_image_url,
+                'location_or_link' => $form->event->location_or_link,
+                'google_calendar_url' => $form->event->google_calendar_url,
+                'maps_url' => $form->event->location_or_link
+                    ? 'https://www.google.com/maps/search/?api=1&query='.urlencode($form->event->location_or_link)
+                    : null,
             ],
             'isGuest' => true,
             'paymentGateway' => $this->resolvePaymentGateway($form, $form->event),
