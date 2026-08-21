@@ -213,6 +213,7 @@ const valid = computed(() => {
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Harga (RM)</label>
                         <input v-model="formData.price" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. 50.00 (kosong = percuma)" />
+                        <p class="text-[11px] text-gray-400">Minimum RM 2.00 (had pembayaran DOKU).</p>
                     </div>
                     <div class="flex items-end pb-1">
                         <label class="flex items-center gap-2 text-sm">

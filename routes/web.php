@@ -410,6 +410,9 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 Route::group(['middleware' => ['throttle:60,1']], function () {
     Route::get('/daftar/{token}', [RegistrationController::class, 'publicCreate'])->name('events.register.public');
     Route::post('/daftar/{token}', [RegistrationController::class, 'publicStore'])->name('events.register.public.store');
+    // Halaman terima kasih — akses public (tetamu & ahli). Kaedah `success()` sendiri
+    // memastikan hanya pemilik pendaftaran boleh lihat.
+    Route::get('/registrations/{registration:registration_no}/success', [RegistrationController::class, 'success'])->name('registrations.success');
 });
 
 // ─── QR Kehadiran (SATU QR Event — ahli & bukan ahli) ──────────────────────
@@ -455,7 +458,6 @@ Route::middleware('auth')->group(function () {
     // Registration Event — daftar oleh ahli
     Route::get('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'create'])->name('events.register');
     Route::post('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'store'])->name('events.register.store');
-    Route::get('/registrations/{registration:registration_no}/success', [RegistrationController::class, 'success'])->name('registrations.success');
 
     // ─── Info Organisasi (Maklumat + Carta Organisasi) ──────────────────────
     Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');
