@@ -101,8 +101,8 @@ function submit() {
                     <h1 class="text-xl font-black text-gray-900">{{ event.title }}</h1>
                 </div>
 
-                <div v-if="featuredImage" class="aspect-[16/9] bg-gray-100 overflow-hidden">
-                    <img :src="featuredImage" :alt="event.title" class="w-full h-full object-cover" />
+                <div v-if="featuredImage" class="bg-gray-100 overflow-hidden flex items-center justify-center">
+                    <img :src="featuredImage" :alt="event.title" class="w-full max-h-[400px] object-contain" />
                 </div>
 
                 <div class="p-6 pt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
