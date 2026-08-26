@@ -4,15 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Form;
-use App\Models\FormAnswer;
 use App\Models\FormQuestion;
 use App\Models\FormResponse;
 use App\Models\Organization;
 use App\Models\User;
 use App\Notifications\FormInvitationNotification;
+use App\Services\FormService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +23,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormController extends Controller
 {
+    public function __construct(private readonly FormService $forms) {}
+
     const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file', 'branch'];
 
     // ─── ADMIN ──────────────────────────────────────────────────────────────
@@ -571,9 +572,7 @@ class FormController extends Controller
 
     public function publicShow(string $token): Response|RedirectResponse
     {
-        $form = Form::where('share_token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
+        $form = $this->forms->findPublic($token);
 
         // Borang pendaftaran event → terus ke halaman daftar (bukan borang generik),
         // supaya public & ahli mengalami aliran yang sama (isi → bayaran).
@@ -581,96 +580,18 @@ class FormController extends Controller
             return redirect()->route('events.register.public', $form->share_token);
         }
 
-        $form->load(['questions' => fn ($q) => $q->orderBy('sort_order'), 'organization:id,name']);
-
         return Inertia::render('Forms/Public', [
-            'form' => [
-                'id' => $form->id,
-                'title' => $form->title,
-                'description' => $form->description,
-                'price' => $form->price,
-                'payment_required' => $form->payment_required,
-                'terms' => $form->terms,
-                'event_id' => $form->event_id,
-                'share_token' => $form->share_token,
-                'organization_name' => $form->organization?->name,
-                'branch_options' => $form->branchOptions(),
-                'header_image_url' => $form->header_image_path
-                    ? asset('storage/'.$form->header_image_path)
-                    : null,
-                'questions' => $form->questions
-                    ->sortBy('sort_order')
-                    ->map(fn ($q) => [
-                        'id' => $q->id,
-                        'label' => $q->label,
-                        'type' => $q->type,
-                        'options' => $q->options,
-                        'required' => $q->required,
-                        'placeholder' => $q->placeholder,
-                        'help_text' => $q->help_text,
-                    ])->values(),
-            ],
+            'form' => $this->forms->publicFormPayload($form),
         ]);
     }
 
     public function publicSubmit(Request $request, string $token): RedirectResponse
     {
-        $form = Form::where('share_token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
+        $form = $this->forms->findPublic($token);
 
-        $form->load('questions');
+        $data = $request->validate($this->forms->validationRules($form));
 
-        $rules = [
-            'respondent_name' => ['nullable', 'string', 'max:255'],
-            'respondent_email' => ['nullable', 'email', 'max:255'],
-            'respondent_phone' => ['nullable', 'string', 'max:50'],
-            'answers' => ['required', 'array'],
-        ];
-
-        foreach ($form->questions as $q) {
-            $key = "answers.{$q->id}";
-            $rule = $q->required ? ['required'] : ['nullable'];
-
-            if ($q->type === 'file') {
-                $rule[] = 'file';
-                $rule[] = 'mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip';
-                $rule[] = 'max:10240';
-            } elseif (in_array($q->type, ['email'])) {
-                $rule[] = 'email';
-            } elseif (in_array($q->type, ['number'])) {
-                $rule[] = 'numeric';
-            } elseif (in_array($q->type, ['date'])) {
-                $rule[] = 'date';
-            }
-
-            $rules[$key] = $rule;
-        }
-
-        $data = $request->validate($rules);
-
-        DB::transaction(function () use ($form, $data, $request) {
-            $response = FormResponse::create([
-                'form_id' => $form->id,
-                'user_id' => $request->user()?->id,
-                'respondent_name' => $data['respondent_name'] ?? null,
-                'respondent_email' => $data['respondent_email'] ?? null,
-                'respondent_phone' => $data['respondent_phone'] ?? null,
-                'submitted_at' => now(),
-            ]);
-
-            foreach ($data['answers'] as $questionId => $value) {
-                $stored = $value instanceof UploadedFile
-                    ? $value->store('form-uploads', 'public')
-                    : (is_array($value) ? implode(', ', $value) : (string) $value);
-
-                FormAnswer::create([
-                    'form_response_id' => $response->id,
-                    'form_question_id' => $questionId,
-                    'value' => $stored,
-                ]);
-            }
-        });
+        $this->forms->storeResponse($form, $data, $request->user());
 
         return redirect()->back()->with('success', 'Respons anda telah diterima. Terima kasih!');
     }

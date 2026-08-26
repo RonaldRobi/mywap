@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UsrahAttendance;
 use App\Models\UsrahGroup;
+use App\Services\UsrahService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,6 +13,8 @@ use Inertia\Response;
 
 class UsrahController extends Controller
 {
+    public function __construct(private readonly UsrahService $usrah) {}
+
     public function adminIndex(Request $request): Response
     {
         $user = $request->user();
@@ -121,45 +124,9 @@ class UsrahController extends Controller
 
     public function myGroup(Request $request): Response
     {
-        $user = $request->user();
+        $data = $this->usrah->myGroup($request->user());
 
-        $groups = $user->usrahGroups()
-            ->with(['members' => fn ($q) => $q->withoutGlobalScopes()->select('users.id', 'name')])
-            ->get();
-
-        $groupsData = $groups->map(fn (UsrahGroup $group) => [
-            'id' => $group->id,
-            'name' => $group->name,
-            'description' => $group->description,
-            'meeting_day' => $group->meeting_day,
-            'meeting_time' => $group->meeting_time,
-            'is_leader' => in_array($group->members->firstWhere('id', $user->id)?->pivot?->role, ['leader', 'sub_leader']),
-            'members' => $group->members->map(fn ($member) => [
-                'id' => $member->id,
-                'name' => $member->name,
-                'role' => $member->pivot->role ?? 'member',
-            ])->values(),
-        ]);
-
-        $allAttendanceHistory = collect();
-        if ($groups->isNotEmpty()) {
-            $allAttendanceHistory = UsrahAttendance::query()
-                ->whereIn('usrah_group_id', $groups->pluck('id'))
-                ->where('user_id', $user->id)
-                ->orderByDesc('session_date')
-                ->take(20)
-                ->get()
-                ->map(fn ($a) => [
-                    'date' => $a->session_date->format('Y-m-d'),
-                    'status' => $a->status,
-                    'notes' => $a->notes,
-                ]);
-        }
-
-        return Inertia::render('Usrah/MyGroup', [
-            'groups' => $groupsData,
-            'attendanceHistory' => $allAttendanceHistory,
-        ]);
+        return Inertia::render('Usrah/MyGroup', $data);
     }
 
     public function logAttendance(Request $request, UsrahGroup $usrahGroup): RedirectResponse

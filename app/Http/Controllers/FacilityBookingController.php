@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\FacilityBooking;
 use App\Models\Organization;
-use Carbon\Carbon;
+use App\Services\FacilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +14,8 @@ use Inertia\Response;
 
 class FacilityBookingController extends Controller
 {
+    public function __construct(private readonly FacilityService $facilities) {}
+
     public function manageFacilities(Request $request): Response
     {
         abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
@@ -212,69 +214,20 @@ class FacilityBookingController extends Controller
     {
         $user = $request->user();
         $historyStatus = trim((string) $request->query('history_status', ''));
-        $validHistoryStatuses = ['pending', 'approved', 'rejected'];
 
-        $facilities = Facility::query()
-            ->with(['organization:id,name,slug', 'media'])
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Facility $facility) => [
-                'id' => $facility->id,
-                'organization_id' => $facility->organization_id,
-                'organization_name' => $facility->organization?->name,
-                'name' => $facility->name,
-                'description' => $facility->description,
-                'location' => $facility->location,
-                'type' => $facility->type,
-                'price_per_unit' => (float) $facility->price_per_unit,
-                'member_price_per_unit' => $facility->member_price_per_unit !== null ? (float) $facility->member_price_per_unit : null,
-                'capacity' => $facility->capacity,
-                'image_path' => $facility->image_path,
-                'media' => $facility->media->map(fn ($m) => [
-                    'id' => $m->id,
-                    'path' => $m->path,
-                    'caption' => $m->caption,
-                ])->values(),
-            ]);
-
-        $myBookings = collect();
-        if ($user) {
-            $myBookings = FacilityBooking::query()
-                ->with(['facility.organization:id,name,slug'])
-                ->where('user_id', $user->id)
-                ->when(
-                    in_array($historyStatus, $validHistoryStatuses, true),
-                    fn ($query) => $query->where('booking_status', $historyStatus)
-                )
-                ->orderByDesc('start_datetime')
-                ->limit(20)
-                ->get()
-                ->map(fn (FacilityBooking $booking) => [
-                    'id' => $booking->id,
-                    'facility_id' => $booking->facility_id,
-                    'facility_name' => $booking->facility?->name ?? 'Ruang Dipadam',
-                    'organization_name' => $booking->facility?->organization?->name ?? '-',
-                    'start_datetime' => $booking->start_datetime?->toDateTimeString(),
-                    'end_datetime' => $booking->end_datetime?->toDateTimeString(),
-                    'total_price' => (float) $booking->total_price,
-                    'booking_status' => $booking->booking_status,
-                    'payment_status' => $booking->payment_status,
-                    'admin_remarks' => $booking->admin_remarks,
-                ]);
-        }
+        $data = $this->facilities->indexData($user, $historyStatus);
 
         return Inertia::render('Facilities/Index', [
-            'facilities' => $facilities,
-            'myBookings' => $myBookings,
-            'isMember' => $user && $user->hasRole('Member'),
+            'facilities' => $data['facilities'],
+            'myBookings' => $data['myBookings'],
+            'isMember' => $data['isMember'],
             'authUser' => $user ? [
                 'id' => $user->id,
                 'name' => $user->name,
                 'phone' => $user->phone,
             ] : null,
             'historyFilters' => [
-                'status' => in_array($historyStatus, $validHistoryStatuses, true) ? $historyStatus : '',
+                'status' => in_array($historyStatus, ['pending', 'approved', 'rejected'], true) ? $historyStatus : '',
             ],
             'jumpToHistory' => $request->query('view') === 'history',
         ]);
@@ -283,61 +236,14 @@ class FacilityBookingController extends Controller
     public function show(Request $request, Facility $facility): Response
     {
         $user = $request->user();
-        $facility->load('media');
-        $bookings = FacilityBooking::query()
-            ->where('facility_id', $facility->id)
-            ->whereIn('booking_status', ['pending', 'approved'])
-            ->orderBy('start_datetime')
-            ->get()
-            ->map(fn (FacilityBooking $booking) => [
-                'id' => $booking->id,
-                'start_datetime' => $booking->start_datetime?->toISOString(),
-                'end_datetime' => $booking->end_datetime?->toISOString(),
-                'booking_status' => $booking->booking_status,
-            ]);
 
-        $myBookings = collect();
-        if ($user) {
-            $myBookings = FacilityBooking::query()
-                ->where('facility_id', $facility->id)
-                ->where('user_id', $user->id)
-                ->orderByDesc('start_datetime')
-                ->limit(10)
-                ->get()
-                ->map(fn (FacilityBooking $booking) => [
-                    'id' => $booking->id,
-                    'start_datetime' => $booking->start_datetime?->toDateTimeString(),
-                    'end_datetime' => $booking->end_datetime?->toDateTimeString(),
-                    'total_price' => (float) $booking->total_price,
-                    'booking_status' => $booking->booking_status,
-                    'payment_status' => $booking->payment_status,
-                    'admin_remarks' => $booking->admin_remarks,
-                ]);
-        }
+        $data = $this->facilities->showFacility($facility, $user);
 
         return Inertia::render('Facilities/Show', [
-            'facility' => [
-                'id' => $facility->id,
-                'organization_id' => $facility->organization_id,
-                'organization_name' => $facility->organization?->name,
-                'name' => $facility->name,
-                'description' => $facility->description,
-                'location' => $facility->location,
-                'type' => $facility->type,
-                'price_per_unit' => (float) $facility->price_per_unit,
-                'member_price_per_unit' => $facility->member_price_per_unit !== null ? (float) $facility->member_price_per_unit : null,
-                'capacity' => $facility->capacity,
-                'image_path' => $facility->image_path,
-                'is_active' => $facility->is_active,
-                'media' => $facility->media->map(fn ($m) => [
-                    'id' => $m->id,
-                    'path' => $m->path,
-                    'caption' => $m->caption,
-                ])->values(),
-            ],
-            'bookings' => $bookings,
-            'myBookings' => $myBookings,
-            'isMember' => $user && $user->hasRole('Member'),
+            'facility' => $data['facility'],
+            'bookings' => $data['bookings'],
+            'myBookings' => $data['myBookings'],
+            'isMember' => $data['isMember'],
             'authUser' => $user ? [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -354,12 +260,6 @@ class FacilityBookingController extends Controller
         // Pentadbir tidak dibenarkan menempah ruang.
         abort_if($user && ($user->hasRole('Superadmin') || $user->hasRole('Admin')), 403);
 
-        if (! $facility->is_active) {
-            return back()->withErrors([
-                'facility' => 'Ruang ini tidak aktif untuk tempahan.',
-            ]);
-        }
-
         $rules = [
             'start_datetime' => ['required', 'date'],
             'end_datetime' => ['required', 'date', 'after:start_datetime'],
@@ -369,29 +269,7 @@ class FacilityBookingController extends Controller
 
         $data = $request->validate($rules);
 
-        $start = Carbon::parse($data['start_datetime']);
-        $end = Carbon::parse($data['end_datetime']);
-
-        if ($this->hasBookingConflict($facility->id, $start->toDateTimeString(), $end->toDateTimeString())) {
-            return back()->withErrors([
-                'start_datetime' => 'Slot tempahan bertindih dengan tempahan sedia ada (pending/approved). Sila pilih masa lain.',
-            ]);
-        }
-
-        $contactName = ($data['contact_name'] ?? null) ?: $user?->name;
-        $contactPhone = ($data['contact_phone'] ?? null) ?: $user?->phone;
-
-        FacilityBooking::create([
-            'facility_id' => $facility->id,
-            'user_id' => $user?->id,
-            'contact_name' => $contactName,
-            'contact_phone' => $contactPhone,
-            'start_datetime' => $start,
-            'end_datetime' => $end,
-            'total_price' => $this->calculateTotalPrice($facility, $start->diffInMinutes($end), $isMember),
-            'booking_status' => 'pending',
-            'payment_status' => 'unpaid',
-        ]);
+        $this->facilities->createBooking($user, $facility, $data);
 
         return back()->with('success', 'Tempahan berjaya dihantar dan sedang menunggu kelulusan admin.');
     }
@@ -483,7 +361,7 @@ class FacilityBookingController extends Controller
 
         if (
             $data['booking_status'] === 'approved'
-            && $this->hasBookingConflict(
+            && $this->facilities->hasBookingConflict(
                 $facilityBooking->facility_id,
                 $facilityBooking->start_datetime?->toDateTimeString(),
                 $facilityBooking->end_datetime?->toDateTimeString(),
@@ -501,42 +379,6 @@ class FacilityBookingController extends Controller
         ]);
 
         return back()->with('success', 'Status tempahan berjaya dikemas kini.');
-    }
-
-    private function hasBookingConflict(int $facilityId, string $requestedStart, string $requestedEnd, ?int $ignoreBookingId = null): bool
-    {
-        return FacilityBooking::query()
-            ->where('facility_id', $facilityId)
-            ->whereIn('booking_status', ['pending', 'approved'])
-            ->when($ignoreBookingId, fn ($query) => $query->where('id', '!=', $ignoreBookingId))
-            ->where(function ($query) use ($requestedStart, $requestedEnd) {
-                $query
-                    ->where('start_datetime', '<', $requestedEnd)
-                    ->where('end_datetime', '>', $requestedStart);
-            })
-            ->exists();
-    }
-
-    private function calculateTotalPrice(Facility $facility, int $durationInMinutes, bool $isMember = false): float
-    {
-        if ($durationInMinutes <= 0) {
-            return 0.0;
-        }
-
-        $rate = $facility->price_per_unit;
-        if ($isMember && $facility->member_price_per_unit !== null) {
-            $rate = $facility->member_price_per_unit;
-        }
-
-        if ($facility->type === 'daily') {
-            $units = (int) ceil($durationInMinutes / 1440);
-
-            return round($units * (float) $rate, 2);
-        }
-
-        $units = (int) ceil($durationInMinutes / 60);
-
-        return round($units * (float) $rate, 2);
     }
 
     private function resolveOrganizationId($user, ?int $submittedOrganizationId): int

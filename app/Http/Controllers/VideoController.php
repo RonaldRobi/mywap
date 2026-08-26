@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Organization;
 use App\Models\Video;
+use App\Services\VideoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,6 +12,8 @@ use Inertia\Response;
 
 class VideoController extends Controller
 {
+    public function __construct(private readonly VideoService $videos) {}
+
     public function manage(Request $request): Response
     {
         $user = $request->user();
@@ -122,22 +125,7 @@ class VideoController extends Controller
 
     public function memberIndex(Request $request): Response
     {
-        $user = $request->user();
-
-        $videos = Video::query()
-            ->where(function ($query) use ($user) {
-                $query->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
-            })
-            ->latest()
-            ->paginate(12)
-            ->through(fn (Video $video) => [
-                'id' => $video->id,
-                'title' => $video->title,
-                'youtube_id' => $video->youtube_id,
-                'thumbnail_url' => $video->thumbnail_url,
-                'embed_url' => $video->embed_url,
-            ]);
+        $videos = $this->videos->list($request, $request->user());
 
         return Inertia::render('Member/Videos', [
             'videos' => $videos,

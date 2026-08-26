@@ -5,61 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    public function __construct(private readonly ProductService $products) {}
+
     public function index(Request $request)
     {
-        $query = Product::with('category', 'organization')->withCount('variations');
-
         $isMall = $request->routeIs('mall.*');
-        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
-
-        // Buyers only ever see published products. Admins keep drafts visible
-        // inside the catalogue so a newly saved draft is never "missing".
-        if ($isMall || ! $isAdmin) {
-            $query->active();
-        } elseif ($request->filled('status')) {
-            $query->where('status', $request->boolean('status'));
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('description', 'like', '%'.$request->search.'%');
-            });
-        }
-
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        $sort = $request->input('sort', 'latest');
-        switch ($sort) {
-            case 'price_low':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_high':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'oldest':
-                $query->orderBy('created_at', 'asc');
-                break;
-            case 'latest':
-            default:
-                $query->orderBy('created_at', 'desc');
-                break;
-        }
-
-        $products = $query->paginate(12)->withQueryString();
-        $categories = Category::orderBy('name')->get();
 
         return Inertia::render('Ecommerce/Products/Index', [
-            'products' => $products,
-            'categories' => $categories,
+            'products' => $this->products->list($request, $request->user(), $isMall),
+            'categories' => $this->products->categoryOptions(),
             'filters' => $request->only(['search', 'category_id', 'sort', 'status']),
             'isMall' => $isMall,
         ]);
@@ -111,21 +72,11 @@ class ProductController extends Controller
         $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
         abort_if(! $product->status && ! $isAdmin, 404);
 
-        $product->load([
-            'category',
-            'organization',
-            'variations.options',
-        ]);
-
-        $relatedProducts = Product::active()
-            ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->limit(4)
-            ->get();
+        $detail = $this->products->showDetail($product, $request->user());
 
         return Inertia::render('Ecommerce/Products/Show', [
-            'product' => $product,
-            'relatedProducts' => $relatedProducts,
+            'product' => $detail['product'],
+            'relatedProducts' => $detail['relatedProducts'],
             'isMall' => $request->routeIs('mall.*'),
         ]);
     }

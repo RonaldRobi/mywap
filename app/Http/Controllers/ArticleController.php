@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\ArticleCategory;
-use App\Models\ArticleComment;
 use App\Models\ArticleMedia;
-use App\Models\ArticleReaction;
 use App\Models\ArticleTag;
 use App\Models\Organization;
+use App\Services\ArticleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,6 +15,8 @@ use Inertia\Inertia;
 
 class ArticleController extends Controller
 {
+    public function __construct(private readonly ArticleService $articles) {}
+
     public function manage()
     {
         $articles = Article::with(['author', 'organization'])
@@ -63,28 +64,9 @@ class ArticleController extends Controller
 
     public function index()
     {
-        $categories = ArticleCategory::orderBy('name')->get();
+        $categories = $this->articles->categories();
 
-        $articles = Article::with(['author', 'organization', 'categories', 'tags'])
-            ->where('is_published', true)
-            ->where(function ($query) {
-                $query->whereNull('published_at')
-                    ->orWhere('published_at', '<=', now());
-            })
-            ->latest('published_at')
-            ->get()
-            ->map(fn ($article) => [
-                'id' => $article->id,
-                'title' => $article->title,
-                'slug' => $article->slug,
-                'cover_image' => $article->cover_image_path,
-                'excerpt' => Str::limit(strip_tags($article->content), 100),
-                'author_name' => $article->author?->name ?? 'Admin',
-                'published_date' => $article->published_at ? $article->published_at->format('d M Y') : $article->created_at->format('d M Y'),
-                'public_url' => route('articles.show', $article->slug),
-                'is_featured' => $article->is_featured,
-                'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]),
-            ]);
+        $articles = $this->articles->listAll();
 
         $featured = $articles->where('is_featured', true)->values();
 
@@ -100,54 +82,11 @@ class ArticleController extends Controller
         abort_if(! $article->is_published, 404);
         abort_if($article->published_at && $article->published_at->isFuture(), 404);
 
-        $article->load(['author:id,name', 'organization:id,name,slug', 'categories', 'tags', 'media']);
-
-        $user = $request->user();
-        $sessionId = $request->session()->getId();
-
-        $likes = $article->reactions()->where('reaction', 'like')->count();
-        $dislikes = $article->reactions()->where('reaction', 'dislike')->count();
-        $myReaction = $article->reactions()
-            ->where(function ($q) use ($user, $sessionId) {
-                if ($user) {
-                    $q->where('user_id', $user->id);
-                } else {
-                    $q->where('session_id', $sessionId);
-                }
-            })->value('reaction');
-
-        $comments = $article->comments()
-            ->where('is_hidden', false)
-            ->with('user:id,name')
-            ->latest()
-            ->take(100)
-            ->get()
-            ->map(fn ($comment) => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Anonim',
-                'created_at' => $comment->created_at?->diffForHumans(),
-            ]);
+        $detail = $this->articles->showDetail($article, $request->user(), $request->session()->getId());
 
         return Inertia::render('Article/Show', [
-            'article' => [
-                'id' => $article->id,
-                'slug' => $article->slug,
-                'title' => $article->title,
-                'excerpt' => $article->excerpt,
-                'content' => $article->content,
-                'cover_image_path' => $article->cover_image_path,
-                'published_at' => $article->published_at?->toDateTimeString(),
-                'organization_name' => $article->organization?->name ?? 'Semua Organisasi',
-                'author_name' => $article->author?->name ?? '-',
-                'likes_count' => $likes,
-                'dislikes_count' => $dislikes,
-                'my_reaction' => $myReaction,
-                'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]),
-                'tags' => $article->tags->map(fn ($t) => ['id' => $t->id, 'name' => $t->name]),
-                'gallery' => $article->media->map(fn ($m) => ['id' => $m->id, 'path' => $m->path, 'caption' => $m->caption]),
-            ],
-            'comments' => $comments,
+            'article' => $detail['article'],
+            'comments' => $detail['comments'],
         ]);
     }
 
@@ -159,32 +98,7 @@ class ArticleController extends Controller
             'reaction' => ['required', 'in:like,dislike'],
         ]);
 
-        $user = $request->user();
-        $sessionId = $request->session()->getId();
-
-        $existing = ArticleReaction::query()
-            ->where('article_id', $article->id)
-            ->where(function ($q) use ($user, $sessionId) {
-                if ($user) {
-                    $q->where('user_id', $user->id);
-                } else {
-                    $q->where('session_id', $sessionId);
-                }
-            })
-            ->first();
-
-        if ($existing && $existing->reaction === $data['reaction']) {
-            $existing->delete();
-        } elseif ($existing) {
-            $existing->update(['reaction' => $data['reaction']]);
-        } else {
-            ArticleReaction::create([
-                'article_id' => $article->id,
-                'user_id' => $user?->id,
-                'session_id' => $user ? null : $sessionId,
-                'reaction' => $data['reaction'],
-            ]);
-        }
+        $this->articles->react($article, $data['reaction'], $request->user(), $request->session()->getId());
 
         return back()->with('success', 'Reaksi berjaya dikemas kini.');
     }
@@ -198,13 +112,12 @@ class ArticleController extends Controller
             'anonymous_name' => ['nullable', 'string', 'max:50'],
         ]);
 
-        ArticleComment::create([
-            'article_id' => $article->id,
-            'user_id' => $request->user()?->id,
-            'anonymous_name' => $request->user() ? null : ($data['anonymous_name'] ?? 'Anonim'),
-            'content' => trim($data['content']),
-            'is_hidden' => false,
-        ]);
+        $this->articles->addComment(
+            $article,
+            $data['content'],
+            $request->user(),
+            $data['anonymous_name'] ?? null
+        );
 
         return back()->with('success', 'Komen berjaya dihantar.');
     }

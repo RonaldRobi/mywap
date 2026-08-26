@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\BroadcastMessage;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
+use App\Services\PushNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -36,11 +37,21 @@ class SendBroadcastJob implements ShouldQueue
             $query->whereIn('id', $message->recipient_ids ?? []);
         }
 
-        $query->orderBy('id')->chunk(200, function ($users) use ($message) {
+        $userIds = [];
+
+        $query->orderBy('id')->chunk(200, function ($users) use ($message, &$userIds) {
             foreach ($users as $user) {
+                $userIds[] = $user->id;
                 $user->notify(new GeneralBroadcastNotification($message));
             }
         });
+
+        app(PushNotificationService::class)->sendToUsers(
+            $userIds,
+            $message->title,
+            $message->content,
+            ['type' => 'broadcast', 'broadcast_message_id' => $message->id]
+        );
 
         $message->update(['sent_at' => now()]);
     }

@@ -6,16 +6,14 @@ use App\Actions\LoadUsrahForUser;
 use App\Models\Article;
 use App\Models\Campaign;
 use App\Models\DashboardBanner;
-use App\Models\Event;
 use App\Models\EventRsvp;
-use App\Models\FacilityBooking;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\NewsPost;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
-use App\Services\FeeService;
+use App\Services\AdminService;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -106,263 +104,16 @@ class DashboardController extends Controller
         return redirect()->route($this->dashboardRouteFor($request->user()));
     }
 
-    public function admin(Request $request, FeeService $feeService): Response
+    public function admin(Request $request): Response
     {
-        $user = $request->user()->load('organization');
-        $isSuperadmin = $user->hasRole('Superadmin');
-
-        $totalMembers = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->count();
-
-        $feesCollectedThisMonth = Payment::query()
-            ->where('status', 'successful')
-            ->where('payable_type', 'membership_fee')
-            ->where('created_at', '>=', now()->startOfMonth())
-            ->where('created_at', '<=', now()->endOfMonth())
-            ->when(! $isSuperadmin, function ($query) use ($user) {
-                $query->whereHas('user', function ($innerQuery) use ($user) {
-                    $innerQuery->withoutGlobalScopes()->where('current_organization_id', $user->current_organization_id);
-                });
-            })
-            ->sum('amount');
-
-        $activeCampaigns = Campaign::query()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
-            ->where('status', 'active')
-            ->latest()
-            ->take(3)
-            ->get()
-            ->map(fn (Campaign $campaign) => [
-                'id' => $campaign->id,
-                'title' => $campaign->title,
-                'status' => $campaign->status,
-                'target_amount' => (float) $campaign->target_amount,
-                'current_amount' => (float) $campaign->current_amount,
-                'progress_percent' => $campaign->target_amount > 0
-                    ? min(100, round(($campaign->current_amount / $campaign->target_amount) * 100))
-                    : 0,
-            ]);
-
-        $eventsCount = Event::query()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
-            ->count();
-
-        $infaqCount = Infaq::query()
-            ->when(! $isSuperadmin, fn ($query) => $query->where(function ($q) use ($user) {
-                $q->where('organization_id', $user->current_organization_id)
-                    ->orWhereNull('organization_id');
-            }))
-            ->count();
-
-        $programChart = [
-            ['label' => 'Program', 'value' => $eventsCount],
-            ['label' => 'Kempen', 'value' => $activeCampaigns->count()],
-            ['label' => 'Infaq', 'value' => $infaqCount],
-        ];
-
-        $newMembersLast30Days = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->where('created_at', '>=', now()->subDays(30))
-            ->count();
-
-        $newMembersPrevious30Days = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->whereBetween('created_at', [now()->subDays(60), now()->subDays(30)])
-            ->count();
-
-        $newMembersTrendPercent = $newMembersPrevious30Days > 0
-            ? round((($newMembersLast30Days - $newMembersPrevious30Days) / $newMembersPrevious30Days) * 100, 1)
-            : ($newMembersLast30Days > 0 ? 100.0 : 0.0);
-
-        $eventsThisMonth = Event::query()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
-            ->whereBetween('start_time', [now()->startOfMonth(), now()->endOfMonth()])
-            ->count();
-
-        $pendingFacilityBookings = FacilityBooking::query()
-            ->where('booking_status', 'pending')
-            ->when(! $isSuperadmin, function ($query) use ($user) {
-                $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id));
-            })
-            ->count();
-
-        $membersByState = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->selectRaw("COALESCE(NULLIF(state, ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
-            ->groupBy('state')
-            ->orderByDesc('total')
-            ->orderBy('state')
-            ->get()
-            ->map(fn ($row) => [
-                'state' => $row->state,
-                'count' => (int) $row->total,
-            ])
-            ->values();
-
-        $activeMembers = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->where('is_active', true)
-            ->count();
-
-        $inactiveMembers = $totalMembers - $activeMembers;
-
-        $orgMemberCounts = [];
-        if ($isSuperadmin) {
-            $orgMemberCounts = Organization::query()
-                ->where('slug', '!=', 'management')
-                ->orderBy('min_age')
-                ->get(['id', 'name', 'slug', 'color_theme'])
-                ->map(fn ($org) => [
-                    'id' => $org->id,
-                    'name' => $org->name,
-                    'slug' => $org->slug,
-                    'color_theme' => $org->color_theme,
-                    'member_count' => User::where('current_organization_id', $org->id)->count(),
-                ])
-                ->values()
-                ->toArray();
-        }
-
-        $year = now()->year;
-        $feesDueCount = $isSuperadmin
-            ? User::withoutGlobalScopes()
-                ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
-                ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
-                ->count()
-            : $feeService->getDueCount($user->current_organization_id, $year);
-
-        $alerts = collect();
-
-        if ($pendingFacilityBookings > 0) {
-            $alerts->push([
-                'type' => $pendingFacilityBookings >= 10 ? 'high' : 'medium',
-                'key' => 'pending_bookings',
-                'count' => $pendingFacilityBookings,
-                'title' => 'Tempahan Ruang Belum Diproses',
-                'description' => "{$pendingFacilityBookings} tempahan masih berstatus pending.",
-            ]);
-        }
-
-        if ($feesDueCount > 0) {
-            $alerts->push([
-                'type' => $feesDueCount >= 50 ? 'high' : 'medium',
-                'key' => 'fees_due',
-                'count' => $feesDueCount,
-                'title' => 'Yuran Tertunggak',
-                'description' => "{$feesDueCount} ahli belum membuat bayaran yuran untuk tahun ini.",
-            ]);
-        }
-
-        if ($eventsThisMonth === 0) {
-            $alerts->push([
-                'type' => 'medium',
-                'key' => 'no_programs',
-                'count' => 0,
-                'title' => 'Program Bulan Ini',
-                'description' => 'Tiada program berjadual bulan ini. Pertimbangkan perancangan segera.',
-            ]);
-        }
-
-        $recentActivities = collect();
-
-        $latestMembers = User::withoutGlobalScopes()
-            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $user->current_organization_id))
-            ->latest('created_at')
-            ->take(4)
-            ->get(['id', 'name', 'created_at']);
-
-        foreach ($latestMembers as $member) {
-            $recentActivities->push([
-                'id' => 'member-'.$member->id,
-                'type' => 'member',
-                'title' => 'Ahli baharu didaftarkan',
-                'description' => $member->name,
-                'created_at' => $member->created_at?->toDateTimeString(),
-            ]);
-        }
-
-        $latestPayments = Payment::query()
-            ->where('status', 'successful')
-            ->when(! $isSuperadmin, function ($query) use ($user) {
-                $query->whereHas('user', fn ($innerQuery) => $innerQuery
-                    ->withoutGlobalScopes()
-                    ->where('current_organization_id', $user->current_organization_id));
-            })
-            ->latest('created_at')
-            ->take(4)
-            ->get(['id', 'amount', 'payable_type', 'created_at']);
-
-        foreach ($latestPayments as $payment) {
-            $recentActivities->push([
-                'id' => 'payment-'.$payment->id,
-                'type' => 'payment',
-                'title' => 'Bayaran berjaya diterima',
-                'description' => strtoupper((string) $payment->payable_type).' · RM '.number_format((float) $payment->amount, 2),
-                'created_at' => $payment->created_at?->toDateTimeString(),
-            ]);
-        }
-
-        $latestBookings = FacilityBooking::query()
-            ->when(! $isSuperadmin, function ($query) use ($user) {
-                $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id));
-            })
-            ->latest('created_at')
-            ->take(4)
-            ->get(['id', 'booking_status', 'created_at']);
-
-        foreach ($latestBookings as $booking) {
-            $recentActivities->push([
-                'id' => 'booking-'.$booking->id,
-                'type' => 'booking',
-                'title' => 'Tempahan ruang dikemaskini',
-                'description' => 'Status: '.ucfirst((string) $booking->booking_status),
-                'created_at' => $booking->created_at?->toDateTimeString(),
-            ]);
-        }
-
-        $recentActivities = $recentActivities
-            ->sortByDesc('created_at')
-            ->take(8)
-            ->values();
+        $user = $request->user();
+        $data = app(AdminService::class)->dashboard($user);
 
         return Inertia::render('Admin/Dashboard', [
-            'organization' => [
-                'name' => $isSuperadmin ? 'Management' : $user->organization?->name,
-                'slug' => $isSuperadmin ? 'management' : $user->organization?->slug,
-                'color_theme' => $isSuperadmin ? '#334155' : $user->organization?->color_theme,
-            ],
-            'overview' => [
-                'total_members' => $totalMembers,
-                'fees_collected_month' => (float) $feesCollectedThisMonth,
-                'total_programs' => (int) ($eventsCount + $activeCampaigns->count() + $infaqCount),
-                'program_chart' => $programChart,
-                'new_members_30d' => $newMembersLast30Days,
-                'new_members_trend_percent' => $newMembersTrendPercent,
-                'events_this_month' => $eventsThisMonth,
-                'pending_facility_bookings' => $pendingFacilityBookings,
-                'fees_due_count' => $feesDueCount,
-                'members_by_state' => $membersByState,
-                'active_members' => $activeMembers,
-                'inactive_members' => $inactiveMembers,
-                'org_member_counts' => $orgMemberCounts,
-                'alerts' => $alerts->values(),
-                'recent_activities' => $recentActivities,
-            ],
-            'managementLinks' => [
-                'create_event_url' => route('events.index'),
-                'create_program_url' => route('events.index'),
-                'create_campaign_url' => route('admin.campaigns.store'),
-                'campaigns_url' => route('admin.campaigns.index'),
-                'infaq_url' => $isSuperadmin ? route('superadmin.infaq.index') : route('admin.campaigns.index'),
-                'banners_url' => $isSuperadmin ? route('superadmin.banners.index') : null,
-                'information_hub_manage_url' => route('admin.hub.manage'),
-                'fees_members_url' => route('admin.fees.members'),
-                'usrah_manage_url' => route('admin.usrah.index'),
-                'broadcasts_url' => route('admin.broadcasts.index'),
-                'directory_url' => route('directory.index'),
-            ],
-            'campaigns' => $activeCampaigns,
+            'organization' => $data['organization'],
+            'overview' => $data['overview'],
+            'managementLinks' => $data['managementLinks'],
+            'campaigns' => $data['campaigns'],
         ]);
     }
 

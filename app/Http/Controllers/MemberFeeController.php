@@ -10,6 +10,7 @@ use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\AdminService;
 use App\Services\FeeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -30,124 +31,11 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class MemberFeeController extends Controller
 {
-    public function index(Request $request, FeeService $feeService): Response
+    public function index(Request $request): Response
     {
-        $user = $request->user();
-        $isSuperadmin = $user->hasRole('Superadmin');
-        $orgId = $user->current_organization_id;
+        $data = app(AdminService::class)->fees($request, $request->user());
 
-        $year = (int) $request->input('year', now()->year);
-
-        $query = User::withoutGlobalScopes()
-            ->with(['membershipFees' => fn ($q) => $q->where('year', $year)])
-            ->with('organization:id,name,slug')
-            ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
-            ->when($isSuperadmin && $request->filled('organization_id'), fn ($q) => $q->where('current_organization_id', (int) $request->organization_id))
-            ->orderBy('name');
-
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('name', 'like', "%{$s}%")
-                    ->orWhere('ic_number', 'like', "%{$s}%")
-                    ->orWhere('phone', 'like', "%{$s}%")
-                    ->orWhere('email', 'like', "%{$s}%");
-            });
-        }
-
-        if ($request->filled('fee_status')) {
-            $status = $request->fee_status;
-            if ($status === 'paid') {
-                $query->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted']));
-            } elseif ($status === 'life_member') {
-                $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'));
-            } elseif ($status === 'exempted') {
-                $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'exempted'));
-            } elseif ($status === 'due') {
-                $query->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted', 'life_member']));
-            }
-        }
-
-        $members = $query->paginate(25)->through(fn (User $u) => [
-            'id' => $u->id,
-            'name' => $u->name,
-            'ic_number' => $u->ic_number,
-            'member_no' => $u->member_no,
-            'phone' => $u->phone,
-            'email' => $u->email,
-            'organization' => $u->organization ? ['id' => $u->organization->id, 'name' => $u->organization->name, 'slug' => $u->organization->slug] : null,
-            'fee' => $u->membershipFees->first() ? [
-                'id' => $u->membershipFees->first()->id,
-                'year' => $u->membershipFees->first()->year,
-                'amount' => (float) $u->membershipFees->first()->amount,
-                'status' => $u->membershipFees->first()->status?->value ?? ($u->membershipFees->first()->status ?? 'unpaid'),
-                'paid_at' => $u->membershipFees->first()->paid_at?->toDateString(),
-                'notes' => $u->membershipFees->first()->notes,
-            ] : ['status' => 'unpaid', 'year' => $year],
-        ]);
-
-        $stats = $isSuperadmin && $request->filled('organization_id')
-            ? $feeService->getAdminStats((int) $request->organization_id, $year)
-            : ($isSuperadmin
-                ? $feeService->getAdminStats(null, $year)
-                : $feeService->getAdminStats($orgId, $year));
-
-        $monthExpr = match (DB::connection()->getDriverName()) {
-            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
-            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
-            default => 'MONTH(created_at)',
-        };
-
-        $monthlyTotals = Payment::query()
-            ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
-            ->where('status', 'successful')
-            ->whereYear('created_at', $year)
-            ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request) {
-                $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScopes()->where('current_organization_id',
-                    $isSuperadmin ? (int) $request->organization_id : $orgId));
-            })
-            ->groupBy('month')
-            ->pluck('total', 'month');
-
-        $monthlyCollection = collect(range(1, 12))->mapWithKeys(fn ($m) => [$m => (float) ($monthlyTotals[$m] ?? 0)]);
-
-        $chart = $monthlyCollection->map(fn ($total, $m) => [
-            'month' => date('F', mktime(0, 0, 0, (int) $m, 1)),
-            'total' => $total,
-        ])->values();
-
-        $years = range(now()->year - 10, now()->year + 1);
-
-        $orgIds = $isSuperadmin
-            ? Organization::pluck('fee_amount', 'id')
-            : [$orgId => Organization::find($orgId)?->fee_amount ?? 0];
-
-        $expectedAmount = 0;
-        $activeMembers = 0;
-        foreach ($orgIds as $oid => $feeAmount) {
-            $cnt = User::withoutGlobalScopes()
-                ->where('current_organization_id', $oid)
-                ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
-                ->count();
-            $activeMembers += $cnt;
-            $expectedAmount += $cnt * (float) $feeAmount;
-        }
-
-        return Inertia::render('Admin/MemberFees/Index', [
-            'members' => $members,
-            'stats' => $stats,
-            'year' => $year,
-            'years' => $years,
-            'chart' => $chart,
-            'organizations' => $isSuperadmin ? Organization::select('id', 'name', 'slug')->get() : [],
-            'reconciliation' => [
-                'expected' => round($expectedAmount, 2),
-                'collected' => $stats['collected_amount'] ?? 0,
-                'outstanding' => round(max(0, $expectedAmount - ($stats['collected_amount'] ?? 0)), 2),
-                'rate' => $expectedAmount > 0 ? round(($stats['collected_amount'] ?? 0) / $expectedAmount * 100, 1) : 0,
-            ],
-            'filters' => $request->only(['search', 'fee_status']),
-        ]);
+        return Inertia::render('Admin/MemberFees/Index', $data);
     }
 
     public function paymentHistory(Request $request, FeeService $feeService, User $targetUser): JsonResponse

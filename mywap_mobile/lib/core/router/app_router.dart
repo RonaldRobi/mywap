@@ -1,0 +1,98 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../features/admin/presentation/admin_landing_screen.dart';
+import '../../features/admin/presentation/routes.dart';
+import '../../features/auth/application/auth_controller.dart';
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/directory/presentation/routes.dart';
+import '../../features/ecommerce/presentation/routes.dart';
+import '../../features/events/presentation/event_detail_screen.dart';
+import '../../features/events/presentation/events_screen.dart';
+import '../../features/events/presentation/routes.dart';
+import '../../features/facilities/presentation/routes.dart';
+import '../../features/forms/presentation/routes.dart';
+import '../../features/infaq/presentation/infaq_landing_screen.dart';
+import '../../features/infaq/presentation/routes.dart';
+import '../../features/member/presentation/main_shell.dart';
+import '../../features/member/presentation/member_dashboard_screen.dart';
+import '../../features/member/presentation/routes.dart';
+import '../../features/menu/presentation/menu_screen.dart';
+import '../../features/menu/presentation/routes.dart';
+import '../../features/news/presentation/routes.dart';
+import '../../features/polls/presentation/routes.dart';
+import '../../features/profile/presentation/routes.dart';
+import '../../features/usrah/presentation/routes.dart';
+
+/// Notifies go_router whenever auth state changes so redirects re-evaluate.
+class _AuthRefresh extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = _AuthRefresh();
+  ref.listen(authControllerProvider, (_, __) => refresh.notify());
+
+  return GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      final location = state.matchedLocation;
+      final isSplash = location == '/splash';
+      final isLogin = location == '/login';
+
+      if (auth is AuthLoading) {
+        return isSplash || isLogin ? null : '/splash';
+      }
+      if (auth is AuthAuthenticated) {
+        return isSplash || isLogin ? '/dashboard' : null;
+      }
+      return isLogin ? null : '/login';
+    },
+    routes: [
+      GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      ShellRoute(
+        builder: (_, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (_, __) => const MemberDashboardScreen(),
+          ),
+          GoRoute(path: '/events', builder: (_, __) => const EventsScreen()),
+          GoRoute(
+            path: '/infaq',
+            builder: (_, __) => const InfaqLandingScreen(),
+          ),
+          GoRoute(path: '/menu', builder: (_, __) => const MenuScreen()),
+          GoRoute(
+            path: '/admin',
+            builder: (_, __) => const AdminLandingScreen(),
+          ),
+        ],
+      ),
+      // Static event sub-routes must be matched before `/events/:id`.
+      ...eventsRoutes,
+      GoRoute(
+        path: '/events/:id',
+        builder: (_, state) =>
+            EventDetailScreen(eventId: int.parse(state.pathParameters['id']!)),
+      ),
+      ...memberRoutes,
+      ...profileRoutes,
+      ...infaqRoutes,
+      ...ecommerceRoutes,
+      ...newsRoutes,
+      ...facilitiesRoutes,
+      ...usrahRoutes,
+      ...pollsRoutes,
+      ...formsRoutes,
+      ...directoryRoutes,
+      ...adminRoutes,
+      ...menuRoutes,
+    ],
+  );
+});

@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "appTitle": "myWAP",
+  "login": "Login",
+  "logout": "Logout",
+  "retry": "Try Again"
+}

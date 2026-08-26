@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\NewsCategory;
 use App\Models\NewsPost;
-use App\Models\NewsPostComment;
-use App\Models\NewsPostReaction;
 use App\Models\Organization;
+use App\Services\NewsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,51 +17,18 @@ class NewsController extends Controller
 {
     private const SUPERADMIN_ALLOWED_TARGET_SLUGS = ['wadah', 'abim', 'pkpim'];
 
+    public function __construct(private readonly NewsService $news) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
         $categoryId = $request->integer('category_id');
 
-        $categories = NewsCategory::query()
-            ->where('is_active', true)
-            ->orderBy('display_order')
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'icon']);
-
-        $query = NewsPost::query()
-            ->with(['category:id,name,slug', 'organization:id,name,slug', 'author:id,name'])
-            ->with(['reactions' => fn ($q) => $q->where('user_id', $user->id)->select('id', 'news_post_id', 'user_id', 'reaction')])
-            ->withCount([
-                'reactions as likes_count' => fn ($q) => $q->where('reaction', 'like'),
-                'reactions as dislikes_count' => fn ($q) => $q->where('reaction', 'dislike'),
-                'comments as comments_count' => fn ($q) => $q->where('is_hidden', false),
-            ])
-            ->where('is_published', true)
-            ->where(function ($q) use ($user) {
-                if ($user->hasRole('Superadmin')) {
-                    return;
-                }
-
-                $q->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
-            })
-            ->where(function ($q) {
-                $q->whereNull('published_at')->orWhere('published_at', '<=', now());
-            });
-
-        if ($categoryId) {
-            $query->where('news_category_id', $categoryId);
-        }
-
-        $posts = $query->latest('published_at')
-            ->latest('id')
-            ->paginate(12)
-            ->withQueryString()
-            ->through(fn (NewsPost $post) => $this->serializePostSummary($post));
+        $posts = $this->news->list($request, $user);
 
         return Inertia::render('Info/Index', [
             'posts' => $posts,
-            'categories' => $categories,
+            'categories' => $this->news->categories(),
             'filters' => [
                 'category_id' => $categoryId ?: null,
             ],
@@ -72,80 +38,26 @@ class NewsController extends Controller
     public function show(Request $request, NewsPost $newsPost): Response
     {
         $user = $request->user();
-        abort_unless($this->canViewPost($user, $newsPost), 404);
+        abort_unless($this->news->canViewPost($user, $newsPost), 404);
 
-        $newsPost->load(['category:id,name,slug', 'organization:id,name,slug', 'author:id,name']);
-
-        $likes = $newsPost->reactions()->where('reaction', 'like')->count();
-        $dislikes = $newsPost->reactions()->where('reaction', 'dislike')->count();
-        $myReaction = $newsPost->reactions()->where('user_id', $user->id)->value('reaction');
-
-        $comments = $newsPost->comments()
-            ->where('is_hidden', false)
-            ->with('user:id,name')
-            ->latest()
-            ->take(100)
-            ->get()
-            ->map(fn (NewsPostComment $comment) => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'user_name' => $comment->user?->name ?? 'Ahli',
-                'created_at' => $comment->created_at?->diffForHumans(),
-            ]);
-
-        $canEdit = $user->hasRole('Superadmin')
-            || ($user->hasRole('Admin')
-                && (is_null($newsPost->organization_id)
-                    || (int) $newsPost->organization_id === (int) $user->current_organization_id));
+        $detail = $this->news->showDetail($newsPost, $user);
 
         return Inertia::render('Info/Show', [
-            'post' => [
-                'id' => $newsPost->id,
-                'title' => $newsPost->title,
-                'excerpt' => $newsPost->excerpt,
-                'content' => $newsPost->content,
-                'cover_image_path' => $newsPost->cover_image_path,
-                'published_at' => $newsPost->published_at?->toDateTimeString(),
-                'organization_name' => $newsPost->organization?->name ?? 'Semua Organisasi',
-                'category' => $newsPost->category ? [
-                    'id' => $newsPost->category->id,
-                    'name' => $newsPost->category->name,
-                ] : null,
-                'author_name' => $newsPost->author?->name ?? '-',
-                'likes_count' => $likes,
-                'dislikes_count' => $dislikes,
-                'my_reaction' => $myReaction,
-                'can_edit' => $canEdit,
-            ],
-            'comments' => $comments,
+            'post' => $detail['post'],
+            'comments' => $detail['comments'],
         ]);
     }
 
     public function react(Request $request, NewsPost $newsPost): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->canViewPost($user, $newsPost), 404);
+        abort_unless($this->news->canViewPost($user, $newsPost), 404);
 
         $data = $request->validate([
             'reaction' => ['required', 'in:like,dislike'],
         ]);
 
-        $existing = NewsPostReaction::query()
-            ->where('news_post_id', $newsPost->id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($existing && $existing->reaction === $data['reaction']) {
-            $existing->delete();
-        } elseif ($existing) {
-            $existing->update(['reaction' => $data['reaction']]);
-        } else {
-            NewsPostReaction::create([
-                'news_post_id' => $newsPost->id,
-                'user_id' => $user->id,
-                'reaction' => $data['reaction'],
-            ]);
-        }
+        $this->news->react($user, $newsPost, $data['reaction']);
 
         return back()->with('success', 'Reaksi berjaya dikemas kini.');
     }
@@ -153,18 +65,13 @@ class NewsController extends Controller
     public function storeComment(Request $request, NewsPost $newsPost): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->canViewPost($user, $newsPost), 404);
+        abort_unless($this->news->canViewPost($user, $newsPost), 404);
 
         $data = $request->validate([
             'content' => ['required', 'string', 'max:1500'],
         ]);
 
-        NewsPostComment::create([
-            'news_post_id' => $newsPost->id,
-            'user_id' => $user->id,
-            'content' => trim($data['content']),
-            'is_hidden' => false,
-        ]);
+        $this->news->addComment($user, $newsPost, $data['content']);
 
         return back()->with('success', 'Komen berjaya dihantar.');
     }
@@ -269,7 +176,7 @@ class NewsController extends Controller
     public function update(Request $request, NewsPost $newsPost): RedirectResponse
     {
         abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
-        $this->authorizeManagePost($request->user(), $newsPost);
+        $this->news->authorizeManagePost($request->user(), $newsPost);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -318,7 +225,7 @@ class NewsController extends Controller
     public function destroy(Request $request, NewsPost $newsPost): RedirectResponse
     {
         abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
-        $this->authorizeManagePost($request->user(), $newsPost);
+        $this->news->authorizeManagePost($request->user(), $newsPost);
 
         $oldPath = ltrim(str_replace('/storage/', '', parse_url($newsPost->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
         if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
@@ -359,42 +266,6 @@ class NewsController extends Controller
         return back()->with('success', 'Kategori info terkini berjaya dipadam.');
     }
 
-    private function canViewPost($user, NewsPost $newsPost): bool
-    {
-        $isPublished = (bool) $newsPost->is_published;
-        $publishedAt = $newsPost->published_at;
-        $isPublishedNow = $isPublished && (is_null($publishedAt) || $publishedAt->lte(now()));
-
-        if (! $isPublishedNow) {
-            return $user->hasRole(['Superadmin', 'Admin']) && $this->canAdminManagePost($user, $newsPost);
-        }
-
-        if ($user->hasRole('Superadmin')) {
-            return true;
-        }
-
-        return is_null($newsPost->organization_id)
-            || (int) $newsPost->organization_id === (int) $user->current_organization_id;
-    }
-
-    private function serializePostSummary(NewsPost $post): array
-    {
-        return [
-            'id' => $post->id,
-            'title' => $post->title,
-            'slug' => $post->slug,
-            'excerpt' => $post->excerpt,
-            'cover_image_path' => $post->cover_image_path,
-            'organization_name' => $post->organization?->name ?? 'Semua Organisasi',
-            'category_name' => $post->category?->name ?? 'Umum',
-            'published_at' => $post->published_at?->toDateTimeString(),
-            'likes_count' => (int) ($post->likes_count ?? 0),
-            'dislikes_count' => (int) ($post->dislikes_count ?? 0),
-            'comments_count' => (int) ($post->comments_count ?? 0),
-            'my_reaction' => $post->reactions->first()?->reaction,
-        ];
-    }
-
     private function resolvePostOrganizationId($user, ?int $submittedOrganizationId, bool $isSuperadmin): ?int
     {
         if ($isSuperadmin) {
@@ -419,20 +290,5 @@ class NewsController extends Controller
         abort_if((int) $submittedOrganizationId !== (int) $user->current_organization_id, 403);
 
         return (int) $submittedOrganizationId;
-    }
-
-    private function authorizeManagePost($user, NewsPost $newsPost): void
-    {
-        abort_unless($this->canAdminManagePost($user, $newsPost), 403);
-    }
-
-    private function canAdminManagePost($user, NewsPost $newsPost): bool
-    {
-        if ($user->hasRole('Superadmin')) {
-            return true;
-        }
-
-        return is_null($newsPost->organization_id)
-            || (int) $newsPost->organization_id === (int) $user->current_organization_id;
     }
 }

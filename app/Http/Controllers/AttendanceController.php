@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Organization;
 use App\Models\Registration;
+use App\Services\AdminService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +24,8 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class AttendanceController extends Controller
 {
+    public function __construct(private readonly AdminService $admin) {}
+
     /**
      * Endpoint yang tertanam dalam QR code event.
      *
@@ -54,7 +56,7 @@ class AttendanceController extends Controller
         }
 
         // Ahli: cari pendaftaran (via user_id, atau fallback padanan emel/telefon).
-        $registration = $this->findRegistration($event, $user);
+        $registration = $this->admin->findRegistration($event, $user);
 
         if (! $registration) {
             return Inertia::render('Events/AttendanceError', [
@@ -63,7 +65,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $error = $this->registrationBlockReason($registration);
+        $error = $this->admin->registrationBlockReason($registration);
         if ($error) {
             return Inertia::render('Events/AttendanceError', [
                 'event' => $this->serializeEvent($event),
@@ -71,7 +73,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $this->recordAttendance($registration, 'member');
+        $this->admin->recordAttendance($registration, 'member');
 
         return Inertia::render('Events/AttendanceSuccess', [
             'event' => $this->serializeEvent($event),
@@ -119,7 +121,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $error = $this->registrationBlockReason($registration);
+        $error = $this->admin->registrationBlockReason($registration);
         if ($error) {
             return Inertia::render('Events/GuestCheckin', [
                 'event' => $this->serializeEvent($event),
@@ -128,7 +130,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $this->recordAttendance($registration, 'guest');
+        $this->admin->recordAttendance($registration, 'guest');
 
         return Inertia::render('Events/AttendanceSuccess', [
             'event' => $this->serializeEvent($event),
@@ -146,94 +148,9 @@ class AttendanceController extends Controller
      */
     public function adminIndex(Request $request): Response
     {
-        $user = $request->user();
-        $isSuperadmin = $user->hasRole('Superadmin');
+        $data = $this->admin->attendanceIndex($request, $request->user());
 
-        $query = Registration::with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment'])
-            ->latest();
-
-        if (! $isSuperadmin) {
-            $query->where(function (Builder $q) use ($user) {
-                $q->where('organization_id', $user->current_organization_id)
-                    ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
-            });
-        }
-
-        if ($request->filled('event_id')) {
-            $query->where('event_id', (int) $request->event_id);
-        }
-
-        if ($request->filled('org')) {
-            $query->where('organization_id', (int) $request->org);
-        }
-
-        if ($request->filled('attendance')) {
-            if ($request->attendance === 'hadir') {
-                $query->whereHas('attendance');
-            } elseif ($request->attendance === 'tidak_hadir') {
-                $query->whereDoesntHave('attendance');
-            }
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('registration_no', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%");
-            });
-        }
-
-        $registrations = $query->paginate(25)->withQueryString()->through(fn (Registration $r) => [
-            'id' => $r->id,
-            'registration_no' => $r->registration_no,
-            'name' => $r->name,
-            'email' => $r->email,
-            'phone' => $r->phone,
-            'member_no' => $r->member_no,
-            'status' => $r->status->value,
-            'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
-            'event_title' => $r->event?->title,
-            'form_title' => $r->form?->title,
-            'payment_status' => $r->latestPayment?->status ?? 'paid',
-            'attended' => $r->attendance !== null,
-            'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
-            'method' => $r->attendance?->method,
-            'created_at' => $r->created_at?->toDateTimeString(),
-        ]);
-
-        // Statistik keseluruhan
-        $statsBase = Registration::query();
-        if (! $isSuperadmin) {
-            $statsBase->where(function (Builder $q) use ($user) {
-                $q->where('organization_id', $user->current_organization_id)
-                    ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
-            });
-        }
-
-        $stats = [
-            'total_registered' => (clone $statsBase)->count(),
-            'total_attended' => (clone $statsBase)->whereHas('attendance')->count(),
-            'total_pending_payment' => (clone $statsBase)
-                ->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))->count(),
-        ];
-
-        $events = Event::query()
-            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
-            ->orderByDesc('start_time')
-            ->get(['id', 'title']);
-
-        return Inertia::render('Admin/Events/Attendance', [
-            'registrations' => $registrations,
-            'stats' => $stats,
-            'events' => $events,
-            'organizations' => $isSuperadmin
-                ? Organization::orderBy('min_age')->get(['id', 'name'])
-                : [],
-            'filters' => $request->only(['event_id', 'org', 'attendance', 'search']),
-        ]);
+        return Inertia::render('Admin/Events/Attendance', $data);
     }
 
     public function exportExcel(Request $request)
@@ -282,47 +199,6 @@ class AttendanceController extends Controller
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
-
-    protected function findRegistration(Event $event, $user): ?Registration
-    {
-        return Registration::where('event_id', $event->id)
-            ->where(function (Builder $q) use ($user) {
-                $q->where('user_id', $user->id);
-                if ($user->email) {
-                    $q->orWhere('email', $user->email);
-                }
-                if ($user->phone) {
-                    $q->orWhere('phone', $user->phone);
-                }
-            })
-            ->latest()
-            ->first();
-    }
-
-    protected function registrationBlockReason(Registration $registration): ?string
-    {
-        if ($registration->status->value === 'cancelled') {
-            return 'Pendaftaran anda telah dibatalkan.';
-        }
-
-        $form = $registration->form;
-        if ($form && $form->payment_required && $form->price && (float) $form->price > 0) {
-            $paymentStatus = $registration->latestPayment?->status ?? 'pending';
-            if ($paymentStatus !== 'successful') {
-                return 'Bayaran pendaftaran anda belum lengkap.';
-            }
-        }
-
-        return null;
-    }
-
-    protected function recordAttendance(Registration $registration, string $method): Attendance
-    {
-        return Attendance::updateOrCreate(
-            ['registration_id' => $registration->id],
-            ['event_id' => $registration->event_id, 'attended_at' => now(), 'method' => $method],
-        );
-    }
 
     protected function serializeEvent(Event $event): array
     {

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendBroadcastJob;
 use App\Models\Announcement;
 use App\Models\Branch;
 use App\Models\BroadcastMessage;
 use App\Models\Organization;
 use App\Models\UsrahGroup;
+use App\Services\AdminService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +15,8 @@ use Inertia\Response;
 
 class BroadcastController extends Controller
 {
+    public function __construct(private readonly AdminService $broadcasts) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -141,7 +143,7 @@ class BroadcastController extends Controller
             $targetOrgId = null;
         }
 
-        $message = BroadcastMessage::create([
+        $this->broadcasts->broadcast([
             'organization_id' => $user->current_organization_id,
             'target_organization_id' => $targetOrgId,
             'branch_id' => $data['branch_id'] ?? null,
@@ -152,8 +154,6 @@ class BroadcastController extends Controller
             'notification_channels' => $data['notification_channels'],
             'email_use_template' => $request->boolean('email_use_template', false),
         ]);
-
-        SendBroadcastJob::dispatch($message->id);
 
         return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
     }

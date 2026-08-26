@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Services\ProductService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
+    public function __construct(private readonly ProductService $products) {}
+
     public function index()
     {
-        $categories = Category::paginate(20);
-
         return Inertia::render('Ecommerce/Categories/Index', [
-            'categories' => $categories,
+            'categories' => $this->products->categories(),
         ]);
     }
 

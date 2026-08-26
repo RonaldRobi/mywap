@@ -5,21 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Infaq;
 use App\Models\InfaqDonation;
 use App\Models\Organization;
-use App\Models\Payment;
 use App\Services\BayarCashService;
 use App\Services\DonorService;
+use App\Services\InfaqService;
 use App\Services\PaymentGatewayManager;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use BaconQrCode\Encoder\Encoder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Webimpian\BayarcashSdk\FpxDirectDebit;
 
 class InfaqController extends Controller
 {
@@ -27,6 +24,7 @@ class InfaqController extends Controller
         protected BayarCashService $bayarCashService,
         protected DonorService $donorService,
         protected PaymentGatewayManager $gateways,
+        protected InfaqService $infaqService,
     ) {}
 
     // ─── Superadmin: list all infaq ─────────────────────────────────────────
@@ -272,132 +270,16 @@ SVG;
 
     public function index()
     {
-        $infaqs = Infaq::query()
-            ->where('is_active', true)
-            ->with('organization:id,name,slug')
-            ->latest()
-            ->get()
-            ->map(fn ($item) => [
-                'id' => $item->id,
-                'title' => $item->title,
-                'type' => $item->type,
-                'target_amount' => (float) $item->target_amount,
-                'collected_amount' => (float) $item->collected_amount,
-                'progress_percent' => $item->progress_percent,
-                'image_path' => $item->image_path,
-                'public_url' => $item->public_url,
-                'is_external' => $item->is_external,
-                'external_url' => $item->external_url,
-                'organization_id' => $item->organization_id,
-                'organization_name' => $item->organization?->name,
-                'organization_slug' => $item->organization?->slug,
-                'days_running' => max(1, (int) abs(now()->diffInDays($item->created_at))),
-            ]);
-
-        // Only list organizations that actually have at least one active campaign,
-        // so the filter never shows an empty tab.
-        $orgIdsWithCampaigns = $infaqs->pluck('organization_id')->filter()->unique();
-
-        $organizations = Organization::query()
-            ->whereIn('id', $orgIdsWithCampaigns)
-            ->orderBy('sort_order')
-            ->orderBy('min_age')
-            ->get(['id', 'name', 'slug'])
-            ->map(fn ($org) => [
-                'id' => $org->id,
-                'name' => $org->name,
-                'slug' => $org->slug,
-            ])
-            ->values();
-
-        return Inertia::render('Infaq/Index', [
-            'infaqs' => $infaqs,
-            'organizations' => $organizations,
-            'hasGlobal' => $infaqs->whereNull('organization_id')->isNotEmpty(),
-        ]);
+        return Inertia::render('Infaq/Index', $this->infaqService->index());
     }
 
     // ─── Member: detail page ────────────────────────────────────────────────
 
     public function show(Request $request, $year, $month, $day, Infaq $infaq): Response
     {
-        $user = $request->user();
-        if ($user) {
-            $user->load('organization');
-        }
+        abort_unless((bool) $infaq->is_active, 404);
 
-        $isVisible = (bool) $infaq->is_active;
-
-        abort_unless($isVisible, 404);
-
-        $recentDonations = InfaqDonation::query()
-            ->where('infaq_id', $infaq->id)
-            ->where('status', 'confirmed')
-            ->with('user:id,name')
-            ->latest('created_at')
-            ->take(10)
-            ->get()
-            ->map(fn (InfaqDonation $donation) => [
-                'id' => $donation->id,
-                'amount' => (float) $donation->amount,
-                'created_at' => $donation->created_at->diffForHumans(),
-                'donor_name' => $donation->is_anonymous ? 'Hamba Allah' : ($donation->donor_name ?? $donation->user?->name ?? 'Hamba Allah'),
-                'prayer_message' => $donation->prayer_message,
-            ]);
-
-        $totalDonors = InfaqDonation::query()
-            ->where('infaq_id', $infaq->id)
-            ->where('status', 'confirmed')
-            ->count();
-
-        $daysRunning = max(1, (int) abs(now()->diffInDays($infaq->created_at)));
-
-        $infaq->load('organization:id,name,slug,logo_path,color_theme');
-
-        $related = Infaq::query()
-            ->where('is_active', true)
-            ->where('id', '!=', $infaq->id)
-            ->latest('id')
-            ->take(3)
-            ->get()
-            ->map(fn ($item) => [
-                'id' => $item->id,
-                'title' => $item->title,
-                'image_path' => $item->image_path,
-                'progress_percent' => $item->progress_percent,
-                'collected_amount' => $item->collected_amount,
-                'target_amount' => $item->target_amount,
-                'public_url' => $item->public_url,
-            ]);
-
-        return Inertia::render('Infaq/Show', [
-            'infaq' => [
-                'id' => $infaq->id,
-                'slug' => $infaq->slug,
-                'title' => $infaq->title,
-                'description' => $infaq->description,
-                'image_path' => $infaq->image_path,
-                'type' => $infaq->type,
-                'allow_recurring' => $infaq->allow_recurring,
-                'target_amount' => $infaq->target_amount,
-                'collected_amount' => $infaq->collected_amount,
-                'progress_percent' => $infaq->progress_percent,
-                'is_external' => $infaq->is_external,
-                'external_url' => $infaq->external_url,
-                'organization_name' => $infaq->organization?->name ?? 'Pengurusan myWAP',
-                'organization_slug' => $infaq->organization?->slug,
-                'organization_logo' => $infaq->organization?->logo_path,
-                'organization_color' => $infaq->organization?->color_theme,
-                'total_donors' => $totalDonors,
-                'days_running' => $daysRunning,
-                'public_url' => $infaq->public_url,
-                'year' => $year,
-                'month' => $month,
-                'day' => $day,
-            ],
-            'recentDonations' => $recentDonations,
-            'relatedInfaqs' => $related,
-        ]);
+        return Inertia::render('Infaq/Show', $this->infaqService->showDetail($infaq));
     }
 
     // ─── Member: submit a donation ───────────────────────────────────────────
@@ -426,141 +308,14 @@ SVG;
 
     public function donate(Request $request, $year, $month, $day, Infaq $infaq): \Symfony\Component\HttpFoundation\Response
     {
-        // External campaigns are handled entirely on the external (DOKU) page.
-        if ($infaq->is_external) {
-            return Inertia::location($infaq->external_url);
+        $result = $this->infaqService->donate($request, $infaq, $request->user());
+
+        if ($result['status'] === 'redirect') {
+            return Inertia::location($result['payment_url']);
         }
 
-        $isRecurring = $request->boolean('is_recurring') && $infaq->allow_recurring;
-
-        $rules = [
-            'amount' => ['required', 'numeric', 'min:1', 'max:99999'],
-            'donor_name' => ['required', 'string', 'max:255'],
-            'donor_phone' => ['required', 'string', 'max:50'],
-            'donor_email' => ['required', 'email', 'max:255'],
-            'prayer_message' => ['nullable', 'string', 'max:400'],
-            'is_anonymous' => ['boolean'],
-            'wants_updates' => ['boolean'],
-        ];
-
-        if ($isRecurring) {
-            $rules['frequency'] = ['required', 'in:monthly,weekly,yearly'];
-        }
-
-        $data = $request->validate($rules);
-
-        $user = $request->user();
-        $org = $infaq->organization_id ? Organization::find($infaq->organization_id) : null;
-        $useGateway = $this->gateways->isLive($org);
-
-        // Recurring / Direct Debit is only supported by BayarCash FPX Direct Debit.
-        if ($isRecurring && ! ($org && $org->supportsRecurring())) {
-            return back()->with('error', 'Sumbangan berkala hanya tersedia untuk gateway BayarCash. Sila pilih sumbangan sekali sahaja.');
-        }
-
-        $frequencyMap = [
-            'monthly' => FpxDirectDebit::MODE_MONTHLY,
-            'weekly' => FpxDirectDebit::MODE_WEEKLY,
-            'yearly' => FpxDirectDebit::MODE_YEARLY,
-        ];
-
-        $gatewayName = $this->gateways->gatewayFor($org);
-
-        $donation = DB::transaction(function () use ($infaq, $user, $data, $org, $useGateway, $gatewayName, $isRecurring, $frequencyMap) {
-            $ref = 'INFQ-'.strtoupper(Str::random(10));
-
-            $nextBilling = null;
-            if ($isRecurring) {
-                $nextBilling = match ($data['frequency']) {
-                    'monthly' => now()->addMonth()->toDateString(),
-                    'weekly' => now()->addWeek()->toDateString(),
-                    'yearly' => now()->addYear()->toDateString(),
-                };
-            }
-
-            $donation = InfaqDonation::create([
-                'infaq_id' => $infaq->id,
-                'user_id' => $user?->id,
-                'amount' => $data['amount'],
-                'reference' => $ref,
-                'status' => $useGateway ? 'pending' : 'confirmed',
-                'donor_name' => $data['donor_name'],
-                'donor_phone' => $data['donor_phone'],
-                'donor_email' => $data['donor_email'],
-                'prayer_message' => $data['prayer_message'] ?? null,
-                'is_anonymous' => $data['is_anonymous'] ?? false,
-                'wants_updates' => $data['wants_updates'] ?? false,
-                'is_recurring' => $isRecurring,
-                'frequency' => $isRecurring ? $frequencyMap[$data['frequency']] : null,
-                'next_billing_date' => $nextBilling,
-                'recurring_status' => $isRecurring ? 'pending' : null,
-            ]);
-
-            // Deduplicate donor
-            $donor = $this->donorService->findOrCreate($donation);
-            $donation->update(['donor_id' => $donor->id]);
-            if (! $useGateway && $donation->status === 'confirmed') {
-                $this->donorService->incrementDonor($donor, (float) $data['amount']);
-            }
-
-            $paymentRef = ($isRecurring ? 'DDR-' : 'INFQ-').strtoupper(Str::random(8));
-
-            $payment = Payment::create([
-                'user_id' => $user?->id,
-                'payable_type' => 'infaq_donation',
-                'payable_id' => $donation->id,
-                'amount' => $data['amount'],
-                'status' => $useGateway ? 'pending' : 'successful',
-                'reference' => $paymentRef,
-                'description' => $isRecurring
-                    ? "Donasi berkala ({$data['frequency']}): {$infaq->title}"
-                    : "Donasi: {$infaq->title}",
-                'gateway' => $gatewayName,
-                'organization_id' => $org?->id,
-            ]);
-
-            if (! $useGateway) {
-                $infaq->increment('collected_amount', $data['amount']);
-            }
-
-            return $donation;
-        });
-
-        if ($useGateway && $org) {
-            $payment = Payment::where('payable_type', 'infaq_donation')
-                ->where('payable_id', $donation->id)
-                ->first();
-
-            if ($isRecurring) {
-                // Recurring is BayarCash-only (guarded above via supportsRecurring()).
-                $url = $this->bayarCashService->createDirectDebitEnrollment(
-                    $org,
-                    $donation,
-                    $payment,
-                    $data['donor_name'],
-                    $data['donor_email'],
-                    $data['donor_phone'],
-                    $frequencyMap[$data['frequency']],
-                );
-            } else {
-                // One-time donation: route through whichever gateway the org uses.
-                $url = $this->gateways->createPaymentRedirect(
-                    $org,
-                    $payment,
-                    $data['donor_name'],
-                    $data['donor_email'],
-                    $data['donor_phone'],
-                    "Donasi: {$infaq->title}",
-                );
-            }
-
-            if ($url) {
-                return Inertia::location($url);
-            }
-
-            $payment->update(['status' => 'failed']);
-
-            return back()->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
+        if ($result['status'] === 'error') {
+            return back()->with('error', $result['message']);
         }
 
         return redirect()->route('infaq.success', [
