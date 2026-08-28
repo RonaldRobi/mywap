@@ -118,7 +118,12 @@ function deleteEvent() {
                             <div class="flex flex-wrap gap-2 mt-1.5 text-[11px] text-gray-500">
                                 <span class="rounded-lg bg-white border border-gray-100 px-2 py-0.5">Soalan: {{ f.questions_count }}</span>
                                 <span class="rounded-lg bg-white border border-gray-100 px-2 py-0.5">Respons: {{ f.responses_count }}</span>
-                                <span v-if="f.payment_required && f.price" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-0.5 font-bold text-emerald-600">RM {{ Number(f.price).toFixed(2) }}</span>
+                                <template v-if="f.payment_required">
+                                    <span v-if="f.price_tiers?.length" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-0.5 font-bold text-emerald-700">
+                                        {{ f.price_tiers.map(t => `${t.label} RM${Number(t.price).toFixed(2)}`).join(' · ') }}
+                                    </span>
+                                    <span v-else-if="f.price" class="rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-0.5 font-bold text-emerald-600">RM {{ Number(f.price).toFixed(2) }}</span>
+                                </template>
                                 <span v-else class="rounded-lg bg-white border border-gray-100 px-2 py-0.5">Percuma</span>
                             </div>
                         </div>

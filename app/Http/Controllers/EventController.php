@@ -508,6 +508,7 @@ class EventController extends Controller
                     'title' => $f->title,
                     'description' => $f->description,
                     'price' => $f->price,
+                    'price_tiers' => $f->tiers(),
                     'payment_required' => $f->payment_required,
                     'is_active' => $f->is_active,
                     'questions_count' => $f->questions->count(),
