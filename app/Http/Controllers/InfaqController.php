@@ -9,14 +9,12 @@ use App\Services\BayarCashService;
 use App\Services\DonorService;
 use App\Services\InfaqService;
 use App\Services\PaymentGatewayManager;
-use BaconQrCode\Common\ErrorCorrectionLevel;
-use BaconQrCode\Encoder\Encoder;
+use App\Support\QrPng;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InfaqController extends Controller
 {
@@ -340,65 +338,9 @@ SVG;
     {
         $shortUrl = route('infaq.short', ['infaq' => $infaq->slug]);
 
-        $png = extension_loaded('imagick')
-            ? QrCode::format('png')->size(300)->margin(1)->generate($shortUrl)
-            : $this->qrPngGd($shortUrl, 300, 1);
+        $png = QrPng::render($shortUrl, 300, 1);
 
         return response($png, 200, ['Content-Type' => 'image/png']);
-    }
-
-    /**
-     * qrPngGd()
-     *
-     * Renders a QR code to PNG using only the GD extension (no Imagick).
-     * Reads the module matrix from BaconQrCode and draws it with GD primitives.
-     * Used as a fallback so PNG QR codes work even when Imagick is not installed.
-     */
-    private function qrPngGd(string $text, int $size = 300, int $margin = 1, string $errorCorrection = 'H'): string
-    {
-        $ecLevel = match (strtoupper($errorCorrection)) {
-            'L' => ErrorCorrectionLevel::L(),
-            'M' => ErrorCorrectionLevel::M(),
-            'Q' => ErrorCorrectionLevel::Q(),
-            default => ErrorCorrectionLevel::H(),
-        };
-
-        $matrix = Encoder::encode($text, $ecLevel)->getMatrix();
-        $modules = $matrix->getWidth();
-        $total = $modules + ($margin * 2);
-
-        $scale = (int) floor($size / $total);
-        if ($scale < 1) {
-            $scale = 1;
-        }
-        $pixelSize = $total * $scale;
-
-        $image = imagecreatetruecolor($pixelSize, $pixelSize);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $black = imagecolorallocate($image, 0, 0, 0);
-        imagefilledrectangle($image, 0, 0, $pixelSize, $pixelSize, $white);
-
-        for ($y = 0; $y < $modules; $y++) {
-            for ($x = 0; $x < $modules; $x++) {
-                if ($matrix->get($x, $y)) {
-                    imagefilledrectangle(
-                        $image,
-                        ($x + $margin) * $scale,
-                        ($y + $margin) * $scale,
-                        (($x + $margin) * $scale) + $scale - 1,
-                        (($y + $margin) * $scale) + $scale - 1,
-                        $black
-                    );
-                }
-            }
-        }
-
-        ob_start();
-        imagepng($image);
-        $png = (string) ob_get_clean();
-        imagedestroy($image);
-
-        return $png;
     }
 
     public function donors(Infaq $infaq): Response

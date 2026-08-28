@@ -11,6 +11,7 @@ use App\Models\PollResponse;
 use App\Models\User;
 use App\Models\UsrahGroup;
 use App\Services\PollService;
+use App\Support\QrPng;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -506,10 +507,7 @@ class PollController extends Controller
 
         $publicUrl = route('polls.public.show', $poll->id);
 
-        $png = QrCode::format('png')
-            ->size(600)
-            ->margin(2)
-            ->generate($publicUrl);
+        $png = QrPng::render($publicUrl, 600, 2);
 
         return response()->streamDownload(function () use ($png) {
             echo $png;

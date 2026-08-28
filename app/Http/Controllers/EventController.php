@@ -10,8 +10,7 @@ use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
-use BaconQrCode\Common\ErrorCorrectionLevel;
-use BaconQrCode\Encoder\Encoder;
+use App\Support\QrPng;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -769,18 +768,10 @@ class EventController extends Controller
      * downloadQr()
      *
      * Returns the attendance QR code as a downloadable PNG image.
-     * Prefers the Imagick backend when available, otherwise falls back to a
-     * pure-GD renderer so PNG export works even without Imagick installed.
      */
     public function downloadQr(Event $event): \Symfony\Component\HttpFoundation\Response
     {
-        $png = extension_loaded('imagick')
-            ? QrCode::format('png')
-                ->size(1024)
-                ->margin(2)
-                ->errorCorrection('H')
-                ->generate($event->attendance_url)
-            : $this->qrPngGd($event->attendance_url, 1024, 4, 'H');
+        $png = QrPng::render($event->attendance_url, 1024, 4, 'H');
 
         $filename = 'qr-'.Str::slug($event->title).'-'.$event->id.'.png';
 
@@ -788,59 +779,6 @@ class EventController extends Controller
             'Content-Type' => 'image/png',
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
-    }
-
-    /**
-     * qrPngGd()
-     *
-     * Renders a QR code to PNG using only the GD extension (no Imagick).
-     * Reads the module matrix from BaconQrCode and draws it with GD primitives.
-     */
-    private function qrPngGd(string $text, int $size = 1024, int $margin = 4, string $errorCorrection = 'H'): string
-    {
-        $ecLevel = match (strtoupper($errorCorrection)) {
-            'L' => ErrorCorrectionLevel::L(),
-            'M' => ErrorCorrectionLevel::M(),
-            'Q' => ErrorCorrectionLevel::Q(),
-            default => ErrorCorrectionLevel::H(),
-        };
-
-        $matrix = Encoder::encode($text, $ecLevel)->getMatrix();
-        $modules = $matrix->getWidth();
-        $total = $modules + ($margin * 2);
-
-        $scale = (int) floor($size / $total);
-        if ($scale < 1) {
-            $scale = 1;
-        }
-        $pixelSize = $total * $scale;
-
-        $image = imagecreatetruecolor($pixelSize, $pixelSize);
-        $white = imagecolorallocate($image, 255, 255, 255);
-        $black = imagecolorallocate($image, 0, 0, 0);
-        imagefilledrectangle($image, 0, 0, $pixelSize, $pixelSize, $white);
-
-        for ($y = 0; $y < $modules; $y++) {
-            for ($x = 0; $x < $modules; $x++) {
-                if ($matrix->get($x, $y)) {
-                    imagefilledrectangle(
-                        $image,
-                        ($x + $margin) * $scale,
-                        ($y + $margin) * $scale,
-                        (($x + $margin) * $scale) + $scale - 1,
-                        (($y + $margin) * $scale) + $scale - 1,
-                        $black
-                    );
-                }
-            }
-        }
-
-        ob_start();
-        imagepng($image);
-        $png = (string) ob_get_clean();
-        imagedestroy($image);
-
-        return $png;
     }
 
     /**

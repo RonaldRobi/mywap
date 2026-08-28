@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\User;
 use App\Notifications\FormInvitationNotification;
 use App\Services\FormService;
+use App\Support\QrPng;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -579,10 +580,7 @@ class FormController extends Controller
 
         $publicUrl = $form->public_url;
 
-        $png = QrCode::format('png')
-            ->size(600)
-            ->margin(2)
-            ->generate($publicUrl);
+        $png = QrPng::render($publicUrl, 600, 2);
 
         return response()->streamDownload(function () use ($png) {
             echo $png;
