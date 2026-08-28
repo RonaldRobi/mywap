@@ -33,6 +33,15 @@ const formData = reactive({
     title:          props.form?.title ?? '',
     description:    props.form?.description ?? '',
     price:          props.form?.price ?? '',
+    price_tiers:    props.form?.price_tiers?.length
+        ? props.form.price_tiers.map(t => ({
+            label: t.label || '',
+            price: t.price ?? '',
+            is_default: !!t.is_default,
+            requires_document: !!t.requires_document,
+            description: t.description || '',
+        }))
+        : [],
     payment_required: props.form?.payment_required ?? false,
     terms:          props.form?.terms ?? '',
     is_active:      props.form?.is_active ?? true,
@@ -50,6 +59,24 @@ const formData = reactive({
 
 function addRecipientEmail() {
     formData.recipient_emails.push('');
+}
+
+function addTier() {
+    formData.price_tiers.push({
+        label: '',
+        price: '',
+        is_default: formData.price_tiers.length === 0,
+        requires_document: false,
+        description: '',
+    });
+}
+
+function removeTier(index) {
+    formData.price_tiers.splice(index, 1);
+}
+
+function setDefaultTier(index) {
+    formData.price_tiers.forEach((t, i) => { t.is_default = i === index; });
 }
 
 function removeRecipientEmail(index) {
@@ -104,6 +131,15 @@ function save() {
         ...formData,
         back_to: props.backTo ?? '',
         price: formData.price === '' ? null : formData.price,
+        price_tiers: (formData.price_tiers || [])
+            .filter(t => t.label?.trim() && t.price !== '' && t.price !== null)
+            .map(t => ({
+                label: t.label.trim(),
+                price: t.price,
+                is_default: !!t.is_default,
+                requires_document: !!t.requires_document,
+                description: t.description || null,
+            })),
         recipient_emails: (formData.recipient_emails || []).filter(e => e && e.trim()),
         questions: formData.questions.map((q, i) => ({
             id: q.id,
@@ -209,16 +245,75 @@ const valid = computed(() => {
                 </div>
 
                 <!-- Bayaran & Terma (untuk borang pendaftaran event) -->
-                <div class="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Harga (RM)</label>
-                        <input v-model="formData.price" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. 50.00 (kosong = percuma)" />
-                        <p class="text-[11px] text-gray-400">Minimum RM 2.00 (had pembayaran DOKU).</p>
+                <div class="pt-2 border-t border-gray-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Harga Asas (RM)</label>
+                            <input v-model="formData.price" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. 50.00 (kosong = percuma)" />
+                            <p class="text-[11px] text-gray-400">Minimum RM 2.00 (had pembayaran DOKU).</p>
+                        </div>
+                        <div class="flex items-end pb-1">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" v-model="formData.payment_required" class="rounded border-gray-300" /> Wajib bayar
+                            </label>
+                        </div>
                     </div>
-                    <div class="flex items-end pb-1">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" v-model="formData.payment_required" class="rounded border-gray-300" /> Wajib bayar
-                        </label>
+
+                    <!-- Harga Tier (cth. Pelajar / Orang Awam) -->
+                    <div v-if="formData.payment_required" class="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">Harga Mengikut Kategori (Tier)</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Opsional. Contoh: Pelajar RM20, Orang Awam RM50. Pendaftar pilih kategori sendiri.</p>
+                            </div>
+                            <button @click="addTier" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Tambah Tier</button>
+                        </div>
+
+                        <div v-if="!formData.price_tiers.length" class="mt-3 text-xs text-gray-400">
+                            Tiada tier — gunakan Harga Asas di atas.
+                        </div>
+
+                        <div v-for="(tier, ti) in formData.price_tiers" :key="ti" class="mt-3 rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    :checked="tier.is_default"
+                                    @change="setDefaultTier(ti)"
+                                    class="text-indigo-600 border-gray-300"
+                                    title="Jadikan harga lalai"
+                                />
+                                <input
+                                    v-model="tier.label"
+                                    type="text"
+                                    placeholder="cth. Pelajar"
+                                    class="flex-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-0 focus:border-gray-300"
+                                />
+                                <div class="flex items-center gap-1">
+                                    <span class="text-sm text-gray-400">RM</span>
+                                    <input
+                                        v-model="tier.price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        class="w-24 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-0 focus:border-gray-300"
+                                    />
+                                </div>
+                                <button @click="removeTier(ti)" class="text-xs text-red-400 hover:text-red-600" title="Buang tier">✕</button>
+                            </div>
+                            <div class="flex flex-wrap gap-x-4 gap-y-2">
+                                <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                                    <input type="checkbox" v-model="tier.requires_document" class="rounded border-gray-300" />
+                                    Perlu dokumen (cth. kad pelajar)
+                                </label>
+                                <input
+                                    v-model="tier.description"
+                                    type="text"
+                                    placeholder="Nota / syarat (cth. bawa kad pelajar)"
+                                    class="flex-1 min-w-40 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs focus:ring-0 focus:border-gray-300"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

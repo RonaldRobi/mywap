@@ -55,6 +55,8 @@ class RegistrationService
             'member_no' => $r->member_no,
             'status' => $r->status->value,
             'status_label' => $r->status->label(),
+            'ticket_type' => $r->ticket_type,
+            'document_path' => $r->document_path,
             'organization_name' => $r->organization?->name,
             'form_title' => $r->form?->title,
             'payment_status' => $r->latestPayment?->status ?? 'paid',

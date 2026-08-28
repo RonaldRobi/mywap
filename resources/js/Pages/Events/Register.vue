@@ -18,13 +18,44 @@ const isPaid = computed(() => props.form.payment_required && props.form.price);
 const showQr = ref(false);
 const copied = ref(false);
 
+// ─── Harga Tier (cth. Pelajar / Orang Awam) ─────────────────────────────
+const tiers = computed(() => props.form.price_tiers || []);
+const selectedTier = ref((props.form.price_tiers || []).find(t => t.is_default)?.label
+    ?? (props.form.price_tiers || [])[0]?.label
+    ?? null);
+
+const selectedPrice = computed(() => {
+    if (tiers.value.length) {
+        const tier = tiers.value.find(t => t.label === selectedTier.value) || tiers.value[0];
+        return Number(tier?.price ?? 0);
+    }
+    return Number(props.form.price ?? 0);
+});
+
+const needsDocument = computed(() => {
+    if (!tiers.value.length) return false;
+    const tier = tiers.value.find(t => t.label === selectedTier.value);
+    return !!tier?.requires_document;
+});
+
 const featuredImage = computed(() => props.form.header_image_url || props.event.featured_image_url || null);
 
 // Form Builder ialah single source of truth — hanya answers dihantar,
 // tiada field peserta auto dijana.
 const registerForm = useForm({
     answers: {},
+    ticket_type: null,
+    document: null,
 });
+
+function onTierChange() {
+    registerForm.document = null;
+    registerForm.clearErrors();
+}
+
+function onDocumentSelect(e) {
+    registerForm.document = e.target.files?.[0] ?? null;
+}
 
 // Negeri yang dipilih bagi setiap soalan jenis "branch" (untuk dropdown cawangan).
 const selectedState = reactive({});
@@ -61,6 +92,7 @@ function initAnswers() {
 initAnswers();
 
 function submit() {
+    registerForm.ticket_type = selectedTier.value;
     const routeName = props.isGuest ? 'events.register.public.store' : 'events.register.store';
     const params = props.isGuest
         ? { token: props.form.share_token || window.location.pathname.split('/').pop() }
@@ -149,6 +181,37 @@ function submit() {
                 </div>
 
                 <hr class="border-gray-100" />
+
+                <!-- Pilih Kategori Yuran (tier) -->
+                <div v-if="tiers.length" class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-2">
+                    <p class="text-xs font-bold uppercase tracking-widest text-emerald-600">Pilih Kategori Yuran</p>
+
+                    <label
+                        v-for="tier in tiers"
+                        :key="tier.label"
+                        class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 cursor-pointer hover:border-emerald-300 transition"
+                        :class="{ 'ring-2 ring-emerald-500 border-emerald-400': selectedTier === tier.label }"
+                    >
+                        <span class="flex items-center gap-2.5">
+                            <input type="radio" :value="tier.label" v-model="selectedTier" @change="onTierChange" class="text-emerald-600 border-gray-300" />
+                            <span>
+                                <span class="block text-sm font-semibold text-gray-800">{{ tier.label }}</span>
+                                <span v-if="tier.description" class="block text-xs text-gray-400">{{ tier.description }}</span>
+                            </span>
+                        </span>
+                        <span class="text-sm font-bold text-emerald-600">RM {{ Number(tier.price).toFixed(2) }}</span>
+                    </label>
+
+                    <!-- Upload dokumen jika tier memerlukan (cth. kad pelajar) -->
+                    <div v-if="needsDocument" class="rounded-xl border border-dashed border-emerald-300 bg-white p-3">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Muat Naik Dokumen Sokongan (cth. kad pelajar) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="file" accept=".pdf,.png,.jpg,.jpeg" @change="onDocumentSelect" class="block w-full text-sm text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100" />
+                        <p v-if="registerForm.errors.document" class="text-xs text-red-500 mt-1">{{ registerForm.errors.document }}</p>
+                        <p v-if="registerForm.errors.ticket_type" class="text-xs text-red-500 mt-1">{{ registerForm.errors.ticket_type }}</p>
+                    </div>
+                </div>
 
                 <!-- Questions -->
                 <div v-for="q in form.questions" :key="q.id" class="space-y-1.5">
@@ -242,9 +305,13 @@ function submit() {
                             <span class="text-gray-500">Program</span>
                             <span class="font-semibold text-gray-800 text-right">{{ event.title }}</span>
                         </div>
+                        <div v-if="selectedTier" class="flex justify-between gap-3">
+                            <span class="text-gray-500">Kategori</span>
+                            <span class="font-semibold text-gray-800 text-right">{{ selectedTier }}</span>
+                        </div>
                         <div class="flex justify-between gap-3">
                             <span class="text-gray-500">Jumlah Bayaran</span>
-                            <span class="font-bold text-emerald-600">RM {{ Number(form.price).toFixed(2) }}</span>
+                            <span class="font-bold text-emerald-600">RM {{ selectedPrice.toFixed(2) }}</span>
                         </div>
                         <div class="flex justify-between gap-3">
                             <span class="text-gray-500">Kaedah Pembayaran</span>
@@ -266,7 +333,7 @@ function submit() {
                     :disabled="registerForm.processing"
                     class="w-full rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                    {{ registerForm.processing ? 'Memproses...' : (isPaid ? `Hantar & Bayar RM ${Number(form.price).toFixed(2)}` : 'Hantar') }}
+                    {{ registerForm.processing ? 'Memproses...' : (isPaid ? `Hantar & Bayar RM ${selectedPrice.toFixed(2)}` : 'Hantar') }}
                 </button>
 
                 <p class="text-center text-xs text-gray-400">Dikuasakan oleh myWAP</p>

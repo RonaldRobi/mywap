@@ -43,6 +43,7 @@ class FormService
             'title' => $form->title,
             'description' => $form->description,
             'price' => $form->price,
+            'price_tiers' => $form->tiers(),
             'payment_required' => $form->payment_required,
             'terms' => $form->terms,
             'event_id' => $form->event_id,

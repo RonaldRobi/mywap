@@ -38,7 +38,7 @@ class Registration extends Model
     protected $fillable = [
         'event_id', 'form_id', 'user_id', 'organization_id', 'member_no',
         'registration_no', 'name', 'email', 'phone', 'ic_number', 'status',
-        'confirmation_sent_at',
+        'ticket_type', 'document_path', 'confirmation_sent_at',
     ];
 
     protected function casts(): array

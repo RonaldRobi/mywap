@@ -26,6 +26,7 @@ class Form extends Model
         'share_token',
         'header_image_path',
         'recipient_emails',
+        'price_tiers',
     ];
 
     protected function casts(): array
@@ -36,6 +37,7 @@ class Form extends Model
             'recipient_emails' => 'array',
             'payment_required' => 'boolean',
             'price' => 'decimal:2',
+            'price_tiers' => 'array',
         ];
     }
 
@@ -119,5 +121,85 @@ class Form extends Model
     public function getShareUrlAttribute(): string
     {
         return route('share.form', $this, true);
+    }
+
+    // ─── Harga Tier (cth. Pelajar / Orang Awam) ─────────────────────────────
+
+    /**
+     * Senarai tier harga (dinormalkan). Setiap item: { label, price,
+     * is_default, requires_document, description? }.
+     */
+    public function tiers(): array
+    {
+        $raw = $this->price_tiers ?? [];
+
+        return collect($raw)
+            ->filter(fn ($t) => is_array($t) && isset($t['label'], $t['price']))
+            ->map(function ($t) {
+                return [
+                    'label' => (string) $t['label'],
+                    'price' => (float) $t['price'],
+                    'is_default' => (bool) ($t['is_default'] ?? false),
+                    'requires_document' => (bool) ($t['requires_document'] ?? false),
+                    'description' => $t['description'] ?? null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function hasTiers(): bool
+    {
+        return $this->tiers() !== [];
+    }
+
+    public function defaultTier(): ?array
+    {
+        foreach ($this->tiers() as $tier) {
+            if ($tier['is_default']) {
+                return $tier;
+            }
+        }
+
+        return $this->tiers()[0] ?? null;
+    }
+
+    public function tierByLabel(?string $label): ?array
+    {
+        if (! $label) {
+            return null;
+        }
+
+        foreach ($this->tiers() as $tier) {
+            if ($tier['label'] === $label) {
+                return $tier;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Harga efektif untuk satu tier label, atau harga default fallback.
+     */
+    public function priceForTier(?string $label): ?float
+    {
+        if ($label) {
+            $tier = $this->tierByLabel($label);
+            if ($tier) {
+                return $tier['price'];
+            }
+        }
+
+        $default = $this->defaultTier();
+
+        return $default ? $default['price'] : (float) $this->price;
+    }
+
+    public function tierRequiresDocument(?string $label): bool
+    {
+        $tier = $this->tierByLabel($label);
+
+        return $tier ? (bool) ($tier['requires_document'] ?? false) : false;
     }
 }

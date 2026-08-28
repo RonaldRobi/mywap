@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -174,7 +175,15 @@ class RegistrationController extends Controller
     {
         $participant = $this->mapAnswersToParticipant($form, $data['answers'] ?? []);
 
-        $registration = DB::transaction(function () use ($form, $event, $data, $user, $participant) {
+        $ticketType = $data['ticket_type'] ?? null;
+        $amount = $form->hasTiers()
+            ? ($form->priceForTier($ticketType) ?: 0)
+            : (float) $form->price;
+        $documentPath = ! empty($data['document'])
+            ? $data['document']->store('registration-documents', 'public')
+            : null;
+
+        $registration = DB::transaction(function () use ($form, $event, $data, $user, $participant, $ticketType, $documentPath) {
             $registration = Registration::create([
                 'event_id' => $event->id,
                 'form_id' => $form->id,
@@ -188,6 +197,8 @@ class RegistrationController extends Controller
                 'email' => $participant['email'] ?: $user?->email,
                 'phone' => $participant['phone'] ?: $user?->phone,
                 'ic_number' => $participant['ic_number'] ?: $user?->ic_number,
+                'ticket_type' => $ticketType,
+                'document_path' => $documentPath,
                 // Berbayar: tunggu pengesahan bayaran (pending). Percuma: disahkan terus.
                 'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
             ]);
@@ -216,20 +227,20 @@ class RegistrationController extends Controller
         });
 
         // Jika borang tidak mewajibkan bayaran, terus disahkan + hantar emel.
-        if (! $form->payment_required || ! $form->price || (float) $form->price <= 0) {
+        if (! $form->payment_required || ! $amount || $amount <= 0) {
             $registration->confirmAndNotify();
 
             return redirect()->route('registrations.success', $registration)
                 ->with('success', 'Pendaftaran berjaya! No Pendaftaran: '.$registration->registration_no);
         }
 
-        return $this->initiatePayment($registration, $form, $event, $data['payment_method'] ?? 'fpx');
+        return $this->initiatePayment($registration, $form, $event, $data['payment_method'] ?? 'fpx', $amount);
     }
 
     /**
      * Cipta Payment dan redirect ke gateway (atau tandakan berjaya dalam mod dummy).
      */
-    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx'): \Symfony\Component\HttpFoundation\Response
+    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx', ?float $amount = null): \Symfony\Component\HttpFoundation\Response
     {
         $org = $form->organization
             ?? ($event->organization_id ? $event->organization : null);
@@ -238,7 +249,7 @@ class RegistrationController extends Controller
 
         $payment = $registration->payments()->create([
             'user_id' => $registration->user_id,
-            'amount' => (float) $form->price,
+            'amount' => $amount ?? (float) $form->price,
             'status' => $useGateway ? 'pending' : 'successful',
             'reference' => $useGateway ? 'REG-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
             'description' => 'Pendaftaran: '.$event->title,
@@ -307,6 +318,7 @@ class RegistrationController extends Controller
                 'phone' => $registration->phone,
                 'status' => $registration->status->value,
                 'status_label' => $registration->status->label(),
+                'ticket_type' => $registration->ticket_type,
                 'payment_status' => $registration->latestPayment?->status ?? 'paid',
                 'attended' => $registration->attendance !== null,
             ],
@@ -430,7 +442,9 @@ class RegistrationController extends Controller
      */
     protected function resolvePaymentGateway(Form $form, Event $event): ?array
     {
-        if (! $form->payment_required || ! $form->price || (float) $form->price <= 0) {
+        $amount = $form->hasTiers() ? $form->priceForTier(null) : (float) $form->price;
+
+        if (! $form->payment_required || ! $amount || $amount <= 0) {
             return null;
         }
 
@@ -445,6 +459,8 @@ class RegistrationController extends Controller
         $rules = [
             'answers' => ['required', 'array'],
             'payment_method' => ['nullable', 'in:fpx,duitnow_qr'],
+            'ticket_type' => ['nullable', 'string', 'max:255'],
+            'document' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:5120'],
         ];
 
         foreach ($form->questions as $q) {
@@ -470,6 +486,23 @@ class RegistrationController extends Controller
         }
 
         $data = $request->validate($rules);
+
+        // Penguatkuasaan tier: kategori wajib sah + dokumen jika diperlukan.
+        if ($form->payment_required && $form->hasTiers()) {
+            $ticketType = $data['ticket_type'] ?? null;
+
+            if (! $ticketType || ! $form->tierByLabel($ticketType)) {
+                throw ValidationException::withMessages([
+                    'ticket_type' => 'Sila pilih kategori yuran yang sah.',
+                ]);
+            }
+
+            if ($form->tierRequiresDocument($ticketType) && empty($data['document'])) {
+                throw ValidationException::withMessages([
+                    'document' => 'Sila muat naik dokumen sokongan (cth. kad pelajar).',
+                ]);
+            }
+        }
 
         return $data;
     }
@@ -547,6 +580,7 @@ class RegistrationController extends Controller
             'title' => $form->title,
             'description' => $form->description,
             'price' => $form->price,
+            'price_tiers' => $form->tiers(),
             'payment_required' => $form->payment_required,
             'terms' => $form->terms,
             'organization_name' => $form->organization?->name,

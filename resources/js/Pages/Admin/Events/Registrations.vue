@@ -76,6 +76,7 @@ function applyFilters() {
                             <th class="px-4 py-3">Peserta</th>
                             <th class="px-4 py-3">Organisasi</th>
                             <th class="px-4 py-3">Borang</th>
+                            <th class="px-4 py-3">Kategori</th>
                             <th class="px-4 py-3">Bayaran</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3 text-right">Tindakan</th>
@@ -90,6 +91,18 @@ function applyFilters() {
                             </td>
                             <td class="px-4 py-3 text-gray-600">{{ r.organization_name || '—' }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ r.form_title || '—' }}</td>
+                            <td class="px-4 py-3">
+                                <span v-if="r.ticket_type" class="inline-flex rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{{ r.ticket_type }}</span>
+                                <a
+                                    v-if="r.document_path"
+                                    :href="`/storage/${r.document_path}`"
+                                    target="_blank"
+                                    class="block mt-1 text-xs text-indigo-600 hover:text-indigo-700 underline"
+                                >
+                                    📎 Lihat dokumen
+                                </a>
+                                <span v-else-if="!r.ticket_type" class="text-gray-400">—</span>
+                            </td>
                             <td class="px-4 py-3">
                                 <span class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
                                     {{ r.payment_status === 'successful' || r.payment_status === 'paid' ? 'Berjaya' : 'Menunggu' }}

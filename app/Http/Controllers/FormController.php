@@ -119,6 +119,12 @@ class FormController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'price_tiers' => ['nullable', 'array'],
+            'price_tiers.*.label' => ['required', 'string', 'max:255'],
+            'price_tiers.*.price' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'price_tiers.*.is_default' => ['boolean'],
+            'price_tiers.*.requires_document' => ['boolean'],
+            'price_tiers.*.description' => ['nullable', 'string', 'max:500'],
             'payment_required' => ['boolean'],
             'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
@@ -139,13 +145,17 @@ class FormController extends Controller
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
+        $priceTiers = $this->normalizePriceTiers($data['price_tiers'] ?? []);
+
+        $this->assertPaidFormHasPrice($data, $priceTiers);
+
         // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
         $organizationId = $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id;
         if (! $organizationId && ! empty($data['event_id'])) {
             $organizationId = Event::find($data['event_id'])?->organization_id;
         }
 
-        $form = DB::transaction(function () use ($data, $request, $organizationId) {
+        $form = DB::transaction(function () use ($data, $request, $organizationId, $priceTiers) {
             $headerImagePath = $request->hasFile('header_image')
                 ? $request->file('header_image')->store('forms', 'public')
                 : null;
@@ -153,7 +163,8 @@ class FormController extends Controller
             $form = Form::create([
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'price' => $data['price'] ?? null,
+                'price' => $priceTiers[0]['price'] ?? $data['price'] ?? null,
+                'price_tiers' => $priceTiers,
                 'payment_required' => $data['payment_required'] ?? false,
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
@@ -224,6 +235,7 @@ class FormController extends Controller
                 'title' => $form->title,
                 'description' => $form->description,
                 'price' => $form->price,
+                'price_tiers' => $form->price_tiers ?? [],
                 'payment_required' => $form->payment_required,
                 'terms' => $form->terms,
                 'is_active' => $form->is_active,
@@ -261,6 +273,12 @@ class FormController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'price_tiers' => ['nullable', 'array'],
+            'price_tiers.*.label' => ['required', 'string', 'max:255'],
+            'price_tiers.*.price' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'price_tiers.*.is_default' => ['boolean'],
+            'price_tiers.*.requires_document' => ['boolean'],
+            'price_tiers.*.description' => ['nullable', 'string', 'max:500'],
             'payment_required' => ['boolean'],
             'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
@@ -282,6 +300,10 @@ class FormController extends Controller
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
 
+        $priceTiers = $this->normalizePriceTiers($data['price_tiers'] ?? []);
+
+        $this->assertPaidFormHasPrice($data, $priceTiers);
+
         // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
         $organizationId = $isSuperadmin
             ? ($data['organization_id'] ?? $form->organization_id)
@@ -290,11 +312,12 @@ class FormController extends Controller
             $organizationId = Event::find($data['event_id'])?->organization_id;
         }
 
-        DB::transaction(function () use ($form, $data, $request, $organizationId) {
+        DB::transaction(function () use ($form, $data, $request, $organizationId, $priceTiers) {
             $updateData = [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'price' => $data['price'] ?? null,
+                'price' => $priceTiers[0]['price'] ?? $data['price'] ?? $form->price,
+                'price_tiers' => $priceTiers,
                 'payment_required' => $data['payment_required'] ?? $form->payment_required,
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? $form->is_active,
@@ -628,5 +651,55 @@ class FormController extends Controller
             || $event->organizations()->where('organizations.id', $ownOrg)->exists();
 
         abort_unless($belongs, 403);
+    }
+
+    /**
+     * Normalisasi price_tiers dari borang admin. Tier default diletakkan
+     * dahulu (dijadikan harga fallback). Tier tanpa label/harga dibuang.
+     *
+     * @return array<int, array{label: string, price: float, is_default: bool, requires_document: bool, description: ?string}>
+     */
+    private function normalizePriceTiers(array $raw): array
+    {
+        $tiers = collect($raw)
+            ->filter(fn ($t) => is_array($t)
+                && ! empty(trim((string) ($t['label'] ?? '')))
+                && is_numeric($t['price'] ?? null))
+            ->map(function ($t) {
+                return [
+                    'label' => trim((string) $t['label']),
+                    'price' => (float) $t['price'],
+                    'is_default' => (bool) ($t['is_default'] ?? false),
+                    'requires_document' => (bool) ($t['requires_document'] ?? false),
+                    'description' => ($t['description'] ?? null) ? trim((string) $t['description']) : null,
+                ];
+            })
+            ->values();
+
+        if ($tiers->isEmpty()) {
+            return [];
+        }
+
+        // Pastikan tepat satu tier default (kalau tiada, tier pertama jadi default).
+        if (! $tiers->contains(fn ($t) => $t['is_default'])) {
+            $tiers = $tiers->map(fn ($t, $i) => ['is_default' => $i === 0] + $t);
+        }
+
+        return $tiers->sortByDesc('is_default')->values()->all();
+    }
+
+    /**
+     * Borang berbayar wajib ada harga — sama ada `price` tunggal atau `price_tiers`.
+     */
+    private function assertPaidFormHasPrice(array $data, array $priceTiers): void
+    {
+        if (empty($data['payment_required'])) {
+            return;
+        }
+
+        $hasPrice = ! empty($priceTiers)
+            || (isset($data['price']) && (float) $data['price'] > 0);
+
+        abort_unless($hasPrice, 422, 'Borang berbayar perlu ada harga atau senarai harga tier.');
     }
 }
