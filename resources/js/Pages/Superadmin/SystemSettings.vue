@@ -92,6 +92,10 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    ageTransitionEnabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const form = useForm({
@@ -118,6 +122,20 @@ const splashForm = useForm({
     splash_enabled: props.splashEnabled,
 });
 const splashPreviewUrl = ref(null);
+
+const ageTransitionForm = useForm({
+    enabled: props.ageTransitionEnabled,
+});
+
+function toggleAgeTransition() {
+    ageTransitionForm.enabled = !ageTransitionForm.enabled;
+    ageTransitionForm.post(route('superadmin.settings.age-transition.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            props.ageTransitionEnabled = ageTransitionForm.enabled;
+        },
+    });
+}
 
 function uploadSystemLogo() {
     form.post(route('superadmin.settings.system-logo.update'), {
@@ -537,6 +555,48 @@ onBeforeUnmount(() => {
                         {{ geminiForm.processing ? 'Menyimpan...' : 'Simpan Kunci API Gemini' }}
                     </button>
                 </form>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">Automatik Peralihan Umur</h2>
+                <p class="mt-1 text-xs text-gray-500">
+                    Kawal sama ada sistem memindahkan <strong>ahli sedia ada</strong> ke organisasi lain
+                    (PKPIM / ABIM / WADAH) mengikut umur secara automatik setiap tengah malam.
+                    Pendaftaran baharu <strong>tetap ikut umur</strong> tidak kira tetapan ini.
+                </p>
+
+                <div class="mt-4 flex flex-col gap-3 rounded-2xl border p-4" :class="ageTransitionForm.enabled ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold" :class="ageTransitionForm.enabled ? 'text-emerald-800' : 'text-gray-700'">
+                                {{ ageTransitionForm.enabled ? 'DIAKTIFKAN' : 'DIBEKUKAN (Frozen)' }}
+                            </p>
+                            <p class="mt-1 text-xs leading-relaxed text-gray-500">
+                                <template v-if="ageTransitionForm.enabled">
+                                    Ahli sedia ada akan dipindahkan ke organisasi mengikut umur pada run tengah malam.
+                                </template>
+                                <template v-else>
+                                    Ahli sedia ada kekal dalam organisasi semasa mereka. Pindahan hanya boleh dibuat secara manual oleh admin.
+                                </template>
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            @click="toggleAgeTransition"
+                            :disabled="ageTransitionForm.processing"
+                            class="relative h-7 w-13 shrink-0 rounded-full transition"
+                            :class="ageTransitionForm.enabled ? 'bg-emerald-500' : 'bg-gray-300'"
+                            :aria-pressed="ageTransitionForm.enabled"
+                        >
+                            <span
+                                class="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all"
+                                :class="ageTransitionForm.enabled ? 'left-6' : 'left-0.5'"
+                            ></span>
+                        </button>
+                    </div>
+                    <p v-if="ageTransitionForm.errors.enabled" class="text-xs text-red-500">{{ ageTransitionForm.errors.enabled }}</p>
+                    <p v-if="ageTransitionForm.processing" class="text-xs text-gray-400">Menyimpan...</p>
+                </div>
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

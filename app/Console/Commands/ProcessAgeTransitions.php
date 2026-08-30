@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Console\Commands\Traits\MemberNoPrefix;
 use App\Events\UserOrganizationTransitioned;
+use App\Models\AppSetting;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -16,6 +17,10 @@ use Illuminate\Console\Command;
  *   1. Updates their current_organization_id.
  *   2. Syncs their Spatie role to the new tier.
  *   3. Fires UserOrganizationTransitioned, which queues logging + notification.
+ *
+ * The engine respects the `age_transition_enabled` setting in app_settings.
+ * When disabled (frozen — the default), existing members are left untouched;
+ * new members are still assigned their tier by age at registration time.
  *
  * Memory efficiency: chunkById(500) processes users in pages of 500, so even a
  * database with hundreds of thousands of members never exhausts PHP memory.
@@ -35,6 +40,14 @@ class ProcessAgeTransitions extends Command
     public function handle(): int
     {
         $isDryRun = $this->option('dry-run');
+
+        if (! AppSetting::singleton()->age_transition_enabled) {
+            $this->info('⏸️  Engine Peralihan Umur DIBEKUKAN (frozen).');
+            $this->info('Ahli sedia ada kekal dalam organisasi semasa. Aktifkan di System Settings untuk meneruskan peralihan automatik.');
+
+            return self::SUCCESS;
+        }
+
         $transitioned = 0;
         $skipped = 0;
 

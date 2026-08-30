@@ -40,6 +40,7 @@ class AppSetting extends Model
         'mail_smtp_username',
         'mail_smtp_password',
         'mail_smtp_encryption',
+        'age_transition_enabled',
     ];
 
     protected function casts(): array
@@ -47,6 +48,7 @@ class AppSetting extends Model
         return [
             'splash_duration_ms' => 'integer',
             'splash_enabled' => 'boolean',
+            'age_transition_enabled' => 'boolean',
             'resend_api_key' => 'encrypted',
             'mail_smtp_password' => 'encrypted',
         ];

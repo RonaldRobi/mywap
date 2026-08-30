@@ -247,6 +247,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/settings/mail', [SuperadminSystemSettingController::class, 'updateMailSettings'])->name('superadmin.settings.mail.update');
         Route::post('/superadmin/settings/mail/test', [SuperadminSystemSettingController::class, 'testMail'])->name('superadmin.settings.mail.test');
         Route::post('/superadmin/settings/gemini-key', [SuperadminSystemSettingController::class, 'updateGeminiKey'])->name('superadmin.settings.gemini-key.update');
+        Route::post('/superadmin/settings/age-transition', [SuperadminSystemSettingController::class, 'updateAgeTransition'])->name('superadmin.settings.age-transition.update');
         Route::post('/superadmin/settings/app-name', [SuperadminSystemSettingController::class, 'updateAppName'])->name('superadmin.settings.app-name.update');
         Route::post('/superadmin/settings/og-image', [SuperadminSystemSettingController::class, 'updateOgImage'])->name('superadmin.settings.og-image.update');
         Route::post('/superadmin/settings/login-image', [SuperadminSystemSettingController::class, 'updateLoginImage'])->name('superadmin.settings.login-image.update');

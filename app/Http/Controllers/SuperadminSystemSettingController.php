@@ -41,6 +41,7 @@ class SuperadminSystemSettingController extends Controller
             'mailSmtpPort' => $setting?->mail_smtp_port ?? '',
             'mailSmtpUsername' => $setting?->mail_smtp_username ?? '',
             'mailSmtpEncryption' => $setting?->mail_smtp_encryption ?? '',
+            'ageTransitionEnabled' => (bool) ($setting?->age_transition_enabled ?? false),
             'canManageSystemLogo' => $canManageSystemLogo,
         ]);
     }
@@ -208,6 +209,34 @@ class SuperadminSystemSettingController extends Controller
         }
 
         return $mailConfig;
+    }
+
+    /**
+     * Hidupkan / bekukan Engine Peralihan Umur automatik.
+     * OFF (frozen) = ahli sedia ada kekal dalam organisasi semasa.
+     * ON = peralihan automatik ikut umur disambung (run tengah malam).
+     * Pendaftaran baharu sentiasa ikut umur, tidak kira toggle ini.
+     */
+    public function updateAgeTransition(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        AppSetting::singleton()->update([
+            'age_transition_enabled' => (bool) $data['enabled'],
+        ]);
+
+        return back()->with(
+            'success',
+            $data['enabled']
+                ? 'Engine Peralihan Umur automatik DIHIDUPKAN. Ahli sedia ada akan dipindahkan ikut umur pada run tengah malam.'
+                : 'Engine Peralihan Umur automatik DIBEKUKAN. Ahli sedia ada kekal dalam organisasi semasa.'
+        );
     }
 
     public function testMail(Request $request): RedirectResponse
