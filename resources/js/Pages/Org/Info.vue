@@ -81,7 +81,12 @@ function openEditMember(member) {
 
 function submitMember() {
     if (editingMember.value) {
-        memberForm.put(route('org.chart.update', editingMember.value.id), {
+        memberForm
+            .transform((data) => ({
+                ...data,
+                _method: 'put',
+            }))
+            .post(route('org.chart.update', editingMember.value.id), {
             preserveScroll: true,
             onSuccess: () => {
                 showMemberModal.value = false;

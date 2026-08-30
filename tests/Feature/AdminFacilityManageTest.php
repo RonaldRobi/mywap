@@ -46,7 +46,8 @@ class AdminFacilityManageTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->admin)->put("/admin/facilities/{$facility->id}", [
+        $response = $this->actingAs($this->admin)->post("/admin/facilities/{$facility->id}", [
+            '_method' => 'put',
             'name' => 'Dewan Serbaguna Baru',
             'description' => 'Dewan dikemas kini',
             'location' => 'Shah Alam',
@@ -77,7 +78,8 @@ class AdminFacilityManageTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->admin)->put("/admin/facilities/{$facility->id}", [
+        $response = $this->actingAs($this->admin)->post("/admin/facilities/{$facility->id}", [
+            '_method' => 'put',
             'name' => 'Bilik Mesyuarat',
             'type' => 'hourly',
             'price_per_unit' => '20',
@@ -100,7 +102,8 @@ class AdminFacilityManageTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($this->admin)->put("/admin/facilities/{$facility->id}", [
+        $response = $this->actingAs($this->admin)->post("/admin/facilities/{$facility->id}", [
+            '_method' => 'put',
             'name' => 'Dewan Serbaguna',
             'type' => 'halfday',
             'price_per_unit' => '250',

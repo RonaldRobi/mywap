@@ -109,7 +109,12 @@ function deleteExistingMedia(mediaId) {
 }
 
 function saveEdit(item) {
-    editForm.put(route('admin.facilities.update', item.id), {
+    editForm
+        .transform((data) => ({
+            ...data,
+            _method: 'put',
+        }))
+        .post(route('admin.facilities.update', item.id), {
         preserveScroll: true,
         forceFormData: true,
         onError: () => {},

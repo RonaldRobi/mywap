@@ -38,7 +38,12 @@ function save() {
     const t = props.templates.find(t => t.key === activeKey.value);
     if (!t) return;
 
-    form.put(route('admin.email-templates.update', { emailTemplate: t.id }), {
+    form
+        .transform((data) => ({
+            ...data,
+            _method: 'put',
+        }))
+        .post(route('admin.email-templates.update', { emailTemplate: t.id }), {
         preserveScroll: true,
         forceFormData: true,
     });
