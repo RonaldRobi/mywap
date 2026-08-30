@@ -6,6 +6,7 @@ use App\Models\OnboardingSlide;
 use App\Models\AppSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,7 +43,7 @@ class OnboardingSlideController extends Controller
             'text_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'], 'overlay_start_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'], 'overlay_end_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
             'overlay_start_opacity' => ['required', 'integer', 'min:0', 'max:100'], 'overlay_end_opacity' => ['required', 'integer', 'min:0', 'max:100'],
             'overlay_start_position' => ['required', 'integer', 'min:0', 'max:100'], 'overlay_end_position' => ['required', 'integer', 'min:0', 'max:100', 'gte:overlay_start_position'],
-            'is_active' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'in:0,1,true,false'],
             'media' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,mp4', 'max:10240'],
         ]);
 
@@ -55,7 +56,21 @@ class OnboardingSlideController extends Controller
             $mediaType = $file->getClientOriginalExtension() === 'mp4' ? 'video' : 'image';
         }
         unset($data['media']);
+
+        // Keserasian DB lama yang belum menjalankan migration overlay:
+        // buang kolum yang tiada supaya update tidak gagal dengan 500.
+        foreach (['overlay_start_color', 'overlay_end_color', 'overlay_start_opacity', 'overlay_end_opacity', 'overlay_start_position', 'overlay_end_position'] as $field) {
+            if (! Schema::hasColumn('onboarding_slides', $field)) {
+                unset($data[$field]);
+            }
+        }
+
+        if (array_key_exists('is_active', $data)) {
+            $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+        }
+
         $onboardingSlide->update(array_merge($data, ['media_path' => $mediaPath, 'media_type' => $mediaType]));
+
         return back()->with('success', "Slide {$onboardingSlide->slide_order} berjaya dikemas kini.");
     }
 

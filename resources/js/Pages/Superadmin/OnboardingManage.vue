@@ -94,7 +94,11 @@ function selectMedia(slide, event) {
 
 function save(slide) {
     forms.value[slide.id]
-        .transform((data) => ({ ...data, _method: 'put' }))
+        .transform((data) => ({
+            ...data,
+            _method: 'put',
+            is_active: data.is_active ? '1' : '0',
+        }))
         .post(route('superadmin.onboarding.update', slide.id), {
             forceFormData: true,
             preserveScroll: true,
