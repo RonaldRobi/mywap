@@ -103,15 +103,10 @@ class AppServiceProvider extends ServiceProvider
         $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
 
         // Local mail server (Postfix/Dovecot on the same VPS) uses a self-signed
-        // cert; skip peer verification so STARTTLS succeeds.
+        // cert; disable peer verification so STARTTLS succeeds.
         if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            $mailConfig['mail.mailers.smtp.stream'] = [
-                'ssl' => [
-                    'allow_self_signed' => true,
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                ],
-            ];
+            $mailConfig['mail.mailers.smtp.verify_peer'] = false;
+            $mailConfig['mail.mailers.smtp.scheme'] = null;
         }
 
         $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
