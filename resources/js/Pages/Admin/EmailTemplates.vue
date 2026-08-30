@@ -40,18 +40,78 @@ function save() {
 }
 
 const templateLabels = {
-    otp_login: 'OTP Pengesahan Emel',
+    otp_login: 'OTP Log Masuk',
+    otp_email_verify: 'OTP Pengesahan Emel',
+    registration_received: 'Pendaftaran Diterima',
+    registration_activated: 'Akaun Diaktifkan',
+    new_member_alert: 'Pemberitahuan Admin (Ahli Baru)',
+    registration_confirmation: 'Pengesahan Pendaftaran Program',
+    form_invitation: 'Jemputan Borang',
+    password_reset: 'Tetapkan Semula Kata Laluan',
 };
 
 const templateDescriptions = {
-    otp_login: 'Dihantar kepada ahli semasa pendaftaran kali pertama atau menukar emel.',
+    otp_login: 'Dihantar kepada ahli semasa log masuk kali pertama (kod OTP).',
+    otp_email_verify: 'Dihantar untuk mengesahkan alamat emel ahli (kod OTP).',
+    registration_received: 'Dihantar kepada pendaftar baharu selepas pendaftaran diterima, sebelum bayaran yuran.',
+    registration_activated: 'Dihantar selepas yuran disahkan dan akaun ahli diaktifkan.',
+    new_member_alert: 'Dihantar kepada pentadbir apabila seorang ahli baharu mendaftar.',
+    registration_confirmation: 'Dihantar kepada peserta selepas pendaftaran program/event disahkan.',
+    form_invitation: 'Dihantar untuk menjemput seseorang mengisi borang pendaftaran.',
+    password_reset: 'Dihantar kepada ahli yang meminta tetapan semula kata laluan.',
 };
 
-const placeholderInfo = [
-    { key: '{{name}}', desc: 'Nama ahli' },
-    { key: '{{code}}', desc: 'Kod OTP 6-digit' },
-    { key: '{{purpose}}', desc: 'Tujuan (Log Masuk / Pengesahan Emel)' },
-];
+const placeholders = {
+    otp_login: [
+        { key: '{{name}}', desc: 'Nama ahli' },
+        { key: '{{code}}', desc: 'Kod OTP 6-digit' },
+        { key: '{{purpose}}', desc: 'Tujuan (Log Masuk)' },
+    ],
+    otp_email_verify: [
+        { key: '{{name}}', desc: 'Nama ahli' },
+        { key: '{{code}}', desc: 'Kod OTP 6-digit' },
+        { key: '{{purpose}}', desc: 'Tujuan (Pengesahan Emel)' },
+    ],
+    registration_received: [
+        { key: '{{name}}', desc: 'Nama ahli' },
+        { key: '{{member_no}}', desc: 'No Ahli' },
+        { key: '{{organization}}', desc: 'Nama organisasi' },
+        { key: '{{branch}}', desc: 'Cawangan' },
+        { key: '{{fee}}', desc: 'Yuran (RM)' },
+    ],
+    registration_activated: [
+        { key: '{{name}}', desc: 'Nama ahli' },
+        { key: '{{member_no}}', desc: 'No Ahli' },
+        { key: '{{organization}}', desc: 'Nama organisasi' },
+        { key: '{{login_link}}', desc: 'Pautan log masuk' },
+    ],
+    new_member_alert: [
+        { key: '{{name}}', desc: 'Nama ahli baharu' },
+        { key: '{{member_no}}', desc: 'No Ahli' },
+        { key: '{{ic_number}}', desc: 'No IC' },
+        { key: '{{organization}}', desc: 'Nama organisasi' },
+        { key: '{{branch}}', desc: 'Cawangan' },
+        { key: '{{fee}}', desc: 'Yuran (RM)' },
+    ],
+    registration_confirmation: [
+        { key: '{{name}}', desc: 'Nama peserta' },
+        { key: '{{registration_no}}', desc: 'No Pendaftaran' },
+        { key: '{{event_title}}', desc: 'Tajuk program/event' },
+        { key: '{{event_date}}', desc: 'Tarikh & masa program' },
+        { key: '{{location}}', desc: 'Lokasi / pautan' },
+        { key: '{{payment_status}}', desc: 'Status bayaran' },
+    ],
+    form_invitation: [
+        { key: '{{name}}', desc: 'Nama penerima' },
+        { key: '{{form_title}}', desc: 'Tajuk borang' },
+        { key: '{{form_link}}', desc: 'Pautan borang' },
+        { key: '{{organization}}', desc: 'Nama organisasi' },
+    ],
+    password_reset: [
+        { key: '{{name}}', desc: 'Nama ahli' },
+        { key: '{{url}}', desc: 'Pautan tetapan semula kata laluan' },
+    ],
+};
 </script>
 
 <template>
@@ -100,10 +160,11 @@ const placeholderInfo = [
                     <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-800">
                         <p class="mb-2 font-semibold">Placeholders yang boleh digunakan:</p>
                         <ul class="space-y-1">
-                            <li v-for="p in placeholderInfo" :key="p.key" class="flex gap-2">
+                            <li v-for="p in (placeholders[activeKey] || [])" :key="p.key" class="flex gap-2">
                                 <code class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 font-bold">{{ p.key }}</code>
                                 <span>{{ p.desc }}</span>
                             </li>
+                            <li v-if="!(placeholders[activeKey] || []).length" class="text-blue-500">Tiada placeholder khusus.</li>
                         </ul>
                     </div>
 

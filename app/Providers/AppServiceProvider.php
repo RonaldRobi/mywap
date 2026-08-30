@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Events\UserOrganizationTransitioned;
 use App\Listeners\LogTransitionAndNotify;
 use App\Models\AppSetting;
+use App\Models\EmailTemplate;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureAppName();
         $this->configureMailFromSettings();
+        $this->configurePasswordResetMail();
 
         Vite::prefetch(concurrency: 3);
 
@@ -30,6 +34,38 @@ class AppServiceProvider extends ServiceProvider
             UserOrganizationTransitioned::class,
             LogTransitionAndNotify::class,
         );
+    }
+
+    private function configurePasswordResetMail(): void
+    {
+        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            $template = EmailTemplate::forKey('password_reset');
+            $data = [
+                'name' => $notifiable->name,
+                'url' => $url,
+            ];
+
+            $subject = $template?->renderSubject($data) ?? 'Tetapkan Semula Kata Laluan - myWAP';
+            $body = $template?->renderBody($data) ?? "Klik pautan di bawah untuk menetapkan semula kata laluan anda:\n\n{$url}";
+
+            $logoUrl = url(AppSetting::singleton()->system_logo_path ?? '/images/logomywaphorizontal.png');
+
+            return (new MailMessage)
+                ->subject($subject)
+                ->view('emails.password-reset', [
+                    'subject' => $subject,
+                    'body' => $body,
+                    'name' => $data['name'],
+                    'url' => $url,
+                    'logoUrl' => $logoUrl,
+                    'appName' => config('app.name'),
+                ]);
+        });
     }
 
     private function configureAppName(): void
