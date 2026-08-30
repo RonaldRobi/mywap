@@ -562,6 +562,9 @@ const submit = () => {
                                     <p class="mt-1 text-emerald-200/80">
                                         Kod OTP telah dihantar ke emel berdaftar anda.
                                     </p>
+                                    <p class="mt-2 text-xs text-slate-400">
+                                        Tidak terima kod? Sila semak folder <strong>Spam/Junk</strong> dalam emel anda.
+                                    </p>
                                 </div>
 
                                 <div>

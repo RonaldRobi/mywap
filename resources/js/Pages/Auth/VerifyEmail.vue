@@ -37,6 +37,9 @@ const verificationLinkSent = computed(
         >
             A new verification link has been sent to the email address you
             provided during registration.
+            <p class="mt-1 text-xs font-normal text-gray-500">
+                Didn't receive it? Please check your <strong>Spam/Junk</strong> folder.
+            </p>
         </div>
 
         <form @submit.prevent="submit">

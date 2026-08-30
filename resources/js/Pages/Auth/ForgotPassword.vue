@@ -35,6 +35,9 @@ const submit = () => {
             class="mb-4 text-sm font-medium text-green-600"
         >
             {{ status }}
+            <p class="mt-1 text-xs font-normal text-gray-500">
+                Tidak terima pautan? Sila semak folder <strong>Spam/Junk</strong> dalam emel anda.
+            </p>
         </div>
 
         <form @submit.prevent="submit">
