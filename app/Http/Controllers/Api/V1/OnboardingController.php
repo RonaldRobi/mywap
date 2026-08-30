@@ -18,6 +18,7 @@ class OnboardingController extends Controller
             'background_start' => $slide->background_start, 'background_end' => $slide->background_end,
             'text_color' => $slide->text_color, 'overlay_start_color' => $slide->overlay_start_color ?? '#071525', 'overlay_end_color' => $slide->overlay_end_color ?? '#071525',
             'overlay_start_opacity' => $slide->overlay_start_opacity ?? 0, 'overlay_end_opacity' => $slide->overlay_end_opacity ?? 90,
+            'overlay_start_position' => $slide->overlay_start_position ?? 0, 'overlay_end_position' => $slide->overlay_end_position ?? 100,
             'media_url' => $slide->media_path ? url($slide->media_path) : null,
             'media_type' => $slide->media_type,
         ]);

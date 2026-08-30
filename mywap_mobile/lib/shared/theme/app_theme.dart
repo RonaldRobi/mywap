@@ -37,7 +37,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      fontFamily: 'Figtree',
+      fontFamily: 'Poppins',
       textTheme: AppTextTheme.base,
       scaffoldBackgroundColor: AppColors.pageBackground,
       appBarTheme: const AppBarTheme(

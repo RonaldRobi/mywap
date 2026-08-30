@@ -216,6 +216,10 @@ class _Slide extends StatelessWidget {
                   slide.overlayEndColor,
                 ).withValues(alpha: slide.overlayEndOpacity / 100),
               ],
+              stops: _overlayStops(
+                slide.overlayStartPosition,
+                slide.overlayEndPosition,
+              ),
             ),
           ),
         ),
@@ -349,4 +353,13 @@ class _VideoMediaState extends State<_VideoMedia> {
 Color _parseColor(String value) {
   final normalized = value.replaceFirst('#', '');
   return Color(int.parse('FF$normalized', radix: 16));
+}
+
+/// Tukar posisi peratus admin (0–100 dari ATAS skrin) kepada `stops`
+/// LinearGradient. Nilai dikepit supaya konfigurasi tersilap tidak
+/// menyebabkan assertion Flutter (stops mesti menaik dan dalam 0..1).
+List<double> _overlayStops(int startPercent, int endPercent) {
+  final start = (startPercent.clamp(0, 100)) / 100;
+  final end = (endPercent.clamp(0, 100)) / 100;
+  return end <= start ? [start, (start + 0.01).clamp(0.0, 1.0)] : [start, end];
 }

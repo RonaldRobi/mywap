@@ -40,7 +40,9 @@ class OnboardingSlideController extends Controller
             'button_label' => ['nullable', 'string', 'max:40'], 'button_url' => ['nullable', 'url', 'max:2048'],
             'background_start' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'], 'background_end' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
             'text_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'], 'overlay_start_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'], 'overlay_end_color' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
-            'overlay_start_opacity' => ['required', 'integer', 'min:0', 'max:100'], 'overlay_end_opacity' => ['required', 'integer', 'min:0', 'max:100'], 'is_active' => ['nullable', 'boolean'],
+            'overlay_start_opacity' => ['required', 'integer', 'min:0', 'max:100'], 'overlay_end_opacity' => ['required', 'integer', 'min:0', 'max:100'],
+            'overlay_start_position' => ['required', 'integer', 'min:0', 'max:100'], 'overlay_end_position' => ['required', 'integer', 'min:0', 'max:100', 'gte:overlay_start_position'],
+            'is_active' => ['nullable', 'boolean'],
             'media' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,mp4', 'max:10240'],
         ]);
 

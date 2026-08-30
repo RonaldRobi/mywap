@@ -13,29 +13,34 @@ class OnboardingSlideData {
     required this.overlayEndColor,
     required this.overlayStartOpacity,
     required this.overlayEndOpacity,
+    this.overlayStartPosition = 0,
+    this.overlayEndPosition = 100,
     this.buttonUrl,
     this.mediaUrl,
     this.mediaType,
   });
 
-  factory OnboardingSlideData.fromJson(Map<String, dynamic> json) =>
-      OnboardingSlideData(
-        order: (json['order'] as num?)?.toInt() ?? 0,
-        title: json['title'] as String? ?? '',
-        body: json['body'] as String? ?? '',
-        buttonLabel: json['button_label'] as String? ?? '',
-        buttonUrl: json['button_url'] as String?,
-        backgroundStart: json['background_start'] as String? ?? '#071525',
-        backgroundEnd: json['background_end'] as String? ?? '#2F6B32',
-        textColor: json['text_color'] as String? ?? '#FFFFFF',
-        overlayStartColor: json['overlay_start_color'] as String? ?? '#071525',
-        overlayEndColor: json['overlay_end_color'] as String? ?? '#071525',
-        overlayStartOpacity:
-            (json['overlay_start_opacity'] as num?)?.toInt() ?? 0,
-        overlayEndOpacity: (json['overlay_end_opacity'] as num?)?.toInt() ?? 90,
-        mediaUrl: json['media_url'] as String?,
-        mediaType: json['media_type'] as String?,
-      );
+  factory OnboardingSlideData.fromJson(
+    Map<String, dynamic> json,
+  ) => OnboardingSlideData(
+    order: (json['order'] as num?)?.toInt() ?? 0,
+    title: json['title'] as String? ?? '',
+    body: json['body'] as String? ?? '',
+    buttonLabel: json['button_label'] as String? ?? '',
+    buttonUrl: json['button_url'] as String?,
+    backgroundStart: json['background_start'] as String? ?? '#071525',
+    backgroundEnd: json['background_end'] as String? ?? '#2F6B32',
+    textColor: json['text_color'] as String? ?? '#FFFFFF',
+    overlayStartColor: json['overlay_start_color'] as String? ?? '#071525',
+    overlayEndColor: json['overlay_end_color'] as String? ?? '#071525',
+    overlayStartOpacity: (json['overlay_start_opacity'] as num?)?.toInt() ?? 0,
+    overlayEndOpacity: (json['overlay_end_opacity'] as num?)?.toInt() ?? 90,
+    overlayStartPosition:
+        (json['overlay_start_position'] as num?)?.toInt() ?? 0,
+    overlayEndPosition: (json['overlay_end_position'] as num?)?.toInt() ?? 100,
+    mediaUrl: json['media_url'] as String?,
+    mediaType: json['media_type'] as String?,
+  );
 
   final int order;
   final String title;
@@ -49,6 +54,8 @@ class OnboardingSlideData {
   final String overlayEndColor;
   final int overlayStartOpacity;
   final int overlayEndOpacity;
+  final int overlayStartPosition;
+  final int overlayEndPosition;
   final String? mediaUrl;
   final String? mediaType;
 }

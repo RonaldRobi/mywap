@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Typography scale for the app.
 ///
 /// Accessibility-first (§10.4): minimum body size 16sp, generous tap targets.
 abstract final class AppTextTheme {
   static TextTheme get base {
-    final textTheme = ThemeData.light().textTheme;
-    return GoogleFonts.figtreeTextTheme(textTheme).copyWith(
+    final textTheme = ThemeData.light().textTheme.apply(
+          fontFamily: 'Poppins',
+        );
+    return textTheme.copyWith(
       displaySmall: textTheme.displaySmall?.copyWith(
         fontSize: 30,
         fontWeight: FontWeight.w700,
