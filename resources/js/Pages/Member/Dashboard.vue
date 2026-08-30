@@ -716,19 +716,28 @@ function scrollBooks(direction) {
                         <Link :href="route('news.index')" class="text-xs font-semibold shrink-0" :class="theme.accentText">{{ t('Buka Feed') }}</Link>
                     </div>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible pb-1 hide-scrollbar">
-                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="min-w-[200px] md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
-                            <Link :href="route('news.show', item.id)" class="block">
-                                <div class="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                                    <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="h-full w-full object-cover">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                        <article v-for="item in featuredNews" :key="`news-${item.id}`" class="w-[170px] h-[220px] md:w-auto md:h-auto md:min-w-0 bg-white rounded-[20px] shadow-sm overflow-hidden shrink-0">
+                            <Link :href="route('news.show', item.id)" class="flex flex-col h-full md:block md:h-auto">
+                                <div class="relative h-[100px] md:aspect-[16/9] w-full overflow-hidden bg-gray-100 shrink-0">
+                                    <img v-if="item.cover_image_path" :src="item.cover_image_path" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
                                 </div>
-                                <div class="px-3 pt-1.5 pb-2 md:px-4 md:pt-3 md:pb-4">
-                                    <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
-                                        <span v-if="item.category_name" class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
-                                        <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
+                                <div class="flex flex-col flex-1 px-3 pt-2 pb-3 md:px-4 md:pt-3 md:pb-4">
+                                    <div class="block md:hidden">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1">
+                                            <span v-if="item.category_name" class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
+                                            <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
+                                        </div>
+                                        <h4 class="text-xs font-bold text-gray-900 leading-snug line-clamp-2 block md:hidden mb-1">{{ item.title }}</h4>
+                                        <p v-if="item.excerpt" class="text-[11px] text-gray-500 line-clamp-1 block md:hidden">{{ item.excerpt }}</p>
                                     </div>
-                                    <h4 class="mt-1 line-clamp-2 text-xs md:text-sm font-bold text-gray-900">{{ item.title }}</h4>
-                                    <p class="mt-0.5 line-clamp-2 text-xs text-gray-500">{{ item.excerpt || t('Tekan untuk baca lanjut.') }}</p>
+                                    <div class="hidden md:block">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
+                                            <span v-if="item.category_name" class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{{ item.category_name }}</span>
+                                            <span v-if="item.organization_name" :class="[theme.accentBg, theme.accentText, 'rounded-full px-2 py-0.5']">{{ item.organization_name }}</span>
+                                        </div>
+                                        <h4 class="mt-1 line-clamp-2 text-sm font-bold text-gray-900 leading-snug">{{ item.title }}</h4>
+                                        <p v-if="item.excerpt" class="mt-1 text-[13px] text-gray-500 line-clamp-1">{{ item.excerpt }}</p>
+                                    </div>
                                 </div>
                             </Link>
                         </article>

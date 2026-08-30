@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AppSettingsController;
 use App\Http\Controllers\BayarCashController;
 use App\Http\Controllers\BranchChangeRequestController;
 use App\Http\Controllers\BranchController;
@@ -246,6 +247,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'updateChartMember'])->name('superadmin.organizations.chart.update');
         Route::delete('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'destroyChartMember'])->name('superadmin.organizations.chart.destroy');
         Route::post('/superadmin/members/{user}/organization', [InformationHubAdminController::class, 'moveOrganization'])->name('superadmin.members.organization.update');
+
+        Route::get('/superadmin/app-settings', [AppSettingsController::class, 'index'])->name('superadmin.app-settings.index');
+        Route::post('/superadmin/app-settings/loading-screen', [AppSettingsController::class, 'updateLoadingScreen'])->name('superadmin.app-settings.loading-screen.update');
+        Route::delete('/superadmin/app-settings/loading-screen', [AppSettingsController::class, 'removeLoadingScreenGif'])->name('superadmin.app-settings.loading-screen.remove');
 
         Route::get('/superadmin/settings', [SuperadminSystemSettingController::class, 'index'])->name('superadmin.settings.index');
         Route::post('/superadmin/settings/system-logo', [SuperadminSystemSettingController::class, 'updateSystemLogo'])->name('superadmin.settings.system-logo.update');

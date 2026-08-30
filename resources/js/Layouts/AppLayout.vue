@@ -568,6 +568,14 @@ const navItems = computed(() => [
         colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
     }, {
+        label:  'Tetapan Aplikasi',
+        href:   route('superadmin.app-settings.index'),
+        active: route().current('superadmin.app-settings.*'),
+        colorClass: 'text-[#071525]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 10h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zM9 8v8m-2-8v8"/>
+                </svg>`,
+    }, {
         label:  'Tetapan myWAP',
         href:   route('superadmin.settings.index'),
         active: route().current('superadmin.settings.*'),

@@ -2,6 +2,9 @@
 /// [BaseOptions.baseUrl]). Keys must match the Laravel routes in
 /// `routes/api/v1/*` exactly.
 abstract final class ApiPaths {
+  // ---- App config (public, sebelum login) ----
+  static const String appConfig = '/app-config';
+
   // ---- Auth ----
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';

@@ -46,6 +46,11 @@ class AppSetting extends Model
         'mail_smtp_password',
         'mail_smtp_encryption',
         'age_transition_enabled',
+        'loading_screen_gif_path',
+        'loading_screen_background_start',
+        'loading_screen_background_end',
+        'loading_screen_duration_ms',
+        'loading_screen_enabled',
     ];
 
     protected function casts(): array
@@ -54,6 +59,8 @@ class AppSetting extends Model
             'splash_duration_ms' => 'integer',
             'splash_enabled' => 'boolean',
             'age_transition_enabled' => 'boolean',
+            'loading_screen_duration_ms' => 'integer',
+            'loading_screen_enabled' => 'boolean',
             'resend_api_key' => 'encrypted',
             'mail_smtp_password' => 'encrypted',
         ];
@@ -94,6 +101,11 @@ class AppSetting extends Model
     }
 
     public function getChatbotLogoPathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getLoadingScreenGifPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

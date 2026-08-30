@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../shared/theme/app_colors.dart';
+import '../../loading_screen/application/loading_screen_providers.dart';
+import '../../loading_screen/presentation/loading_screen.dart';
 import '../application/auth_controller.dart';
 import '../../onboarding/presentation/onboarding_screen.dart';
 
-/// Startup screen shown while auth state resolves (§11.5 — native splash
-/// preferred; this is a minimal Dart fallback while providers load).
+/// Startup screen shown while auth state resolves. Memaparkan loading screen
+/// GIF (latar gradient + GIF di tengah) yang boleh dikonfigurasi di admin
+/// panel — aplikasi Flutter sahaja, web tidak terjejas.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -18,6 +20,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
   var _redirected = false;
+  final _startedAt = DateTime.now();
 
   @override
   void initState() {
@@ -28,6 +31,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _route(AuthState state) async {
     if (_redirected || state is AuthLoading || !mounted) return;
     _redirected = true;
+
+    // Pastikan loading screen kelihatan sekurang-kurangnya tempoh yang
+    // ditetapkan di admin sebelum pergi ke skrin seterusnya.
+    final config = ref.read(loadingScreenControllerProvider);
+    final duration =
+        (config?.enabled ?? true) ? (config?.durationMs ?? 2500) : 0;
+    final remaining = duration - DateTime.now().difference(_startedAt).inMilliseconds;
+    if (remaining > 0) {
+      await Future<void>.delayed(Duration(milliseconds: remaining));
+    }
+    if (!mounted) return;
+
     if (state is AuthAuthenticated) {
       context.go('/dashboard');
       return;
@@ -43,39 +58,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     _route(ref.watch(authControllerProvider));
-    return const Scaffold(
-      backgroundColor: AppColors.movementDarkGreen,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.volunteer_activism,
-              size: 72,
-              color: AppColors.movementSoftGreen,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'myWAP',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-            ),
-            SizedBox(height: 24),
-            SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: AppColors.movementSoftGreen,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const LoadingScreenView();
   }
 }
