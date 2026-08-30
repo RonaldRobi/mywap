@@ -39,7 +39,7 @@ class MemberDashboardService
         $setting = AppSetting::query()->first();
 
         $nextEventRsvp = EventRsvp::query()
-            ->where('user_id', $user->id)
+            ->where('event_rsvps.user_id', $user->id)
             ->whereIn('event_rsvps.status', ['going', 'maybe'])
             ->whereHas('event', fn ($query) => $query->where('start_time', '>=', now()))
             ->with('event.organization')

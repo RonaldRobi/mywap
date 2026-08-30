@@ -122,8 +122,8 @@ class DashboardController extends Controller
         $user = $request->user()->load('organization');
 
         $nextEventRsvp = EventRsvp::query()
-            ->where('user_id', $user->id)
-            ->whereIn('status', ['going', 'maybe'])
+            ->where('event_rsvps.user_id', $user->id)
+            ->whereIn('event_rsvps.status', ['going', 'maybe'])
             ->whereHas('event', fn ($query) => $query->where('start_time', '>=', now()))
             ->with('event.organization')
             ->join('events', 'event_rsvps.event_id', '=', 'events.id')
