@@ -77,15 +77,11 @@ class SuperadminSystemSettingController extends Controller
 
         $setting = AppSetting::singleton();
         $updateData = [];
-        $mailConfig = [];
 
         // Only update API key if a non-empty value was sent
         if ($request->filled('resend_api_key')) {
             $updateData['resend_api_key'] = $data['resend_api_key'];
-            $mailConfig['mail.default'] = 'resend';
-            $mailConfig['mail.mailers.resend.key'] = $data['resend_api_key'];
-            $mailConfig['services.resend.key'] = $data['resend_api_key'];
-            $mailConfig['resend.api_key'] = $data['resend_api_key'];
+            $updateData['mail_mailer'] = 'resend';
         }
 
         if ($request->has('mail_from_address')) {
@@ -100,12 +96,7 @@ class SuperadminSystemSettingController extends Controller
             $setting->update($updateData);
         }
 
-        if ($setting->mail_from_address) {
-            $mailConfig['mail.from.address'] = $setting->mail_from_address;
-            $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
-        }
-
-        config($mailConfig);
+        config($this->buildMailConfig($setting));
 
         return back()->with('success', 'Tetapan emel berjaya disimpan.');
     }
@@ -155,26 +146,52 @@ class SuperadminSystemSettingController extends Controller
         $setting->update($updateData);
 
         // Rebuild runtime mail config so the next email uses the new driver.
+        config($this->buildMailConfig($setting));
+
+        return back()->with('success', 'Tetapan mailer berjaya disimpan.');
+    }
+
+    /**
+     * Bina konfigurasi mail runtime daripada app_settings.
+     *
+     * Apabila mailer utama ialah "resend" DAN SMTP backup diisi, guna failover
+     * (Resend dahulu → SMTP sekiranya Resend gagal / kuota habis) supaya emel
+     * penting tetap keluar.
+     */
+    private function buildMailConfig(AppSetting $setting): array
+    {
+        $mailer = $setting->mail_mailer ?: 'log';
         $mailConfig = [];
 
-        if ($data['mail_mailer'] === 'resend' && $setting->resend_api_key) {
+        if ($mailer === 'resend' && $setting->resend_api_key) {
             $mailConfig = [
                 'mail.default' => 'resend',
                 'mail.mailers.resend.key' => $setting->resend_api_key,
                 'services.resend.key' => $setting->resend_api_key,
                 'resend.api_key' => $setting->resend_api_key,
             ];
-        } elseif ($data['mail_mailer'] === 'smtp') {
-            $mailConfig = [
-                'mail.default' => 'smtp',
-                'mail.mailers.smtp.host' => $setting->mail_smtp_host,
-                'mail.mailers.smtp.port' => $setting->mail_smtp_port,
-                'mail.mailers.smtp.encryption' => $setting->mail_smtp_encryption,
-                'mail.mailers.smtp.username' => $setting->mail_smtp_username,
-                'mail.mailers.smtp.password' => $setting->mail_smtp_password,
-            ];
-        } else {
-            $mailConfig = ['mail.default' => 'log'];
+        }
+
+        if (in_array($mailer, ['resend', 'smtp'], true)) {
+            $mailConfig['mail.mailers.smtp.host'] = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
+            $mailConfig['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
+            $mailConfig['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
+            $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
+
+            $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
+            if ($encryption && $encryption !== 'null') {
+                $mailConfig['mail.mailers.smtp.encryption'] = $encryption;
+            }
+
+            if ($mailer === 'resend' && $setting->mail_smtp_host) {
+                $mailConfig['mail.default'] = 'failover';
+            }
+        }
+
+        if ($mailer === 'smtp') {
+            $mailConfig['mail.default'] = 'smtp';
+        } elseif ($mailer === 'log') {
+            $mailConfig['mail.default'] = 'log';
         }
 
         if ($setting->mail_from_address) {
@@ -182,9 +199,7 @@ class SuperadminSystemSettingController extends Controller
             $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
         }
 
-        config($mailConfig);
-
-        return back()->with('success', 'Tetapan mailer berjaya disimpan.');
+        return $mailConfig;
     }
 
     public function testMail(Request $request): RedirectResponse

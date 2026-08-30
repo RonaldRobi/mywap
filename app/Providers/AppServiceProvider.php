@@ -67,15 +67,18 @@ class AppServiceProvider extends ServiceProvider
                     'services.resend.key' => $key,
                     'resend.api_key' => $key,
                 ];
+
+                $this->configureSmtpMailer($mailConfig, $setting);
+
+                // Prefer failover (Resend → SMTP) when a backup SMTP is configured,
+                // so essential mail still goes out when the Resend daily quota runs out.
+                if ($setting->mail_smtp_host) {
+                    $mailConfig['mail.default'] = 'failover';
+                }
             } elseif ($mailer === 'smtp') {
-                $mailConfig = [
-                    'mail.default' => 'smtp',
-                    'mail.mailers.smtp.host' => $setting->mail_smtp_host ?: config('mail.mailers.smtp.host'),
-                    'mail.mailers.smtp.port' => $setting->mail_smtp_port ?: config('mail.mailers.smtp.port'),
-                    'mail.mailers.smtp.encryption' => $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption'),
-                    'mail.mailers.smtp.username' => $setting->mail_smtp_username ?: config('mail.mailers.smtp.username'),
-                    'mail.mailers.smtp.password' => $setting->mail_smtp_password ?: config('mail.mailers.smtp.password'),
-                ];
+                $mailConfig = ['mail.default' => 'smtp'];
+
+                $this->configureSmtpMailer($mailConfig, $setting);
             } elseif ($mailer === 'log') {
                 $mailConfig = ['mail.default' => 'log'];
             }
@@ -88,6 +91,19 @@ class AppServiceProvider extends ServiceProvider
             config($mailConfig);
         } catch (\Throwable) {
             // Silent fail — settings table may not be ready during early boot
+        }
+    }
+
+    private function configureSmtpMailer(array &$mailConfig, AppSetting $setting): void
+    {
+        $mailConfig['mail.mailers.smtp.host'] = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
+        $mailConfig['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
+        $mailConfig['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
+        $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
+
+        $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
+        if ($encryption && $encryption !== 'null') {
+            $mailConfig['mail.mailers.smtp.encryption'] = $encryption;
         }
     }
 }

@@ -541,7 +541,7 @@ onBeforeUnmount(() => {
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-black text-gray-800">Tetapan Emel (Mailer)</h2>
-                <p class="mt-1 text-xs text-gray-500">Pilih cara sistem menghantar emel (OTP, jemputan borang, pemberitahuan). Tetapan ini menggantikan <strong>MAIL_MAILER</strong> dalam fail .env.</p>
+                <p class="mt-1 text-xs text-gray-500">Pilih cara sistem menghantar emel (OTP, jemputan borang, pemberitahuan). Tetapan ini menggantikan <strong>MAIL_MAILER</strong> dalam fail .env. Jika anda isi butiran SMTP bersama Resend, sistem akan guna Resend dahulu dan <strong>auto-fallback ke SMTP</strong> apabila kuota Resend habis.</p>
 
                 <form class="mt-4 space-y-3" @submit.prevent="saveMailSettings">
                     <label class="block">
@@ -580,8 +580,11 @@ onBeforeUnmount(() => {
                         </label>
                     </template>
 
-                    <!-- SMTP fields -->
-                    <template v-if="mailForm.mail_mailer === 'smtp'">
+                    <!-- SMTP fields (juga bertindak sebagai sandaran automatik apabila Resend dipilih) -->
+                    <template v-if="mailForm.mail_mailer === 'smtp' || mailForm.mail_mailer === 'resend'">
+                        <p v-if="mailForm.mail_mailer === 'resend'" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                            Isi butiran SMTP di bawah untuk bertindak sebagai <strong>sandaran automatik</strong> apabila kuota Resend (100 emel/hari) habis. Biarkan kosong jika tidak mahu fallback.
+                        </p>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <label class="block">
                                 <span class="mb-1 block text-xs font-semibold text-gray-500">SMTP Host</span>
