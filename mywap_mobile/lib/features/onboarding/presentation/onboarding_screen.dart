@@ -65,10 +65,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   ];
 
   Future<void> _complete() async {
-    await (await SharedPreferences.getInstance()).setBool(
-      onboardingCompletedKey,
-      true,
-    );
+    try {
+      await (await SharedPreferences.getInstance()).setBool(
+        onboardingCompletedKey,
+        true,
+      );
+    } catch (_) {
+      // Kegagalan menyimpan status tidak sepatutnya menghalang navigasi.
+    }
     if (mounted) context.go('/login');
   }
 

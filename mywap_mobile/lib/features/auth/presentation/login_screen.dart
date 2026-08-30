@@ -212,7 +212,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     : const Text('Log Masuk'),
                           ),
                         ),
-                        const Spacer(),
                         const SizedBox(height: Spacing.xxl),
                         Text(
                           'PLATFORM RASMI EKOSISTEM',
