@@ -6,7 +6,10 @@ import { ref } from 'vue';
 const props = defineProps({ slides: { type: Array, default: () => [] }, loginBranding: { type: Object, required: true } });
 const forms = ref(Object.fromEntries(props.slides.map((slide) => [slide.id, useForm({
     title: slide.title ?? '', body: slide.body ?? '', button_label: slide.button_label ?? '', button_url: slide.button_url ?? '',
-    background_start: slide.background_start, background_end: slide.background_end, text_color: slide.text_color, is_active: !!slide.is_active, media: null,
+    background_start: slide.background_start, background_end: slide.background_end, text_color: slide.text_color,
+    overlay_start_color: slide.overlay_start_color ?? '#071525', overlay_end_color: slide.overlay_end_color ?? '#071525',
+    overlay_start_opacity: slide.overlay_start_opacity ?? 0, overlay_end_opacity: slide.overlay_end_opacity ?? 90,
+    is_active: !!slide.is_active, media: null,
 })])));
 const previews = ref({});
 const loginForm = useForm({
@@ -45,6 +48,7 @@ function saveLoginBranding() {
                 <h1 class="font-black">3 Slide Onboarding Mobile</h1>
                 <p class="mt-1 text-indigo-800">Konfigurasi ini digunakan oleh aplikasi iOS dan Android sebelum pengguna log masuk. Setiap slide boleh mempunyai gradient, teks, butang dan media sendiri.</p>
                 <p class="mt-3 font-semibold">Media disyorkan: 1080×1920px (nisbah 9:16). Format: JPG, PNG, WebP, GIF atau MP4. Maksimum 10MB. MP4 disyorkan H.264 tanpa audio atau audio ringkas untuk prestasi terbaik.</p>
+                <p class="mt-2">Untuk media cerah di atas dan teks jelas di bawah, gunakan overlay navy/gelap dengan <strong>Atas 0%</strong> dan <strong>Bawah 90%</strong>.</p>
             </section>
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
                 <div class="mb-4"><p class="text-xs font-bold uppercase tracking-widest text-emerald-600">Flutter sahaja</p><h2 class="text-lg font-black text-gray-900">Branding Log Masuk Mobile</h2><p class="mt-1 text-sm text-gray-500">Tetapan ini digunakan pada aplikasi iOS dan Android sahaja, bukan halaman login web.</p></div>
@@ -71,6 +75,7 @@ function saveLoginBranding() {
                         <div><label class="field-label">Gradient Mula</label><input v-model="forms[slide.id].background_start" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
                         <div><label class="field-label">Gradient Tamat</label><input v-model="forms[slide.id].background_end" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
                         <div><label class="field-label">Warna Teks</label><input v-model="forms[slide.id].text_color" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
+                        <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-slate-50 p-3"><p class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-600">Overlay Gradient Atas ke Bawah</p><div class="grid gap-3 sm:grid-cols-2"><div><label class="field-label">Warna Overlay Atas</label><input v-model="forms[slide.id].overlay_start_color" class="h-10 w-full rounded-xl border border-gray-200" type="color"><label class="mt-2 flex items-center justify-between text-xs font-semibold text-gray-500">Opacity Atas <span>{{ forms[slide.id].overlay_start_opacity }}%</span></label><input v-model.number="forms[slide.id].overlay_start_opacity" class="w-full accent-slate-900" type="range" min="0" max="100"></div><div><label class="field-label">Warna Overlay Bawah</label><input v-model="forms[slide.id].overlay_end_color" class="h-10 w-full rounded-xl border border-gray-200" type="color"><label class="mt-2 flex items-center justify-between text-xs font-semibold text-gray-500">Opacity Bawah <span>{{ forms[slide.id].overlay_end_opacity }}%</span></label><input v-model.number="forms[slide.id].overlay_end_opacity" class="w-full accent-slate-900" type="range" min="0" max="100"></div></div></div>
                         <div><label class="field-label">Media</label><input accept="image/jpeg,image/png,image/webp,image/gif,video/mp4" class="block w-full text-xs" type="file" @change="selectMedia(slide, $event)"><p v-if="forms[slide.id].errors.media" class="field-error">{{ forms[slide.id].errors.media }}</p></div>
                         <div class="md:col-span-2"><button :disabled="forms[slide.id].processing" class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{{ forms[slide.id].processing ? 'Menyimpan...' : 'Simpan Slide' }}</button></div>
                     </div>
@@ -83,6 +88,8 @@ function saveLoginBranding() {
                         <div v-else class="flex aspect-[9/16] items-center justify-center rounded-xl border-2 border-dashed border-gray-200 text-center text-xs text-gray-400">Tiada media</div>
                         <p v-if="previews[slide.id]" class="mt-2 truncate text-xs text-gray-500">{{ previews[slide.id].name }} · {{ previews[slide.id].size }}</p>
                         <button v-if="slide.media_path" type="button" class="mt-3 text-xs font-semibold text-red-600" @click="deleteMedia(slide)">Padam media sedia ada</button>
+                        <div class="mt-3 h-12 rounded-lg" :style="{ background: `linear-gradient(to bottom, ${forms[slide.id].overlay_start_color}${Math.round(forms[slide.id].overlay_start_opacity * 2.55).toString(16).padStart(2, '0')}, ${forms[slide.id].overlay_end_color}${Math.round(forms[slide.id].overlay_end_opacity * 2.55).toString(16).padStart(2, '0')})` }"></div>
+                        <p class="mt-1 text-[10px] text-gray-400">Preview: atas {{ forms[slide.id].overlay_start_opacity }}% → bawah {{ forms[slide.id].overlay_end_opacity }}%</p>
                     </aside>
                 </form>
             </section>

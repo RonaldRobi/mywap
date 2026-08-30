@@ -9,6 +9,10 @@ class OnboardingSlideData {
     required this.backgroundStart,
     required this.backgroundEnd,
     required this.textColor,
+    required this.overlayStartColor,
+    required this.overlayEndColor,
+    required this.overlayStartOpacity,
+    required this.overlayEndOpacity,
     this.buttonUrl,
     this.mediaUrl,
     this.mediaType,
@@ -24,6 +28,11 @@ class OnboardingSlideData {
         backgroundStart: json['background_start'] as String? ?? '#071525',
         backgroundEnd: json['background_end'] as String? ?? '#2F6B32',
         textColor: json['text_color'] as String? ?? '#FFFFFF',
+        overlayStartColor: json['overlay_start_color'] as String? ?? '#071525',
+        overlayEndColor: json['overlay_end_color'] as String? ?? '#071525',
+        overlayStartOpacity:
+            (json['overlay_start_opacity'] as num?)?.toInt() ?? 0,
+        overlayEndOpacity: (json['overlay_end_opacity'] as num?)?.toInt() ?? 90,
         mediaUrl: json['media_url'] as String?,
         mediaType: json['media_type'] as String?,
       );
@@ -36,6 +45,10 @@ class OnboardingSlideData {
   final String backgroundStart;
   final String backgroundEnd;
   final String textColor;
+  final String overlayStartColor;
+  final String overlayEndColor;
+  final int overlayStartOpacity;
+  final int overlayEndOpacity;
   final String? mediaUrl;
   final String? mediaType;
 }

@@ -16,7 +16,9 @@ class OnboardingController extends Controller
             'order' => $slide->slide_order, 'title' => $slide->title, 'body' => $slide->body,
             'button_label' => $slide->button_label, 'button_url' => $slide->button_url,
             'background_start' => $slide->background_start, 'background_end' => $slide->background_end,
-            'text_color' => $slide->text_color, 'media_url' => $slide->media_path ? url($slide->media_path) : null,
+            'text_color' => $slide->text_color, 'overlay_start_color' => $slide->overlay_start_color ?? '#071525', 'overlay_end_color' => $slide->overlay_end_color ?? '#071525',
+            'overlay_start_opacity' => $slide->overlay_start_opacity ?? 0, 'overlay_end_opacity' => $slide->overlay_end_opacity ?? 90,
+            'media_url' => $slide->media_path ? url($slide->media_path) : null,
             'media_type' => $slide->media_type,
         ]);
         $setting = AppSetting::singleton();

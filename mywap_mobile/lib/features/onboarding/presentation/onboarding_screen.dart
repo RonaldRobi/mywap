@@ -31,6 +31,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       backgroundStart: '#071525',
       backgroundEnd: '#2F6B32',
       textColor: '#FFFFFF',
+      overlayStartColor: '#071525',
+      overlayEndColor: '#071525',
+      overlayStartOpacity: 0,
+      overlayEndOpacity: 90,
     ),
     OnboardingSlideData(
       order: 2,
@@ -40,6 +44,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       backgroundStart: '#123D2A',
       backgroundEnd: '#6FBF8A',
       textColor: '#FFFFFF',
+      overlayStartColor: '#071525',
+      overlayEndColor: '#071525',
+      overlayStartOpacity: 0,
+      overlayEndOpacity: 90,
     ),
     OnboardingSlideData(
       order: 3,
@@ -49,6 +57,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       backgroundStart: '#2F6B32',
       backgroundEnd: '#071525',
       textColor: '#FFFFFF',
+      overlayStartColor: '#071525',
+      overlayEndColor: '#071525',
+      overlayStartOpacity: 0,
+      overlayEndOpacity: 90,
     ),
   ];
 
@@ -191,17 +203,19 @@ class _Slide extends StatelessWidget {
           ),
           child: _Media(url: slide.mediaUrl, type: slide.mediaType),
         ),
-        const DecoratedBox(
+        DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.transparent,
-                Color(0x33071525),
-                Color(0xE6071525),
+                _parseColor(
+                  slide.overlayStartColor,
+                ).withValues(alpha: slide.overlayStartOpacity / 100),
+                _parseColor(
+                  slide.overlayEndColor,
+                ).withValues(alpha: slide.overlayEndOpacity / 100),
               ],
-              stops: [0, .38, 1],
             ),
           ),
         ),
