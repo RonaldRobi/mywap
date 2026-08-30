@@ -4,18 +4,20 @@ namespace App\Notifications;
 
 use App\Models\Organization;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * MemberTransitionNotification
  *
  * Sent to a member after the Age Transition Engine migrates them to a new NGO tier.
- * Delivered via both database (in-app notification bell) and email.
  *
- * The notification is queued (via ShouldQueue on the listener) so it does not
- * block the nightly cron.
+ * Delivered via database (in-app bell) ONLY. Email is intentionally disabled so that
+ * bulk transition jobs never consume the daily email quota (Resend free = 100/day)
+ * which must be reserved for essential transactional mail (OTP verification codes,
+ * password reset, registration confirmations).
+ *
+ * To re-enable email delivery (e.g. after upgrading the mail plan), add 'mail' to
+ * the `via()` array and restore the `toMail()` method.
  */
 class MemberTransitionNotification extends Notification
 {
@@ -31,32 +33,11 @@ class MemberTransitionNotification extends Notification
     ) {}
 
     /**
-     * Deliver via database (for in-app bell) AND email.
+     * Deliver via database (in-app bell) only — protects the email quota.
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
-    }
-
-    /**
-     * Email representation.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        $toOrg = Organization::find($this->toOrgId);
-        $fromOrg = $this->fromOrgId ? Organization::find($this->fromOrgId) : null;
-
-        $greeting = $fromOrg
-            ? "Tahniah! Anda telah berjaya beralih dari {$fromOrg->name} ke {$toOrg->name}."
-            : "Selamat datang ke {$toOrg->name}! Perjalanan keahlian anda bermula hari ini.";
-
-        return (new MailMessage)
-            ->subject("MyMarhalah — Selamat datang ke {$toOrg->name}!")
-            ->greeting("Salam, {$notifiable->name}!")
-            ->line($greeting)
-            ->line('Akun dan semua rekod anda telah dipindahkan secara automatik. Tiada tindakan diperlukan daripada anda.')
-            ->action('Lihat Profil Anda', route('profile.show'))
-            ->line('Terima kasih kerana bersama MyMarhalah.');
+        return ['database'];
     }
 
     /**
