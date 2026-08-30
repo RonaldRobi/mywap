@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mywap_mobile/app.dart';
 import 'package:mywap_mobile/core/network/providers.dart';
 import 'package:mywap_mobile/core/storage/token_storage.dart';
-import 'package:mywap_mobile/features/auth/presentation/login_screen.dart';
+import 'package:mywap_mobile/features/onboarding/presentation/onboarding_screen.dart';
 
 class _FakeTokenStorage extends TokenStorage {
   _FakeTokenStorage() : super();
@@ -21,16 +22,21 @@ class _FakeTokenStorage extends TokenStorage {
 }
 
 void main() {
-  testWidgets('app boots to login screen when no token', (tester) async {
+  testWidgets('app boots to onboarding when no token and onboarding is new', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [tokenStorageProvider.overrideWithValue(_FakeTokenStorage())],
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_FakeTokenStorage()),
+        ],
         child: const MyWapApp(),
       ),
     );
     await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-    expect(find.byType(LoginScreen), findsOneWidget);
-    expect(find.text('Log Masuk'), findsWidgets);
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(find.text('Selamat Datang ke myWAP'), findsOneWidget);
   });
 }

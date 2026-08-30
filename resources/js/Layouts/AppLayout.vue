@@ -562,6 +562,12 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
                 </svg>`,
     }, {
+        label:  'Onboarding Aplikasi',
+        href:   route('superadmin.onboarding.index'),
+        active: route().current('superadmin.onboarding.*'),
+        colorClass: 'text-[#071525]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
+    }, {
         label:  'Tetapan myWAP',
         href:   route('superadmin.settings.index'),
         active: route().current('superadmin.settings.*'),

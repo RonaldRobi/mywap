@@ -7,6 +7,7 @@ import '../../features/admin/presentation/routes.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/directory/presentation/routes.dart';
 import '../../features/ecommerce/presentation/routes.dart';
 import '../../features/events/presentation/event_detail_screen.dart';
@@ -43,18 +44,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final isSplash = location == '/splash';
       final isLogin = location == '/login';
+      final isOnboarding = location == '/onboarding';
 
       if (auth is AuthLoading) {
-        return isSplash || isLogin ? null : '/splash';
+        return isSplash || isLogin || isOnboarding ? null : '/splash';
       }
       if (auth is AuthAuthenticated) {
-        return isSplash || isLogin ? '/dashboard' : null;
+        return isSplash || isLogin || isOnboarding ? '/dashboard' : null;
       }
-      return isLogin ? null : '/login';
+      return isLogin || isSplash || isOnboarding ? null : '/login';
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
       ShellRoute(
         builder: (_, state, child) => MainShell(child: child),
         routes: [
@@ -78,8 +84,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ...eventsRoutes,
       GoRoute(
         path: '/events/:id',
-        builder: (_, state) =>
-            EventDetailScreen(eventId: int.parse(state.pathParameters['id']!)),
+        builder:
+            (_, state) => EventDetailScreen(
+              eventId: int.parse(state.pathParameters['id']!),
+            ),
       ),
       ...memberRoutes,
       ...profileRoutes,
