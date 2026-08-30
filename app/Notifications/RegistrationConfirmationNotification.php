@@ -50,7 +50,7 @@ class RegistrationConfirmationNotification extends Notification implements Shoul
         $body = $template?->renderBody($data) ?? "Pendaftaran anda telah diterima. No Pendaftaran: {$registration->registration_no}.";
 
         $settings = AppSetting::singleton();
-        $logoUrl = url($settings->system_logo_path ?? '/images/logomywaphorizontal.png');
+        $logoUrl = $template?->headerImageUrl() ?? url($settings->system_logo_path ?? '/images/logomywaphorizontal.png');
 
         return (new MailMessage)
             ->subject($subject)

@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
             $subject = $template?->renderSubject($data) ?? 'Tetapkan Semula Kata Laluan - myWAP';
             $body = $template?->renderBody($data) ?? "Klik pautan di bawah untuk menetapkan semula kata laluan anda:\n\n{$url}";
 
-            $logoUrl = url(AppSetting::singleton()->system_logo_path ?? '/images/logomywaphorizontal.png');
+            $logoUrl = $template?->headerImageUrl() ?? url(AppSetting::singleton()->system_logo_path ?? '/images/logomywaphorizontal.png');
 
             return (new MailMessage)
                 ->subject($subject)

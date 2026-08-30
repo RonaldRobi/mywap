@@ -39,7 +39,7 @@ class RegistrationReceived extends Notification implements ShouldQueue
 
         $settings = AppSetting::singleton();
         $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
-        $logoUrl = url($logoPath);
+        $logoUrl = $template?->headerImageUrl() ?? url($logoPath);
 
         return (new MailMessage)
             ->subject($subject)

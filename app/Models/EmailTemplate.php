@@ -10,11 +10,19 @@ class EmailTemplate extends Model
         'key',
         'subject',
         'body',
+        'header_image_path',
     ];
 
     public static function forKey(string $key): ?self
     {
         return static::where('key', $key)->first();
+    }
+
+    public function headerImageUrl(): ?string
+    {
+        return $this->header_image_path
+            ? url($this->header_image_path)
+            : null;
     }
 
     public function renderSubject(array $data = []): string

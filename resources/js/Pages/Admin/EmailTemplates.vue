@@ -18,6 +18,8 @@ const activeTemplate = props.templates.find(t => t.key === activeKey.value) ?? p
 const form = useForm({
     subject: activeTemplate?.subject ?? '',
     body: activeTemplate?.body ?? '',
+    header_image: null,
+    remove_header_image: false,
 });
 
 function switchTemplate(key) {
@@ -26,6 +28,8 @@ function switchTemplate(key) {
     if (t) {
         form.subject = t.subject;
         form.body = t.body;
+        form.header_image = null;
+        form.remove_header_image = false;
         form.clearErrors();
     }
 }
@@ -36,7 +40,21 @@ function save() {
 
     form.put(route('admin.email-templates.update', { emailTemplate: t.id }), {
         preserveScroll: true,
+        forceFormData: true,
     });
+}
+
+function onImageSelected(event) {
+    const file = event.target.files?.[0];
+    if (file) {
+        form.header_image = file;
+        form.remove_header_image = false;
+    }
+}
+
+function removeImage() {
+    form.header_image = null;
+    form.remove_header_image = true;
 }
 
 const templateLabels = {
@@ -156,6 +174,36 @@ const placeholders = {
                         <textarea v-model="form.body" rows="8" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono"></textarea>
                         <p v-if="form.errors.body" class="mt-1 text-xs text-red-500">{{ form.errors.body }}</p>
                     </label>
+
+                    <div class="rounded-2xl border border-gray-200 p-4">
+                        <p class="mb-2 text-xs font-semibold text-gray-500">Imej Header (Logo)</p>
+                        <p class="mb-3 text-xs text-gray-400">Logo/imej ini akan muncul di bahagian atas emel. Kosongkan untuk guna logo sistem.</p>
+
+                        <div v-if="form.header_image || activeTemplate?.header_image_path" class="mb-3">
+                            <img
+                                :src="form.header_image ? URL.createObjectURL(form.header_image) : activeTemplate.header_image_path"
+                                alt="Preview"
+                                class="h-12 w-auto rounded-lg border border-gray-200 bg-white object-contain"
+                            >
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <label class="cursor-pointer rounded-xl border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                Pilih Imej
+                                <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onImageSelected">
+                            </label>
+                            <button
+                                v-if="form.header_image || activeTemplate?.header_image_path"
+                                type="button"
+                                @click="removeImage"
+                                class="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            >
+                                Buang Imej
+                            </button>
+                            <span v-if="form.header_image" class="text-xs text-emerald-600">Imej baharu dipilih — tekan Simpan.</span>
+                        </div>
+                        <p v-if="form.errors.header_image" class="mt-1 text-xs text-red-500">{{ form.errors.header_image }}</p>
+                    </div>
 
                     <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-800">
                         <p class="mb-2 font-semibold">Placeholders yang boleh digunakan:</p>
