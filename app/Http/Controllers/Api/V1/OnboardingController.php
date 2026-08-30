@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\OnboardingSlide;
+use App\Models\AppSetting;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
@@ -18,6 +19,18 @@ class OnboardingController extends Controller
             'text_color' => $slide->text_color, 'media_url' => $slide->media_path ? url($slide->media_path) : null,
             'media_type' => $slide->media_type,
         ]);
-        return ApiResponse::success($slides);
+        $setting = AppSetting::singleton();
+        return ApiResponse::success([
+            'slides' => $slides,
+            'login' => [
+                'title' => $setting->mobile_login_title ?? 'Selamat kembali',
+                'subtitle' => $setting->mobile_login_subtitle ?? 'Log masuk untuk meneruskan ke myWAP.',
+                'background_start' => $setting->mobile_login_background_start ?? '#F4F6F1',
+                'background_end' => $setting->mobile_login_background_end ?? '#EDF5EE',
+                'accent' => $setting->mobile_login_accent ?? '#2F6B32',
+                'logo_url' => $setting->system_logo_path ? url($setting->system_logo_path) : null,
+                'image_url' => $setting->login_image_path ? url($setting->login_image_path) : null,
+            ],
+        ]);
     }
 }

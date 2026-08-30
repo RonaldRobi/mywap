@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     templates: {
@@ -13,14 +13,29 @@ const props = defineProps({
 const page = usePage();
 const activeKey = ref(props.templates[0]?.key ?? null);
 
-const activeTemplate = props.templates.find(t => t.key === activeKey.value) ?? props.templates[0];
+const activeTemplate = computed(() =>
+    props.templates.find(t => t.key === activeKey.value) ?? props.templates[0]
+);
 
 const form = useForm({
-    subject: activeTemplate?.subject ?? '',
-    body: activeTemplate?.body ?? '',
+    subject: props.templates[0]?.subject ?? '',
+    body: props.templates[0]?.body ?? '',
     header_image: null,
     remove_header_image: false,
 });
+
+const headerPreviewUrl = ref(null);
+
+function revokePreviewUrl() {
+    if (headerPreviewUrl.value) {
+        URL.revokeObjectURL(headerPreviewUrl.value);
+        headerPreviewUrl.value = null;
+    }
+}
+
+const headerPreview = computed(() =>
+    headerPreviewUrl.value ?? activeTemplate.value?.header_image_path ?? null
+);
 
 function switchTemplate(key) {
     activeKey.value = key;
@@ -30,6 +45,7 @@ function switchTemplate(key) {
         form.body = t.body;
         form.header_image = null;
         form.remove_header_image = false;
+        revokePreviewUrl();
         form.clearErrors();
     }
 }
@@ -46,6 +62,11 @@ function save() {
         .post(route('admin.email-templates.update', { emailTemplate: t.id }), {
         preserveScroll: true,
         forceFormData: true,
+        onSuccess: () => {
+            form.header_image = null;
+            form.remove_header_image = false;
+            revokePreviewUrl();
+        },
     });
 }
 
@@ -54,12 +75,15 @@ function onImageSelected(event) {
     if (file) {
         form.header_image = file;
         form.remove_header_image = false;
+        revokePreviewUrl();
+        headerPreviewUrl.value = URL.createObjectURL(file);
     }
 }
 
 function removeImage() {
     form.header_image = null;
     form.remove_header_image = true;
+    revokePreviewUrl();
 }
 
 const templateLabels = {
@@ -184,9 +208,9 @@ const placeholders = {
                         <p class="mb-2 text-xs font-semibold text-gray-500">Imej Header (Logo)</p>
                         <p class="mb-3 text-xs text-gray-400">Logo/imej ini akan muncul di bahagian atas emel. Kosongkan untuk guna logo sistem.</p>
 
-                        <div v-if="form.header_image || activeTemplate?.header_image_path" class="mb-3">
+                        <div v-if="headerPreview" class="mb-3">
                             <img
-                                :src="form.header_image ? URL.createObjectURL(form.header_image) : activeTemplate.header_image_path"
+                                :src="headerPreview"
                                 alt="Preview"
                                 class="h-12 w-auto rounded-lg border border-gray-200 bg-white object-contain"
                             >
@@ -198,7 +222,7 @@ const placeholders = {
                                 <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onImageSelected">
                             </label>
                             <button
-                                v-if="form.header_image || activeTemplate?.header_image_path"
+                                v-if="headerPreview"
                                 type="button"
                                 @click="removeImage"
                                 class="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"

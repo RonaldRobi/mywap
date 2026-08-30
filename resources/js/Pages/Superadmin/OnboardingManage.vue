@@ -3,12 +3,17 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref } from 'vue';
 
-const props = defineProps({ slides: { type: Array, default: () => [] } });
+const props = defineProps({ slides: { type: Array, default: () => [] }, loginBranding: { type: Object, required: true } });
 const forms = ref(Object.fromEntries(props.slides.map((slide) => [slide.id, useForm({
     title: slide.title ?? '', body: slide.body ?? '', button_label: slide.button_label ?? '', button_url: slide.button_url ?? '',
     background_start: slide.background_start, background_end: slide.background_end, text_color: slide.text_color, is_active: !!slide.is_active, media: null,
 })])));
 const previews = ref({});
+const loginForm = useForm({
+    mobile_login_title: props.loginBranding.title ?? '', mobile_login_subtitle: props.loginBranding.subtitle ?? '',
+    mobile_login_background_start: props.loginBranding.background_start, mobile_login_background_end: props.loginBranding.background_end,
+    mobile_login_accent: props.loginBranding.accent,
+});
 
 function selectMedia(slide, event) {
     const file = event.target.files?.[0];
@@ -24,6 +29,10 @@ function save(slide) {
 function deleteMedia(slide) {
     if (confirm(`Padam media Slide ${slide.slide_order}?`)) useForm({}).delete(route('superadmin.onboarding.media.destroy', slide.id), { preserveScroll: true });
 }
+
+function saveLoginBranding() {
+    loginForm.put(route('superadmin.onboarding.login-branding.update'), { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -36,6 +45,17 @@ function deleteMedia(slide) {
                 <h1 class="font-black">3 Slide Onboarding Mobile</h1>
                 <p class="mt-1 text-indigo-800">Konfigurasi ini digunakan oleh aplikasi iOS dan Android sebelum pengguna log masuk. Setiap slide boleh mempunyai gradient, teks, butang dan media sendiri.</p>
                 <p class="mt-3 font-semibold">Media disyorkan: 1080×1920px (nisbah 9:16). Format: JPG, PNG, WebP, GIF atau MP4. Maksimum 10MB. MP4 disyorkan H.264 tanpa audio atau audio ringkas untuk prestasi terbaik.</p>
+            </section>
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div class="mb-4"><p class="text-xs font-bold uppercase tracking-widest text-emerald-600">Flutter sahaja</p><h2 class="text-lg font-black text-gray-900">Branding Log Masuk Mobile</h2><p class="mt-1 text-sm text-gray-500">Tetapan ini digunakan pada aplikasi iOS dan Android sahaja, bukan halaman login web.</p></div>
+                <form class="grid gap-3 md:grid-cols-2" @submit.prevent="saveLoginBranding">
+                    <div><label class="field-label">Tajuk</label><input v-model="loginForm.mobile_login_title" class="field-input" maxlength="120"></div>
+                    <div><label class="field-label">Penerangan</label><input v-model="loginForm.mobile_login_subtitle" class="field-input" maxlength="255"></div>
+                    <div><label class="field-label">Background Mula</label><input v-model="loginForm.mobile_login_background_start" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
+                    <div><label class="field-label">Background Tamat</label><input v-model="loginForm.mobile_login_background_end" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
+                    <div><label class="field-label">Warna Utama / Butang</label><input v-model="loginForm.mobile_login_accent" class="h-10 w-full rounded-xl border border-gray-200" type="color"></div>
+                    <div class="flex items-end"><button :disabled="loginForm.processing" class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{{ loginForm.processing ? 'Menyimpan...' : 'Simpan Branding Login' }}</button></div>
+                </form>
             </section>
             <section v-for="slide in slides" :key="slide.id" class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">

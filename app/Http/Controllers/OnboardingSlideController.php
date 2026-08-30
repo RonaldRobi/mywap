@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OnboardingSlide;
+use App\Models\AppSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +16,21 @@ class OnboardingSlideController extends Controller
     {
         return Inertia::render('Superadmin/OnboardingManage', [
             'slides' => OnboardingSlide::query()->orderBy('slide_order')->get(),
+            'loginBranding' => $this->loginBranding(AppSetting::singleton()),
         ]);
+    }
+
+    public function updateLoginBranding(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'mobile_login_title' => ['nullable', 'string', 'max:120'],
+            'mobile_login_subtitle' => ['nullable', 'string', 'max:255'],
+            'mobile_login_background_start' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'mobile_login_background_end' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'mobile_login_accent' => ['required', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+        ]);
+        AppSetting::singleton()->update($data);
+        return back()->with('success', 'Branding log masuk aplikasi mudah alih berjaya dikemas kini.');
     }
 
     public function update(Request $request, OnboardingSlide $onboardingSlide): RedirectResponse
@@ -52,5 +67,18 @@ class OnboardingSlideController extends Controller
     {
         $path = ltrim(str_replace('/storage/', '', parse_url((string) $url, PHP_URL_PATH) ?? ''), '/');
         if ($path !== '' && Storage::disk('public')->exists($path)) Storage::disk('public')->delete($path);
+    }
+
+    private function loginBranding(AppSetting $setting): array
+    {
+        return [
+            'title' => $setting->mobile_login_title ?? 'Selamat kembali',
+            'subtitle' => $setting->mobile_login_subtitle ?? 'Log masuk untuk meneruskan ke myWAP.',
+            'background_start' => $setting->mobile_login_background_start ?? '#F4F6F1',
+            'background_end' => $setting->mobile_login_background_end ?? '#EDF5EE',
+            'accent' => $setting->mobile_login_accent ?? '#2F6B32',
+            'logo_url' => $setting->system_logo_path ? url($setting->system_logo_path) : null,
+            'image_url' => $setting->login_image_path ? url($setting->login_image_path) : null,
+        ];
     }
 }

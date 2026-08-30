@@ -229,6 +229,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/dashboard-banners', [DashboardBannerController::class, 'index'])->name('superadmin.banners.index');
         Route::get('/superadmin/onboarding', [OnboardingSlideController::class, 'index'])->name('superadmin.onboarding.index');
         Route::post('/superadmin/onboarding/{onboardingSlide}', [OnboardingSlideController::class, 'update'])->name('superadmin.onboarding.update');
+        Route::put('/superadmin/onboarding/login-branding', [OnboardingSlideController::class, 'updateLoginBranding'])->name('superadmin.onboarding.login-branding.update');
         Route::delete('/superadmin/onboarding/{onboardingSlide}/media', [OnboardingSlideController::class, 'destroyMedia'])->name('superadmin.onboarding.media.destroy');
         Route::post('/superadmin/dashboard-banners', [DashboardBannerController::class, 'store'])->name('superadmin.banners.store');
         Route::post('/superadmin/dashboard-banners/seed-demo', [DashboardBannerController::class, 'seedDemo'])->name('superadmin.banners.seed');

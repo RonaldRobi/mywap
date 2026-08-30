@@ -44,14 +44,70 @@ class OnboardingRepository {
   OnboardingRepository(this._client);
   final ApiClient _client;
 
-  Future<List<OnboardingSlideData>> getSlides() async {
+  Future<MobileAuthConfiguration> getConfiguration() async {
     final response = await _client.get('/onboarding');
-    if (response is! List) return const [];
-    return response
+    if (response is! Map) {
+      return const MobileAuthConfiguration(
+        slides: [],
+        login: MobileLoginBranding(
+          title: 'Selamat kembali',
+          subtitle: 'Log masuk untuk meneruskan ke myWAP.',
+          backgroundStart: '#F4F6F1',
+          backgroundEnd: '#EDF5EE',
+          accent: '#2F6B32',
+        ),
+      );
+    }
+    final slides = (response['slides'] as List? ?? const [])
         .whereType<Map>()
         .map(
           (item) => OnboardingSlideData.fromJson(item.cast<String, dynamic>()),
         )
         .toList(growable: false);
+    final login =
+        response['login'] is Map<String, dynamic>
+            ? MobileLoginBranding.fromJson(
+              response['login'] as Map<String, dynamic>,
+            )
+            : const MobileLoginBranding(
+              title: 'Selamat kembali',
+              subtitle: 'Log masuk untuk meneruskan ke myWAP.',
+              backgroundStart: '#F4F6F1',
+              backgroundEnd: '#EDF5EE',
+              accent: '#2F6B32',
+            );
+    return MobileAuthConfiguration(slides: slides, login: login);
   }
+}
+
+class MobileLoginBranding {
+  const MobileLoginBranding({
+    required this.title,
+    required this.subtitle,
+    required this.backgroundStart,
+    required this.backgroundEnd,
+    required this.accent,
+    this.logoUrl,
+    this.imageUrl,
+  });
+  factory MobileLoginBranding.fromJson(Map<String, dynamic> json) =>
+      MobileLoginBranding(
+        title: json['title'] as String? ?? 'Selamat kembali',
+        subtitle:
+            json['subtitle'] as String? ??
+            'Log masuk untuk meneruskan ke myWAP.',
+        backgroundStart: json['background_start'] as String? ?? '#F4F6F1',
+        backgroundEnd: json['background_end'] as String? ?? '#EDF5EE',
+        accent: json['accent'] as String? ?? '#2F6B32',
+        logoUrl: json['logo_url'] as String?,
+        imageUrl: json['image_url'] as String?,
+      );
+  final String title, subtitle, backgroundStart, backgroundEnd, accent;
+  final String? logoUrl, imageUrl;
+}
+
+class MobileAuthConfiguration {
+  const MobileAuthConfiguration({required this.slides, required this.login});
+  final List<OnboardingSlideData> slides;
+  final MobileLoginBranding login;
 }

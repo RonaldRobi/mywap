@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/theme/app_theme.dart';
 import '../application/onboarding_providers.dart';
 import '../data/onboarding_repository.dart';
 
@@ -83,7 +84,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final configured =
-        ref.watch(onboardingSlidesProvider).valueOrNull ?? const [];
+        ref.watch(mobileAuthConfigurationProvider).valueOrNull?.slides ??
+        const [];
     final slides = configured.length == 3 ? configured : _fallbackSlides;
     return Scaffold(
       body: Stack(
@@ -127,9 +129,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           height: 7,
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.white.withValues(
-                              alpha: index == _page ? 1 : .45,
-                            ),
+                            color:
+                                index == _page
+                                    ? _parseColor(slides[_page].textColor)
+                                    : AppColors.white.withValues(alpha: .45),
                             borderRadius: BorderRadius.circular(99),
                           ),
                         ),
@@ -172,48 +175,86 @@ class _Slide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = _parseColor(slide.textColor);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _parseColor(slide.backgroundStart),
-            _parseColor(slide.backgroundEnd),
-          ],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _parseColor(slide.backgroundStart),
+                _parseColor(slide.backgroundEnd),
+              ],
+            ),
+          ),
+          child: _Media(url: slide.mediaUrl, type: slide.mediaType),
         ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(32, 64, 32, 130),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Center(
-                  child: _Media(url: slide.mediaUrl, type: slide.mediaType),
-                ),
-              ),
-              Text(
-                slide.title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                slide.body,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: textColor.withValues(alpha: .88),
-                ),
-              ),
-            ],
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Color(0x33071525),
+                Color(0xE6071525),
+              ],
+              stops: [0, .38, 1],
+            ),
           ),
         ),
-      ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(32, 0, 32, 132),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder:
+                    (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, .08),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                child: Column(
+                  key: ValueKey(slide.order),
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      slide.title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineMedium?.copyWith(
+                        color: textColor,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                    Text(
+                      slide.body,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: textColor.withValues(alpha: .9),
+                        fontSize: 17,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -224,18 +265,14 @@ class _Media extends StatelessWidget {
   final String? type;
   @override
   Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
-      return const Icon(
-        Icons.volunteer_activism_outlined,
-        size: 144,
-        color: AppColors.white,
-      );
-    }
+    if (url == null || url!.isEmpty) return const SizedBox.expand();
     if (type == 'video') return _VideoMedia(url: url!);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.zero,
       child: Image.network(
         url!,
+        width: double.infinity,
+        height: double.infinity,
         fit: BoxFit.cover,
         errorBuilder:
             (_, __, ___) => const Icon(
@@ -279,10 +316,12 @@ class _VideoMediaState extends State<_VideoMedia> {
   @override
   Widget build(BuildContext context) =>
       _controller.value.isInitialized
-          ? ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
+          ? FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: _controller.value.size.width,
+              height: _controller.value.size.height,
               child: VideoPlayer(_controller),
             ),
           )
