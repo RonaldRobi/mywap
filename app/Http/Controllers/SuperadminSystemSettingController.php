@@ -173,10 +173,23 @@ class SuperadminSystemSettingController extends Controller
         }
 
         if (in_array($mailer, ['resend', 'smtp'], true)) {
-            $mailConfig['mail.mailers.smtp.host'] = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
+            $host = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
+            $mailConfig['mail.mailers.smtp.host'] = $host;
             $mailConfig['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
             $mailConfig['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
             $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
+
+            // Local mail server uses a self-signed cert — skip peer verification
+            // so STARTTLS succeeds on 127.0.0.1.
+            if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
+                $mailConfig['mail.mailers.smtp.stream'] = [
+                    'ssl' => [
+                        'allow_self_signed' => true,
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                    ],
+                ];
+            }
 
             $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
             if ($encryption && $encryption !== 'null') {
