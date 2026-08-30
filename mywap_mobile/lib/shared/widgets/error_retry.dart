@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 /// Friendly error state with a retry action.
 class ErrorRetry extends StatelessWidget {
@@ -13,20 +14,41 @@ class ErrorRetry extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Cuba Semula'),
-            ),
-          ],
+        padding: const EdgeInsets.all(Spacing.xl),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(Spacing.xxl),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: AppRadius.hero,
+            border: Border.all(color: AppColors.divider),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.softGreenSurface,
+                  borderRadius: AppRadius.lg,
+                ),
+                child: const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 28,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: Spacing.lg),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: Spacing.lg),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Cuba Semula'),
+              ),
+            ],
+          ),
         ),
       ),
     );

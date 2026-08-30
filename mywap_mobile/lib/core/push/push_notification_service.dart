@@ -32,6 +32,12 @@ class PushNotificationService {
   /// Initialize Firebase + daftar token. Tidak pernah throws — sebarang
   /// ralat hanya set [initialized] = false.
   Future<void> init() async {
+    // Firebase belum dikonfigurasi (options kosong) — skip supaya
+    // Firebase.initializeApp tidak lempar NSException dan crash app.
+    if (kFirebaseOptions.apiKey.isEmpty || kFirebaseOptions.appId.isEmpty) {
+      initialized = false;
+      return;
+    }
     try {
       await Firebase.initializeApp(options: kFirebaseOptions);
       _messaging = FirebaseMessaging.instance;

@@ -34,10 +34,14 @@ class EventsScreen extends ConsumerWidget {
       body: eventsAsync.when(
         data: (events) => _EventsList(events: events),
         loading: () => const _EventsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(eventsProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(eventsProvider),
+            ),
       ),
     );
   }
@@ -51,12 +55,26 @@ class _EventsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (events.isEmpty) {
-      return const Center(child: Text('Tiada acara buat masa ini.'));
+      return const _EventsEmpty();
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: Spacing.md),
-      itemCount: events.length,
-      itemBuilder: (context, index) => _EventCard(event: events[index]),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.xxl,
+      ),
+      itemCount: events.length + 1,
+      separatorBuilder: (_, __) => const SizedBox(height: Spacing.lg),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return const _PageIntro(
+            title: 'Program & Acara',
+            subtitle: 'Ketahui dan sertai program yang akan datang.',
+          );
+        }
+        return _EventCard(event: events[index - 1]);
+      },
     );
   }
 }
@@ -71,81 +89,191 @@ class _EventCard extends StatelessWidget {
     final theme = Theme.of(context);
     final imageUrl = event.featured_image_url;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return Material(
+      color: AppColors.white,
+      borderRadius: AppRadius.hero,
       child: InkWell(
+        borderRadius: AppRadius.hero,
         onTap: () => context.push('/events/${event.id}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (imageUrl != null && imageUrl.isNotEmpty)
-              AppImage(imageUrl, height: 160, width: double.infinity)
-            else
-              const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(event.title ?? '-', style: theme.textTheme.titleMedium),
-                  if (event.organization?.name != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      event.organization!.name!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.movementGreen,
-                        fontWeight: FontWeight.w600,
+        child: ClipRRect(
+          borderRadius: AppRadius.hero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 176,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl != null && imageUrl.isNotEmpty)
+                      AppImage(imageUrl, fit: BoxFit.cover)
+                    else
+                      Container(color: AppColors.paleGreen),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Color(0x77071525), Colors.transparent],
+                        ),
+                      ),
+                    ),
+                    if (event.organization?.name != null)
+                      Positioned(
+                        top: Spacing.md,
+                        left: Spacing.md,
+                        child: _ImageChip(label: event.organization!.name!),
+                      ),
+                    Positioned(
+                      bottom: Spacing.md,
+                      left: Spacing.md,
+                      child: _ImageChip(
+                        label:
+                            event.type == 'physical'
+                                ? 'Fizikal'
+                                : 'Dalam Talian',
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          event.start_formatted ?? '',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          event.location_or_link ?? '',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(Spacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title ?? '-',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: Spacing.sm),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event.start_formatted ?? '',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event.location_or_link ?? '',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _PageIntro extends StatelessWidget {
+  const _PageIntro({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: Spacing.xs),
+      Text(
+        subtitle,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+      ),
+    ],
+  );
+}
+
+class _ImageChip extends StatelessWidget {
+  const _ImageChip({required this.label});
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 5),
+    decoration: BoxDecoration(
+      color: AppColors.white.withValues(alpha: .94),
+      borderRadius: AppRadius.md,
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
+    ),
+  );
+}
+
+class _EventsEmpty extends StatelessWidget {
+  const _EventsEmpty();
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      margin: const EdgeInsets.all(Spacing.xl),
+      padding: const EdgeInsets.all(Spacing.xxl),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.hero,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_busy_outlined,
+            size: 48,
+            color: AppColors.textSecondary,
+          ),
+          SizedBox(height: Spacing.md),
+          Text('Tiada program dijadualkan'),
+          SizedBox(height: Spacing.xs),
+          Text(
+            'Program baharu akan muncul di sini apabila dijadualkan.',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _EventsSkeleton extends StatelessWidget {
@@ -156,10 +284,11 @@ class _EventsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 240, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 240, radius: 16),
+          ),
     );
   }
 }

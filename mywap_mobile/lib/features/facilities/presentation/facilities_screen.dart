@@ -30,11 +30,14 @@ class FacilitiesScreen extends ConsumerWidget {
       body: facilitiesAsync.when(
         data: (data) => _FacilitiesBody(data: data),
         loading: () => const _FacilitiesSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(facilitiesProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(facilitiesProvider),
+            ),
       ),
     );
   }
@@ -49,7 +52,7 @@ class _FacilitiesBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(child: SectionHeader('Kemudahan')),
+        const SliverToBoxAdapter(child: _FacilitiesIntro()),
         if (data.facilities.isEmpty)
           const SliverToBoxAdapter(
             child: EmptyState(
@@ -60,8 +63,9 @@ class _FacilitiesBody extends StatelessWidget {
         else
           SliverList.builder(
             itemCount: data.facilities.length,
-            itemBuilder: (context, index) =>
-                _FacilityCard(facility: data.facilities[index]),
+            itemBuilder:
+                (context, index) =>
+                    _FacilityCard(facility: data.facilities[index]),
           ),
         const SliverToBoxAdapter(child: SectionHeader('Tempahan Saya')),
         if (data.myBookings.isEmpty)
@@ -74,8 +78,9 @@ class _FacilitiesBody extends StatelessWidget {
         else
           SliverList.builder(
             itemCount: data.myBookings.length,
-            itemBuilder: (context, index) =>
-                _MyBookingCard(booking: data.myBookings[index]),
+            itemBuilder:
+                (context, index) =>
+                    _MyBookingCard(booking: data.myBookings[index]),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: Spacing.xl)),
       ],
@@ -96,25 +101,52 @@ class _FacilityCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
       child: InkWell(
         onTap: () => context.push('/facilities/${facility.id}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppImage(facility.imageUrl, height: 140, width: double.infinity),
+            Stack(
+              children: [
+                AppImage(
+                  facility.imageUrl,
+                  height: 160,
+                  width: double.infinity,
+                ),
+                Positioned(
+                  top: Spacing.md,
+                  left: Spacing.md,
+                  child: _FacilityTag(
+                    label: facility.organizationName ?? 'Organisasi',
+                  ),
+                ),
+                Positioned(
+                  top: Spacing.md,
+                  right: Spacing.md,
+                  child: _FacilityTag(
+                    label: facility.type == 'daily' ? 'Harian' : 'Sejam',
+                  ),
+                ),
+              ],
+            ),
             Padding(
               padding: const EdgeInsets.all(Spacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(facility.name ?? '-', style: theme.textTheme.titleMedium),
-                  if (facility.organizationName != null) ...[
-                    const SizedBox(height: 4),
+                  Text(
+                    facility.name ?? '-',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  if (facility.description?.isNotEmpty == true) ...[
+                    const SizedBox(height: Spacing.xs),
                     Text(
-                      facility.organizationName!,
+                      facility.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.movementGreen,
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -156,6 +188,11 @@ class _FacilityCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                  const SizedBox(height: Spacing.md),
+                  FilledButton.tonal(
+                    onPressed: () => context.push('/facilities/${facility.id}'),
+                    child: const Text('Lihat & Tempah'),
+                  ),
                 ],
               ),
             ),
@@ -164,6 +201,47 @@ class _FacilityCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FacilitiesIntro extends StatelessWidget {
+  const _FacilitiesIntro();
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.fromLTRB(
+      Spacing.lg,
+      Spacing.lg,
+      Spacing.lg,
+      Spacing.xl,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Perkhidmatan & Fasiliti',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: Spacing.xs),
+        Text('Tempah ruang perkhidmatan dan fasiliti yang tersedia.'),
+      ],
+    ),
+  );
+}
+
+class _FacilityTag extends StatelessWidget {
+  const _FacilityTag({required this.label});
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 5),
+    decoration: BoxDecoration(
+      color: AppColors.white.withValues(alpha: .92),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+    ),
+  );
 }
 
 class _MyBookingCard extends StatelessWidget {
@@ -204,15 +282,8 @@ class _MyBookingCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: Spacing.sm),
-            _RowIcon(
-              icon: Icons.schedule,
-              text: start ?? '-',
-            ),
-            if (end != null)
-              _RowIcon(
-                icon: Icons.event_available,
-                text: end,
-              ),
+            _RowIcon(icon: Icons.schedule, text: start ?? '-'),
+            if (end != null) _RowIcon(icon: Icons.event_available, text: end),
             const SizedBox(height: Spacing.sm),
             Text(
               'Jumlah: ${Formatters.currency(booking.totalPrice)}',
@@ -282,9 +353,9 @@ class _RowIcon extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -318,8 +389,18 @@ DateTime? _parse(String? value) {
 }
 
 const List<String> _months = [
-  'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis',
+  'Jan',
+  'Feb',
+  'Mac',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Ogo',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Dis',
 ];
 
 String? _formatDateTime(String? iso) {

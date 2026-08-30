@@ -38,16 +38,21 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
         actions: const [LogoutIconButton()],
       ),
       body: listAsync.when(
-        data: (list) => _InfaqList(
-          list: list,
-          selectedOrgId: _selectedOrgId,
-          onOrgSelected: (id) => setState(() => _selectedOrgId = id),
-        ),
+        data:
+            (list) => _InfaqList(
+              list: list,
+              selectedOrgId: _selectedOrgId,
+              onOrgSelected: (id) => setState(() => _selectedOrgId = id),
+            ),
         loading: () => const _InfaqListSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(infaqListProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(infaqListProvider),
+            ),
       ),
     );
   }
@@ -68,22 +73,19 @@ class _InfaqList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasFilter = list.organizations.isNotEmpty;
     final hasGlobal = list.hasGlobal;
-    final infaqs = selectedOrgId == null
-        ? list.infaqs
-        : list.infaqs.where((i) => i.organizationId == selectedOrgId).toList();
-
-    if (list.infaqs.isEmpty) {
-      return const EmptyState(
-        icon: Icons.volunteer_activism_outlined,
-        message: 'Tiada kempen infaq buat masa ini.',
-      );
-    }
+    final infaqs =
+        selectedOrgId == null
+            ? list.infaqs
+            : list.infaqs
+                .where((i) => i.organizationId == selectedOrgId)
+                .toList();
 
     return RefreshIndicator(
       onRefresh: () => ref.refresh(infaqListProvider.future),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          SliverToBoxAdapter(child: _InfaqIntro(infaqs: list.infaqs)),
           if (hasFilter)
             SliverToBoxAdapter(
               child: _OrgFilter(
@@ -97,8 +99,8 @@ class _InfaqList extends ConsumerWidget {
             const SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Icons.filter_alt_off_outlined,
-                message: 'Tiada kempen untuk organisasi ini.',
+                icon: Icons.volunteer_activism_outlined,
+                message: 'Tiada kempen infaq buat masa ini.',
               ),
             )
           else
@@ -144,7 +146,12 @@ class _OrgFilter extends StatelessWidget {
       height: 52,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, 0),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lg,
+          Spacing.sm,
+          Spacing.lg,
+          0,
+        ),
         itemCount: chips.length,
         separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm),
         itemBuilder: (context, index) {
@@ -175,15 +182,43 @@ class _InfaqCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: Spacing.lg),
       child: InkWell(
         onTap: () => context.push('/infaq/${infaq.slug}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (imageUrl != null && imageUrl.isNotEmpty)
-              AppImage(imageUrl, height: 160, width: double.infinity)
-            else
-              const SizedBox(height: 12),
+            SizedBox(
+              height: 170,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (imageUrl != null && imageUrl.isNotEmpty)
+                    AppImage(imageUrl, fit: BoxFit.cover)
+                  else
+                    Container(color: AppColors.paleGreen),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [Color(0x66071525), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: Spacing.md,
+                    bottom: Spacing.md,
+                    child: _CampaignTag(
+                      label:
+                          infaq.type == 'progress'
+                              ? 'Kutip Dana'
+                              : 'Derma Bebas',
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(Spacing.lg),
               child: Column(
@@ -266,6 +301,113 @@ class _InfaqCard extends StatelessWidget {
   }
 }
 
+class _InfaqIntro extends StatelessWidget {
+  const _InfaqIntro({required this.infaqs});
+  final List<Infaq> infaqs;
+  @override
+  Widget build(BuildContext context) {
+    final total = infaqs.fold<num>(
+      0,
+      (sum, item) => sum + (item.collectedAmount ?? 0),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Kempen Infaq',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            'Sertai kami dalam menyumbang dan membantu mereka yang memerlukan.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          if (infaqs.isNotEmpty) ...[
+            const SizedBox(height: Spacing.lg),
+            Row(
+              children: [
+                _InfaqStat(value: '${infaqs.length}', label: 'KEMPEN AKTIF'),
+                const SizedBox(width: Spacing.sm),
+                _InfaqStat(
+                  value: Formatters.currency(total),
+                  label: 'TERKUMPUL',
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfaqStat extends StatelessWidget {
+  const _InfaqStat({required this.value, required this.label});
+  final String value;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.md,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppColors.movementGreen,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _CampaignTag extends StatelessWidget {
+  const _CampaignTag({required this.label});
+  final String label;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 5),
+    decoration: BoxDecoration(
+      color: AppColors.white.withValues(alpha: .92),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+    ),
+  );
+}
+
 class _InfaqListSkeleton extends StatelessWidget {
   const _InfaqListSkeleton();
 
@@ -274,10 +416,11 @@ class _InfaqListSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 300, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 300, radius: 16),
+          ),
     );
   }
 }

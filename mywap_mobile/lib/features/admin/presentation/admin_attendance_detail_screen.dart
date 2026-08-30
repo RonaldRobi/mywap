@@ -372,7 +372,7 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
           MobileScanner(
             controller: _scannerController,
             onDetect: _onDetect,
-            errorBuilder: (context, error, child) =>
+            errorBuilder: (context, error) =>
                 _ScannerError(errorCode: error.errorCode),
           ),
           Positioned(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 
 /// Full-screen loading overlay shown over the current content.
 class LoadingOverlay extends StatelessWidget {
@@ -16,12 +17,16 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: transparent ? Colors.transparent : Colors.black.withValues(alpha: 0.35),
+      color:
+          transparent
+              ? Colors.transparent
+              : Colors.black.withValues(alpha: 0.35),
       child: Center(
         child: Card(
-          margin: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(Spacing.xl),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Spacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

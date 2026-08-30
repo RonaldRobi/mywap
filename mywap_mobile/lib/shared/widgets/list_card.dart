@@ -25,10 +25,7 @@ class ListCard extends StatelessWidget {
     final theme = Theme.of(context);
     final content = Row(
       children: [
-        if (leading != null) ...[
-          leading!,
-          const SizedBox(width: Spacing.lg),
-        ],
+        if (leading != null) ...[leading!, const SizedBox(width: Spacing.lg)],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,20 +51,21 @@ class ListCard extends StatelessWidget {
     );
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
-      child: onTap == null
-          ? Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: content,
-            )
-          : InkWell(
-              onTap: onTap,
-              borderRadius: AppRadius.lg,
-              child: Padding(
+      margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 6),
+      child:
+          onTap == null
+              ? Padding(
                 padding: const EdgeInsets.all(Spacing.lg),
                 child: content,
+              )
+              : InkWell(
+                onTap: onTap,
+                borderRadius: AppRadius.card,
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  child: content,
+                ),
               ),
-            ),
     );
   }
 }
