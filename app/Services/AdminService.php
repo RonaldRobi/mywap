@@ -17,6 +17,7 @@ use App\Models\UsrahGroup;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -36,6 +37,13 @@ class AdminService
      * mengambil subset (stats / recent_activities / revenue_by_month).
      */
     public function dashboard(User $user): array
+    {
+        $key = 'admin.dashboard.'.$user->current_organization_id.'.'.($user->hasRole('Superadmin') ? 'superadmin' : 'admin');
+
+        return Cache::remember($key, 300, fn () => $this->buildDashboard($user));
+    }
+
+    private function buildDashboard(User $user): array
     {
         $user->loadMissing('organization');
 
@@ -146,16 +154,24 @@ class AdminService
 
         $orgMemberCounts = [];
         if ($isSuperadmin) {
-            $orgMemberCounts = Organization::query()
+            $orgs = Organization::query()
                 ->where('slug', '!=', 'management')
                 ->orderBy('min_age')
-                ->get(['id', 'name', 'slug', 'color_theme'])
+                ->get(['id', 'name', 'slug', 'color_theme']);
+
+            $counts = User::withoutGlobalScopes()
+                ->whereIn('current_organization_id', $orgs->pluck('id'))
+                ->selectRaw('current_organization_id, COUNT(*) as total')
+                ->groupBy('current_organization_id')
+                ->pluck('total', 'current_organization_id');
+
+            $orgMemberCounts = $orgs
                 ->map(fn ($org) => [
                     'id' => $org->id,
                     'name' => $org->name,
                     'slug' => $org->slug,
                     'color_theme' => $org->color_theme,
-                    'member_count' => User::where('current_organization_id', $org->id)->count(),
+                    'member_count' => (int) ($counts[$org->id] ?? 0),
                 ])
                 ->values()
                 ->toArray();
@@ -458,13 +474,19 @@ class AdminService
 
         $expectedAmount = 0;
         $activeMembers = 0;
-        foreach ($orgIds as $oid => $feeAmount) {
-            $cnt = User::withoutGlobalScopes()
-                ->where('current_organization_id', $oid)
+        if ($orgIds) {
+            $counts = User::withoutGlobalScopes()
+                ->whereIn('current_organization_id', array_keys($orgIds))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
-                ->count();
-            $activeMembers += $cnt;
-            $expectedAmount += $cnt * (float) $feeAmount;
+                ->selectRaw('current_organization_id, COUNT(*) as total')
+                ->groupBy('current_organization_id')
+                ->pluck('total', 'current_organization_id');
+
+            foreach ($orgIds as $oid => $feeAmount) {
+                $cnt = (int) ($counts[$oid] ?? 0);
+                $activeMembers += $cnt;
+                $expectedAmount += $cnt * (float) $feeAmount;
+            }
         }
 
         return [
@@ -593,6 +615,7 @@ class AdminService
         $registrations = Registration::with('attendance')
             ->where('event_id', $eventId)
             ->latest()
+            ->limit(200)
             ->get()
             ->map(fn (Registration $r) => [
                 'id' => $r->id,

@@ -140,6 +140,7 @@ class FacilityService
             ->where('facility_id', $facility->id)
             ->whereIn('booking_status', ['pending', 'approved'])
             ->orderBy('start_datetime')
+            ->limit(100)
             ->get()
             ->map(fn (FacilityBooking $booking) => $this->serializeBookingSlot($booking));
 

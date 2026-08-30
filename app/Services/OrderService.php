@@ -268,9 +268,17 @@ class OrderService
                 'shipping_phone' => $shippingPhone,
             ]);
 
-            foreach ($items as $itemData) {
+            $now = now();
+
+            foreach ($items as &$itemData) {
                 $itemData['order_id'] = $order->id;
-                OrderItem::create($itemData);
+                $itemData['created_at'] = $now;
+                $itemData['updated_at'] = $now;
+            }
+            unset($itemData);
+
+            if ($items !== []) {
+                OrderItem::insert($items);
             }
 
             return $order;

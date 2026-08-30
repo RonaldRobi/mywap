@@ -56,15 +56,18 @@ class DonorService
 
     public function recalculateAll(): void
     {
-        $donors = Donor::with('donations')->get();
+        Donor::query()
+            ->with(['donations' => fn ($q) => $q->where('status', 'confirmed')])
+            ->chunkById(500, function ($donors) {
+                foreach ($donors as $donor) {
+                    $confirmed = $donor->donations;
 
-        foreach ($donors as $donor) {
-            $confirmed = $donor->donations->where('status', 'confirmed');
-            $donor->update([
-                'total_donated' => $confirmed->sum('amount'),
-                'donation_count' => $confirmed->count(),
-                'last_donated_at' => $confirmed->max('created_at'),
-            ]);
-        }
+                    $donor->update([
+                        'total_donated' => (float) $confirmed->sum('amount'),
+                        'donation_count' => $confirmed->count(),
+                        'last_donated_at' => $confirmed->max('created_at'),
+                    ]);
+                }
+            });
     }
 }

@@ -162,7 +162,7 @@ class EventService
                 ];
             });
 
-        $relatedEvents = Event::with('organization')
+        $relatedEvents = Event::with(['organization', 'organizations', 'rsvps'])
             ->where('start_time', '>=', now())
             ->where('id', '!=', $event->id)
             ->where(function ($q) use ($event) {

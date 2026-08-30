@@ -457,13 +457,13 @@ class MemberFeeController extends Controller
         }
 
         $year = (int) $request->input('year', now()->year);
-        $members = $this->exportQuery($request, $year)->get();
+        $query = $this->exportQuery($request, $year);
 
-        $callback = function () use ($members) {
+        $callback = function () use ($query) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['Nama', 'No IC', 'No Ahli', 'Organisasi', 'Status', 'Jumlah Dibayar', 'Tarikh Bayar', 'Rujukan']);
 
-            foreach ($members as $m) {
+            $query->lazy(500)->each(function ($m) use ($handle) {
                 $fee = $m->membershipFees->first();
                 fputcsv($handle, [
                     $m->name, $m->ic_number, $m->member_no, $m->organization?->name ?? '',
@@ -472,7 +472,7 @@ class MemberFeeController extends Controller
                     $fee?->paid_at?->toDateString() ?? '',
                     $fee?->payment?->reference ?? '',
                 ]);
-            }
+            });
 
             fclose($handle);
         };

@@ -18,6 +18,7 @@ use App\Models\PollResponse;
 use App\Models\Popup;
 use App\Models\User;
 use App\Models\Video;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * MemberDashboardService
@@ -33,6 +34,11 @@ class MemberDashboardService
     ) {}
 
     public function data(User $user): array
+    {
+        return Cache::remember("member.dashboard.{$user->id}", 60, fn () => $this->buildData($user));
+    }
+
+    public function buildData(User $user): array
     {
         $user->load('organization');
 
@@ -119,7 +125,10 @@ class MemberDashboardService
                 'embed_url' => $video->embed_url,
             ]);
 
-        $upcomingEvents = Event::with('organization')
+        $upcomingEvents = Event::with([
+            'organization',
+            'rsvps' => fn ($q) => $q->where('user_id', $user->id),
+        ])
             ->where('start_time', '>=', now())
             ->where(function ($q) use ($user) {
                 $q->whereNull('organization_id')
@@ -128,10 +137,8 @@ class MemberDashboardService
             ->orderBy('start_time')
             ->take(5)
             ->get()
-            ->map(function (Event $e) use ($user) {
-                $myRsvp = EventRsvp::where('event_id', $e->id)
-                    ->where('user_id', $user->id)
-                    ->first();
+            ->map(function (Event $e) {
+                $myRsvp = $e->rsvps->first();
 
                 return [
                     'id' => $e->id,
@@ -245,44 +252,60 @@ class MemberDashboardService
             })
             ->latest()
             ->take(6)
-            ->get()
-            ->map(function ($poll) use ($user) {
-                $hasResponded = PollResponse::where('poll_id', $poll->id)
-                    ->where('user_id', $user->id)
-                    ->exists();
+            ->get();
 
-                $firstQuestion = $poll->questions->first();
-                $optionsPreview = [];
-                $totalAnswers = 0;
+        $respondedPollIds = PollResponse::whereIn('poll_id', $activePolls->pluck('id')->filter())
+            ->where('user_id', $user->id)
+            ->pluck('poll_id');
 
-                if ($firstQuestion) {
-                    $totalAnswers = PollAnswer::where('poll_question_id', $firstQuestion->id)->count();
-                    $optionsPreview = $firstQuestion->options->map(function ($opt) use ($firstQuestion, $totalAnswers) {
-                        $count = PollAnswer::where('poll_question_id', $firstQuestion->id)
-                            ->where('poll_option_id', $opt->id)
-                            ->count();
+        $answerCounts = collect();
+        if ($activePolls->isNotEmpty()) {
+            $firstQuestionIds = $activePolls->pluck('questions')->map->first()->pluck('id')->filter()->values();
 
-                        return [
-                            'id' => $opt->id,
-                            'text' => $opt->option_text,
-                            'count' => $count,
-                            'width' => $totalAnswers > 0 ? round(($count / $totalAnswers) * 100) : 0,
-                        ];
-                    });
-                }
+            if ($firstQuestionIds->isNotEmpty()) {
+                $answerCounts = PollAnswer::whereIn('poll_question_id', $firstQuestionIds)
+                    ->selectRaw('poll_question_id, poll_option_id, COUNT(*) as n')
+                    ->groupBy(['poll_question_id', 'poll_option_id'])
+                    ->get()
+                    ->groupBy('poll_question_id')
+                    ->mapWithKeys(fn ($rows, $qid) => [$qid => $rows->pluck('n', 'poll_option_id')]);
+            }
+        }
 
-                return [
-                    'id' => $poll->id,
-                    'title' => $poll->title,
-                    'type' => $poll->type,
-                    'ends_at_formatted' => $poll->ends_at?->locale('ms')->isoFormat('D MMM'),
-                    'response_count' => $poll->responses_count,
-                    'has_responded' => $hasResponded,
-                    'first_question' => $firstQuestion?->question_text,
-                    'options_preview' => $optionsPreview,
-                    'total_answers' => $totalAnswers,
-                ];
-            });
+        $activePolls = $activePolls->map(function ($poll) use ($respondedPollIds, $answerCounts) {
+            $hasResponded = $respondedPollIds->contains($poll->id);
+
+            $firstQuestion = $poll->questions->first();
+            $optionsPreview = [];
+            $totalAnswers = 0;
+
+            if ($firstQuestion) {
+                $qCounts = $answerCounts->get($firstQuestion->id, collect());
+                $totalAnswers = (int) $qCounts->sum();
+                $optionsPreview = $firstQuestion->options->map(function ($opt) use ($qCounts, $totalAnswers) {
+                    $count = (int) $qCounts->get($opt->id, 0);
+
+                    return [
+                        'id' => $opt->id,
+                        'text' => $opt->option_text,
+                        'count' => $count,
+                        'width' => $totalAnswers > 0 ? round(($count / $totalAnswers) * 100) : 0,
+                    ];
+                });
+            }
+
+            return [
+                'id' => $poll->id,
+                'title' => $poll->title,
+                'type' => $poll->type,
+                'ends_at_formatted' => $poll->ends_at?->locale('ms')->isoFormat('D MMM'),
+                'response_count' => $poll->responses_count,
+                'has_responded' => $hasResponded,
+                'first_question' => $firstQuestion?->question_text,
+                'options_preview' => $optionsPreview,
+                'total_answers' => $totalAnswers,
+            ];
+        });
 
         $activePopup = Popup::query()
             ->where('is_active', true)

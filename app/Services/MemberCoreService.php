@@ -165,6 +165,7 @@ class MemberCoreService
     {
         return LibraryItem::query()
             ->latest('id')
+            ->limit(200)
             ->get()
             ->map(fn (LibraryItem $item) => [
                 'id' => $item->id,

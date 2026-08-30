@@ -36,6 +36,7 @@ class InfaqService
             ->where('is_active', true)
             ->with('organization:id,name,slug')
             ->latest()
+            ->limit(50)
             ->get()
             ->map(fn ($item) => [
                 'id' => $item->id,

@@ -24,6 +24,10 @@ class InformationHubController extends Controller
                 'reactions as likes_count' => fn ($q) => $q->where('reaction', 'like'),
                 'reads as reads_count',
             ])
+            ->with([
+                'reactions' => fn ($q) => $q->where('user_id', $user->id),
+                'reads' => fn ($q) => $q->where('user_id', $user->id),
+            ])
             ->where(function ($query) {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
@@ -33,14 +37,10 @@ class InformationHubController extends Controller
             ->latest('id')
             ->take(20)
             ->get()
-            ->map(function (Announcement $announcement) use ($user) {
-                $userReaction = $announcement->reactions()
-                    ->where('user_id', $user->id)
-                    ->first();
+            ->map(function (Announcement $announcement) {
+                $userReaction = $announcement->reactions->first();
 
-                $userRead = $announcement->reads()
-                    ->where('user_id', $user->id)
-                    ->first();
+                $userRead = $announcement->reads->first();
 
                 return [
                     'id' => $announcement->id,
@@ -110,6 +110,7 @@ class InformationHubController extends Controller
     {
         $libraryItems = LibraryItem::query()
             ->latest('id')
+            ->limit(200)
             ->get()
             ->map(fn (LibraryItem $item) => [
                 'id' => $item->id,

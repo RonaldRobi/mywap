@@ -360,12 +360,21 @@ class PollController extends Controller
             ->where('current_organization_id', $poll->organization_id)
             ->count();
 
-        $questions = $poll->questions->map(function ($question) {
-            $totalForQuestion = PollAnswer::where('poll_question_id', $question->id)->count();
-            $options = $question->options->map(function ($option) use ($question, $totalForQuestion) {
-                $count = PollAnswer::where('poll_question_id', $question->id)
-                    ->where('poll_option_id', $option->id)
-                    ->count();
+        $answerCounts = collect();
+        if ($poll->questions->isNotEmpty()) {
+            $answerCounts = PollAnswer::whereIn('poll_question_id', $poll->questions->pluck('id'))
+                ->selectRaw('poll_question_id, poll_option_id, COUNT(*) as n')
+                ->groupBy(['poll_question_id', 'poll_option_id'])
+                ->get()
+                ->groupBy('poll_question_id')
+                ->mapWithKeys(fn ($rows, $qid) => [$qid => $rows->pluck('n', 'poll_option_id')]);
+        }
+
+        $questions = $poll->questions->map(function ($question) use ($answerCounts) {
+            $qCounts = $answerCounts->get($question->id, collect());
+            $totalForQuestion = (int) $qCounts->sum();
+            $options = $question->options->map(function ($option) use ($qCounts, $totalForQuestion) {
+                $count = (int) $qCounts->get($option->id, 0);
 
                 return [
                     'id' => $option->id,

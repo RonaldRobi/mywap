@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -62,17 +63,21 @@ class ArticleService
     public function listAll(): Collection
     {
         return $this->publishedQuery()
+            ->limit(60)
             ->get()
             ->map(fn (Article $article) => $this->serializeSummary($article));
     }
 
     public function featured(): Collection
     {
-        return $this->publishedQuery()
-            ->where('is_featured', true)
-            ->get()
-            ->map(fn (Article $article) => $this->serializeSummary($article))
-            ->values();
+        return Cache::remember('articles.featured', 300, function () {
+            return $this->publishedQuery()
+                ->where('is_featured', true)
+                ->limit(8)
+                ->get()
+                ->map(fn (Article $article) => $this->serializeSummary($article))
+                ->values();
+        });
     }
 
     /**

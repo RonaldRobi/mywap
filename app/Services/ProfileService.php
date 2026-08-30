@@ -102,6 +102,7 @@ class ProfileService
             ->values();
 
         $history = $user->transitionHistory()
+            ->limit(100)
             ->get()
             ->map(fn ($record) => [
                 'id' => $record->id,

@@ -116,16 +116,25 @@ class FormService
                 'submitted_at' => now(),
             ]);
 
+            $now = now();
+            $rows = [];
+
             foreach ($data['answers'] as $questionId => $value) {
                 $stored = $value instanceof UploadedFile
                     ? $value->store('form-uploads', 'public')
                     : (is_array($value) ? implode(', ', $value) : (string) $value);
 
-                FormAnswer::create([
+                $rows[] = [
                     'form_response_id' => $response->id,
                     'form_question_id' => $questionId,
                     'value' => $stored,
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            if ($rows !== []) {
+                FormAnswer::insert($rows);
             }
 
             return $response;

@@ -10,7 +10,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -74,41 +73,59 @@ class AdminFinanceController extends Controller
             'total' => $total,
         ])->values();
 
-        // Merged transactions
-        $feeRows = (clone $paymentQuery)->with('user:id,name,member_no')->latest('created_at')->get()
-            ->map(fn (Payment $p) => [
-                'id' => 'p-'.$p->id,
-                'user_id' => $p->user_id,
-                'created_at' => $p->created_at?->toISOString(),
-                'member_name' => $p->user?->name ?? '—',
-                'member_no' => $p->user?->member_no ?? '—',
-                'type' => 'Yuran Keahlian',
-                'amount' => (float) $p->amount,
-                'reference' => $p->reference,
-            ]);
+        // Merged transactions — paginate in SQL via UNION (bukan in-memory merge).
+        $paymentSelect = (clone $paymentQuery)->selectRaw("'fee' as source, id, created_at, user_id, amount, reference");
+        $infaqSelect = (clone $infaqQuery)->selectRaw("'infaq' as source, id, created_at, user_id, amount, reference");
 
-        $infaqRows = (clone $infaqQuery)->with('infaq:id,title', 'user:id,name,member_no')->latest('created_at')->get()
-            ->map(fn (InfaqDonation $d) => [
-                'id' => 'i-'.$d->id,
-                'user_id' => $d->user_id,
-                'created_at' => $d->created_at?->toISOString(),
-                'member_name' => $d->user?->name ?? ($d->donor_name ?? 'Tanpa Nama'),
-                'member_no' => $d->user?->member_no ?? '—',
+        $paginated = $paymentSelect->union($infaqSelect)
+            ->orderByDesc('created_at')
+            ->paginate(25, ['*'], 'page', $request->input('page', 1))
+            ->withQueryString();
+
+        $rows = $paginated->getCollection();
+        $feeIds = $rows->where('source', 'fee')->pluck('id');
+        $infaqIds = $rows->where('source', 'infaq')->pluck('id');
+
+        $feeModels = $feeIds->isNotEmpty()
+            ? Payment::whereIn('id', $feeIds)->with('user:id,name,member_no')->get()->keyBy('id')
+            : collect();
+        $infaqModels = $infaqIds->isNotEmpty()
+            ? InfaqDonation::whereIn('id', $infaqIds)->with('user:id,name,member_no', 'infaq:id,title')->get()->keyBy('id')
+            : collect();
+
+        $transactions = $rows->map(function ($row) use ($feeModels, $infaqModels) {
+            $createdAt = Carbon::parse($row->created_at);
+
+            if ($row->source === 'fee') {
+                $p = $feeModels->get($row->id);
+
+                return [
+                    'id' => 'p-'.$row->id,
+                    'user_id' => $row->user_id,
+                    'created_at' => $createdAt->toISOString(),
+                    'member_name' => $p?->user?->name ?? '—',
+                    'member_no' => $p?->user?->member_no ?? '—',
+                    'type' => 'Yuran Keahlian',
+                    'amount' => (float) $row->amount,
+                    'reference' => $row->reference,
+                ];
+            }
+
+            $d = $infaqModels->get($row->id);
+
+            return [
+                'id' => 'i-'.$row->id,
+                'user_id' => $row->user_id,
+                'created_at' => $createdAt->toISOString(),
+                'member_name' => $d?->user?->name ?? ($d?->donor_name ?? 'Tanpa Nama'),
+                'member_no' => $d?->user?->member_no ?? '—',
                 'type' => 'Infaq',
-                'amount' => (float) $d->amount,
-                'reference' => $d->reference,
-            ]);
+                'amount' => (float) $row->amount,
+                'reference' => $row->reference,
+            ];
+        });
 
-        $merged = $feeRows->concat($infaqRows)->sortByDesc('created_at')->values();
-        $page = (int) $request->input('page', 1);
-        $perPage = 25;
-        $paginated = new LengthAwarePaginator(
-            $merged->forPage($page, $perPage),
-            $merged->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        $paginated->setCollection($transactions);
 
         $totalRevenue = $feeTotal + $infaqTotal;
 

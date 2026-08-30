@@ -69,9 +69,7 @@ class ExportController extends Controller
             $query->where('current_organization_id', $admin->current_organization_id);
         }
 
-        $members = $query
-            ->orderBy('name')
-            ->get();
+        $query->orderBy('name');
 
         $fileName = 'members-export-'.now()->format('Ymd-His').'.csv';
 
@@ -80,12 +78,12 @@ class ExportController extends Controller
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ];
 
-        return response()->stream(function () use ($members): void {
+        return response()->stream(function () use ($query): void {
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, ['No Ahli', 'Nama', 'Email', 'Phone', 'IC', 'DOB', 'Organisasi', 'Cawangan', 'Status Yuran']);
 
-            foreach ($members as $member) {
+            $query->lazy(500)->each(function ($member) use ($handle) {
                 $fee = $member->membershipFees->first();
                 fputcsv($handle, [
                     $member->member_no,
@@ -98,7 +96,7 @@ class ExportController extends Controller
                     $member->branch?->name,
                     $fee?->status?->value ?? ($fee?->status ?? 'unpaid'),
                 ]);
-            }
+            });
 
             fclose($handle);
         }, 200, $headers);

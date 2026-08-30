@@ -25,7 +25,7 @@ class RegistrationService
      */
     public function memberRegistrations(User $user): LengthAwarePaginator
     {
-        $registrations = Registration::with(['event.organization', 'latestPayment', 'attendance'])
+        $registrations = Registration::with(['event.organization', 'latestPayment', 'attendance', 'form:id,title'])
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->paginate(15);

@@ -6,6 +6,7 @@ use App\Models\Poll;
 use App\Models\PollAnswer;
 use App\Models\PollResponse;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -46,12 +47,11 @@ class PollService
                     });
             })
             ->withCount('responses')
+            ->with(['responses' => fn ($q) => $q->where('user_id', $user->id)])
             ->orderByDesc('created_at')
             ->get()
-            ->map(function ($poll) use ($user) {
-                $myResponse = PollResponse::where('poll_id', $poll->id)
-                    ->where('user_id', $user->id)
-                    ->first();
+            ->map(function ($poll) {
+                $myResponse = $poll->responses->first();
 
                 return [
                     'id' => $poll->id,
@@ -156,15 +156,26 @@ class PollService
                 'submitted_at' => now(),
             ]);
 
+            $now = now();
+            $rows = [];
+
             foreach ($answers as $answer) {
                 foreach ($answer['option_ids'] as $optionId) {
-                    PollAnswer::create([
+                    $rows[] = [
                         'poll_response_id' => $response->id,
                         'poll_question_id' => $answer['question_id'],
                         'poll_option_id' => $optionId,
-                    ]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
                 }
             }
+
+            if ($rows !== []) {
+                PollAnswer::insert($rows);
+            }
+
+            Cache::forget("member.dashboard.{$user->id}");
 
             return $response;
         });
@@ -185,9 +196,17 @@ class PollService
         $optionCounts = collect();
 
         if ($poll->questions->isNotEmpty()) {
-            $allAnswers = PollAnswer::whereIn('poll_question_id', $poll->questions->pluck('id'))->get();
-            $questionCounts = $allAnswers->groupBy('poll_question_id')->map->count();
-            $optionCounts = $allAnswers->groupBy('poll_option_id')->map->count();
+            $answerRows = PollAnswer::whereIn('poll_question_id', $poll->questions->pluck('id'))
+                ->selectRaw('poll_question_id, poll_option_id, COUNT(*) as n')
+                ->groupBy(['poll_question_id', 'poll_option_id'])
+                ->get();
+
+            $questionCounts = $answerRows
+                ->groupBy('poll_question_id')
+                ->map->sum('n');
+            $optionCounts = $answerRows
+                ->groupBy('poll_option_id')
+                ->map->sum('n');
         }
 
         $questions = $poll->questions->map(function ($question) use ($questionCounts, $optionCounts) {
