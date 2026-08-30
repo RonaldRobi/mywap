@@ -47,6 +47,12 @@ const rateLabel = computed(() =>
     props.isMember && props.facility.member_price_per_unit != null ? 'Harga Ahli' : 'Harga Umum'
 );
 
+const unitLabel = computed(() =>
+    props.facility.type === 'daily' ? 'hari'
+        : props.facility.type === 'halfday' ? 'separuh hari'
+            : 'jam'
+);
+
 function buildEndDatetime() {
     if (!form.date || !form.start_time || !form.end_time) return '';
     const start = new Date(`${form.date}T${form.start_time}`);
@@ -65,6 +71,9 @@ const estimatedPrice = computed(() => {
     if (diffMinutes <= 0) return null;
     if (props.facility.type === 'daily') {
         return Math.ceil(diffMinutes / 1440) * rate.value;
+    }
+    if (props.facility.type === 'halfday') {
+        return Math.ceil(diffMinutes / 720) * rate.value;
     }
     return Math.ceil(diffMinutes / 60) * rate.value;
 });
@@ -133,8 +142,8 @@ function submitBooking() {
                             {{ facility.organization_name }}
                         </span>
                         <span class="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm"
-                              :class="facility.type === 'daily' ? 'bg-indigo-400/30 text-indigo-100' : 'bg-blue-400/30 text-blue-100'">
-                            {{ facility.type === 'daily' ? 'Daily' : 'Hourly' }}
+                              :class="facility.type === 'daily' ? 'bg-indigo-400/30 text-indigo-100' : facility.type === 'halfday' ? 'bg-amber-400/30 text-amber-100' : 'bg-blue-400/30 text-blue-100'">
+                            {{ facility.type === 'daily' ? 'Daily' : facility.type === 'halfday' ? 'Halfday' : 'Hourly' }}
                         </span>
                     </div>
                     <h1 class="text-2xl font-black text-white md:text-3xl">{{ facility.name }}</h1>
@@ -166,7 +175,7 @@ function submitBooking() {
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Harga</p>
                                     <p class="font-semibold text-gray-800">RM {{ Number(facility.price_per_unit).toFixed(2) }}</p>
-                                    <p class="text-[11px] text-gray-400">Harga Umum • per {{ facility.type === 'daily' ? 'hari' : 'jam' }}</p>
+                                    <p class="text-[11px] text-gray-400">Harga Umum • per {{ unitLabel }}</p>
                                     <p v-if="facility.member_price_per_unit != null" class="text-[11px] font-semibold text-emerald-600">Ahli: RM {{ Number(facility.member_price_per_unit).toFixed(2) }}</p>
                                 </div>
                             </div>
@@ -311,7 +320,7 @@ function submitBooking() {
                             <div class="rounded-xl bg-gray-50 px-4 py-3 text-xs text-gray-500">
                                 <span class="font-semibold">{{ rateLabel }}</span>:
                                 <span class="font-bold text-gray-800">RM {{ rate.toFixed(2) }}</span>
-                                per {{ facility.type === 'daily' ? 'hari' : 'jam' }}
+                                per {{ unitLabel }}
                                 <span v-if="!isMember && facility.member_price_per_unit != null" class="block mt-1 text-emerald-600">
                                     💡 Log masuk sebagai ahli untuk Harga Ahli (RM {{ Number(facility.member_price_per_unit).toFixed(2) }}).
                                 </span>

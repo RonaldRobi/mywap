@@ -93,7 +93,7 @@ class _DetailContent extends StatelessWidget {
                     _InfoRow(
                       icon: Icons.attach_money_outlined,
                       text:
-                          '${Formatters.currency(price)} / ${facility?.type == 'daily' ? 'hari' : 'jam'}',
+                          '${Formatters.currency(price)} / ${facility?.type == 'daily' ? 'hari' : facility?.type == 'halfday' ? 'separuh hari' : 'jam'}',
                     ),
                     if (facility?.description != null &&
                         (facility!.description!.isNotEmpty)) ...[

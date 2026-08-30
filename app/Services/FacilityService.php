@@ -242,6 +242,12 @@ class FacilityService
             return round($units * (float) $rate, 2);
         }
 
+        if ($facility->type === 'halfday') {
+            $units = (int) ceil($durationInMinutes / 720);
+
+            return round($units * (float) $rate, 2);
+        }
+
         $units = (int) ceil($durationInMinutes / 60);
 
         return round($units * (float) $rate, 2);

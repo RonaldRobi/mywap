@@ -32,7 +32,7 @@ const props = defineProps({
     },
     filters: {
         type: Object,
-        default: () => ({ search: '', organization_id: '', role: '' }),
+        default: () => ({ search: '', organization_id: '', role: '', sort: 'newest' }),
     },
 });
 
@@ -180,15 +180,16 @@ const branchIdFilter = ref(props.filters?.branch_id ?? '');
 const feeStatusFilter = ref(props.filters?.fee_status ?? '');
 const registeredFrom = ref(props.filters?.registered_from ?? '');
 const registeredTo = ref(props.filters?.registered_to ?? '');
+const sortBy = ref(props.filters?.sort ?? 'newest');
 
 let filterDebounce;
 
-watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter], ([newSearch, newOrg, newRole, newBranch, newFeeStatus]) => {
+watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter, sortBy], ([newSearch, newOrg, newRole, newBranch, newFeeStatus]) => {
     clearTimeout(filterDebounce);
     filterDebounce = setTimeout(() => {
         router.get(
             route('admin.hub.manage'),
-            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '', branch_id: newBranch || '', fee_status: newFeeStatus || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '' },
+            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '', branch_id: newBranch || '', fee_status: newFeeStatus || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '', sort: sortBy.value || 'newest' },
             { preserveState: true, preserveScroll: true, replace: true }
         );
     }, 300);
@@ -197,7 +198,7 @@ watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusF
 function applyDateFilter() {
     router.get(
         route('admin.hub.manage'),
-        { search: searchQuery.value?.trim() || '', organization_id: organizationIdFilter.value || '', role: roleFilter.value || '', branch_id: branchIdFilter.value || '', fee_status: feeStatusFilter.value || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '' },
+        { search: searchQuery.value?.trim() || '', organization_id: organizationIdFilter.value || '', role: roleFilter.value || '', branch_id: branchIdFilter.value || '', fee_status: feeStatusFilter.value || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '', sort: sortBy.value || 'newest' },
         { preserveState: true, preserveScroll: true, replace: true }
     );
 }
@@ -695,6 +696,15 @@ async function finishImport() {
                         <select v-model="branchIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
                             <option value="">Semua Cawangan</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="relative md:w-56 shrink-0">
+                        <select v-model="sortBy" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <option value="newest">Tertib: Terkini Didaftar</option>
+                            <option value="recent_activation">Baru Aktifkan Akaun</option>
+                            <option value="name_asc">Nama (A–Z)</option>
+                            <option value="name_desc">Nama (Z–A)</option>
                         </select>
                     </div>
                 </div>

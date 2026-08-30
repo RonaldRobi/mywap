@@ -82,6 +82,7 @@ class InformationHubAdminController extends Controller
         $feeStatusFilter = $request->input('fee_status');
         $registeredFrom = $request->input('registered_from');
         $registeredTo = $request->input('registered_to');
+        $sort = $request->input('sort', 'newest');
         $perPage = (int) ($request->input('per_page', 25));
         $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 25;
 
@@ -148,7 +149,11 @@ class InformationHubAdminController extends Controller
             ? Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        $members = $query->latest()->paginate($perPage)->withQueryString()
+        $members = $query->when($sort === 'recent_activation', fn ($q) => $q->orderByDesc('first_login_at'))
+            ->when($sort === 'name_asc', fn ($q) => $q->orderBy('name'))
+            ->when($sort === 'name_desc', fn ($q) => $q->orderByDesc('name'))
+            ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation']), fn ($q) => $q->latest())
+            ->paginate($perPage)->withQueryString()
             ->through(fn (User $u) => [
                 'id' => $u->id,
                 'name' => $u->name,
@@ -253,6 +258,7 @@ class InformationHubAdminController extends Controller
                 'fee_status' => $feeStatusFilter,
                 'registered_from' => $registeredFrom,
                 'registered_to' => $registeredTo,
+                'sort' => $sort,
                 'per_page' => $perPage,
             ],
         ]);

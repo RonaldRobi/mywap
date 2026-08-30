@@ -59,10 +59,17 @@ function removeEditGalleryFile(index) {
     editForm.gallery.splice(index, 1);
 }
 
+const facilityTypes = [
+    { value: 'hourly', label: 'Hourly' },
+    { value: 'halfday', label: 'Halfday' },
+    { value: 'daily', label: 'Daily' },
+];
+
 function submit() {
     form.post(route('admin.facilities.store'), {
         preserveScroll: true,
         forceFormData: true,
+        onError: () => {},
         onSuccess: () => {
             form.reset('name', 'description', 'location', 'type', 'price_per_unit', 'member_price_per_unit', 'capacity', 'image', 'is_active');
             form.gallery = [];
@@ -77,7 +84,7 @@ function startEdit(item) {
     editForm.name = item.name;
     editForm.description = item.description ?? '';
     editForm.location = item.location ?? '';
-    editForm.type = item.type;
+    editForm.type = facilityTypes.some(t => t.value === item.type) ? item.type : 'hourly';
     editForm.price_per_unit = item.price_per_unit;
     editForm.member_price_per_unit = item.member_price_per_unit ?? null;
     editForm.capacity = item.capacity;
@@ -85,6 +92,7 @@ function startEdit(item) {
     editForm.gallery = [];
     editForm.delete_media = [];
     editForm.is_active = !!item.is_active;
+    editForm.clearErrors();
 }
 
 function cancelEdit() {
@@ -104,6 +112,7 @@ function saveEdit(item) {
     editForm.put(route('admin.facilities.update', item.id), {
         preserveScroll: true,
         forceFormData: true,
+        onError: () => {},
         onSuccess: () => cancelEdit(),
     });
 }
@@ -158,14 +167,15 @@ const allImages = computed(() => {
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Jenis Tempahan</label>
                         <select v-model="form.type" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
-                            <option value="hourly">Hourly</option>
-                            <option value="daily">Daily</option>
+                            <option v-for="t in facilityTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                         </select>
+                        <p v-if="form.errors.type" class="mt-1 text-xs text-red-600">{{ form.errors.type }}</p>
                     </div>
 
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-gray-500">Harga Umum per Unit (RM)</label>
                         <input v-model.number="form.price_per_unit" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" required>
+                        <p v-if="form.errors.price_per_unit" class="mt-1 text-xs text-red-600">{{ form.errors.price_per_unit }}</p>
                     </div>
 
                     <div>
@@ -236,14 +246,17 @@ const allImages = computed(() => {
                                 <input v-model="editForm.name" type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" required>
                                 <input v-model="editForm.location" type="text" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                 <select v-model="editForm.type" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
-                                    <option value="hourly">Hourly</option>
-                                    <option value="daily">Daily</option>
+                                    <option v-for="t in facilityTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                                 </select>
                                 <input v-model.number="editForm.price_per_unit" type="number" step="0.01" min="0" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" required>
                                 <input v-model.number="editForm.member_price_per_unit" type="number" step="0.01" min="0" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs" placeholder="Harga Ahli (RM)">
                                 <input v-model.number="editForm.capacity" type="number" min="1" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs">
                                 <label class="flex items-center gap-2 text-xs text-gray-600"><input v-model="editForm.is_active" type="checkbox" class="rounded border-gray-300"> Aktif</label>
                                 <textarea v-model="editForm.description" rows="2" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs"></textarea>
+
+                                <div v-if="Object.keys(editForm.errors).length" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                                    <p v-for="(msg, key) in editForm.errors" :key="key">{{ msg }}</p>
+                                </div>
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-2 space-y-1">
                                     <p class="text-[11px] font-semibold text-gray-500">Cover Imej</p>

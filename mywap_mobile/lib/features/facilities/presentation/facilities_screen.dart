@@ -125,7 +125,11 @@ class _FacilityCard extends StatelessWidget {
                   top: Spacing.md,
                   right: Spacing.md,
                   child: _FacilityTag(
-                    label: facility.type == 'daily' ? 'Harian' : 'Sejam',
+                    label: facility.type == 'daily'
+                        ? 'Harian'
+                        : facility.type == 'halfday'
+                            ? 'Separuh Hari'
+                            : 'Sejam',
                   ),
                 ),
               ],
@@ -172,7 +176,7 @@ class _FacilityCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        ' / ${facility.type == 'daily' ? 'hari' : 'jam'}',
+                        ' / ${facility.type == 'daily' ? 'hari' : facility.type == 'halfday' ? 'separuh hari' : 'jam'}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),

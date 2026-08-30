@@ -107,8 +107,8 @@ onMounted(async () => {
                                 {{ facility.organization_name }}
                             </span>
                             <span class="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                                  :class="facility.type === 'daily' ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'">
-                                {{ facility.type === 'daily' ? 'Daily' : 'Hourly' }}
+                                  :class="facility.type === 'daily' ? 'bg-indigo-50 text-indigo-600' : facility.type === 'halfday' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'">
+                                {{ facility.type === 'daily' ? 'Daily' : facility.type === 'halfday' ? 'Halfday' : 'Hourly' }}
                             </span>
                         </div>
 
@@ -128,7 +128,7 @@ onMounted(async () => {
                                 <svg class="h-3.5 w-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <div>
                                     <span class="font-semibold text-gray-700">RM {{ Number(facility.price_per_unit).toFixed(2) }}</span>
-                                    <span class="text-gray-400">/ {{ facility.type === 'daily' ? 'hari' : 'jam' }}</span>
+                                    <span class="text-gray-400">/ {{ facility.type === 'daily' ? 'hari' : facility.type === 'halfday' ? 'separuh hari' : 'jam' }}</span>
                                     <p v-if="facility.member_price_per_unit != null" class="text-[10px] font-semibold text-emerald-600">Ahli: RM {{ Number(facility.member_price_per_unit).toFixed(2) }}</p>
                                 </div>
                             </div>
