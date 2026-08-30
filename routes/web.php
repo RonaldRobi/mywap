@@ -31,6 +31,7 @@ use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MemberFeeController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingSlideController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrganizationInfoController;
 use App\Http\Controllers\PaymentController;
@@ -226,6 +227,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/superadmin/transactions/{payment}', [PaymentController::class, 'updateTransactionStatus'])->name('superadmin.transactions.update');
         Route::get('/superadmin/pustaka/manage', [InformationHubAdminController::class, 'libraryIndex'])->name('admin.library.manage');
         Route::get('/superadmin/dashboard-banners', [DashboardBannerController::class, 'index'])->name('superadmin.banners.index');
+        Route::get('/superadmin/onboarding', [OnboardingSlideController::class, 'index'])->name('superadmin.onboarding.index');
+        Route::post('/superadmin/onboarding/{onboardingSlide}', [OnboardingSlideController::class, 'update'])->name('superadmin.onboarding.update');
+        Route::delete('/superadmin/onboarding/{onboardingSlide}/media', [OnboardingSlideController::class, 'destroyMedia'])->name('superadmin.onboarding.media.destroy');
         Route::post('/superadmin/dashboard-banners', [DashboardBannerController::class, 'store'])->name('superadmin.banners.store');
         Route::post('/superadmin/dashboard-banners/seed-demo', [DashboardBannerController::class, 'seedDemo'])->name('superadmin.banners.seed');
         Route::put('/superadmin/dashboard-banners/{dashboardBanner}', [DashboardBannerController::class, 'update'])->name('superadmin.banners.update');
@@ -237,6 +241,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/organizations/{organization}/chart', [SuperadminOrganizationController::class, 'storeChartMember'])->name('superadmin.organizations.chart.store');
         Route::put('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'updateChartMember'])->name('superadmin.organizations.chart.update');
         Route::delete('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'destroyChartMember'])->name('superadmin.organizations.chart.destroy');
+        Route::post('/superadmin/members/{user}/organization', [InformationHubAdminController::class, 'moveOrganization'])->name('superadmin.members.organization.update');
 
         Route::get('/superadmin/settings', [SuperadminSystemSettingController::class, 'index'])->name('superadmin.settings.index');
         Route::post('/superadmin/settings/system-logo', [SuperadminSystemSettingController::class, 'updateSystemLogo'])->name('superadmin.settings.system-logo.update');

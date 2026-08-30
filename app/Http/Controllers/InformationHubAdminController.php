@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserOrganizationTransitioned;
 use App\Imports\MembersImport;
 use App\Jobs\SendAnnouncementJob;
 use App\Models\ActivityLog;
@@ -736,6 +737,49 @@ class InformationHubAdminController extends Controller
         ]);
 
         return back()->with('success', 'No IC/Passport berjaya dikemas kini.');
+    }
+
+    /**
+     * Pindah ahli ke organisasi lain secara manual — SUPERADMIN SAHAJA.
+     * Direkod dalam history perjalanan ahli + notifikasi in-app (tiada emel).
+     */
+    public function moveOrganization(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+
+        $data = $request->validate([
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+        ]);
+
+        $targetOrg = Organization::find((int) $data['organization_id']);
+
+        if (! $targetOrg || $targetOrg->slug === 'management') {
+            return back()->with('error', 'Organisasi sasaran tidak sah.');
+        }
+
+        $fromOrgId = $user->current_organization_id;
+
+        if ((int) $fromOrgId === (int) $targetOrg->id) {
+            return back()->with('error', 'Ahli ini sudah berada dalam organisasi tersebut.');
+        }
+
+        $user->update([
+            'current_organization_id' => $targetOrg->id,
+            'branch_id' => null,
+        ]);
+
+        UserOrganizationTransitioned::dispatch($user, $fromOrgId, $targetOrg->id);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'organization_id' => $targetOrg->id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'move_organization',
+            'description' => "Ahli {$user->name} dipindahkan ke {$targetOrg->name} secara manual.",
+        ]);
+
+        return back()->with('success', "Ahli {$user->name} berjaya dipindahkan ke {$targetOrg->name}.");
     }
 
     public function importStart(Request $request)

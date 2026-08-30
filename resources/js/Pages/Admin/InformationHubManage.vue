@@ -258,6 +258,37 @@ function submitIcNumberUpdate() {
     });
 }
 
+// ─── Pindah Organisasi (Superadmin sahaja) ─────────────────────────────────────
+
+const showMoveModal = ref(false);
+const moveTargetMember = ref(null);
+const moveForm = useForm({
+    organization_id: '',
+});
+
+function openMoveModal(member) {
+    moveTargetMember.value = member;
+    moveForm.reset();
+    moveForm.clearErrors();
+    showMoveModal.value = true;
+}
+
+function closeMoveModal() {
+    showMoveModal.value = false;
+    moveTargetMember.value = null;
+    moveForm.reset();
+    moveForm.clearErrors();
+}
+
+function submitMoveOrganization() {
+    if (!moveTargetMember.value) return;
+
+    moveForm.post(route('superadmin.members.organization.update', moveTargetMember.value.id), {
+        preserveScroll: true,
+        onSuccess: () => closeMoveModal(),
+    });
+}
+
 // ─── Profile Slide-Over Panel ────────────────────────────────────────────────
 
 const showProfilePanel = ref(false);
@@ -778,6 +809,10 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                                                 Reset Kata Laluan
                                             </button>
+                                            <button v-if="isSuperadmin" @click="openMoveModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                                Pindah Organisasi
+                                            </button>
                                             <button @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
@@ -884,6 +919,77 @@ async function finishImport() {
                                         class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
                                     >
                                         {{ icForm.processing ? 'Menyimpan...' : 'Simpan IC' }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </Transition>
+
+                <!-- Pindah Organisasi Modal -->
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0"
+                    enter-to-class="opacity-100"
+                    leave-active-class="transition ease-in duration-150"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                >
+                    <div
+                        v-if="showMoveModal"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm"
+                        @click.self="closeMoveModal"
+                    >
+                        <div class="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl">
+                            <div class="mb-4">
+                                <h3 class="text-lg font-black text-gray-900">Pindah Organisasi</h3>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    Pengguna: <span class="font-semibold text-gray-700">{{ moveTargetMember?.name || '-' }}</span>
+                                </p>
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Organisasi semasa: <span class="font-medium text-gray-600">{{ moveTargetMember?.organization_name || '-' }}</span>
+                                </p>
+                            </div>
+
+                            <form class="space-y-3" @submit.prevent="submitMoveOrganization">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Pindah Ke</label>
+                                    <select
+                                        v-model="moveForm.organization_id"
+                                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-gray-900"
+                                        required
+                                    >
+                                        <option value="" disabled>Pilih organisasi</option>
+                                        <option
+                                            v-for="org in organizations"
+                                            :key="org.id"
+                                            :value="org.id"
+                                            v-show="String(org.id) !== String(moveTargetMember?.organization_id)"
+                                        >
+                                            {{ org.name }}
+                                        </option>
+                                    </select>
+                                    <p v-if="moveForm.errors.organization_id" class="mt-1 text-xs text-red-600">{{ moveForm.errors.organization_id }}</p>
+                                </div>
+
+                                <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    Ahli akan direkodkan dalam sejarah peralihan & menerima notifikasi dalam-app. Tiada emel dihantar.
+                                </p>
+
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        @click="closeMoveModal"
+                                        class="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        :disabled="moveForm.processing"
+                                        class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                                    >
+                                        {{ moveForm.processing ? 'Memindahkan...' : 'Pindah Ahli' }}
                                     </button>
                                 </div>
                             </form>
