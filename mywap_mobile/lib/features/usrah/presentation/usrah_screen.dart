@@ -8,7 +8,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/usrah_providers.dart';
 import '../data/models/usrah.dart';
 
@@ -21,11 +22,15 @@ class UsrahScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Usrah'),
-        actions: const [LogoutIconButton()],
+        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: usrahAsync.when(
-        data: (data) => _UsrahBody(data: data),
+        data: (data) => _UsrahBody(
+          data: data,
+          onRefresh: () async => ref.invalidate(usrahProvider),
+        ),
         loading: () => const _UsrahSkeleton(),
         error: (error, _) => ErrorRetry(
           message:
@@ -38,13 +43,17 @@ class UsrahScreen extends ConsumerWidget {
 }
 
 class _UsrahBody extends StatelessWidget {
-  const _UsrahBody({required this.data});
+  const _UsrahBody({required this.data, required this.onRefresh});
 
   final UsrahData data;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         const SectionHeader('Kumpulan Usrah Saya'),
@@ -72,6 +81,7 @@ class _UsrahBody extends StatelessWidget {
             _AttendanceTile(record: record),
         const SizedBox(height: Spacing.xl),
       ],
+      ),
     );
   }
 }

@@ -56,12 +56,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           onRetry: () => ref.read(ordersProvider.notifier).refresh(),
         ),
         data: (state) => state.items.isEmpty
-            ? const EmptyState(
-                icon: Icons.receipt_long_outlined,
-                message: 'Tiada pesanan buat masa ini.',
+            ? RefreshIndicator(
+                onRefresh: () async => ref.read(ordersProvider.notifier).refresh(),
+                child: const SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: EmptyState(
+                    icon: Icons.receipt_long_outlined,
+                    message: 'Tiada pesanan buat masa ini.',
+                  ),
+                ),
               )
-            : ListView.builder(
+            : RefreshIndicator(
+                onRefresh: () async => ref.read(ordersProvider.notifier).refresh(),
+                child: ListView.builder(
                 controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
                 itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
@@ -79,6 +88,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   }
                   return _OrderCard(order: state.items[index]);
                 },
+                ),
               ),
       ),
     );

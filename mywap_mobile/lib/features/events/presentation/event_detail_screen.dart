@@ -61,6 +61,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           rsvpLoading: _rsvpLoading,
           rsvpError: _rsvpError,
           onRsvp: _toggleRsvp,
+          onRefresh: () async =>
+              ref.invalidate(eventDetailProvider(widget.eventId)),
         ),
         loading: () => const _DetailSkeleton(),
         error: (error, _) => ErrorRetry(
@@ -78,12 +80,14 @@ class _DetailContent extends StatelessWidget {
     required this.rsvpLoading,
     required this.rsvpError,
     required this.onRsvp,
+    required this.onRefresh,
   });
 
   final Event? event;
   final bool rsvpLoading;
   final String? rsvpError;
   final ValueChanged<String?> onRsvp;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +97,10 @@ class _DetailContent extends StatelessWidget {
     final myRsvp = event?.my_rsvp;
     final isGoing = myRsvp == 'going';
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         AppImage(
@@ -177,6 +184,7 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }

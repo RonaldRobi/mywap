@@ -458,6 +458,8 @@ const sendResetLink = () => {
                             <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-slate-200 pt-3 text-center text-sm text-slate-500">
                                 <Link :href="route('infaq.index')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">Kempen Sumbangan</Link>
                                 <span class="text-slate-300">|</span>
+                                <Link :href="route('events.index')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">Program &amp; Acara</Link>
+                                <span class="text-slate-300">|</span>
                                 <Link :href="route('articles.index')" class="font-semibold text-slate-600 hover:text-slate-500">Artikel</Link>
                             </div>
                         </div>

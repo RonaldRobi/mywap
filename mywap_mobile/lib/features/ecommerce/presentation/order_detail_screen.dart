@@ -78,7 +78,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Butiran Pesanan')),
       body: detailAsync.when(
-        data: (detail) => _DetailBody(order: detail.order),
+        data: (detail) => _DetailBody(
+          order: detail.order,
+          onRefresh: () async =>
+              ref.invalidate(orderDetailProvider(widget.orderId)),
+        ),
         loading: () => const _DetailSkeleton(),
         error: (error, _) => ErrorRetry(
           message:
@@ -117,19 +121,29 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 }
 
 class _DetailBody extends StatelessWidget {
-  const _DetailBody({required this.order});
+  const _DetailBody({required this.order, required this.onRefresh});
 
   final Order? order;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final o = order;
     if (o == null) {
-      return const Center(child: Text('Pesanan tidak dijumpai.'));
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Center(child: Text('Pesanan tidak dijumpai.')),
+        ),
+      );
     }
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
         Card(
@@ -225,6 +239,7 @@ class _DetailBody extends StatelessWidget {
         ),
         const SizedBox(height: Spacing.xl),
       ],
+      ),
     );
   }
 }

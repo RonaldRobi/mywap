@@ -29,6 +29,26 @@ Route::prefix('v1')->group(function () {
     // ─── Auth (public) ───────────────────────────────────────────────────
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:5,1');
+    Route::post('/auth/register', [AuthController::class, 'register'])
+        ->middleware('throttle:10,1');
+    Route::get('/auth/referral/{code}', [AuthController::class, 'resolveReferral'])
+        ->middleware('throttle:30,1');
+    Route::post('/auth/check-member', [AuthController::class, 'checkMember'])
+        ->middleware('throttle:15,1');
+    Route::post('/auth/forgot-id', [AuthController::class, 'forgotId'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/verify-identity', [AuthController::class, 'verifyIdentity'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/send-otp', [AuthController::class, 'sendOtp'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/update-and-send-otp', [AuthController::class, 'updateAndSendOtp'])
+        ->middleware('throttle:5,1');
+    Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1');
 
     // ─── Protected (Fasa 0 template) ─────────────────────────────────────
     Route::middleware('auth:sanctum')->group(function () {
@@ -42,6 +62,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/events', [EventController::class, 'index']);
         Route::get('/events/{event}', [EventController::class, 'show']);
         Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp']);
+        Route::post('/events/{id}/check-in', [EventController::class, 'checkIn']);
     });
 
     // ─── Route fail per-domain ───────────────────────────────────────────

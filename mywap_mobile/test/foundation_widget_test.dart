@@ -38,7 +38,7 @@ class _FakeAuthController extends AuthController {
 
 void main() {
   testWidgets('MenuScreen renders all menu items', (tester) async {
-    tester.view.physicalSize = const Size(800, 1500);
+    tester.view.physicalSize = const Size(800, 2200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -52,6 +52,9 @@ void main() {
     const expected = [
       'Profil',
       'Kad Ahli',
+      'Jemput Ahli',
+      'Yuran & Kewangan',
+      'Info Organisasi',
       'Pengumuman',
       'Pustaka',
       'Berita',
@@ -108,7 +111,7 @@ void main() {
     expect(find.text('Utama'), findsOneWidget);
     expect(find.text('Acara'), findsOneWidget);
     expect(find.text('Infaq'), findsOneWidget);
-    expect(find.text('Menu'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
     expect(find.text('Admin'), findsOneWidget);
 
     await tester.tap(find.text('Infaq'));
@@ -146,7 +149,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Admin'), findsNothing);
-    expect(find.text('Menu'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
   });
 
   testWidgets('app router: static event route beats /events/:id', (tester) async {
@@ -185,7 +188,7 @@ void main() {
 
     router.go('/menu');
     await tester.pumpAndSettle();
-    expect(find.text('Profil'), findsOneWidget);
+    expect(find.text('Profil'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

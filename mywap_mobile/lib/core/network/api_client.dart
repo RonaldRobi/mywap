@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'api_interceptor.dart';
+import '../constants/app_env.dart';
 import '../storage/token_storage.dart';
 
 /// Thin Dio wrapper shared by all repositories.
@@ -13,8 +14,7 @@ class ApiClient {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                baseUrl:
-                    '${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000')}/api/v1',
+                baseUrl: '${AppEnv.apiHost}/api/v1',
                 connectTimeout: const Duration(seconds: 15),
                 receiveTimeout: const Duration(seconds: 20),
                 headers: const {'Accept': 'application/json'},

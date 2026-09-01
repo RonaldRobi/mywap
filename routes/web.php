@@ -448,6 +448,12 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
         ->name('polls.public.respond');
 });
 
+// ─── Program / Acara — Lihat Awam (tanpa login) ─────────────────────────────
+Route::group(['middleware' => ['throttle:60,1']], function () {
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/{event:slug}', [EventController::class, 'show'])->name('events.show');
+});
+
 // ─── Authenticated Member Routes ─────────────────────────────────────────────
 
 Route::middleware('auth')->group(function () {
@@ -464,9 +470,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Events — browse + RSVP
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
-    Route::get('/events/{event:slug}', [EventController::class, 'show'])->name('events.show');
+    // Events — RSVP & comments kekal memerlukan login
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
 

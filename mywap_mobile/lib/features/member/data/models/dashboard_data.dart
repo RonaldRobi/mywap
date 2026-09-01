@@ -92,6 +92,21 @@ sealed class ArticleItem with _$ArticleItem {
 }
 
 @freezed
+sealed class PollPreviewItem with _$PollPreviewItem {
+  const factory PollPreviewItem({
+    int? id,
+    String? title,
+    String? type,
+    @JsonKey(name: 'ends_at_formatted') String? ends_at_formatted,
+    @JsonKey(name: 'response_count') int? response_count,
+    @JsonKey(name: 'has_responded') bool? has_responded,
+  }) = _PollPreviewItem;
+
+  factory PollPreviewItem.fromJson(Map<String, dynamic> json) =>
+      _$PollPreviewItemFromJson(json);
+}
+
+@freezed
 sealed class DashboardData with _$DashboardData {
   const factory DashboardData({
     DashboardMember? member,
@@ -103,6 +118,7 @@ sealed class DashboardData with _$DashboardData {
     @JsonKey(name: 'infaqItems') List<InfaqItem>? infaq_items,
     @JsonKey(name: 'latestNews') List<NewsItem>? latest_news,
     @JsonKey(name: 'latestArticles') List<ArticleItem>? latest_articles,
+    @JsonKey(name: 'activePolls') List<PollPreviewItem>? active_polls,
   }) = _DashboardData;
 
   factory DashboardData.fromJson(Map<String, dynamic> json) =>

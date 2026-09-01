@@ -38,6 +38,7 @@ class NewsDetailScreen extends ConsumerWidget {
                 .commentNews(newsId, content);
             ref.invalidate(newsDetailProvider(newsId));
           },
+          onRefresh: () async => ref.invalidate(newsDetailProvider(newsId)),
         ),
         loading: () => const _DetailSkeleton(),
         error: (error, _) => ErrorRetry(
@@ -54,18 +55,23 @@ class _NewsDetailBody extends StatelessWidget {
     required this.detail,
     required this.onReaction,
     required this.onComment,
+    required this.onRefresh,
   });
 
   final NewsDetail detail;
   final Future<void> Function(String reaction) onReaction;
   final Future<void> Function(String content) onComment;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final post = detail.post;
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
         if (post.coverImagePath != null && post.coverImagePath!.isNotEmpty)
@@ -119,6 +125,7 @@ class _NewsDetailBody extends StatelessWidget {
         const Divider(height: Spacing.xl * 2),
         CommentSection(comments: detail.comments, onSubmit: onComment),
       ],
+      ),
     );
   }
 }

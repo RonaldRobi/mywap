@@ -69,13 +69,25 @@ const currentIdentifierError = computed(() => {
 
 const _page = usePage();
 
+function readXsrfCookie() {
+    const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
 function csrfHeaders() {
+    const cookieToken = readXsrfCookie();
+    if (cookieToken) {
+        return {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-XSRF-TOKEN': cookieToken,
+        };
+    }
     const token = _page.props.csrf_token;
     return {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-CSRF-TOKEN': token,
-        'X-XSRF-TOKEN': token,
     };
 }
 
@@ -681,6 +693,17 @@ const submit = () => {
                                     MyWAP Mall
                                 </Link>.
                             </p>
+                            <div class="mt-4">
+                                <Link
+                                    :href="route('events.index')"
+                                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    Lihat Program &amp; Acara Terkini
+                                </Link>
+                            </div>
                         </div>
                     </Transition>
                     <div class="mt-6 border-t border-[#D5E3D8] pt-4 text-center">

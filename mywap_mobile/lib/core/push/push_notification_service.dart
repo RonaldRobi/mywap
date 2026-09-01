@@ -34,12 +34,13 @@ class PushNotificationService {
   Future<void> init() async {
     // Firebase belum dikonfigurasi (options kosong) — skip supaya
     // Firebase.initializeApp tidak lempar NSException dan crash app.
-    if (kFirebaseOptions.apiKey.isEmpty || kFirebaseOptions.appId.isEmpty) {
+    final options = DefaultFirebaseOptions.currentPlatform;
+    if (options.apiKey.isEmpty || options.appId.isEmpty) {
       initialized = false;
       return;
     }
     try {
-      await Firebase.initializeApp(options: kFirebaseOptions);
+      await Firebase.initializeApp(options: options);
       _messaging = FirebaseMessaging.instance;
 
       await _messaging!.requestPermission();

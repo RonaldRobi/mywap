@@ -10,7 +10,8 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -21,6 +22,7 @@ class EventsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Acara'),
         actions: [
           IconButton(
@@ -28,11 +30,15 @@ class EventsScreen extends ConsumerWidget {
             onPressed: () => context.push('/events/my-registrations'),
             icon: const Icon(Icons.event_available_outlined),
           ),
-          const LogoutIconButton(),
+          const NotificationBell(),
+          const SizedBox(width: Spacing.sm),
         ],
       ),
       body: eventsAsync.when(
-        data: (events) => _EventsList(events: events),
+        data: (events) => _EventsList(
+          events: events,
+          onRefresh: () async => ref.invalidate(eventsProvider),
+        ),
         loading: () => const _EventsSkeleton(),
         error:
             (error, _) => ErrorRetry(
@@ -48,33 +54,44 @@ class EventsScreen extends ConsumerWidget {
 }
 
 class _EventsList extends StatelessWidget {
-  const _EventsList({required this.events});
+  const _EventsList({required this.events, required this.onRefresh});
 
   final List<Event> events;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (events.isEmpty) {
-      return const _EventsEmpty();
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: _EventsEmpty(),
+        ),
+      );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.lg,
-        Spacing.lg,
-        Spacing.lg,
-        Spacing.xxl,
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.lg,
+          Spacing.lg,
+          Spacing.lg,
+          Spacing.xxl,
+        ),
+        itemCount: events.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(height: Spacing.lg),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return const _PageIntro(
+              title: 'Program & Acara',
+              subtitle: 'Ketahui dan sertai program yang akan datang.',
+            );
+          }
+          return _EventCard(event: events[index - 1]);
+        },
       ),
-      itemCount: events.length + 1,
-      separatorBuilder: (_, __) => const SizedBox(height: Spacing.lg),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return const _PageIntro(
-            title: 'Program & Acara',
-            subtitle: 'Ketahui dan sertai program yang akan datang.',
-          );
-        }
-        return _EventCard(event: events[index - 1]);
-      },
     );
   }
 }

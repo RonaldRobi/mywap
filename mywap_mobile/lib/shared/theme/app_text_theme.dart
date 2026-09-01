@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 /// Typography scale for the app.
 ///
+/// Font: Plus Jakarta Sans — Apple-inspired, geometric, generous x-height.
 /// Accessibility-first (§10.4): minimum body size 16sp, generous tap targets.
 abstract final class AppTextTheme {
+  static const String fontFamily = 'PlusJakartaSans';
+
   static TextTheme get base {
     final textTheme = ThemeData.light().textTheme.apply(
-          fontFamily: 'Poppins',
+          fontFamily: fontFamily,
         );
     return textTheme.copyWith(
       displaySmall: textTheme.displaySmall?.copyWith(

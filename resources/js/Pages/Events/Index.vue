@@ -36,6 +36,7 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const isLoggedIn = computed(() => !!user.value);
 const isSuperadmin = computed(() => {
     const roles = user.value?.roles ?? [];
     return roles.includes('Superadmin') || roles.includes('Admin');
@@ -145,6 +146,7 @@ function submitCreateProgram() {
 // ─── Filters & Search ────────────────────────────────────────────────────────
 const searchQuery = ref(props.filters?.search ?? '');
 const typeFilter  = ref(props.filters?.type ?? '');
+const orgFilter   = ref(props.filters?.org ?? '');
 
 function customDebounce(fn, wait) {
     let timer;
@@ -154,10 +156,10 @@ function customDebounce(fn, wait) {
     };
 }
 
-watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
+watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType, newOrg]) => {
     router.get(
         route('events.index'),
-        { tab: props.tab, search: newSearch, type: newType },
+        { tab: props.tab, search: newSearch, type: newType, org: newOrg },
         { preserveState: true, preserveScroll: true, replace: true }
     );
 }, 300));
@@ -186,7 +188,7 @@ watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
                     <!-- Tab Switcher -->
                     <div class="flex items-center rounded-2xl bg-gray-100/80 p-1 border border-gray-200">
                         <button 
-                            @click="router.get(route('events.index'), { tab: 'upcoming', search: searchQuery, type: typeFilter }, { preserveState: true })"
+                            @click="router.get(route('events.index'), { tab: 'upcoming', search: searchQuery, type: typeFilter, org: orgFilter }, { preserveState: true })"
                             :class="[
                                 'px-4 py-2 text-sm font-bold rounded-xl transition-all',
                                 tab === 'upcoming' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5' : 'text-gray-500 hover:text-gray-700'
@@ -195,7 +197,7 @@ watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
                             Akan Datang
                         </button>
                         <button 
-                            @click="router.get(route('events.index'), { tab: 'past', search: searchQuery, type: typeFilter }, { preserveState: true })"
+                            @click="router.get(route('events.index'), { tab: 'past', search: searchQuery, type: typeFilter, org: orgFilter }, { preserveState: true })"
                             :class="[
                                 'px-4 py-2 text-sm font-bold rounded-xl transition-all',
                                 tab === 'past' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5' : 'text-gray-500 hover:text-gray-700'
@@ -259,6 +261,22 @@ watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
                         <option value="">Semua Format</option>
                         <option value="physical">Fizikal</option>
                         <option value="online">Dalam Talian</option>
+                    </select>
+                </div>
+
+                <!-- Organization Selector (guests & superadmin) -->
+                <div v-if="organizations.length" class="relative max-w-[220px]">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7a2 2 0 012-2h10a2 2 0 012 2v14M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" />
+                        </svg>
+                    </div>
+                    <select
+                        v-model="orgFilter"
+                        class="pl-10 w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors text-gray-700 bg-white"
+                    >
+                        <option value="">Semua Organisasi</option>
+                        <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
                     </select>
                 </div>
             </div>
@@ -388,7 +406,7 @@ watch([searchQuery, typeFilter], customDebounce(([newSearch, newType]) => {
                             
                             <div class="flex items-center gap-1.5 font-bold text-sm group-hover:gap-2 transition-all"
                                  :style="{ color: tab === 'past' ? '#6b7280' : event.organization.color_theme }">
-                                {{ tab === 'past' ? 'Lihat' : (isSuperadmin ? 'Urus' : 'Sertai') }}
+                                {{ tab === 'past' ? 'Lihat' : (isSuperadmin ? 'Urus' : (isLoggedIn ? 'Sertai' : 'Lihat')) }}
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                 </svg>

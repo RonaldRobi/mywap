@@ -41,6 +41,19 @@ final currentUserProvider = Provider<User?>((ref) {
   return state is AuthAuthenticated ? state.user : null;
 });
 
+/// Sama ada peranti menyokong Face ID / cap jari DAN pengguna telah
+/// mendayakannya untuk akaun semasa. Digunakan oleh skrin log masuk untuk
+/// papar/sorok butang "Log masuk dengan Face ID/Cap Jari".
+final biometricAvailableProvider = FutureProvider<bool>((ref) async {
+  final biometric = ref.watch(biometricServiceProvider);
+  final storage = ref.watch(tokenStorageProvider);
+  final supported = await biometric.isDeviceSupported();
+  if (!supported) return false;
+  final hasToken = await storage.read();
+  final enabled = await storage.isBiometricEnabled();
+  return hasToken != null && hasToken.isNotEmpty && enabled;
+});
+
 class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() {
@@ -87,8 +100,77 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// Log masuk semula menggunakan Face ID/cap jari — mengesahkan biometrik
+  /// peranti lalu memulihkan sesi dari token yang tersimpan (tiada
+  /// kata laluan/OTP diperlukan semula).
+  Future<bool> loginWithBiometrics() async {
+    final biometric = ref.read(biometricServiceProvider);
+    final ok = await biometric.authenticate(
+      reason: 'Sahkan Face ID / cap jari untuk log masuk ke myWAP',
+    );
+    if (!ok) return false;
+
+    state = const AuthLoading();
+    try {
+      final user = await ref.read(authRepositoryProvider).me();
+      state = AuthAuthenticated(user);
+      ref.read(pushServiceProvider).init();
+      return true;
+    } on ApiException catch (e) {
+      state = AuthUnauthenticated(error: e.message);
+      return false;
+    }
+  }
+
+  /// Dayakan/lumpuhkan log masuk biometrik untuk akaun semasa.
+  Future<bool> setBiometricEnabled(bool enabled) async {
+    final biometric = ref.read(biometricServiceProvider);
+    if (enabled) {
+      final supported = await biometric.isDeviceSupported();
+      if (!supported) return false;
+      final ok = await biometric.authenticate(
+        reason: 'Sahkan Face ID / cap jari untuk mendayakan log masuk pantas',
+      );
+      if (!ok) return false;
+    }
+    await ref.read(tokenStorageProvider).setBiometricEnabled(enabled);
+    ref.invalidate(biometricAvailableProvider);
+    return true;
+  }
+
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
     state = const AuthUnauthenticated();
+  }
+
+  /// Sahkan OTP log masuk kali pertama (dengan/tanpa tetapan kata laluan
+  /// baharu) dan log masuk terus menggunakan token yang dikembalikan.
+  Future<bool> verifyOtp({
+    required String icNumber,
+    required String code,
+    String? password,
+    String? passwordConfirmation,
+  }) async {
+    state = const AuthLoading();
+    try {
+      final user = await ref.read(authRepositoryProvider).verifyOtp(
+            icNumber: icNumber,
+            code: code,
+            password: password,
+            passwordConfirmation: passwordConfirmation,
+          );
+      state = AuthAuthenticated(user);
+      ref.read(pushServiceProvider).init();
+      return true;
+    } on ApiException catch (e) {
+      state = AuthUnauthenticated(error: e.message);
+      return false;
+    }
+  }
+
+  /// Kembali ke skrin log masuk selepas ralat OTP/pendaftaran tanpa
+  /// membuang mesej ralat sebelumnya secara tiba-tiba.
+  void resetToUnauthenticated({String? error}) {
+    state = AuthUnauthenticated(error: error);
   }
 }

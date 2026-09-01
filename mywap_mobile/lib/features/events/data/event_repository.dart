@@ -33,6 +33,16 @@ class EventRepository {
     );
   }
 
+  /// Imbas QR poster event untuk rekod kehadiran sendiri (member self
+  /// check-in). Mengembalikan `{event_title, registration_no}` bila berjaya.
+  Future<Map<String, dynamic>> checkIn(int id, {required String token}) async {
+    final data = await _api.post(
+      ApiPaths.eventCheckIn(id),
+      body: {'token': token},
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
   Future<List<EventRegistration>> myRegistrations({int page = 1}) async {
     final data = await _api.get(
       ApiPaths.memberRegistrations,

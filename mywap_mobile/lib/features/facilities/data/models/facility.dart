@@ -1,3 +1,5 @@
+import '../../../../core/constants/app_env.dart';
+
 /// Plain immutable model for a bookable facility (§ FLUTTER_PLAN facilities).
 class Facility {
   const Facility({
@@ -51,13 +53,8 @@ class Facility {
     final fromMedia = media.isNotEmpty ? media.first.path : null;
     final raw = (fromMedia != null && fromMedia.isNotEmpty) ? fromMedia : imagePath;
     if (raw == null || raw.isEmpty) return null;
-    return raw.startsWith('http') ? raw : '$apiBaseUrl/storage/$raw';
+    return AppEnv.resolveUrl(raw);
   }
-
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
-  );
 
   static List<FacilityMedia> _parseMedia(dynamic value) {
     if (value is! List) return const [];

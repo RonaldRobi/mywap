@@ -177,13 +177,22 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 onRetry: () => ref.read(productsProvider.notifier).refresh(),
               ),
               data: (state) => state.items.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.storefront_outlined,
-                      message: 'Tiada produk dijumpai.',
+                  ? RefreshIndicator(
+                      onRefresh: () async =>
+                          ref.read(productsProvider.notifier).refresh(),
+                      child: const SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: EmptyState(
+                          icon: Icons.storefront_outlined,
+                          message: 'Tiada produk dijumpai.',
+                        ),
+                      ),
                     )
                   : _ProductsGrid(
                       state: state,
                       scrollController: _scrollController,
+                      onRefresh: () async =>
+                          ref.read(productsProvider.notifier).refresh(),
                     ),
             ),
           ),
@@ -238,24 +247,33 @@ class _CategoryChips extends StatelessWidget {
 }
 
 class _ProductsGrid extends StatelessWidget {
-  const _ProductsGrid({required this.state, required this.scrollController});
+  const _ProductsGrid({
+    required this.state,
+    required this.scrollController,
+    required this.onRefresh,
+  });
 
   final ProductsState state;
   final ScrollController scrollController;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: CustomScrollView(
       controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.all(Spacing.lg),
+          padding: const EdgeInsets.all(Spacing.md),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: Spacing.md,
               crossAxisSpacing: Spacing.md,
-              mainAxisExtent: 264,
+              // Shopee-style card: 4:5 image + compact info footer.
+              childAspectRatio: 0.62,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => _ProductCard(product: state.items[index]),
@@ -277,6 +295,7 @@ class _ProductsGrid extends StatelessWidget {
             ),
           ),
       ],
+      ),
     );
   }
 }
@@ -289,10 +308,16 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final showBadge = product.isMember && product.priceForMember != null;
-    final price = showBadge ? product.priceForMember! : (product.price ?? 0);
+    final showMemberPrice = product.isMember && product.priceForMember != null;
+    final price = showMemberPrice ? product.priceForMember! : (product.price ?? 0);
+    final hasDiscount = showMemberPrice && product.price != null;
+    final discountPercent = hasDiscount && product.price! > 0
+        ? (((product.price! - price) / product.price!) * 100).round()
+        : 0;
 
-    return Card(
+    return Material(
+      color: AppColors.white,
+      borderRadius: AppRadius.card,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: product.id == null
@@ -301,79 +326,120 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppImage(
-              product.displayImage,
-              height: 150,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              borderRadius: BorderRadius.zero,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name ?? '-',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            Formatters.currency(price),
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: AppColors.movementGreen,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+            // Shopee-style large 4:5 thumbnail — the dominant visual element.
+            AspectRatio(
+              aspectRatio: 4 / 5,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  AppImage(
+                    product.displayImage,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  if (hasDiscount && discountPercent > 0)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.sm,
+                          vertical: 3,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.only(
+                            bottomRight: Radius.circular(8),
                           ),
                         ),
-                        if (showBadge)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.movementGreen,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'Harga Ahli',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                        child: Text(
+                          '-$discountPercent%',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                           ),
-                      ],
-                    ),
-                    if (showBadge && product.price != null)
-                      Text(
-                        Formatters.currency(product.price),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      )
-                    else if (product.category?.name != null)
-                      Text(
-                        product.category!.name!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
                         ),
                       ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.sm,
+                Spacing.sm,
+                Spacing.sm,
+                Spacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name ?? '-',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    Formatters.currency(price),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (hasDiscount) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          Formatters.currency(product.price),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                            decoration: TextDecoration.lineThrough,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.softGreenSurface,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Ahli',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.movementGreen,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else if (product.category?.name != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      product.category!.name!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ],
@@ -389,13 +455,13 @@ class _ProductsSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(Spacing.lg),
+      padding: const EdgeInsets.all(Spacing.md),
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: Spacing.md,
         crossAxisSpacing: Spacing.md,
-        mainAxisExtent: 264,
+        childAspectRatio: 0.62,
       ),
       itemCount: 6,
       itemBuilder: (_, __) => const SkeletonBox(radius: 16),

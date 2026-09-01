@@ -12,7 +12,8 @@ import '../../auth/application/auth_controller.dart';
 import '../../events/data/models/event.dart';
 import '../application/member_providers.dart';
 import '../data/models/dashboard_data.dart';
-import 'main_shell.dart';
+import 'widgets/notification_bell.dart';
+import 'widgets/shell_scaffold_key.dart';
 
 class MemberDashboardScreen extends ConsumerWidget {
   const MemberDashboardScreen({super.key});
@@ -51,6 +52,10 @@ class _DashboardContent extends ConsumerWidget {
     final memberName = member?.name ?? userName ?? 'Ahli';
     final banners = data.banners ?? const [];
     final events = data.upcoming_events ?? const [];
+    final infaqItems = data.infaq_items ?? const [];
+    final news = data.latest_news ?? const [];
+    final articles = data.latest_articles ?? const [];
+    final polls = data.active_polls ?? const [];
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(memberDashboardProvider),
@@ -58,12 +63,13 @@ class _DashboardContent extends ConsumerWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            backgroundColor: AppColors.white.withValues(alpha: 0.94),
+            backgroundColor: AppColors.pageBackground.withValues(alpha: 0.94),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
-            titleSpacing: Spacing.lg,
+            titleSpacing: 0,
+            leading: const AppMenuButton(),
             title: _Greeting(name: memberName),
-            actions: const [LogoutIconButton(), SizedBox(width: Spacing.sm)],
+            actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
@@ -77,10 +83,14 @@ class _DashboardContent extends ConsumerWidget {
                 _Banner(banner: banners.isEmpty ? null : banners.first),
                 const SizedBox(height: Spacing.xl),
                 const _SectionLabel(title: 'Pintasan'),
-                const SizedBox(height: Spacing.md),
-                const _Shortcuts(),
+                const SizedBox(height: Spacing.sm),
+                const _ShortcutsGrid(),
                 const SizedBox(height: Spacing.xl),
                 _MembershipCard(member: member, feeStatus: data.fee_status),
+                if (data.next_event != null) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _NextEvent(event: data.next_event!),
+                ],
                 const SizedBox(height: Spacing.xl),
                 _SectionLabel(
                   title: 'Program',
@@ -89,7 +99,10 @@ class _DashboardContent extends ConsumerWidget {
                 ),
                 const SizedBox(height: Spacing.md),
                 if (events.isEmpty)
-                  const _EmptyPrograms()
+                  const _EmptySection(
+                    icon: Icons.event_busy_outlined,
+                    message: 'Tiada acara akan datang buat masa ini.',
+                  )
                 else
                   SizedBox(
                     height: 230,
@@ -102,9 +115,75 @@ class _DashboardContent extends ConsumerWidget {
                           (_, index) => _EventCard(event: events[index]),
                     ),
                   ),
-                if (data.next_event != null) ...[
+                if (infaqItems.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
-                  _NextEvent(event: data.next_event!),
+                  _SectionLabel(
+                    title: 'Infaq',
+                    subtitle: 'Kempen sumbangan aktif',
+                    action: () => context.go('/infaq'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 150,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: infaqItems.length,
+                      separatorBuilder:
+                          (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder:
+                          (_, index) => _InfaqCard(item: infaqItems[index]),
+                    ),
+                  ),
+                ],
+                if (polls.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: 'Undian',
+                    subtitle: 'Sertai undian & tinjauan aktif',
+                    action: () => context.push('/polls'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  ...polls.take(2).map((p) => _PollPreviewCard(poll: p)),
+                ],
+                if (news.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: 'Info Terkini',
+                    subtitle: 'Berita dan pengumuman terbaharu',
+                    action: () => context.push('/news'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 190,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: news.length.clamp(0, 6),
+                      separatorBuilder:
+                          (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder:
+                          (_, index) => _NewsCard(item: news[index]),
+                    ),
+                  ),
+                ],
+                if (articles.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: 'Artikel',
+                    subtitle: 'Penulisan & rencana pilihan',
+                    action: () => context.push('/articles'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 190,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: articles.length.clamp(0, 6),
+                      separatorBuilder:
+                          (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder:
+                          (_, index) => _ArticleCard(item: articles[index]),
+                    ),
+                  ),
                 ],
               ]),
             ),
@@ -228,93 +307,131 @@ class _SectionLabel extends StatelessWidget {
   );
 }
 
-class _Shortcuts extends StatelessWidget {
-  const _Shortcuts();
+/// Grid of shortcuts to every high-frequency member module — surfaces more
+/// than the old 4-item row without feeling crowded, since each tile is
+/// compact and grouped 4-per-row with generous spacing.
+class _ShortcutsGrid extends StatelessWidget {
+  const _ShortcutsGrid();
+
+  static const List<_ShortcutItem> _items = [
+    _ShortcutItem(
+      icon: Icons.credit_card_rounded,
+      label: 'Yuran Saya',
+      color: Color(0xFF059669),
+      path: '/member/fee-status',
+    ),
+    _ShortcutItem(
+      icon: Icons.calendar_month_rounded,
+      label: 'Tempah',
+      color: Color(0xFFD97706),
+      path: '/facilities',
+    ),
+    _ShortcutItem(
+      icon: Icons.newspaper_rounded,
+      label: 'Info',
+      color: Color(0xFF4F46E5),
+      path: '/news',
+    ),
+    _ShortcutItem(
+      icon: Icons.volunteer_activism_rounded,
+      label: 'Infaq',
+      color: Color(0xFFE11D48),
+      path: '/infaq',
+    ),
+    _ShortcutItem(
+      icon: Icons.badge_rounded,
+      label: 'Kad Ahli',
+      color: Color(0xFF2563EB),
+      path: '/card',
+    ),
+    _ShortcutItem(
+      icon: Icons.groups_rounded,
+      label: 'Usrah',
+      color: Color(0xFF7C3AED),
+      path: '/usrah',
+    ),
+    _ShortcutItem(
+      icon: Icons.storefront_rounded,
+      label: 'Mall',
+      color: Color(0xFFEA580C),
+      path: '/products',
+    ),
+    _ShortcutItem(
+      icon: Icons.person_add_alt_1_rounded,
+      label: 'Jemput Ahli',
+      color: Color(0xFF0D9488),
+      path: '/member/referral',
+    ),
+  ];
+
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      _Shortcut(
-        icon: Icons.credit_card_outlined,
-        label: 'Yuran Saya',
-        colors: const [Color(0xFF34D399), Color(0xFF059669)],
-        onTap: () => context.push('/member/fee-status'),
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: Spacing.sm,
+        crossAxisSpacing: Spacing.xs,
+        mainAxisExtent: 78,
       ),
-      _Shortcut(
-        icon: Icons.calendar_month_outlined,
-        label: 'Tempah',
-        colors: const [Color(0xFFFBBF24), Color(0xFFD97706)],
-        onTap: () => context.push('/facilities'),
-      ),
-      _Shortcut(
-        icon: Icons.newspaper_outlined,
-        label: 'Info',
-        colors: const [Color(0xFF818CF8), Color(0xFF4F46E5)],
-        onTap: () => context.push('/news'),
-      ),
-      _Shortcut(
-        icon: Icons.volunteer_activism_outlined,
-        label: 'Infaq',
-        colors: const [Color(0xFFFB7185), Color(0xFFE11D48)],
-        onTap: () => context.go('/infaq'),
-      ),
-    ],
-  );
+      itemBuilder: (context, index) => _ShortcutTile(item: _items[index]),
+    );
+  }
 }
 
-class _Shortcut extends StatelessWidget {
-  const _Shortcut({
+class _ShortcutItem {
+  const _ShortcutItem({
     required this.icon,
     required this.label,
-    required this.colors,
-    required this.onTap,
+    required this.color,
+    required this.path,
   });
   final IconData icon;
   final String label;
-  final List<Color> colors;
-  final VoidCallback onTap;
+  final Color color;
+  final String path;
+}
+
+class _ShortcutTile extends StatelessWidget {
+  const _ShortcutTile({required this.item});
+  final _ShortcutItem item;
+
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: Material(
-        color: AppColors.white,
-        borderRadius: AppRadius.card,
-        child: InkWell(
-          borderRadius: AppRadius.card,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: Spacing.md,
-              horizontal: Spacing.xs,
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.lg,
+        onTap: () => context.push(item.path),
+        child: Column(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: item.color.withValues(alpha: .12),
+                borderRadius: AppRadius.lg,
+              ),
+              child: Icon(item.icon, color: item.color, size: 22),
             ),
-            child: Column(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: colors),
-                    borderRadius: AppRadius.lg,
-                  ),
-                  child: Icon(icon, color: AppColors.white, size: 25),
-                ),
-                const SizedBox(height: Spacing.sm),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 6),
+            Text(
+              item.label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+              ),
             ),
-          ),
+          ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _MembershipCard extends StatelessWidget {
@@ -337,13 +454,7 @@ class _MembershipCard extends StatelessWidget {
           ],
         ),
         borderRadius: AppRadius.hero,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x55071F25),
-            blurRadius: 22,
-            offset: Offset(0, 10),
-          ),
-        ],
+        boxShadow: AppShadows.floating,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,28 +750,254 @@ class _NextEvent extends StatelessWidget {
   );
 }
 
-class _EmptyPrograms extends StatelessWidget {
-  const _EmptyPrograms();
+class _EmptySection extends StatelessWidget {
+  const _EmptySection({required this.icon, required this.message});
+  final IconData icon;
+  final String message;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(Spacing.xxl),
     decoration: BoxDecoration(
       color: AppColors.white,
       borderRadius: AppRadius.card,
-      border: Border.all(color: AppColors.divider, style: BorderStyle.solid),
+      border: Border.all(color: AppColors.divider),
     ),
-    child: const Column(
+    child: Column(
       children: [
-        Icon(
-          Icons.event_busy_outlined,
-          color: AppColors.textSecondary,
-          size: 32,
-        ),
-        SizedBox(height: Spacing.sm),
-        Text('Tiada acara akan datang buat masa ini.'),
+        Icon(icon, color: AppColors.textSecondary, size: 32),
+        const SizedBox(height: Spacing.sm),
+        Text(message, textAlign: TextAlign.center),
       ],
     ),
   );
+}
+
+class _InfaqCard extends StatelessWidget {
+  const _InfaqCard({required this.item});
+  final InfaqItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = ((item.progress_percent ?? 0) / 100).clamp(0, 1).toDouble();
+    return SizedBox(
+      width: 220,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: () => context.go('/infaq'),
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title ?? '-',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: Spacing.sm),
+                ClipRRect(
+                  borderRadius: AppRadius.sm,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: AppColors.divider,
+                    color: AppColors.movementGreen,
+                  ),
+                ),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  '${item.progress_percent ?? 0}% terkumpul',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PollPreviewCard extends StatelessWidget {
+  const _PollPreviewCard({required this.poll});
+  final PollPreviewItem poll;
+
+  @override
+  Widget build(BuildContext context) {
+    final responded = poll.has_responded ?? false;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.md),
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: () => context.push('/polls/${poll.id}'),
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: Row(
+              children: [
+                Icon(
+                  responded
+                      ? Icons.check_circle_outline
+                      : Icons.how_to_vote_outlined,
+                  color: responded ? AppColors.success : AppColors.movementGreen,
+                ),
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        poll.title ?? '-',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      Text(
+                        responded
+                            ? 'Anda telah menjawab'
+                            : 'Belum dijawab · ${poll.response_count ?? 0} respons',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewsCard extends StatelessWidget {
+  const _NewsCard({required this.item});
+  final NewsItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 175,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: () => context.push('/news/${item.id}'),
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: item.cover_image_path?.isNotEmpty == true
+                      ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                      : Container(color: AppColors.paleGreen),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.category_name ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArticleCard extends StatelessWidget {
+  const _ArticleCard({required this.item});
+  final ArticleItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 175,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: () => context.push('/articles/${item.id}'),
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: item.cover_image_path?.isNotEmpty == true
+                      ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                      : Container(color: AppColors.paleGreen),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.author_name ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _DashboardSkeleton extends StatelessWidget {

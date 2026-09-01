@@ -36,6 +36,11 @@ class PushNotificationServiceTest extends TestCase
             'first_login_at' => now(),
             'profile_completed_at' => now(),
         ]);
+
+        // Paksa tiada kredential FCM supaya test kekal offline/deterministik
+        // (tanpa config, service jadi no-op — kontrak asal).
+        config()->set('services.fcm.service_account', '');
+        config()->set('services.fcm.server_key', '');
         $this->otherUser = User::factory()->create([
             'email' => 'ahli2@pkpim.test',
             'current_organization_id' => $this->org->id,

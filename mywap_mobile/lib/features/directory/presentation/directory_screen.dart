@@ -127,13 +127,22 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
       return const _DirectorySkeleton();
     }
     if (state.users.isEmpty) {
-      return const EmptyState(
-        icon: Icons.people_outline,
-        message: 'Tiada ahli dijumpai.',
+      return RefreshIndicator(
+        onRefresh: () async => ref.read(directoryControllerProvider.notifier).retry(),
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: EmptyState(
+            icon: Icons.people_outline,
+            message: 'Tiada ahli dijumpai.',
+          ),
+        ),
       );
     }
-    return ListView.builder(
+    return RefreshIndicator(
+      onRefresh: () async => ref.read(directoryControllerProvider.notifier).retry(),
+      child: ListView.builder(
       controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(top: Spacing.sm, bottom: Spacing.xl),
       itemCount: state.users.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -151,6 +160,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
           onTap: () => _showMemberDetail(user),
         );
       },
+      ),
     );
   }
 }

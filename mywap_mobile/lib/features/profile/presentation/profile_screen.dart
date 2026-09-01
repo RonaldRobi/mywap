@@ -25,7 +25,10 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: profileAsync.when(
-        data: (data) => _ProfileContent(data: data),
+        data: (data) => _ProfileContent(
+          data: data,
+          onRefresh: () async => ref.invalidate(profileProvider),
+        ),
         loading: () => const _ProfileSkeleton(),
         error: (error, _) => ErrorRetry(
           message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
@@ -37,23 +40,33 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _ProfileContent extends ConsumerWidget {
-  const _ProfileContent({required this.data});
+  const _ProfileContent({required this.data, required this.onRefresh});
 
   final ProfileData data;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = data.profileUser;
     if (user == null) {
-      return const EmptyState(
-        icon: Icons.person_outline,
-        message: 'Tiada data profil ditemui.',
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: EmptyState(
+            icon: Icons.person_outline,
+            message: 'Tiada data profil ditemui.',
+          ),
+        ),
       );
     }
 
     final history = data.history ?? const <ProfileHistoryEntry>[];
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: Spacing.xl),
       children: [
         _ProfileHeader(user: user),
@@ -106,6 +119,7 @@ class _ProfileContent extends ConsumerWidget {
             ),
         ],
       ],
+      ),
     );
   }
 }

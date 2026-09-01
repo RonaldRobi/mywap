@@ -11,7 +11,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 
@@ -24,11 +25,15 @@ class FacilitiesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Kemudahan'),
-        actions: const [LogoutIconButton()],
+        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(
-        data: (data) => _FacilitiesBody(data: data),
+        data: (data) => _FacilitiesBody(
+          data: data,
+          onRefresh: () async => ref.invalidate(facilitiesProvider),
+        ),
         loading: () => const _FacilitiesSkeleton(),
         error:
             (error, _) => ErrorRetry(
@@ -44,13 +49,17 @@ class FacilitiesScreen extends ConsumerWidget {
 }
 
 class _FacilitiesBody extends StatelessWidget {
-  const _FacilitiesBody({required this.data});
+  const _FacilitiesBody({required this.data, required this.onRefresh});
 
   final FacilityListData data;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         const SliverToBoxAdapter(child: _FacilitiesIntro()),
         if (data.facilities.isEmpty)
@@ -84,6 +93,7 @@ class _FacilitiesBody extends StatelessWidget {
           ),
         const SliverToBoxAdapter(child: SizedBox(height: Spacing.xl)),
       ],
+      ),
     );
   }
 }

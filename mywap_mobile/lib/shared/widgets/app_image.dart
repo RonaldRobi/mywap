@@ -1,10 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_env.dart';
 import '../theme/app_colors.dart';
 import 'skeleton_box.dart';
 
 /// Cached image with skeleton placeholder + friendly error widget (§11.2).
+///
+/// The backend commonly returns storage paths relative to the API host
+/// (e.g. `/storage/logos/x.png`) rather than fully-qualified URLs — these
+/// are resolved against [AppEnv.apiHost] here so every screen gets a working
+/// image without each call site needing to know about the backend host.
 class AppImage extends StatelessWidget {
   const AppImage(
     this.url, {
@@ -28,10 +34,12 @@ class AppImage extends StatelessWidget {
       return _placeholder(width, height);
     }
 
+    final resolvedUrl = AppEnv.resolveUrl(urlValue);
+
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
       child: CachedNetworkImage(
-        imageUrl: urlValue,
+        imageUrl: resolvedUrl,
         width: width,
         height: height,
         fit: fit,

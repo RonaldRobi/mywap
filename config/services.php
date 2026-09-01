@@ -40,6 +40,10 @@ return [
     ],
 
     'fcm' => [
+        // FCM HTTP v1 (disarankan) — path ke fail service account JSON.
+        // E.g. storage/firebase/mywap-f6b01-firebase-adminsdk.json
+        'service_account' => env('FCM_SERVICE_ACCOUNT', ''),
+        // Legacy HTTP API (fallback) — Server key dari console.
         'server_key' => env('FCM_SERVER_KEY', ''),
     ],
 

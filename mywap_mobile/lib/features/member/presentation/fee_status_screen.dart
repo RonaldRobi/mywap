@@ -20,7 +20,10 @@ class FeeStatusScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Status Yuran')),
       body: feeAsync.when(
-        data: (fee) => _FeeStatusContent(fee: fee),
+        data: (fee) => _FeeStatusContent(
+          fee: fee,
+          onRefresh: () async => ref.invalidate(memberFeeStatusProvider),
+        ),
         loading: () => const Padding(
           padding: EdgeInsets.all(Spacing.lg),
           child: SkeletonBox(height: 260, radius: 16),
@@ -35,9 +38,10 @@ class FeeStatusScreen extends ConsumerWidget {
 }
 
 class _FeeStatusContent extends StatelessWidget {
-  const _FeeStatusContent({required this.fee});
+  const _FeeStatusContent({required this.fee, required this.onRefresh});
 
   final FeeStatus fee;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +49,10 @@ class _FeeStatusContent extends StatelessWidget {
     final isDue = fee.isDue;
     final amountDue = fee.amount_due ?? 0;
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
         Card(
@@ -96,6 +103,7 @@ class _FeeStatusContent extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 

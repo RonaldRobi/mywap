@@ -78,10 +78,13 @@ class EventController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin']);
+        $isSuperadmin = $user && $user->hasRole('Superadmin');
 
         $tab = $request->input('tab', 'upcoming');
         $search = $request->input('search');
         $typeFilter = $request->input('type');
+        $orgFilter = $request->input('org');
 
         $query = Event::with([
             'organization',
@@ -95,11 +98,26 @@ class EventController extends Controller
             $query->where('start_time', '>=', now())->orderBy('start_time', 'asc');
         }
 
-        if (! $user->hasRole('Superadmin')) {
+        // Tetamu & ahli biasa: hanya program 'published'. Draft/closed untuk admin sahaja.
+        if (! $isAdmin) {
+            $query->where('status', EventStatus::Published->value);
+        }
+
+        // Scoping organisasi: superadmin & tetamu lihat semua; ahli terhad kepada org sendiri.
+        if ($user && ! $isSuperadmin) {
             $query->where(function ($innerQuery) use ($user) {
                 $innerQuery->where('organization_id', $user->current_organization_id)
                     ->orWhereNull('organization_id')
                     ->orWhereHas('organizations', fn ($q) => $q->where('organizations.id', $user->current_organization_id));
+            });
+        }
+
+        // Penapis organisasi (query param ?org=) — untuk tetamu & superadmin.
+        if ($orgFilter) {
+            $query->where(function ($innerQuery) use ($orgFilter) {
+                $innerQuery->where('organization_id', (int) $orgFilter)
+                    ->orWhereNull('organization_id')
+                    ->orWhereHas('organizations', fn ($q) => $q->where('organizations.id', (int) $orgFilter));
             });
         }
 
@@ -115,10 +133,10 @@ class EventController extends Controller
         }
 
         $events = $query->paginate(12)->withQueryString()->through(
-            function (Event $e) use ($user) {
-                $eventArr = $this->serializeEvent($e, $user->id);
+            function (Event $e) use ($user, $isAdmin) {
+                $eventArr = $this->serializeEvent($e, $user?->id);
                 // For admin/superadmin, include attendance list for modal
-                if ($user->hasRole(['Superadmin', 'Admin'])) {
+                if ($isAdmin) {
                     $eventArr['attendance'] = $e->rsvps
                         ->where('status', 'attended')
                         ->map(function ($rsvp) {
@@ -137,7 +155,7 @@ class EventController extends Controller
 
         // Senarai program yang telah dihadiri oleh user (ahli)
         $attendedEvents = [];
-        if ($user->hasRole('Member')) {
+        if ($user && $user->hasRole('Member')) {
             $attended = EventRsvp::where('user_id', $user->id)
                 ->where('status', 'attended')
                 ->with(['event.organization'])
@@ -166,8 +184,10 @@ class EventController extends Controller
             'filters' => [
                 'search' => $search,
                 'type' => $typeFilter,
+                'org' => $orgFilter,
             ],
-            'organizations' => $user->hasRole('Superadmin')
+            // Tetamu & superadmin boleh menapis mengikut organisasi; ahli kekal scoping sendiri.
+            'organizations' => ($isSuperadmin || ! $user)
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
             'attendedEvents' => $attendedEvents,
@@ -186,6 +206,7 @@ class EventController extends Controller
     public function show(Request $request, string $slug): Response
     {
         $user = $request->user();
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin']);
 
         $event = Event::with([
             'organization',
@@ -195,10 +216,15 @@ class EventController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        $eventArr = $this->serializeEvent($event, $user->id);
+        // Tetamu & ahli biasa tidak boleh lihat draft/closed event.
+        if (! $isAdmin && ! $event->isPublished()) {
+            abort(404);
+        }
+
+        $eventArr = $this->serializeEvent($event, $user?->id);
 
         // Attendance list for admins
-        if ($user->hasRole(['Superadmin', 'Admin'])) {
+        if ($isAdmin) {
             $eventArr['attendance'] = $event->rsvps
                 ->where('status', 'attended')
                 ->map(function ($rsvp) {
@@ -243,6 +269,7 @@ class EventController extends Controller
                         ->orWhereNull('organization_id');
                 }
             })
+            ->when(! $isAdmin, fn ($q) => $q->where('status', EventStatus::Published->value))
             ->orderBy('start_time')
             ->take(3)
             ->get()
@@ -279,7 +306,7 @@ class EventController extends Controller
                 'status' => $myRegistration->status->value,
                 'status_label' => $myRegistration->status->label(),
             ] : null,
-            'organizations' => $user->hasRole('Superadmin')
+            'organizations' => $user && $user->hasRole('Superadmin')
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
             'statuses' => collect(EventStatus::cases())

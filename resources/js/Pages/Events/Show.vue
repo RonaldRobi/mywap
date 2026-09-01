@@ -17,6 +17,7 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const isLoggedIn = computed(() => !!user.value);
 const isSuperadmin = computed(() => {
     const roles = user.value?.roles ?? [];
     return roles.includes('Superadmin') || roles.includes('Admin');
@@ -383,7 +384,7 @@ function eventShareUrl() {
                     </span>
                 </div>
 
-                <div v-if="!isSuperadmin" class="grid grid-cols-3 gap-2 max-w-md">
+                <div v-if="!isSuperadmin && isLoggedIn" class="grid grid-cols-3 gap-2 max-w-md">
                     <button
                         @click="submitRsvp('going')"
                         :disabled="submitting"
@@ -431,8 +432,14 @@ function eventShareUrl() {
                     </button>
                 </div>
 
-                <div v-else class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
+                <div v-else-if="isSuperadmin" class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
                     Akaun pentadbir menggunakan mod pengurusan kehadiran (QR + senarai peserta hadir) di bawah.
+                </div>
+
+                <!-- Guest: galakkan daftar program -->
+                <div v-else class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-4 text-sm text-emerald-800">
+                    <p class="font-bold mb-1">Berminat untuk hadir?</p>
+                    <p class="text-emerald-700">Daftarkan diri anda sebagai peserta program ini melalui borang pendaftaran di bawah — tiada akaun diperlukan.</p>
                 </div>
             </div>
 
@@ -458,11 +465,11 @@ function eventShareUrl() {
                         </div>
                         <div class="flex gap-2 shrink-0">
                             <a
-                                :href="f.register_url"
+                                :href="isLoggedIn ? f.register_url : f.public_url"
                                 :disabled="!!myRegistration"
                                 class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                Daftar
+                                {{ isLoggedIn ? 'Daftar' : 'Daftar Program' }}
                             </a>
                         </div>
                     </div>
@@ -602,23 +609,13 @@ function eventShareUrl() {
             <section class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6">
                 <h2 class="text-lg font-black text-gray-900 mb-4">Komen</h2>
 
-                <form class="space-y-3 mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100" @submit.prevent="submitComment">
+                <form v-if="isLoggedIn" class="space-y-3 mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100" @submit.prevent="submitComment">
                     <p class="text-xs font-medium text-gray-500">
                         Tinggalkan komen anda
-                        <template v-if="user"> sebagai <span class="font-bold text-gray-700">{{ user.name }}</span></template>
-                        <template v-else>(boleh sebagai anonim)</template>:
+                        <span class="font-bold text-gray-700"> sebagai {{ user.name }}</span>:
                     </p>
 
-                    <div v-if="!user">
-                        <input
-                            v-model="commentForm.anonymous_name"
-                            type="text"
-                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                            placeholder="Nama anda (Pilihan)"
-                        />
-                    </div>
-
-                    <div>
+                    <div class="space-y-1">
                         <textarea
                             v-model="commentForm.content"
                             rows="3"

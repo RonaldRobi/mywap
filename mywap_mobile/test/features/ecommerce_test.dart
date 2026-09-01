@@ -167,7 +167,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Baju Melayu'), findsOneWidget);
-    expect(find.text('Harga Ahli'), findsOneWidget);
+    expect(find.text('Ahli'), findsOneWidget);
     expect(find.text('RM45'), findsOneWidget);
   });
 

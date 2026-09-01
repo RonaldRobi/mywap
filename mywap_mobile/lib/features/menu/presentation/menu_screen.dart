@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 
 /// Menu grid linking to every feature screen (§5).
 class MenuScreen extends StatelessWidget {
@@ -12,6 +13,9 @@ class MenuScreen extends StatelessWidget {
   static const List<_MenuItem> _items = [
     _MenuItem('Profil', '/profile', Icons.person_outline, 'Maklumat akaun anda'),
     _MenuItem('Kad Ahli', '/card', Icons.qr_code_2, 'Kad digital & QR'),
+    _MenuItem('Jemput Ahli', '/member/referral', Icons.person_add_alt_outlined, 'Kongsi pautan rujukan'),
+    _MenuItem('Yuran & Kewangan', '/member/financial/overview', Icons.receipt_long_outlined, 'Status yuran & infaq'),
+    _MenuItem('Info Organisasi', '/organization/info', Icons.info_outline, 'Carta & maklumat organisasi'),
     _MenuItem('Pengumuman', '/member/announcements', Icons.campaign_outlined, 'Makluman terkini'),
     _MenuItem('Pustaka', '/member/library', Icons.local_library_outlined, 'Bahan bacaan & rujukan'),
     _MenuItem('Berita', '/news', Icons.newspaper, 'Berita terkini'),
@@ -32,8 +36,9 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Menu'),
-        actions: const [LogoutIconButton()],
+        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(Spacing.lg),

@@ -9,6 +9,16 @@ abstract final class ApiPaths {
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
   static const String me = '/auth/me';
+  static const String register = '/auth/register';
+  static String resolveReferral(String code) => '/auth/referral/$code';
+  static const String checkMember = '/auth/check-member';
+  static const String forgotId = '/auth/forgot-id';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
+  static const String verifyIdentity = '/auth/verify-identity';
+  static const String sendOtp = '/auth/send-otp';
+  static const String updateAndSendOtp = '/auth/update-and-send-otp';
+  static const String verifyOtp = '/auth/verify-otp';
 
   // ---- Member ----
   static const String memberDashboard = '/member/dashboard';
@@ -19,11 +29,17 @@ abstract final class ApiPaths {
   static String memberAnnouncementReact(int id) => '/member/announcements/$id/react';
   static String memberAnnouncementRead(int id) => '/member/announcements/$id/read';
   static const String memberLibrary = '/member/library';
+  static const String memberReferral = '/member/referral';
+  static const String memberFinancialOverview = '/member/financial/overview';
+
+  // ---- Organization ----
+  static const String organizationInfo = '/organization/info';
 
   // ---- Events ----
   static const String events = '/events';
   static String eventDetail(int id) => '/events/$id';
   static String eventRsvp(int id) => '/events/$id/rsvp';
+  static String eventCheckIn(int id) => '/events/$id/check-in';
 
   // ---- Profile ----
   static const String profile = '/profile';

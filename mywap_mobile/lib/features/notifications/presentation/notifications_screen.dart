@@ -67,18 +67,27 @@ class NotificationsScreen extends ConsumerWidget {
                         ),
                       ),
                     Expanded(
-                      child: state.notifications.isEmpty
-                          ? const EmptyState(
-                              icon: Icons.notifications_none,
-                              message: 'Tiada notifikasi buat masa ini.',
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: Spacing.xl),
-                              itemCount: state.notifications.length,
-                              itemBuilder: (context, index) => _NotificationCard(
-                                notification: state.notifications[index],
+                      child: RefreshIndicator(
+                        onRefresh: () async => ref
+                            .read(notificationsControllerProvider.notifier)
+                            .retry(),
+                        child: state.notifications.isEmpty
+                            ? const SingleChildScrollView(
+                                physics: AlwaysScrollableScrollPhysics(),
+                                child: EmptyState(
+                                  icon: Icons.notifications_none,
+                                  message: 'Tiada notifikasi buat masa ini.',
+                                ),
+                              )
+                            : ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.only(bottom: Spacing.xl),
+                                itemCount: state.notifications.length,
+                                itemBuilder: (context, index) => _NotificationCard(
+                                  notification: state.notifications[index],
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ],
                 ),

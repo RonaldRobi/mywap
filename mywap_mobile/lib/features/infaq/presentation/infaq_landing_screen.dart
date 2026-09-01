@@ -10,7 +10,8 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
 
@@ -34,8 +35,9 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Infaq'),
-        actions: const [LogoutIconButton()],
+        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: listAsync.when(
         data:

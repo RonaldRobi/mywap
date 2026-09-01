@@ -25,6 +25,7 @@ class JourneyScreen extends ConsumerWidget {
         data: (data) => _JourneyContent(
           history: data.history ?? const <ProfileHistoryEntry>[],
           programs: data.attendedPrograms ?? const <ProfileAttendedProgram>[],
+          onRefresh: () async => ref.invalidate(profileProvider),
         ),
         loading: () => const _JourneySkeleton(),
         error: (error, _) => ErrorRetry(
@@ -37,21 +38,35 @@ class JourneyScreen extends ConsumerWidget {
 }
 
 class _JourneyContent extends StatelessWidget {
-  const _JourneyContent({required this.history, required this.programs});
+  const _JourneyContent({
+    required this.history,
+    required this.programs,
+    required this.onRefresh,
+  });
 
   final List<ProfileHistoryEntry> history;
   final List<ProfileAttendedProgram> programs;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (history.isEmpty && programs.isEmpty) {
-      return const EmptyState(
-        icon: Icons.route_outlined,
-        message: 'Tiada rekod perjalanan lagi.',
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: EmptyState(
+            icon: Icons.route_outlined,
+            message: 'Tiada rekod perjalanan lagi.',
+          ),
+        ),
       );
     }
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: Spacing.xl),
       children: [
         if (history.isNotEmpty) ...[
@@ -76,6 +91,7 @@ class _JourneyContent extends StatelessWidget {
           for (final program in programs) _ProgramCard(program: program),
         ],
       ],
+      ),
     );
   }
 }

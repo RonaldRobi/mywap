@@ -102,6 +102,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             onOptionSelected: (variationId, optionId) => setState(
               () => _selectedOptions[variationId] = optionId,
             ),
+            onRefresh: () async =>
+                ref.invalidate(productDetailProvider(widget.productId)),
           );
         },
         loading: () => const _DetailSkeleton(),
@@ -138,24 +140,35 @@ class _DetailContent extends StatelessWidget {
     required this.detail,
     required this.selectedOptions,
     required this.onOptionSelected,
+    required this.onRefresh,
   });
 
   final ProductDetail detail;
   final Map<int, int> selectedOptions;
   final void Function(int variationId, int optionId) onOptionSelected;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final product = detail.product;
     if (product == null) {
-      return const Center(child: Text('Produk tidak dijumpai.'));
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Center(child: Text('Produk tidak dijumpai.')),
+        ),
+      );
     }
 
     final showBadge = product.isMember && product.priceForMember != null;
     final price = showBadge ? product.priceForMember! : (product.price ?? 0);
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         AppImage(
@@ -293,6 +306,7 @@ class _DetailContent extends StatelessWidget {
           const SizedBox(height: Spacing.xl),
         ],
       ],
+      ),
     );
   }
 }

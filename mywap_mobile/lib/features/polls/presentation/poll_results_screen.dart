@@ -21,7 +21,10 @@ class PollResultsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Keputusan Undian')),
       body: resultsAsync.when(
-        data: (results) => _ResultsBody(results: results),
+        data: (results) => _ResultsBody(
+          results: results,
+          onRefresh: () async => ref.invalidate(pollResultsProvider(pollId)),
+        ),
         loading: () => const _ResultsSkeleton(),
         error: (error, _) => ErrorRetry(
           message:
@@ -34,16 +37,20 @@ class PollResultsScreen extends ConsumerWidget {
 }
 
 class _ResultsBody extends StatelessWidget {
-  const _ResultsBody({required this.results});
+  const _ResultsBody({required this.results, required this.onRefresh});
 
   final PollResults results;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = results.poll?.title ?? 'Keputusan';
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
         Text(title, style: theme.textTheme.headlineSmall),
@@ -58,6 +65,7 @@ class _ResultsBody extends StatelessWidget {
         for (final question in results.questions) _QuestionResult(question: question),
         const SizedBox(height: Spacing.xl),
       ],
+      ),
     );
   }
 }

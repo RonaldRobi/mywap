@@ -86,6 +86,7 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
         data: (detail) => _DetailContent(
           detail: detail,
           onDonate: () => _openDonate(detail.infaq),
+          onRefresh: () async => ref.invalidate(infaqDetailProvider(widget.slug)),
         ),
         loading: () => const _DetailSkeleton(),
         error: (error, _) => ErrorRetry(
@@ -98,10 +99,15 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
 }
 
 class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.detail, required this.onDonate});
+  const _DetailContent({
+    required this.detail,
+    required this.onDonate,
+    required this.onRefresh,
+  });
 
   final InfaqDetail detail;
   final VoidCallback onDonate;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +117,10 @@ class _DetailContent extends StatelessWidget {
     final description = infaq.description;
     final orgName = infaq.organizationName;
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         AppImage(
@@ -234,6 +243,7 @@ class _DetailContent extends StatelessWidget {
         ],
         const SizedBox(height: Spacing.xl),
       ],
+      ),
     );
   }
 }

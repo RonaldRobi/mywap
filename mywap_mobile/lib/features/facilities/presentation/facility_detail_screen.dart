@@ -28,6 +28,8 @@ class FacilityDetailScreen extends ConsumerWidget {
         data: (detail) => _DetailContent(
           detail: detail,
           onBook: () => showFacilityBookingSheet(context, detail),
+          onRefresh: () async =>
+              ref.invalidate(facilityDetailProvider(facilityId)),
         ),
         loading: () => const _DetailSkeleton(),
         error: (error, _) => ErrorRetry(
@@ -41,10 +43,15 @@ class FacilityDetailScreen extends ConsumerWidget {
 }
 
 class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.detail, required this.onBook});
+  const _DetailContent({
+    required this.detail,
+    required this.onBook,
+    required this.onRefresh,
+  });
 
   final FacilityDetailData detail;
   final VoidCallback onBook;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +62,10 @@ class _DetailContent extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          child: ListView(
+          child: RefreshIndicator(
+            onRefresh: onRefresh,
+            child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
             children: [
               AppImage(
@@ -113,6 +123,7 @@ class _DetailContent extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
         SafeArea(

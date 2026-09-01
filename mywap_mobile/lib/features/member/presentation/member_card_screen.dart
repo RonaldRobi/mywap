@@ -35,14 +35,18 @@ class MemberCardScreen extends ConsumerWidget {
   }
 }
 
-class _CardContent extends StatelessWidget {
+class _CardContent extends ConsumerWidget {
   const _CardContent({required this.data});
   final MemberCardData data;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(Spacing.lg),
-    children: [_MemberCard(card: data.card, qrValue: data.card?.qrValue)],
+  Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
+    onRefresh: () async => ref.invalidate(memberCardProvider),
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(Spacing.lg),
+      children: [_MemberCard(card: data.card, qrValue: data.card?.qrValue)],
+    ),
   );
 }
 

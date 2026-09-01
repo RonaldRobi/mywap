@@ -9,7 +9,8 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../member/presentation/widgets/notification_bell.dart';
+import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/poll_providers.dart';
 import '../data/models/poll.dart';
 
@@ -22,11 +23,15 @@ class PollsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppMenuButton(),
         title: const Text('Undian'),
-        actions: const [LogoutIconButton()],
+        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: pollsAsync.when(
-        data: (data) => _PollsBody(data: data),
+        data: (data) => _PollsBody(
+          data: data,
+          onRefresh: () async => ref.invalidate(pollsProvider),
+        ),
         loading: () => const _PollsSkeleton(),
         error: (error, _) => ErrorRetry(
           message:
@@ -39,19 +44,29 @@ class PollsScreen extends ConsumerWidget {
 }
 
 class _PollsBody extends StatelessWidget {
-  const _PollsBody({required this.data});
+  const _PollsBody({required this.data, required this.onRefresh});
 
   final PollListData data;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (data.availablePolls.isEmpty && data.answeredPolls.isEmpty) {
-      return const EmptyState(
-        icon: Icons.poll_outlined,
-        message: 'Tiada undian buat masa ini.',
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: const SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: EmptyState(
+            icon: Icons.poll_outlined,
+            message: 'Tiada undian buat masa ini.',
+          ),
+        ),
       );
     }
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
         const SectionHeader('Undian Terkini'),
@@ -68,6 +83,7 @@ class _PollsBody extends StatelessWidget {
             _PollCard(poll: poll, answered: true),
         const SizedBox(height: Spacing.xl),
       ],
+      ),
     );
   }
 }

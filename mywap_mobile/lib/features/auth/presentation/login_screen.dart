@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _error;
+  bool _bioSubmitting = false;
 
   @override
   void dispose() {
@@ -47,6 +49,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : 'Log masuk gagal. Sila cuba lagi.',
       );
     }
+  }
+
+  Future<void> _loginWithBiometrics() async {
+    setState(() {
+      _bioSubmitting = true;
+      _error = null;
+    });
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .loginWithBiometrics();
+    if (!ok && mounted) {
+      setState(() => _error = 'Pengesahan biometrik gagal. Sila log masuk manual.');
+    }
+    if (mounted) setState(() => _bioSubmitting = false);
   }
 
   @override
@@ -180,7 +196,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () => context.push('/forgot-password'),
                             style: TextButton.styleFrom(
                               foregroundColor: accent,
                             ),
@@ -212,7 +228,95 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     : const Text('Log Masuk'),
                           ),
                         ),
-                        const SizedBox(height: Spacing.xxl),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final bioAvailable = ref.watch(
+                              biometricAvailableProvider,
+                            );
+                            return bioAvailable.maybeWhen(
+                              data: (available) {
+                                if (!available) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: Spacing.md,
+                                  ),
+                                  child: SizedBox(
+                                    height: 52,
+                                    child: OutlinedButton.icon(
+                                      onPressed:
+                                          _bioSubmitting
+                                              ? null
+                                              : _loginWithBiometrics,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: accent,
+                                        side: BorderSide(color: accent),
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: AppRadius.xl,
+                                        ),
+                                      ),
+                                      icon:
+                                          _bioSubmitting
+                                              ? const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                              : const Icon(
+                                                Icons.fingerprint,
+                                              ),
+                                      label: const Text(
+                                        'Log Masuk dengan Face ID / Cap Jari',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              orElse: () => const SizedBox.shrink(),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Log masuk kali pertama?'),
+                            TextButton(
+                              onPressed: () => context.push('/first-login'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: accent,
+                              ),
+                              child: const Text('Klik di sini'),
+                            ),
+                          ],
+                        ),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => context.push('/forgot-id'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.textSecondary,
+                            ),
+                            child: const Text('Lupa No. Ahli?'),
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Belum ada akaun?'),
+                            TextButton(
+                              onPressed: () => context.push('/register'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: accent,
+                              ),
+                              child: const Text('Daftar Sekarang'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: Spacing.xl),
                         Text(
                           'PLATFORM RASMI EKOSISTEM',
                           textAlign: TextAlign.center,
