@@ -161,7 +161,14 @@ import { Head, Link } from '@inertiajs/vue3';
         </main>
 
         <footer class="bg-slate-950 py-8 text-center text-sm text-slate-500">
-            <p>&copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.</p>
+            <div class="mx-auto flex flex-col items-center gap-4 px-4">
+                <div class="flex gap-4">
+                    <Link :href="route('terms')" class="hover:text-white transition">Terma & Syarat</Link>
+                    <span class="text-slate-700">|</span>
+                    <Link :href="route('privacy')" class="hover:text-white transition">Privasi</Link>
+                </div>
+                <p>&copy; {{ new Date().getFullYear() }} myWAP. Hak Cipta Terpelihara.</p>
+            </div>
         </footer>
     </div>
 </template>

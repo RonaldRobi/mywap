@@ -334,14 +334,13 @@ class ProfileController extends Controller
 
     /**
      * Delete the user's account.
+     *
+     * Any authenticated user may delete their own account — required for
+     * Play Store account-deletion compliance.
      */
     public function destroy(Request $request): RedirectResponse
     {
         $user = $request->user();
-
-        if (! $user->hasAnyRole(['Superadmin', 'Admin'])) {
-            abort(403);
-        }
 
         $request->validate([
             'password' => ['required', 'current_password'],

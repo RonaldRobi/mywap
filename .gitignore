@@ -41,3 +41,7 @@ Thumbs.db
 /mywap_mobile/android/local.properties
 /mywap_mobile/**/*.g.dart
 /mywap_mobile/**/*.freezed.dart
+
+# Android release signing (rahasia, jangan commit)
+/mywap_mobile/android/key.properties
+/mywap_mobile/android/*.jks

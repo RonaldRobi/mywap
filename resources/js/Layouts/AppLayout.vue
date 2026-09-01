@@ -186,26 +186,33 @@ const ecommerceChildren = computed(() => {
 
 const ecommerceActive = computed(() => ecommerceChildren.value.some((c) => c.active));
 const memberFacilityChildren = computed(() => {
-    if (isMember.value && !isAdmin.value && !isSuperadmin.value) {
-        return [
-            {
-                label: 'Tempah Perkhidmatan/Fasiliti',
-                href: route('member.facilities.index'),
-                active: route().current('member.facilities.*') && queryParam('view') !== 'history',
-                colorClass: 'text-[#123D2A]',
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
-            },
-            {
-                label: 'Sejarah Tempahan',
-                href: route('member.facilities.index', { view: 'history' }),
-                active: route().current('member.facilities.index') && queryParam('view') === 'history',
-                colorClass: 'text-[#123D2A]',
-                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-            },
-        ];
+    // Admin/superadmin dilarang menempah ruang — menu tempahan hanya untuk
+    // ahli & tetamu. Tetamu hanya nampak "Tempah", ahli juga nampak sejarah.
+    if (isAdmin.value || isSuperadmin.value) {
+        return [];
     }
 
-    return [];
+    const children = [
+        {
+            label: 'Tempah Perkhidmatan/Fasiliti',
+            href: route('member.facilities.index'),
+            active: route().current('member.facilities.*') && queryParam('view') !== 'history',
+            colorClass: 'text-[#123D2A]',
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M5 7v13h14V7M9 7V4h6v3M9 13h6"/></svg>`,
+        },
+    ];
+
+    if (isMember.value) {
+        children.push({
+            label: 'Sejarah Tempahan',
+            href: route('member.facilities.index', { view: 'history' }),
+            active: route().current('member.facilities.index') && queryParam('view') === 'history',
+            colorClass: 'text-[#123D2A]',
+            icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+        });
+    }
+
+    return children;
 });
 const facilitiesActive = computed(() => memberFacilityChildren.value.some((c) => c.active));
 const adminFacilityChildren = computed(() => {
@@ -652,6 +659,15 @@ const navItems = computed(() => [
         colorClass: 'text-[#071525]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>`,
+    },
+    {
+        label:  'Pembatalan Akaun',
+        href:   route('account.cancellation'),
+        active: route().current('account.cancellation'),
+        colorClass: 'text-red-500',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>`,
     },
 ]);

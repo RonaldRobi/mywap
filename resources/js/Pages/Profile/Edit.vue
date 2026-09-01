@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
     mustVerifyEmail: {
@@ -51,6 +51,23 @@ defineProps({
 
                 <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:p-6">
                     <UpdatePasswordForm />
+                </section>
+
+                <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm md:p-6">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-lg font-black text-gray-900">Pembatalan Akaun</h2>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Padam akaun dan semua data anda secara kekal.
+                            </p>
+                        </div>
+                        <Link
+                            :href="route('account.cancellation')"
+                            class="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition"
+                        >
+                            Urus Pembatalan
+                        </Link>
+                    </div>
                 </section>
 
             </div>

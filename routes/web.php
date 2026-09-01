@@ -470,6 +470,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Pembatalan akaun (member area) — untuk pematuhan Play Store
+    Route::get('/akaun/pembatalan', fn () => inertia('AccountCancellation'))->name('account.cancellation');
+
     // Events — RSVP & comments kekal memerlukan login
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');

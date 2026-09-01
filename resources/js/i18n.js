@@ -57,6 +57,7 @@ const en = {
     'Akaun': 'Account',
     'Profil': 'Profile',
     'Perjalanan': 'Journey',
+    'Pembatalan Akaun': 'Account Cancellation',
     'Utama': 'Home',
     'Kad': 'Card',
     'Notifikasi': 'Notifications',
