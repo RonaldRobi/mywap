@@ -66,6 +66,7 @@ Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('publ
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');
 Route::get('/terma-syarat', fn () => inertia('TermsConditions'))->name('terms');
+Route::get('/keselamatan-kanak-kanak', fn () => inertia('ChildSafety'))->name('child.safety');
 
 Route::post('/__deploy/{token}', DeployController::class);
 

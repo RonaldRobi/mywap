@@ -32,7 +32,7 @@ android {
         applicationId = "com.mywap.mywap_mobile"
         // mobile_scanner (androidx.camera) requires minSdk >= 23.
         minSdk = maxOf(flutter.minSdkVersion, 23)
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
