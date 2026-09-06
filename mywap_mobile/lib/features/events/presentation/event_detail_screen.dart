@@ -59,7 +59,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/events'),
-        title: const Text('Butiran Acara'),
+        title: const Text('Butiran Program'),
       ),
       body: detailAsync.when(
         data:
@@ -105,7 +105,7 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = event?.title ?? 'Acara';
+    final title = event?.title ?? 'Program & Acara';
     final description = event?.description;
     final myRsvp = event?.my_rsvp;
     final isGoing = myRsvp == 'going';

@@ -8,6 +8,7 @@ use App\Models\BroadcastMessage;
 use App\Models\Organization;
 use App\Models\UsrahGroup;
 use App\Services\AdminService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +44,20 @@ class BroadcastController extends Controller
                 'recipient_count' => is_array($message->recipient_ids) ? count($message->recipient_ids) : 0,
                 'notification_channels' => $message->notification_channels ?? ['in_app'],
                 'sent_at' => $message->sent_at?->toDateTimeString(),
+                'status' => $message->status ?? 'queued',
+                'status_label' => match ($message->status) {
+                    'processing' => 'Sedang Dihantar',
+                    'completed' => 'Selesai Dihantar',
+                    'partial' => 'Selesai (Sebahagian Gagal)',
+                    'failed' => 'Gagal',
+                    default => 'Menunggu Beratur (Queue)',
+                },
+                'total_recipients' => $message->recipient_count,
+                'success_count' => $message->success_count,
+                'failed_count' => $message->failed_count,
+                'started_at' => $message->started_at?->toDateTimeString(),
+                'finished_at' => $message->finished_at?->toDateTimeString(),
+                'error_message' => $message->error_message,
             ]);
 
         $announcementsQuery = Announcement::query()->with('organization:id,name,slug');
@@ -129,7 +144,9 @@ class BroadcastController extends Controller
         $targetOrgId = null;
 
         if ($data['target_criteria'] === 'all') {
-            $targetOrgId = null;
+            // 'Semua Ahli' untuk org-admin bermaksud semua ahli organisasinya sahaja,
+            // bukan seluruh platform merentas tier. Superadmin: seluruh platform.
+            $targetOrgId = $isSuperadmin ? null : $user->current_organization_id;
         } elseif ($data['target_criteria'] === 'organization') {
             if ($isSuperadmin) {
                 $targetOrgId = $data['target_organization_id'] ?? $user->current_organization_id;
@@ -156,5 +173,28 @@ class BroadcastController extends Controller
         ]);
 
         return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
+    }
+
+    /**
+     * Log peristiwa untuk satu siaran (JSON). Dimuat secara berasingan supaya
+     * halaman sejarah tidak memuat semua log per-penerima sekali gus.
+     */
+    public function logs(BroadcastMessage $broadcast): JsonResponse
+    {
+        $logs = $broadcast->logs()
+            ->take(200)
+            ->get()
+            ->map(fn ($log) => [
+                'id' => $log->id,
+                'event' => $log->event,
+                'channel' => $log->channel,
+                'user_id' => $log->user_id,
+                'message' => $log->message,
+                'created_at' => $log->created_at?->toDateTimeString(),
+                'created_human' => $log->created_at?->locale('ms')->diffForHumans(),
+            ])
+            ->values();
+
+        return response()->json(['logs' => $logs]);
     }
 }

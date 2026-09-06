@@ -78,7 +78,7 @@ class _AttendanceContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                data.event?.title ?? 'Acara',
+                data.event?.title ?? 'Program',
                 style: theme.textTheme.titleLarge,
               ),
               if (data.event?.startTime != null) ...[

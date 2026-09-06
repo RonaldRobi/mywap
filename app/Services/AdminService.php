@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\SendBroadcastJob;
 use App\Models\Attendance;
+use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
 use App\Models\Campaign;
 use App\Models\Event;
@@ -296,8 +297,8 @@ class AdminService
                 'recent_activities' => $recentActivities,
             ],
             'managementLinks' => [
-                'create_event_url' => route('events.index'),
-                'create_program_url' => route('events.index'),
+                'create_event_url' => route('admin.events.index'),
+                'create_program_url' => route('admin.events.create'),
                 'create_campaign_url' => route('admin.campaigns.store'),
                 'campaigns_url' => route('admin.campaigns.index'),
                 'infaq_url' => $isSuperadmin ? route('superadmin.infaq.index') : route('admin.campaigns.index'),
@@ -751,6 +752,12 @@ class AdminService
 
         SendBroadcastJob::dispatch($message->id);
 
+        BroadcastLog::create([
+            'broadcast_message_id' => $message->id,
+            'event' => 'queued',
+            'message' => 'Siaran dimasukkan ke dalam giliran pemprosesan.',
+        ]);
+
         return $message;
     }
 
@@ -759,6 +766,11 @@ class AdminService
      */
     public function resolveAudience(User $user, string $audience, ?int $organizationId = null): array
     {
+        // 'all' untuk org-admin terhad kepada organisasi sendiri (bukan seluruh platform).
+        if ($audience === 'all' && ! $user->hasRole('Superadmin')) {
+            $audience = 'members';
+        }
+
         return match ($audience) {
             'members' => ['organization', $user->current_organization_id, null],
             'org' => $this->orgTarget($user, $organizationId),

@@ -147,6 +147,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/usrah/groups/{usrahGroup}/assign', [UsrahController::class, 'assignMembers'])->name('admin.usrah.groups.assign');
         Route::get('/admin/broadcasts', [BroadcastController::class, 'index'])->name('admin.broadcasts.index');
         Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
+        Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
         Route::get('/admin/facilities/manage', [FacilityBookingController::class, 'manageFacilities'])->name('admin.facilities.manage');
         Route::post('/admin/facilities', [FacilityBookingController::class, 'storeFacility'])->name('admin.facilities.store');
         Route::put('/admin/facilities/{facility}', [FacilityBookingController::class, 'updateFacility'])->name('admin.facilities.update');

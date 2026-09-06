@@ -13,14 +13,43 @@ class GeneralBroadcastNotification extends Notification
 
     public function __construct(public BroadcastMessage $broadcastMessage) {}
 
+    /**
+     * Saluran dipilih di admin disimpan sebagai nilai UI ('in_app', 'email'),
+     * manakala Laravel cuma kenal channel ('database', 'mail', dll).
+     * Peta di sini supaya notifikasi tidak gagal dengan "Driver not supported".
+     *
+     * Emel hanya dihantar kepada ahli yang ada alamat emel — ahli tanpa emel
+     * tidak boleh menerima saluran 'email' (elak ralat MailChannel).
+     */
     public function via(object $notifiable): array
     {
-        return $this->broadcastMessage->notification_channels ?? ['in_app'];
+        $channels = $this->broadcastMessage->notification_channels ?? ['in_app'];
+
+        $map = [
+            'in_app' => 'database',
+            'email' => 'mail',
+        ];
+
+        $canEmail = filled($notifiable->email ?? null);
+
+        return collect($channels)
+            ->map(function (string $channel) use ($canEmail, $map) {
+                if ($channel === 'email' && ! $canEmail) {
+                    return null;
+                }
+
+                return $map[$channel] ?? null;
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function toDatabase(object $notifiable): array
     {
         return [
+            'type' => 'broadcast',
             'broadcast_id' => $this->broadcastMessage->id,
             'title' => $this->broadcastMessage->title,
             'content' => $this->broadcastMessage->content,

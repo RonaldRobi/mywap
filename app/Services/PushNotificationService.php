@@ -71,7 +71,11 @@ class PushNotificationService
      * Hantar push kepada semua token peranti untuk satu senarai user
      * (terima User model ataupun id). Query token di-chunk oleh sendToTokens.
      */
-    public function sendToUsers(iterable $users, string $title, string $body, array $data = []): void
+    /**
+     * Hantar push kepada semua token peranti untuk satu senarai user
+     * (terima User model ataupun id). Pulangkan bilangan token cuba dihantar.
+     */
+    public function sendToUsers(iterable $users, string $title, string $body, array $data = []): int
     {
         $ids = collect($users)
             ->map(fn ($u) => $u instanceof User ? $u->getKey() : $u)
@@ -79,7 +83,7 @@ class PushNotificationService
             ->values();
 
         if ($ids->isEmpty()) {
-            return;
+            return 0;
         }
 
         $tokens = DeviceToken::whereIn('user_id', $ids->all())
@@ -87,24 +91,26 @@ class PushNotificationService
             ->all();
 
         $this->sendToTokens($tokens, $title, $body, $data);
+
+        return count($tokens);
     }
 
-    public function sendToUser(User $user, string $title, string $body, array $data = []): void
+    public function sendToUser(User $user, string $title, string $body, array $data = []): int
     {
-        $this->sendToUsers([$user], $title, $body, $data);
+        return $this->sendToUsers([$user], $title, $body, $data);
     }
 
     /**
      * Hantar push kepada semua token peranti user dalam satu organisasi.
      */
-    public function sendToOrganization(int $organizationId, string $title, string $body, array $data = []): void
+    public function sendToOrganization(int $organizationId, string $title, string $body, array $data = []): int
     {
         $ids = User::withoutGlobalScopes()
             ->where('current_organization_id', $organizationId)
             ->pluck('id')
             ->all();
 
-        $this->sendToUsers($ids, $title, $body, $data);
+        return $this->sendToUsers($ids, $title, $body, $data);
     }
 
     /**

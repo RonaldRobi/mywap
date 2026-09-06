@@ -39,7 +39,7 @@ const props = defineProps({
                         <span class="font-semibold text-gray-800">{{ registration.phone }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-400">Event</span>
+                        <span class="text-gray-400">Program & Acara</span>
                         <span class="font-semibold text-gray-800">{{ event.title }}</span>
                     </div>
                     <div class="flex justify-between">

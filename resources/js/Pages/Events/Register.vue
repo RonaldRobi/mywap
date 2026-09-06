@@ -128,7 +128,7 @@ function submit() {
             <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl shadow-sm mb-6 overflow-hidden">
                 <div class="p-6">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
-                        {{ isGuest ? 'Pendaftaran Awam' : 'Pendaftaran Event' }}
+                        {{ isGuest ? 'Pendaftaran Awam' : 'Pendaftaran Program & Acara' }}
                     </p>
                     <h1 class="text-xl font-black text-gray-900">{{ event.title }}</h1>
                 </div>

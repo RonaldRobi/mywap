@@ -1,6 +1,8 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const props = defineProps({
     events: Object, // paginator
@@ -9,6 +11,22 @@ const props = defineProps({
     statuses: Array,
     categories: Array,
 });
+
+// ─── Kongsi Program (popup platform) ────────────────────────────────────────
+
+const shareTarget = ref(null);
+
+function openShare(event) {
+    shareTarget.value = event;
+}
+
+function closeShare() {
+    shareTarget.value = null;
+}
+
+function shareUrlFor(event) {
+    return event ? route('share.event', event.id, true) : '';
+}
 
 const statusColor = {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
@@ -32,18 +50,18 @@ function deleteEvent(event) {
 </script>
 
 <template>
-    <Head title="Pengurusan Event" />
+    <Head title="Pengurusan Program & Acara" />
 
     <AppLayout>
         <div class="max-w-7xl mx-auto px-4 py-8">
             <div class="flex items-center justify-between gap-3 mb-6">
                 <div>
-                    <h1 class="text-2xl font-black text-gray-900">Pengurusan Event</h1>
-                    <p class="text-sm text-gray-500 mt-0.5">Cipta &amp; urus semua event, borang pendaftaran, peserta dan kehadiran.</p>
+                    <h1 class="text-2xl font-black text-gray-900">Pengurusan Program & Acara</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">Cipta &amp; urus semua program/acara, borang pendaftaran, peserta dan kehadiran.</p>
                 </div>
                 <Link :href="route('admin.events.create')" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Cipta Event
+                    Cipta Program
                 </Link>
             </div>
 
@@ -67,14 +85,21 @@ function deleteEvent(event) {
 
             <!-- Empty -->
             <div v-if="events.data.length === 0" class="rounded-3xl bg-white border border-gray-100 p-12 text-center">
-                <p class="text-gray-400 text-sm">Tiada event. Klik "Cipta Event" untuk mulakan.</p>
+                <p class="text-gray-400 text-sm">Tiada program &amp; acara. Klik "Cipta Program" untuk mulakan.</p>
             </div>
 
             <!-- Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div v-for="e in events.data" :key="e.id" class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                    <div class="aspect-[16/9] bg-gray-100 overflow-hidden">
+                    <div class="relative aspect-[4/5] bg-gray-100 overflow-hidden">
                         <img :src="e.featured_image_url" :alt="e.title" class="w-full h-full object-cover" />
+                        <button
+                            @click="openShare(e)"
+                            title="Kongsi program"
+                            class="absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-600 shadow-sm hover:bg-white hover:text-gray-900 transition"
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 6l-4-4-4 4M12 2v12"/></svg>
+                        </button>
                     </div>
                     <div class="p-4 flex-1 flex flex-col gap-3">
                         <div class="flex flex-wrap gap-1.5">
@@ -127,5 +152,35 @@ function deleteEvent(event) {
                 </div>
             </div>
         </div>
+
+        <!-- Modal Kongsi Program (popup platform) -->
+        <Teleport to="body">
+            <div
+                v-if="shareTarget"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+                @click.self="closeShare"
+            >
+                <div class="w-full max-w-md rounded-3xl border border-white/50 bg-white/95 shadow-2xl p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div class="min-w-0">
+                            <h3 class="text-base font-black text-gray-800">Kongsi Program</h3>
+                            <p class="text-sm text-gray-500 truncate mt-0.5">{{ shareTarget.title }}</p>
+                        </div>
+                        <button @click="closeShare" class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 mb-4">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Pautan Kongsi</p>
+                        <p class="text-xs text-gray-600 break-all">{{ shareUrlFor(shareTarget) }}</p>
+                    </div>
+
+                    <SocialShareButtons :title="shareTarget.title" :url="shareUrlFor(shareTarget)" />
+                </div>
+            </div>
+        </Teleport>
     </AppLayout>
 </template>

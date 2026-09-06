@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const props = defineProps({
     event: Object,
@@ -45,6 +46,22 @@ function deleteEvent() {
     if (!confirm(`Padam program "${props.event.title}"?\n\nSemua borang, pendaftaran dan kehadiran program ini juga akan dipadam. Tindakan ini tidak boleh dibatalkan.`)) return;
     router.delete(route('events.destroy', props.event.id));
 }
+
+// ─── Kongsi Program (popup platform) ────────────────────────────────────────
+
+const eventShareOpen = ref(false);
+
+function shareProgram() {
+    eventShareOpen.value = true;
+}
+
+function closeShareProgram() {
+    eventShareOpen.value = false;
+}
+
+function eventShareUrl() {
+    return route('share.event', props.event?.id, true);
+}
 </script>
 
 <template>
@@ -54,10 +71,11 @@ function deleteEvent() {
         <div class="max-w-5xl mx-auto px-4 py-8">
             <!-- Header -->
             <div class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden mb-6">
-                <div class="aspect-[21/9] bg-gray-100 overflow-hidden">
-                    <img :src="event.featured_image_url" :alt="event.title" class="w-full h-full object-cover" />
-                </div>
-                <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr]">
+                    <div class="aspect-[4/5] bg-gray-100 overflow-hidden">
+                        <img :src="event.featured_image_url" :alt="event.title" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="p-6">
                     <div class="flex flex-wrap items-center gap-2 mb-2">
                         <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold" :class="statusColor[event.status] ?? statusColor.draft">
                             {{ event.status_label }}
@@ -75,6 +93,13 @@ function deleteEvent() {
                     <p v-if="event.organizations.length > 1" class="text-xs text-gray-400 mt-0.5">Terlibat: {{ event.organizations.join(', ') }}</p>
 
                     <div class="mt-4 flex flex-wrap gap-2">
+                        <button
+                            @click="shareProgram"
+                            class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 6l-4-4-4 4M12 2v12"/></svg>
+                            Kongsi
+                        </button>
                         <a :href="editUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Edit</a>
                         <a :href="route('events.show', event.slug)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Lihat Awam</a>
                         <a :href="qrUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">QR Kehadiran</a>
@@ -88,6 +113,7 @@ function deleteEvent() {
                             Padam
                         </button>
                     </div>
+                </div>
                 </div>
             </div>
 
@@ -154,6 +180,37 @@ function deleteEvent() {
                 </div>
             </div>
         </div>
+
+        <!-- Modal Kongsi Program (popup platform) -->
+        <Teleport to="body">
+            <div v-if="eventShareOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" @click.self="closeShareProgram">
+                <div class="w-full max-w-md rounded-3xl border border-white/50 bg-white/95 shadow-2xl p-6">
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div class="min-w-0">
+                            <h3 class="text-base font-black text-gray-800">Kongsi Program</h3>
+                            <p class="text-sm text-gray-500 truncate mt-0.5">{{ event.title }}</p>
+                        </div>
+                        <button @click="closeShareProgram" class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div v-if="!isPublished()" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-left mb-4">
+                        <p class="text-xs font-bold text-amber-800">Program belum diterbitkan</p>
+                        <p class="text-[11px] text-amber-700 mt-0.5">Pengguna akan melihat 404 apabila membuka pautan ini. Sila terbitkan program dahulu.</p>
+                    </div>
+
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 mb-4">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Pautan Kongsi</p>
+                        <p class="text-xs text-gray-600 break-all">{{ eventShareUrl() }}</p>
+                    </div>
+
+                    <SocialShareButtons :title="event.title" :url="eventShareUrl()" />
+                </div>
+            </div>
+        </Teleport>
 
         <!-- Modal Kongsi (QR + Salin Pautan) -->
         <div v-if="shareForm" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" @click.self="shareForm = null">

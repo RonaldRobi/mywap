@@ -91,7 +91,7 @@ class _RegistrationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    event?.title ?? item.formTitle ?? 'Acara',
+                    event?.title ?? item.formTitle ?? 'Program & Acara',
                     style: theme.textTheme.titleMedium,
                   ),
                 ),

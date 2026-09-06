@@ -147,10 +147,10 @@ function submitCampaign() {
                         <Link :href="managementLinks.fees_members_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Yuran Ahli') }}
                         </Link>
-                        <Link :href="managementLinks.create_program_url || managementLinks.create_event_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link :href="managementLinks.create_program_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Tambah Program Baharu') }}
                         </Link>
-                        <Link :href="managementLinks.create_program_url || managementLinks.create_event_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link :href="managementLinks.create_event_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Urus Program') }}
                         </Link>
                         <Link v-if="isManagementView" :href="managementLinks.infaq_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">

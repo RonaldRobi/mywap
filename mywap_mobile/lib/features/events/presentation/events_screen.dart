@@ -23,7 +23,7 @@ class EventsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppMenuButton(),
-        title: const Text('Acara'),
+        title: const Text('Program & Acara'),
         actions: [
           IconButton(
             tooltip: 'Pendaftaran Saya',

@@ -276,19 +276,10 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M7 7v10m10-10v10M8 17l8-10"/>
                 </svg>`,
     }] : []),
-    ...(isAdmin.value || isSuperadmin.value ? [{
-        label:  'Event',
-        href:   route('admin.events.index'),
-        active: route().current('admin.events.*'),
-        colorClass: 'text-[#123D2A]',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 3h-6m6 0v6m0-6L9 15m3 0H7.5a1.5 1.5 0 00-1.5 1.5V21h4.5a1.5 1.5 0 001.5-1.5V15m-3 0l-4.5 4.5"/>
-                </svg>`,
-    }] : []),
     {
-        label:  'Program',
-        href:   route('events.index'),
-        active: route().current('events.*'),
+        label:  'Program & Acara',
+        href:   (isAdmin.value || isSuperadmin.value) ? route('admin.events.index') : route('events.index'),
+        active: route().current('admin.events.*') || route().current('events.*'),
         colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>

@@ -150,7 +150,7 @@ class _BottomNavBar extends StatelessWidget {
           _NavItem(
             icon: Icons.event_outlined,
             selectedIcon: Icons.event,
-            label: 'Acara',
+            label: 'Program',
             selected: selectedIndex == 1,
             onTap: () => onSelect(1),
           ),

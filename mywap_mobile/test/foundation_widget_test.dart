@@ -111,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Utama'), findsOneWidget);
-    expect(find.text('Acara'), findsOneWidget);
+    expect(find.text('Program'), findsOneWidget);
     expect(find.text('Infaq'), findsOneWidget);
     expect(find.text('Profil'), findsOneWidget);
     expect(find.text('Admin'), findsOneWidget);
@@ -185,7 +185,7 @@ void main() {
 
     router.go('/events/999');
     await tester.pumpAndSettle();
-    expect(find.text('Butiran Acara'), findsOneWidget);
+    expect(find.text('Butiran Program'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     router.go('/infaq');

@@ -46,6 +46,18 @@ function eventShareUrl(event) {
     return route('share.event', event?.id, true);
 }
 
+// ─── Kongsi Program (popup platform) ────────────────────────────────────────
+
+const shareTarget = ref(null);
+
+function openShare(event) {
+    shareTarget.value = event;
+}
+
+function closeShare() {
+    shareTarget.value = null;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const typeConfig = {
@@ -302,7 +314,7 @@ watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType,
                            hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-300 cursor-pointer flex flex-col"
                 >
                     <!-- Featured Image -->
-                    <div class="relative aspect-[4/3] overflow-hidden bg-gray-50 shrink-0">
+                    <div class="relative aspect-[4/5] overflow-hidden bg-gray-50 shrink-0">
                         <img
                             :src="event.featured_image_url"
                             :alt="event.title"
@@ -314,6 +326,13 @@ watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType,
 
                         <!-- Admin Actions (top-right overlay) -->
                         <div v-if="isSuperadmin" class="absolute top-2 right-2 z-10 flex gap-1">
+                            <button
+                                @click.stop="openShare(event)"
+                                class="flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-600 shadow-sm hover:bg-white hover:text-gray-900 transition text-[10px]"
+                                title="Kongsi program"
+                            >
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 6l-4-4-4 4M12 2v12"/></svg>
+                            </button>
                             <button
                                 @click.stop="router.visit(route('events.show', event.slug))"
                                 class="flex items-center justify-center w-7 h-7 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 text-gray-600 shadow-sm hover:bg-white hover:text-gray-900 transition text-[10px]"
@@ -581,13 +600,14 @@ watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType,
                             </div>
 
                             <div class="space-y-1">
-                                <label class="text-xs font-semibold text-gray-500">Featured Image</label>
+                                <label class="text-xs font-semibold text-gray-500">Poster Program</label>
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/jpg,image/jpeg,image/png,image/webp"
                                     class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
                                     @change="createProgramForm.featured_image = $event.target.files?.[0] ?? null"
                                 >
+                                <p class="text-[11px] text-gray-400">Cadangan saiz poster: 1080 × 1350 px (nisbah 4:5) untuk paparan seragam.</p>
                                 <p v-if="createProgramForm.errors.featured_image" class="text-xs text-red-500">{{ createProgramForm.errors.featured_image }}</p>
                             </div>
 
@@ -600,6 +620,47 @@ watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType,
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!--  KONGSI PROGRAM MODAL                                            -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 scale-95"
+                enter-to-class="opacity-100 scale-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100 scale-100"
+                leave-to-class="opacity-0 scale-95"
+            >
+                <div
+                    v-if="shareTarget"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+                    @click.self="closeShare"
+                >
+                    <div class="w-full max-w-md rounded-3xl border border-white/50 bg-white/95 shadow-2xl p-6">
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div class="min-w-0">
+                                <h3 class="text-base font-black text-gray-800">Kongsi Program</h3>
+                                <p class="text-sm text-gray-500 truncate mt-0.5">{{ shareTarget.title }}</p>
+                            </div>
+                            <button @click="closeShare" class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 mb-4">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Pautan Kongsi</p>
+                            <p class="text-xs text-gray-600 break-all">{{ eventShareUrl(shareTarget) }}</p>
+                        </div>
+
+                        <SocialShareButtons :title="shareTarget.title" :url="eventShareUrl(shareTarget)" />
                     </div>
                 </div>
             </Transition>

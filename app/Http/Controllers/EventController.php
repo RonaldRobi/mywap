@@ -600,7 +600,7 @@ class EventController extends Controller
         $event = $this->persistEvent(null, $request);
 
         return redirect()->route('admin.events.show', $event->id)
-            ->with('success', 'Event baharu berjaya ditambah. Sila tambah borang pendaftaran.');
+            ->with('success', 'Program & acara baharu berjaya ditambah. Sila tambah borang pendaftaran.');
     }
 
     public function updateAdmin(Request $request, Event $event): RedirectResponse
@@ -610,7 +610,7 @@ class EventController extends Controller
         $this->persistEvent($event, $request);
 
         return redirect()->route('admin.events.show', $event->id)
-            ->with('success', 'Event berjaya dikemas kini.');
+            ->with('success', 'Program & acara berjaya dikemas kini.');
     }
 
     private function eventForm(Request $request, ?Event $event): Response

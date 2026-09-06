@@ -70,11 +70,11 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="isEditing ? `Edit Event: ${event.title}` : 'Cipta Event'" />
+    <Head :title="isEditing ? `Edit Program & Acara: ${event.title}` : 'Cipta Program & Acara'" />
 
     <AppLayout>
         <div class="max-w-3xl mx-auto px-4 py-8">
-            <h1 class="text-2xl font-black text-gray-900 mb-6">{{ isEditing ? 'Edit Event' : 'Cipta Event' }}</h1>
+            <h1 class="text-2xl font-black text-gray-900 mb-6">{{ isEditing ? 'Edit Program & Acara' : 'Cipta Program & Acara' }}</h1>
 
             <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
                 {{ $page.props.flash.error }}
@@ -172,8 +172,9 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Featured Image</label>
-                    <p class="text-xs text-gray-400 mb-2">Gambar ini jadi preview apabila event dikongsi di WhatsApp, Facebook atau Telegram.</p>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Poster Program</label>
+                    <p class="text-xs text-gray-400 mb-2">Gunakan gambar berformat poster: <strong>1080px (lebar) × 1350px (tinggi)</strong> — nisbah 4:5 — supaya paparan seragam dan tidak dipotong.</p>
+                    <p class="text-xs text-gray-400 mb-2">Poster ini jadi imej preview apabila program dikongsi di WhatsApp, Facebook atau Telegram.</p>
                     <input type="file" accept="image/jpg,image/jpeg,image/png,image/webp" @change="form.featured_image = $event.target.files?.[0] ?? null" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
                     <div v-if="isEditing && event.featured_image_url" class="mt-2">
                         <img :src="event.featured_image_url" class="h-28 rounded-lg object-cover" alt="Featured semasa" />
@@ -183,7 +184,7 @@ function submit() {
 
                 <div class="flex gap-3 pt-2">
                     <button @click="submit" :disabled="form.processing || invalidTimes" class="flex-1 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50">
-                        {{ form.processing ? 'Menyimpan...' : (isEditing ? 'Kemas Kini Event' : 'Cipta Event') }}
+                        {{ form.processing ? 'Menyimpan...' : (isEditing ? 'Kemas Kini Program' : 'Cipta Program') }}
                     </button>
                     <a :href="route('admin.events.index')" class="rounded-2xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50">Batal</a>
                 </div>

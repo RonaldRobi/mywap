@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -82,11 +82,17 @@ const memberSearchQuery = ref('');
 const memberResults = ref([]);
 const selectedMembers = ref([]);
 const memberSearchLoading = ref(false);
+const memberSearchError = ref('');
 const showMemberDropdown = ref(false);
 let memberDebounceTimer = null;
 
+function orgNameById(orgId) {
+    return props.organizations.find((o) => Number(o.id) === Number(orgId))?.name;
+}
+
 function onMemberSearchInput(val) {
     memberSearchQuery.value = val;
+    memberSearchError.value = '';
     clearTimeout(memberDebounceTimer);
     if (val.length < 2) {
         memberResults.value = [];
@@ -95,13 +101,23 @@ function onMemberSearchInput(val) {
     }
     memberDebounceTimer = setTimeout(() => {
         memberSearchLoading.value = true;
-        axios.get('/api/members/search', { params: { q: val } })
+        const params = { q: val };
+        if (!props.isSuperadmin) {
+            params.organization_id = props.defaultOrganizationId;
+        }
+        axios.get('/api/members/search', { params })
             .then((res) => {
                 const alreadySelected = selectedMembers.value.map(m => m.id);
                 memberResults.value = (res.data || []).filter(m => !alreadySelected.includes(m.id));
-                showMemberDropdown.value = memberResults.value.length > 0;
+                showMemberDropdown.value = true;
             })
-            .catch(() => { memberResults.value = []; })
+            .catch((err) => {
+                memberResults.value = [];
+                memberSearchError.value = err?.response?.status === 429
+                    ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
+                    : 'Ralat carian. Sila cuba lagi.';
+                showMemberDropdown.value = true;
+            })
             .finally(() => { memberSearchLoading.value = false; });
     }, 300);
 }
@@ -113,6 +129,7 @@ function addMember(member) {
     }
     memberSearchQuery.value = '';
     memberResults.value = [];
+    memberSearchError.value = '';
     showMemberDropdown.value = false;
 }
 
@@ -126,7 +143,7 @@ function onMemberBlur() {
 }
 
 function onMemberFocus() {
-    if (memberResults.value.length > 0) {
+    if (memberResults.value.length > 0 || memberSearchError.value) {
         showMemberDropdown.value = true;
     }
 }
@@ -272,6 +289,103 @@ function markImageForRemoval(imageId) {
 function undoRemoveImage(imageId) {
     editRemoveImageIds.value = editRemoveImageIds.value.filter(id => id !== imageId);
 }
+
+// ─── Sejarah: status, log & auto-refresh ─────────────────────────────────────
+const logsOpen = ref(new Set());
+const logsCache = ref({});
+const logsLoading = ref({});
+
+async function toggleLogs(id) {
+    if (logsOpen.value.has(id)) {
+        const next = new Set(logsOpen.value);
+        next.delete(id);
+        logsOpen.value = next;
+        return;
+    }
+    const next = new Set(logsOpen.value);
+    next.add(id);
+    logsOpen.value = next;
+
+    if (logsCache.value[id] === undefined) {
+        logsLoading.value[id] = true;
+        try {
+            const res = await axios.get(route('admin.broadcasts.logs', id));
+            logsCache.value[id] = res.data?.logs || [];
+        } catch {
+            logsCache.value[id] = [];
+        } finally {
+            logsLoading.value[id] = false;
+        }
+    }
+}
+
+function logsFor(id) {
+    return logsCache.value[id];
+}
+
+function statusBadgeClass(status) {
+    return {
+        completed: 'bg-emerald-50 text-emerald-700',
+        partial: 'bg-orange-50 text-orange-700',
+        failed: 'bg-red-50 text-red-700',
+        processing: 'bg-blue-50 text-blue-700',
+        queued: 'bg-amber-50 text-amber-700',
+    }[status] || 'bg-amber-50 text-amber-700';
+}
+
+function statusDotClass(status) {
+    return {
+        completed: 'bg-emerald-500',
+        partial: 'bg-orange-500',
+        failed: 'bg-red-500',
+        processing: 'bg-blue-500 animate-pulse',
+        queued: 'bg-amber-500',
+    }[status] || 'bg-amber-500';
+}
+
+function channelLabel(ch) {
+    return ch === 'in_app' ? 'In-App' : 'Email';
+}
+
+function logEventLabel(event) {
+    return {
+        queued: 'Dalam giliran',
+        processing: 'Mula diproses',
+        completed: 'Selesai',
+        partial: 'Sebahagian gagal',
+        failed: 'Gagal',
+        delivery_failed: 'Hantaran gagal',
+        fcm_sent: 'Push peranti (FCM) dihantar',
+        fcm_skipped: 'Push peranti (FCM) dilangkau',
+    }[event] || event;
+}
+
+function hasActiveBroadcast() {
+    return (props.recentMessages || []).some(m => m.status === 'queued' || m.status === 'processing');
+}
+
+let pollTimer = null;
+
+function stopPolling() {
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+}
+
+watch(() => props.recentMessages, () => {
+    if (hasActiveBroadcast()) {
+        if (!pollTimer) {
+            pollTimer = setInterval(() => {
+                router.reload({ only: ['recentMessages'], preserveScroll: true });
+            }, 8000);
+        }
+    } else {
+        stopPolling();
+    }
+}, { immediate: true });
+
+onBeforeUnmount(stopPolling);
 </script>
 
 <template>
@@ -389,10 +503,18 @@ function undoRemoveImage(imageId) {
                                         @mousedown.prevent="addMember(member)"
                                         class="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                     >
-                                        <span class="font-medium">{{ member.name }}</span>
-                                        <span class="text-xs text-gray-400 font-mono">{{ member.member_no }}</span>
+                                        <span class="min-w-0">
+                                            <span class="block font-medium truncate">{{ member.name }}</span>
+                                            <span class="block text-[11px] text-gray-400">
+                                                <span class="font-mono">{{ member.member_no }}</span>
+                                                <template v-if="isSuperadmin && member.current_organization_id && orgNameById(member.current_organization_id)">
+                                                    <span class="mx-0.5">&middot;</span>{{ orgNameById(member.current_organization_id) }}
+                                                </template>
+                                            </span>
+                                        </span>
                                     </li>
-                                    <li v-if="memberResults.length === 0 && !memberSearchLoading" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
+                                    <li v-if="memberSearchError" class="px-4 py-3 text-sm text-red-600 text-center">{{ memberSearchError }}</li>
+                                    <li v-else-if="!memberSearchLoading && memberResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
                                 </ul>
                             </div>
 
@@ -477,34 +599,62 @@ function undoRemoveImage(imageId) {
                 <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                     <h2 class="text-lg font-black text-gray-800 mb-4">Sejarah Push Notification Keluar</h2>
                     <div class="space-y-3">
-                        <article v-for="item in recentMessages" :key="item.id" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-gray-50/50 p-4 hover:border-gray-200 transition-colors">
-                            <div class="flex items-start gap-4">
-                                <div class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                        <article v-for="item in recentMessages" :key="item.id" class="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 transition-colors hover:border-gray-200" :class="item.status === 'failed' ? 'border-red-200 bg-red-50/30' : (item.status === 'partial' ? 'border-orange-200 bg-orange-50/20' : '')">
+                            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                <div class="flex items-start gap-4 min-w-0">
+                                    <div class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-gray-800">{{ item.title }}</p>
+                                        <p class="mt-0.5 text-xs text-gray-500 font-medium tracking-wide">
+                                            <span class="text-gray-700">{{ item.organization_name }}</span> &bull;
+                                            <span class="capitalize">{{ item.target_criteria_label }}</span>
+                                            <span v-if="item.target_criteria === 'organization' && item.target_organization_name">({{ item.target_organization_name }})</span>
+                                            <span v-if="item.target_criteria === 'specific_members' && item.recipient_count">({{ item.recipient_count }} ahli)</span>
+                                        </p>
+                                        <p v-if="item.notification_channels?.length" class="mt-0.5 text-[11px] text-gray-400">
+                                            Saluran:
+                                            <span v-for="(ch, idx) in item.notification_channels" :key="ch" class="inline-flex items-center">
+                                                <span class="font-medium">{{ channelLabel(ch) }}</span>
+                                                <span v-if="idx < item.notification_channels.length - 1" class="mx-0.5">+</span>
+                                            </span>
+                                        </p>
+                                        <p v-if="item.total_recipients !== null && item.total_recipients !== undefined" class="mt-1 text-[11px] font-semibold text-gray-400">
+                                            {{ item.total_recipients }} penerima
+                                            <span v-if="(item.failed_count ?? 0) > 0" class="text-red-500">· {{ item.success_count ?? 0 }} berjaya · {{ item.failed_count }} gagal</span>
+                                            <span v-else class="text-emerald-600">· {{ item.success_count ?? 0 }} berjaya</span>
+                                        </p>
+                                        <p v-if="item.error_message" class="mt-1 text-[11px] font-semibold text-red-500">{{ item.error_message }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-sm font-bold text-gray-800">{{ item.title }}</p>
-                                    <p class="mt-0.5 text-xs text-gray-500 font-medium tracking-wide">
-                                        <span class="text-gray-700">{{ item.organization_name }}</span> &bull;
-                                        <span class="capitalize">{{ item.target_criteria_label }}</span>
-                                        <span v-if="item.target_criteria === 'organization' && item.target_organization_name">({{ item.target_organization_name }})</span>
-                                        <span v-if="item.target_criteria === 'specific_members' && item.recipient_count">({{ item.recipient_count }} ahli)</span>
-                                    </p>
-                                    <p v-if="item.notification_channels?.length" class="mt-0.5 text-[11px] text-gray-400">
-                                        Saluran:
-                                        <span v-for="(ch, idx) in item.notification_channels" :key="ch" class="inline-flex items-center">
-                                            <span class="font-medium">{{ ch === 'in_app' ? 'In-App' : 'Email' }}</span>
-                                            <span v-if="idx < item.notification_channels.length - 1" class="mx-0.5">+</span>
-                                        </span>
-                                    </p>
+                                <div class="shrink-0 flex flex-col items-start sm:items-end gap-1.5">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold" :class="statusBadgeClass(item.status)">
+                                        <span :class="['h-1.5 w-1.5 rounded-full', statusDotClass(item.status)]"></span>
+                                        {{ item.status_label }}
+                                    </span>
+                                    <span v-if="item.finished_at" class="text-[10px] text-gray-400 font-medium">Siap: {{ item.finished_at }}</span>
+                                    <button
+                                        type="button"
+                                        @click="toggleLogs(item.id)"
+                                        class="text-[11px] font-bold text-gray-500 hover:text-gray-900 transition-colors underline underline-offset-2"
+                                    >
+                                        {{ logsOpen.has(item.id) ? 'Tutup log' : 'Lihat log' }}
+                                    </button>
                                 </div>
                             </div>
-                            <div class="shrink-0 flex items-center justify-end">
-                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"
-                                      :class="item.sent_at ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
-                                    <span v-if="item.sent_at" class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                                    {{ item.sent_at ? 'Selesai Dihantar' : 'Menunggu Beratur (Queue)' }}
-                                </span>
+
+                            <div v-if="logsOpen.has(item.id)" class="mt-3 border-t border-gray-100 pt-3 space-y-1.5">
+                                <div v-if="logsLoading[item.id]" class="text-[11px] text-gray-400 font-medium">Memuat log...</div>
+                                <template v-else>
+                                    <div v-for="log in logsFor(item.id) || []" :key="log.id" class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+                                        <span class="font-mono text-gray-300">{{ log.created_at }}</span>
+                                        <span class="font-bold text-gray-600 rounded bg-gray-100 px-1.5 py-0.5">{{ logEventLabel(log.event) }}</span>
+                                        <span v-if="log.channel" class="text-gray-400 font-mono">{{ channelLabel(log.channel) }}</span>
+                                        <span v-if="log.message" class="text-gray-500">{{ log.message }}</span>
+                                    </div>
+                                    <div v-if="!(logsFor(item.id) || []).length" class="text-[11px] text-gray-400 font-medium">Tiada rekod log.</div>
+                                </template>
                             </div>
                         </article>
 
