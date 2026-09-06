@@ -61,12 +61,20 @@ class SharePreviewController extends Controller
 
     public function event(Event $event): View
     {
+        // Satu borang aktif → kongsi terus ke borang pendaftaran (elak langkah
+        // overview). Lebih dari satu / tiada borang → halaman overview (pilih borang).
+        $activeForms = $event->activeForms;
+
+        $redirectUrl = $activeForms->count() === 1
+            ? route('events.register.public', $activeForms->first()->share_token, true)
+            : route('events.show', $event->slug, true);
+
         return $this->renderPreview(
             title: $event->title,
             description: $event->description ?: 'Program komuniti terkini. Jom sertai bersama.',
             imageUrl: $this->absoluteUrl($event->featured_image_url),
             pageUrl: route('share.event', $event, true),
-            redirectUrl: route('events.show', $event->slug, true),
+            redirectUrl: $redirectUrl,
             type: 'article'
         );
     }

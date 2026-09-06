@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
 import 'infaq_donate_sheet.dart';
@@ -59,7 +60,11 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
   Future<void> _openWebview(String url) async {
     final paid = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => PaymentWebviewScreen(paymentUrl: url, title: 'Pembayaran Infaq'),
+        builder:
+            (_) => PaymentWebviewScreen(
+              paymentUrl: url,
+              title: 'Pembayaran Infaq',
+            ),
       ),
     );
     if (!mounted) return;
@@ -70,9 +75,9 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pembayaran dibatalkan.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pembayaran dibatalkan.')));
     }
   }
 
@@ -81,18 +86,27 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
     final detailAsync = ref.watch(infaqDetailProvider(widget.slug));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Infaq')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/infaq'),
+        title: const Text('Butiran Infaq'),
+      ),
       body: detailAsync.when(
-        data: (detail) => _DetailContent(
-          detail: detail,
-          onDonate: () => _openDonate(detail.infaq),
-          onRefresh: () async => ref.invalidate(infaqDetailProvider(widget.slug)),
-        ),
+        data:
+            (detail) => _DetailContent(
+              detail: detail,
+              onDonate: () => _openDonate(detail.infaq),
+              onRefresh:
+                  () async => ref.invalidate(infaqDetailProvider(widget.slug)),
+            ),
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(infaqDetailProvider(widget.slug)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(infaqDetailProvider(widget.slug)),
+            ),
       ),
     );
   }
@@ -120,129 +134,130 @@ class _DetailContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      children: [
-        AppImage(
-          infaq.imagePath,
-          height: 220,
-          width: double.infinity,
-          borderRadius: BorderRadius.zero,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (orgName != null) ...[
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.apartment,
-                      size: 18,
-                      color: AppColors.movementGreen,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        orgName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.movementGreen,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          AppImage(
+            infaq.imagePath,
+            height: 220,
+            width: double.infinity,
+            borderRadius: BorderRadius.zero,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (orgName != null) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.apartment,
+                        size: 18,
+                        color: AppColors.movementGreen,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          orgName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.movementGreen,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                ],
+                Text(infaq.title ?? '-', style: theme.textTheme.headlineSmall),
+                const SizedBox(height: Spacing.sm),
+                if (infaq.daysRunning != null || infaq.totalDonors != null)
+                  Row(
+                    children: [
+                      if (infaq.daysRunning != null)
+                        _InfoRow(
+                          icon: Icons.schedule,
+                          text: '${infaq.daysRunning} hari berjalan',
+                        ),
+                      if (infaq.daysRunning != null &&
+                          infaq.totalDonors != null)
+                        const SizedBox(width: Spacing.md),
+                      if (infaq.totalDonors != null)
+                        _InfoRow(
+                          icon: Icons.people_outline,
+                          text: '${infaq.totalDonors} penyumbang',
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: Spacing.lg),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    backgroundColor: AppColors.divider,
+                    color: AppColors.movementGreen,
+                  ),
                 ),
                 const SizedBox(height: Spacing.sm),
-              ],
-              Text(infaq.title ?? '-', style: theme.textTheme.headlineSmall),
-              const SizedBox(height: Spacing.sm),
-              if (infaq.daysRunning != null || infaq.totalDonors != null)
                 Row(
                   children: [
-                    if (infaq.daysRunning != null)
-                      _InfoRow(
-                        icon: Icons.schedule,
-                        text: '${infaq.daysRunning} hari berjalan',
+                    Text(
+                      Formatters.currency(infaq.collectedAmount),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppColors.movementGreen,
+                        fontWeight: FontWeight.w700,
                       ),
-                    if (infaq.daysRunning != null && infaq.totalDonors != null)
-                      const SizedBox(width: Spacing.md),
-                    if (infaq.totalDonors != null)
-                      _InfoRow(
-                        icon: Icons.people_outline,
-                        text: '${infaq.totalDonors} penyumbang',
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Sasaran ${Formatters.currency(infaq.targetAmount)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
                       ),
+                    ),
                   ],
                 ),
-              const SizedBox(height: Spacing.lg),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 10,
-                  backgroundColor: AppColors.divider,
-                  color: AppColors.movementGreen,
-                ),
-              ),
-              const SizedBox(height: Spacing.sm),
-              Row(
-                children: [
-                  Text(
-                    Formatters.currency(infaq.collectedAmount),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppColors.movementGreen,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Sasaran ${Formatters.currency(infaq.targetAmount)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                if (description != null && description.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: Spacing.sm),
+                  Text(description, style: theme.textTheme.bodyLarge),
                 ],
-              ),
-              if (description != null && description.isNotEmpty) ...[
                 const SizedBox(height: Spacing.xl),
-                Text('Penerangan', style: theme.textTheme.titleLarge),
-                const SizedBox(height: Spacing.sm),
-                Text(description, style: theme.textTheme.bodyLarge),
+                FilledButton.icon(
+                  onPressed: onDonate,
+                  icon: const Icon(Icons.volunteer_activism_outlined),
+                  label: const Text('Sumbang Sekarang'),
+                ),
               ],
-              const SizedBox(height: Spacing.xl),
-              FilledButton.icon(
-                onPressed: onDonate,
-                icon: const Icon(Icons.volunteer_activism_outlined),
-                label: const Text('Sumbang Sekarang'),
-              ),
-            ],
-          ),
-        ),
-        if (detail.recentDonations.isNotEmpty) ...[
-          const SectionHeader('Sumbangan Terkini'),
-          for (final donation in detail.recentDonations)
-            _RecentDonationTile(donation: donation),
-        ],
-        if (detail.relatedInfaqs.isNotEmpty) ...[
-          const SectionHeader('Infaq Lain'),
-          SizedBox(
-            height: 210,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.lg,
-                vertical: Spacing.sm,
-              ),
-              scrollDirection: Axis.horizontal,
-              itemCount: detail.relatedInfaqs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-              itemBuilder: (_, index) => _RelatedInfaqCard(
-                infaq: detail.relatedInfaqs[index],
-              ),
             ),
           ),
+          if (detail.recentDonations.isNotEmpty) ...[
+            const SectionHeader('Sumbangan Terkini'),
+            for (final donation in detail.recentDonations)
+              _RecentDonationTile(donation: donation),
+          ],
+          if (detail.relatedInfaqs.isNotEmpty) ...[
+            const SectionHeader('Infaq Lain'),
+            SizedBox(
+              height: 210,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.lg,
+                  vertical: Spacing.sm,
+                ),
+                scrollDirection: Axis.horizontal,
+                itemCount: detail.relatedInfaqs.length,
+                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                itemBuilder:
+                    (_, index) =>
+                        _RelatedInfaqCard(infaq: detail.relatedInfaqs[index]),
+              ),
+            ),
+          ],
+          const SizedBox(height: Spacing.xl),
         ],
-        const SizedBox(height: Spacing.xl),
-      ],
       ),
     );
   }
@@ -263,9 +278,9 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -284,13 +299,18 @@ class _RecentDonationTile extends StatelessWidget {
     final name = donation.donorName ?? 'Hamba Allah';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.lg,
+        vertical: Spacing.sm,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: AppColors.movementSoftGreen.withValues(alpha: 0.25),
+            backgroundColor: AppColors.movementSoftGreen.withValues(
+              alpha: 0.25,
+            ),
             child: const Icon(
               Icons.person,
               size: 20,

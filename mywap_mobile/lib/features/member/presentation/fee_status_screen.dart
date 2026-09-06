@@ -6,6 +6,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/fee_status.dart';
 
@@ -18,20 +19,29 @@ class FeeStatusScreen extends ConsumerWidget {
     final feeAsync = ref.watch(memberFeeStatusProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Status Yuran')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/member/financial/overview'),
+        title: const Text('Status Yuran'),
+      ),
       body: feeAsync.when(
-        data: (fee) => _FeeStatusContent(
-          fee: fee,
-          onRefresh: () async => ref.invalidate(memberFeeStatusProvider),
-        ),
-        loading: () => const Padding(
-          padding: EdgeInsets.all(Spacing.lg),
-          child: SkeletonBox(height: 260, radius: 16),
-        ),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(memberFeeStatusProvider),
-        ),
+        data:
+            (fee) => _FeeStatusContent(
+              fee: fee,
+              onRefresh: () async => ref.invalidate(memberFeeStatusProvider),
+            ),
+        loading:
+            () => const Padding(
+              padding: EdgeInsets.all(Spacing.lg),
+              child: SkeletonBox(height: 260, radius: 16),
+            ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(memberFeeStatusProvider),
+            ),
       ),
     );
   }
@@ -52,57 +62,60 @@ class _FeeStatusContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [
-        Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Status Yuran', style: theme.textTheme.titleMedium),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(Spacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Status Yuran',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      _StatusBadge(active: !isDue),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.xl),
+                  _InfoRow(
+                    label: 'Amaun Yuran Tahunan',
+                    value: _formatMoney(fee.fee_amount),
+                  ),
+                  if (isDue) ...[
+                    const SizedBox(height: Spacing.md),
+                    _InfoRow(
+                      label: 'Amaun Belum Dibayar',
+                      value: _formatMoney(amountDue),
+                      emphasize: true,
                     ),
-                    _StatusBadge(active: !isDue),
+                  ] else if (fee.last_paid_at != null) ...[
+                    const SizedBox(height: Spacing.md),
+                    _InfoRow(
+                      label: 'Tarikh Dibayar',
+                      value: _formatDate(fee.last_paid_at),
+                    ),
                   ],
-                ),
-                const SizedBox(height: Spacing.xl),
-                _InfoRow(
-                  label: 'Amaun Yuran Tahunan',
-                  value: _formatMoney(fee.fee_amount),
-                ),
-                if (isDue) ...[
-                  const SizedBox(height: Spacing.md),
-                  _InfoRow(
-                    label: 'Amaun Belum Dibayar',
-                    value: _formatMoney(amountDue),
-                    emphasize: true,
-                  ),
-                ] else if (fee.last_paid_at != null) ...[
-                  const SizedBox(height: Spacing.md),
-                  _InfoRow(
-                    label: 'Tarikh Dibayar',
-                    value: _formatDate(fee.last_paid_at),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: Spacing.lg),
-        Text(
-          isDue
-              ? 'Sila jelaskan yuran keahlian anda untuk mengekalkan status ahli yang aktif.'
-              : 'Yuran keahlian anda adalah LUNAS. Terima kasih atas sokongan anda.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+          const SizedBox(height: Spacing.lg),
+          Text(
+            isDue
+                ? 'Sila jelaskan yuran keahlian anda untuk mengekalkan status ahli yang aktif.'
+                : 'Yuran keahlian anda adalah LUNAS. Terima kasih atas sokongan anda.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -180,12 +193,13 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: Spacing.md),
         Text(
           value,
-          style: emphasize
-              ? theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.warning,
-                  fontWeight: FontWeight.w700,
-                )
-              : theme.textTheme.titleMedium,
+          style:
+              emphasize
+                  ? theme.textTheme.titleMedium?.copyWith(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  )
+                  : theme.textTheme.titleMedium,
         ),
       ],
     );

@@ -7,6 +7,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_scaffold.dart';
+import 'widgets/biometric_prompt.dart';
 
 /// Log Masuk Kali Pertama (OTP) — sepadan dengan web first-login flow:
 /// 1) IC (+ emel jika tiada/salah) → hantar OTP ke emel berdaftar.
@@ -112,10 +113,13 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
             ? auth.error!
             : 'Pengesahan OTP gagal. Sila cuba lagi.',
       );
+      setState(() => _submitting = false);
+      return;
     }
     // Kejayaan: go_router redirect akan bawa ke /dashboard secara automatik
     // (lihat app_router.dart) apabila AuthState bertukar ke AuthAuthenticated.
     setState(() => _submitting = false);
+    await BiometricPrompt.offerEnable(context, ref);
   }
 
   @override

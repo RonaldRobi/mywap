@@ -13,6 +13,8 @@ const props = defineProps({
     qrUrl: String,
 });
 
+const isPublished = () => props.event?.status === 'published';
+
 const statusColor = {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
     published: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -89,6 +91,22 @@ function deleteEvent() {
                 </div>
             </div>
 
+            <!-- Amaran: event belum diterbitkan -->
+            <div v-if="!isPublished()" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex-1 text-sm text-amber-800">
+                    <p class="font-bold flex items-center gap-2">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                        Program ini masih berstatus {{ event.status_label }}
+                    </p>
+                    <p class="text-amber-700 mt-0.5">
+                        QR &amp; pautan kongsi borang pendaftaran di bawah <strong>tidak akan berfungsi</strong> untuk pengguna (paparan 404) sehingga program diterbitkan.
+                    </p>
+                </div>
+                <a :href="editUrl" class="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition">
+                    Terbitkan Sekarang
+                </a>
+            </div>
+
             <!-- Borang Pendaftaran -->
             <div class="rounded-3xl bg-white border border-gray-100 shadow-sm p-6">
                 <div class="flex items-center justify-between gap-3 mb-4">
@@ -141,6 +159,10 @@ function deleteEvent() {
         <div v-if="shareForm" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4" @click.self="shareForm = null">
             <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center space-y-4">
                 <p class="text-sm font-bold text-gray-800">Kongsi — {{ shareForm.title }}</p>
+                <div v-if="!isPublished()" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-left">
+                    <p class="text-xs font-bold text-amber-800">Program belum diterbitkan</p>
+                    <p class="text-[11px] text-amber-700 mt-0.5">Pengguna akan melihat 404 apabila membuka pautan/QR ini. Sila terbitkan program dahulu.</p>
+                </div>
                 <div class="mx-auto flex justify-center rounded-2xl border border-gray-100 bg-white p-4">
                     <div class="w-48 h-48 [&_svg]:w-full [&_svg]:h-full" v-html="shareForm.qr_svg"></div>
                 </div>

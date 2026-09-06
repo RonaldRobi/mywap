@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
@@ -38,9 +39,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (buyNow) {
       context.push('/checkout');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ditambah ke troli.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ditambah ke troli.')));
     }
   }
 
@@ -61,9 +62,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     // unit price (adjustments are only added for non-members).
     final isMember = product.isMember;
     final singleOption = selected.length == 1 ? selected.first : null;
-    final unitPrice = isMember
-        ? (product.priceForMember ?? (product.price ?? 0))
-        : (product.price ?? 0) + (singleOption?.priceAdjustment ?? 0);
+    final unitPrice =
+        isMember
+            ? (product.priceForMember ?? (product.price ?? 0))
+            : (product.price ?? 0) + (singleOption?.priceAdjustment ?? 0);
 
     final labels = <String>[];
     for (final option in selected) {
@@ -92,42 +94,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final detailAsync = ref.watch(productDetailProvider(widget.productId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Produk')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/products'),
+        title: const Text('Butiran Produk'),
+      ),
       body: detailAsync.when(
         data: (detail) {
           _detail = detail;
           return _DetailContent(
             detail: detail,
             selectedOptions: _selectedOptions,
-            onOptionSelected: (variationId, optionId) => setState(
-              () => _selectedOptions[variationId] = optionId,
-            ),
-            onRefresh: () async =>
-                ref.invalidate(productDetailProvider(widget.productId)),
+            onOptionSelected:
+                (variationId, optionId) =>
+                    setState(() => _selectedOptions[variationId] = optionId),
+            onRefresh:
+                () async =>
+                    ref.invalidate(productDetailProvider(widget.productId)),
           );
         },
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () =>
-              ref.invalidate(productDetailProvider(widget.productId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry:
+                  () => ref.invalidate(productDetailProvider(widget.productId)),
+            ),
       ),
       bottomNavigationBar: detailAsync.when(
-        data: (detail) => detail.product == null
-            ? null
-            : _BottomBar(
-                quantity: _quantity,
-                onDecrease: () => setState(() {
-                  if (_quantity > 1) _quantity--;
-                }),
-                onIncrease: () => setState(() {
-                  if (_quantity < 99) _quantity++;
-                }),
-                onAddToCart: () => _addToCart(buyNow: false),
-                onBuyNow: () => _addToCart(buyNow: true),
-              ),
+        data:
+            (detail) =>
+                detail.product == null
+                    ? null
+                    : _BottomBar(
+                      quantity: _quantity,
+                      onDecrease:
+                          () => setState(() {
+                            if (_quantity > 1) _quantity--;
+                          }),
+                      onIncrease:
+                          () => setState(() {
+                            if (_quantity < 99) _quantity++;
+                          }),
+                      onAddToCart: () => _addToCart(buyNow: false),
+                      onBuyNow: () => _addToCart(buyNow: true),
+                    ),
         loading: () => null,
         error: (_, __) => null,
       ),
@@ -168,144 +181,146 @@ class _DetailContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      children: [
-        AppImage(
-          product.displayImage,
-          height: 280,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          borderRadius: BorderRadius.zero,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      product.name ?? '-',
-                      style: theme.textTheme.headlineSmall,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          AppImage(
+            product.displayImage,
+            height: 280,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            borderRadius: BorderRadius.zero,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        product.name ?? '-',
+                        style: theme.textTheme.headlineSmall,
+                      ),
                     ),
-                  ),
-                  if (showBadge)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.sm,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.movementGreen,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Harga Ahli',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                    if (showBadge)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.sm,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementGreen,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Harga Ahli',
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: Spacing.sm),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    Formatters.currency(price),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: AppColors.movementGreen,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (showBadge && product.price != null) ...[
-                    const SizedBox(width: Spacing.sm),
+                  ],
+                ),
+                const SizedBox(height: Spacing.sm),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
                     Text(
-                      Formatters.currency(product.price),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        decoration: TextDecoration.lineThrough,
+                      Formatters.currency(price),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: AppColors.movementGreen,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (showBadge && product.price != null) ...[
+                      const SizedBox(width: Spacing.sm),
+                      Text(
+                        Formatters.currency(product.price),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-              if (product.organization?.name != null) ...[
-                const SizedBox(height: Spacing.sm),
-                Text(
-                  product.organization!.name!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.movementGreen,
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
-              ],
-              if (product.description != null &&
-                  product.description!.isNotEmpty) ...[
-                const SizedBox(height: Spacing.xl),
-                Text('Penerangan', style: theme.textTheme.titleLarge),
-                const SizedBox(height: Spacing.sm),
-                Text(product.description!, style: theme.textTheme.bodyLarge),
-              ],
-              if (product.variations.any((v) => v.options.isNotEmpty)) ...[
-                const SizedBox(height: Spacing.xl),
-                Text('Pilihan', style: theme.textTheme.titleLarge),
-                for (final variation in product.variations)
-                  if (variation.options.isNotEmpty) ...[
-                    const SizedBox(height: Spacing.md),
-                    Text(
-                      variation.name ?? 'Pilihan',
-                      style: theme.textTheme.titleSmall,
+                if (product.organization?.name != null) ...[
+                  const SizedBox(height: Spacing.sm),
+                  Text(
+                    product.organization!.name!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.movementGreen,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: Spacing.xs),
-                    Wrap(
-                      spacing: Spacing.sm,
-                      runSpacing: Spacing.xs,
-                      children: [
-                        for (final option in variation.options)
-                          ChoiceChip(
-                            label: Text(_optionLabel(option)),
-                            selected: (selectedOptions[variation.id] ??
-                                    variation.options.first.id!) ==
-                                option.id,
-                            showCheckmark: false,
-                            onSelected: (_) => onOptionSelected(
-                              variation.id!,
-                              option.id!,
+                  ),
+                ],
+                if (product.description != null &&
+                    product.description!.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: Spacing.sm),
+                  Text(product.description!, style: theme.textTheme.bodyLarge),
+                ],
+                if (product.variations.any((v) => v.options.isNotEmpty)) ...[
+                  const SizedBox(height: Spacing.xl),
+                  Text('Pilihan', style: theme.textTheme.titleLarge),
+                  for (final variation in product.variations)
+                    if (variation.options.isNotEmpty) ...[
+                      const SizedBox(height: Spacing.md),
+                      Text(
+                        variation.name ?? 'Pilihan',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: Spacing.xs),
+                      Wrap(
+                        spacing: Spacing.sm,
+                        runSpacing: Spacing.xs,
+                        children: [
+                          for (final option in variation.options)
+                            ChoiceChip(
+                              label: Text(_optionLabel(option)),
+                              selected:
+                                  (selectedOptions[variation.id] ??
+                                      variation.options.first.id!) ==
+                                  option.id,
+                              showCheckmark: false,
+                              onSelected:
+                                  (_) => onOptionSelected(
+                                    variation.id!,
+                                    option.id!,
+                                  ),
                             ),
-                          ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                ],
               ],
-            ],
-          ),
-        ),
-        if (detail.relatedProducts.isNotEmpty) ...[
-          const SectionHeader('Produk Berkaitan'),
-          SizedBox(
-            height: 220,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-              itemCount: detail.relatedProducts.length,
-              separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-              itemBuilder: (context, index) => _RelatedCard(
-                product: detail.relatedProducts[index],
-              ),
             ),
           ),
-          const SizedBox(height: Spacing.xl),
+          if (detail.relatedProducts.isNotEmpty) ...[
+            const SectionHeader('Produk Berkaitan'),
+            SizedBox(
+              height: 220,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                itemCount: detail.relatedProducts.length,
+                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                itemBuilder:
+                    (context, index) =>
+                        _RelatedCard(product: detail.relatedProducts[index]),
+              ),
+            ),
+            const SizedBox(height: Spacing.xl),
+          ],
         ],
-      ],
       ),
     );
   }
@@ -330,9 +345,10 @@ class _RelatedCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: product.id == null
-              ? null
-              : () => context.push('/products/${product.id}'),
+          onTap:
+              product.id == null
+                  ? null
+                  : () => context.push('/products/${product.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

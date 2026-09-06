@@ -9,6 +9,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/form_providers.dart';
 import '../data/form_repository.dart';
 import '../data/models/form_model.dart';
@@ -41,9 +42,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
   TextEditingController _controllerFor(int questionId) {
     return _controllers.putIfAbsent(
       questionId,
-      () => TextEditingController(
-        text: _values[questionId] as String? ?? '',
-      ),
+      () => TextEditingController(text: _values[questionId] as String? ?? ''),
     );
   }
 
@@ -80,16 +79,18 @@ class _FormScreenState extends ConsumerState<FormScreen> {
 
     for (final question in form.questions) {
       if (question.isFile) continue;
-      final value = question.type == 'text' ||
-              question.type == 'textarea' ||
-              question.type == 'email' ||
-              question.type == 'number'
-          ? _controllerFor(question.id!).text
-          : _values[question.id];
+      final value =
+          question.type == 'text' ||
+                  question.type == 'textarea' ||
+                  question.type == 'email' ||
+                  question.type == 'number'
+              ? _controllerFor(question.id!).text
+              : _values[question.id];
 
-      final isEmpty = value is String
-          ? value.trim().isEmpty
-          : value == null || (value is List && value.isEmpty);
+      final isEmpty =
+          value is String
+              ? value.trim().isEmpty
+              : value == null || (value is List && value.isEmpty);
 
       if (question.required && isEmpty) {
         setState(() => _error = 'Sila lengkapkan semua ruangan yang wajib.');
@@ -133,25 +134,32 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Borang')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Borang'),
+      ),
       body: formAsync.when(
-        data: (form) => _FormBody(
-          form: form,
-          values: _values,
-          submitting: _submitting,
-          error: _error,
-          onChanged: _setValue,
-          onToggleCheckbox: _toggleCheckbox,
-          onPickDate: _pickDate,
-          controllerFor: _controllerFor,
-          onSubmit: () => _submit(form),
-        ),
+        data:
+            (form) => _FormBody(
+              form: form,
+              values: _values,
+              submitting: _submitting,
+              error: _error,
+              onChanged: _setValue,
+              onToggleCheckbox: _toggleCheckbox,
+              onPickDate: _pickDate,
+              controllerFor: _controllerFor,
+              onSubmit: () => _submit(form),
+            ),
         loading: () => const _FormSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(formDetailProvider(widget.token)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(formDetailProvider(widget.token)),
+            ),
       ),
     );
   }
@@ -176,7 +184,7 @@ class _FormBody extends StatelessWidget {
   final String? error;
   final void Function(int questionId, dynamic value) onChanged;
   final void Function(int questionId, String option, bool checked)
-      onToggleCheckbox;
+  onToggleCheckbox;
   final void Function(int questionId) onPickDate;
   final TextEditingController Function(int questionId) controllerFor;
   final VoidCallback onSubmit;
@@ -237,16 +245,17 @@ class _FormBody extends StatelessWidget {
         const SizedBox(height: Spacing.lg),
         FilledButton.icon(
           onPressed: submitting ? null : onSubmit,
-          icon: submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.white,
-                  ),
-                )
-              : const Icon(Icons.send),
+          icon:
+              submitting
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.white,
+                    ),
+                  )
+                  : const Icon(Icons.send),
           label: const Text('Hantar Borang'),
         ),
         if (form.terms != null && form.terms!.isNotEmpty) ...[
@@ -279,16 +288,17 @@ class _QuestionField extends StatelessWidget {
   final TextEditingController Function(int questionId) controller;
   final void Function(int questionId, dynamic value) onChanged;
   final void Function(int questionId, String option, bool checked)
-      onToggleCheckbox;
+  onToggleCheckbox;
   final void Function(int questionId) onPickDate;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final id = question.id;
-    final label = question.required
-        ? '${question.label ?? ''} *'
-        : (question.label ?? '');
+    final label =
+        question.required
+            ? '${question.label ?? ''} *'
+            : (question.label ?? '');
     final type = question.type ?? 'text';
 
     Widget field;
@@ -331,9 +341,10 @@ class _QuestionField extends StatelessWidget {
                   ? value as String
                   : 'Pilih tarikh',
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: value is String && (value as String).isNotEmpty
-                    ? null
-                    : AppColors.textSecondary,
+                color:
+                    value is String && (value as String).isNotEmpty
+                        ? null
+                        : AppColors.textSecondary,
               ),
             ),
           ),
@@ -372,8 +383,7 @@ class _QuestionField extends StatelessWidget {
           ],
         );
       case 'checkbox':
-        final selected =
-            List<String>.of((value as List<String>?) ?? const []);
+        final selected = List<String>.of((value as List<String>?) ?? const []);
         field = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -382,8 +392,9 @@ class _QuestionField extends StatelessWidget {
             for (final option in question.options)
               CheckboxListTile(
                 value: selected.contains(option),
-                onChanged: (checked) =>
-                    onToggleCheckbox(id!, option, checked ?? false),
+                onChanged:
+                    (checked) =>
+                        onToggleCheckbox(id!, option, checked ?? false),
                 title: Text(option),
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
@@ -461,7 +472,11 @@ class _SuccessScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle, size: 64, color: AppColors.success),
+              const Icon(
+                Icons.check_circle,
+                size: 64,
+                color: AppColors.success,
+              ),
               const SizedBox(height: Spacing.lg),
               Text('Borang Dihantar', style: theme.textTheme.headlineSmall),
               const SizedBox(height: Spacing.sm),
@@ -522,8 +537,18 @@ class _FormSkeleton extends StatelessWidget {
 }
 
 const List<String> _months = [
-  'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis',
+  'Jan',
+  'Feb',
+  'Mac',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Ogo',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Dis',
 ];
 
 String _formatDate(DateTime value) =>

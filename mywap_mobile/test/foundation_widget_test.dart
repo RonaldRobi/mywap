@@ -43,9 +43,7 @@ void main() {
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: MenuScreen()),
-      ),
+      const ProviderScope(child: MaterialApp(home: MenuScreen())),
     );
     await tester.pumpAndSettle();
 
@@ -71,7 +69,11 @@ void main() {
       'Notifikasi',
     ];
     for (final label in expected) {
-      expect(find.text(label), findsOneWidget, reason: 'missing menu item: $label');
+      expect(
+        find.text(label),
+        findsOneWidget,
+        reason: 'missing menu item: $label',
+      );
     }
   });
 
@@ -152,7 +154,9 @@ void main() {
     expect(find.text('Profil'), findsOneWidget);
   });
 
-  testWidgets('app router: static event route beats /events/:id', (tester) async {
+  testWidgets('app router: static event route beats /events/:id', (
+    tester,
+  ) async {
     final adminUser = User(roles: ['Admin']);
     await tester.pumpWidget(
       ProviderScope(
@@ -161,7 +165,9 @@ void main() {
           authControllerProvider.overrideWith(
             () => _FakeAuthController(AuthAuthenticated(adminUser)),
           ),
-          memberDashboardProvider.overrideWith((ref) async => const DashboardData()),
+          memberDashboardProvider.overrideWith(
+            (ref) async => const DashboardData(),
+          ),
         ],
         child: const MyWapApp(),
       ),

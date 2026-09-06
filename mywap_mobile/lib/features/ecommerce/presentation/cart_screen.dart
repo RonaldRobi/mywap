@@ -8,6 +8,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -18,27 +19,32 @@ class CartScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Troli')),
-      body: cart.isEmpty
-          ? EmptyState(
-              icon: Icons.shopping_cart_outlined,
-              message: 'Troli anda kosong.',
-              actionLabel: 'Terokai Pasar',
-              onAction: () => context.go('/products'),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-                    itemCount: cart.items.length,
-                    itemBuilder: (context, index) =>
-                        _CartItemCard(item: cart.items[index]),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/products'),
+        title: const Text('Troli'),
+      ),
+      body:
+          cart.isEmpty
+              ? EmptyState(
+                icon: Icons.shopping_cart_outlined,
+                message: 'Troli anda kosong.',
+                actionLabel: 'Terokai Pasar',
+                onAction: () => context.go('/products'),
+              )
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+                      itemCount: cart.items.length,
+                      itemBuilder:
+                          (context, index) =>
+                              _CartItemCard(item: cart.items[index]),
+                    ),
                   ),
-                ),
-                _CartSummary(cart: cart),
-              ],
-            ),
+                  _CartSummary(cart: cart),
+                ],
+              ),
     );
   }
 }
@@ -96,26 +102,31 @@ class _CartItemCard extends ConsumerWidget {
                     children: [
                       IconButton.outlined(
                         visualDensity: VisualDensity.compact,
-                        onPressed: item.quantity > 1
-                            ? () => ref
-                                .read(cartProvider.notifier)
-                                .updateQuantity(item.key, item.quantity - 1)
-                            : null,
+                        onPressed:
+                            item.quantity > 1
+                                ? () => ref
+                                    .read(cartProvider.notifier)
+                                    .updateQuantity(item.key, item.quantity - 1)
+                                : null,
                         icon: const Icon(Icons.remove),
                       ),
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: Spacing.sm),
-                        child: Text('${item.quantity}',
-                            style: theme.textTheme.titleSmall),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.sm,
+                        ),
+                        child: Text(
+                          '${item.quantity}',
+                          style: theme.textTheme.titleSmall,
+                        ),
                       ),
                       IconButton.outlined(
                         visualDensity: VisualDensity.compact,
-                        onPressed: item.quantity < 99
-                            ? () => ref
-                                .read(cartProvider.notifier)
-                                .updateQuantity(item.key, item.quantity + 1)
-                            : null,
+                        onPressed:
+                            item.quantity < 99
+                                ? () => ref
+                                    .read(cartProvider.notifier)
+                                    .updateQuantity(item.key, item.quantity + 1)
+                                : null,
                         icon: const Icon(Icons.add),
                       ),
                     ],

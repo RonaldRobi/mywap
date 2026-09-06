@@ -9,6 +9,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/order_providers.dart';
 import '../data/models/order.dart';
 import 'order_status.dart';
@@ -47,49 +48,66 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final ordersAsync = ref.watch(ordersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pesanan')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Pesanan'),
+      ),
       body: ordersAsync.when(
         loading: () => const _OrdersSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.read(ordersProvider.notifier).refresh(),
-        ),
-        data: (state) => state.items.isEmpty
-            ? RefreshIndicator(
-                onRefresh: () async => ref.read(ordersProvider.notifier).refresh(),
-                child: const SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  child: EmptyState(
-                    icon: Icons.receipt_long_outlined,
-                    message: 'Tiada pesanan buat masa ini.',
-                  ),
-                ),
-              )
-            : RefreshIndicator(
-                onRefresh: () async => ref.read(ordersProvider.notifier).refresh(),
-                child: ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-                itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index >= state.items.length) {
-                    return const Padding(
-                      padding: EdgeInsets.all(Spacing.xl),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.read(ordersProvider.notifier).refresh(),
+            ),
+        data:
+            (state) =>
+                state.items.isEmpty
+                    ? RefreshIndicator(
+                      onRefresh:
+                          () async =>
+                              ref.read(ordersProvider.notifier).refresh(),
+                      child: const SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: EmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          message: 'Tiada pesanan buat masa ini.',
                         ),
                       ),
-                    );
-                  }
-                  return _OrderCard(order: state.items[index]);
-                },
-                ),
-              ),
+                    )
+                    : RefreshIndicator(
+                      onRefresh:
+                          () async =>
+                              ref.read(ordersProvider.notifier).refresh(),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: Spacing.sm,
+                        ),
+                        itemCount:
+                            state.items.length + (state.isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= state.items.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(Spacing.xl),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          return _OrderCard(order: state.items[index]);
+                        },
+                      ),
+                    ),
       ),
     );
   }
@@ -106,9 +124,8 @@ class _OrderCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: order.id == null
-            ? null
-            : () => context.push('/orders/${order.id}'),
+        onTap:
+            order.id == null ? null : () => context.push('/orders/${order.id}'),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.lg),
           child: Column(
@@ -182,10 +199,11 @@ class _OrdersSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 5,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 120, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 120, radius: 16),
+          ),
     );
   }
 }

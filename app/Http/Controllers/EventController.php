@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Models\Event;
-use App\Models\EventComment;
 use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Organization;
@@ -244,21 +243,6 @@ class EventController extends Controller
             $myRsvp = $rsvp?->status;
         }
 
-        // Comments
-        $comments = EventComment::with('user')
-            ->where('event_id', $event->id)
-            ->where('is_hidden', false)
-            ->latest()
-            ->get()
-            ->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Ahli',
-                    'content' => $comment->content,
-                    'created_at' => $comment->created_at->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
-                ];
-            });
-
         // Related events (same organization, upcoming, exclude current)
         $relatedEvents = Event::with('organization')
             ->where('start_time', '>=', now())
@@ -298,7 +282,6 @@ class EventController extends Controller
 
         return Inertia::render('Events/Show', [
             'event' => $eventArr,
-            'comments' => $comments,
             'relatedEvents' => $relatedEvents,
             'registrationForms' => $registrationForms,
             'myRegistration' => $myRegistration ? [
@@ -733,26 +716,6 @@ class EventController extends Controller
         );
 
         return back()->with('success', 'RSVP berjaya dikemas kini.');
-    }
-
-    /**
-     * storeComment()
-     */
-    public function storeComment(Request $request, Event $event): RedirectResponse
-    {
-        $data = $request->validate([
-            'content' => ['required', 'string', 'max:2000'],
-            'anonymous_name' => ['nullable', 'string', 'max:100'],
-        ]);
-
-        EventComment::create([
-            'event_id' => $event->id,
-            'user_id' => $request->user()?->id,
-            'anonymous_name' => $data['anonymous_name'] ?? null,
-            'content' => $data['content'],
-        ]);
-
-        return back()->with('success', 'Komen berjaya dihantar.');
     }
 
     // ─── Admin Facing ─────────────────────────────────────────────────────────

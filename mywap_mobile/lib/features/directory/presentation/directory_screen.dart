@@ -7,6 +7,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/directory_providers.dart';
 import '../data/models/directory_user.dart';
 
@@ -55,7 +56,10 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
     final controller = ref.read(directoryControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Direktori')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Direktori'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -104,8 +108,8 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
                   return ChoiceChip(
                     label: Text(label),
                     selected: selected,
-                    onSelected: (_) =>
-                        controller.setIndustry(isAll ? null : label),
+                    onSelected:
+                        (_) => controller.setIndustry(isAll ? null : label),
                   );
                 },
               ),
@@ -128,7 +132,8 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
     }
     if (state.users.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () async => ref.read(directoryControllerProvider.notifier).retry(),
+        onRefresh:
+            () async => ref.read(directoryControllerProvider.notifier).retry(),
         child: const SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
           child: EmptyState(
@@ -139,27 +144,23 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
       );
     }
     return RefreshIndicator(
-      onRefresh: () async => ref.read(directoryControllerProvider.notifier).retry(),
+      onRefresh:
+          () async => ref.read(directoryControllerProvider.notifier).retry(),
       child: ListView.builder(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(top: Spacing.sm, bottom: Spacing.xl),
-      itemCount: state.users.length + (state.isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= state.users.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: Spacing.lg),
-            child: Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        }
-        final user = state.users[index];
-        return _MemberCard(
-          user: user,
-          onTap: () => _showMemberDetail(user),
-        );
-      },
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(top: Spacing.sm, bottom: Spacing.xl),
+        itemCount: state.users.length + (state.isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= state.users.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: Spacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          final user = state.users[index];
+          return _MemberCard(user: user, onTap: () => _showMemberDetail(user));
+        },
       ),
     );
   }
@@ -176,8 +177,7 @@ class _MemberCard extends StatelessWidget {
     final subtitleParts = <String>[
       if (user.industry != null && user.industry!.isNotEmpty) user.industry!,
       if (user.expertise != null && user.expertise!.isNotEmpty) user.expertise!,
-      if (user.organizationName != null &&
-          user.organizationName!.isNotEmpty)
+      if (user.organizationName != null && user.organizationName!.isNotEmpty)
         user.organizationName!,
     ];
     return ListCard(
@@ -264,9 +264,10 @@ class _MemberDetailSheet extends StatelessWidget {
             _DetailRow(
               icon: Icons.link,
               label: 'LinkedIn',
-              value: (user.linkedinUrl == null || user.linkedinUrl!.isEmpty)
-                  ? 'Tiada pautan'
-                  : user.linkedinUrl!,
+              value:
+                  (user.linkedinUrl == null || user.linkedinUrl!.isEmpty)
+                      ? 'Tiada pautan'
+                      : user.linkedinUrl!,
             ),
           ],
         ),
@@ -320,10 +321,11 @@ class _DirectorySkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.md),
-        child: SkeletonBox(height: 76, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.md),
+            child: SkeletonBox(height: 76, radius: 16),
+          ),
     );
   }
 }

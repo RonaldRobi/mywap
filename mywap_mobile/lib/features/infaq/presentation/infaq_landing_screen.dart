@@ -115,7 +115,13 @@ class _InfaqList extends ConsumerWidget {
               ),
               sliver: SliverList.builder(
                 itemCount: infaqs.length,
-                itemBuilder: (_, index) => _InfaqCard(infaq: infaqs[index]),
+                itemBuilder:
+                    (_, index) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == infaqs.length - 1 ? 0 : Spacing.md,
+                      ),
+                      child: _InfaqCard(infaq: infaqs[index]),
+                    ),
               ),
             ),
         ],
@@ -184,119 +190,120 @@ class _InfaqCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.only(bottom: Spacing.lg),
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: () => context.push('/infaq/${infaq.slug}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 170,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageUrl != null && imageUrl.isNotEmpty)
-                    AppImage(imageUrl, fit: BoxFit.cover)
-                  else
-                    Container(color: AppColors.paleGreen),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [Color(0x66071525), Colors.transparent],
+        child: SizedBox(
+          // The 4:5 campaign art alone is ~181px wide on compact phones.
+          // Reserve enough space for the accessible text footer as well.
+          height: 230,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 145,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl != null && imageUrl.isNotEmpty)
+                      AppImage(imageUrl, fit: BoxFit.cover)
+                    else
+                      Container(color: AppColors.paleGreen),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [Color(0x66071525), Colors.transparent],
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: Spacing.md,
-                    bottom: Spacing.md,
-                    child: _CampaignTag(
-                      label:
-                          infaq.type == 'progress'
-                              ? 'Kutip Dana'
-                              : 'Derma Bebas',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (orgName != null) ...[
-                    Text(
-                      orgName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.movementGreen,
-                        fontWeight: FontWeight.w600,
+                    Positioned(
+                      left: Spacing.sm,
+                      bottom: Spacing.sm,
+                      child: _CampaignTag(
+                        label:
+                            infaq.type == 'progress'
+                                ? 'Kutip Dana'
+                                : 'Derma Bebas',
                       ),
                     ),
-                    const SizedBox(height: 4),
                   ],
-                  Text(
-                    infaq.title ?? '-',
-                    style: theme.textTheme.titleMedium,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 8,
-                      backgroundColor: AppColors.divider,
-                      color: AppColors.movementGreen,
-                    ),
-                  ),
-                  const SizedBox(height: Spacing.sm),
-                  Row(
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        Formatters.currency(infaq.collectedAmount),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.movementGreen,
+                        infaq.title ?? '-',
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const Spacer(),
-                      Flexible(
-                        child: Text(
-                          'Sasaran ${Formatters.currency(infaq.targetAmount)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                      if (orgName != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          orgName,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.movementGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      ClipRRect(
+                        borderRadius: AppRadius.xs,
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 7,
+                          backgroundColor: AppColors.divider,
+                          color: AppColors.movementGreen,
                         ),
                       ),
-                    ],
-                  ),
-                  if (infaq.daysRunning != null) ...[
-                    const SizedBox(height: Spacing.sm),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: AppColors.textSecondary,
+                      const SizedBox(height: Spacing.sm),
+                      Text(
+                        Formatters.currency(infaq.collectedAmount),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.movementGreen,
+                          fontWeight: FontWeight.w800,
                         ),
-                        const SizedBox(width: 4),
+                      ),
+                      Text(
+                        '${infaq.progressPercent ?? 0}% terkumpul',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        'Sasaran ${Formatters.currency(infaq.targetAmount)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                      if (infaq.daysRunning != null)
                         Text(
                           '${infaq.daysRunning} hari berjalan',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
+                            fontSize: 10,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/library_item.dart';
 
@@ -20,33 +21,45 @@ class LibraryScreen extends ConsumerWidget {
     final libraryAsync = ref.watch(memberLibraryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pustaka')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Pustaka'),
+      ),
       body: libraryAsync.when(
-        data: (items) => items.isEmpty
-            ? const EmptyState(
-                icon: Icons.local_library_outlined,
-                message: 'Tiada bahan pustaka buat masa ini.',
-              )
-            : RefreshIndicator(
-                onRefresh: () async => ref.invalidate(memberLibraryProvider),
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(Spacing.lg),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: Spacing.md,
-                    crossAxisSpacing: Spacing.md,
-                    childAspectRatio: 0.72,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) =>
-                      _LibraryCard(item: items[index]),
-                ),
-              ),
+        data:
+            (items) =>
+                items.isEmpty
+                    ? const EmptyState(
+                      icon: Icons.local_library_outlined,
+                      message: 'Tiada bahan pustaka buat masa ini.',
+                    )
+                    : RefreshIndicator(
+                      onRefresh:
+                          () async => ref.invalidate(memberLibraryProvider),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(Spacing.lg),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: Spacing.md,
+                              crossAxisSpacing: Spacing.md,
+                              childAspectRatio: 0.72,
+                            ),
+                        itemCount: items.length,
+                        itemBuilder:
+                            (context, index) =>
+                                _LibraryCard(item: items[index]),
+                      ),
+                    ),
         loading: () => const _LibrarySkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(memberLibraryProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(memberLibraryProvider),
+            ),
       ),
     );
   }
@@ -86,8 +99,7 @@ class _LibraryCard extends StatelessWidget {
                   const SizedBox(height: Spacing.md),
                   Text(item.description!, style: theme.textTheme.bodyMedium),
                 ],
-                if (item.file_path != null &&
-                    item.file_path!.isNotEmpty) ...[
+                if (item.file_path != null && item.file_path!.isNotEmpty) ...[
                   const SizedBox(height: Spacing.md),
                   Row(
                     children: [
@@ -144,8 +156,7 @@ class _LibraryCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (item.category != null &&
-                      item.category!.isNotEmpty) ...[
+                  if (item.category != null && item.category!.isNotEmpty) ...[
                     Text(
                       item.category!,
                       style: theme.textTheme.labelSmall?.copyWith(

@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../events/application/event_providers.dart';
 
 /// Floating-button "Imbas QR" — member self check-in ke program/event.
@@ -113,36 +114,37 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        icon: Icon(
-          success ? Icons.check_circle_outline : Icons.error_outline,
-          color: success ? AppColors.success : AppColors.error,
-          size: 40,
-        ),
-        title: Text(success ? 'Kehadiran Disahkan' : 'Imbasan Gagal'),
-        content: Text(message),
-        actions: [
-          if (success)
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (mounted) context.pop();
-              },
-              child: const Text('Selesai'),
-            )
-          else
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() => _processing = false);
-                try {
-                  _controller.start();
-                } catch (_) {}
-              },
-              child: const Text('Cuba Lagi'),
+      builder:
+          (context) => AlertDialog(
+            icon: Icon(
+              success ? Icons.check_circle_outline : Icons.error_outline,
+              color: success ? AppColors.success : AppColors.error,
+              size: 40,
             ),
-        ],
-      ),
+            title: Text(success ? 'Kehadiran Disahkan' : 'Imbasan Gagal'),
+            content: Text(message),
+            actions: [
+              if (success)
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    if (mounted) context.pop();
+                  },
+                  child: const Text('Selesai'),
+                )
+              else
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    setState(() => _processing = false);
+                    try {
+                      _controller.start();
+                    } catch (_) {}
+                  },
+                  child: const Text('Cuba Lagi'),
+                ),
+            ],
+          ),
     );
   }
 
@@ -151,6 +153,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: Colors.black,
         foregroundColor: AppColors.white,
         title: const Text('Imbas QR Kehadiran'),
@@ -164,7 +167,10 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
               width: 240,
               height: 240,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.movementSoftGreen, width: 3),
+                border: Border.all(
+                  color: AppColors.movementSoftGreen,
+                  width: 3,
+                ),
                 borderRadius: AppRadius.xl,
               ),
             ),
@@ -180,9 +186,9 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
                 child: Text(
                   'Halakan kamera ke kod QR pada poster/skrin program untuk daftar hadir.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.white,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
                 ),
               ),
             ),

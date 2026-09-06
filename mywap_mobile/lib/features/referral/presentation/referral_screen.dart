@@ -9,8 +9,8 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/referral_providers.dart';
 import '../data/models/referral_data.dart';
 
@@ -27,20 +27,25 @@ class ReferralScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const AppMenuButton(),
+        leading: const AppBackButton(),
         title: const Text('Jemput Ahli'),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(
-        data: (data) => _ReferralContent(
-          data: data,
-          onRefresh: () async => ref.invalidate(referralDataProvider),
-        ),
+        data:
+            (data) => _ReferralContent(
+              data: data,
+              onRefresh: () async => ref.invalidate(referralDataProvider),
+            ),
         loading: () => const _ReferralSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(referralDataProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(referralDataProvider),
+            ),
       ),
     );
   }
@@ -59,97 +64,98 @@ class _ReferralContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(Spacing.xl),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: AppColors.heroGradient),
-            borderRadius: AppRadius.hero,
-            boxShadow: AppShadows.card,
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Jemput rakan menyertai myWAP',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(height: Spacing.lg),
-              if (link.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  decoration: BoxDecoration(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(Spacing.xl),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: AppColors.heroGradient),
+              borderRadius: AppRadius.hero,
+              boxShadow: AppShadows.card,
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Jemput rakan menyertai myWAP',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.white,
-                    borderRadius: AppRadius.lg,
-                  ),
-                  child: QrImageView(
-                    data: link,
-                    size: 180,
-                    backgroundColor: AppColors.white,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              const SizedBox(height: Spacing.lg),
-              Text(
-                'No. Ahli: ${data.member_no ?? '-'}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textOnDark,
+                const SizedBox(height: Spacing.lg),
+                if (link.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: AppRadius.lg,
                     ),
-              ),
-              const SizedBox(height: Spacing.md),
-              OutlinedButton.icon(
-                onPressed: link.isEmpty
-                    ? null
-                    : () => Clipboard.setData(ClipboardData(text: link)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.white,
-                  side: const BorderSide(color: AppColors.white),
+                    child: QrImageView(
+                      data: link,
+                      size: 180,
+                      backgroundColor: AppColors.white,
+                    ),
+                  ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  'No. Ahli: ${data.member_no ?? '-'}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.textOnDark),
                 ),
-                icon: const Icon(Icons.copy_outlined),
-                label: const Text('Salin Pautan Rujukan'),
+                const SizedBox(height: Spacing.md),
+                OutlinedButton.icon(
+                  onPressed:
+                      link.isEmpty
+                          ? null
+                          : () => Clipboard.setData(ClipboardData(text: link)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.white,
+                    side: const BorderSide(color: AppColors.white),
+                  ),
+                  icon: const Icon(Icons.copy_outlined),
+                  label: const Text('Salin Pautan Rujukan'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(label: 'Jumlah', value: '${data.stats.total}'),
+              ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: _StatCard(label: 'Aktif', value: '${data.stats.active}'),
+              ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: _StatCard(
+                  label: 'Menunggu',
+                  value: '${data.stats.pending}',
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: Spacing.xl),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(label: 'Jumlah', value: '${data.stats.total}'),
-            ),
-            const SizedBox(width: Spacing.md),
-            Expanded(
-              child: _StatCard(label: 'Aktif', value: '${data.stats.active}'),
-            ),
-            const SizedBox(width: Spacing.md),
-            Expanded(
-              child: _StatCard(
-                label: 'Menunggu',
-                value: '${data.stats.pending}',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: Spacing.xl),
-        Text(
-          'Ahli Dijemput',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: Spacing.md),
-        if (members.isEmpty)
-          const EmptyState(
-            icon: Icons.person_add_alt_outlined,
-            message: 'Belum ada ahli yang dijemput menggunakan pautan anda.',
-          )
-        else
-          ...members.map((m) => _ReferredMemberTile(member: m)),
-      ],
+          const SizedBox(height: Spacing.xl),
+          Text(
+            'Ahli Dijemput',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: Spacing.md),
+          if (members.isEmpty)
+            const EmptyState(
+              icon: Icons.person_add_alt_outlined,
+              message: 'Belum ada ahli yang dijemput menggunakan pautan anda.',
+            )
+          else
+            ...members.map((m) => _ReferredMemberTile(member: m)),
+        ],
       ),
     );
   }
@@ -162,31 +168,31 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(Spacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: AppRadius.card,
-          boxShadow: AppShadows.subtle,
+    padding: const EdgeInsets.all(Spacing.lg),
+    decoration: BoxDecoration(
+      color: AppColors.white,
+      borderRadius: AppRadius.card,
+      boxShadow: AppShadows.subtle,
+    ),
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.movementGreen,
+          ),
         ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.movementGreen,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _ReferredMemberTile extends StatelessWidget {
@@ -198,9 +204,8 @@ class _ReferredMemberTile extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: member.isActive
-              ? AppColors.movementSoftGreen
-              : AppColors.divider,
+          backgroundColor:
+              member.isActive ? AppColors.movementSoftGreen : AppColors.divider,
           child: Icon(
             member.isActive ? Icons.check : Icons.hourglass_empty,
             color: AppColors.movementNavy,
@@ -227,11 +232,11 @@ class _ReferralSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(Spacing.lg),
-        children: const [
-          SkeletonBox(height: 320, radius: 28),
-          SizedBox(height: Spacing.xl),
-          SkeletonBox(height: 80),
-        ],
-      );
+    padding: const EdgeInsets.all(Spacing.lg),
+    children: const [
+      SkeletonBox(height: 320, radius: 28),
+      SizedBox(height: Spacing.xl),
+      SkeletonBox(height: 80),
+    ],
+  );
 }

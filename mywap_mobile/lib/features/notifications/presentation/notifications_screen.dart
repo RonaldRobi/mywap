@@ -6,6 +6,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/notification_providers.dart';
 import '../data/models/app_notification.dart';
 
@@ -14,83 +15,108 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<NotificationsState>(notificationsControllerProvider, (prev, next) {
+    ref.listen<NotificationsState>(notificationsControllerProvider, (
+      prev,
+      next,
+    ) {
       final error = next.error;
-      if (error != null && error != prev?.error && next.notifications.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
+      if (error != null &&
+          error != prev?.error &&
+          next.notifications.isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
       }
     });
     final state = ref.watch(notificationsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifikasi')),
-      body: state.isLoading
-          ? const _NotificationsSkeleton()
-          : state.error != null && state.notifications.isEmpty
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Notifikasi'),
+      ),
+      body:
+          state.isLoading
+              ? const _NotificationsSkeleton()
+              : state.error != null && state.notifications.isEmpty
               ? ErrorRetry(
-                  message: state.error ?? 'Ralat tidak dijangka.',
-                  onRetry: () => ref
-                      .read(notificationsControllerProvider.notifier)
-                      .retry(),
-                )
+                message: state.error ?? 'Ralat tidak dijangka.',
+                onRetry:
+                    () =>
+                        ref
+                            .read(notificationsControllerProvider.notifier)
+                            .retry(),
+              )
               : Column(
-                  children: [
-                    if (state.notifications.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          Spacing.lg,
-                          Spacing.md,
-                          Spacing.lg,
-                          Spacing.xs,
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: state.isMarking
-                                ? null
-                                : () => ref
-                                    .read(notificationsControllerProvider.notifier)
-                                    .markAllRead(),
-                            icon: state.isMarking
-                                ? const SizedBox(
+                children: [
+                  if (state.notifications.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        Spacing.md,
+                        Spacing.lg,
+                        Spacing.xs,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed:
+                              state.isMarking
+                                  ? null
+                                  : () =>
+                                      ref
+                                          .read(
+                                            notificationsControllerProvider
+                                                .notifier,
+                                          )
+                                          .markAllRead(),
+                          icon:
+                              state.isMarking
+                                  ? const SizedBox(
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Icon(Icons.done_all),
-                            label: const Text('Tandakan Semua Dibaca'),
-                          ),
+                                  : const Icon(Icons.done_all),
+                          label: const Text('Tandakan Semua Dibaca'),
                         ),
                       ),
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: () async => ref
-                            .read(notificationsControllerProvider.notifier)
-                            .retry(),
-                        child: state.notifications.isEmpty
-                            ? const SingleChildScrollView(
+                    ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh:
+                          () async =>
+                              ref
+                                  .read(
+                                    notificationsControllerProvider.notifier,
+                                  )
+                                  .retry(),
+                      child:
+                          state.notifications.isEmpty
+                              ? const SingleChildScrollView(
                                 physics: AlwaysScrollableScrollPhysics(),
                                 child: EmptyState(
                                   icon: Icons.notifications_none,
                                   message: 'Tiada notifikasi buat masa ini.',
                                 ),
                               )
-                            : ListView.builder(
+                              : ListView.builder(
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(bottom: Spacing.xl),
-                                itemCount: state.notifications.length,
-                                itemBuilder: (context, index) => _NotificationCard(
-                                  notification: state.notifications[index],
+                                padding: const EdgeInsets.only(
+                                  bottom: Spacing.xl,
                                 ),
+                                itemCount: state.notifications.length,
+                                itemBuilder:
+                                    (context, index) => _NotificationCard(
+                                      notification: state.notifications[index],
+                                    ),
                               ),
-                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
     );
   }
 }
@@ -105,7 +131,8 @@ class _NotificationCard extends StatelessWidget {
     final theme = Theme.of(context);
     final data = notification.data;
     final title = (data['title'] as String?) ?? '';
-    final body = (data['content'] as String?) ?? (data['message'] as String?) ?? '';
+    final body =
+        (data['content'] as String?) ?? (data['message'] as String?) ?? '';
     final isRead = notification.isRead;
 
     return Card(
@@ -151,9 +178,10 @@ class _NotificationCard extends StatelessWidget {
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight:
                                 isRead ? FontWeight.w500 : FontWeight.w700,
-                            color: isRead
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimary,
+                            color:
+                                isRead
+                                    ? AppColors.textSecondary
+                                    : AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -193,17 +221,19 @@ class _NotificationsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.md),
-        child: SkeletonBox(height: 72, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.md),
+            child: SkeletonBox(height: 72, radius: 16),
+          ),
     );
   }
 }
 
 IconData _iconFor(AppNotification notification) {
   final type =
-      '${notification.type ?? ''} ${notification.data['type'] ?? ''}'.toLowerCase();
+      '${notification.type ?? ''} ${notification.data['type'] ?? ''}'
+          .toLowerCase();
   if (type.contains('announcement')) return Icons.campaign_outlined;
   if (type.contains('infaq')) return Icons.volunteer_activism_outlined;
   if (type.contains('event')) return Icons.event_outlined;

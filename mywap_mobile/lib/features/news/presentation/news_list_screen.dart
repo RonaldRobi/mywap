@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 
@@ -20,19 +21,27 @@ class NewsListScreen extends ConsumerWidget {
     final async = ref.watch(newsListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Info Terkini')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Info Terkini'),
+      ),
       body: async.when(
-        data: (items) => _NewsList(
-          items: items,
-          hasMore: ref.read(newsListProvider.notifier).hasMore,
-          onLoadMore: () => ref.read(newsListProvider.notifier).loadMore(),
-          onRefresh: () async => ref.invalidate(newsListProvider),
-        ),
+        data:
+            (items) => _NewsList(
+              items: items,
+              hasMore: ref.read(newsListProvider.notifier).hasMore,
+              onLoadMore: () => ref.read(newsListProvider.notifier).loadMore(),
+              onRefresh: () async => ref.invalidate(newsListProvider),
+            ),
         loading: () => const _NewsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(newsListProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(newsListProvider),
+            ),
       ),
     );
   }
@@ -68,7 +77,10 @@ class _NewsList extends StatelessWidget {
         itemBuilder: (context, index) {
           if (index >= items.length) {
             return Center(
-              child: TextButton(onPressed: onLoadMore, child: const Text('Muat Lagi')),
+              child: TextButton(
+                onPressed: onLoadMore,
+                child: const Text('Muat Lagi'),
+              ),
             );
           }
           return _NewsCard(post: items[index]);
@@ -94,7 +106,14 @@ class _NewsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (post.coverImagePath != null && post.coverImagePath!.isNotEmpty)
-              AppImage(post.coverImagePath, height: 160, width: double.infinity),
+              AspectRatio(
+                aspectRatio: 4 / 5,
+                child: AppImage(
+                  post.coverImagePath,
+                  width: double.infinity,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(Spacing.lg),
               child: Column(
@@ -130,13 +149,27 @@ class _NewsCard extends StatelessWidget {
                   const SizedBox(height: Spacing.md),
                   Row(
                     children: [
-                      const Icon(Icons.thumb_up_outlined, size: 16, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.thumb_up_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
-                      Text('${post.likesCount}', style: theme.textTheme.bodySmall),
+                      Text(
+                        '${post.likesCount}',
+                        style: theme.textTheme.bodySmall,
+                      ),
                       const SizedBox(width: Spacing.md),
-                      const Icon(Icons.comment_outlined, size: 16, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.comment_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
-                      Text('${post.commentsCount}', style: theme.textTheme.bodySmall),
+                      Text(
+                        '${post.commentsCount}',
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ],
@@ -182,10 +215,11 @@ class _NewsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 5,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 220, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 220, radius: 16),
+          ),
     );
   }
 }

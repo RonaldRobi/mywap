@@ -7,6 +7,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/poll_providers.dart';
 import '../data/models/poll.dart';
 
@@ -61,18 +62,16 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
       _submitError = null;
     });
     try {
-      await ref
-          .read(pollRepositoryProvider)
-          .respond(widget.pollId, _selected);
+      await ref.read(pollRepositoryProvider).respond(widget.pollId, _selected);
       if (!mounted) return;
       ref.invalidate(pollsProvider);
       _goToResults();
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.statusCode == 409) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
         ref.invalidate(pollsProvider);
         _goToResults();
         return;
@@ -93,23 +92,30 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     final pollAsync = ref.watch(pollDetailProvider(widget.pollId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Undian')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/polls'),
+        title: const Text('Butiran Undian'),
+      ),
       body: pollAsync.when(
-        data: (poll) => _PollForm(
-          poll: poll,
-          selected: _selected,
-          submitting: _submitting,
-          error: _submitError,
-          onToggle: _toggleOption,
-          onSelectSingle: _selectSingle,
-          onSubmit: _submit,
-        ),
+        data:
+            (poll) => _PollForm(
+              poll: poll,
+              selected: _selected,
+              submitting: _submitting,
+              error: _submitError,
+              onToggle: _toggleOption,
+              onSelectSingle: _selectSingle,
+              onSubmit: _submit,
+            ),
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(pollDetailProvider(widget.pollId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(pollDetailProvider(widget.pollId)),
+            ),
       ),
     );
   }
@@ -174,16 +180,17 @@ class _PollForm extends StatelessWidget {
         const SizedBox(height: Spacing.lg),
         FilledButton.icon(
           onPressed: submitting ? null : onSubmit,
-          icon: submitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.white,
-                  ),
-                )
-              : const Icon(Icons.send),
+          icon:
+              submitting
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.white,
+                    ),
+                  )
+                  : const Icon(Icons.send),
           label: const Text('Hantar Jawapan'),
         ),
         const SizedBox(height: Spacing.xl),
@@ -228,10 +235,11 @@ class _QuestionCard extends StatelessWidget {
               for (final option in question.options)
                 CheckboxListTile(
                   value: selected.contains(option.id),
-                  onChanged: (_) =>
-                      questionId != null && option.id != null
-                          ? onToggle(questionId, option.id!)
-                          : null,
+                  onChanged:
+                      (_) =>
+                          questionId != null && option.id != null
+                              ? onToggle(questionId, option.id!)
+                              : null,
                   title: Text(option.optionText ?? '-'),
                   controlAffinity: ListTileControlAffinity.leading,
                   dense: true,
@@ -241,9 +249,10 @@ class _QuestionCard extends StatelessWidget {
                 RadioListTile<int?>(
                   value: option.id,
                   groupValue: selected.isEmpty ? null : selected.first,
-                  onChanged: questionId == null || option.id == null
-                      ? null
-                      : (_) => onSelectSingle(questionId, option.id!),
+                  onChanged:
+                      questionId == null || option.id == null
+                          ? null
+                          : (_) => onSelectSingle(questionId, option.id!),
                   title: Text(option.optionText ?? '-'),
                   controlAffinity: ListTileControlAffinity.leading,
                   dense: true,

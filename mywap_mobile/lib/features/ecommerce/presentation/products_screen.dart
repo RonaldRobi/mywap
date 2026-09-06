@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
@@ -53,11 +54,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   }
 
   void _applyFilters() {
-    ref.read(productsProvider.notifier).setFilters(
-          search: _searchText,
-          categoryId: _categoryId,
-          sort: _sort,
-        );
+    ref
+        .read(productsProvider.notifier)
+        .setFilters(search: _searchText, categoryId: _categoryId, sort: _sort);
   }
 
   void _onSearchChanged(String value) {
@@ -83,6 +82,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(),
         title: const Text('Pasar'),
         actions: [
           IconButton(
@@ -99,7 +99,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.md,
+              Spacing.lg,
+              0,
+            ),
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
@@ -107,24 +112,26 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               decoration: InputDecoration(
                 hintText: 'Cari produk...',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchText.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: _clearSearch,
-                      ),
+                suffixIcon:
+                    _searchText.isEmpty
+                        ? null
+                        : IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: _clearSearch,
+                        ),
               ),
             ),
           ),
           categoriesAsync.when(
-            data: (categories) => _CategoryChips(
-              categories: categories,
-              selectedId: _categoryId,
-              onSelected: (id) {
-                setState(() => _categoryId = id);
-                _applyFilters();
-              },
-            ),
+            data:
+                (categories) => _CategoryChips(
+                  categories: categories,
+                  selectedId: _categoryId,
+                  onSelected: (id) {
+                    setState(() => _categoryId = id);
+                    _applyFilters();
+                  },
+                ),
             loading: () => const SizedBox(height: 52),
             error: (_, __) => const SizedBox(height: 52),
           ),
@@ -145,10 +152,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   underline: const SizedBox.shrink(),
                   borderRadius: AppRadius.md,
                   items: const [
-                    DropdownMenuItem(
-                      value: 'latest',
-                      child: Text('Terkini'),
-                    ),
+                    DropdownMenuItem(value: 'latest', child: Text('Terkini')),
                     DropdownMenuItem(
                       value: 'price_low',
                       child: Text('Harga Rendah'),
@@ -171,29 +175,41 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           Expanded(
             child: productsAsync.when(
               loading: () => const _ProductsSkeleton(),
-              error: (error, _) => ErrorRetry(
-                message:
-                    error is ApiException ? error.message : 'Ralat tidak dijangka.',
-                onRetry: () => ref.read(productsProvider.notifier).refresh(),
-              ),
-              data: (state) => state.items.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: () async =>
-                          ref.read(productsProvider.notifier).refresh(),
-                      child: const SingleChildScrollView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        child: EmptyState(
-                          icon: Icons.storefront_outlined,
-                          message: 'Tiada produk dijumpai.',
-                        ),
-                      ),
-                    )
-                  : _ProductsGrid(
-                      state: state,
-                      scrollController: _scrollController,
-                      onRefresh: () async =>
-                          ref.read(productsProvider.notifier).refresh(),
-                    ),
+              error:
+                  (error, _) => ErrorRetry(
+                    message:
+                        error is ApiException
+                            ? error.message
+                            : 'Ralat tidak dijangka.',
+                    onRetry:
+                        () => ref.read(productsProvider.notifier).refresh(),
+                  ),
+              data:
+                  (state) =>
+                      state.items.isEmpty
+                          ? RefreshIndicator(
+                            onRefresh:
+                                () async =>
+                                    ref
+                                        .read(productsProvider.notifier)
+                                        .refresh(),
+                            child: const SingleChildScrollView(
+                              physics: AlwaysScrollableScrollPhysics(),
+                              child: EmptyState(
+                                icon: Icons.storefront_outlined,
+                                message: 'Tiada produk dijumpai.',
+                              ),
+                            ),
+                          )
+                          : _ProductsGrid(
+                            state: state,
+                            scrollController: _scrollController,
+                            onRefresh:
+                                () async =>
+                                    ref
+                                        .read(productsProvider.notifier)
+                                        .refresh(),
+                          ),
             ),
           ),
         ],
@@ -222,7 +238,11 @@ class _CategoryChips extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: Spacing.sm, bottom: Spacing.sm, right: Spacing.sm),
+            padding: const EdgeInsets.only(
+              top: Spacing.sm,
+              bottom: Spacing.sm,
+              right: Spacing.sm,
+            ),
             child: ChoiceChip(
               label: const Text('Semua'),
               selected: selectedId == null,
@@ -232,7 +252,11 @@ class _CategoryChips extends StatelessWidget {
           ),
           for (final category in categories)
             Padding(
-              padding: const EdgeInsets.only(top: Spacing.sm, bottom: Spacing.sm, right: Spacing.sm),
+              padding: const EdgeInsets.only(
+                top: Spacing.sm,
+                bottom: Spacing.sm,
+                right: Spacing.sm,
+              ),
               child: ChoiceChip(
                 label: Text(category.name ?? '-'),
                 selected: selectedId == category.id,
@@ -262,39 +286,39 @@ class _ProductsGrid extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: CustomScrollView(
-      controller: scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(Spacing.md),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: Spacing.md,
-              crossAxisSpacing: Spacing.md,
-              // Shopee-style card: 4:5 image + compact info footer.
-              childAspectRatio: 0.62,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _ProductCard(product: state.items[index]),
-              childCount: state.items.length,
-            ),
-          ),
-        ),
-        if (state.isLoadingMore)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: Spacing.xl),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                ),
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(Spacing.md),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: Spacing.md,
+                crossAxisSpacing: Spacing.md,
+                // Shopee-style card: 4:5 image + compact info footer.
+                childAspectRatio: 0.62,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _ProductCard(product: state.items[index]),
+                childCount: state.items.length,
               ),
             ),
           ),
-      ],
+          if (state.isLoadingMore)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: Spacing.xl),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -309,20 +333,23 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showMemberPrice = product.isMember && product.priceForMember != null;
-    final price = showMemberPrice ? product.priceForMember! : (product.price ?? 0);
+    final price =
+        showMemberPrice ? product.priceForMember! : (product.price ?? 0);
     final hasDiscount = showMemberPrice && product.price != null;
-    final discountPercent = hasDiscount && product.price! > 0
-        ? (((product.price! - price) / product.price!) * 100).round()
-        : 0;
+    final discountPercent =
+        hasDiscount && product.price! > 0
+            ? (((product.price! - price) / product.price!) * 100).round()
+            : 0;
 
     return Material(
       color: AppColors.white,
       borderRadius: AppRadius.card,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: product.id == null
-            ? null
-            : () => context.push('/products/${product.id}'),
+        onTap:
+            product.id == null
+                ? null
+                : () => context.push('/products/${product.id}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

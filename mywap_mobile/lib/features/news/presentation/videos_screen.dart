@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 
@@ -19,17 +20,25 @@ class VideosScreen extends ConsumerWidget {
     final async = ref.watch(videosProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Video')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Video'),
+      ),
       body: async.when(
-        data: (videos) => _VideoList(
-          videos: videos,
-          onRefresh: () async => ref.invalidate(videosProvider),
-        ),
+        data:
+            (videos) => _VideoList(
+              videos: videos,
+              onRefresh: () async => ref.invalidate(videosProvider),
+            ),
         loading: () => const _VideoSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(videosProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(videosProvider),
+            ),
       ),
     );
   }
@@ -69,7 +78,10 @@ class _VideoCard extends StatelessWidget {
   Future<void> _open(BuildContext context) async {
     final url = video.watchUrl;
     if (url.isEmpty) return;
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video tidak dapat dibuka.')),
@@ -103,13 +115,20 @@ class _VideoCard extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.55),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.all(Spacing.lg),
-              child: Text(video.title ?? '-', style: theme.textTheme.titleMedium),
+              child: Text(
+                video.title ?? '-',
+                style: theme.textTheme.titleMedium,
+              ),
             ),
           ],
         ),
@@ -126,10 +145,11 @@ class _VideoSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 4,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 220, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 220, radius: 16),
+          ),
     );
   }
 }

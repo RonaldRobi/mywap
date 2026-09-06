@@ -41,14 +41,33 @@ final currentUserProvider = Provider<User?>((ref) {
   return state is AuthAuthenticated ? state.user : null;
 });
 
+/// Sama ada peranti menyokong sebarang kaedah biometrik/PIN peranti (tanpa
+/// syarat token/flag). Digunakan oleh toggle di halaman Profil & prompt.
+final biometricSupportedProvider = FutureProvider<bool>((ref) async {
+  final biometric = ref.watch(biometricServiceProvider);
+  return biometric.isDeviceSupported();
+});
+
+/// Sama ada peranti menyokong Face ID (untuk label/ikon yang sesuai —
+/// "Face ID" di iOS vs "Cap Jari" di Android).
+final hasFaceIdProvider = FutureProvider<bool>((ref) async {
+  final biometric = ref.watch(biometricServiceProvider);
+  return biometric.hasFaceId();
+});
+
+/// Sama ada pengguna semasa telah mendayakan log masuk biometrik untuk akaun
+/// ini (dibaca daripada secure storage).
+final biometricEnabledProvider = FutureProvider<bool>((ref) async {
+  final storage = ref.watch(tokenStorageProvider);
+  return storage.isBiometricEnabled();
+});
+
 /// Sama ada peranti menyokong Face ID / cap jari DAN pengguna telah
 /// mendayakannya untuk akaun semasa. Digunakan oleh skrin log masuk untuk
 /// papar/sorok butang "Log masuk dengan Face ID/Cap Jari".
 final biometricAvailableProvider = FutureProvider<bool>((ref) async {
-  final biometric = ref.watch(biometricServiceProvider);
+  if (!await ref.watch(biometricSupportedProvider.future)) return false;
   final storage = ref.watch(tokenStorageProvider);
-  final supported = await biometric.isDeviceSupported();
-  if (!supported) return false;
   final hasToken = await storage.read();
   final enabled = await storage.isBiometricEnabled();
   return hasToken != null && hasToken.isNotEmpty && enabled;
@@ -135,6 +154,7 @@ class AuthController extends Notifier<AuthState> {
     }
     await ref.read(tokenStorageProvider).setBiometricEnabled(enabled);
     ref.invalidate(biometricAvailableProvider);
+    ref.invalidate(biometricEnabledProvider);
     return true;
   }
 

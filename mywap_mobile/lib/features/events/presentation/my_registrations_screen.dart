@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/event_providers.dart';
 import '../data/models/event_registration.dart';
 
@@ -19,17 +20,25 @@ class MyRegistrationsScreen extends ConsumerWidget {
     final async = ref.watch(myRegistrationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pendaftaran Saya')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/events'),
+        title: const Text('Pendaftaran Saya'),
+      ),
       body: async.when(
-        data: (items) => _RegistrationsList(
-          items: items,
-          onRefresh: () async => ref.invalidate(myRegistrationsProvider),
-        ),
+        data:
+            (items) => _RegistrationsList(
+              items: items,
+              onRefresh: () async => ref.invalidate(myRegistrationsProvider),
+            ),
         loading: () => const _RegistrationsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(myRegistrationsProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(myRegistrationsProvider),
+            ),
       ),
     );
   }
@@ -88,16 +97,21 @@ class _RegistrationCard extends StatelessWidget {
                 ),
                 _StatusChip(
                   label: item.statusLabel ?? item.status ?? '',
-                  color: item.status == 'confirmed'
-                      ? AppColors.success
-                      : AppColors.warning,
+                  color:
+                      item.status == 'confirmed'
+                          ? AppColors.success
+                          : AppColors.warning,
                 ),
               ],
             ),
             const SizedBox(height: Spacing.sm),
             Row(
               children: [
-                const Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.schedule,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -185,10 +199,11 @@ class _RegistrationsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 4,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 160, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 160, radius: 16),
+          ),
     );
   }
 }

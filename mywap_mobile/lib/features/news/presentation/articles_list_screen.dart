@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 
@@ -20,19 +21,28 @@ class ArticlesListScreen extends ConsumerWidget {
     final async = ref.watch(articleListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Artikel')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Artikel'),
+      ),
       body: async.when(
-        data: (items) => _ArticleList(
-          items: items,
-          hasMore: ref.read(articleListProvider.notifier).hasMore,
-          onLoadMore: () => ref.read(articleListProvider.notifier).loadMore(),
-          onRefresh: () async => ref.invalidate(articleListProvider),
-        ),
+        data:
+            (items) => _ArticleList(
+              items: items,
+              hasMore: ref.read(articleListProvider.notifier).hasMore,
+              onLoadMore:
+                  () => ref.read(articleListProvider.notifier).loadMore(),
+              onRefresh: () async => ref.invalidate(articleListProvider),
+            ),
         loading: () => const _ArticleSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(articleListProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(articleListProvider),
+            ),
       ),
     );
   }
@@ -68,7 +78,10 @@ class _ArticleList extends StatelessWidget {
         itemBuilder: (context, index) {
           if (index >= items.length) {
             return Center(
-              child: TextButton(onPressed: onLoadMore, child: const Text('Muat Lagi')),
+              child: TextButton(
+                onPressed: onLoadMore,
+                child: const Text('Muat Lagi'),
+              ),
             );
           }
           return _ArticleCard(article: items[index]);
@@ -94,7 +107,14 @@ class _ArticleCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (article.coverImage != null && article.coverImage!.isNotEmpty)
-              AppImage(article.coverImage, height: 150, width: double.infinity),
+              AspectRatio(
+                aspectRatio: 4 / 5,
+                child: AppImage(
+                  article.coverImage,
+                  width: double.infinity,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(Spacing.lg),
               child: Column(
@@ -113,17 +133,24 @@ class _ArticleCard extends StatelessWidget {
                       ),
                       Text(
                         article.publishedDate ?? '',
-                        style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: Spacing.sm),
-                  Text(article.title ?? '-', style: theme.textTheme.titleMedium),
+                  Text(
+                    article.title ?? '-',
+                    style: theme.textTheme.titleMedium,
+                  ),
                   if (article.excerpt?.isNotEmpty ?? false) ...[
                     const SizedBox(height: Spacing.sm),
                     Text(
                       article.excerpt!,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -139,7 +166,8 @@ class _ArticleCard extends StatelessWidget {
                               label: Text(c.name!),
                               labelStyle: const TextStyle(fontSize: 11),
                               visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                             ),
                           )
                           .toList(growable: false),
@@ -163,10 +191,11 @@ class _ArticleSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 5,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 200, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 200, radius: 16),
+          ),
     );
   }
 }

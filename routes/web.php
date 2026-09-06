@@ -474,9 +474,8 @@ Route::middleware('auth')->group(function () {
     // Pembatalan akaun (member area) — untuk pematuhan Play Store
     Route::get('/akaun/pembatalan', fn () => inertia('AccountCancellation'))->name('account.cancellation');
 
-    // Events — RSVP & comments kekal memerlukan login
+    // Events — RSVP kekal memerlukan login
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
-    Route::post('/events/{event}/comments', [EventController::class, 'storeComment'])->name('events.comments.store');
 
     // Registration Event — daftar oleh ahli
     Route::get('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'create'])->name('events.register');

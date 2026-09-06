@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Event;
-use App\Models\EventComment;
 use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Registration;
@@ -148,20 +147,6 @@ class EventService
                 })->values();
         }
 
-        $comments = EventComment::with('user')
-            ->where('event_id', $event->id)
-            ->where('is_hidden', false)
-            ->latest()
-            ->get()
-            ->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Ahli',
-                    'content' => $comment->content,
-                    'created_at' => $comment->created_at->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
-                ];
-            });
-
         $relatedEvents = Event::with(['organization', 'organizations', 'rsvps'])
             ->where('start_time', '>=', now())
             ->where('id', '!=', $event->id)
@@ -198,7 +183,6 @@ class EventService
 
         return [
             'event' => $eventArr,
-            'comments' => $comments,
             'relatedEvents' => $relatedEvents,
             'registrationForms' => $registrationForms,
             'myRegistration' => $myRegistration ? [

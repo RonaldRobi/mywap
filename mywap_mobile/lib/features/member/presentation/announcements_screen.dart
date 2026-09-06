@@ -9,6 +9,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/announcement.dart';
 
@@ -21,40 +22,49 @@ class AnnouncementsScreen extends ConsumerWidget {
     final announcementsAsync = ref.watch(memberAnnouncementsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengumuman')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Pengumuman'),
+      ),
       body: announcementsAsync.when(
-        data: (items) => items.isEmpty
-            ? const EmptyState(
-                icon: Icons.campaign_outlined,
-                message: 'Tiada pengumuman buat masa ini.',
-              )
-            : RefreshIndicator(
-                onRefresh: () async =>
-                    ref.invalidate(memberAnnouncementsProvider),
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: Spacing.xl),
-                  itemCount: items.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return SectionHeader(
-                        'Pengumuman',
-                        trailing: Text(
-                          '${items.length}',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: AppColors.textSecondary,
+        data:
+            (items) =>
+                items.isEmpty
+                    ? const EmptyState(
+                      icon: Icons.campaign_outlined,
+                      message: 'Tiada pengumuman buat masa ini.',
+                    )
+                    : RefreshIndicator(
+                      onRefresh:
+                          () async =>
+                              ref.invalidate(memberAnnouncementsProvider),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: Spacing.xl),
+                        itemCount: items.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return SectionHeader(
+                              'Pengumuman',
+                              trailing: Text(
+                                '${items.length}',
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(color: AppColors.textSecondary),
                               ),
-                        ),
-                      );
-                    }
-                    return _AnnouncementCard(item: items[index - 1]);
-                  },
-                ),
-              ),
+                            );
+                          }
+                          return _AnnouncementCard(item: items[index - 1]);
+                        },
+                      ),
+                    ),
         loading: () => const _AnnouncementsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(memberAnnouncementsProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(memberAnnouncementsProvider),
+            ),
       ),
     );
   }
@@ -95,8 +105,9 @@ class _AnnouncementCardState extends ConsumerState<_AnnouncementCard> {
       if (mounted) ref.invalidate(memberAnnouncementsProvider);
     } on ApiException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } finally {
       if (mounted) setState(() => _reacting = false);
@@ -177,7 +188,11 @@ class _AnnouncementCardState extends ConsumerState<_AnnouncementCard> {
                     const SizedBox(height: Spacing.md),
                     for (final image in item.images)
                       if (image.url != null && image.url!.isNotEmpty) ...[
-                        AppImage(image.url, height: 140, width: double.infinity),
+                        AppImage(
+                          image.url,
+                          height: 140,
+                          width: double.infinity,
+                        ),
                         if (image.caption != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -268,10 +283,11 @@ class _AnnouncementsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 5,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.lg),
-        child: SkeletonBox(height: 120, radius: 16),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.lg),
+            child: SkeletonBox(height: 120, radius: 16),
+          ),
     );
   }
 }

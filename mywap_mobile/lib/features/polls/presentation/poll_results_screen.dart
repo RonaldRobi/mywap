@@ -6,6 +6,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/poll_providers.dart';
 import '../data/models/poll.dart';
 
@@ -19,18 +20,26 @@ class PollResultsScreen extends ConsumerWidget {
     final resultsAsync = ref.watch(pollResultsProvider(pollId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Keputusan Undian')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/polls'),
+        title: const Text('Keputusan Undian'),
+      ),
       body: resultsAsync.when(
-        data: (results) => _ResultsBody(
-          results: results,
-          onRefresh: () async => ref.invalidate(pollResultsProvider(pollId)),
-        ),
+        data:
+            (results) => _ResultsBody(
+              results: results,
+              onRefresh:
+                  () async => ref.invalidate(pollResultsProvider(pollId)),
+            ),
         loading: () => const _ResultsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(pollResultsProvider(pollId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(pollResultsProvider(pollId)),
+            ),
       ),
     );
   }
@@ -50,21 +59,22 @@ class _ResultsBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [
-        Text(title, style: theme.textTheme.headlineSmall),
-        const SizedBox(height: Spacing.xs),
-        Text(
-          '${results.totalResponses} respons',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppColors.textSecondary,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          Text(title, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            '${results.totalResponses} respons',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-        ),
-        const SizedBox(height: Spacing.lg),
-        for (final question in results.questions) _QuestionResult(question: question),
-        const SizedBox(height: Spacing.xl),
-      ],
+          const SizedBox(height: Spacing.lg),
+          for (final question in results.questions)
+            _QuestionResult(question: question),
+          const SizedBox(height: Spacing.xl),
+        ],
       ),
     );
   }
@@ -86,7 +96,10 @@ class _QuestionResult extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(question.questionText ?? '-', style: theme.textTheme.titleMedium),
+            Text(
+              question.questionText ?? '-',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: Spacing.sm),
             for (final option in question.options) _OptionBar(option: option),
             const SizedBox(height: Spacing.xs),

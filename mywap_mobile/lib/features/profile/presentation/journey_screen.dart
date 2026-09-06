@@ -9,6 +9,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 
@@ -20,18 +21,27 @@ class JourneyScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Perjalanan Ahli')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/profile'),
+        title: const Text('Perjalanan Ahli'),
+      ),
       body: profileAsync.when(
-        data: (data) => _JourneyContent(
-          history: data.history ?? const <ProfileHistoryEntry>[],
-          programs: data.attendedPrograms ?? const <ProfileAttendedProgram>[],
-          onRefresh: () async => ref.invalidate(profileProvider),
-        ),
+        data:
+            (data) => _JourneyContent(
+              history: data.history ?? const <ProfileHistoryEntry>[],
+              programs:
+                  data.attendedPrograms ?? const <ProfileAttendedProgram>[],
+              onRefresh: () async => ref.invalidate(profileProvider),
+            ),
         loading: () => const _JourneySkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(profileProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(profileProvider),
+            ),
       ),
     );
   }
@@ -66,31 +76,36 @@ class _JourneyContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: Spacing.xl),
-      children: [
-        if (history.isNotEmpty) ...[
-          const SectionHeader('Perjalanan Organisasi'),
-          Card(
-            margin: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.sm),
-            child: Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                children: [
-                  for (var i = 0; i < history.length; i++) ...[
-                    _TimelineEntry(entry: history[i]),
-                    if (i != history.length - 1) const _TimelineConnector(),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: Spacing.xl),
+        children: [
+          if (history.isNotEmpty) ...[
+            const SectionHeader('Perjalanan Organisasi'),
+            Card(
+              margin: const EdgeInsets.fromLTRB(
+                Spacing.lg,
+                0,
+                Spacing.lg,
+                Spacing.sm,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(Spacing.lg),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < history.length; i++) ...[
+                      _TimelineEntry(entry: history[i]),
+                      if (i != history.length - 1) const _TimelineConnector(),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
+          ],
+          if (programs.isNotEmpty) ...[
+            const SectionHeader('Program Dihadiri'),
+            for (final program in programs) _ProgramCard(program: program),
+          ],
         ],
-        if (programs.isNotEmpty) ...[
-          const SectionHeader('Program Dihadiri'),
-          for (final program in programs) _ProgramCard(program: program),
-        ],
-      ],
       ),
     );
   }
@@ -165,12 +180,16 @@ class _ProgramCard extends StatelessWidget {
     final event = program.event;
     final subtitle = [
       if (program.attended_at_human != null) program.attended_at_human,
-      if (event?.location_or_link != null && event!.location_or_link!.isNotEmpty)
+      if (event?.location_or_link != null &&
+          event!.location_or_link!.isNotEmpty)
         event.location_or_link,
     ].join(' • ');
 
     return ListCard(
-      leading: const Icon(Icons.event_available_outlined, color: AppColors.movementGreen),
+      leading: const Icon(
+        Icons.event_available_outlined,
+        color: AppColors.movementGreen,
+      ),
       title: event?.title ?? '-',
       subtitle: subtitle.isEmpty ? null : subtitle,
     );

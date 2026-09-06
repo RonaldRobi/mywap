@@ -7,6 +7,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
@@ -68,17 +69,24 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     final metaAsync = ref.watch(profileCompleteMetaProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Lengkapkan Profil')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/profile'),
+        title: const Text('Lengkapkan Profil'),
+      ),
       body: metaAsync.when(
         data: (meta) {
           _initFromMeta(meta);
           return _buildForm();
         },
         loading: () => const _FormSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(profileCompleteMetaProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(profileCompleteMetaProvider),
+            ),
       ),
     );
   }
@@ -86,7 +94,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   void _initFromMeta(CompleteMeta meta) {
     if (_metaLoaded) return;
     _metaLoaded = true;
-    _dob = meta.parsedDob == null ? null : ProfileFormat.parseDate(meta.parsedDob!);
+    _dob =
+        meta.parsedDob == null
+            ? null
+            : ProfileFormat.parseDate(meta.parsedDob!);
     _gender = meta.parsedGender;
   }
 
@@ -134,9 +145,22 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ),
             ),
           _section('Maklumat Wajib', [
-            _textField('education_level', label: 'Tahap Pendidikan', required: true),
-            _textField('current_profession', label: 'Profesion Semasa', required: true),
-            _textField('phone', label: 'No. Telefon', required: true, keyboardType: TextInputType.phone),
+            _textField(
+              'education_level',
+              label: 'Tahap Pendidikan',
+              required: true,
+            ),
+            _textField(
+              'current_profession',
+              label: 'Profesion Semasa',
+              required: true,
+            ),
+            _textField(
+              'phone',
+              label: 'No. Telefon',
+              required: true,
+              keyboardType: TextInputType.phone,
+            ),
           ]),
           _section('Maklumat Lanjut', [
             _dobField(),
@@ -158,7 +182,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           _section('Alamat', [
             _textField('address_1', label: 'Alamat (Baris 1)'),
             _textField('address_2', label: 'Alamat (Baris 2)'),
-            _textField('postcode', label: 'Poskod', keyboardType: TextInputType.number),
+            _textField(
+              'postcode',
+              label: 'Poskod',
+              keyboardType: TextInputType.number,
+            ),
             _textField('city', label: 'Bandar'),
             _textField('state', label: 'Negeri'),
           ]),
@@ -180,16 +208,17 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           const SizedBox(height: Spacing.md),
           ElevatedButton.icon(
             onPressed: _saving ? null : _submit,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
-                    ),
-                  )
-                : const Icon(Icons.check_circle_outline),
+            icon:
+                _saving
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                    : const Icon(Icons.check_circle_outline),
             label: Text(_saving ? 'Menyimpan...' : 'Simpan & Selesai'),
           ),
         ],
@@ -296,9 +325,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                   _dob == null ? 'Pilih tarikh' : ProfileFormat.date(_dob!),
                   style: TextStyle(
                     fontSize: 16,
-                    color: _dob == null
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
+                    color:
+                        _dob == null
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -371,9 +401,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           ..addAll(_mapErrors(error.errors));
       });
       if (_serverErrors.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } catch (_) {
       if (!mounted) return;

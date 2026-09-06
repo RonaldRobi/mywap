@@ -81,11 +81,9 @@ class _DashboardContent extends ConsumerWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _Banner(banner: banners.isEmpty ? null : banners.first),
-                const SizedBox(height: Spacing.xl),
-                const _SectionLabel(title: 'Pintasan'),
                 const SizedBox(height: Spacing.sm),
                 const _ShortcutsGrid(),
-                const SizedBox(height: Spacing.xl),
+                const SizedBox(height: Spacing.sm),
                 _MembershipCard(member: member, feeStatus: data.fee_status),
                 if (data.next_event != null) ...[
                   const SizedBox(height: Spacing.xl),
@@ -124,7 +122,9 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 150,
+                    // 4:5 image + title/progress footer. Keeping this height
+                    // explicit prevents the portrait card footer overflowing.
+                    height: 338,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: infaqItems.length,
@@ -154,14 +154,13 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 190,
+                    height: 338,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: news.length.clamp(0, 6),
                       separatorBuilder:
                           (_, __) => const SizedBox(width: Spacing.md),
-                      itemBuilder:
-                          (_, index) => _NewsCard(item: news[index]),
+                      itemBuilder: (_, index) => _NewsCard(item: news[index]),
                     ),
                   ),
                 ],
@@ -174,7 +173,7 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 190,
+                    height: 338,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: articles.length.clamp(0, 6),
@@ -307,60 +306,70 @@ class _SectionLabel extends StatelessWidget {
   );
 }
 
-/// Grid of shortcuts to every high-frequency member module — surfaces more
-/// than the old 4-item row without feeling crowded, since each tile is
-/// compact and grouped 4-per-row with generous spacing.
+/// Compact 5-column grid for high-frequency member modules.
 class _ShortcutsGrid extends StatelessWidget {
   const _ShortcutsGrid();
 
   static const List<_ShortcutItem> _items = [
     _ShortcutItem(
-      icon: Icons.credit_card_rounded,
-      label: 'Yuran Saya',
+      icon: Icons.receipt_long_rounded,
+      label: 'Yuran',
       color: Color(0xFF059669),
       path: '/member/fee-status',
     ),
     _ShortcutItem(
-      icon: Icons.calendar_month_rounded,
+      icon: Icons.calendar_today_rounded,
       label: 'Tempah',
       color: Color(0xFFD97706),
       path: '/facilities',
     ),
     _ShortcutItem(
-      icon: Icons.newspaper_rounded,
-      label: 'Info',
+      icon: Icons.article_rounded,
+      label: 'Berita',
       color: Color(0xFF4F46E5),
       path: '/news',
     ),
     _ShortcutItem(
-      icon: Icons.volunteer_activism_rounded,
+      icon: Icons.favorite_rounded,
       label: 'Infaq',
       color: Color(0xFFE11D48),
       path: '/infaq',
     ),
     _ShortcutItem(
-      icon: Icons.badge_rounded,
+      icon: Icons.contact_page_rounded,
       label: 'Kad Ahli',
       color: Color(0xFF2563EB),
       path: '/card',
     ),
     _ShortcutItem(
-      icon: Icons.groups_rounded,
+      icon: Icons.groups_2_rounded,
       label: 'Usrah',
       color: Color(0xFF7C3AED),
       path: '/usrah',
     ),
     _ShortcutItem(
-      icon: Icons.storefront_rounded,
+      icon: Icons.shopping_bag_rounded,
       label: 'Mall',
       color: Color(0xFFEA580C),
       path: '/products',
     ),
     _ShortcutItem(
-      icon: Icons.person_add_alt_1_rounded,
-      label: 'Jemput Ahli',
+      icon: Icons.share_rounded,
+      label: 'Jemput',
       color: Color(0xFF0D9488),
       path: '/member/referral',
+    ),
+    _ShortcutItem(
+      icon: Icons.menu_book_rounded,
+      label: 'Pustaka',
+      color: Color(0xFF0F766E),
+      path: '/member/library',
+    ),
+    _ShortcutItem(
+      icon: Icons.poll_rounded,
+      label: 'Undian',
+      color: Color(0xFF9D174D),
+      path: '/polls',
     ),
   ];
 
@@ -368,13 +377,15 @@ class _ShortcutsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
+      primary: false,
+      padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 5,
         mainAxisSpacing: Spacing.sm,
         crossAxisSpacing: Spacing.xs,
-        mainAxisExtent: 78,
+        mainAxisExtent: 70,
       ),
       itemBuilder: (context, index) => _ShortcutTile(item: _items[index]),
     );
@@ -400,34 +411,38 @@ class _ShortcutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: AppRadius.lg,
-        onTap: () => context.push(item.path),
-        child: Column(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: item.color.withValues(alpha: .12),
-                borderRadius: AppRadius.lg,
+    return SizedBox(
+      height: 70,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppRadius.lg,
+          onTap: () => context.push(item.path),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: .12),
+                  borderRadius: AppRadius.lg,
+                  border: Border.all(color: item.color.withValues(alpha: .08)),
+                ),
+                child: Icon(item.icon, color: item.color, size: 20),
               ),
-              child: Icon(item.icon, color: item.color, size: 22),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              item.label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                height: 1.1,
+              const SizedBox(height: Spacing.xs),
+              Text(
+                item.label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -778,41 +793,78 @@ class _InfaqCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = ((item.progress_percent ?? 0) / 100).clamp(0, 1).toDouble();
+    final progress =
+        ((item.progress_percent ?? 0) / 100).clamp(0, 1).toDouble();
     return SizedBox(
-      width: 220,
+      width: 172,
       child: Material(
         color: AppColors.white,
         borderRadius: AppRadius.card,
         child: InkWell(
           borderRadius: AppRadius.card,
           onTap: () => context.go('/infaq'),
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.title ?? '-',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: Spacing.sm),
-                ClipRRect(
-                  borderRadius: AppRadius.sm,
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor: AppColors.divider,
-                    color: AppColors.movementGreen,
+                AspectRatio(
+                  aspectRatio: 4 / 5,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      AppImage(item.image_path, fit: BoxFit.cover),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [Color(0x55071525), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: Spacing.xs),
-                Text(
-                  '${item.progress_percent ?? 0}% terkumpul',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title ?? '-',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                        const Spacer(),
+                        ClipRRect(
+                          borderRadius: AppRadius.xs,
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 5,
+                            backgroundColor: AppColors.divider,
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${item.progress_percent ?? 0}% terkumpul',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -847,7 +899,8 @@ class _PollPreviewCard extends StatelessWidget {
                   responded
                       ? Icons.check_circle_outline
                       : Icons.how_to_vote_outlined,
-                  color: responded ? AppColors.success : AppColors.movementGreen,
+                  color:
+                      responded ? AppColors.success : AppColors.movementGreen,
                 ),
                 const SizedBox(width: Spacing.md),
                 Expanded(
@@ -887,7 +940,7 @@ class _NewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 175,
+      width: 172,
       child: Material(
         color: AppColors.white,
         borderRadius: AppRadius.card,
@@ -900,10 +953,11 @@ class _NewsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: item.cover_image_path?.isNotEmpty == true
-                      ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                      : Container(color: AppColors.paleGreen),
+                  aspectRatio: 4 / 5,
+                  child:
+                      item.cover_image_path?.isNotEmpty == true
+                          ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                          : Container(color: AppColors.paleGreen),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(Spacing.md),
@@ -914,16 +968,17 @@ class _NewsCard extends StatelessWidget {
                         item.title ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.category_name ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
@@ -947,7 +1002,7 @@ class _ArticleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 175,
+      width: 172,
       child: Material(
         color: AppColors.white,
         borderRadius: AppRadius.card,
@@ -960,10 +1015,11 @@ class _ArticleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: item.cover_image_path?.isNotEmpty == true
-                      ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                      : Container(color: AppColors.paleGreen),
+                  aspectRatio: 4 / 5,
+                  child:
+                      item.cover_image_path?.isNotEmpty == true
+                          ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                          : Container(color: AppColors.paleGreen),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(Spacing.md),
@@ -974,16 +1030,17 @@ class _ArticleCard extends StatelessWidget {
                         item.title ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.author_name ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),

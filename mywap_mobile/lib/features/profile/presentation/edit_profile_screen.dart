@@ -6,6 +6,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
@@ -74,17 +75,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Profil')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/profile'),
+        title: const Text('Edit Profil'),
+      ),
       body: profileAsync.when(
         data: (data) {
           _initFrom(data.profileUser);
           return _buildForm();
         },
         loading: () => const _FormSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(profileProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(profileProvider),
+            ),
       ),
     );
   }
@@ -127,7 +135,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Widget _buildForm() {
     final editMetaAsync = ref.watch(profileEditMetaProvider);
-    final branches = editMetaAsync.valueOrNull?.branches ?? const <ProfileBranch>[];
+    final branches =
+        editMetaAsync.valueOrNull?.branches ?? const <ProfileBranch>[];
 
     return Form(
       key: _formKey,
@@ -155,7 +164,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _section('Maklumat Asas', [
             _textField('name', label: 'Nama Penuh', required: true),
             _textField('email', label: 'Emel', required: true, isEmail: true),
-            _textField('phone', label: 'No. Telefon', keyboardType: TextInputType.phone),
+            _textField(
+              'phone',
+              label: 'No. Telefon',
+              keyboardType: TextInputType.phone,
+            ),
             _dobField(),
             _optionField(
               key: 'gender',
@@ -206,9 +219,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Text(branch.name ?? 'Cawangan ${branch.id ?? ''}'),
                     ),
                 ],
-                onChanged: branches.isEmpty
-                    ? null
-                    : (value) => setState(() {
+                onChanged:
+                    branches.isEmpty
+                        ? null
+                        : (value) => setState(() {
                           _branchId = value;
                           _serverErrors.remove('branch_id');
                         }),
@@ -219,13 +233,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               title: const Text('Papar dalam Direktori Awam'),
               subtitle: const Text('Benarkan orang lain melihat profil anda'),
               value: _isPublicInDirectory,
-              onChanged: (value) => setState(() => _isPublicInDirectory = value),
+              onChanged:
+                  (value) => setState(() => _isPublicInDirectory = value),
             ),
           ]),
           _section('Alamat', [
             _textField('address_1', label: 'Alamat (Baris 1)'),
             _textField('address_2', label: 'Alamat (Baris 2)'),
-            _textField('postcode', label: 'Poskod', keyboardType: TextInputType.number),
+            _textField(
+              'postcode',
+              label: 'Poskod',
+              keyboardType: TextInputType.number,
+            ),
             _textField('city', label: 'Bandar'),
             _textField('state', label: 'Negeri'),
           ]),
@@ -240,16 +259,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           const SizedBox(height: Spacing.md),
           ElevatedButton.icon(
             onPressed: _saving ? null : _submit,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
-                    ),
-                  )
-                : const Icon(Icons.save_outlined),
+            icon:
+                _saving
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                    : const Icon(Icons.save_outlined),
             label: Text(_saving ? 'Menyimpan...' : 'Simpan Perubahan'),
           ),
         ],
@@ -361,9 +381,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   _dob == null ? 'Pilih tarikh' : ProfileFormat.date(_dob!),
                   style: TextStyle(
                     fontSize: 16,
-                    color: _dob == null
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
+                    color:
+                        _dob == null
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -444,9 +465,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ..addAll(_mapErrors(error.errors));
       });
       if (_serverErrors.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     } catch (_) {
       if (!mounted) return;

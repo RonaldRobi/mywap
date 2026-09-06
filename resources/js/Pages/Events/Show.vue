@@ -6,7 +6,6 @@ import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const props = defineProps({
     event: { type: Object, required: true },
-    comments: { type: Array, default: () => [] },
     relatedEvents: { type: Array, default: () => [] },
     organizations: { type: Array, default: () => [] },
     registrationForms: { type: Array, default: () => [] },
@@ -22,6 +21,7 @@ const isSuperadmin = computed(() => {
     const roles = user.value?.roles ?? [];
     return roles.includes('Superadmin') || roles.includes('Admin');
 });
+const eventIsPublished = computed(() => props.event?.status === 'published');
 
 const typeConfig = {
     physical: { label: 'Fizikal', classes: 'bg-emerald-100 text-emerald-700' },
@@ -94,20 +94,6 @@ function submitRsvp(status) {
             onError: () => { submitting.value = false; },
         }
     );
-}
-
-// ─── Comments ─────────────────────────────────────────────────────────────
-
-const commentForm = useForm({
-    content: '',
-    anonymous_name: '',
-});
-
-function submitComment() {
-    commentForm.post(route('events.comments.store', props.event.id), {
-        preserveScroll: true,
-        onSuccess: () => commentForm.reset('content'),
-    });
 }
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────
@@ -231,6 +217,21 @@ function eventShareUrl() {
         <template #header>Program &amp; Acara</template>
 
         <div class="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-8">
+
+            <!-- ─── Warning: Program Belum Diterbitkan (admin sahaja) ────────── -->
+            <div
+                v-if="isSuperadmin && !eventIsPublished"
+                class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-800"
+            >
+                <p class="flex items-center gap-2 font-bold mb-1">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                    Program ini masih berstatus {{ event.status_label }}
+                </p>
+                <p class="text-amber-700">
+                    Pengguna <strong>tidak dapat membuka</strong> pautan kongsi atau QR pendaftaran program ini sehingga ia diterbitkan.
+                    Tukar status kepada <strong>Diterbitkan</strong> sebelum berkongsi pautan / menjana QR.
+                </p>
+            </div>
 
             <!-- ─── Hero / Poster ───────────────────────────────────────────── -->
             <div
@@ -604,53 +605,6 @@ function eventShareUrl() {
                     </div>
                 </div>
             </div>
-
-            <!-- ─── Comments ─────────────────────────────────────────────────── -->
-            <section class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6">
-                <h2 class="text-lg font-black text-gray-900 mb-4">Komen</h2>
-
-                <form v-if="isLoggedIn" class="space-y-3 mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100" @submit.prevent="submitComment">
-                    <p class="text-xs font-medium text-gray-500">
-                        Tinggalkan komen anda
-                        <span class="font-bold text-gray-700"> sebagai {{ user.name }}</span>:
-                    </p>
-
-                    <div class="space-y-1">
-                        <textarea
-                            v-model="commentForm.content"
-                            rows="3"
-                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0"
-                            placeholder="Tulis komen anda di sini..."
-                            required
-                        ></textarea>
-                        <p v-if="commentForm.errors.content" class="text-xs text-red-600 mt-1">{{ commentForm.errors.content }}</p>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button
-                            type="submit"
-                            :disabled="commentForm.processing"
-                            class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-gray-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {{ commentForm.processing ? 'Menghantar...' : 'Hantar Komen' }}
-                        </button>
-                    </div>
-                </form>
-
-                <div class="space-y-3">
-                    <article v-for="comment in comments" :key="comment.id" class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <p class="text-sm font-bold text-gray-800">{{ comment.user_name }}</p>
-                            <p class="text-[11px] font-medium text-gray-400">{{ comment.created_at }}</p>
-                        </div>
-                        <p class="text-sm text-gray-600 leading-relaxed">{{ comment.content }}</p>
-                    </article>
-
-                    <p v-if="!comments.length" class="text-sm text-gray-400 text-center py-6 border-2 border-dashed border-gray-100 rounded-2xl">
-                        Belum ada komen. Jadilah yang pertama!
-                    </p>
-                </div>
-            </section>
 
             <!-- ─── Related Events ───────────────────────────────────────────── -->
             <section v-if="relatedEvents.length" class="space-y-4">

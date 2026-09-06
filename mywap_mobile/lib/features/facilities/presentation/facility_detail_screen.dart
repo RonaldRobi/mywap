@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import 'facility_booking_sheet.dart';
@@ -23,20 +24,28 @@ class FacilityDetailScreen extends ConsumerWidget {
     final detailAsync = ref.watch(facilityDetailProvider(facilityId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Kemudahan')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/facilities'),
+        title: const Text('Butiran Kemudahan'),
+      ),
       body: detailAsync.when(
-        data: (detail) => _DetailContent(
-          detail: detail,
-          onBook: () => showFacilityBookingSheet(context, detail),
-          onRefresh: () async =>
-              ref.invalidate(facilityDetailProvider(facilityId)),
-        ),
+        data:
+            (detail) => _DetailContent(
+              detail: detail,
+              onBook: () => showFacilityBookingSheet(context, detail),
+              onRefresh:
+                  () async =>
+                      ref.invalidate(facilityDetailProvider(facilityId)),
+            ),
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(facilityDetailProvider(facilityId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(facilityDetailProvider(facilityId)),
+            ),
       ),
     );
   }
@@ -65,64 +74,72 @@ class _DetailContent extends StatelessWidget {
           child: RefreshIndicator(
             onRefresh: onRefresh,
             child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            children: [
-              AppImage(
-                facility?.imageUrl,
-                height: 220,
-                width: double.infinity,
-                borderRadius: BorderRadius.zero,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(Spacing.xl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(facility?.name ?? '-',
-                        style: theme.textTheme.headlineSmall),
-                    if (facility?.organizationName != null) ...[
-                      const SizedBox(height: Spacing.xs),
-                      Text(
-                        facility!.organizationName!,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.movementGreen,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: Spacing.md),
-                    _InfoRow(
-                      icon: Icons.location_on_outlined,
-                      text: facility?.location ?? '-',
-                    ),
-                    _InfoRow(
-                      icon: Icons.people_outline,
-                      text:
-                          'Kapasiti: ${facility?.capacity?.toString() ?? '-'}',
-                    ),
-                    _InfoRow(
-                      icon: Icons.attach_money_outlined,
-                      text:
-                          '${Formatters.currency(price)} / ${facility?.type == 'daily' ? 'hari' : facility?.type == 'halfday' ? 'separuh hari' : 'jam'}',
-                    ),
-                    if (facility?.description != null &&
-                        (facility!.description!.isNotEmpty)) ...[
-                      const SizedBox(height: Spacing.xl),
-                      Text('Penerangan', style: theme.textTheme.titleLarge),
-                      const SizedBox(height: Spacing.sm),
-                      Text(facility.description!,
-                          style: theme.textTheme.bodyLarge),
-                    ],
-                    if (detail.myBookings.isNotEmpty) ...[
-                      const SizedBox(height: Spacing.xl),
-                      const SectionHeader('Tempahan Saya'),
-                      for (final booking in detail.myBookings)
-                        _MyBookingTile(booking: booking),
-                    ],
-                  ],
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+                AppImage(
+                  facility?.imageUrl,
+                  height: 220,
+                  width: double.infinity,
+                  borderRadius: BorderRadius.zero,
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        facility?.name ?? '-',
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                      if (facility?.organizationName != null) ...[
+                        const SizedBox(height: Spacing.xs),
+                        Text(
+                          facility!.organizationName!,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: Spacing.md),
+                      _InfoRow(
+                        icon: Icons.location_on_outlined,
+                        text: facility?.location ?? '-',
+                      ),
+                      _InfoRow(
+                        icon: Icons.people_outline,
+                        text:
+                            'Kapasiti: ${facility?.capacity?.toString() ?? '-'}',
+                      ),
+                      _InfoRow(
+                        icon: Icons.attach_money_outlined,
+                        text:
+                            '${Formatters.currency(price)} / ${facility?.type == 'daily'
+                                ? 'hari'
+                                : facility?.type == 'halfday'
+                                ? 'separuh hari'
+                                : 'jam'}',
+                      ),
+                      if (facility?.description != null &&
+                          (facility!.description!.isNotEmpty)) ...[
+                        const SizedBox(height: Spacing.xl),
+                        Text('Penerangan', style: theme.textTheme.titleLarge),
+                        const SizedBox(height: Spacing.sm),
+                        Text(
+                          facility.description!,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ],
+                      if (detail.myBookings.isNotEmpty) ...[
+                        const SizedBox(height: Spacing.xl),
+                        const SectionHeader('Tempahan Saya'),
+                        for (final booking in detail.myBookings)
+                          _MyBookingTile(booking: booking),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -179,9 +196,9 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -219,8 +236,18 @@ class _DetailSkeleton extends StatelessWidget {
 }
 
 const List<String> _months = [
-  'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis',
+  'Jan',
+  'Feb',
+  'Mac',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Ogo',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Dis',
 ];
 
 String? _formatDateTime(String? iso) {

@@ -11,6 +11,8 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
@@ -23,17 +25,25 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Profil'),
+      ),
       body: profileAsync.when(
-        data: (data) => _ProfileContent(
-          data: data,
-          onRefresh: () async => ref.invalidate(profileProvider),
-        ),
+        data:
+            (data) => _ProfileContent(
+              data: data,
+              onRefresh: () async => ref.invalidate(profileProvider),
+            ),
         loading: () => const _ProfileSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(profileProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(profileProvider),
+            ),
       ),
     );
   }
@@ -66,59 +76,64 @@ class _ProfileContent extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: Spacing.xl),
-      children: [
-        _ProfileHeader(user: user),
-        if (!user.isComplete) ...[
-          const SizedBox(height: Spacing.md),
-          _CompleteProfileBanner(onPressed: () => context.push('/profile/complete')),
-        ],
-        if (user.feeStatus != null) ...[
-          const SizedBox(height: Spacing.md),
-          _FeeStatusCard(feeStatus: user.feeStatus!),
-        ],
-        const SectionHeader('Maklumat Perhubungan'),
-        _ContactCard(user: user),
-        const SectionHeader('Butiran'),
-        _DetailsCard(user: user),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.lg),
-          child: FilledButton.icon(
-            onPressed: () => context.push('/profile/edit'),
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit Profil'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: Spacing.xl),
+        children: [
+          _ProfileHeader(user: user),
+          if (!user.isComplete) ...[
+            const SizedBox(height: Spacing.md),
+            _CompleteProfileBanner(
+              onPressed: () => context.push('/profile/complete'),
+            ),
+          ],
+          if (user.feeStatus != null) ...[
+            const SizedBox(height: Spacing.md),
+            _FeeStatusCard(feeStatus: user.feeStatus!),
+          ],
+          const SectionHeader('Maklumat Perhubungan'),
+          _ContactCard(user: user),
+          const SectionHeader('Butiran'),
+          _DetailsCard(user: user),
+          const SectionHeader('Keselamatan'),
+          const _BiometricSetting(),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: FilledButton.icon(
+              onPressed: () => context.push('/profile/edit'),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit Profil'),
+            ),
           ),
-        ),
-        SectionHeader(
-          'Perjalanan Ahli',
-          trailing: history.isEmpty
-              ? null
-              : TextButton(
-                  onPressed: () => context.push('/profile/journey'),
-                  child: const Text('Lihat Semua'),
-                ),
-        ),
-        if (history.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
-            child: EmptyState(
-              icon: Icons.route_outlined,
-              message: 'Tiada rekod perjalanan lagi.',
-            ),
-          )
-        else ...[
-          for (final entry in history.take(3)) _JourneyPreview(entry: entry),
-          if (history.length > 3)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-              child: OutlinedButton(
-                onPressed: () => context.push('/profile/journey'),
-                child: Text('Lihat Semua (${history.length})'),
+          SectionHeader(
+            'Perjalanan Ahli',
+            trailing:
+                history.isEmpty
+                    ? null
+                    : TextButton(
+                      onPressed: () => context.push('/profile/journey'),
+                      child: const Text('Lihat Semua'),
+                    ),
+          ),
+          if (history.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
+              child: EmptyState(
+                icon: Icons.route_outlined,
+                message: 'Tiada rekod perjalanan lagi.',
               ),
-            ),
+            )
+          else ...[
+            for (final entry in history.take(3)) _JourneyPreview(entry: entry),
+            if (history.length > 3)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                child: OutlinedButton(
+                  onPressed: () => context.push('/profile/journey'),
+                  child: Text('Lihat Semua (${history.length})'),
+                ),
+              ),
+          ],
         ],
-      ],
       ),
     );
   }
@@ -161,7 +176,8 @@ class _ProfileHeader extends StatelessWidget {
                         color: AppColors.white,
                       ),
                     ),
-                    if (user.member_no != null && user.member_no!.isNotEmpty) ...[
+                    if (user.member_no != null &&
+                        user.member_no!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'No. Ahli: ${user.member_no}',
@@ -345,8 +361,16 @@ class _ContactCard extends StatelessWidget {
     return Column(
       children: [
         _DetailRow(icon: Icons.mail_outline, label: 'Emel', value: user.email),
-        _DetailRow(icon: Icons.phone_outlined, label: 'Telefon', value: user.phone),
-        _DetailRow(icon: Icons.badge_outlined, label: 'No. IC', value: user.ic_number),
+        _DetailRow(
+          icon: Icons.phone_outlined,
+          label: 'Telefon',
+          value: user.phone,
+        ),
+        _DetailRow(
+          icon: Icons.badge_outlined,
+          label: 'No. IC',
+          value: user.ic_number,
+        ),
       ],
     );
   }
@@ -358,13 +382,14 @@ class _DetailsCard extends StatelessWidget {
   final ProfileUser user;
 
   String get _address {
-    final parts = [
-      user.address_1,
-      user.address_2,
-      if (user.postcode != null && user.city != null)
-        '${user.postcode} ${user.city}',
-      user.state,
-    ].where((p) => p != null && p.trim().isNotEmpty).toList();
+    final parts =
+        [
+          user.address_1,
+          user.address_2,
+          if (user.postcode != null && user.city != null)
+            '${user.postcode} ${user.city}',
+          user.state,
+        ].where((p) => p != null && p.trim().isNotEmpty).toList();
     return parts.isEmpty ? '' : parts.join(', ');
   }
 
@@ -372,17 +397,38 @@ class _DetailsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _DetailRow(icon: Icons.account_tree_outlined, label: 'Cawangan', value: user.branch_name),
-        _DetailRow(icon: Icons.place_outlined, label: 'Lokaliti', value: user.locality),
-        _DetailRow(icon: Icons.work_outline, label: 'Profesion', value: user.current_profession),
-        _DetailRow(icon: Icons.school_outlined, label: 'Pendidikan', value: user.education_level),
-        _DetailRow(icon: Icons.home_outlined, label: 'Alamat', value: _address.isEmpty ? null : _address),
+        _DetailRow(
+          icon: Icons.account_tree_outlined,
+          label: 'Cawangan',
+          value: user.branch_name,
+        ),
+        _DetailRow(
+          icon: Icons.place_outlined,
+          label: 'Lokaliti',
+          value: user.locality,
+        ),
+        _DetailRow(
+          icon: Icons.work_outline,
+          label: 'Profesion',
+          value: user.current_profession,
+        ),
+        _DetailRow(
+          icon: Icons.school_outlined,
+          label: 'Pendidikan',
+          value: user.education_level,
+        ),
+        _DetailRow(
+          icon: Icons.home_outlined,
+          label: 'Alamat',
+          value: _address.isEmpty ? null : _address,
+        ),
         _DetailRow(
           icon: Icons.emergency_outlined,
           label: 'Hubungan Kecemasan',
-          value: user.emergency_contact_name != null
-              ? '${user.emergency_contact_name} (${user.emergency_contact_phone ?? '-'})'
-              : null,
+          value:
+              user.emergency_contact_name != null
+                  ? '${user.emergency_contact_name} (${user.emergency_contact_phone ?? '-'})'
+                  : null,
         ),
       ],
     );
@@ -401,7 +447,8 @@ class _DetailRow extends StatelessWidget {
     return ListCard(
       leading: Icon(icon, color: AppColors.movementGreen, size: 22),
       title: label,
-      subtitle: (value == null || value!.trim().isEmpty) ? 'Tidak dinyatakan' : value,
+      subtitle:
+          (value == null || value!.trim().isEmpty) ? 'Tidak dinyatakan' : value,
     );
   }
 }
@@ -420,6 +467,76 @@ class _JourneyPreview extends StatelessWidget {
       leading: const Icon(Icons.swap_horiz, color: AppColors.movementGreen),
       title: from == null ? 'Sertai ${to ?? 'organisasi'}' : '$from → $to',
       subtitle: entry.transitioned_at_human,
+    );
+  }
+}
+
+/// Toggle dayakan/lumpuhkan log masuk biometrik untuk akaun semasa. Hanya
+/// dipaparkan apabila peranti menyokong biometrik.
+class _BiometricSetting extends ConsumerStatefulWidget {
+  const _BiometricSetting();
+
+  @override
+  ConsumerState<_BiometricSetting> createState() => _BiometricSettingState();
+}
+
+class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool value) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .setBiometricEnabled(value);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value
+                ? 'Gagal mendayakan. Pastikan Face ID / cap jari telah '
+                    'didaftarkan pada peranti anda.'
+                : 'Gagal melumpuhkan log masuk biometrik. Sila cuba lagi.',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final supportedAsync = ref.watch(biometricSupportedProvider);
+    final enabledAsync = ref.watch(biometricEnabledProvider);
+    final hasFaceId = ref.watch(hasFaceIdProvider).valueOrNull ?? false;
+
+    return supportedAsync.maybeWhen(
+      data: (supported) {
+        if (!supported) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+          child: Card(
+            child: SwitchListTile(
+              secondary: Icon(
+                hasFaceId ? Icons.face_retouching_natural : Icons.fingerprint,
+                color: AppColors.movementGreen,
+              ),
+              title: Text(
+                hasFaceId
+                    ? 'Log masuk dengan Face ID'
+                    : 'Log masuk dengan Cap Jari',
+              ),
+              subtitle: const Text(
+                'Buka kunci akaun anda dengan biometrik peranti.',
+              ),
+              value: enabledAsync.valueOrNull ?? false,
+              onChanged: _busy ? null : _toggle,
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }

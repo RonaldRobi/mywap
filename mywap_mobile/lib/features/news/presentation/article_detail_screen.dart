@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
@@ -21,30 +22,39 @@ class ArticleDetailScreen extends ConsumerWidget {
     final async = ref.watch(articleDetailProvider(articleId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Artikel')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/articles'),
+        title: const Text('Artikel'),
+      ),
       body: async.when(
-        data: (detail) => _ArticleDetailBody(
-          detail: detail,
-          onReaction: (reaction) async {
-            await ref
-                .read(newsRepositoryProvider)
-                .reactArticle(articleId, reaction);
-            ref.invalidate(articleDetailProvider(articleId));
-            ref.invalidate(articleListProvider);
-          },
-          onComment: (content) async {
-            await ref
-                .read(newsRepositoryProvider)
-                .commentArticle(articleId, content);
-            ref.invalidate(articleDetailProvider(articleId));
-          },
-          onRefresh: () async => ref.invalidate(articleDetailProvider(articleId)),
-        ),
+        data:
+            (detail) => _ArticleDetailBody(
+              detail: detail,
+              onReaction: (reaction) async {
+                await ref
+                    .read(newsRepositoryProvider)
+                    .reactArticle(articleId, reaction);
+                ref.invalidate(articleDetailProvider(articleId));
+                ref.invalidate(articleListProvider);
+              },
+              onComment: (content) async {
+                await ref
+                    .read(newsRepositoryProvider)
+                    .commentArticle(articleId, content);
+                ref.invalidate(articleDetailProvider(articleId));
+              },
+              onRefresh:
+                  () async => ref.invalidate(articleDetailProvider(articleId)),
+            ),
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(articleDetailProvider(articleId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(articleDetailProvider(articleId)),
+            ),
       ),
     );
   }
@@ -71,75 +81,81 @@ class _ArticleDetailBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [
-        if (article.coverImagePath != null && article.coverImagePath!.isNotEmpty)
-          AppImage(article.coverImagePath, height: 200, borderRadius: BorderRadius.circular(12)),
-        const SizedBox(height: Spacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${article.authorName ?? 'Admin'} • ${article.publishedAt ?? ''}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.movementGreen,
-                  fontWeight: FontWeight.w600,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          if (article.coverImagePath != null &&
+              article.coverImagePath!.isNotEmpty)
+            AppImage(
+              article.coverImagePath,
+              height: 200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          const SizedBox(height: Spacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${article.authorName ?? 'Admin'} • ${article.publishedAt ?? ''}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.movementGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(article.title ?? '-', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: Spacing.lg),
+          Text(article.content ?? '', style: theme.textTheme.bodyLarge),
+          if (article.gallery.isNotEmpty) ...[
+            const SizedBox(height: Spacing.lg),
+            SizedBox(
+              height: 180,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: article.gallery.length,
+                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                itemBuilder:
+                    (_, i) => SizedBox(
+                      width: 260,
+                      child: AppImage(
+                        article.gallery[i].path,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: Spacing.sm),
-        Text(article.title ?? '-', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: Spacing.lg),
-        Text(article.content ?? '', style: theme.textTheme.bodyLarge),
-        if (article.gallery.isNotEmpty) ...[
-          const SizedBox(height: Spacing.lg),
-          SizedBox(
-            height: 180,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: article.gallery.length,
-              separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-              itemBuilder: (_, i) => SizedBox(
-                width: 260,
-                child: AppImage(
-                  article.gallery[i].path,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+          if (article.tags.isNotEmpty) ...[
+            const SizedBox(height: Spacing.lg),
+            Wrap(
+              spacing: 6,
+              children: article.tags
+                  .where((t) => t.name != null)
+                  .map(
+                    (t) => Chip(
+                      label: Text('#${t.name}'),
+                      labelStyle: const TextStyle(fontSize: 11),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  )
+                  .toList(growable: false),
             ),
+          ],
+          const SizedBox(height: Spacing.xl),
+          ReactionBar(
+            likesCount: article.likesCount,
+            dislikesCount: article.dislikesCount,
+            myReaction: article.myReaction,
+            onLike: () => onReaction('like'),
+            onDislike: () => onReaction('dislike'),
           ),
+          const Divider(height: Spacing.xl * 2),
+          CommentSection(comments: detail.comments, onSubmit: onComment),
         ],
-        if (article.tags.isNotEmpty) ...[
-          const SizedBox(height: Spacing.lg),
-          Wrap(
-            spacing: 6,
-            children: article.tags
-                .where((t) => t.name != null)
-                .map(
-                  (t) => Chip(
-                    label: Text('#${t.name}'),
-                    labelStyle: const TextStyle(fontSize: 11),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ],
-        const SizedBox(height: Spacing.xl),
-        ReactionBar(
-          likesCount: article.likesCount,
-          dislikesCount: article.dislikesCount,
-          myReaction: article.myReaction,
-          onLike: () => onReaction('like'),
-          onDislike: () => onReaction('dislike'),
-        ),
-        const Divider(height: Spacing.xl * 2),
-        CommentSection(comments: detail.comments, onSubmit: onComment),
-      ],
       ),
     );
   }

@@ -10,7 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../application/onboarding_providers.dart';
 import '../data/onboarding_repository.dart';
 
-const onboardingCompletedKey = 'onboarding_completed_v1';
+const onboardingCompletedKey = 'onboarding_completed_v2';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

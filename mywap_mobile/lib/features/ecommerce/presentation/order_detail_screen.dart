@@ -9,6 +9,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/order_providers.dart';
 import '../data/models/order.dart';
 import 'order_status.dart';
@@ -28,7 +29,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Future<void> _pay() async {
     setState(() => _paying = true);
     try {
-      final result = await ref.read(orderRepositoryProvider).pay(widget.orderId);
+      final result = await ref
+          .read(orderRepositoryProvider)
+          .pay(widget.orderId);
       if (!mounted) return;
       ref.invalidate(orderDetailProvider(widget.orderId));
       ref.invalidate(ordersProvider);
@@ -38,7 +41,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           result.paymentUrl!.isNotEmpty) {
         final paid = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
-            builder: (_) => PaymentWebviewScreen(paymentUrl: result.paymentUrl!),
+            builder:
+                (_) => PaymentWebviewScreen(paymentUrl: result.paymentUrl!),
           ),
         );
         if (!mounted) return;
@@ -62,9 +66,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (!mounted) return;
       ref.invalidate(orderDetailProvider(widget.orderId));
       ref.invalidate(ordersProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _paying = false);
     }
@@ -76,46 +80,57 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final order = detailAsync.valueOrNull?.order;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Pesanan')),
-      body: detailAsync.when(
-        data: (detail) => _DetailBody(
-          order: detail.order,
-          onRefresh: () async =>
-              ref.invalidate(orderDetailProvider(widget.orderId)),
-        ),
-        loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(orderDetailProvider(widget.orderId)),
-        ),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/orders'),
+        title: const Text('Butiran Pesanan'),
       ),
-      bottomNavigationBar: order != null && order.status == 'pending'
-          ? SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.all(Spacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(top: BorderSide(color: AppColors.divider)),
+      body: detailAsync.when(
+        data:
+            (detail) => _DetailBody(
+              order: detail.order,
+              onRefresh:
+                  () async =>
+                      ref.invalidate(orderDetailProvider(widget.orderId)),
+            ),
+        loading: () => const _DetailSkeleton(),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry:
+                  () => ref.invalidate(orderDetailProvider(widget.orderId)),
+            ),
+      ),
+      bottomNavigationBar:
+          order != null && order.status == 'pending'
+              ? SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(top: BorderSide(color: AppColors.divider)),
+                  ),
+                  child: FilledButton.icon(
+                    onPressed: _paying ? null : _pay,
+                    icon:
+                        _paying
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                            : const Icon(Icons.payment),
+                    label: const Text('Bayar'),
+                  ),
                 ),
-                child: FilledButton.icon(
-                  onPressed: _paying ? null : _pay,
-                  icon: _paying
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.white,
-                          ),
-                        )
-                      : const Icon(Icons.payment),
-                  label: const Text('Bayar'),
-                ),
-              ),
-            )
-          : null,
+              )
+              : null,
     );
   }
 }
@@ -143,102 +158,108 @@ class _DetailBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Pesanan #${o.id ?? '-'}',
-                          style: theme.textTheme.titleLarge),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(Spacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Pesanan #${o.id ?? '-'}',
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                      _StatusChip(status: o.status),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    formatOrderDate(o.createdAt),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                    _StatusChip(status: o.status),
-                  ],
-                ),
-                const SizedBox(height: Spacing.xs),
-                Text(
-                  formatOrderDate(o.createdAt),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
                   ),
-                ),
-                const SizedBox(height: Spacing.sm),
-                Text(
-                  'Jumlah: ${Formatters.currency(o.grandTotal)}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: AppColors.movementGreen,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: Spacing.sm),
+                  Text(
+                    'Jumlah: ${Formatters.currency(o.grandTotal)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.movementGreen,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: Spacing.md),
+          _SectionCard(
+            title: 'Item',
+            child:
+                o.items.isEmpty
+                    ? const Text('Tiada item.')
+                    : Column(
+                      children: [
+                        for (final item in o.items) _ItemRow(item: item),
+                      ],
+                    ),
+          ),
+          const SizedBox(height: Spacing.md),
+          _SectionCard(
+            title: 'Maklumat Penghantaran',
+            child: Column(
+              children: [
+                _InfoLine(label: 'Nama', value: o.shippingName),
+                _InfoLine(label: 'Telefon', value: o.shippingPhone),
+                _InfoLine(label: 'Alamat', value: o.shippingAddress),
+                _InfoLine(label: 'Poskod', value: o.shippingPostcode),
+                _InfoLine(label: 'Kurier', value: o.courier),
+                _InfoLine(label: 'No. Penjejakan', value: o.trackingNo),
+              ],
+            ),
+          ),
+          const SizedBox(height: Spacing.md),
+          _SectionCard(
+            title: 'Pembayaran',
+            child:
+                o.payments.isEmpty
+                    ? const Text('Tiada pembayaran.')
+                    : Column(
+                      children: [
+                        for (final payment in o.payments)
+                          _PaymentRow(payment: payment),
+                      ],
+                    ),
+          ),
+          const SizedBox(height: Spacing.md),
+          _SectionCard(
+            title: 'Ringkasan',
+            child: Column(
+              children: [
+                _InfoLine(
+                  label: 'Subjumlah',
+                  value: Formatters.currency(o.total),
+                ),
+                _InfoLine(
+                  label: 'Pos',
+                  value: Formatters.currency(o.postageCost),
+                ),
+                const Divider(height: Spacing.lg),
+                _InfoLine(
+                  label: 'Jumlah',
+                  value: Formatters.currency(o.grandTotal),
+                  bold: true,
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: Spacing.md),
-        _SectionCard(
-          title: 'Item',
-          child: o.items.isEmpty
-              ? const Text('Tiada item.')
-              : Column(
-                  children: [
-                    for (final item in o.items)
-                      _ItemRow(item: item),
-                  ],
-                ),
-        ),
-        const SizedBox(height: Spacing.md),
-        _SectionCard(
-          title: 'Maklumat Penghantaran',
-          child: Column(
-            children: [
-              _InfoLine(label: 'Nama', value: o.shippingName),
-              _InfoLine(label: 'Telefon', value: o.shippingPhone),
-              _InfoLine(label: 'Alamat', value: o.shippingAddress),
-              _InfoLine(label: 'Poskod', value: o.shippingPostcode),
-              _InfoLine(label: 'Kurier', value: o.courier),
-              _InfoLine(label: 'No. Penjejakan', value: o.trackingNo),
-            ],
-          ),
-        ),
-        const SizedBox(height: Spacing.md),
-        _SectionCard(
-          title: 'Pembayaran',
-          child: o.payments.isEmpty
-              ? const Text('Tiada pembayaran.')
-              : Column(
-                  children: [
-                    for (final payment in o.payments)
-                      _PaymentRow(payment: payment),
-                  ],
-                ),
-        ),
-        const SizedBox(height: Spacing.md),
-        _SectionCard(
-          title: 'Ringkasan',
-          child: Column(
-            children: [
-              _InfoLine(label: 'Subjumlah', value: Formatters.currency(o.total)),
-              _InfoLine(
-                label: 'Pos',
-                value: Formatters.currency(o.postageCost),
-              ),
-              const Divider(height: Spacing.lg),
-              _InfoLine(
-                label: 'Jumlah',
-                value: Formatters.currency(o.grandTotal),
-                bold: true,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: Spacing.xl),
-      ],
+          const SizedBox(height: Spacing.xl),
+        ],
       ),
     );
   }
@@ -280,11 +301,7 @@ class _ItemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
       child: Row(
         children: [
-          AppImage(
-            item.product?.image,
-            width: 48,
-            height: 48,
-          ),
+          AppImage(item.product?.image, width: 48, height: 48),
           const SizedBox(width: Spacing.md),
           Expanded(
             child: Column(
@@ -373,11 +390,13 @@ class _PaymentRow extends StatelessWidget {
               Text(
                 paymentStatusLabel(payment.status),
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: orderStatusColor(payment.status == 'successful'
-                      ? 'paid'
-                      : payment.status == 'failed'
-                          ? 'cancelled'
-                          : 'pending'),
+                  color: orderStatusColor(
+                    payment.status == 'successful'
+                        ? 'paid'
+                        : payment.status == 'failed'
+                        ? 'cancelled'
+                        : 'pending',
+                  ),
                 ),
               ),
             ],

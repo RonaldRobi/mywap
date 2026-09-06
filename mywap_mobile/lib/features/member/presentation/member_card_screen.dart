@@ -8,6 +8,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/member_card_data.dart';
 
@@ -18,7 +19,10 @@ class MemberCardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cardAsync = ref.watch(memberCardProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Kad Ahli')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: const Text('Kad Ahli'),
+      ),
       body: cardAsync.when(
         data: (data) => _CardContent(data: data),
         loading: () => const _CardSkeleton(),

@@ -9,6 +9,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/loading_overlay.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/order_providers.dart';
 
@@ -40,14 +41,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   List<Map<String, dynamic>> get _productsPayload {
     final cart = ref.read(cartProvider);
     return cart.items
-        .map((item) => {
-              'id': item.productId,
-              'quantity': item.quantity,
-              if (item.variationOptionId != null)
-                'variation_option_id': item.variationOptionId,
-              if (item.variationLabel != null && item.variationLabel!.isNotEmpty)
-                'variation_snapshot': item.variationLabel,
-            })
+        .map(
+          (item) => {
+            'id': item.productId,
+            'quantity': item.quantity,
+            if (item.variationOptionId != null)
+              'variation_option_id': item.variationOptionId,
+            if (item.variationLabel != null && item.variationLabel!.isNotEmpty)
+              'variation_snapshot': item.variationLabel,
+          },
+        )
         .toList(growable: false);
   }
 
@@ -61,7 +64,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _error = null;
     });
     try {
-      final result = await ref.read(orderRepositoryProvider).checkout(
+      final result = await ref
+          .read(orderRepositoryProvider)
+          .checkout(
             products: _productsPayload,
             shippingName: _nameController.text,
             shippingPhone: _phoneController.text,
@@ -116,13 +121,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/cart'),
+        title: const Text('Checkout'),
+      ),
       body: Stack(
         children: [
-          cart.isEmpty
-              ? const _EmptyCheckout()
-              : _buildCheckoutForm(cart),
-          if (_submitting) const LoadingOverlay(message: 'Memproses pesanan...'),
+          cart.isEmpty ? const _EmptyCheckout() : _buildCheckoutForm(cart),
+          if (_submitting)
+            const LoadingOverlay(message: 'Memproses pesanan...'),
         ],
       ),
     );
@@ -141,8 +148,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Maklumat Penghantaran',
-                      style: theme.textTheme.titleMedium),
+                  Text(
+                    'Maklumat Penghantaran',
+                    style: theme.textTheme.titleMedium,
+                  ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
                     controller: _nameController,
@@ -152,9 +161,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       hintText: 'Nama penuh',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
-                    validator: (value) => (value == null || value.trim().isEmpty)
-                        ? 'Nama diperlukan'
-                        : null,
+                    validator:
+                        (value) =>
+                            (value == null || value.trim().isEmpty)
+                                ? 'Nama diperlukan'
+                                : null,
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
@@ -165,10 +176,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       hintText: '012-3456789',
                       prefixIcon: Icon(Icons.phone_outlined),
                     ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                            ? 'Nombor telefon diperlukan'
-                            : null,
+                    validator:
+                        (value) =>
+                            (value == null || value.trim().isEmpty)
+                                ? 'Nombor telefon diperlukan'
+                                : null,
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
@@ -203,8 +215,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 Text('Ringkasan Pesanan', style: theme.textTheme.titleMedium),
                 const SizedBox(height: Spacing.sm),
-                for (final item in cart.items)
-                  _SummaryRow(item: item),
+                for (final item in cart.items) _SummaryRow(item: item),
                 const Divider(height: Spacing.xl),
                 Row(
                   children: [

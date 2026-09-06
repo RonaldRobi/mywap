@@ -36,54 +36,46 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(builder: (context, ref, _) {
-      final authState = ref.watch(authControllerProvider);
-      final user = authState is AuthAuthenticated ? authState.user : null;
-      final isAdmin =
-          user != null && (user.roles ?? const []).any(_isAdmin);
-      final scaffoldKey = ref.watch(mainShellScaffoldKeyProvider);
+    return Consumer(
+      builder: (context, ref, _) {
+        final authState = ref.watch(authControllerProvider);
+        final user = authState is AuthAuthenticated ? authState.user : null;
+        final isAdmin = user != null && (user.roles ?? const []).any(_isAdmin);
+        final scaffoldKey = ref.watch(mainShellScaffoldKeyProvider);
 
-      final selectedIndex = _currentIndex(context);
-      final maxIndex = isAdmin ? 5 : 4;
-      final effectiveIndex = selectedIndex > maxIndex ? 0 : selectedIndex;
+        final selectedIndex = _currentIndex(context);
+        final maxIndex = isAdmin ? 5 : 4;
+        final effectiveIndex = selectedIndex > maxIndex ? 0 : selectedIndex;
 
-      return Scaffold(
-        key: scaffoldKey,
-        drawer: const AppSidebar(),
-        body: child,
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: _ScanFab(
-          onTap: () => context.push('/scan'),
-        ),
-        bottomNavigationBar: _BottomNavBar(
-          selectedIndex: effectiveIndex,
-          isAdmin: isAdmin,
-          onSelect: (index) {
-            final router = GoRouter.of(context);
-            final paths = [
-              '/dashboard',
-              '/events',
-              null, // center slot — QR scan FAB, not a tab.
-              '/infaq',
-              '/profile',
-              '/admin',
-            ];
-            final path = paths[index];
-            if (path == '/profile') {
-              // /profile lives outside the shell's ShellRoute, so push
-              // instead of go (keeps the bottom nav/shell chrome visible
-              // when the user navigates back).
-              context.push('/profile');
-              return;
-            }
-            if (path != null && router.state.matchedLocation != path) {
-              router.go(path);
-            }
-          },
-        ),
-      );
-    });
+        return Scaffold(
+          key: scaffoldKey,
+          drawer: const AppSidebar(),
+          body: child,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: _ScanFab(onTap: () => context.push('/scan')),
+          bottomNavigationBar: _BottomNavBar(
+            selectedIndex: effectiveIndex,
+            isAdmin: isAdmin,
+            onSelect: (index) {
+              final router = GoRouter.of(context);
+              final paths = [
+                '/dashboard',
+                '/events',
+                null, // center slot — QR scan FAB, not a tab.
+                '/infaq',
+                '/profile',
+                '/admin',
+              ];
+              final path = paths[index];
+              if (path != null && router.state.matchedLocation != path) {
+                router.go(path);
+              }
+            },
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -138,57 +130,54 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: BottomAppBar(
-        color: AppColors.white,
-        elevation: 0,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6,
-        height: 56,
-        padding: EdgeInsets.zero,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
+    return BottomAppBar(
+      color: AppColors.white,
+      elevation: 0,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 6,
+      height: 56,
+      padding: EdgeInsets.zero,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _NavItem(
+            icon: Icons.home_outlined,
+            selectedIcon: Icons.home,
+            label: 'Utama',
+            selected: selectedIndex == 0,
+            onTap: () => onSelect(0),
+          ),
+          _NavItem(
+            icon: Icons.event_outlined,
+            selectedIcon: Icons.event,
+            label: 'Acara',
+            selected: selectedIndex == 1,
+            onTap: () => onSelect(1),
+          ),
+          const SizedBox(width: 52), // reserved space for the notch/FAB
+          _NavItem(
+            icon: Icons.volunteer_activism_outlined,
+            selectedIcon: Icons.volunteer_activism,
+            label: 'Infaq',
+            selected: selectedIndex == 3,
+            onTap: () => onSelect(3),
+          ),
+          _NavItem(
+            icon: Icons.person_outline,
+            selectedIcon: Icons.person,
+            label: 'Profil',
+            selected: selectedIndex == 4,
+            onTap: () => onSelect(4),
+          ),
+          if (isAdmin)
             _NavItem(
-              icon: Icons.home_outlined,
-              selectedIcon: Icons.home,
-              label: 'Utama',
-              selected: selectedIndex == 0,
-              onTap: () => onSelect(0),
+              icon: Icons.admin_panel_settings_outlined,
+              selectedIcon: Icons.admin_panel_settings,
+              label: 'Admin',
+              selected: selectedIndex == 5,
+              onTap: () => onSelect(5),
             ),
-            _NavItem(
-              icon: Icons.event_outlined,
-              selectedIcon: Icons.event,
-              label: 'Acara',
-              selected: selectedIndex == 1,
-              onTap: () => onSelect(1),
-            ),
-            const SizedBox(width: 52), // reserved space for the notch/FAB
-            _NavItem(
-              icon: Icons.volunteer_activism_outlined,
-              selectedIcon: Icons.volunteer_activism,
-              label: 'Infaq',
-              selected: selectedIndex == 3,
-              onTap: () => onSelect(3),
-            ),
-            _NavItem(
-              icon: Icons.person_outline,
-              selectedIcon: Icons.person,
-              label: 'Profil',
-              selected: selectedIndex == 4,
-              onTap: () => onSelect(4),
-            ),
-            if (isAdmin)
-              _NavItem(
-                icon: Icons.admin_panel_settings_outlined,
-                selectedIcon: Icons.admin_panel_settings,
-                label: 'Admin',
-                selected: selectedIndex == 5,
-                onTap: () => onSelect(5),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

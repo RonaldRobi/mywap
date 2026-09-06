@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../member/application/member_providers.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
@@ -30,7 +31,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _rsvpError = null;
     });
     try {
-      await ref.read(eventRepositoryProvider).rsvp(
+      await ref
+          .read(eventRepositoryProvider)
+          .rsvp(
             widget.eventId,
             status: currentStatus == 'going' ? 'declined' : 'going',
           );
@@ -54,21 +57,31 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final detailAsync = ref.watch(eventDetailProvider(widget.eventId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Butiran Acara')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallback: '/events'),
+        title: const Text('Butiran Acara'),
+      ),
       body: detailAsync.when(
-        data: (detail) => _DetailContent(
-          event: detail.event,
-          rsvpLoading: _rsvpLoading,
-          rsvpError: _rsvpError,
-          onRsvp: _toggleRsvp,
-          onRefresh: () async =>
-              ref.invalidate(eventDetailProvider(widget.eventId)),
-        ),
+        data:
+            (detail) => _DetailContent(
+              event: detail.event,
+              rsvpLoading: _rsvpLoading,
+              rsvpError: _rsvpError,
+              onRsvp: _toggleRsvp,
+              onRefresh:
+                  () async =>
+                      ref.invalidate(eventDetailProvider(widget.eventId)),
+            ),
         loading: () => const _DetailSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(eventDetailProvider(widget.eventId)),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry:
+                  () => ref.invalidate(eventDetailProvider(widget.eventId)),
+            ),
       ),
     );
   }
@@ -100,90 +113,93 @@ class _DetailContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      children: [
-        AppImage(
-          event?.featured_image_url,
-          height: 220,
-          width: double.infinity,
-          borderRadius: BorderRadius.zero,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(Spacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: Spacing.md),
-              if (event?.organization?.name != null) ...[
-                Row(
-                  children: [
-                    Icon(
-                      Icons.apartment,
-                      size: 18,
-                      color: AppColors.movementGreen,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      event!.organization!.name!,
-                      style: theme.textTheme.titleSmall?.copyWith(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          AppImage(
+            event?.featured_image_url,
+            height: 220,
+            width: double.infinity,
+            borderRadius: BorderRadius.zero,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.headlineSmall),
+                const SizedBox(height: Spacing.md),
+                if (event?.organization?.name != null) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.apartment,
+                        size: 18,
                         color: AppColors.movementGreen,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: Spacing.sm),
-              ],
-              _InfoRow(
-                icon: Icons.calendar_today_outlined,
-                text: event?.start_formatted ?? '',
-              ),
-              _InfoRow(
-                icon: Icons.location_on_outlined,
-                text: event?.location_or_link ?? '',
-              ),
-              if (event?.rsvp_count != null) ...[
-                const SizedBox(height: Spacing.sm),
-                _InfoRow(
-                  icon: Icons.people_outline,
-                  text: '${event!.rsvp_count} peserta',
-                ),
-              ],
-              if (description != null && description.isNotEmpty) ...[
-                const SizedBox(height: Spacing.xl),
-                Text('Penerangan', style: theme.textTheme.titleLarge),
-                const SizedBox(height: Spacing.sm),
-                Text(description, style: theme.textTheme.bodyLarge),
-              ],
-              if (rsvpError != null) ...[
-                const SizedBox(height: Spacing.lg),
-                Text(
-                  rsvpError!,
-                  style: const TextStyle(color: AppColors.error),
-                ),
-              ],
-              const SizedBox(height: Spacing.xl),
-              FilledButton.icon(
-                onPressed: rsvpLoading ? null : () => onRsvp(myRsvp),
-                icon: rsvpLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.white,
+                      const SizedBox(width: 6),
+                      Text(
+                        event!.organization!.name!,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppColors.movementGreen,
                         ),
-                      )
-                    : Icon(isGoing ? Icons.event_busy : Icons.event_available),
-                label: Text(
-                  isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                ],
+                _InfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  text: event?.start_formatted ?? '',
                 ),
-              ),
-            ],
+                _InfoRow(
+                  icon: Icons.location_on_outlined,
+                  text: event?.location_or_link ?? '',
+                ),
+                if (event?.rsvp_count != null) ...[
+                  const SizedBox(height: Spacing.sm),
+                  _InfoRow(
+                    icon: Icons.people_outline,
+                    text: '${event!.rsvp_count} peserta',
+                  ),
+                ],
+                if (description != null && description.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: Spacing.sm),
+                  Text(description, style: theme.textTheme.bodyLarge),
+                ],
+                if (rsvpError != null) ...[
+                  const SizedBox(height: Spacing.lg),
+                  Text(
+                    rsvpError!,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                ],
+                const SizedBox(height: Spacing.xl),
+                FilledButton.icon(
+                  onPressed: rsvpLoading ? null : () => onRsvp(myRsvp),
+                  icon:
+                      rsvpLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                          : Icon(
+                            isGoing ? Icons.event_busy : Icons.event_available,
+                          ),
+                  label: Text(
+                    isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -207,9 +223,9 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],

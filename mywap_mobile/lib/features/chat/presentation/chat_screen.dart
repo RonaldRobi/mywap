@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../application/chat_providers.dart';
 import '../data/models/chat_message.dart';
 
@@ -45,37 +46,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.listen<ChatState>(chatControllerProvider, (prev, next) {
       final error = next.error;
       if (error != null && error != prev?.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
       }
     });
     final state = ref.watch(chatControllerProvider);
     _scrollToBottom();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(leading: const AppBackButton(), title: const Text('Chat')),
       body: Column(
         children: [
           Expanded(
-            child: state.messages.isEmpty
-                ? const EmptyState(
-                    icon: Icons.chat_bubble_outline,
-                    message:
-                        'Tiada mesej lagi. Hantar mesej untuk bertanya kepada pembantu AI.',
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(Spacing.lg),
-                    itemCount:
-                        state.messages.length + (state.sending ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= state.messages.length) {
-                        return const _TypingIndicator();
-                      }
-                      return _MessageBubble(message: state.messages[index]);
-                    },
-                  ),
+            child:
+                state.messages.isEmpty
+                    ? const EmptyState(
+                      icon: Icons.chat_bubble_outline,
+                      message:
+                          'Tiada mesej lagi. Hantar mesej untuk bertanya kepada pembantu AI.',
+                    )
+                    : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(Spacing.lg),
+                      itemCount:
+                          state.messages.length + (state.sending ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= state.messages.length) {
+                          return const _TypingIndicator();
+                        }
+                        return _MessageBubble(message: state.messages[index]);
+                      },
+                    ),
           ),
           _ChatInput(
             controller: _inputController,
@@ -194,16 +196,17 @@ class _ChatInput extends StatelessWidget {
                 padding: const EdgeInsets.all(Spacing.lg),
                 minimumSize: const Size(56, 56),
               ),
-              child: sending
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send),
+              child:
+                  sending
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.white,
+                        ),
+                      )
+                      : const Icon(Icons.send),
             ),
           ],
         ),
