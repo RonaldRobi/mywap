@@ -9,6 +9,8 @@ const props = defineProps({
     relatedEvents: { type: Array, default: () => [] },
     organizations: { type: Array, default: () => [] },
     registrationForms: { type: Array, default: () => [] },
+    promoUrl: { type: String, default: '' },
+    promoQrSvg: { type: String, default: '' },
     myRegistration: { type: Object, default: null },
     statuses: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
@@ -207,6 +209,27 @@ function submitEdit() {
 
 function eventShareUrl() {
     return route('share.event', props.event?.id, true);
+}
+
+// ─── QR Promosi ───────────────────────────────────────────────────────────
+const promoQrOpen = ref(false);
+const promoCopied = ref(false);
+
+function openPromoQr() {
+    promoCopied.value = false;
+    promoQrOpen.value = true;
+}
+
+function copyPromoLink() {
+    const url = props.promoUrl || window.location.href;
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+            promoCopied.value = true;
+            setTimeout(() => { promoCopied.value = false; }, 1400);
+        });
+    } else {
+        window.prompt('Salin pautan ini:', url);
+    }
 }
 </script>
 
@@ -522,11 +545,24 @@ function eventShareUrl() {
                 <!-- Share -->
                 <div class="pt-2">
                     <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Kongsi Program</p>
-                    <SocialShareButtons
-                        :title="event.title"
-                        :text="event.organization?.name || 'Program komuniti'"
-                        :url="eventShareUrl()"
-                    />
+                    <div class="flex flex-wrap items-center gap-2">
+                        <SocialShareButtons
+                            :title="event.title"
+                            :text="event.organization?.name || 'Program komuniti'"
+                            :url="eventShareUrl()"
+                        />
+                        <button
+                            type="button"
+                            @click="openPromoQr"
+                            title="QR Promosi"
+                            class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                            </svg>
+                            QR
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -811,6 +847,50 @@ function eventShareUrl() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
+        <!-- ════════════════════════════════════════════════════════════════════ -->
+        <!--  QR PROMOSI MODAL                                                  -->
+        <!-- ════════════════════════════════════════════════════════════════════ -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="promoQrOpen"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4"
+                    @click.self="promoQrOpen = false"
+                >
+                    <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center space-y-4">
+                        <p class="text-sm font-bold text-gray-800">QR Promosi — {{ event.title }}</p>
+                        <p class="text-xs text-gray-500">Imbas untuk terus mendaftar program ini. Sesuai dicetak pada poster / bahan promosi.</p>
+                        <div class="mx-auto flex justify-center rounded-2xl border border-gray-100 bg-white p-4">
+                            <div class="w-48 h-48 [&_svg]:w-full [&_svg]:h-full" v-html="promoQrSvg"></div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 break-all">{{ promoUrl }}</p>
+                        <div class="flex flex-col gap-2">
+                            <button @click="copyPromoLink" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+                                {{ promoCopied ? 'Pautan Disalin!' : 'Salin Pautan' }}
+                            </button>
+                            <a
+                                :href="route('events.share-qr.download', { event: event.id })"
+                                download
+                                class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+                            >
+                                Muat Turun PNG
+                            </a>
+                            <button @click="promoQrOpen = false" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                                Tutup
+                            </button>
+                        </div>
                     </div>
                 </div>
             </Transition>

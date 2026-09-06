@@ -453,6 +453,8 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 Route::group(['middleware' => ['throttle:60,1']], function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event:slug}', [EventController::class, 'show'])->name('events.show');
+    Route::get('/events/{event}/share-qr/download', [EventController::class, 'downloadShareQr'])
+        ->name('events.share-qr.download');
 });
 
 // ─── Authenticated Member Routes ─────────────────────────────────────────────

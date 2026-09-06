@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3';
 const props = defineProps({
     event: Object,
     message: String,
+    registerAction: { type: Object, default: null },
 });
 </script>
 
@@ -29,6 +30,20 @@ const props = defineProps({
                     </div>
 
                     <p class="text-sm text-gray-600 bg-gray-50 rounded-2xl p-4">{{ message }}</p>
+
+                    <!-- Belum daftar? Laluan terus ke pendaftaran -->
+                    <div v-if="registerAction?.url" class="rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4">
+                        <p class="text-sm font-semibold text-gray-700">
+                            Belum mendaftar untuk program <span class="font-extrabold">{{ event.title }}</span>?
+                        </p>
+                        <a
+                            :href="registerAction.url"
+                            class="mt-3 inline-block w-full rounded-2xl py-3.5 font-bold text-sm text-white shadow-lg transition-transform active:scale-95"
+                            :style="{ backgroundColor: event.color_theme ?? '#d97706' }"
+                        >
+                            Sila Daftar di Sini
+                        </a>
+                    </div>
 
                     <a
                         :href="route('dashboard')"

@@ -5,6 +5,7 @@ const props = defineProps({
     event: Object,
     attendUrl: String,
     error: { type: String, default: '' },
+    registerAction: { type: Object, default: null },
 });
 
 const form = useForm({ identifier: '' });
@@ -44,6 +45,23 @@ function submit() {
                     </div>
 
                     <p v-if="error" class="text-xs text-red-600 bg-red-50 border border-red-100 rounded-2xl p-3">{{ error }}</p>
+
+                    <!-- Belum daftar? Laluan terus ke pendaftaran -->
+                    <div
+                        v-if="registerAction?.url"
+                        class="rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4"
+                    >
+                        <p class="text-sm font-semibold text-gray-700">
+                            Belum mendaftar untuk program <span class="font-extrabold">{{ event.title }}</span>?
+                        </p>
+                        <a
+                            :href="registerAction.url"
+                            class="mt-2 inline-block w-full rounded-2xl py-3 font-bold text-sm text-white shadow-lg transition-transform active:scale-95"
+                            :style="{ backgroundColor: event.color_theme ?? '#d97706' }"
+                        >
+                            Sila Daftar di Sini
+                        </a>
+                    </div>
 
                     <form @submit.prevent="submit" class="space-y-3">
                         <input

@@ -260,19 +260,30 @@ class EventController extends Controller
             ->map(fn ($e) => $this->serializeEvent($e, $user?->id));
 
         // Borang pendaftaran event (aktif) — untuk modul Registration.
-        $registrationForms = Form::where('event_id', $event->id)
+        $activeForms = Form::where('event_id', $event->id)
             ->where('is_active', true)
             ->orderBy('title')
-            ->get(['id', 'title', 'description', 'price', 'payment_required', 'share_token'])
-            ->map(fn ($f) => [
-                'id' => $f->id,
-                'title' => $f->title,
-                'description' => $f->description,
-                'price' => $f->price,
-                'payment_required' => $f->payment_required,
-                'register_url' => route('events.register', ['event' => $event->slug, 'form' => $f->id]),
-                'public_url' => route('events.register.public', $f->share_token),
-            ]);
+            ->get(['id', 'title', 'description', 'price', 'payment_required', 'share_token']);
+
+        $registrationForms = $activeForms->map(fn ($f) => [
+            'id' => $f->id,
+            'title' => $f->title,
+            'description' => $f->description,
+            'price' => $f->price,
+            'payment_required' => $f->payment_required,
+            'register_url' => route('events.register', ['event' => $event->slug, 'form' => $f->id]),
+            'public_url' => route('events.register.public', $f->share_token),
+        ]);
+
+        // Pautan promosi: 1 borang → terus ke pendaftaran awam; jika tidak → overview.
+        $promoUrl = $activeForms->count() === 1
+            ? route('events.register.public', $activeForms->first()->share_token, true)
+            : route('events.show', $event->slug, true);
+
+        $promoQrSvg = (string) QrCode::format('svg')
+            ->size(220)
+            ->errorCorrection('M')
+            ->generate($promoUrl);
 
         $myRegistration = $user
             ? Registration::where('event_id', $event->id)
@@ -284,6 +295,8 @@ class EventController extends Controller
             'event' => $eventArr,
             'relatedEvents' => $relatedEvents,
             'registrationForms' => $registrationForms,
+            'promoUrl' => $promoUrl,
+            'promoQrSvg' => $promoQrSvg,
             'myRegistration' => $myRegistration ? [
                 'registration_no' => $myRegistration->registration_no,
                 'status' => $myRegistration->status->value,
@@ -765,6 +778,30 @@ class EventController extends Controller
         $png = QrPng::render($event->attendance_url, 1024, 4, 'H');
 
         $filename = 'qr-'.Str::slug($event->title).'-'.$event->id.'.png';
+
+        return response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
+     * downloadShareQr()
+     *
+     * Muat turun QR promosi program (encode pautan pendaftaran / overview),
+     * berbeza daripada QR kehadiran. Untuk poster & bahan promosi.
+     */
+    public function downloadShareQr(Event $event): \Symfony\Component\HttpFoundation\Response
+    {
+        $activeForms = $event->activeForms()->get(['id', 'share_token']);
+
+        $promoUrl = $activeForms->count() === 1
+            ? route('events.register.public', $activeForms->first()->share_token, true)
+            : route('events.show', $event->slug, true);
+
+        $png = QrPng::render($promoUrl, 1024, 4, 'H');
+
+        $filename = 'qr-promosi-'.$event->slug.'.png';
 
         return response($png, 200, [
             'Content-Type' => 'image/png',

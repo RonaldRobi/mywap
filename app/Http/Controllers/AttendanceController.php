@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Services\AdminService;
@@ -62,6 +63,7 @@ class AttendanceController extends Controller
             return Inertia::render('Events/AttendanceError', [
                 'event' => $this->serializeEvent($event),
                 'message' => 'Anda belum mendaftar untuk event ini. Sila daftar dahulu.',
+                'registerAction' => $this->registrationAction($event, true),
             ]);
         }
 
@@ -118,6 +120,7 @@ class AttendanceController extends Controller
                 'event' => $this->serializeEvent($event),
                 'attendUrl' => route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]),
                 'error' => 'Tiada rekod pendaftaran dijumpai. Sila semak semula maklumat anda.',
+                'registerAction' => $this->registrationAction($event, false),
             ]);
         }
 
@@ -199,6 +202,38 @@ class AttendanceController extends Controller
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Pautan "daftar sekarang" untuk user yang belum berdaftar ketika scan
+     * kehadiran. Pulangkan null kalau pendaftaran tidak dibuka (event draft /
+     * closed / tiada borang aktif).
+     *
+     * 1 borang aktif → terus ke borang (member: /events/{slug}/daftar/{form},
+     * tetamu: /daftar/{token}). Lebih dari satu → overview (pilih borang).
+     */
+    protected function registrationAction(Event $event, bool $member): ?array
+    {
+        if (! $event->isPublished() || $event->isClosed()) {
+            return null;
+        }
+
+        $activeForms = Form::where('event_id', $event->id)
+            ->where('is_active', true)
+            ->orderBy('title')
+            ->get(['id', 'share_token']);
+
+        if ($activeForms->isEmpty()) {
+            return null;
+        }
+
+        $url = $activeForms->count() === 1
+            ? ($member
+                ? route('events.register', ['event' => $event->slug, 'form' => $activeForms->first()->id])
+                : route('events.register.public', $activeForms->first()->share_token))
+            : route('events.show', $event->slug);
+
+        return ['url' => $url];
+    }
 
     protected function serializeEvent(Event $event): array
     {
