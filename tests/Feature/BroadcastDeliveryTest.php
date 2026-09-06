@@ -144,4 +144,41 @@ class BroadcastDeliveryTest extends TestCase
         $this->assertInstanceOf(MailMessage::class, $mail);
         $this->assertSame('Tajuk Siaran', $mail->subject);
     }
+
+    public function test_web_admin_store_specific_members_creates_and_sends(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin Siaran',
+            'email' => 'admin@pkpim.test',
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+            'current_organization_id' => $this->org->id,
+        ]);
+        $admin->assignRole('Admin');
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Makluman Khas',
+                'content' => 'Untuk ahli terpilih sahaja.',
+                'target_criteria' => 'specific_members',
+                'recipient_ids' => [$this->memberA->id],
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->first();
+        $this->assertNotNull($message);
+        $this->assertSame('specific_members', $message->target_criteria);
+        $this->assertSame([$this->memberA->id], $message->recipient_ids);
+
+        // Job berjalan segerak dalam test → bell dalam-app dihantar kepada memberA.
+        $this->assertSame(1, DB::table('notifications')->count());
+
+        $fresh = BroadcastMessage::withoutGlobalScopes()->find($message->id);
+        $this->assertSame('completed', $fresh->status);
+        $this->assertSame(1, $fresh->recipient_count);
+        $this->assertSame(1, $fresh->success_count);
+    }
 }

@@ -183,24 +183,112 @@ const registeredTo = ref(props.filters?.registered_to ?? '');
 const sortBy = ref(props.filters?.sort ?? 'newest');
 
 let filterDebounce;
+let suppressNextWatch = false;
 
-watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter, sortBy], ([newSearch, newOrg, newRole, newBranch, newFeeStatus]) => {
+function buildFilterParams() {
+    return {
+        search: searchQuery.value?.trim() || '',
+        organization_id: organizationIdFilter.value || '',
+        role: roleFilter.value || '',
+        branch_id: branchIdFilter.value || '',
+        fee_status: feeStatusFilter.value || '',
+        registered_from: registeredFrom.value || '',
+        registered_to: registeredTo.value || '',
+        sort: sortBy.value || 'newest',
+    };
+}
+
+function requestNow() {
     clearTimeout(filterDebounce);
-    filterDebounce = setTimeout(() => {
-        router.get(
-            route('admin.hub.manage'),
-            { search: newSearch?.trim() || '', organization_id: newOrg || '', role: newRole || '', branch_id: newBranch || '', fee_status: newFeeStatus || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '', sort: sortBy.value || 'newest' },
-            { preserveState: true, preserveScroll: true, replace: true }
-        );
-    }, 300);
+    router.get(route('admin.hub.manage'), buildFilterParams(), { preserveState: true, preserveScroll: true, replace: true });
+    suppressNextWatch = true;
+    setTimeout(() => { suppressNextWatch = false; }, 0);
+}
+
+watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
+    if (suppressNextWatch) return;
+    clearTimeout(filterDebounce);
+    filterDebounce = setTimeout(requestNow, 300);
 });
 
 function applyDateFilter() {
-    router.get(
-        route('admin.hub.manage'),
-        { search: searchQuery.value?.trim() || '', organization_id: organizationIdFilter.value || '', role: roleFilter.value || '', branch_id: branchIdFilter.value || '', fee_status: feeStatusFilter.value || '', registered_from: registeredFrom.value || '', registered_to: registeredTo.value || '', sort: sortBy.value || 'newest' },
-        { preserveState: true, preserveScroll: true, replace: true }
-    );
+    requestNow();
+}
+
+const hasActiveFilters = computed(() =>
+    Boolean(
+        searchQuery.value?.trim() ||
+        organizationIdFilter.value ||
+        roleFilter.value ||
+        branchIdFilter.value ||
+        feeStatusFilter.value ||
+        registeredFrom.value ||
+        registeredTo.value ||
+        sortBy.value !== 'newest'
+    )
+);
+
+const roleFilterLabels = {
+    Admin: 'Peranan: Admin',
+    Member: 'Peranan: Ahli',
+};
+
+const feeStatusFilterLabels = {
+    paid: 'Yuran: Selesai',
+    due: 'Yuran: Tertunggak',
+    life_member: 'Yuran: Seumur Hidup',
+    exempted: 'Yuran: Dikecualikan',
+};
+
+const activeFilterChips = computed(() => {
+    const chips = [];
+    const org = props.organizations.find(o => String(o.id) === String(organizationIdFilter.value));
+    if (org) chips.push({ key: 'organization_id', label: org.name });
+    if (roleFilter.value) chips.push({ key: 'role', label: roleFilterLabels[roleFilter.value] ?? `Peranan: ${roleFilter.value}` });
+    const branch = props.branches.find(b => String(b.id) === String(branchIdFilter.value));
+    if (branch) chips.push({ key: 'branch_id', label: branch.name });
+    if (feeStatusFilter.value) chips.push({ key: 'fee_status', label: feeStatusFilterLabels[feeStatusFilter.value] ?? `Yuran: ${feeStatusFilter.value}` });
+    if (registeredFrom.value || registeredTo.value) {
+        const fmt = v => v ? new Date(`${v}T00:00:00`).toLocaleDateString('ms-MY') : '…';
+        chips.push({ key: 'registered_from', label: `Daftar: ${fmt(registeredFrom.value)} – ${fmt(registeredTo.value)}` });
+    }
+    return chips;
+});
+
+function removeFilterChip(key) {
+    switch (key) {
+        case 'organization_id': organizationIdFilter.value = ''; break;
+        case 'role': roleFilter.value = ''; break;
+        case 'branch_id': branchIdFilter.value = ''; break;
+        case 'fee_status': feeStatusFilter.value = ''; break;
+        default:
+            clearDateRange();
+            return;
+    }
+    requestNow();
+}
+
+function clearSearch() {
+    searchQuery.value = '';
+    requestNow();
+}
+
+function clearDateRange() {
+    registeredFrom.value = '';
+    registeredTo.value = '';
+    requestNow();
+}
+
+function resetFilters() {
+    searchQuery.value = '';
+    organizationIdFilter.value = '';
+    roleFilter.value = '';
+    branchIdFilter.value = '';
+    feeStatusFilter.value = '';
+    registeredFrom.value = '';
+    registeredTo.value = '';
+    sortBy.value = 'newest';
+    requestNow();
 }
 
 // ─── Update Role ─────────────────────────────────────────────────────────────
@@ -657,68 +745,134 @@ async function finishImport() {
                 </section>
             </transition>
 
-            <!-- Filters Section -->
-            <div class="flex flex-col gap-3">
-                <div class="flex flex-col md:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <!-- Search & Filters -->
+            <div class="rounded-3xl border border-gray-100 bg-white p-4 md:p-5 shadow-sm space-y-5">
+                <!-- Search -->
+                <div class="relative w-full">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <input v-model="searchQuery" type="text" placeholder="Cari nama, email, no ahli, IC/passport, no telefon..." class="pl-11 pr-10 w-full rounded-2xl border-gray-200 text-sm py-2.5 focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                    <button v-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-700 transition-colors" aria-label="Kosongkan carian">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Result count + sort -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                    <p class="text-sm font-medium text-gray-500">
+                        <span class="font-black text-gray-900">{{ members.total ?? 0 }}</span>
+                        ahli ditemui
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button v-if="hasActiveFilters" @click="resetFilters" class="text-xs font-semibold text-gray-500 underline underline-offset-2 hover:text-gray-900 transition-colors">
+                            Set Semula
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-gray-500 whitespace-nowrap">Susun</span>
+                            <div class="relative w-56">
+                                <select v-model="sortBy" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="newest">Paling Baharu Didaftar</option>
+                                    <option value="recent_activation">Baru Aktifkan Akaun</option>
+                                    <option value="name_asc">Nama (A–Z)</option>
+                                    <option value="name_desc">Nama (Z–A)</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
                         </div>
-                        <input v-model="searchQuery" type="text" placeholder="Cari nama, email, no ahli, IC/passport, no telefon..." class="pl-10 w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                    </div>
-
-                    <div v-if="isSuperadmin" class="relative md:w-48 shrink-0">
-                        <select v-model="organizationIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                            <option value="">Semua Organisasi</option>
-                            <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
-                        </select>
-                    </div>
-
-                    <div class="relative md:w-48 shrink-0">
-                        <select v-model="roleFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                            <option value="">Semua Peranan</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Member">Member / Ahli</option>
-                        </select>
-                    </div>
-
-                    <div class="relative md:w-48 shrink-0">
-                        <select v-model="feeStatusFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                            <option value="">Semua Status Yuran</option>
-                            <option value="paid">Selesai</option>
-                            <option value="due">Tertunggak</option>
-                            <option value="life_member">Seumur Hidup</option>
-                            <option value="exempted">Dikecualikan</option>
-                        </select>
-                    </div>
-
-                    <div class="relative md:w-48 shrink-0">
-                        <select v-model="branchIdFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                            <option value="">Semua Cawangan</option>
-                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
-                        </select>
-                    </div>
-
-                    <div class="relative md:w-56 shrink-0">
-                        <select v-model="sortBy" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                            <option value="newest">Tertib: Terkini Didaftar</option>
-                            <option value="recent_activation">Baru Aktifkan Akaun</option>
-                            <option value="name_asc">Nama (A–Z)</option>
-                            <option value="name_desc">Nama (Z–A)</option>
-                        </select>
                     </div>
                 </div>
 
-                <div class="flex flex-col md:flex-row items-center gap-3">
-                    <div class="relative md:w-40 shrink-0">
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Daftar Dari</label>
-                        <input v-model="registeredFrom" type="date" @change="applyDateFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                <!-- Active filter chips -->
+                <div v-if="activeFilterChips.length" class="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Filter Aktif:</span>
+                    <button
+                        v-for="chip in activeFilterChips"
+                        :key="chip.key"
+                        @click="removeFilterChip(chip.key)"
+                        class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+                        :title="`Buang filter ${chip.label}`"
+                    >
+                        {{ chip.label }}
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Filters grid -->
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2.5">Tapis Ahli</p>
+                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" :class="isSuperadmin ? '' : 'lg:grid-cols-3'">
+                        <div v-if="isSuperadmin">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Organisasi</label>
+                            <div class="relative">
+                                <select v-model="organizationIdFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Organisasi</option>
+                                    <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Peranan</label>
+                            <div class="relative">
+                                <select v-model="roleFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Peranan</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="Member">Member / Ahli</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Cawangan</label>
+                            <div class="relative">
+                                <select v-model="branchIdFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Cawangan</option>
+                                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Status Yuran</label>
+                            <div class="relative">
+                                <select v-model="feeStatusFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Status Yuran</option>
+                                    <option value="paid">Selesai</option>
+                                    <option value="due">Tertunggak</option>
+                                    <option value="life_member">Seumur Hidup</option>
+                                    <option value="exempted">Dikecualikan</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="relative md:w-40 shrink-0">
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Hingga</label>
-                        <input v-model="registeredTo" type="date" @change="applyDateFilter" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                </div>
+
+                <!-- Registered date range -->
+                <div class="border-t border-gray-100 pt-4 flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Tarikh Daftar</label>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <input v-model="registeredFrom" type="date" @change="applyDateFilter" class="w-36 sm:w-44 rounded-xl border-gray-200 text-sm px-3 py-2 focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                            <span class="text-xs text-gray-400 pb-2.5">hingga</span>
+                            <input v-model="registeredTo" type="date" @change="applyDateFilter" class="w-36 sm:w-44 rounded-xl border-gray-200 text-sm px-3 py-2 focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                        </div>
                     </div>
-                    <button v-if="registeredFrom || registeredTo" @click="registeredFrom = ''; registeredTo = ''; applyDateFilter()" class="rounded-2xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 mt-5">
+                    <button v-if="registeredFrom || registeredTo" @click="clearDateRange" class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
                         Kosongkan Tarikh
                     </button>
                 </div>
