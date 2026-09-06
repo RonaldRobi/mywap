@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\BroadcastMessage;
 use App\Models\Organization;
 use App\Models\UsrahGroup;
+use App\Models\User;
 use App\Services\AdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,8 +28,11 @@ class BroadcastController extends Controller
             ->with(['organization:id,name', 'targetOrganization:id,name'])
             ->latest()
             ->take(20)
-            ->get()
-            ->map(fn (BroadcastMessage $message) => [
+            ->get();
+
+        $recipientsByMessage = $this->resolveRecipientPreviews($messages);
+
+        $messages = $messages->map(fn (BroadcastMessage $message) => [
                 'id' => $message->id,
                 'title' => $message->title,
                 'target_criteria' => $message->target_criteria,
@@ -39,9 +43,11 @@ class BroadcastController extends Controller
                     'specific_members' => 'Individu Tertentu',
                     default => $message->target_criteria,
                 },
-                'organization_name' => $message->organization?->name,
+                'sender_name' => $message->sender_label ?? $message->organization?->name,
                 'target_organization_name' => $message->targetOrganization?->name,
                 'recipient_count' => is_array($message->recipient_ids) ? count($message->recipient_ids) : 0,
+                'recipients_preview' => array_slice($recipientsByMessage[$message->id] ?? [], 0, 3),
+                'recipients_more' => max(0, (int) count($recipientsByMessage[$message->id] ?? []) - 3),
                 'notification_channels' => $message->notification_channels ?? ['in_app'],
                 'sent_at' => $message->sent_at?->toDateTimeString(),
                 'status' => $message->status ?? 'queued',
@@ -162,6 +168,7 @@ class BroadcastController extends Controller
 
         $this->broadcasts->broadcast([
             'organization_id' => $user->current_organization_id,
+            'sender_label' => $isSuperadmin && $targetOrgId === null ? BroadcastMessage::PLATFORM_SENDER_LABEL : null,
             'target_organization_id' => $targetOrgId,
             'branch_id' => $data['branch_id'] ?? null,
             'title' => $data['title'],
@@ -196,5 +203,56 @@ class BroadcastController extends Controller
             ->values();
 
         return response()->json(['logs' => $logs]);
+    }
+
+    /**
+     * Senarai penerima (nama + organisasi) bagi setiap siaran 'specific_members',
+     * untuk paparan sejarah. Dikumpul sekali gus (bukan per-mesej) bagi elak N+1.
+     */
+    private function resolveRecipientPreviews(\Illuminate\Support\Collection $messages): array
+    {
+        $ids = $messages
+            ->where('target_criteria', 'specific_members')
+            ->flatMap(fn (BroadcastMessage $message) => array_map('intval', (array) ($message->recipient_ids ?? [])))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        $users = User::withoutGlobalScopes()
+            ->whereIn('id', $ids)
+            ->get(['id', 'name', 'current_organization_id'])
+            ->keyBy('id');
+
+        $orgNames = Organization::whereIn('id', $users->pluck('current_organization_id')->filter()->unique())
+            ->pluck('name', 'id');
+
+        $previews = [];
+
+        foreach ($messages as $message) {
+            if ($message->target_criteria !== 'specific_members') {
+                continue;
+            }
+
+            $previews[$message->id] = collect($message->recipient_ids ?? [])
+                ->map(function ($userId) use ($users, $orgNames) {
+                    $user = $users->get((int) $userId);
+
+                    return [
+                        'id' => (int) $userId,
+                        'name' => $user?->name,
+                        'organization_name' => $user?->current_organization_id
+                            ? ($orgNames[$user->current_organization_id] ?? null)
+                            : null,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        return $previews;
     }
 }

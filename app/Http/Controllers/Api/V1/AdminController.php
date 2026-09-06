@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\BroadcastMessage;
 use App\Models\User;
 use App\Services\AdminService;
 use App\Support\ApiResponse;
@@ -112,6 +113,7 @@ class AdminController extends Controller
 
         $this->admin->broadcast([
             'organization_id' => $user->current_organization_id,
+            'sender_label' => $user->hasRole('Superadmin') && $targetOrgId === null ? BroadcastMessage::PLATFORM_SENDER_LABEL : null,
             'target_organization_id' => $targetOrgId,
             'title' => $validated['title'],
             'content' => $validated['message'],

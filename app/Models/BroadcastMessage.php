@@ -22,8 +22,12 @@ class BroadcastMessage extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** Label sumber untuk siaran superadmin tanpa pilih organisasi (siaran platform). */
+    public const PLATFORM_SENDER_LABEL = 'MyWAP';
+
     protected $fillable = [
         'organization_id',
+        'sender_label',
         'target_organization_id',
         'branch_id',
         'title',

@@ -740,6 +740,7 @@ class AdminService
     {
         $message = BroadcastMessage::create([
             'organization_id' => $input['organization_id'],
+            'sender_label' => $input['sender_label'] ?? null,
             'target_organization_id' => $input['target_organization_id'] ?? null,
             'branch_id' => $input['branch_id'] ?? null,
             'title' => $input['title'],

@@ -608,11 +608,22 @@ onBeforeUnmount(stopPolling);
                                     <div class="min-w-0">
                                         <p class="text-sm font-bold text-gray-800">{{ item.title }}</p>
                                         <p class="mt-0.5 text-xs text-gray-500 font-medium tracking-wide">
-                                            <span class="text-gray-700">{{ item.organization_name }}</span> &bull;
+                                            <span class="font-bold text-gray-700">Dari: {{ item.sender_name || '—' }}</span> &bull;
                                             <span class="capitalize">{{ item.target_criteria_label }}</span>
-                                            <span v-if="item.target_criteria === 'organization' && item.target_organization_name">({{ item.target_organization_name }})</span>
-                                            <span v-if="item.target_criteria === 'specific_members' && item.recipient_count">({{ item.recipient_count }} ahli)</span>
+                                            <template v-if="item.target_criteria === 'organization' && item.target_organization_name">
+                                                &rarr; <span class="font-semibold text-gray-600">{{ item.target_organization_name }}</span>
+                                            </template>
+                                            <template v-if="item.target_criteria === 'specific_members' && item.recipient_count">
+                                                ({{ item.recipient_count }} ahli)
+                                            </template>
                                         </p>
+                                        <div v-if="item.target_criteria === 'specific_members' && (item.recipients_preview?.length || item.recipients_more > 0)" class="mt-1.5 flex flex-wrap gap-1.5">
+                                            <span v-for="r in item.recipients_preview" :key="r.id" class="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800">
+                                                {{ r.name || 'Ahli tidak ditemui' }}
+                                                <span v-if="r.organization_name" class="ml-1 font-bold text-blue-400">{{ r.organization_name }}</span>
+                                            </span>
+                                            <span v-if="item.recipients_more > 0" class="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold text-gray-400">+{{ item.recipients_more }} lagi</span>
+                                        </div>
                                         <p v-if="item.notification_channels?.length" class="mt-0.5 text-[11px] text-gray-400">
                                             Saluran:
                                             <span v-for="(ch, idx) in item.notification_channels" :key="ch" class="inline-flex items-center">

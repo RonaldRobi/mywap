@@ -109,14 +109,26 @@ class InformationHubAdminController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('ic_number', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%")
-                    ->orWhere('original_member_no', 'like', "%{$search}%");
-            });
+            // Split on every kind of whitespace (incl. non-breaking space from
+            // Excel/legacy imports) so "Muhamad hafizzudin" still matches names
+            // stored with NBSP or multiple spaces between words.
+            $tokens = preg_split('/[\s\x{00A0}\x{3000}]+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY);
+
+            if ($tokens) {
+                $query->where(function ($q) use ($tokens) {
+                    foreach ($tokens as $token) {
+                        $escaped = addcslashes($token, '\\%_');
+                        $q->where(function ($sub) use ($escaped) {
+                            $sub->where('name', 'like', "%{$escaped}%")
+                                ->orWhere('email', 'like', "%{$escaped}%")
+                                ->orWhere('phone', 'like', "%{$escaped}%")
+                                ->orWhere('ic_number', 'like', "%{$escaped}%")
+                                ->orWhere('member_no', 'like', "%{$escaped}%")
+                                ->orWhere('original_member_no', 'like', "%{$escaped}%");
+                        });
+                    }
+                });
+            }
         }
 
         if ($roleFilter) {
@@ -149,10 +161,10 @@ class InformationHubAdminController extends Controller
             ? Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
             : Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        $members = $query->when($sort === 'recent_activation', fn ($q) => $q->orderByDesc('first_login_at'))
-            ->when($sort === 'name_asc', fn ($q) => $q->orderBy('name'))
-            ->when($sort === 'name_desc', fn ($q) => $q->orderByDesc('name'))
-            ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation']), fn ($q) => $q->latest())
+        $members = $query->when($sort === 'recent_activation', fn ($q) => $q->orderByDesc('first_login_at')->orderByDesc('id'))
+            ->when($sort === 'name_asc', fn ($q) => $q->orderBy('name')->orderBy('id'))
+            ->when($sort === 'name_desc', fn ($q) => $q->orderByDesc('name')->orderByDesc('id'))
+            ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation']), fn ($q) => $q->orderByDesc('created_at')->orderByDesc('id'))
             ->paginate($perPage)->withQueryString()
             ->through(fn (User $u) => [
                 'id' => $u->id,

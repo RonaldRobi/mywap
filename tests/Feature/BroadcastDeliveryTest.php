@@ -181,4 +181,84 @@ class BroadcastDeliveryTest extends TestCase
         $this->assertSame(1, $fresh->recipient_count);
         $this->assertSame(1, $fresh->success_count);
     }
+
+    public function test_org_admin_all_stays_scoped_to_own_org_without_platform_label(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Pegawai PKPIM',
+            'email' => 'pegawai@pkpim.test',
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+            'current_organization_id' => $this->org->id,
+        ]);
+        $admin->assignRole('Admin');
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Untuk PKPIM',
+                'content' => 'Hanya PKPIM.',
+                'target_criteria' => 'all',
+                'recipient_ids' => [],
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->first();
+        $this->assertSame('all', $message->target_criteria);
+        $this->assertNull($message->sender_label);
+        // 'Semua Ahli' untuk org-admin di-pin ke organisasi sendiri.
+        $this->assertSame($this->org->id, (int) $message->target_organization_id);
+    }
+
+    public function test_superadmin_platform_send_gets_mywap_label_and_recipient_org_preview(): void
+    {
+        $abim = Organization::factory()->create(['name' => 'ABIM', 'slug' => 'abim']);
+        $abimMember = User::factory()->create([
+            'name' => 'Ahmad Bin Abu',
+            'email' => 'ahmad.abim@test',
+            'current_organization_id' => $abim->id,
+        ]);
+
+        $super = User::factory()->create([
+            'name' => 'Super MyWAP',
+            'email' => 'super@test',
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+            'current_organization_id' => $this->org->id,
+        ]);
+        $super->assignRole('Superadmin');
+
+        // Superadmin hantar ke individu tanpa pilih organisasi → sumber = MyWAP.
+        $this->actingAs($super, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Hebahan Platform',
+                'content' => 'Untuk semua tier.',
+                'target_criteria' => 'specific_members',
+                'recipient_ids' => [$abimMember->id],
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->first();
+        $this->assertSame('specific_members', $message->target_criteria);
+        $this->assertSame(BroadcastMessage::PLATFORM_SENDER_LABEL, $message->sender_label);
+
+        // Paparan sejarah: sumber 'MyWAP' (bukan org akaun) + penerima dari org sebenar (ABIM).
+        $message->setRelation('organization', $this->org);
+        $this->assertSame('MyWAP', $message->sender_label ?? $message->organization->name);
+
+        $previews = $this->resolveRecipientPreviews($message);
+        $this->assertSame($abimMember->name, $previews[$message->id][0]['name'] ?? null);
+        $this->assertSame('ABIM', $previews[$message->id][0]['organization_name'] ?? null);
+    }
+
+    private function resolveRecipientPreviews(BroadcastMessage $message): array
+    {
+        $method = new \ReflectionMethod(\App\Http\Controllers\BroadcastController::class, 'resolveRecipientPreviews');
+        $method->setAccessible(true);
+
+        return $method->invoke(app(\App\Http\Controllers\BroadcastController::class), collect([$message]));
+    }
 }
