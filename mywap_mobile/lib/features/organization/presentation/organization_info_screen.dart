@@ -80,59 +80,15 @@ class _OrganizationContent extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: Spacing.xl),
         children: [
-          Container(
-            margin: const EdgeInsets.all(Spacing.lg),
-            padding: const EdgeInsets.all(Spacing.xl),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: AppColors.heroGradient),
-              borderRadius: AppRadius.hero,
-              boxShadow: AppShadows.card,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.lg,
+              Spacing.sm,
             ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: AppRadius.lg,
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    color: AppColors.white.withValues(alpha: .14),
-                    child:
-                        org.logo_path?.isNotEmpty == true
-                            ? AppImage(org.logo_path, fit: BoxFit.contain)
-                            : const Icon(
-                              Icons.account_balance_outlined,
-                              color: AppColors.white,
-                              size: 32,
-                            ),
-                  ),
-                ),
-                const SizedBox(width: Spacing.lg),
-                Expanded(
-                  child: Text(
-                    org.name ?? '-',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: _OrgHeaderCard(org: org),
           ),
-          if (org.description?.isNotEmpty == true) ...[
-            const SectionHeader('Maklumat'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-              child: Text(
-                org.description!,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(height: 1.6),
-              ),
-            ),
-            const SizedBox(height: Spacing.md),
-          ],
-          _SocialLinksRow(org: org),
           const SectionHeader('Carta Organisasi'),
           if (chart.isEmpty)
             const Padding(
@@ -150,6 +106,75 @@ class _OrganizationContent extends StatelessWidget {
   }
 }
 
+class _OrgHeaderCard extends StatelessWidget {
+  const _OrgHeaderCard({required this.org});
+
+  final OrganizationDetail org;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasLogo = org.logo_path?.isNotEmpty == true;
+    final hasDescription = org.description?.isNotEmpty == true;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Spacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        boxShadow: AppShadows.subtle,
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColors.softGreenSurface,
+              borderRadius: AppRadius.xl,
+              border: Border.all(color: AppColors.paleGreen),
+            ),
+            child: hasLogo
+                ? AppImage(
+                    org.logo_path,
+                    fit: BoxFit.contain,
+                    borderRadius: BorderRadius.zero,
+                  )
+                : const Icon(
+                    Icons.account_balance_outlined,
+                    color: AppColors.movementGreen,
+                    size: 56,
+                  ),
+          ),
+          const SizedBox(height: Spacing.lg),
+          Text(
+            org.name ?? '-',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (hasDescription) ...[
+            const SizedBox(height: Spacing.md),
+            Text(
+              org.description!,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.6,
+              ),
+            ),
+          ],
+          const SizedBox(height: Spacing.lg),
+          _SocialLinksRow(org: org),
+        ],
+      ),
+    );
+  }
+}
+
 class _SocialLinksRow extends StatelessWidget {
   const _SocialLinksRow({required this.org});
   final OrganizationDetail org;
@@ -160,24 +185,24 @@ class _SocialLinksRow extends StatelessWidget {
         <(IconData, String?)>[
           (Icons.public, org.website_url),
           (Icons.facebook, org.facebook_url),
+          (Icons.alternate_email, org.twitter_url),
           (Icons.camera_alt_outlined, org.instagram_url),
           (Icons.play_circle_outline, org.youtube_url),
+          (Icons.music_note, org.tiktok_url),
         ].where((e) => e.$2 != null && e.$2!.isNotEmpty).toList();
 
     if (links.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-      child: Wrap(
-        spacing: Spacing.sm,
-        children: [
-          for (final link in links)
-            IconButton.filledTonal(
-              onPressed: () => launchUrl(Uri.parse(link.$2!)),
-              icon: Icon(link.$1),
-            ),
-        ],
-      ),
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: Spacing.xs,
+      children: [
+        for (final link in links)
+          IconButton.filledTonal(
+            onPressed: () => launchUrl(Uri.parse(link.$2!)),
+            icon: Icon(link.$1),
+          ),
+      ],
     );
   }
 }
@@ -193,14 +218,7 @@ class _ChartMemberTile extends StatelessWidget {
         padding: const EdgeInsets.all(Spacing.md),
         child: Row(
           children: [
-            ClipOval(
-              child: AppImage(
-                member.image_path,
-                width: 52,
-                height: 52,
-                fit: BoxFit.cover,
-              ),
-            ),
+            _MemberAvatar(member: member),
             const SizedBox(width: Spacing.md),
             Expanded(
               child: Column(
@@ -224,6 +242,61 @@ class _ChartMemberTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  const _MemberAvatar({required this.member});
+
+  final OrgChartMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = member.image_path?.isNotEmpty == true;
+
+    if (hasImage) {
+      return ClipRRect(
+        borderRadius: AppRadius.sm,
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: AppImage(
+            member.image_path,
+            fit: BoxFit.cover,
+            borderRadius: BorderRadius.zero,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 52,
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.paleGreen,
+        borderRadius: AppRadius.sm,
+      ),
+      child: Text(
+        _initials(member.name),
+        style: const TextStyle(
+          color: AppColors.movementGreen,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+String _initials(String? name) {
+  final raw = name?.trim() ?? '';
+  if (raw.isEmpty) return '?';
+  final parts = raw.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    return parts.first.substring(0, 1).toUpperCase();
+  }
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
 }
 
 class _OrganizationSkeleton extends StatelessWidget {

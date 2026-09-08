@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Campaign;
 use App\Models\Payment;
 use App\Services\FeeService;
+use App\Services\ReceiptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class FinancialController extends Controller
         return back()->with('success', 'Kempen infaq berjaya dicipta.');
     }
 
-    public function memberOverview(Request $request, FeeService $feeService): Response
+    public function memberOverview(Request $request, FeeService $feeService, ReceiptService $receipts): Response
     {
         $user = $request->user();
 
@@ -95,13 +96,7 @@ class FinancialController extends Controller
             ->latest()
             ->take(10)
             ->get()
-            ->map(fn (Payment $payment) => [
-                'id' => $payment->id,
-                'payable_type' => $payment->payable_type,
-                'amount' => (float) $payment->amount,
-                'status' => $payment->status,
-                'created_at' => $payment->created_at?->toISOString(),
-            ]);
+            ->map(fn (Payment $payment) => $receipts->historyRow($payment));
 
         $feeStatus = $feeService->getStatus($user);
 

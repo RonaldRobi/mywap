@@ -1,8 +1,12 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/providers.dart';
 import '../../../core/push/push_providers.dart';
+import '../../notifications/application/notification_providers.dart';
 import '../data/auth_repository.dart';
 import '../data/models/user.dart';
 
@@ -33,8 +37,9 @@ class AuthUnauthenticated extends AuthState {
   final String? error;
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
 
 final currentUserProvider = Provider<User?>((ref) {
   final state = ref.watch(authControllerProvider);
@@ -91,9 +96,43 @@ class AuthController extends Notifier<AuthState> {
     try {
       final user = await ref.read(authRepositoryProvider).me();
       state = AuthAuthenticated(user);
+      _attachPushHandlers();
+      ref.read(pushServiceProvider).init();
     } on ApiException {
       await storage.delete();
       state = const AuthUnauthenticated();
+    }
+  }
+
+  /// Pasang callback push foreground: papar SnackBar & segarkan badge notifikasi.
+  void _attachPushHandlers() {
+    final push = ref.read(pushServiceProvider);
+    push.onMessage = (payload) {
+      final data = _decodePayload(payload);
+      final title = (data['title'] as String?) ?? '';
+      final body = (data['body'] as String?) ?? '';
+      final text =
+          body.isNotEmpty
+              ? body
+              : (title.isEmpty ? 'Notifikasi baharu' : title);
+      ref
+          .read(appMessengerKeyProvider)
+          .currentState
+          ?.showSnackBar(
+            SnackBar(
+              content: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+          );
+      ref.invalidate(notificationsControllerProvider);
+    };
+  }
+
+  Map<String, dynamic> _decodePayload(String payload) {
+    try {
+      final decoded = jsonDecode(payload);
+      return decoded is Map<String, dynamic> ? decoded : const {};
+    } catch (_) {
+      return const {};
     }
   }
 
@@ -104,13 +143,12 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     state = const AuthLoading();
     try {
-      final user = await ref.read(authRepositoryProvider).login(
-            email: email,
-            icNumber: icNumber,
-            password: password,
-          );
+      final user = await ref
+          .read(authRepositoryProvider)
+          .login(email: email, icNumber: icNumber, password: password);
       state = AuthAuthenticated(user);
       // Daftar FCM secara fire-and-forget; tidak menghalang aliran log masuk.
+      _attachPushHandlers();
       ref.read(pushServiceProvider).init();
       return true;
     } on ApiException catch (e) {
@@ -133,6 +171,7 @@ class AuthController extends Notifier<AuthState> {
     try {
       final user = await ref.read(authRepositoryProvider).me();
       state = AuthAuthenticated(user);
+      _attachPushHandlers();
       ref.read(pushServiceProvider).init();
       return true;
     } on ApiException catch (e) {
@@ -159,6 +198,7 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    ref.read(pushServiceProvider).onMessage = null;
     await ref.read(authRepositoryProvider).logout();
     state = const AuthUnauthenticated();
   }
@@ -173,13 +213,16 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     state = const AuthLoading();
     try {
-      final user = await ref.read(authRepositoryProvider).verifyOtp(
+      final user = await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(
             icNumber: icNumber,
             code: code,
             password: password,
             passwordConfirmation: passwordConfirmation,
           );
       state = AuthAuthenticated(user);
+      _attachPushHandlers();
       ref.read(pushServiceProvider).init();
       return true;
     } on ApiException catch (e) {

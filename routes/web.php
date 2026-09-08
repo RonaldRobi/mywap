@@ -44,6 +44,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCardController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ResitController;
 use App\Http\Controllers\SenangPayController;
 use App\Http\Controllers\SharePreviewController;
 use App\Http\Controllers\SuperadminOrganizationController;
@@ -51,7 +52,6 @@ use App\Http\Controllers\SuperadminSystemSettingController;
 use App\Http\Controllers\UsrahController;
 use App\Http\Controllers\VideoController;
 use App\Models\Infaq;
-use App\Models\Poll;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
@@ -63,6 +63,17 @@ Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->na
 Route::get('/share/borang/{form}', [SharePreviewController::class, 'form'])->name('share.form')->middleware('throttle:30,1');
 Route::get('/share/produk/{product}', [SharePreviewController::class, 'product'])->name('share.product')->middleware('throttle:30,1');
 Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
+// Surat pengesahan keahlian — URL ditandatangani supaya mobile boleh buka
+// dalam pelayar tanpa sesi/Authorization. Mesti di daftar sebelum wildcard.
+Route::get('/kad/surat/{user}', [MemberCardController::class, 'letterPdfSigned'])
+    ->name('member.card.letter.signed')
+    ->middleware(['signed', 'throttle:30,1']);
+
+// Resit pembayaran (generik) — URL ditandatangani supaya ahli boleh muat
+// turun resit PDF dalam pelayar tanpa sesi. Template ikut branding org.
+Route::get('/resit/{payment}', [ResitController::class, 'show'])
+    ->name('receipt.show')
+    ->middleware(['signed', 'throttle:30,1']);
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');
 Route::get('/terma-syarat', fn () => inertia('TermsConditions'))->name('terms');
@@ -154,6 +165,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/admin/facilities/{facility}', [FacilityBookingController::class, 'destroyFacility'])->name('admin.facilities.destroy');
         Route::get('/admin/facility-bookings', [FacilityBookingController::class, 'adminIndex'])->name('admin.facility-bookings.index');
         Route::patch('/admin/facility-bookings/{facilityBooking}', [FacilityBookingController::class, 'updateStatus'])->name('admin.facility-bookings.update');
+        Route::patch('/admin/facility-bookings/{facilityBooking}/pay', [FacilityBookingController::class, 'markPaid'])->name('admin.facility-bookings.pay');
         // Polls / Surveys
         Route::get('/admin/polls', [PollController::class, 'adminIndex'])->name('admin.polls.index');
         Route::get('/admin/polls/create', [PollController::class, 'adminCreate'])->name('admin.polls.create');
@@ -297,7 +309,6 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/member/pay-fee', [PaymentController::class, 'payFee'])->name('member.pay.fee');
 
         // Polls / Surveys
-        Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
         Route::get('/member/videos', [VideoController::class, 'memberIndex'])->name('member.videos.index');
         Route::get('/polls', [PollController::class, 'index'])->name('member.polls.index');
         Route::get('/polls/{poll}', [PollController::class, 'show'])->name('member.polls.show');
@@ -441,8 +452,6 @@ Route::group(['middleware' => ['throttle:120,1']], function () {
 });
 
 // ─── Public Poll Feedback (program poster QR) ────────────────────────────────
-Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
-
 Route::group(['middleware' => ['throttle:60,1']], function () {
     Route::get('/polls/public/{poll}', [PollController::class, 'publicShow'])
         ->name('polls.public.show');

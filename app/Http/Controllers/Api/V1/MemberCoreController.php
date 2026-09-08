@@ -49,4 +49,19 @@ class MemberCoreController extends Controller
     {
         return ApiResponse::success($this->core->library());
     }
+
+    /**
+     * URL ditandatangani (sementara) untuk surat pengesahan keahlian supaya
+     * boleh dibuka terus dalam pelayar peranti tanpa header Authorization.
+     */
+    public function letter(Request $request): JsonResponse
+    {
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'member.card.letter.signed',
+            now()->addMinutes(10),
+            ['user' => $request->user()->id],
+        );
+
+        return ApiResponse::success(['url' => $url]);
+    }
 }

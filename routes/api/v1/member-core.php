@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->prefix('member')->group(function () {
     Route::get('/card', [MemberCoreController::class, 'card']);
+    Route::get('/card/letter', [MemberCoreController::class, 'letter']);
     Route::get('/fee-status', [MemberCoreController::class, 'feeStatus']);
 
     Route::get('/announcements', [MemberCoreController::class, 'announcements']);

@@ -13,6 +13,8 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/financial_providers.dart';
 import '../data/models/financial_overview.dart';
+import 'widgets/pay_fee_button.dart';
+import 'widgets/receipt_download_button.dart';
 
 /// Yuran & Kewangan — sepadan dengan web `/member/financial/overview`
 /// (FinancialController::memberOverview): status yuran, kempen infaq aktif,
@@ -125,43 +127,52 @@ class _FeeStatusCard extends StatelessWidget {
         borderRadius: AppRadius.hero,
         border: Border.all(color: accent.withValues(alpha: .3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            active ? Icons.verified_outlined : Icons.error_outline,
-            color: accent,
-            size: 32,
-          ),
-          const SizedBox(width: Spacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  active ? 'Yuran Ahli Aktif' : 'Yuran Belum Dibayar',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.movementNavy,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            children: [
+              Icon(
+                active ? Icons.verified_outlined : Icons.error_outline,
+                color: accent,
+                size: 32,
+              ),
+              const SizedBox(width: Spacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      active ? 'Yuran Ahli Aktif' : 'Yuran Belum Dibayar',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.movementNavy,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (active)
+                      Text(
+                        'Bayaran terakhir: ${fee?.last_paid_at ?? '-'}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Amaun tertunggak: ${Formatters.currency(fee?.amount_due ?? 0)}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                if (active)
-                  Text(
-                    'Bayaran terakhir: ${fee?.last_paid_at ?? '-'}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  )
-                else
-                  Text(
-                    'Amaun tertunggak: ${Formatters.currency(fee?.amount_due ?? 0)}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (!active) ...[
+            const SizedBox(height: Spacing.lg),
+            const PayFeeButton(),
+          ],
         ],
       ),
     );
@@ -221,6 +232,10 @@ class _PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final label = payment.description?.trim().isNotEmpty ?? false
+        ? payment.description!.trim()
+        : _typeLabel(payment.payable_type);
+
     return Card(
       child: ListTile(
         leading: Icon(
@@ -229,11 +244,27 @@ class _PaymentTile extends StatelessWidget {
               : Icons.pending_outlined,
           color: payment.isSuccessful ? AppColors.success : AppColors.warning,
         ),
-        title: Text(_typeLabel(payment.payable_type)),
-        subtitle: Text(payment.created_at ?? '-'),
-        trailing: Text(
-          Formatters.currency(payment.amount ?? 0),
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          [payment.created_at, if (payment.isSuccessful) payment.reference]
+              .whereType<String>()
+              .where((s) => s.trim().isNotEmpty)
+              .join('  •  '),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              Formatters.currency(payment.amount ?? 0),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            if (payment.isSuccessful)
+              ReceiptDownloadButton(paymentId: payment.id),
+          ],
         ),
       ),
     );

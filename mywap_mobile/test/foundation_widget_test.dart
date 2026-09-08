@@ -64,8 +64,6 @@ void main() {
       'Kemudahan',
       'Usrah',
       'Undian',
-      'Direktori',
-      'Chat',
       'Notifikasi',
     ];
     for (final label in expected) {

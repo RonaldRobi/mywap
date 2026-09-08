@@ -33,27 +33,45 @@ class Facility {
   final bool? isActive;
 
   factory Facility.fromJson(Map<String, dynamic> json) => Facility(
-        id: json['id'] as int?,
-        organizationId: json['organization_id'] as int?,
-        organizationName: json['organization_name'] as String?,
-        name: json['name'] as String?,
-        description: json['description'] as String?,
-        location: json['location'] as String?,
-        type: json['type'] as String?,
-        pricePerUnit: (json['price_per_unit'] as num?)?.toDouble(),
-        memberPricePerUnit: (json['member_price_per_unit'] as num?)?.toDouble(),
-        capacity: json['capacity'] as int?,
-        imagePath: json['image_path'] as String?,
-        media: _parseMedia(json['media']),
-        isActive: json['is_active'] as bool?,
-      );
+    id: json['id'] as int?,
+    organizationId: json['organization_id'] as int?,
+    organizationName: json['organization_name'] as String?,
+    name: json['name'] as String?,
+    description: json['description'] as String?,
+    location: json['location'] as String?,
+    type: json['type'] as String?,
+    pricePerUnit: (json['price_per_unit'] as num?)?.toDouble(),
+    memberPricePerUnit: (json['member_price_per_unit'] as num?)?.toDouble(),
+    capacity: json['capacity'] as int?,
+    imagePath: json['image_path'] as String?,
+    media: _parseMedia(json['media']),
+    isActive: json['is_active'] as bool?,
+  );
 
   /// Primary display image URL (media first, else image_path).
   String? get imageUrl {
     final fromMedia = media.isNotEmpty ? media.first.path : null;
-    final raw = (fromMedia != null && fromMedia.isNotEmpty) ? fromMedia : imagePath;
+    final raw =
+        (fromMedia != null && fromMedia.isNotEmpty) ? fromMedia : imagePath;
     if (raw == null || raw.isEmpty) return null;
     return AppEnv.resolveUrl(raw);
+  }
+
+  /// Semua imej galeri (media admin). Jatuh kepada [imageUrl] sahaja bila
+  /// admin tiada galeri — pulang senarai kosong jika tiada gambar langsung.
+  List<String> get galleryUrls {
+    final urls = <String>[];
+    for (final item in media) {
+      final path = item.path;
+      if (path == null || path.isEmpty) continue;
+      final url = AppEnv.resolveUrl(path);
+      if (!urls.contains(url)) urls.add(url);
+    }
+    if (urls.isEmpty) {
+      final featured = imageUrl;
+      if (featured != null) urls.add(featured);
+    }
+    return List.unmodifiable(urls);
   }
 
   static List<FacilityMedia> _parseMedia(dynamic value) {
@@ -73,10 +91,10 @@ class FacilityMedia {
   final String? caption;
 
   factory FacilityMedia.fromJson(Map<String, dynamic> json) => FacilityMedia(
-        id: json['id'] as int?,
-        path: json['path'] as String?,
-        caption: json['caption'] as String?,
-      );
+    id: json['id'] as int?,
+    path: json['path'] as String?,
+    caption: json['caption'] as String?,
+  );
 }
 
 class FacilityBooking {
@@ -104,7 +122,8 @@ class FacilityBooking {
   final String? paymentStatus;
   final String? adminRemarks;
 
-  factory FacilityBooking.fromJson(Map<String, dynamic> json) => FacilityBooking(
+  factory FacilityBooking.fromJson(Map<String, dynamic> json) =>
+      FacilityBooking(
         id: json['id'] as int?,
         facilityId: json['facility_id'] as int?,
         facilityName: json['facility_name'] as String?,
@@ -129,10 +148,13 @@ class FacilityListData {
   final List<FacilityBooking> myBookings;
   final bool isMember;
 
-  factory FacilityListData.fromJson(Map<String, dynamic> json) => FacilityListData(
+  factory FacilityListData.fromJson(Map<String, dynamic> json) =>
+      FacilityListData(
         facilities: _parseList<Facility>(json['facilities'], Facility.fromJson),
-        myBookings:
-            _parseList<FacilityBooking>(json['myBookings'], FacilityBooking.fromJson),
+        myBookings: _parseList<FacilityBooking>(
+          json['myBookings'],
+          FacilityBooking.fromJson,
+        ),
         isMember: json['isMember'] as bool? ?? false,
       );
 }
@@ -152,13 +174,18 @@ class FacilityDetailData {
 
   factory FacilityDetailData.fromJson(Map<String, dynamic> json) =>
       FacilityDetailData(
-        facility: json['facility'] is Map<String, dynamic>
-            ? Facility.fromJson(json['facility'] as Map<String, dynamic>)
-            : null,
-        bookings:
-            _parseList<FacilityBooking>(json['bookings'], FacilityBooking.fromJson),
-        myBookings:
-            _parseList<FacilityBooking>(json['myBookings'], FacilityBooking.fromJson),
+        facility:
+            json['facility'] is Map<String, dynamic>
+                ? Facility.fromJson(json['facility'] as Map<String, dynamic>)
+                : null,
+        bookings: _parseList<FacilityBooking>(
+          json['bookings'],
+          FacilityBooking.fromJson,
+        ),
+        myBookings: _parseList<FacilityBooking>(
+          json['myBookings'],
+          FacilityBooking.fromJson,
+        ),
         isMember: json['isMember'] as bool? ?? false,
       );
 }
@@ -171,12 +198,13 @@ class BookingResult {
   final String? bookingStatus;
 
   factory BookingResult.fromJson(Map<String, dynamic> json) => BookingResult(
-        booking: json['booking'] is Map<String, dynamic>
+    booking:
+        json['booking'] is Map<String, dynamic>
             ? FacilityBooking.fromJson(json['booking'] as Map<String, dynamic>)
             : null,
-        totalPrice: (json['total_price'] as num?)?.toDouble(),
-        bookingStatus: json['booking_status'] as String?,
-      );
+    totalPrice: (json['total_price'] as num?)?.toDouble(),
+    bookingStatus: json['booking_status'] as String?,
+  );
 }
 
 List<T> _parseList<T>(

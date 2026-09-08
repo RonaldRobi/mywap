@@ -32,23 +32,23 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register'])
         ->middleware('throttle:10,1');
     Route::get('/auth/referral/{code}', [AuthController::class, 'resolveReferral'])
-        ->middleware('throttle:30,1');
+        ->middleware(['throttle:30,1', 'throttle:api_account']);
     Route::post('/auth/check-member', [AuthController::class, 'checkMember'])
-        ->middleware('throttle:15,1');
+        ->middleware(['throttle:15,1', 'throttle:api_account']);
     Route::post('/auth/forgot-id', [AuthController::class, 'forgotId'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/verify-identity', [AuthController::class, 'verifyIdentity'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/send-otp', [AuthController::class, 'sendOtp'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/update-and-send-otp', [AuthController::class, 'updateAndSendOtp'])
-        ->middleware('throttle:5,1');
+        ->middleware(['throttle:5,1', 'throttle:api_account']);
     Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])
-        ->middleware('throttle:10,1');
+        ->middleware(['throttle:10,1', 'throttle:api_account']);
 
     // ─── Protected (Fasa 0 template) ─────────────────────────────────────
     Route::middleware('auth:sanctum')->group(function () {

@@ -60,4 +60,11 @@ class OrderRepository {
       data is Map<String, dynamic> ? data : const {},
     );
   }
+
+  /// Mark a shipped order as received (`shipped` → `completed`). Returns the
+  /// updated order serialization.
+  Future<Order> receive(int orderId) async {
+    final data = await _api.post(ApiPaths.orderReceive(orderId));
+    return Order.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
 }

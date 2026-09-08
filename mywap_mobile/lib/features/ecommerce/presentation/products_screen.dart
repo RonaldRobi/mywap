@@ -283,6 +283,9 @@ class _ProductsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cellWidth = _cellWidth(MediaQuery.sizeOf(context).width);
+    final gridExtent = cellWidth + _cardFooterHeight;
+
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: CustomScrollView(
@@ -292,12 +295,13 @@ class _ProductsGrid extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.all(Spacing.md),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: Spacing.md,
                 crossAxisSpacing: Spacing.md,
-                // Shopee-style card: 4:5 image + compact info footer.
-                childAspectRatio: 0.62,
+                // Fixed row extent = 1:1 image + footer → no overflow regardless
+                // of text metrics, unlike a fragile childAspectRatio.
+                mainAxisExtent: gridExtent,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => _ProductCard(product: state.items[index]),
@@ -324,13 +328,48 @@ class _ProductsGrid extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
+/// Reserved footer height (info text + buy button) beneath the square image.
+const double _cardFooterHeight = 148;
+
+/// Cell width for a 2-column grid padded `Spacing.md` all round with
+/// `Spacing.md` cross spacing.
+double _cellWidth(double screenWidth) => (screenWidth - Spacing.md * 3) / 2;
+
+class _ProductCard extends ConsumerWidget {
   const _ProductCard({required this.product});
 
   final Product product;
 
+  void _buy(BuildContext context, WidgetRef ref) {
+    final id = product.id;
+    if (id == null) return;
+
+    // Products with variations need an option chosen first → open the detail
+    // page where the buyer picks before adding to cart.
+    if (product.variationsCount != null && product.variationsCount! > 0) {
+      context.push('/products/$id');
+      return;
+    }
+
+    ref.read(cartProvider.notifier).add(
+      CartItem(
+        key: '$id:0',
+        productId: id,
+        name: product.name ?? 'Produk',
+        image: product.displayImage,
+        unitPrice: product.effectivePrice,
+        quantity: 1,
+      ),
+    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text('Ditambah ke troli.')),
+      );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final showMemberPrice = product.isMember && product.priceForMember != null;
     final price =
@@ -353,9 +392,9 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Shopee-style large 4:5 thumbnail — the dominant visual element.
+            // Shopee-style 1:1 thumbnail — the dominant visual element.
             AspectRatio(
-              aspectRatio: 4 / 5,
+              aspectRatio: 1,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -392,81 +431,124 @@ class _ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Spacing.sm,
-                Spacing.sm,
-                Spacing.sm,
-                Spacing.sm,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name ?? '-',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    Formatters.currency(price),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (hasDiscount) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          Formatters.currency(product.price),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.textTertiary,
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.softGreenSurface,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Ahli',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.movementGreen,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Spacing.sm,
+                  Spacing.xs,
+                  Spacing.sm,
+                  Spacing.sm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            product.name ?? '-',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            Formatters.currency(price),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          SizedBox(
+                            height: 16,
+                            child: hasDiscount
+                                ? Row(
+                                    children: [
+                                      Text(
+                                        Formatters.currency(product.price),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                                  color: AppColors.textTertiary,
+                                                  decoration: TextDecoration
+                                                      .lineThrough,
+                                                  fontSize: 11,
+                                                ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 5,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.softGreenSurface,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Ahli',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                    color:
+                                                        AppColors.movementGreen,
+                                                    fontSize: 9,
+                                                    fontWeight:
+                                                        FontWeight.w700,
+                                                  ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : (product.category?.name != null
+                                      ? Text(
+                                          product.category!.name!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                    color: AppColors
+                                                        .textSecondary,
+                                                    fontSize: 11,
+                                                  ),
+                                        )
+                                      : const SizedBox.shrink()),
+                          ),
+                        ],
+                      ),
                     ),
-                  ] else if (product.category?.name != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      product.category!.name!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 34,
+                      child: FilledButton(
+                        onPressed:
+                            product.id == null ? null : () => _buy(context, ref),
+                        style: FilledButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          backgroundColor: AppColors.movementGreen,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Beli'),
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -481,14 +563,15 @@ class _ProductsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cellWidth = _cellWidth(MediaQuery.sizeOf(context).width);
     return GridView.builder(
       padding: const EdgeInsets.all(Spacing.md),
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: Spacing.md,
         crossAxisSpacing: Spacing.md,
-        childAspectRatio: 0.62,
+        mainAxisExtent: cellWidth + _cardFooterHeight,
       ),
       itemCount: 6,
       itemBuilder: (_, __) => const SkeletonBox(radius: 16),

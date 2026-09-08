@@ -24,13 +24,22 @@ abstract final class ApiPaths {
   static const String memberDashboard = '/member/dashboard';
   static const String memberRegistrations = '/member/registrations';
   static const String memberCard = '/member/card';
+  static const String memberCardLetter = '/member/card/letter';
   static const String memberFeeStatus = '/member/fee-status';
+  static const String memberPayFee = '/member/pay-fee';
   static const String memberAnnouncements = '/member/announcements';
   static String memberAnnouncementReact(int id) => '/member/announcements/$id/react';
   static String memberAnnouncementRead(int id) => '/member/announcements/$id/read';
   static const String memberLibrary = '/member/library';
   static const String memberReferral = '/member/referral';
   static const String memberFinancialOverview = '/member/financial/overview';
+  static String memberPaymentReceipt(int paymentId) =>
+      '/member/payments/$paymentId/receipt';
+
+  // ---- Event registration (member) ----
+  static String eventRegistrationForm(int eventId, int formId) =>
+      '/events/$eventId/registration/$formId';
+  static String eventRegistration(int eventId) => '/events/$eventId/registration';
 
   // ---- Organization ----
   static const String organizationInfo = '/organization/info';
@@ -45,6 +54,8 @@ abstract final class ApiPaths {
   static const String profile = '/profile';
   static const String profileComplete = '/profile/complete';
   static const String profileEditMeta = '/profile/edit-meta';
+  static const String profilePassword = '/profile/password';
+  static const String profilePhoto = '/profile/photo';
 
   // ---- News ----
   static const String news = '/news';
@@ -73,6 +84,7 @@ abstract final class ApiPaths {
   static const String orders = '/orders';
   static String orderDetail(int id) => '/orders/$id';
   static String orderPay(int id) => '/orders/$id/pay';
+  static String orderReceive(int id) => '/orders/$id/receive';
 
   // ---- Facilities ----
   static const String facilities = '/facilities';

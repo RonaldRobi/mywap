@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -13,6 +16,7 @@ import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../financial/presentation/widgets/pay_fee_button.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
@@ -96,6 +100,7 @@ class _ProfileContent extends ConsumerWidget {
           _DetailsCard(user: user),
           const SectionHeader('Keselamatan'),
           const _BiometricSetting(),
+          const _ChangePasswordTile(),
           Padding(
             padding: const EdgeInsets.all(Spacing.lg),
             child: FilledButton.icon(
@@ -133,6 +138,9 @@ class _ProfileContent extends ConsumerWidget {
                 ),
               ),
           ],
+          const SectionHeader('Akaun'),
+          const _ProfilePhotoTile(),
+          const _DeleteAccountTile(),
         ],
       ),
     );
@@ -343,6 +351,10 @@ class _FeeStatusCard extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
+              if (!active) ...[
+                const SizedBox(height: Spacing.md),
+                const PayFeeButton(),
+              ],
             ],
           ),
         ),
@@ -571,6 +583,230 @@ class _ProfileSkeleton extends StatelessWidget {
           child: SkeletonBox(height: 180),
         ),
       ],
+    );
+  }
+}
+
+/// Entry point to the change-password screen.
+class _ChangePasswordTile extends StatelessWidget {
+  const _ChangePasswordTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          leading: const Icon(Icons.lock_reset, color: AppColors.movementGreen),
+          title: const Text('Tukar Kata Laluan'),
+          subtitle: const Text('Kemas kini kata laluan akaun anda'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push('/profile/change-password'),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pilih & muat naik foto profil baru.
+class _ProfilePhotoTile extends ConsumerStatefulWidget {
+  const _ProfilePhotoTile();
+
+  @override
+  ConsumerState<_ProfilePhotoTile> createState() => _ProfilePhotoTileState();
+}
+
+class _ProfilePhotoTileState extends ConsumerState<_ProfilePhotoTile> {
+  bool _busy = false;
+
+  Future<void> _pickPhoto() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      final url = await ref
+          .read(profileRepositoryProvider)
+          .uploadPhoto(File(picked.path));
+      if (!mounted) return;
+      ref.invalidate(profileProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            url == null || url.isEmpty
+                ? 'Foto berjaya dimuat naik.'
+                : 'Foto profil anda telah dikemas kini.',
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = ref
+        .watch(profileProvider)
+        .valueOrNull
+        ?.profileUser
+        ?.photo_url;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          leading: ClipOval(
+            child: photoUrl == null || photoUrl.isEmpty
+                ? Container(
+                    width: 40,
+                    height: 40,
+                    color: AppColors.divider,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.person_outline),
+                  )
+                : AppImage(
+                    photoUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
+          ),
+          title: const Text('Foto Profil'),
+          subtitle: Text(
+            _busy ? 'Memuat naik...' : 'Tukar gambar profil anda',
+          ),
+          trailing: _busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.chevron_right),
+          onTap: _busy ? null : _pickPhoto,
+        ),
+      ),
+    );
+  }
+}
+
+/// Padam akaun (Play Store compliance) — memerlukan pengesahan kata laluan.
+class _DeleteAccountTile extends ConsumerStatefulWidget {
+  const _DeleteAccountTile();
+
+  @override
+  ConsumerState<_DeleteAccountTile> createState() =>
+      _DeleteAccountTileState();
+}
+
+class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
+  bool _busy = false;
+
+  Future<void> _confirmDelete() async {
+    final controller = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Padam Akaun'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Akaun anda akan dipadam secara kekal. Tindakan ini tidak '
+                'boleh dibatalkan. Masukkan kata laluan untuk mengesahkan.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: Spacing.md),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Kata Laluan'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('Padam'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+
+    if (password == null || password.trim().isEmpty || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(profileRepositoryProvider)
+          .deleteAccount(password.trim());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akaun anda telah dipadam.')),
+      );
+      ref.read(authControllerProvider.notifier).logout();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) setState(() => _busy = false);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+      );
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: AppColors.error.withValues(alpha: 0.06),
+        child: ListTile(
+          leading: const Icon(Icons.delete_forever_outlined,
+              color: AppColors.error),
+          title: const Text(
+            'Padam Akaun',
+            style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+          ),
+          subtitle: const Text('Padam akaun anda secara kekal'),
+          trailing: const Icon(Icons.chevron_right, color: AppColors.error),
+          onTap: _busy ? null : _confirmDelete,
+        ),
+      ),
     );
   }
 }

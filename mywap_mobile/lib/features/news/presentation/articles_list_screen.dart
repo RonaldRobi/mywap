@@ -108,10 +108,11 @@ class _ArticleCard extends StatelessWidget {
           children: [
             if (article.coverImage != null && article.coverImage!.isNotEmpty)
               AspectRatio(
-                aspectRatio: 4 / 5,
+                aspectRatio: 16 / 9,
                 child: AppImage(
                   article.coverImage,
                   width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.zero,
                 ),
               ),

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_image.dart';
 import '../../../auth/application/auth_controller.dart';
+import '../../../profile/application/profile_providers.dart';
 
 /// Collapsible left sidebar (hamburger menu) — secondary navigation that
 /// surfaces every member module grouped the same way as the web app's
@@ -16,6 +18,7 @@ class AppSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
+    final profileUser = ref.watch(profileProvider).valueOrNull?.profileUser;
 
     return Drawer(
       backgroundColor: AppColors.white,
@@ -23,7 +26,12 @@ class AppSidebar extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _SidebarHeader(name: user?.name, member: user),
+            _SidebarHeader(
+              name: user?.name,
+              memberNo: user?.member_no,
+              orgLogo: user?.organization?.logo_path,
+              photoUrl: profileUser?.photo_url,
+            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
@@ -136,16 +144,6 @@ class AppSidebar extends ConsumerWidget {
                         label: 'Jemput Ahli',
                         path: '/member/referral',
                       ),
-                      _SidebarItem(
-                        icon: Icons.contacts_outlined,
-                        label: 'Direktori Ahli',
-                        path: '/directory',
-                      ),
-                      _SidebarItem(
-                        icon: Icons.chat_outlined,
-                        label: 'Chat',
-                        path: '/chat',
-                      ),
                     ],
                   ),
                   _SidebarSection(
@@ -155,11 +153,6 @@ class AppSidebar extends ConsumerWidget {
                         icon: Icons.person_outline,
                         label: 'Profil',
                         path: '/profile',
-                      ),
-                      _SidebarItem(
-                        icon: Icons.route_outlined,
-                        label: 'Perjalanan',
-                        path: '/profile/journey',
                       ),
                     ],
                   ),
@@ -184,19 +177,32 @@ class AppSidebar extends ConsumerWidget {
 }
 
 class _SidebarHeader extends StatelessWidget {
-  const _SidebarHeader({required this.name, required this.member});
+  const _SidebarHeader({
+    required this.name,
+    required this.memberNo,
+    this.orgLogo,
+    this.photoUrl,
+  });
 
   final String? name;
-  final dynamic member;
+  final String? memberNo;
+
+  /// Logo organisasi (biasanya hijau) — dipaparkan di atas kad putih supaya
+  /// kekal kelihatan pada latar hijau header.
+  final String? orgLogo;
+
+  /// Gambar profil yang dimuat naik pengguna (`profile_photo_path`).
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = photoUrl != null && photoUrl!.isNotEmpty;
     return Container(
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,
         Spacing.lg,
         Spacing.lg,
-        Spacing.lg,
+        Spacing.xl,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -205,46 +211,94 @@ class _SidebarHeader extends StatelessWidget {
           colors: AppColors.heroGradient,
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipOval(
-            child: Container(
-              width: 52,
-              height: 52,
-              color: AppColors.white.withValues(alpha: .16),
-              child: const Icon(
-                Icons.person,
-                color: AppColors.white,
-                size: 28,
+          _OrgLogoCard(logoPath: orgLogo),
+          const SizedBox(height: Spacing.lg),
+          Row(
+            children: [
+              ClipOval(
+                child: hasPhoto
+                    ? AppImage(
+                        photoUrl,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        width: 52,
+                        height: 52,
+                        color: AppColors.white.withValues(alpha: .16),
+                        child: const Icon(
+                          Icons.person,
+                          color: AppColors.white,
+                          size: 28,
+                        ),
+                      ),
               ),
-            ),
-          ),
-          const SizedBox(width: Spacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name ?? 'Ahli myWAP',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name ?? 'Ahli myWAP',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      memberNo ?? '',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textOnDark,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  member?.member_no ?? '',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textOnDark,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Kad putih di belakang logo organisasi — logo semua wadah berwarna hijau,
+/// jadi latar putih diperlukan agar tidak hilang pada header hijau.
+class _OrgLogoCard extends StatelessWidget {
+  const _OrgLogoCard({this.logoPath});
+
+  final String? logoPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = logoPath != null && logoPath!.isNotEmpty;
+    return Container(
+      width: 64,
+      height: 64,
+      padding: const EdgeInsets.all(Spacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.lg,
+        boxShadow: AppShadows.subtle,
+      ),
+      child: hasLogo
+          ? AppImage(
+              logoPath,
+              fit: BoxFit.contain,
+              borderRadius: BorderRadius.zero,
+            )
+          : const Icon(
+              Icons.groups_outlined,
+              color: AppColors.movementGreen,
+              size: 32,
+            ),
     );
   }
 }

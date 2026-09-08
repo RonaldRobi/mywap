@@ -307,7 +307,7 @@ class _DetailContent extends StatelessWidget {
           if (detail.relatedProducts.isNotEmpty) ...[
             const SectionHeader('Produk Berkaitan'),
             SizedBox(
-              height: 220,
+              height: 280,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
@@ -341,8 +341,10 @@ class _RelatedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return SizedBox(
-      width: 140,
-      child: Card(
+      width: 168,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap:
@@ -352,16 +354,23 @@ class _RelatedCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppImage(
-                product.displayImage,
-                height: 90,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                borderRadius: BorderRadius.zero,
+              // Consistent 1:1 thumbnail, same as the catalogue cards.
+              AspectRatio(
+                aspectRatio: 1,
+                child: AppImage(
+                  product.displayImage,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.zero,
+                ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(Spacing.sm),
+                  padding: const EdgeInsets.fromLTRB(
+                    Spacing.sm,
+                    Spacing.xs,
+                    Spacing.sm,
+                    Spacing.sm,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -369,14 +378,19 @@ class _RelatedCard extends StatelessWidget {
                         product.name ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
+                        ),
                       ),
                       const Spacer(),
                       Text(
                         Formatters.currency(product.effectivePrice),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: AppColors.movementGreen,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],

@@ -239,6 +239,9 @@ IconData _iconFor(AppNotification notification) {
   if (type.contains('event')) return Icons.event_outlined;
   if (type.contains('fee')) return Icons.receipt_long_outlined;
   if (type.contains('form')) return Icons.assignment_outlined;
+  if (type.contains('facility') || type.contains('booking')) {
+    return Icons.meeting_room_outlined;
+  }
   if (type.contains('transition') ||
       type.contains('member') ||
       type.contains('registration')) {

@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
 import 'models/event.dart';
 import 'models/event_registration.dart';
+import 'models/event_registration_form.dart';
 
 class EventRepository {
   EventRepository(this._api);
@@ -27,10 +31,7 @@ class EventRepository {
   }
 
   Future<void> rsvp(int id, {String status = 'going'}) async {
-    await _api.post(
-      ApiPaths.eventRsvp(id),
-      body: {'status': status},
-    );
+    await _api.post(ApiPaths.eventRsvp(id), body: {'status': status});
   }
 
   /// Imbas QR poster event untuk rekod kehadiran sendiri (member self
@@ -55,6 +56,85 @@ class EventRepository {
         .toList(growable: false);
   }
 
+  /// Borang pendaftaran (member) untuk satu event.
+  Future<EventRegistrationData> registrationForm(
+    int eventId,
+    int formId,
+  ) async {
+    final data = await _api.get(
+      ApiPaths.eventRegistrationForm(eventId, formId),
+    );
+    return EventRegistrationData.fromJson(_asMap(data));
+  }
+
+  /// Hantar pendaftaran event (member). JSON bila tiada fail; multipart bila
+  /// ada sebarang fail (jawapan jenis 'file' atau dokumen sokongan tier).
+  Future<EventRegistrationResult> submitRegistration({
+    required int eventId,
+    required int formId,
+    required Map<String, dynamic> answers,
+    Map<int, File> files = const {},
+    String? ticketType,
+    String paymentMethod = 'fpx',
+    File? document,
+  }) async {
+    final data =
+        files.isNotEmpty || document != null
+            ? await _submitRegistrationMultipart(
+              eventId: eventId,
+              formId: formId,
+              answers: answers,
+              files: files,
+              ticketType: ticketType,
+              paymentMethod: paymentMethod,
+              document: document,
+            )
+            : await _api.post(
+              ApiPaths.eventRegistration(eventId),
+              body: {
+                'form_id': formId,
+                'answers': answers,
+                if (ticketType != null && ticketType.isNotEmpty)
+                  'ticket_type': ticketType,
+                'payment_method': paymentMethod,
+              },
+            );
+    return EventRegistrationResult.fromJson(_asMap(data));
+  }
+
+  Future<dynamic> _submitRegistrationMultipart({
+    required int eventId,
+    required int formId,
+    required Map<String, dynamic> answers,
+    required Map<int, File> files,
+    required String? ticketType,
+    required String paymentMethod,
+    required File? document,
+  }) async {
+    final fields = <String, dynamic>{
+      'form_id': formId.toString(),
+      for (final entry in answers.entries)
+        'answers[${entry.key}]': _stringify(entry.value),
+      for (final entry in files.entries)
+        'answers[${entry.key}]': MultipartFile.fromFileSync(
+          entry.value.path,
+          filename: _fileName(entry.value.path),
+        ),
+      if (document != null)
+        'document': MultipartFile.fromFileSync(
+          document.path,
+          filename: _fileName(document.path),
+        ),
+      if (ticketType != null && ticketType.isNotEmpty)
+        'ticket_type': ticketType,
+      'payment_method': paymentMethod,
+    };
+    return _api.post(
+      ApiPaths.eventRegistration(eventId),
+      body: FormData.fromMap(fields),
+    );
+  }
+
   List<Event> _parseList(dynamic data) {
     if (data is List) {
       return data
@@ -63,5 +143,25 @@ class EventRepository {
           .toList(growable: false);
     }
     return const [];
+  }
+
+  static Map<String, dynamic> _asMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    return <String, dynamic>{};
+  }
+
+  static String _stringify(dynamic value) {
+    if (value is List) return value.map((e) => e.toString()).join(', ');
+    return value?.toString() ?? '';
+  }
+
+  static String _fileName(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final index = normalized.lastIndexOf('/');
+    return index == -1 ? normalized : normalized.substring(index + 1);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
@@ -12,6 +14,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/order_providers.dart';
 import '../data/models/order.dart';
+import '../../financial/presentation/widgets/receipt_download_button.dart';
 import 'order_status.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -25,6 +28,28 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _paying = false;
+  bool _receiving = false;
+
+  Future<void> _receive() async {
+    setState(() => _receiving = true);
+    try {
+      await ref.read(orderRepositoryProvider).receive(widget.orderId);
+      if (!mounted) return;
+      ref.invalidate(orderDetailProvider(widget.orderId));
+      ref.invalidate(ordersProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pesanan disahkan diterima. Terima kasih!')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ref.invalidate(orderDetailProvider(widget.orderId));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _receiving = false);
+    }
+  }
 
   Future<void> _pay() async {
     setState(() => _paying = true);
@@ -103,34 +128,59 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   () => ref.invalidate(orderDetailProvider(widget.orderId)),
             ),
       ),
-      bottomNavigationBar:
-          order != null && order.status == 'pending'
-              ? SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.all(Spacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.divider)),
-                  ),
-                  child: FilledButton.icon(
-                    onPressed: _paying ? null : _pay,
-                    icon:
-                        _paying
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.white,
-                              ),
-                            )
-                            : const Icon(Icons.payment),
-                    label: const Text('Bayar'),
-                  ),
-                ),
-              )
-              : null,
+      bottomNavigationBar: switch (order?.status) {
+        'pending' => SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.all(Spacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(top: BorderSide(color: AppColors.divider)),
+            ),
+            child: FilledButton.icon(
+              onPressed: _paying ? null : _pay,
+              icon:
+                  _paying
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : const Icon(Icons.payment),
+              label: const Text('Bayar'),
+            ),
+          ),
+        ),
+        'shipped' => SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.all(Spacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(top: BorderSide(color: AppColors.divider)),
+            ),
+            child: FilledButton.icon(
+              onPressed: _receiving ? null : _receive,
+              icon:
+                  _receiving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : const Icon(Icons.inventory_2_outlined),
+              label: const Text('Terima Pesanan'),
+            ),
+          ),
+        ),
+        _ => null,
+      },
     );
   }
 }
@@ -218,11 +268,13 @@ class _DetailBody extends StatelessWidget {
                 _InfoLine(label: 'Telefon', value: o.shippingPhone),
                 _InfoLine(label: 'Alamat', value: o.shippingAddress),
                 _InfoLine(label: 'Poskod', value: o.shippingPostcode),
-                _InfoLine(label: 'Kurier', value: o.courier),
-                _InfoLine(label: 'No. Penjejakan', value: o.trackingNo),
               ],
             ),
           ),
+          if (o.trackingNo != null && o.trackingNo!.trim().isNotEmpty) ...[
+            const SizedBox(height: Spacing.md),
+            _TrackingCard(order: o),
+          ],
           const SizedBox(height: Spacing.md),
           _SectionCard(
             title: 'Pembayaran',
@@ -260,6 +312,137 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.xl),
         ],
+      ),
+    );
+  }
+}
+
+class _TrackingCard extends StatelessWidget {
+  const _TrackingCard({required this.order});
+
+  final Order order;
+
+  Future<void> _track(BuildContext context) async {
+    final number = order.trackingNo?.trim() ?? '';
+    final url = courierTrackingUrl(order.courier, order.trackingNo);
+
+    // Copy first so the number is handy even when the courier site needs a
+    // manual paste, then jump to the courier page when we recognise one.
+    await Clipboard.setData(ClipboardData(text: number));
+
+    if (!context.mounted) return;
+
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No. penjejakan disalin ke papan klip.')),
+      );
+      return;
+    }
+
+    final launched = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No. penjejakan disalin ke papan klip.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final courier = order.courier?.trim();
+    final number = order.trackingNo!.trim();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  color: AppColors.movementGreen,
+                ),
+                const SizedBox(width: Spacing.sm),
+                Text(
+                  'Penjejakan Parcel',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: AppColors.movementGreen,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Spacing.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.softGreenSurface,
+                borderRadius: AppRadius.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (courier != null && courier.isNotEmpty) ...[
+                    Text(
+                      courier.toUpperCase(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.xs),
+                  ],
+                  Text(
+                    number,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Spacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _track(context),
+                    icon: const Icon(Icons.travel_explore, size: 20),
+                    label: const Text('Track'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Spacing.sm),
+                IconButton.outlined(
+                  tooltip: 'Salin No. Penjejakan',
+                  onPressed: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: number),
+                    );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No. penjejakan disalin ke papan klip.'),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 20),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -399,6 +582,11 @@ class _PaymentRow extends StatelessWidget {
                   ),
                 ),
               ),
+              if (payment.status == 'successful')
+                ReceiptDownloadButton(
+                  paymentId: payment.id,
+                  color: AppColors.movementGreen,
+                ),
             ],
           ),
         ],

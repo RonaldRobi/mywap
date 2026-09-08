@@ -19,6 +19,8 @@ class DirectoryApiTest extends TestCase
 
     private User $member;
 
+    private User $admin;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +37,13 @@ class DirectoryApiTest extends TestCase
             'member_no' => 'PKPIM-0001',
         ]);
         $this->member->assignRole('Member');
+
+        $this->admin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+            'member_no' => 'PKPIM-0002',
+        ]);
+        $this->admin->assignRole('Admin');
     }
 
     private function makePublicUser(array $attributes = []): User
@@ -53,17 +62,27 @@ class DirectoryApiTest extends TestCase
         $this->getJson('/api/v1/directory')->assertUnauthorized();
     }
 
-    public function test_member_can_search_directory(): void
+    public function test_member_cannot_access_directory(): void
     {
         $this->makePublicUser(['member_no' => 'PKPIM-0100']);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/directory?search=Ali')
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_search_directory(): void
+    {
+        $this->makePublicUser(['member_no' => 'PKPIM-0200']);
         $this->makePublicUser([
             'name' => 'Siti Aminah',
             'industry' => 'Pendidikan',
-            'member_no' => 'PKPIM-0101',
+            'member_no' => 'PKPIM-0201',
         ]);
-        $this->makePublicUser(['is_public_in_directory' => false, 'member_no' => 'PKPIM-0102']);
+        $this->makePublicUser(['is_public_in_directory' => false, 'member_no' => 'PKPIM-0202']);
 
-        Sanctum::actingAs($this->member);
+        Sanctum::actingAs($this->admin);
 
         $this->getJson('/api/v1/directory?search=Ali')
             ->assertOk()
@@ -75,16 +94,16 @@ class DirectoryApiTest extends TestCase
             ->assertJsonPath('data.industries.1', 'Perubatan');
     }
 
-    public function test_member_can_filter_directory_by_industry(): void
+    public function test_admin_can_filter_directory_by_industry(): void
     {
-        $this->makePublicUser(['member_no' => 'PKPIM-0200']);
+        $this->makePublicUser(['member_no' => 'PKPIM-0300']);
         $this->makePublicUser([
             'name' => 'Siti Aminah',
             'industry' => 'Pendidikan',
-            'member_no' => 'PKPIM-0201',
+            'member_no' => 'PKPIM-0301',
         ]);
 
-        Sanctum::actingAs($this->member);
+        Sanctum::actingAs($this->admin);
 
         $this->getJson('/api/v1/directory?industry=Pendidikan')
             ->assertOk()

@@ -53,3 +53,48 @@ String formatOrderDate(String? iso) {
   ];
   return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
 }
+
+/// Best-effort deep-link into a courier's tracking page for a known courier
+/// name, interpolating `{no}` with the tracking number where the courier
+/// supports query-based tracking. Returns `null` for unrecognised couriers —
+/// the caller then falls back to copying the tracking number to the clipboard.
+String? courierTrackingUrl(String? courier, String? trackingNo) {
+  final name = courier?.trim().toLowerCase() ?? '';
+  final number = trackingNo?.trim() ?? '';
+  if (name.isEmpty || number.isEmpty) return null;
+
+  String? template;
+  if (name.contains('pos laju') ||
+      name.contains('poslaju') ||
+      name.contains('pos malaysia')) {
+    template = 'https://www.pos.com.my/track-trace';
+  } else if (name.contains('j&t') ||
+      name.contains('j and t') ||
+      name == 'jt' ||
+      name.contains('jt express')) {
+    template = 'https://www.jtexpress.my/tracking?trackingNo={no}';
+  } else if (name.contains('city-link') || name.contains('citylink')) {
+    template = 'https://www.citylinkexpress.com/track-trace';
+  } else if (name.contains('dhl')) {
+    template = 'https://www.dhl.com/my-en/home/tracking.html?tracking-id={no}';
+  } else if (name.contains('gdex') || name.contains('gdexpress')) {
+    template = 'https://www.gdexpress.com/track/';
+  } else if (name.contains('ninja')) {
+    template = 'https://www.ninjavan.co/en-my/tracking?id={no}';
+  } else if (name.contains('fedex')) {
+    template = 'https://www.fedex.com/fedextrack/?trknbr={no}';
+  } else if (name.contains('ups')) {
+    template = 'https://www.ups.com/track?tracknum={no}';
+  } else if (name.contains('flash')) {
+    template = 'https://www.flashexpress.my/track/';
+  } else if (name.contains('pgeon')) {
+    template = 'https://www.pgeon.my/';
+  } else if (name.contains('abx')) {
+    template = 'https://abxexpress.com.my/';
+  } else if (name.contains('skynet')) {
+    template = 'https://www.skynet.com.my/';
+  }
+
+  if (template == null) return null;
+  return template.replaceFirst('{no}', Uri.encodeComponent(number));
+}

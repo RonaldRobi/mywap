@@ -39,6 +39,7 @@ class ProfileService
             'email' => $user->email,
             'phone' => $user->phone,
             'ic_number' => $user->ic_number,
+            'photo_url' => $user->profile_photo_path,
             'roles' => $user->getRoleNames()->values(),
             'dob' => $isSuperadmin ? null : $user->dob?->format('d M Y'),
             'age' => $isSuperadmin ? null : $user->dob?->age,

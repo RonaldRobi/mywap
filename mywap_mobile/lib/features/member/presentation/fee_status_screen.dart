@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../financial/presentation/widgets/pay_fee_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/fee_status.dart';
 
@@ -115,6 +116,10 @@ class _FeeStatusContent extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
+          if (isDue) ...[
+            const SizedBox(height: Spacing.xl),
+            const PayFeeButton(),
+          ],
         ],
       ),
     );

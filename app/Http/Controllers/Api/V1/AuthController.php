@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -47,11 +48,15 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $this->ensureIsNotLoginRateLimited($request);
+
         $user = $this->resolveUser($request);
 
         $field = $request->filled('email') ? 'email' : 'ic_number';
 
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            RateLimiter::hit($this->loginThrottleKey($request));
+
             if ($user && is_null($user->first_login_at)) {
                 throw ValidationException::withMessages([
                     $field => 'Akaun ini belum aktif. Sila gunakan pautan "Log Masuk Kali Pertama" di bawah.',
@@ -67,7 +72,9 @@ class AuthController extends Controller
             $user->update(['first_login_at' => now()]);
         }
 
-        $token = $user->createToken('mobile')->plainTextToken;
+        RateLimiter::clear($this->loginThrottleKey($request));
+
+        $token = $user->createToken('mobile', $user->apiTokenAbilities(), $this->tokenExpiry())->plainTextToken;
 
         return ApiResponse::success([
             'token' => $token,
@@ -395,6 +402,9 @@ class AuthController extends Controller
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                // Tarik balik semua token API lama — password reset = kunci semula semua peranti.
+                $user->tokens()->delete();
             }
         );
 
@@ -491,7 +501,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken('mobile')->plainTextToken;
+        $token = $user->createToken('mobile', $user->apiTokenAbilities(), $this->tokenExpiry())->plainTextToken;
 
         return ApiResponse::success([
             'message' => 'Log masuk berjaya.',
@@ -564,6 +574,55 @@ class AuthController extends Controller
         }
 
         return [$user, null];
+    }
+
+    /**
+     * Kunci log masuk per-akaun (bukan sekadar per-IP) selepas 5 percubaan
+     * gagal dalam seminit — semantik sama dengan web LoginRequest.
+     *
+     * @throws ValidationException
+     */
+    private function ensureIsNotLoginRateLimited(Request $request): void
+    {
+        $key = $this->loginThrottleKey($request);
+
+        if (! RateLimiter::tooManyAttempts($key, 5)) {
+            return;
+        }
+
+        $seconds = RateLimiter::availableIn($key);
+        $field = $request->filled('email') ? 'email' : 'ic_number';
+
+        throw ValidationException::withMessages([
+            $field => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function loginThrottleKey(Request $request): string
+    {
+        if ($request->filled('email')) {
+            $identifier = Str::lower(trim((string) $request->input('email')));
+        } else {
+            $identifier = Str::upper(
+                preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
+            );
+        }
+
+        return 'api-login:'.Str::transliterate($identifier).'|'.$request->ip();
+    }
+
+    /**
+     * Tarikh luput untuk token Sanctum baharu, mengikut config sanctum.expiration
+     * (minit). Pulangkan null jika expiration tidak dikonfigurasikan.
+     */
+    private function tokenExpiry(): ?\DateTimeInterface
+    {
+        $minutes = config('sanctum.expiration');
+
+        return $minutes ? now()->addMinutes((int) $minutes) : null;
     }
 
     private function lookupUser(string $identifier): ?User

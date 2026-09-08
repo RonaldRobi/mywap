@@ -89,7 +89,9 @@ class MemberExtrasApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.campaigns.0.title', 'Tabung Ramadan')
             ->assertJsonPath('data.campaigns.0.progress_percent', 25)
-            ->assertJsonPath('data.payment_history.0.reference', null) // reference not exposed by design
+            // reference & receipt_url kini didedahkan supaya mobile boleh
+            // menawarkan muat turun resit PDF bagi bayaran berjaya.
+            ->assertJsonPath('data.payment_history.0.reference', 'REF-001')
             ->assertJsonStructure(['data' => ['campaigns', 'fee_status', 'payment_history']]);
     }
 

@@ -336,6 +336,27 @@ class OrderService
     }
 
     /**
+     * Tandai pesanan sebagai diterima oleh pembeli (status 'shipped' →
+     * 'completed'). Hanya pemilik order boleh memanggil; lihat OrderController.
+     *
+     * @return array{status: string, order: Order} status 'completed' | 'error'
+     */
+    public function markReceived(Order $order): array
+    {
+        if ($order->status !== 'shipped') {
+            return [
+                'status' => 'error',
+                'order' => $order,
+                'message' => 'Pesanan hanya boleh ditanda diterima selepas dihantar.',
+            ];
+        }
+
+        $order->update(['status' => 'completed']);
+
+        return ['status' => 'completed', 'order' => $order];
+    }
+
+    /**
      * Cipta Payment row dan, jika gateway aktif, minta URL redirect daripada
      * PaymentGatewayManager. Tanpa gateway → status 'no_gateway' (payment dummy
      * berjaya direkod, pemanggil menanda order paid).

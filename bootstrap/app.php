@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'profile_complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
+            'api_admin' => \App\Http\Middleware\EnsureApiAdminAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

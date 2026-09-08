@@ -54,6 +54,15 @@ dependencies:
   shared_preferences: 2.5.3
   video_player: 2.9.5
   local_auth: ^2.3.0
+  image_picker: ^1.2.1
+  file_picker: ^11.0.3
+  pdfx: ^2.11.0
+  path_provider: ^2.1.4
+
+# pdfx requires Matrix4.translateByDouble/scaleByDouble, which only exist in
+# vector_math >= 2.2.0, but the Flutter SDK (3.29) pins 2.1.4.
+dependency_overrides:
+  vector_math: 2.2.0
 
 dev_dependencies:
   flutter_test:

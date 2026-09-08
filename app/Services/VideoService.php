@@ -24,6 +24,7 @@ class VideoService
             'youtube_id' => $video->youtube_id,
             'thumbnail_url' => $video->thumbnail_url,
             'embed_url' => $video->embed_url,
+            'is_live' => (bool) $video->is_live,
         ];
     }
 

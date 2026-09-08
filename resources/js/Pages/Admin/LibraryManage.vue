@@ -160,6 +160,7 @@ const showUploadForm = ref(false);
                         <div class="rounded-xl border border-gray-200 p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-700">Fail PDF</label>
                             <input type="file" accept="application/pdf" @change="onPdfSelected" class="w-full text-sm file:mr-4 file:rounded-xl file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-gray-800 transition-all file:cursor-pointer mt-1">
+                            <p class="mt-1 text-[11px] text-gray-400">PDF sahaja · Maksimum 5MB</p>
                             <p v-if="libraryForm.errors.pdf_file" class="mt-2 text-xs font-semibold text-red-500">{{ libraryForm.errors.pdf_file }}</p>
                         </div>
 
@@ -206,6 +207,7 @@ const showUploadForm = ref(false);
                                 <div>
                                     <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">Kemaskini Fail PDF (Opsional)</label>
                                     <input type="file" accept="application/pdf" @change="onEditPdfSelected" class="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-2 file:py-1 file:text-xs file:font-semibold">
+                                    <p class="mt-1 text-[10px] text-gray-400">PDF sahaja · Maksimum 5MB</p>
                                     <p v-if="libraryEditForm.errors.pdf_file" class="mt-2 text-[11px] font-semibold text-red-500">{{ libraryEditForm.errors.pdf_file }}</p>
                                 </div>
                                 <div>

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -52,6 +54,58 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
+  void _openRegistration(EventDetail detail) {
+    final forms = detail.registration_forms ?? const <RegistrationForm>[];
+    if (forms.isEmpty) return;
+
+    void pushForm(RegistrationForm form) {
+      context.push('/events/registration/${widget.eventId}/${form.id}');
+    }
+
+    if (forms.length == 1) {
+      pushForm(forms.first);
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Daftar Program', style: theme.textTheme.titleMedium),
+                const SizedBox(height: Spacing.sm),
+                for (final form in forms)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(
+                      Icons.assignment_outlined,
+                      color: AppColors.movementGreen,
+                    ),
+                    title: Text(form.title ?? 'Borang'),
+                    subtitle:
+                        form.paymentRequired && (form.price ?? 0) > 0
+                            ? Text('Yuran: ${Formatters.currency(form.price)}')
+                            : null,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      pushForm(form);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(eventDetailProvider(widget.eventId));
@@ -65,9 +119,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         data:
             (detail) => _DetailContent(
               event: detail.event,
+              registrationForms: detail.registration_forms ?? const [],
+              myRegistration: detail.my_registration,
               rsvpLoading: _rsvpLoading,
               rsvpError: _rsvpError,
               onRsvp: _toggleRsvp,
+              onRegister: () => _openRegistration(detail),
               onRefresh:
                   () async =>
                       ref.invalidate(eventDetailProvider(widget.eventId)),
@@ -90,16 +147,22 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.event,
+    required this.registrationForms,
+    required this.myRegistration,
     required this.rsvpLoading,
     required this.rsvpError,
     required this.onRsvp,
+    required this.onRegister,
     required this.onRefresh,
   });
 
   final Event? event;
+  final List<RegistrationForm> registrationForms;
+  final EventRegistrationSummary? myRegistration;
   final bool rsvpLoading;
   final String? rsvpError;
   final ValueChanged<String?> onRsvp;
+  final VoidCallback onRegister;
   final Future<void> Function() onRefresh;
 
   @override
@@ -196,6 +259,21 @@ class _DetailContent extends StatelessWidget {
                     isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
                   ),
                 ),
+                if (registrationForms.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.md),
+                  if (myRegistration == null)
+                    FilledButton.icon(
+                      onPressed: onRegister,
+                      icon: const Icon(Icons.assignment_outlined),
+                      label: const Text('Daftar Program'),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/events/my-registrations'),
+                      icon: const Icon(Icons.event_available_outlined),
+                      label: const Text('Sudah Daftar'),
+                    ),
+                ],
               ],
             ),
           ),

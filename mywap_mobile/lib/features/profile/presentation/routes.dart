@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import 'change_password_screen.dart';
 import 'complete_profile_screen.dart';
 import 'edit_profile_screen.dart';
 import 'journey_screen.dart';
@@ -14,4 +15,8 @@ final List<RouteBase> profileRoutes = [
     builder: (_, __) => const CompleteProfileScreen(),
   ),
   GoRoute(path: '/profile/journey', builder: (_, __) => const JourneyScreen()),
+  GoRoute(
+    path: '/profile/change-password',
+    builder: (_, __) => const ChangePasswordScreen(),
+  ),
 ];

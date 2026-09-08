@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
 import '../../../core/network/api_exception.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -44,14 +43,18 @@ class _CardContent extends ConsumerWidget {
   final MemberCardData data;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
-    onRefresh: () async => ref.invalidate(memberCardProvider),
-    child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(Spacing.lg),
-      children: [_MemberCard(card: data.card, qrValue: data.card?.qrValue)],
-    ),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(memberCardProvider),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(Spacing.lg),
+        children: [
+          _MemberCard(card: data.card, qrValue: data.card?.qrValue),
+        ],
+      ),
+    );
+  }
 }
 
 class _MemberCard extends StatelessWidget {
@@ -283,8 +286,6 @@ class _CardSkeleton extends StatelessWidget {
     padding: const EdgeInsets.all(Spacing.lg),
     children: const [
       SkeletonBox(height: 460, radius: 28),
-      SizedBox(height: Spacing.xl),
-      SkeletonBox(height: 250, radius: 20),
     ],
   );
 }

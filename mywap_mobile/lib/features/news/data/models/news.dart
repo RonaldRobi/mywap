@@ -277,18 +277,26 @@ class ArticleMedia {
 }
 
 class Video {
-  const Video({this.id, this.title, this.youtubeId, this.thumbnailUrl});
+  const Video({
+    this.id,
+    this.title,
+    this.youtubeId,
+    this.thumbnailUrl,
+    this.isLive = false,
+  });
 
   final int? id;
   final String? title;
   final String? youtubeId;
   final String? thumbnailUrl;
+  final bool isLive;
 
   factory Video.fromJson(Map<String, dynamic> json) => Video(
         id: _int(json['id']),
         title: json['title'] as String?,
         youtubeId: json['youtube_id'] as String?,
         thumbnailUrl: json['thumbnail_url'] as String?,
+        isLive: json['is_live'] == true,
       );
 
   String get watchUrl =>

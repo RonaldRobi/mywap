@@ -102,6 +102,31 @@ class _FakeOrderRepository implements OrderRepository {
 
   @override
   Future<PayResult> pay(int orderId) async => payResult;
+
+  @override
+  Future<Order> receive(int orderId) async {
+    final current = detail?.order ??
+        (orderList.isNotEmpty ? orderList.first : null);
+    if (current == null) return const Order();
+    return Order(
+      id: current.id,
+      userId: current.userId,
+      organisasiId: current.organisasiId,
+      total: current.total,
+      postageCost: current.postageCost,
+      status: 'completed',
+      trackingNo: current.trackingNo,
+      shippingName: current.shippingName,
+      shippingAddress: current.shippingAddress,
+      shippingPostcode: current.shippingPostcode,
+      shippingPhone: current.shippingPhone,
+      courier: current.courier,
+      createdAt: current.createdAt,
+      updatedAt: current.updatedAt,
+      items: current.items,
+      payments: current.payments,
+    );
+  }
 }
 
 Product _product({

@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
@@ -44,6 +47,37 @@ class ProfileRepository {
   Future<ProfileUser> completeProfile(Map<String, dynamic> body) async {
     final data = await _api.post(ApiPaths.profileComplete, body: body);
     return ProfileUser.fromJson(_asMap(data));
+  }
+
+  /// `POST /profile/password` — change the account password.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _api.post(ApiPaths.profilePassword, body: {
+      'current_password': currentPassword,
+      'password': newPassword,
+      'password_confirmation': newPassword,
+    });
+  }
+
+  /// `DELETE /profile` — permanently delete the account (Play Store policy).
+  Future<void> deleteAccount(String password) async {
+    await _api.delete(ApiPaths.profile, body: {'password': password});
+  }
+
+  /// `POST /profile/photo` — upload a new profile photo (multipart).
+  Future<String?> uploadPhoto(File photo) async {
+    final fileName = photo.uri.pathSegments.isNotEmpty
+        ? photo.uri.pathSegments.last
+        : 'photo.jpg';
+    final formData = FormData.fromMap({
+      'photo': await MultipartFile.fromFile(photo.path, filename: fileName),
+    });
+    final data = await _api.post(ApiPaths.profilePhoto, body: formData);
+    final map = _asMap(data);
+    final url = map['photo_url'];
+    return url?.toString();
   }
 
   static Map<String, dynamic> _asMap(dynamic data) {

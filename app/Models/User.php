@@ -212,6 +212,27 @@ class User extends Authenticatable
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**
+     * Abilities untuk token Sanctum mobile.
+     *
+     * Semua token diberi ability asas 'member'; token bagi akaun dengan peranan
+     * pentadbir diberi ability tambahan 'admin' supaya route /admin/* boleh
+     * disekat di lapisan routing, bukan sahaja di dalam controller.
+     *
+     * NOTA: abilities ditentukan semasa token dikeluarkan. Jika peranan berubah
+     * selepas itu, pengguna perlu log masuk semula untuk token baharu.
+     */
+    public function apiTokenAbilities(): array
+    {
+        $abilities = ['member'];
+
+        if ($this->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+            $abilities[] = 'admin';
+        }
+
+        return $abilities;
+    }
+
+    /**
      * Compute age in full years from the stored DOB.
      */
     public function getAgeAttribute(): ?int

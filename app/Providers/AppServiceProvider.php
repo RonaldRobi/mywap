@@ -6,13 +6,19 @@ use App\Events\UserOrganizationTransitioned;
 use App\Listeners\LogTransitionAndNotify;
 use App\Models\AppSetting;
 use App\Models\EmailTemplate;
+use App\Models\Poll;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,9 +26,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerPollRouteBinding();
         $this->configureAppName();
         $this->configureMailFromSettings();
         $this->configurePasswordResetMail();
+        $this->registerApiRateLimiters();
 
         Vite::prefetch(concurrency: 3);
 
@@ -34,6 +42,36 @@ class AppServiceProvider extends ServiceProvider
             UserOrganizationTransitioned::class,
             LogTransitionAndNotify::class,
         );
+    }
+
+    private function registerPollRouteBinding(): void
+    {
+        // Polls can be shared cross-organization via target_type = 'all_orgs'
+        // (senarai member guna withoutGlobalScopes + klausa all_orgs). Bind mesti
+        // tanpa OrganizationScope supaya undian sebegitu boleh dibuka di API &
+        // web, DAN mesti didaftar di service provider — bukan dalam fail route —
+        // kerana route:cache (dijalankan deploy via optimize) membuang binders
+        // yang diisytihar dalam fail route.
+        Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
+    }
+
+    private function registerApiRateLimiters(): void
+    {
+        RateLimiter::for('api_account', function (Request $request) {
+            return Limit::perMinute(10)->by('api-account:'.$this->accountKey($request).'|'.$request->ip());
+        });
+    }
+
+    private function accountKey(Request $request): string
+    {
+        $raw = (string) $request->input('ic_number', $request->input('email', ''));
+        $normalized = Str::upper(preg_replace('/\s+/', '', trim($raw)) ?? '');
+
+        if ($normalized === '') {
+            return (string) $request->ip();
+        }
+
+        return Str::transliterate($normalized);
     }
 
     private function configurePasswordResetMail(): void

@@ -42,6 +42,28 @@ function updateStatus(bookingId, bookingStatus) {
         preserveScroll: true,
     });
 }
+
+function markPaid(bookingId) {
+    if (!window.confirm('Tandakan tempahan ini sebagai TELAH DIBAYAR?')) return;
+    useForm({}).patch(route('admin.facility-bookings.pay', bookingId), {
+        preserveScroll: true,
+    });
+}
+
+function statusChip(status) {
+    const map = {
+        pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700' },
+        approved: { label: 'Approved', cls: 'bg-emerald-100 text-emerald-700' },
+        rejected: { label: 'Rejected', cls: 'bg-red-100 text-red-700' },
+    };
+    return map[status] || { label: status || '-', cls: 'bg-gray-100 text-gray-600' };
+}
+
+function paymentChip(status) {
+    return status === 'paid'
+        ? { label: 'Dibayar', cls: 'bg-green-100 text-green-700' }
+        : { label: 'Belum bayar', cls: 'bg-gray-100 text-gray-500' };
+}
 </script>
 
 <template>
@@ -99,7 +121,8 @@ function updateStatus(bookingId, bookingStatus) {
                                 <th class="px-2 py-2">Mula</th>
                                 <th class="px-2 py-2">Tamat</th>
                                 <th class="px-2 py-2">Harga</th>
-                                <th class="px-2 py-2">Status</th>
+                                <th class="px-2 py-2">Kelulusan</th>
+                                <th class="px-2 py-2">Bayaran</th>
                                 <th class="px-2 py-2">Catatan Admin</th>
                                 <th class="px-2 py-2">Tindakan</th>
                             </tr>
@@ -119,7 +142,16 @@ function updateStatus(bookingId, bookingStatus) {
                                 <td class="px-2 py-2">{{ booking.start_datetime }}</td>
                                 <td class="px-2 py-2">{{ booking.end_datetime }}</td>
                                 <td class="px-2 py-2">RM {{ Number(booking.total_price).toFixed(2) }}</td>
-                                <td class="px-2 py-2 font-semibold">{{ booking.booking_status }}</td>
+                                <td class="px-2 py-2">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" :class="statusChip(booking.booking_status).cls">
+                                        {{ statusChip(booking.booking_status).label }}
+                                    </span>
+                                </td>
+                                <td class="px-2 py-2">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" :class="paymentChip(booking.payment_status).cls">
+                                        {{ paymentChip(booking.payment_status).label }}
+                                    </span>
+                                </td>
                                 <td class="px-2 py-2">
                                     <template v-if="booking.booking_status === 'pending'">
                                         <input
@@ -140,11 +172,18 @@ function updateStatus(bookingId, bookingStatus) {
                                             Reject
                                         </button>
                                     </div>
+                                    <button
+                                        v-else-if="booking.booking_status === 'approved' && booking.payment_status !== 'paid'"
+                                        @click="markPaid(booking.id)"
+                                        class="rounded-lg border border-green-600 bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                                    >
+                                        Tandakan Dibayar
+                                    </button>
                                     <span v-else class="text-xs text-gray-400">—</span>
                                 </td>
                             </tr>
                             <tr v-if="bookings.data.length === 0">
-                                <td colspan="10" class="px-2 py-4 text-gray-500">Tiada rekod tempahan ditemui.</td>
+                                <td colspan="11" class="px-2 py-4 text-gray-500">Tiada rekod tempahan ditemui.</td>
                             </tr>
                         </tbody>
                     </table>

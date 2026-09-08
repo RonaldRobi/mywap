@@ -27,8 +27,6 @@ class MenuScreen extends StatelessWidget {
     _MenuItem('Kemudahan', '/facilities', Icons.apartment, 'Tempah ruang & dewan'),
     _MenuItem('Usrah', '/usrah', Icons.groups_outlined, 'Kumpulan & jadual usrah'),
     _MenuItem('Undian', '/polls', Icons.how_to_vote_outlined, 'Undian & tinjauan'),
-    _MenuItem('Direktori', '/directory', Icons.contacts_outlined, 'Direktori ahli'),
-    _MenuItem('Chat', '/chat', Icons.chat_outlined, 'Perbualan & mesej'),
     _MenuItem('Notifikasi', '/notifications', Icons.notifications_outlined, 'Pemberitahuan anda'),
   ];
 

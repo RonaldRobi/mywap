@@ -15,6 +15,7 @@ import '../../member/presentation/widgets/notification_bell.dart';
 import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
+import 'widgets/booking_status_chips.dart';
 
 class FacilitiesScreen extends ConsumerWidget {
   const FacilitiesScreen({super.key});
@@ -30,10 +31,11 @@ class FacilitiesScreen extends ConsumerWidget {
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(
-        data: (data) => _FacilitiesBody(
-          data: data,
-          onRefresh: () async => ref.invalidate(facilitiesProvider),
-        ),
+        data:
+            (data) => _FacilitiesBody(
+              data: data,
+              onRefresh: () async => ref.invalidate(facilitiesProvider),
+            ),
         loading: () => const _FacilitiesSkeleton(),
         error:
             (error, _) => ErrorRetry(
@@ -59,40 +61,40 @@ class _FacilitiesBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: [
-        const SliverToBoxAdapter(child: _FacilitiesIntro()),
-        if (data.facilities.isEmpty)
-          const SliverToBoxAdapter(
-            child: EmptyState(
-              icon: Icons.apartment,
-              message: 'Tiada kemudahan buat masa ini.',
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          const SliverToBoxAdapter(child: _FacilitiesIntro()),
+          if (data.facilities.isEmpty)
+            const SliverToBoxAdapter(
+              child: EmptyState(
+                icon: Icons.apartment,
+                message: 'Tiada kemudahan buat masa ini.',
+              ),
+            )
+          else
+            SliverList.builder(
+              itemCount: data.facilities.length,
+              itemBuilder:
+                  (context, index) =>
+                      _FacilityCard(facility: data.facilities[index]),
             ),
-          )
-        else
-          SliverList.builder(
-            itemCount: data.facilities.length,
-            itemBuilder:
-                (context, index) =>
-                    _FacilityCard(facility: data.facilities[index]),
-          ),
-        const SliverToBoxAdapter(child: SectionHeader('Tempahan Saya')),
-        if (data.myBookings.isEmpty)
-          const SliverToBoxAdapter(
-            child: EmptyState(
-              icon: Icons.event_note_outlined,
-              message: 'Tiada tempahan buat masa ini.',
+          const SliverToBoxAdapter(child: SectionHeader('Tempahan Saya')),
+          if (data.myBookings.isEmpty)
+            const SliverToBoxAdapter(
+              child: EmptyState(
+                icon: Icons.event_note_outlined,
+                message: 'Tiada tempahan buat masa ini.',
+              ),
+            )
+          else
+            SliverList.builder(
+              itemCount: data.myBookings.length,
+              itemBuilder:
+                  (context, index) =>
+                      _MyBookingCard(booking: data.myBookings[index]),
             ),
-          )
-        else
-          SliverList.builder(
-            itemCount: data.myBookings.length,
-            itemBuilder:
-                (context, index) =>
-                    _MyBookingCard(booking: data.myBookings[index]),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: Spacing.xl)),
-      ],
+          const SliverToBoxAdapter(child: SizedBox(height: Spacing.xl)),
+        ],
       ),
     );
   }
@@ -135,9 +137,10 @@ class _FacilityCard extends StatelessWidget {
                   top: Spacing.md,
                   right: Spacing.md,
                   child: _FacilityTag(
-                    label: facility.type == 'daily'
-                        ? 'Harian'
-                        : facility.type == 'halfday'
+                    label:
+                        facility.type == 'daily'
+                            ? 'Harian'
+                            : facility.type == 'halfday'
                             ? 'Separuh Hari'
                             : 'Sejam',
                   ),
@@ -186,7 +189,11 @@ class _FacilityCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        ' / ${facility.type == 'daily' ? 'hari' : facility.type == 'halfday' ? 'separuh hari' : 'jam'}',
+                        ' / ${facility.type == 'daily'
+                            ? 'hari'
+                            : facility.type == 'halfday'
+                            ? 'separuh hari'
+                            : 'jam'}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -276,6 +283,7 @@ class _MyBookingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
@@ -283,7 +291,15 @@ class _MyBookingCard extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
-                _StatusChip(status: booking.bookingStatus),
+                const SizedBox(width: Spacing.sm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    BookingStatusChip(status: booking.bookingStatus),
+                    const SizedBox(height: 4),
+                    PaymentStatusChip(status: booking.paymentStatus),
+                  ],
+                ),
               ],
             ),
             if (booking.organizationName != null) ...[
@@ -305,45 +321,16 @@ class _MyBookingCard extends StatelessWidget {
                 color: AppColors.movementGreen,
               ),
             ),
+            if (booking.adminRemarks?.isNotEmpty == true) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(
+                'Catatan admin: ${booking.adminRemarks}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final String? status;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (status) {
-      'approved' => 'Diluluskan',
-      'rejected' => 'Ditolak',
-      'pending' => 'Menunggu',
-      _ => status ?? '-',
-    };
-    final color = switch (status) {
-      'approved' => AppColors.success,
-      'rejected' => AppColors.error,
-      'pending' => AppColors.warning,
-      _ => AppColors.textSecondary,
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
         ),
       ),
     );

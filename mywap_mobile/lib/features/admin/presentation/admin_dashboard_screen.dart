@@ -30,10 +30,14 @@ class AdminDashboardScreen extends ConsumerWidget {
       body: dashboardAsync.when(
         data: (data) => _DashboardContent(data: data),
         loading: () => const _DashboardSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(adminDashboardProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(adminDashboardProvider),
+            ),
       ),
     );
   }
@@ -54,6 +58,9 @@ class _DashboardContent extends ConsumerWidget {
           const SectionHeader('Pengurusan'),
           const _AdminActions(),
           const SizedBox(height: Spacing.sm),
+          const SectionHeader('Pengurusan Lanjutan'),
+          const _WebOnlyActions(),
+          const SizedBox(height: Spacing.sm),
           const SectionHeader('Ringkasan'),
           _StatRow(stats: data.stats),
           const SectionHeader('Hasil Bulanan'),
@@ -72,34 +79,38 @@ class _DashboardContent extends ConsumerWidget {
                 ),
               ),
             ),
-          SectionHeader('Aktiviti Terkini', trailing: _count(data.activities.length)),
+          SectionHeader(
+            'Aktiviti Terkini',
+            trailing: _count(data.activities.length),
+          ),
           if (data.activities.isEmpty)
             const Padding(
               padding: EdgeInsets.all(Spacing.xl),
               child: Center(child: Text('Tiada aktiviti terkini.')),
             )
           else
-            for (final activity in data.activities) _ActivityCard(activity: activity),
+            for (final activity in data.activities)
+              _ActivityCard(activity: activity),
         ],
       ),
     );
   }
 
   Widget _count(int count) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: AppColors.movementSoftGreen,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          '$count',
-          style: const TextStyle(
-            color: AppColors.movementNavy,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: AppColors.movementSoftGreen,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      '$count',
+      style: const TextStyle(
+        color: AppColors.movementNavy,
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+      ),
+    ),
+  );
 }
 
 class _AdminActions extends StatelessWidget {
@@ -163,6 +174,122 @@ class _Action {
   final String label;
   final String path;
   final IconData icon;
+}
+
+/// Fungsi pentadbiran yang hanya tersedia di versi web (PC/laptop) — sentuhan
+/// memaparkan dialog maklumat, bukan navigasi.
+class _WebOnlyActions extends StatelessWidget {
+  const _WebOnlyActions();
+
+  static const _actions = [
+    _WebAction('Urus Program', Icons.event_note),
+    _WebAction('Urus Yuran', Icons.payments_outlined),
+    _WebAction('Kewangan', Icons.account_balance_wallet_outlined),
+    _WebAction('Transaksi', Icons.receipt_long_outlined),
+    _WebAction('Borang', Icons.assignment_outlined),
+    _WebAction('Undian', Icons.how_to_vote_outlined),
+    _WebAction('Berita & Artikel', Icons.newspaper_outlined),
+    _WebAction('Pengumuman', Icons.campaign_outlined),
+    _WebAction('Fasiliti', Icons.apartment_outlined),
+    _WebAction('Cawangan', Icons.account_tree_outlined),
+    _WebAction('Jawatan', Icons.badge_outlined),
+    _WebAction('Export Ahli', Icons.download_outlined),
+    _WebAction('Penderma', Icons.volunteer_activism_outlined),
+    _WebAction('Tukar Cawangan', Icons.swap_horiz_outlined),
+  ];
+
+  void _showWebOnlyNotice(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Fungsi Versi Web'),
+          content: const Text(
+            'Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisExtent: 64,
+          mainAxisSpacing: Spacing.sm,
+          crossAxisSpacing: Spacing.sm,
+        ),
+        itemCount: _actions.length,
+        itemBuilder: (context, index) {
+          final action = _actions[index];
+          return _WebOnlyAction(
+            label: action.label,
+            icon: action.icon,
+            onTap: () => _showWebOnlyNotice(context),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _WebAction {
+  const _WebAction(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class _WebOnlyAction extends StatelessWidget {
+  const _WebOnlyAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.movementGreen, size: 24),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StatRow extends StatelessWidget {
@@ -238,12 +365,16 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: Spacing.sm),
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(color: AppColors.white),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: AppColors.white,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textOnDark),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textOnDark,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -287,9 +418,15 @@ class _RevenueChart extends StatelessWidget {
           gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -340,7 +477,10 @@ class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.sm),
+      margin: const EdgeInsets.symmetric(
+        horizontal: Spacing.lg,
+        vertical: Spacing.sm,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(Spacing.lg),
         child: Row(
@@ -352,15 +492,21 @@ class _ActivityCard extends StatelessWidget {
                 color: AppColors.movementSoftGreen,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.campaign_outlined, color: AppColors.movementNavy, size: 20),
+              child: const Icon(
+                Icons.campaign_outlined,
+                color: AppColors.movementNavy,
+                size: 20,
+              ),
             ),
             const SizedBox(width: Spacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(activity.title.isEmpty ? 'Aktiviti' : activity.title,
-                      style: theme.textTheme.titleSmall),
+                  Text(
+                    activity.title.isEmpty ? 'Aktiviti' : activity.title,
+                    style: theme.textTheme.titleSmall,
+                  ),
                   if (activity.description.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(

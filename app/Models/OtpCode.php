@@ -14,6 +14,7 @@ class OtpCode extends Model
         'purpose',
         'expires_at',
         'used_at',
+        'attempts',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class OtpCode extends Model
         return [
             'expires_at' => 'datetime',
             'used_at' => 'datetime',
+            'attempts' => 'integer',
         ];
     }
 

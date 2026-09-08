@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facility;
 use App\Models\FacilityBooking;
 use App\Models\Organization;
+use App\Services\FacilityBookingNotifier;
 use App\Services\FacilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -378,7 +379,39 @@ class FacilityBookingController extends Controller
             'admin_remarks' => $data['admin_remarks'] ?? null,
         ]);
 
+        app(FacilityBookingNotifier::class)
+            ->notifyOwnerStatusChanged($facilityBooking, $data['booking_status']);
+
         return back()->with('success', 'Status tempahan berjaya dikemas kini.');
+    }
+
+    public function markPaid(Request $request, FacilityBooking $facilityBooking): RedirectResponse
+    {
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+
+        if (! $request->user()->hasRole('Superadmin')) {
+            abort_if(
+                (int) $facilityBooking->facility?->organization_id !== (int) $request->user()->current_organization_id,
+                403
+            );
+        }
+
+        if ($facilityBooking->booking_status !== 'approved') {
+            return back()->withErrors([
+                'payment_status' => 'Hanya tempahan yang diluluskan boleh ditanda sebagai dibayar.',
+            ]);
+        }
+
+        if ($facilityBooking->payment_status === 'paid') {
+            return back()->with('info', 'Bayaran tempahan ini sudah direkodkan.');
+        }
+
+        $facilityBooking->update(['payment_status' => 'paid']);
+
+        app(FacilityBookingNotifier::class)
+            ->notifyOwnerPaymentRecorded($facilityBooking);
+
+        return back()->with('success', 'Bayaran direkodkan sebagai telah dibayar.');
     }
 
     private function resolveOrganizationId($user, ?int $submittedOrganizationId): int

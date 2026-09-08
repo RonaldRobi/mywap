@@ -192,7 +192,7 @@ class FacilityService
         $contactName = ($data['contact_name'] ?? null) ?: $user?->name;
         $contactPhone = ($data['contact_phone'] ?? null) ?: $user?->phone;
 
-        return FacilityBooking::create([
+        $booking = FacilityBooking::create([
             'facility_id' => $facility->id,
             'user_id' => $user?->id,
             'contact_name' => $contactName,
@@ -203,6 +203,11 @@ class FacilityService
             'booking_status' => 'pending',
             'payment_status' => 'unpaid',
         ]);
+
+        // Beritahu pentadbir organisasi: tempahan baharu perlu disemak.
+        app(FacilityBookingNotifier::class)->notifyAdminsOfNewBooking($booking);
+
+        return $booking;
     }
 
     /**

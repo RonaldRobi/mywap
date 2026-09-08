@@ -17,6 +17,16 @@ class MemberCoreRepository {
     return MemberCardData.fromJson((data as Map<String, dynamic>?) ?? {});
   }
 
+  /// Signed (temporary) URL for the membership confirmation letter PDF.
+  Future<String?> letterUrl() async {
+    final data = await _api.get(ApiPaths.memberCardLetter);
+    if (data is Map<String, dynamic>) {
+      final url = data['url'];
+      return url?.toString();
+    }
+    return null;
+  }
+
   Future<List<Announcement>> announcements() async {
     final data = await _api.get(ApiPaths.memberAnnouncements);
     return _parseList(data, Announcement.fromJson);

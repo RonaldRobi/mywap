@@ -84,14 +84,23 @@ class PaymentHistoryItem {
     this.amount,
     this.status,
     this.created_at,
+    this.reference,
+    this.description,
+    this.gateway,
+    this.channel,
   });
 
-  factory PaymentHistoryItem.fromJson(Map<String, dynamic> json) => PaymentHistoryItem(
+  factory PaymentHistoryItem.fromJson(Map<String, dynamic> json) =>
+      PaymentHistoryItem(
         id: (json['id'] as num?)?.toInt(),
         payable_type: json['payable_type'] as String?,
         amount: (json['amount'] as num?)?.toDouble(),
         status: json['status'] as String?,
         created_at: json['created_at'] as String?,
+        reference: json['reference'] as String?,
+        description: json['description'] as String?,
+        gateway: json['gateway'] as String?,
+        channel: json['channel'] as String?,
       );
 
   final int? id;
@@ -99,6 +108,10 @@ class PaymentHistoryItem {
   final double? amount;
   final String? status;
   final String? created_at;
+  final String? reference;
+  final String? description;
+  final String? gateway;
+  final String? channel;
 
   bool get isSuccessful => status == 'successful';
 }

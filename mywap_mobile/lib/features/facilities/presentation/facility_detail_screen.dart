@@ -5,7 +5,6 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
@@ -13,6 +12,8 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import 'facility_booking_sheet.dart';
+import 'widgets/booking_status_chips.dart';
+import 'widgets/facility_gallery.dart';
 
 class FacilityDetailScreen extends ConsumerWidget {
   const FacilityDetailScreen({super.key, required this.facilityId});
@@ -77,12 +78,10 @@ class _DetailContent extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               children: [
-                AppImage(
-                  facility?.imageUrl,
-                  height: 220,
-                  width: double.infinity,
-                  borderRadius: BorderRadius.zero,
-                ),
+                if (facility != null)
+                  FacilityGallery(facility: facility)
+                else
+                  const SizedBox(height: 220),
                 Padding(
                   padding: const EdgeInsets.all(Spacing.xl),
                   child: Column(
@@ -166,13 +165,74 @@ class _MyBookingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final start = _formatDateTime(booking.startDatetime);
+    final end = _formatDateTime(booking.endDatetime);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: Spacing.sm),
-      child: ListTile(
-        leading: const Icon(Icons.schedule, color: AppColors.movementGreen),
-        title: Text(start ?? '-'),
-        subtitle: Text(booking.bookingStatus ?? '-'),
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.schedule, color: AppColors.movementGreen),
+                const SizedBox(width: Spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        start ?? '-',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (end != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'hingga $end',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: Spacing.sm),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    BookingStatusChip(status: booking.bookingStatus),
+                    const SizedBox(height: 4),
+                    PaymentStatusChip(status: booking.paymentStatus),
+                  ],
+                ),
+              ],
+            ),
+            if (booking.totalPrice != null) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(
+                'Jumlah: ${Formatters.currency(booking.totalPrice)}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppColors.movementGreen,
+                ),
+              ),
+            ],
+            if (booking.adminRemarks?.isNotEmpty == true) ...[
+              const SizedBox(height: Spacing.xs),
+              Text(
+                'Catatan admin: ${booking.adminRemarks}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

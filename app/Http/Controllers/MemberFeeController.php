@@ -12,6 +12,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\AdminService;
 use App\Services\FeeService;
+use App\Services\ReceiptService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -75,31 +76,28 @@ class MemberFeeController extends Controller
         return response()->json(['data' => $logs]);
     }
 
-    public function downloadReceipt(Request $request, Payment $payment)
+    public function downloadReceipt(Request $request, Payment $payment, ReceiptService $receipts)
     {
         $user = $request->user();
         if (! $user->hasRole(['Superadmin', 'Admin'])) {
             abort(403);
         }
 
-        $payment->loadMissing('user.organization');
-        $member = $payment->user;
-        $this->authorizeOrg($user, $member);
-
-        $fee = MembershipFee::where('payment_id', $payment->id)->first();
-        if (! $fee) {
+        if ($payment->status !== 'successful') {
             abort(404);
         }
 
-        $pdf = Pdf::loadView('exports.receipt', [
-            'payment' => $payment,
-            'fee' => $fee,
-            'member' => $member,
-        ]);
+        $payment->loadMissing('user.organization');
 
-        $filename = 'resit-yuran-'.$fee->year.'-'.($member->member_no ?? $member->id).'.pdf';
+        // Yuran sentiasa ada pemilik (user). Untuk kes lain (contoh pesanan
+        // tetamu) hanya Superadmin yang boleh muat turun terus dari sini.
+        if ($payment->user && ! $user->hasRole('Superadmin')) {
+            $this->authorizeOrg($user, $payment->user);
+        } elseif (! $payment->user && ! $user->hasRole('Superadmin')) {
+            abort(403);
+        }
 
-        return $pdf->download($filename);
+        return $receipts->pdf($payment)->download($receipts->filename($payment));
     }
 
     public function feeDetail(Request $request, User $targetUser, MembershipFee $membershipFee): JsonResponse

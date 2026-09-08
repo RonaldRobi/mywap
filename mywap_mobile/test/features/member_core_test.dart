@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mywap_mobile/core/network/api_client.dart';
 import 'package:mywap_mobile/core/storage/token_storage.dart';
 import 'package:mywap_mobile/features/member/application/member_core_providers.dart';
+import 'package:mywap_mobile/features/member/data/library_file_service.dart';
 import 'package:mywap_mobile/features/member/data/member_core_repository.dart';
 import 'package:mywap_mobile/features/member/data/models/announcement.dart';
 import 'package:mywap_mobile/features/member/data/models/fee_status.dart';
@@ -13,6 +17,7 @@ import 'package:mywap_mobile/features/member/data/models/library_item.dart';
 import 'package:mywap_mobile/features/member/data/models/member_card_data.dart';
 import 'package:mywap_mobile/features/member/presentation/announcements_screen.dart';
 import 'package:mywap_mobile/features/member/presentation/fee_status_screen.dart';
+import 'package:mywap_mobile/features/member/presentation/library_reader_screen.dart';
 import 'package:mywap_mobile/features/member/presentation/library_screen.dart';
 import 'package:mywap_mobile/features/member/presentation/member_card_screen.dart';
 
@@ -204,7 +209,10 @@ void main() {
     expect(find.text('Butiran pekeliling penuh.'), findsOneWidget);
   });
 
-  testWidgets('LibraryScreen renders library items', (tester) async {
+  testWidgets('LibraryScreen renders book cards with Baca & favourite', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
     final items = [
       const LibraryItem(
         id: 1,
@@ -226,7 +234,96 @@ void main() {
 
     expect(find.text('Pustaka'), findsOneWidget);
     expect(find.text('Buku Panduan Keahlian'), findsOneWidget);
-    expect(find.text('Dokumen'), findsOneWidget);
+    expect(find.text('Baca'), findsOneWidget);
+    expect(find.text('Semua (1)'), findsOneWidget);
+    expect(find.text('Kegemaran (0)'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    expect(find.textContaining('/storage/'), findsNothing);
+  });
+
+  testWidgets('LibraryScreen favourite toggle updates Kegemaran filter', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'pustaka_favourites_v1': ['1'],
+    });
+    final items = [
+      const LibraryItem(
+        id: 1,
+        title: 'Buku Pertama',
+        category: 'Kitab',
+        cover_image_path: '',
+        file_path: '/storage/files/one.pdf',
+      ),
+      const LibraryItem(
+        id: 2,
+        title: 'Buku Kedua',
+        category: 'Kitab',
+        cover_image_path: '',
+        file_path: '/storage/files/two.pdf',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [memberLibraryProvider.overrideWith((ref) async => items)],
+        child: const MaterialApp(home: LibraryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buku Pertama'), findsOneWidget);
+    expect(find.text('Buku Kedua'), findsOneWidget);
+    expect(find.text('Kegemaran (1)'), findsOneWidget);
+
+    await tester.tap(find.text('Kegemaran (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Buku Pertama'), findsOneWidget);
+    expect(find.text('Buku Kedua'), findsNothing);
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+  });
+
+  testWidgets('LibraryScreen Baca opens in-app reader without showing URL', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final dir = Directory.systemTemp.createTempSync('pustaka_reader_test');
+    addTearDown(() => dir.delete(recursive: true));
+    File('${dir.path}/pustaka/1.pdf')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('bukan pdf sebenar');
+
+    final service = LibraryFileService(baseDirectory: dir);
+    const item = LibraryItem(
+      id: 1,
+      title: 'Buku Panduan Keahlian',
+      description: 'Panduan lengkap untuk ahli.',
+      category: 'Dokumen',
+      cover_image_path: '',
+      file_path: '/storage/files/guide.pdf',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          memberLibraryProvider.overrideWith((ref) async => [item]),
+          libraryFileServiceProvider.overrideWithValue(service),
+        ],
+        child: const MaterialApp(home: LibraryScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Baca'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Baca'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byType(LibraryReaderScreen), findsOneWidget);
+    expect(find.text('Buku Panduan Keahlian'), findsOneWidget);
+    expect(find.textContaining('/storage/'), findsNothing);
   });
 
   testWidgets('FeeStatusScreen shows due state with amount', (tester) async {

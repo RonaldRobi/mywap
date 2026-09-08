@@ -9,6 +9,11 @@ use Carbon\Carbon;
 
 class OtpService
 {
+    /**
+     * Bilangan maksimum tekaan salah sebelum OTP dibatalkan (mengelak brute force).
+     */
+    public const MAX_ATTEMPTS = 5;
+
     public function generate(User $user, string $purpose = 'login'): OtpCode
     {
         $this->invalidatePrevious($user, $purpose);
@@ -20,6 +25,7 @@ class OtpService
             'code' => $code,
             'purpose' => $purpose,
             'expires_at' => Carbon::now()->addMinutes(5),
+            'attempts' => 0,
         ]);
 
         return $otp;
@@ -38,13 +44,24 @@ class OtpService
     {
         $otp = OtpCode::query()
             ->where('user_id', $user->id)
-            ->where('code', $code)
             ->where('purpose', $purpose)
             ->valid()
             ->latest()
             ->first();
 
         if (! $otp) {
+            return false;
+        }
+
+        if (! hash_equals((string) $otp->code, (string) $code)) {
+            $otp->increment('attempts');
+
+            // Selepas cukup banyak tekaan salah, bakar kod itu supaya percubaan
+            // selanjutnya tidak boleh diteruskan sehingga OTP baharu dihantar.
+            if ($otp->attempts >= self::MAX_ATTEMPTS) {
+                $otp->update(['used_at' => now()]);
+            }
+
             return false;
         }
 

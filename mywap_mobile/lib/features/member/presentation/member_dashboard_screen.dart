@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +86,7 @@ class _DashboardContent extends ConsumerWidget {
                 const SizedBox(height: Spacing.sm),
                 const _ShortcutsGrid(),
                 const SizedBox(height: Spacing.sm),
-                _MembershipCard(member: member, feeStatus: data.fee_status),
+                _MembershipCard(member: member),
                 if (data.next_event != null) ...[
                   const SizedBox(height: Spacing.xl),
                   _NextEvent(event: data.next_event!),
@@ -450,14 +452,30 @@ class _ShortcutTile extends StatelessWidget {
 }
 
 class _MembershipCard extends StatelessWidget {
-  const _MembershipCard({required this.member, required this.feeStatus});
+  const _MembershipCard({required this.member});
   final DashboardMember? member;
-  final Map<String, dynamic>? feeStatus;
+
+  String? get _logoUrl {
+    final orgLogo = member?.organization?.logo_path;
+    if (orgLogo?.isNotEmpty == true) return orgLogo;
+    final systemLogo = member?.system_logo_path;
+    return (systemLogo?.isNotEmpty == true) ? systemLogo : null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final active = feeStatus?['status']?.toString() == 'active';
+    final org = member?.organization;
+    final orgName = org?.name;
+    final since = member?.member_since;
+    final sinceSuffix = since?.isNotEmpty == true ? since! : '-';
+    final sinceText =
+        (orgName?.isNotEmpty == true)
+            ? 'Ahli $orgName sejak $sinceSuffix'
+            : 'Ahli sejak $sinceSuffix';
+    final branch = member?.branch_name;
+
     return Container(
-      padding: const EdgeInsets.all(Spacing.xl),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -471,111 +489,114 @@ class _MembershipCard extends StatelessWidget {
         borderRadius: AppRadius.hero,
         boxShadow: AppShadows.floating,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.workspace_premium_outlined,
-                color: AppColors.white,
-                size: 20,
-              ),
-              const SizedBox(width: Spacing.sm),
-              Text(
-                'KAD AHLI · myWAP',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.textOnDark,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-              const Spacer(),
-              Icon(
-                Icons.circle,
-                size: 12,
-                color: active ? AppColors.movementSoftGreen : AppColors.warning,
-              ),
-            ],
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(painter: _IslamicPatternPainter()),
+            ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: Spacing.md),
-            child: Divider(color: Color(0x33FFFFFF)),
-          ),
-          Row(
-            children: [
-              ClipRRect(
-                borderRadius: AppRadius.md,
-                child: AppImage(
-                  member?.photo_url,
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(width: Spacing.md),
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _OrgLogoBadge(url: _logoUrl),
+                const SizedBox(height: Spacing.lg),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      member?.name ?? 'Ahli myWAP',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
+                    ClipRRect(
+                      borderRadius: AppRadius.md,
+                      child: AppImage(
+                        member?.photo_url,
+                        width: 76,
+                        height: 76,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: Spacing.xs),
-                    Text(
-                      'Ahli sejak ${member?.member_since ?? '-'}',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textOnDark,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: Spacing.xs),
-                    Text(
-                      member?.member_no ?? 'No. ahli belum tersedia',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.movementSoftGreen,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: Spacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            member?.name ?? 'Ahli',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
+                              color: AppColors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Text(
+                            sinceText,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: .72),
+                              fontSize: 11,
+                              height: 1.3,
+                            ),
+                          ),
+                          if (branch?.isNotEmpty == true) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Cawangan $branch',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelMedium?.copyWith(
+                                color: Colors.white.withValues(alpha: .72),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: Spacing.sm),
+                          Text(
+                            member?.member_no ?? '-',
+                            style: const TextStyle(
+                              color: AppColors.movementSoftGreen,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Spacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: _CardStat(
-                  label: 'CAWANGAN AHLI',
-                  value: member?.branch_name ?? '-',
+                const SizedBox(height: Spacing.xs),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/card'),
+                    icon: const Icon(Icons.chevron_right_rounded, size: 14),
+                    label: const Text('Lihat Kad Penuh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white.withValues(alpha: .78),
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: Spacing.sm),
-              Expanded(
-                child: _CardStat(
-                  label: 'STATUS',
-                  value: active ? 'AKTIF' : 'SEMAK YURAN',
-                ),
-              ),
-            ],
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.push('/card'),
-              child: const Text(
-                'Lihat Kad Penuh',
-                style: TextStyle(color: AppColors.white),
-              ),
+              ],
             ),
           ),
         ],
@@ -584,42 +605,77 @@ class _MembershipCard extends StatelessWidget {
   }
 }
 
-class _CardStat extends StatelessWidget {
-  const _CardStat({required this.label, required this.value});
-  final String label;
-  final String value;
+class _OrgLogoBadge extends StatelessWidget {
+  const _OrgLogoBadge({required this.url});
+  final String? url;
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(Spacing.sm),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .1),
-      borderRadius: AppRadius.md,
-      border: Border.all(color: Colors.white.withValues(alpha: .12)),
-    ),
-    child: Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0x99FFFFFF),
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child:
+            url?.isNotEmpty == true
+                ? AppImage(url, fit: BoxFit.contain)
+                : const Icon(
+                  Icons.groups_2_rounded,
+                  color: AppColors.movementGreen,
+                  size: 22,
+                ),
+      ),
+    );
+  }
+}
+
+/// Subtle seamless islamic geometric lattice painted behind card content.
+class _IslamicPatternPainter extends CustomPainter {
+  const _IslamicPatternPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.6
+          ..color = Colors.white.withValues(alpha: 0.055);
+
+    const spacing = 92.0;
+    final side = spacing / math.sqrt2;
+
+    for (double x = -spacing; x < size.width + spacing; x += spacing) {
+      for (double y = -spacing; y < size.height + spacing; y += spacing) {
+        _square(canvas, Offset(x, y), side, 0, paint);
+        _square(canvas, Offset(x, y), side, math.pi / 4, paint);
+      }
+    }
+  }
+
+  void _square(
+    Canvas canvas,
+    Offset center,
+    double side,
+    double angle,
+    Paint paint,
+  ) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+    canvas.drawRect(
+      Rect.fromCenter(center: Offset.zero, width: side, height: side),
+      paint,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _IslamicPatternPainter oldDelegate) => false;
 }
 
 class _EventCard extends StatelessWidget {

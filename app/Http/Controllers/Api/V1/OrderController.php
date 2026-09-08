@@ -58,4 +58,26 @@ class OrderController extends Controller
             'payment_url' => $result['payment_url'] ?? null,
         ]);
     }
+
+    /**
+     * Tandai pesanan sendiri sebagai diterima ('shipped' → 'completed').
+     * Admin tidak boleh menanda received bagi pihak pembeli — hanya pemilik
+     * order. (Admin guna dashboard web untuk kemaskini status/hantar.)
+     */
+    public function receive(Request $request, Order $order): JsonResponse
+    {
+        $this->authorize('view', $order);
+
+        if ($order->user_id !== $request->user()->id) {
+            return ApiResponse::error('Tiada kebenaran.', [], 403);
+        }
+
+        $result = $this->orders->markReceived($order);
+
+        if ($result['status'] === 'error') {
+            return ApiResponse::error($result['message'], [], 422);
+        }
+
+        return ApiResponse::success($this->orders->serialize($result['order']));
+    }
 }

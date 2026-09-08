@@ -36,6 +36,7 @@ class RegistrationController extends Controller
 {
     public function __construct(
         protected PaymentGatewayManager $gateways,
+        protected RegistrationService $registrations,
     ) {}
 
     // ─── MEMBER: Daftar Event ─────────────────────────────────────────────────
@@ -95,9 +96,11 @@ class RegistrationController extends Controller
 
         abort_if($event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
 
-        $data = $this->validatePayload($request, $form);
+        $data = $request->validate($this->registrations->validationRules($form));
 
-        return $this->processRegistration($form, $event, $data, $user);
+        $result = $this->registrations->submitForEvent($form, $event, $data, $user);
+
+        return $this->registrationSubmitResponse($result);
     }
 
     // ─── BUKAN AHLI: Daftar via borang public ─────────────────────────────────
@@ -160,134 +163,32 @@ class RegistrationController extends Controller
         abort_unless($form->event, 404, 'Event tidak dijumpai.');
         abort_if($form->event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
 
-        $data = $this->validatePayload($request, $form);
+        $data = $request->validate($this->registrations->validationRules($form));
 
-        return $this->processRegistration($form, $form->event, $data, null);
+        $result = $this->registrations->submitForEvent($form, $form->event, $data, null);
+
+        return $this->registrationSubmitResponse($result);
     }
 
     // ─── Core processing ───────────────────────────────────────────────────────
 
     /**
-     * Cipta Registration + FormResponse + FormAnswers, dan proses bayaran
-     * jika borang mewajibkan bayaran.
+     * Peta hasil kongsi (RegistrationService::submitForEvent) kepada respons
+     * Inertia — redirect ke gateway untuk bayaran, atau ke halaman berjaya.
      */
-    protected function processRegistration(Form $form, Event $event, array $data, ?User $user): \Symfony\Component\HttpFoundation\Response
+    protected function registrationSubmitResponse(array $result): \Symfony\Component\HttpFoundation\Response
     {
-        $participant = $this->mapAnswersToParticipant($form, $data['answers'] ?? []);
+        $registration = $result['registration'];
 
-        $ticketType = $data['ticket_type'] ?? null;
-        $amount = $form->hasTiers()
-            ? ($form->priceForTier($ticketType) ?: 0)
-            : (float) $form->price;
-        $documentPath = ! empty($data['document'])
-            ? $data['document']->store('registration-documents', 'public')
-            : null;
-
-        $registration = DB::transaction(function () use ($form, $event, $data, $user, $participant, $ticketType, $documentPath) {
-            $registration = Registration::create([
-                'event_id' => $event->id,
-                'form_id' => $form->id,
-                'user_id' => $user?->id,
-                'organization_id' => $user?->current_organization_id
-                    ?? $form->organization_id,
-                'member_no' => $user?->member_no,
-                // Ahli: profil adalah sumber maklumat, jawapan borang mengatasi jika ada.
-                // Bukan ahli: semuanya daripada jawapan borang.
-                'name' => $participant['name'] ?: ($user?->name ?? 'Peserta'),
-                'email' => $participant['email'] ?: $user?->email,
-                'phone' => $participant['phone'] ?: $user?->phone,
-                'ic_number' => $participant['ic_number'] ?: $user?->ic_number,
-                'ticket_type' => $ticketType,
-                'document_path' => $documentPath,
-                // Berbayar: tunggu pengesahan bayaran (pending). Percuma: disahkan terus.
-                'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
-            ]);
-
-            $response = FormResponse::create([
-                'form_id' => $form->id,
-                'user_id' => $user?->id,
-                'respondent_name' => $registration->name,
-                'respondent_email' => $registration->email,
-                'respondent_phone' => $registration->phone,
-                'submitted_at' => now(),
-            ]);
-
-            foreach ($data['answers'] as $questionId => $value) {
-                $question = $form->questions->firstWhere('id', (int) $questionId);
-                $stored = $this->storeAnswerValue($question, $value);
-
-                FormAnswer::create([
-                    'form_response_id' => $response->id,
-                    'form_question_id' => $questionId,
-                    'value' => $stored,
-                ]);
-            }
-
-            return $registration;
-        });
-
-        // Jika borang tidak mewajibkan bayaran, terus disahkan + hantar emel.
-        if (! $form->payment_required || ! $amount || $amount <= 0) {
-            $registration->confirmAndNotify();
-
-            return redirect()->route('registrations.success', $registration)
-                ->with('success', 'Pendaftaran berjaya! No Pendaftaran: '.$registration->registration_no);
+        if ($result['status'] === 'redirect') {
+            return Inertia::location($result['payment_url']);
         }
 
-        return $this->initiatePayment($registration, $form, $event, $data['payment_method'] ?? 'fpx', $amount);
-    }
+        $flash = $result['status'] === 'success'
+            ? ['success' => $result['message'] ?? 'Pendaftaran berjaya!']
+            : ['error' => $result['message'] ?? 'Pembayaran gagal diproses. Sila cuba lagi.'];
 
-    /**
-     * Cipta Payment dan redirect ke gateway (atau tandakan berjaya dalam mod dummy).
-     */
-    protected function initiatePayment(Registration $registration, Form $form, Event $event, string $paymentMethod = 'fpx', ?float $amount = null): \Symfony\Component\HttpFoundation\Response
-    {
-        $org = $form->organization
-            ?? ($event->organization_id ? $event->organization : null);
-
-        $useGateway = $org ? $this->gateways->isLive($org) : false;
-
-        $payment = $registration->payments()->create([
-            'user_id' => $registration->user_id,
-            'amount' => $amount ?? (float) $form->price,
-            'status' => $useGateway ? 'pending' : 'successful',
-            'reference' => $useGateway ? 'REG-'.strtoupper(Str::random(8)) : 'DUMMY-'.strtoupper(Str::random(8)),
-            'description' => 'Pendaftaran: '.$event->title,
-            'gateway' => $org ? $this->gateways->gatewayFor($org) : 'dummy',
-            'organization_id' => $org?->id,
-            'channel' => $paymentMethod,
-        ]);
-
-        // Jejak rujukan pembayaran dalam session supaya gateway redirect balik
-        // (tanpa invoice_number) boleh kenal pasti pendaftaran pengguna ini.
-        session(['last_payment_reference' => $payment->reference]);
-
-        if ($useGateway && $org) {
-            $url = $this->gateways->createPaymentRedirect(
-                $org,
-                $payment,
-                $registration->name,
-                $registration->email ?: ($registration->name.'@mywap.my'),
-                $registration->phone,
-                'Pendaftaran: '.$event->title,
-                $paymentMethod,
-            );
-
-            if ($url) {
-                return Inertia::location($url);
-            }
-
-            $payment->update(['status' => 'failed']);
-
-            return redirect()->route('registrations.success', $registration)
-                ->with('error', 'Pembayaran gagal diproses. Sila cuba lagi.');
-        }
-
-        // Mod dummy (tiada gateway dikonfigurasi): anggap berjaya + hantar emel.
-        $registration->confirmAndNotify();
-
-        return redirect()->route('registrations.success', $registration)
-            ->with('success', 'Pendaftaran berjaya! No Pendaftaran: '.$registration->registration_no);
+        return redirect()->route('registrations.success', $registration)->with($flash);
     }
 
     // ─── Halaman Berjaya ───────────────────────────────────────────────────────
@@ -452,120 +353,6 @@ class RegistrationController extends Controller
             ?? ($event->organization_id ? $event->organization : null);
 
         return $this->gateways->branding($org);
-    }
-
-    protected function validatePayload(Request $request, Form $form): array
-    {
-        $rules = [
-            'answers' => ['required', 'array'],
-            'payment_method' => ['nullable', 'in:fpx,duitnow_qr'],
-            'ticket_type' => ['nullable', 'string', 'max:255'],
-            'document' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:5120'],
-        ];
-
-        foreach ($form->questions as $q) {
-            $key = "answers.{$q->id}";
-            $rule = $q->required ? ['required'] : ['nullable'];
-
-            if ($q->type === 'file') {
-                $rule[] = 'file';
-                $rule[] = 'mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip';
-                $rule[] = 'max:10240';
-            } elseif (in_array($q->type, ['email'])) {
-                $rule[] = 'email';
-            } elseif (in_array($q->type, ['number'])) {
-                $rule[] = 'numeric';
-            } elseif (in_array($q->type, ['phone'])) {
-                $rule[] = 'string';
-                $rule[] = 'max:50';
-            } elseif (in_array($q->type, ['date'])) {
-                $rule[] = 'date';
-            }
-
-            $rules[$key] = $rule;
-        }
-
-        $data = $request->validate($rules);
-
-        // Penguatkuasaan tier: kategori wajib sah + dokumen jika diperlukan.
-        if ($form->payment_required && $form->hasTiers()) {
-            $ticketType = $data['ticket_type'] ?? null;
-
-            if (! $ticketType || ! $form->tierByLabel($ticketType)) {
-                throw ValidationException::withMessages([
-                    'ticket_type' => 'Sila pilih kategori yuran yang sah.',
-                ]);
-            }
-
-            if ($form->tierRequiresDocument($ticketType) && empty($data['document'])) {
-                throw ValidationException::withMessages([
-                    'document' => 'Sila muat naik dokumen sokongan (cth. kad pelajar).',
-                ]);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Petakan jawapan borang kepada maklumat peserta (nama/emel/telefon/IC).
-     * Form Builder ialah single source of truth — tiada field peserta auto.
-     * Pengenalpastian berdasarkan jenis field & label (nama, telefon, IC, emel).
-     *
-     * @return array{name: string|null, email: string|null, phone: string|null, ic_number: string|null}
-     */
-    protected function mapAnswersToParticipant(Form $form, array $answers): array
-    {
-        $result = ['name' => null, 'email' => null, 'phone' => null, 'ic_number' => null];
-
-        foreach ($form->questions as $q) {
-            $value = $answers[$q->id] ?? null;
-
-            if ($value === null || $value === '' || is_array($value)) {
-                continue;
-            }
-
-            $value = trim((string) $value);
-            $label = strtolower($q->label);
-
-            if ($q->type === 'email') {
-                $result['email'] = $value;
-
-                continue;
-            }
-
-            if ($q->type === 'phone' || str_contains($label, 'telefon') || str_contains($label, 'phone') || str_contains($label, 'whatsapp')) {
-                $result['phone'] ??= $value;
-
-                continue;
-            }
-
-            if (str_contains($label, 'kad pengenalan') || str_contains($label, 'no ic') || str_contains($label, 'ic number') || str_contains($label, 'nric')) {
-                $result['ic_number'] ??= $value;
-
-                continue;
-            }
-
-            // Fallback: text/textarea pertama dianggap sebagai nama.
-            if (in_array($q->type, ['text', 'textarea'], true) && $result['name'] === null) {
-                $result['name'] = $value;
-            }
-        }
-
-        return $result;
-    }
-
-    protected function storeAnswerValue(?FormQuestion $question, mixed $value): string
-    {
-        if ($question && $question->type === 'file' && $value instanceof UploadedFile) {
-            return $value->store('form-uploads', 'public');
-        }
-
-        if (is_array($value)) {
-            return implode(', ', $value);
-        }
-
-        return (string) $value;
     }
 
     protected function serialize(Registration $r): array

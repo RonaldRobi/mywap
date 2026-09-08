@@ -157,6 +157,32 @@ class _OrderCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (order.status == 'shipped' &&
+                  order.trackingNo != null &&
+                  order.trackingNo!.trim().isNotEmpty) ...[
+                const SizedBox(height: Spacing.sm),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.local_shipping_outlined,
+                      size: 16,
+                      color: AppColors.movementGreen,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Parcel telah dihantar — sentuh untuk Track & Terima',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

@@ -20,9 +20,15 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        // Keselamatan: bila kata laluan ditukar, tarik balik semua token API
+        // (peranti mobile) supaya token lama yang terlepas tidak kekal sah.
+        $user->tokens()->delete();
 
         return back();
     }

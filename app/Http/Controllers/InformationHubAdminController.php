@@ -546,7 +546,7 @@ class InformationHubAdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
-            'pdf_file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'pdf_file' => ['required', 'file', 'mimes:pdf', 'max:5120'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
         ]);
 
@@ -662,7 +662,7 @@ class InformationHubAdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
-            'pdf_file' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'pdf_file' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
         ]);
 

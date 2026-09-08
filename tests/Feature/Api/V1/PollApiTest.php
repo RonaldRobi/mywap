@@ -208,4 +208,30 @@ class PollApiTest extends TestCase
 
         $this->getJson("/api/v1/polls/{$poll->id}/results")->assertStatus(403);
     }
+
+    public function test_member_can_open_all_orgs_poll_owned_by_another_org(): void
+    {
+        $poll = $this->makePoll($this->otherOrg->id, ['target_type' => 'all_orgs']);
+
+        Sanctum::actingAs($this->member);
+
+        // Regresi: senarai member memaparkan undian all_orgs dari org lain,
+        // jadi detail/results mesti tidak 404 (binder route-model mesti skip
+        // OrganizationScope — didaftar di service provider, bukan fail route,
+        // supaya kekal selepas route:cache di deploy).
+        $this->getJson("/api/v1/polls/{$poll->id}")
+            ->assertOk()
+            ->assertJsonPath('data.poll.id', $poll->id);
+
+        $this->getJson("/api/v1/polls/{$poll->id}/results")->assertOk();
+    }
+
+    public function test_foreign_org_poll_not_all_orgs_returns_403(): void
+    {
+        $poll = $this->makePoll($this->otherOrg->id, ['target_type' => 'all']);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson("/api/v1/polls/{$poll->id}")->assertStatus(403);
+    }
 }

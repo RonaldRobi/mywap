@@ -9,4 +9,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/complete', [ProfileController::class, 'storeComplete']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::get('/profile/edit-meta', [ProfileController::class, 'editMeta']);
+    Route::post('/profile/password', [ProfileController::class, 'password']);
+    Route::post('/profile/photo', [ProfileController::class, 'photo']);
+    Route::delete('/profile', [ProfileController::class, 'destroy']);
 });

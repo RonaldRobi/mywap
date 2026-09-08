@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\V1\AdminController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'api_admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
     Route::get('/admin/members', [AdminController::class, 'members']);
     Route::get('/admin/fees', [AdminController::class, 'fees']);
