@@ -52,6 +52,35 @@ function closeDropdown() {
 onMounted(() => document.addEventListener('click', closeDropdown));
 onUnmounted(() => document.removeEventListener('click', closeDropdown));
 
+// ─── Export Menu ────────────────────────────────────────────────────────────
+
+const showExportMenu = ref(false);
+const exportType = ref('simple');
+const exportOrgId = ref('');
+
+function toggleExportMenu() {
+    showExportMenu.value = !showExportMenu.value;
+}
+
+function closeExportMenu() {
+    showExportMenu.value = false;
+}
+
+function exportUrl() {
+    const params = { type: exportType.value };
+    if (props.isSuperadmin && exportOrgId.value) {
+        params.organization_id = exportOrgId.value;
+    }
+    return route('admin.members.export', params);
+}
+
+function closeExportMenuOnClick() {
+    showExportMenu.value = false;
+}
+
+onMounted(() => document.addEventListener('click', closeExportMenuOnClick));
+onUnmounted(() => document.removeEventListener('click', closeExportMenuOnClick));
+
 // Activity Log state
 const activityLogs = ref([]);
 const loadingLogs = ref(false);
@@ -660,13 +689,70 @@ async function finishImport() {
                     <p class="text-sm font-medium text-gray-500 mt-1">Urus keahlian, organisasi, dan peranan sistem.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <a
-                        :href="route('admin.members.export')"
-                        class="inline-flex items-center gap-2 rounded-2xl bg-white border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all hover:-translate-y-0.5"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Export CSV
-                    </a>
+                    <div class="relative" @click.stop>
+                        <button
+                            type="button"
+                            @click="toggleExportMenu"
+                            class="inline-flex items-center gap-2 rounded-2xl bg-white border border-gray-200 px-5 py-2.5 text-sm font-bold text-gray-600 shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all hover:-translate-y-0.5"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Export CSV
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <transition
+                            enter-active-class="transition duration-150 ease-out"
+                            enter-from-class="opacity-0 scale-95"
+                            enter-to-class="opacity-100 scale-100"
+                            leave-active-class="transition duration-100 ease-in"
+                            leave-from-class="opacity-100 scale-100"
+                            leave-to-class="opacity-0 scale-95"
+                        >
+                            <div v-if="showExportMenu" class="absolute right-0 z-30 mt-2 w-72 origin-top-right rounded-2xl border border-gray-100 bg-white p-4 shadow-xl shadow-gray-200/60">
+                                <p class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">Jenis Data</p>
+                                <div class="grid grid-cols-2 gap-2 mb-4">
+                                    <button
+                                        type="button"
+                                        @click="exportType = 'simple'"
+                                        class="rounded-xl border px-3 py-2 text-xs font-bold transition-all"
+                                        :class="exportType === 'simple' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                    >
+                                        Ringkas
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="exportType = 'full'"
+                                        class="rounded-xl border px-3 py-2 text-xs font-bold transition-all"
+                                        :class="exportType === 'full' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                                    >
+                                        Penuh (Alamat)
+                                    </button>
+                                </div>
+
+                                <div v-if="isSuperadmin" class="mb-4">
+                                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Organisasi</label>
+                                    <div class="relative">
+                                        <select v-model="exportOrgId" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                            <option value="">Semua Organisasi</option>
+                                            <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+                                        </select>
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <a
+                                    :href="exportUrl()"
+                                    @click="closeExportMenu"
+                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-all"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Muat Turun CSV
+                                </a>
+                            </div>
+                        </transition>
+                    </div>
                     <button
                         v-if="isSuperadmin"
                         @click="triggerExcelImport"

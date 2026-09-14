@@ -19,6 +19,9 @@ sealed class DashboardMember with _$DashboardMember {
     String? photo_url,
     String? member_since,
     String? member_no,
+    String? state,
+    String? dob,
+    String? qr_value,
     String? system_logo_path,
     Organization? organization,
   }) = _DashboardMember;

@@ -351,6 +351,11 @@ class MemberDashboardService
                 'photo_url' => $user->profile_photo_path,
                 'member_since' => optional($user->created_at)->format('M Y'),
                 'member_no' => $user->member_no,
+                'state' => $user->state,
+                'dob' => optional($user->dob)->format('d M Y'),
+                'qr_value' => $user->member_no
+                    ? route('public.card', ['memberNo' => $user->member_no])
+                    : route('member.card'),
                 'system_logo_path' => $this->normalizeStorageUrl($setting?->system_logo_path),
                 'organization' => [
                     'name' => $user->organization?->name,
