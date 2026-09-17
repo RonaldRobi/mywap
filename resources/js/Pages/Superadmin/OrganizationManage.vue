@@ -276,14 +276,17 @@ function updateOrganizationLogo(organization) {
                                 <div>
                                     <label class="mb-1 block text-xs font-semibold text-gray-500">API Token</label>
                                     <input v-model="editForms[organization.id].bayarcash_api_token" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Personal Access Token">
+                                    <p v-if="editForms[organization.id].errors.bayarcash_api_token" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.bayarcash_api_token }}</p>
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-xs font-semibold text-gray-500">Portal Key</label>
                                     <input v-model="editForms[organization.id].bayarcash_portal_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="Portal key dari BayarCash console">
+                                    <p v-if="editForms[organization.id].errors.bayarcash_portal_key" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.bayarcash_portal_key }}</p>
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-xs font-semibold text-gray-500">Secret Key</label>
                                     <input v-model="editForms[organization.id].bayarcash_secret_key" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="API Secret Key untuk checksum">
+                                    <p v-if="editForms[organization.id].errors.bayarcash_secret_key" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.bayarcash_secret_key }}</p>
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-xs font-semibold text-gray-500">Environment</label>
@@ -449,7 +452,7 @@ function updateOrganizationLogo(organization) {
                                 </div>
 
                                 <!-- Add form -->
-                                <form @submit.prevent="submitAddChart(organization)" class="space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                                <div class="space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
                                     <p class="text-xs font-bold text-gray-600">Tambah Ahli Baharu</p>
                                     <input v-model="chartAddForms[organization.id].name" type="text" placeholder="Nama" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
                                     <p v-if="chartAddForms[organization.id].errors.name" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.name }}</p>
@@ -459,10 +462,10 @@ function updateOrganizationLogo(organization) {
                                     <p v-if="chartAddForms[organization.id].errors.email" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.email }}</p>
                                     <input type="file" accept="image/jpeg,image/png,image/webp" @change="chartAddForms[organization.id].image = $event.target.files[0]" class="w-full text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700">
                                     <p v-if="chartAddForms[organization.id].errors.image" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.image }}</p>
-                                    <button type="submit" :disabled="chartAddForms[organization.id].processing" class="w-full rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
+                                    <button type="button" @click="submitAddChart(organization)" :disabled="chartAddForms[organization.id].processing" class="w-full rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
                                         {{ chartAddForms[organization.id].processing ? 'Menyimpan...' : 'Tambah' }}
                                     </button>
-                                </form>
+                                </div>
                             </div>
                         </details>
 
