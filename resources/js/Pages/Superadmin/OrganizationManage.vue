@@ -454,9 +454,9 @@ function updateOrganizationLogo(organization) {
                                 <!-- Add form -->
                                 <div class="space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
                                     <p class="text-xs font-bold text-gray-600">Tambah Ahli Baharu</p>
-                                    <input v-model="chartAddForms[organization.id].name" type="text" placeholder="Nama" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                    <input v-model="chartAddForms[organization.id].name" type="text" placeholder="Nama" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
                                     <p v-if="chartAddForms[organization.id].errors.name" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.name }}</p>
-                                    <input v-model="chartAddForms[organization.id].position" type="text" placeholder="Jawatan" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
+                                    <input v-model="chartAddForms[organization.id].position" type="text" placeholder="Jawatan" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
                                     <p v-if="chartAddForms[organization.id].errors.position" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.position }}</p>
                                     <input v-model="chartAddForms[organization.id].email" type="email" placeholder="Emel (mailto)" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-emerald-400 focus:ring-0">
                                     <p v-if="chartAddForms[organization.id].errors.email" class="text-xs text-red-500">{{ chartAddForms[organization.id].errors.email }}</p>
