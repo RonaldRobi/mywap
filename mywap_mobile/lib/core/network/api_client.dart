@@ -6,9 +6,10 @@ import '../storage/token_storage.dart';
 
 /// Thin Dio wrapper shared by all repositories.
 ///
-/// Base URL: `API_BASE_URL` from dart-define (Android emulator default
-/// `http://10.0.2.2:8000` → host loopback). `/api/v1` is appended here so
-/// repositories only deal with [ApiPaths]-style paths.
+/// Base URL: `API_BASE_URL` from dart-define, defaulting to production
+/// (`https://mywap.my`). For local development pass
+/// `--dart-define=API_BASE_URL=http://10.0.2.2:8000`. `/api/v1` is appended
+/// here so repositories only deal with [ApiPaths]-style paths.
 class ApiClient {
   ApiClient(this.tokenStorage, {Dio? dio})
       : _dio = dio ??

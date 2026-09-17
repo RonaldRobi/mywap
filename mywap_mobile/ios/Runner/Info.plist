@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>mywap_mobile</string>
+	<string>myWAP</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,6 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
@@ -52,6 +56,10 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Kamera digunakan untuk mengimbas kod QR dan kad ahli.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Galeri foto digunakan untuk memuat naik gambar profil dan bukti pembayaran.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Galeri foto digunakan untuk menyimpan gambar seperti kad ahli dan resit.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID digunakan untuk log masuk pantas dan selamat ke akaun myWAP anda.</string>
 </dict>

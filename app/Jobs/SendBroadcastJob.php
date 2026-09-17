@@ -119,7 +119,7 @@ class SendBroadcastJob implements ShouldQueue
                     ['type' => 'broadcast', 'broadcast_message_id' => $message->id]
                 );
 
-                $this->log($message, 'fcm_sent', 'in_app', null, "{$tokenCount} token peranti dihantar.");
+                $this->log($message, 'fcm_sent', 'in_app', null, "{$tokenCount} token peranti berjaya dihantar (FCM).");
             } elseif ($wantInApp) {
                 $this->log($message, 'fcm_skipped', 'in_app', null, 'Tiada token peranti didaftarkan.');
             }

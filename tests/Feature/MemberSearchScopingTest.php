@@ -121,4 +121,41 @@ class MemberSearchScopingTest extends TestCase
         $this->assertContains($this->memberPkpim->id, $ids);
         $this->assertContains($this->memberAbim->id, $ids);
     }
+
+    public function test_search_matches_names_with_non_breaking_spaces(): void
+    {
+        // Nama import Excel/legacy (Windows-1252) kerap menyimpan non-breaking
+        // space (0xA0) antara perkataan — carian "Ahmad Firdaus" (ruang biasa)
+        // mesti tetap padan dengan "Ahmad\u{00A0}Firdaus".
+        $memberNbsp = User::factory()->create([
+            'name' => "Ahmad\u{00A0}Firdaus",
+            'member_no' => 'P099998',
+            'current_organization_id' => $this->pkpim->id,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'web')
+            ->get('/api/members/search?q='.urlencode('Ahmad Firdaus'));
+
+        $response->assertOk();
+
+        $ids = collect($response->json())->pluck('id')->all();
+        $this->assertContains($memberNbsp->id, $ids);
+    }
+
+    public function test_search_matches_names_with_multiple_spaces(): void
+    {
+        $memberDoubleSpace = User::factory()->create([
+            'name' => 'Siti  Fatimah',
+            'member_no' => 'P099997',
+            'current_organization_id' => $this->pkpim->id,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'web')
+            ->get('/api/members/search?q='.urlencode('Siti Fatimah'));
+
+        $response->assertOk();
+
+        $ids = collect($response->json())->pluck('id')->all();
+        $this->assertContains($memberDoubleSpace->id, $ids);
+    }
 }

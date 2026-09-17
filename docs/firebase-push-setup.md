@@ -63,16 +63,49 @@ Bagi aku:
 
 ---
 
-## ⬜ BELUM SET: APNs Auth Key (iOS — BLOCKER sebelum build iOS)
+## iOS / APNs Setup (lengkap)
 
-Apple Developer account belum didaftar. Sebelum build iOS, kena:
+Tanpa APNs auth key, FCM iOS gagal dengan ralat "APNs auth key not found".
+Ikut 4 bahagian ni mengikut turutan.
 
-1. Daftar Apple Developer account (`developer.apple.com`)
-2. Buat **APNs Auth Key** (`.p8`) di Apple Developer → Certificates, Identifiers & Profiles
-3. Upload `.p8` ke **Firebase Console → mywap-f6b01 → Project settings ⚙️ → Cloud Messaging → Apple app configuration**
-4. Pastikan `Runner.entitlements` `aps-environment` = `production` untuk TestFlight/App Store (dev build OK dengan `development`)
+### A. Apple Developer Portal (`developer.apple.com`)
 
-Tanpa ini, FCM iOS akan gagal dengan ralat "APNs auth key not found".
+1. **Certificates, Identifiers & Profiles → Identifiers** → pilih App ID
+   `com.mywap.mywapMobile` → **Edit** → tick **Push Notifications** → **Save**.
+2. **Keys → +** (Create a key):
+   - Key Name: `myWAP APNs`
+   - Tick **Apple Push Notifications service (APNs)** → **Configure** → pilih
+     bundle `com.mywap.mywapMobile` → **Save** → **Continue** → **Register**.
+   - **Download** fail `.p8` (hanya boleh download SEKALI). Simpan selamat.
+   - Catat: **Key ID** = `BBF86G2X7L` dan **Team ID** = `BW4B5LCN9S`.
+3. **JANGAN commit `.p8` ke git.** Satu key sah untuk semua app dalam team.
+
+### B. Firebase Console
+
+1. Buka project **mywap-f6b01** → **⚙️ Project settings → Cloud Messaging**.
+2. Bawah **Apple app configuration** → **APNs Authentication Key** → **Upload**.
+3. Upload `.p8`, isi **Key ID** `BBF86G2X7L` + **Team ID** `BW4B5LCN9S` → **Upload**.
+4. Pastikan status menunjukkan key tersebut. Kalau ada APNs *certificate* lama,
+   padamkannya — auth key ambil keutamaan.
+
+### C. Xcode / projek iOS (SUDAH DIBUAT)
+
+- `Runner.entitlements` → `aps-environment` ✅ (biarkan `development` —
+  Xcode auto-tukar ke `production` bila archive/TestFlight berdasarkan
+  provisioning profile; rujuk Apple docs "APS Environment Entitlement").
+- `Info.plist` → `UIBackgroundModes` = `remote-notification` ✅
+- `project.pbxproj` → SystemCapabilities `com.apple.Push` +
+  `com.apple.BackgroundModes` ✅
+- Signing: automatic, Team `BW4B5LCN9S` (cyberocket) ✅
+
+### D. Test
+
+- Guna **iPhone fizikal** (simulator tidak terima APNs push biasa).
+- `flutter run -d <device-id>` → build development → sandbox APNs.
+- Benarkan prompt kebenaran notifikasi.
+- Uji hantar dari **Firebase Console → Messaging → Create campaign → Send
+  test message** → masukkan FCM token peranti.
+- TestFlight / App Store = production APNs (Xcode uruskan entitlement).
 
 ## Build & test selepas API key masuk
 

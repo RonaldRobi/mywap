@@ -69,11 +69,8 @@ class PushNotificationService
 
     /**
      * Hantar push kepada semua token peranti untuk satu senarai user
-     * (terima User model ataupun id). Query token di-chunk oleh sendToTokens.
-     */
-    /**
-     * Hantar push kepada semua token peranti untuk satu senarai user
-     * (terima User model ataupun id). Pulangkan bilangan token cuba dihantar.
+     * (terima User model ataupun id). Pulangkan bilangan token yang BERJAYA
+     * diterima FCM (bukan bilangan token cubaan).
      */
     public function sendToUsers(iterable $users, string $title, string $body, array $data = []): int
     {
@@ -90,9 +87,7 @@ class PushNotificationService
             ->pluck('token')
             ->all();
 
-        $this->sendToTokens($tokens, $title, $body, $data);
-
-        return count($tokens);
+        return $this->sendToTokens($tokens, $title, $body, $data);
     }
 
     public function sendToUser(User $user, string $title, string $body, array $data = []): int
@@ -116,58 +111,59 @@ class PushNotificationService
     /**
      * Hantar push sebenar. Pilih FCM v1 (service account) dahulu, jatuh
      * kepada legacy HTTP API sebagai fallback. No-op bila kedua-dua kosong.
+     * Pulangkan bilangan token yang BERJAYA diterima FCM (bukan bilangan cubaan).
      */
-    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): void
+    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): int
     {
         if (empty($tokens)) {
-            return;
+            return 0;
         }
 
         $serviceAccountPath = (string) config('services.fcm.service_account', '');
         $serverKey = (string) config('services.fcm.server_key', '');
 
         if ($serviceAccountPath !== '' && is_file($serviceAccountPath)) {
-            $this->sendViaHttpV1($tokens, $title, $body, $data, $serviceAccountPath);
-
-            return;
+            return $this->sendViaHttpV1($tokens, $title, $body, $data, $serviceAccountPath);
         }
 
         if ($serverKey !== '') {
-            $this->sendViaLegacy($tokens, $title, $body, $data, $serverKey);
-
-            return;
+            return $this->sendViaLegacy($tokens, $title, $body, $data, $serverKey);
         }
 
         Log::info('PushNotificationService: no FCM credential configured, skipping send.', [
             'token_count' => count($tokens),
             'title' => $title,
         ]);
+
+        return 0;
     }
 
     /**
      * Hantar melalui FCM HTTP v1 (satu mesej setiap token). Service account
      * membekalkan OAuth2 token yang sah untuk menghantar push.
      */
-    private function sendViaHttpV1(array $tokens, string $title, string $body, array $data, string $serviceAccountPath): void
+    private function sendViaHttpV1(array $tokens, string $title, string $body, array $data, string $serviceAccountPath): int
     {
         $projectId = $this->serviceAccountProjectId($serviceAccountPath);
         if ($projectId === '') {
             Log::error('PushNotificationService: invalid service account file.', ['path' => $serviceAccountPath]);
 
-            return;
+            return 0;
         }
 
         $accessToken = $this->getAccessToken($serviceAccountPath);
         if ($accessToken === null) {
             Log::error('PushNotificationService: failed to obtain OAuth2 access token.');
 
-            return;
+            return 0;
         }
 
         // Normalize data values to string (FCM v1 memerlukan string).
         $data = collect($data)
             ->map(fn ($value) => is_scalar($value) ? (string) $value : $value)
             ->all();
+
+        $success = 0;
 
         foreach ($tokens as $token) {
             $payload = [
@@ -186,11 +182,25 @@ class PushNotificationService
                     ->post(sprintf(self::FCM_V1_ENDPOINT, $projectId), $payload);
 
                 if ($response->failed()) {
+                    $errorCode = $response->json('error.details.0.errorCode')
+                        ?? $response->json('error.status')
+                        ?? null;
+
                     Log::error('PushNotificationService: FCM v1 send failed.', [
                         'token' => substr($token, 0, 12).'...',
                         'status' => $response->status(),
+                        'error_code' => $errorCode,
                         'error' => $response->json('error.message') ?? $response->body(),
                     ]);
+
+                    // Buang token yang sudah tidak sah (device uninstall / app
+                    // data dikosongkan) supaya siaran seterusnya tidak cuba
+                    // menghantar ke token mati berulang kali.
+                    if (in_array($errorCode, ['UNREGISTERED', 'NOT_FOUND', 'INVALID_ARGUMENT'], true)) {
+                        DeviceToken::where('token', $token)->delete();
+                    }
+                } else {
+                    $success++;
                 }
             } catch (\Throwable $e) {
                 Log::error('PushNotificationService: FCM v1 exception.', [
@@ -198,12 +208,14 @@ class PushNotificationService
                 ]);
             }
         }
+
+        return $success;
     }
 
     /**
      * Hantar melalui FCM legacy HTTP API (batch 500 token). Fallback sahaja.
      */
-    private function sendViaLegacy(array $tokens, string $title, string $body, array $data, string $serverKey): void
+    private function sendViaLegacy(array $tokens, string $title, string $body, array $data, string $serverKey): int
     {
         $payload = [
             'notification' => [
@@ -215,18 +227,43 @@ class PushNotificationService
                 ->all(),
         ];
 
+        $success = 0;
+
         foreach (array_chunk($tokens, self::BATCH_SIZE) as $chunk) {
             try {
-                Http::withHeaders([
+                $response = Http::withHeaders([
                     'Authorization' => 'key='.$serverKey,
                     'Content-Type' => 'application/json',
                 ])->post(self::FCM_LEGACY_ENDPOINT, $payload + ['registration_ids' => $chunk]);
+
+                if ($response->failed()) {
+                    Log::error('PushNotificationService: FCM legacy send failed.', [
+                        'status' => $response->status(),
+                        'error' => $response->body(),
+                    ]);
+
+                    continue;
+                }
+
+                $result = $response->json();
+                $success += (int) ($result['success'] ?? 0);
+
+                foreach (($result['results'] ?? []) as $index => $item) {
+                    if (isset($item['error']) && in_array($item['error'], ['NotRegistered', 'InvalidRegistration'], true)) {
+                        $token = $chunk[$index] ?? null;
+                        if ($token) {
+                            DeviceToken::where('token', $token)->delete();
+                        }
+                    }
+                }
             } catch (\Throwable $e) {
                 Log::error('PushNotificationService: FCM legacy send failed.', [
                     'error' => $e->getMessage(),
                 ]);
             }
         }
+
+        return $success;
     }
 
     /**

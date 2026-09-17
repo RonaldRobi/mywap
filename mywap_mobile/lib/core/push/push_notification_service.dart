@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../constants/api_paths.dart';
 import '../network/api_client.dart';
@@ -22,6 +23,7 @@ class PushNotificationService {
   static bool initialized = false;
 
   FirebaseMessaging? _messaging;
+  FlutterLocalNotificationsPlugin? _localNotifications;
   String? _lastToken;
 
   /// Callback untuk notifikasi foreground (paparkan SnackBar di UI).
@@ -43,6 +45,13 @@ class PushNotificationService {
     try {
       await Firebase.initializeApp(options: options);
       _messaging = FirebaseMessaging.instance;
+      await _initLocalNotifications();
+
+      // Tandakan initialized seawal mungkin supaya registerToken() di bawah
+      // (dan onTokenRefresh) benar-benar menghantar token ke backend. Sebelum
+      // ini flag hanya ditetapkan selepas keseluruhan init() selesai, jadi
+      // token pertama TIDAK pernah didaftarkan — punca push tak sampai.
+      initialized = true;
 
       await _messaging!.requestPermission();
       final token = await _messaging!.getToken();
@@ -57,19 +66,86 @@ class PushNotificationService {
       );
       final initial = await _messaging!.getInitialMessage();
       if (initial != null) _handleTap(initial);
-
-      initialized = true;
     } catch (_) {
       initialized = false;
     }
   }
 
   void _handleForeground(RemoteMessage message) {
+    final title = message.notification?.title ?? message.data['title'] ?? '';
+    final body = message.notification?.body ?? message.data['body'] ?? '';
+    _showLocalNotification(title, body, _payload(message));
     onMessage?.call(_payload(message));
   }
 
   void _handleTap(RemoteMessage message) {
     onMessageTap?.call(_payload(message));
+  }
+
+  /// Sediakan flutter_local_notifications supaya mesej FCM yang diterima
+  /// semasa app di latar hadapan (foreground) tetap muncul sebagai banner di
+  /// notification bar — bukan sekadar SnackBar. Gagal senyap (null) supaya
+  /// tidak menjejaskan aliran utama.
+  Future<void> _initLocalNotifications() async {
+    try {
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwin = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const settings = InitializationSettings(android: android, iOS: darwin);
+
+      _localNotifications = FlutterLocalNotificationsPlugin();
+      await _localNotifications!.initialize(
+        settings,
+        onDidReceiveNotificationResponse: (response) {
+          final payload = response.payload;
+          if (payload != null && payload.isNotEmpty) {
+            onMessageTap?.call(payload);
+          }
+        },
+      );
+    } catch (_) {
+      _localNotifications = null;
+    }
+  }
+
+  /// Papar notifikasi tempatan (banner) untuk mesej foreground.
+  Future<void> _showLocalNotification(
+    String title,
+    String body,
+    String payload,
+  ) async {
+    final plugin = _localNotifications;
+    if (plugin == null) return;
+
+    try {
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'mywap_notifications',
+          'Notifikasi myWAP',
+          channelDescription: 'Notifikasi push daripada myWAP',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBanner: true,
+          presentSound: true,
+        ),
+      );
+
+      await plugin.show(
+        DateTime.now().millisecondsSinceEpoch % 0x7fffffff,
+        title.isNotEmpty ? title : 'myWAP',
+        body,
+        details,
+        payload: payload,
+      );
+    } catch (_) {
+      // Abaikan kegagalan paparan banner foreground.
+    }
   }
 
   /// Bina payload JSON ringkas (data + judul/kandungan) supaya UI dapat
@@ -81,10 +157,9 @@ class PushNotificationService {
     return jsonEncode(data);
   }
 
-  /// Daftar token FCM ke backend. Tidak buat apa-apa jika tidak initialized
-  /// atau token kosong.
+  /// Daftar token FCM ke backend. Tidak buat apa-apa jika token kosong.
   Future<void> registerToken(String? token) async {
-    if (token == null || token.isEmpty || !initialized) return;
+    if (token == null || token.isEmpty) return;
 
     _lastToken = token;
     try {

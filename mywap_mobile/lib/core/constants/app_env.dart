@@ -1,10 +1,15 @@
 /// Resolves API/storage host — same base used by [ApiClient] but without the
 /// `/api/v1` suffix, since uploaded media (`/storage/...`) is served directly
 /// by Laravel, not under the API prefix.
+///
+/// Defaults to the production host so release builds always talk to
+/// `https://mywap.my` even without a `--dart-define`. For local development
+/// override it explicitly, e.g. Android emulator:
+/// `flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000`.
 abstract final class AppEnv {
   static const String apiHost = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'https://mywap.my',
   );
 
   /// Turns a backend-relative path into a fully-qualified URL the device can
