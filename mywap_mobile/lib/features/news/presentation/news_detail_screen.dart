@@ -37,12 +37,6 @@ class NewsDetailScreen extends ConsumerWidget {
                 ref.invalidate(newsDetailProvider(newsId));
                 ref.invalidate(newsListProvider);
               },
-              onComment: (content) async {
-                await ref
-                    .read(newsRepositoryProvider)
-                    .commentNews(newsId, content);
-                ref.invalidate(newsDetailProvider(newsId));
-              },
               onRefresh: () async => ref.invalidate(newsDetailProvider(newsId)),
             ),
         loading: () => const _DetailSkeleton(),
@@ -63,13 +57,11 @@ class _NewsDetailBody extends StatelessWidget {
   const _NewsDetailBody({
     required this.detail,
     required this.onReaction,
-    required this.onComment,
     required this.onRefresh,
   });
 
   final NewsDetail detail;
   final Future<void> Function(String reaction) onReaction;
-  final Future<void> Function(String content) onComment;
   final Future<void> Function() onRefresh;
 
   @override
@@ -142,8 +134,6 @@ class _NewsDetailBody extends StatelessWidget {
             onLike: () => onReaction('like'),
             onDislike: () => onReaction('dislike'),
           ),
-          const Divider(height: Spacing.xl * 2),
-          CommentSection(comments: detail.comments, onSubmit: onComment),
         ],
       ),
     );

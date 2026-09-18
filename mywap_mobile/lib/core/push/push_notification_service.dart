@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
@@ -53,11 +54,20 @@ class PushNotificationService {
       // token pertama TIDAK pernah didaftarkan — punca push tak sampai.
       initialized = true;
 
-      await _messaging!.requestPermission();
-      final token = await _messaging!.getToken();
-      await registerToken(token);
+      unawaited(_reportDiagnostic('firebase_ok', extra: {
+        'apps': Firebase.apps.map((a) => a.name).toList(),
+      }));
 
+      // Pasang listener token SEBELUM meminta token. Di iOS token FCM boleh
+      // dijana lewat (selepas APNs token tersedia) — listener awal memastikan
+      // token yang tiba lewat tidak terlepas.
       _messaging!.onTokenRefresh.listen((newToken) => registerToken(newToken));
+
+      await _messaging!.requestPermission();
+
+      // Daftar token semasa (dengan tunggu + cuba semula untuk iOS).
+      unawaited(_registerCurrentToken());
+
       FirebaseMessaging.onMessage.listen(
         (message) => _handleForeground(message),
       );
@@ -66,8 +76,87 @@ class PushNotificationService {
       );
       final initial = await _messaging!.getInitialMessage();
       if (initial != null) _handleTap(initial);
-    } catch (_) {
+    } catch (e) {
       initialized = false;
+      unawaited(_reportDiagnostic('init_error', extra: {'error': e.toString()}));
+    }
+  }
+
+  /// Hantar diagnostik ringkas ke backend (log server) untuk menyiasat isu
+  /// pendaftaran token. Gagal senyap — tidak pernah menjejaskan app.
+  Future<void> _reportDiagnostic(
+    String stage, {
+    Map<String, dynamic>? extra,
+  }) async {
+    try {
+      await _api.post(
+        ApiPaths.pushDebug,
+        body: {
+          'stage': stage,
+          'platform': _platformName,
+          ...?extra,
+        },
+      );
+    } catch (_) {
+      // Abaikan.
+    }
+  }
+
+  /// Dapatkan token FCM dan daftarkan ke backend. Di iOS, `getToken()` boleh
+  /// memulangkan null selagi APNs token belum tersedia — jadi tunggu APNs
+  /// token dahulu dan cuba semula (sehingga ~16s) sebelum menyerah.
+  Future<void> _registerCurrentToken() async {
+    final messaging = _messaging;
+    if (messaging == null) return;
+
+    String? apnsPrefix;
+    String? tokenPrefix;
+    String? lastError;
+
+    for (var attempt = 0; attempt < 8; attempt++) {
+      try {
+        if (_isIOS) {
+          final apns = await messaging.getAPNSToken();
+          apnsPrefix = _prefix(apns);
+          if (apns == null || apns.isEmpty) {
+            await Future<void>.delayed(const Duration(seconds: 2));
+            continue;
+          }
+        }
+
+        final token = await messaging.getToken();
+        tokenPrefix = _prefix(token);
+        if (token != null && token.isNotEmpty) {
+          await registerToken(token);
+          unawaited(_reportDiagnostic('token_ok', extra: {
+            'apns': apnsPrefix,
+            'fcm': tokenPrefix,
+            'attempt': attempt + 1,
+          }));
+          return;
+        }
+      } catch (e) {
+        lastError = e.toString();
+      }
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+
+    unawaited(_reportDiagnostic('token_failed', extra: {
+      'apns': apnsPrefix,
+      'fcm': tokenPrefix,
+      'error': lastError,
+    }));
+  }
+
+  String? _prefix(String? value) =>
+      (value == null || value.isEmpty) ? null : value.substring(0, 12);
+
+  bool get _isIOS {
+    try {
+      return Platform.isIOS;
+    } catch (_) {
+      return false;
     }
   }
 

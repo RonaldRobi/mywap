@@ -159,17 +159,6 @@ class _NewsCard extends StatelessWidget {
                         '${post.likesCount}',
                         style: theme.textTheme.bodySmall,
                       ),
-                      const SizedBox(width: Spacing.md),
-                      const Icon(
-                        Icons.comment_outlined,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.commentsCount}',
-                        style: theme.textTheme.bodySmall,
-                      ),
                     ],
                   ),
                 ],

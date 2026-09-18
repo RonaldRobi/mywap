@@ -20,6 +20,8 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
+        // Diperlukan oleh flutter_local_notifications (java.time APIs).
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -35,6 +37,7 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     signingConfigs {
@@ -61,4 +64,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Diperlukan oleh flutter_local_notifications (core library desugaring).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

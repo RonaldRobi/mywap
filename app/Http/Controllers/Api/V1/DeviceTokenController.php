@@ -7,6 +7,7 @@ use App\Services\PushNotificationService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DeviceTokenController extends Controller
 {
@@ -29,6 +30,12 @@ class DeviceTokenController extends Controller
             $validated['platform'],
             $validated['device_name'] ?? null,
         );
+
+        Log::info('DeviceToken registered.', [
+            'user_id' => $request->user()->id,
+            'platform' => $validated['platform'],
+            'token' => substr($validated['token'], 0, 12).'...',
+        ]);
 
         return ApiResponse::success(['registered' => true]);
     }

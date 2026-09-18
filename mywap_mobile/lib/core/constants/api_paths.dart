@@ -113,4 +113,5 @@ abstract final class ApiPaths {
 
   // ---- Push notification / FCM ----
   static const String deviceTokens = '/device-tokens';
+  static const String pushDebug = '/push-debug';
 }

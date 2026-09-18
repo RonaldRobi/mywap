@@ -122,6 +122,13 @@ class PushNotificationService
         $serviceAccountPath = (string) config('services.fcm.service_account', '');
         $serverKey = (string) config('services.fcm.server_key', '');
 
+        if ($serviceAccountPath !== '') {
+            // Path relatif (cth. `storage/firebase/...`) mesti diselesaikan
+            // terhadap base_path() — bukan cwd — supaya ia berfungsi walau
+            // proses queue/web dijalankan dari direktori berbeza.
+            $serviceAccountPath = $this->resolveServiceAccountPath($serviceAccountPath);
+        }
+
         if ($serviceAccountPath !== '' && is_file($serviceAccountPath)) {
             return $this->sendViaHttpV1($tokens, $title, $body, $data, $serviceAccountPath);
         }
@@ -136,6 +143,19 @@ class PushNotificationService
         ]);
 
         return 0;
+    }
+
+    /**
+     * Tukar path service account relatif kepada path mutlak berasaskan
+     * base_path(). Path mutlak (bermula `/`) dibiarkan seperti sedia ada.
+     */
+    private function resolveServiceAccountPath(string $path): string
+    {
+        if ($path === '' || str_starts_with($path, '/') || str_starts_with($path, '\\')) {
+            return $path;
+        }
+
+        return base_path($path);
     }
 
     /**
