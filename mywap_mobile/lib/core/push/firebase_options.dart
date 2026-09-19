@@ -28,5 +28,8 @@ class DefaultFirebaseOptions {
     appId: '1:587545407330:ios:19e26099610413a745063b',
     messagingSenderId: '587545407330',
     projectId: 'mywap-f6b01',
+    // Wajib untuk FCM/APNs iOS: FIROptions.bundleID mesti diisi supaya token
+    // APNs dikaitkan dengan bundle yang betul.
+    iosBundleId: 'com.mywap.mywapMobile',
   );
 }

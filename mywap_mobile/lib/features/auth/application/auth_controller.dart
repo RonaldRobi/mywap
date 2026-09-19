@@ -199,6 +199,9 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> logout() async {
     ref.read(pushServiceProvider).onMessage = null;
+    // Buang token peranti sebelum token auth dipadam, supaya peranti ini tidak
+    // lagi menerima push untuk akaun yang telah log keluar.
+    await ref.read(pushServiceProvider).unregisterToken();
     await ref.read(authRepositoryProvider).logout();
     state = const AuthUnauthenticated();
   }

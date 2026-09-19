@@ -23,9 +23,18 @@ class PushNotificationService {
   /// `true` selepas FCM berjaya initialized dan token didaftarkan.
   static bool initialized = false;
 
+  /// Saluran notifikasi Android. Mesti sepadan dengan
+  /// `com.google.firebase.messaging.default_notification_channel_id` dalam
+  /// AndroidManifest.xml.
+  static const String _androidChannelId = 'mywap_notifications';
+
   FirebaseMessaging? _messaging;
   FlutterLocalNotificationsPlugin? _localNotifications;
   String? _lastToken;
+
+  /// Elak memasang listener berulang kali bila [init] dipanggil lebih daripada
+  /// sekali (login/logout/restore sesi).
+  bool _listenersAttached = false;
 
   /// Callback untuk notifikasi foreground (paparkan SnackBar di UI).
   void Function(String payload)? onMessage;
@@ -44,8 +53,29 @@ class PushNotificationService {
       return;
     }
     try {
-      await Firebase.initializeApp(options: options);
+      // `Firebase.initializeApp` akan lempar bila dipanggil dua kali dalam
+      // proses yang sama (cth. logout → login semula). Semak dahulu supaya
+      // pendaftaran token tidak terlangkau oleh pengecualian itu.
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(options: options);
+      }
       _messaging = FirebaseMessaging.instance;
+
+      // Paksa auto-init ON → plugin iOS akan panggil
+      // `registerForRemoteNotifications` (tanpa ini APNs token boleh kekal
+      // null dan `getToken()` tak pernah berjaya).
+      try {
+        await _messaging!.setAutoInitEnabled(true);
+      } catch (_) {
+        // Versi platform tertentu mungkin tak sokong — teruskan.
+      }
+
+      if (!_listenersAttached) {
+        FirebaseMessaging.onBackgroundMessage(
+          firebaseMessagingBackgroundHandler,
+        );
+      }
+
       await _initLocalNotifications();
 
       // Tandakan initialized seawal mungkin supaya registerToken() di bawah
@@ -56,24 +86,30 @@ class PushNotificationService {
 
       unawaited(_reportDiagnostic('firebase_ok', extra: {
         'apps': Firebase.apps.map((a) => a.name).toList(),
+        'device': _deviceName,
       }));
 
-      // Pasang listener token SEBELUM meminta token. Di iOS token FCM boleh
-      // dijana lewat (selepas APNs token tersedia) — listener awal memastikan
-      // token yang tiba lewat tidak terlepas.
-      _messaging!.onTokenRefresh.listen((newToken) => registerToken(newToken));
+      if (!_listenersAttached) {
+        _listenersAttached = true;
+
+        // Pasang listener token SEBELUM meminta token. Di iOS token FCM boleh
+        // dijana lewat (selepas APNs token tersedia) — listener awal memastikan
+        // token yang tiba lewat tidak terlepas.
+        _messaging!.onTokenRefresh.listen((newToken) => registerToken(newToken));
+
+        FirebaseMessaging.onMessage.listen(
+          (message) => _handleForeground(message),
+        );
+        FirebaseMessaging.onMessageOpenedApp.listen(
+          (message) => _handleTap(message),
+        );
+      }
 
       await _messaging!.requestPermission();
 
       // Daftar token semasa (dengan tunggu + cuba semula untuk iOS).
       unawaited(_registerCurrentToken());
 
-      FirebaseMessaging.onMessage.listen(
-        (message) => _handleForeground(message),
-      );
-      FirebaseMessaging.onMessageOpenedApp.listen(
-        (message) => _handleTap(message),
-      );
       final initial = await _messaging!.getInitialMessage();
       if (initial != null) _handleTap(initial);
     } catch (e) {
@@ -112,12 +148,20 @@ class PushNotificationService {
     String? apnsPrefix;
     String? tokenPrefix;
     String? lastError;
+    var reportedApns = false;
 
     for (var attempt = 0; attempt < 8; attempt++) {
       try {
         if (_isIOS) {
           final apns = await messaging.getAPNSToken();
           apnsPrefix = _prefix(apns);
+          if (!reportedApns) {
+            reportedApns = true;
+            unawaited(_reportDiagnostic('apns_status', extra: {
+              'apns': apnsPrefix,
+              'attempt': attempt + 1,
+            }));
+          }
           if (apns == null || apns.isEmpty) {
             await Future<void>.delayed(const Duration(seconds: 2));
             continue;
@@ -137,6 +181,11 @@ class PushNotificationService {
         }
       } catch (e) {
         lastError = e.toString();
+        unawaited(_reportDiagnostic('token_error', extra: {
+          'apns': apnsPrefix,
+          'attempt': attempt + 1,
+          'error': lastError,
+        }));
       }
 
       await Future<void>.delayed(const Duration(seconds: 2));
@@ -195,6 +244,23 @@ class PushNotificationService {
           }
         },
       );
+
+      // Cipta saluran notifikasi Android (high importance) seawal mungkin.
+      // FCM menggunakan saluran ini untuk notifikasi latar (lihat
+      // `com.google.firebase.messaging.default_notification_channel_id` dalam
+      // AndroidManifest.xml). Tanpa saluran berdaftar, sesetengah OEM
+      // menyenyapkan notifikasi latar.
+      final androidPlugin = _localNotifications!
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _androidChannelId,
+          'Notifikasi myWAP',
+          description: 'Notifikasi push daripada myWAP',
+          importance: Importance.high,
+        ),
+      );
     } catch (_) {
       _localNotifications = null;
     }
@@ -212,7 +278,7 @@ class PushNotificationService {
     try {
       const details = NotificationDetails(
         android: AndroidNotificationDetails(
-          'mywap_notifications',
+          _androidChannelId,
           'Notifikasi myWAP',
           channelDescription: 'Notifikasi push daripada myWAP',
           importance: Importance.high,
@@ -292,5 +358,18 @@ class PushNotificationService {
     } catch (_) {
       return '';
     }
+  }
+}
+
+/// Handler mesej FCM ketika app di latar/terminated (data-only). Mesti
+/// top-level + `vm:entry-point` supaya boleh dipanggil dalam background
+/// isolate. Notifikasi bertajuk (payload `notification`) dipaparkan oleh
+/// sistem secara automatik tanpa handler ini.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
 }

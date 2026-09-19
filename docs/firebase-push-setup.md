@@ -82,11 +82,21 @@ Ikut 4 bahagian ni mengikut turutan.
 
 ### B. Firebase Console
 
+> **PENTING:** Firebase Console ada **DUA slot** — **Development APNs auth key**
+> dan **Production APNs auth key**. Kena isi **KEDUA-DUA** dengan fail `.p8`
+> yang **sama** (satu `.p8` sah untuk sandbox + production). Kalau isi
+> Development sahaja, push ke TestFlight/App Store **GAGAL** dengan ralat FCM
+> `THIRD_PARTY_AUTH_ERROR: Invalid APNs credential`.
+
 1. Buka project **mywap-f6b01** → **⚙️ Project settings → Cloud Messaging**.
-2. Bawah **Apple app configuration** → **APNs Authentication Key** → **Upload**.
-3. Upload `.p8`, isi **Key ID** `BBF86G2X7L` + **Team ID** `BW4B5LCN9S` → **Upload**.
-4. Pastikan status menunjukkan key tersebut. Kalau ada APNs *certificate* lama,
-   padamkannya — auth key ambil keutamaan.
+2. Bawah **Apple app configuration**:
+   - **Development APNs auth key** → **Upload** → pilih `.p8` → isi
+     **Key ID** + **Team ID** `BW4B5LCN9S` → **Upload**.
+   - **Production APNs auth key** → **Upload** → pilih `.p8` yang **sama** →
+     isi **Key ID** + **Team ID** `BW4B5LCN9S` → **Upload**.
+3. Pastikan **kedua-dua** slot menunjukkan key tersebut. Kalau ada APNs
+   *certificate* lama, padamkannya — auth key ambil keutamaan.
+4. Tunggu ~10–30 minit untuk FCM propagate credential baru sebelum uji.
 
 ### C. Xcode / projek iOS (SUDAH DIBUAT)
 
@@ -101,11 +111,24 @@ Ikut 4 bahagian ni mengikut turutan.
 ### D. Test
 
 - Guna **iPhone fizikal** (simulator tidak terima APNs push biasa).
-- `flutter run -d <device-id>` → build development → sandbox APNs.
+- Uji guna **TestFlight** (production APNs) — cara paling hampir dengan
+  pengeluaran sebenar. `flutter run` = build debug → sandbox APNs.
 - Benarkan prompt kebenaran notifikasi.
-- Uji hantar dari **Firebase Console → Messaging → Create campaign → Send
-  test message** → masukkan FCM token peranti.
+- Uji hantar dari admin panel (siaran In-App) atau **Firebase Console →
+  Messaging → Create campaign → Send test message**.
 - TestFlight / App Store = production APNs (Xcode uruskan entitlement).
+
+### E. Troubleshooting (punca yang pernah berlaku)
+
+Semak log server: `grep 'PUSH-DEBUG' storage/logs/laravel.log | tail`
+
+| Gejala log | Punca | Fix |
+|------------|-------|-----|
+| Tiada `token_ok`, hanya `firebase_ok` / `token_failed` | `registerForRemoteNotifications` tak dipanggil (plugin iOS cuba register sebelum Firebase siap) | Pastikan app panggil `FirebaseMessaging.instance.setAutoInitEnabled(true)` selepas `Firebase.initializeApp` (dah dibuat dalam `PushNotificationService.init()`) |
+| `token_ok` tapi `DeviceToken registered` tiada | POST `/device-tokens` gagal / sesi tamat | Semak auth token |
+| FCM `THIRD_PARTY_AUTH_ERROR: Invalid APNs credential` | Slot **Production** APNs auth key kosong, atau Key ID/Team ID salah, atau key team berbeza | Isi **kedua-dua** slot (Dev + Prod) dengan `.p8` + Team ID `BW4B5LCN9S` |
+| FCM `UNREGISTERED` / `NotRegistered` | Token mati (app uninstall/reinstall) | Token dipadam automatik; buka app semula untuk daftar token baru |
+| `apns: null` pada iPhone sebenar | Entitlement/provisioning tak efektif | Pastikan App ID ada Push Notifications; guna profile App Store (TestFlight) |
 
 ## Build & test selepas API key masuk
 
