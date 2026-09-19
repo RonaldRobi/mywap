@@ -11,8 +11,11 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../events/data/models/event.dart';
+import '../application/member_core_providers.dart';
 import '../application/member_providers.dart';
 import '../data/models/dashboard_data.dart';
+import '../data/models/library_item.dart';
+import 'library_reader_screen.dart';
 import 'widgets/notification_bell.dart';
 import 'widgets/shell_scaffold_key.dart';
 
@@ -59,7 +62,10 @@ class _DashboardContent extends ConsumerWidget {
     final polls = data.active_polls ?? const [];
 
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(memberDashboardProvider),
+      onRefresh: () async {
+        ref.invalidate(memberDashboardProvider);
+        ref.invalidate(memberLibraryProvider);
+      },
       child: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -185,6 +191,7 @@ class _DashboardContent extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const _LibrarySection(),
               ]),
             ),
           ),
@@ -1383,6 +1390,110 @@ class _ArticleCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LibrarySection extends ConsumerWidget {
+  const _LibrarySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(memberLibraryProvider).value ?? const <LibraryItem>[];
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: Spacing.xl),
+        _SectionLabel(
+          title: 'Pustaka',
+          subtitle: 'Buku digital untuk dibaca',
+          action: () => context.push('/member/library'),
+        ),
+        const SizedBox(height: Spacing.md),
+        SizedBox(
+          height: 208,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length.clamp(0, 6),
+            separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+            itemBuilder: (_, index) => _LibraryBookCard(item: items[index]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LibraryBookCard extends StatelessWidget {
+  const _LibraryBookCard({required this.item});
+  final LibraryItem item;
+
+  void _openReader(BuildContext context) {
+    final path = item.file_path;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tiada fail untuk dibuka.')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => LibraryReaderScreen(item: item)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cover = item.cover_image_path;
+
+    return SizedBox(
+      width: 120,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          borderRadius: AppRadius.card,
+          onTap: () => _openReader(context),
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 3 / 4,
+                  child:
+                      cover?.isNotEmpty == true
+                          ? AppImage(cover, fit: BoxFit.cover)
+                          : Container(
+                            color: AppColors.paleGreen,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.menu_book_outlined,
+                              color: AppColors.movementGreen,
+                            ),
+                          ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.sm),
+                    child: Text(
+                      item.title ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    ),
                   ),
                 ),
               ],

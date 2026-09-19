@@ -137,11 +137,13 @@ class _DetailContent extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
-          AppImage(
-            infaq.imagePath,
-            height: 220,
-            width: double.infinity,
-            borderRadius: BorderRadius.zero,
+          AspectRatio(
+            aspectRatio: 4 / 5,
+            child: AppImage(
+              infaq.imagePath,
+              width: double.infinity,
+              borderRadius: BorderRadius.zero,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(Spacing.xl),
@@ -440,7 +442,10 @@ class _DetailSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: const [
-        SkeletonBox(height: 220, radius: 0),
+        AspectRatio(
+          aspectRatio: 4 / 5,
+          child: SkeletonBox(radius: 0),
+        ),
         Padding(
           padding: EdgeInsets.all(24),
           child: Column(

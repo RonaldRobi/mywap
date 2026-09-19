@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/html_content.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
@@ -100,7 +101,7 @@ class _ArticleDetailBody extends StatelessWidget {
           const SizedBox(height: Spacing.sm),
           Text(article.title ?? '-', style: theme.textTheme.headlineSmall),
           const SizedBox(height: Spacing.lg),
-          Text(article.content ?? '', style: theme.textTheme.bodyLarge),
+          HtmlContent(article.content, style: theme.textTheme.bodyLarge),
           if (article.gallery.isNotEmpty) ...[
             const SizedBox(height: Spacing.lg),
             SizedBox(

@@ -65,6 +65,9 @@ dependencies:
 # vector_math >= 2.2.0, but the Flutter SDK (3.29) pins 2.1.4.
 dependency_overrides:
   vector_math: 2.2.0
+  # flutter_html 3.0.0 calls the top-level `matches()` helper in html, which
+  # was removed in html 0.15.7. Pin to the last compatible release.
+  html: 0.15.6
 
 dev_dependencies:
   flutter_test:

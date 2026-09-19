@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/html_content.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
@@ -76,10 +77,13 @@ class _NewsDetailBody extends StatelessWidget {
         padding: const EdgeInsets.all(Spacing.lg),
         children: [
           if (post.coverImagePath != null && post.coverImagePath!.isNotEmpty)
-            AppImage(
-              post.coverImagePath,
-              height: 200,
-              borderRadius: BorderRadius.circular(12),
+            AspectRatio(
+              aspectRatio: 4 / 5,
+              child: AppImage(
+                post.coverImagePath,
+                width: double.infinity,
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           const SizedBox(height: Spacing.lg),
           Row(
@@ -125,7 +129,7 @@ class _NewsDetailBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Spacing.lg),
-          Text(post.content ?? '', style: theme.textTheme.bodyLarge),
+          HtmlContent(post.content, style: theme.textTheme.bodyLarge),
           const SizedBox(height: Spacing.xl),
           ReactionBar(
             likesCount: post.likesCount,
@@ -148,7 +152,10 @@ class _DetailSkeleton extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
       children: const [
-        SkeletonBox(height: 200, radius: 12),
+        AspectRatio(
+          aspectRatio: 4 / 5,
+          child: SkeletonBox(radius: 12),
+        ),
         SizedBox(height: Spacing.lg),
         SkeletonBox(height: 28, radius: 8),
         SizedBox(height: Spacing.sm),
