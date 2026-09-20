@@ -52,7 +52,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           onboardingCompletedKey,
         ) ??
         false;
-    if (mounted) context.go(completed ? '/login' : '/onboarding');
+    if (mounted) context.go(completed ? '/home' : '/onboarding');
   }
 
   @override

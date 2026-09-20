@@ -38,3 +38,8 @@ class LoadingScreenController extends Notifier<LoadingScreenConfig?> {
     }
   }
 }
+
+/// Logo sistem (dimuat naik admin) untuk dipaparkan merentas app.
+final appLogoProvider = Provider<String?>(
+  (ref) => ref.watch(loadingScreenControllerProvider)?.logoUrl,
+);

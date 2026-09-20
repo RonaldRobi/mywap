@@ -30,7 +30,7 @@ class LoadingScreenView extends ConsumerWidget {
         child: Center(
           child: enabled && config?.gifUrl != null
               ? _LoadingGif(url: config!.gifUrl!)
-              : const _FallbackIndicator(),
+              : _FallbackIndicator(logoUrl: config?.logoUrl),
         ),
       ),
     );
@@ -75,21 +75,53 @@ class _LoadingGif extends StatelessWidget {
 }
 
 /// Fallback apabila tiada GIF dikonfigurasikan (atau gagal dimuat).
+/// Memaparkan logo sistem (dimuat naik admin) jika ada, jika tidak ikon.
 class _FallbackIndicator extends StatelessWidget {
-  const _FallbackIndicator();
+  const _FallbackIndicator({this.logoUrl});
+
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final logo = logoUrl;
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.volunteer_activism,
-          size: 64,
-          color: Colors.white70,
-        ),
-        SizedBox(height: 20),
-        SizedBox(
+        if (logo != null && logo.isNotEmpty)
+          Container(
+            width: 132,
+            height: 132,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: CachedNetworkImage(
+              imageUrl: logo,
+              fit: BoxFit.contain,
+              errorWidget:
+                  (_, __, ___) => const Icon(
+                    Icons.volunteer_activism,
+                    size: 56,
+                    color: Color(0xFF2F6B32),
+                  ),
+            ),
+          )
+        else
+          const Icon(
+            Icons.volunteer_activism,
+            size: 64,
+            color: Colors.white70,
+          ),
+        const SizedBox(height: 24),
+        const SizedBox(
           width: 28,
           height: 28,
           child: CircularProgressIndicator(

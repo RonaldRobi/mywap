@@ -20,11 +20,12 @@ import '../../features/facilities/presentation/routes.dart';
 import '../../features/forms/presentation/routes.dart';
 import '../../features/infaq/presentation/infaq_landing_screen.dart';
 import '../../features/infaq/presentation/routes.dart';
-import '../../features/member/presentation/main_shell.dart';
 import '../../features/member/presentation/member_dashboard_screen.dart';
 import '../../features/member/presentation/routes.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/menu/presentation/routes.dart';
+import '../../features/public/presentation/public_home_screen.dart';
+import '../../features/public/presentation/public_shell.dart';
 import '../../features/financial/presentation/financial_overview_screen.dart';
 import '../../features/news/presentation/routes.dart';
 import '../../features/organization/presentation/organization_info_screen.dart';
@@ -38,6 +39,29 @@ import '../../shared/screens/route_not_found_screen.dart';
 /// Notifies go_router whenever auth state changes so redirects re-evaluate.
 class _AuthRefresh extends ChangeNotifier {
   void notify() => notifyListeners();
+}
+
+/// Routes that anyone (including logged-out visitors) may open. Everything
+/// else requires authentication. Member-only routes such as
+/// `/events/my-registrations` intentionally do NOT match.
+bool _isPublicLocation(String location) {
+  const exact = {
+    '/home',
+    '/articles',
+    '/news',
+    '/videos',
+    '/infaq',
+    '/events',
+    '/organization/info',
+    '/scan',
+  };
+  if (exact.contains(location)) return true;
+  if (RegExp(r'^/(articles|news)/\d+$').hasMatch(location)) return true;
+  if (RegExp(r'^/events/\d+$').hasMatch(location)) return true;
+  if (location.startsWith('/infaq/')) return true;
+  if (location.startsWith('/forms/')) return true;
+  if (location.startsWith('/card/')) return true;
+  return false;
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -61,18 +85,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           location == '/forgot-password' ||
           location == '/forgot-id' ||
           location == '/first-login';
+      final isPublic = _isPublicLocation(location);
 
       if (auth is AuthLoading) {
-        return isSplash || isLogin || isOnboarding || isPublicAuthFlow
+        return isSplash ||
+                isLogin ||
+                isOnboarding ||
+                isPublicAuthFlow ||
+                isPublic
             ? null
             : '/splash';
       }
       if (auth is AuthAuthenticated) {
-        return isSplash || isLogin || isOnboarding ? '/dashboard' : null;
+        // Members land on their dashboard; public browsing stays available.
+        if (isSplash || isLogin || isOnboarding || location == '/home') {
+          return '/dashboard';
+        }
+        return null;
       }
-      return isLogin || isSplash || isOnboarding || isPublicAuthFlow
+      // Unauthenticated: allow splash, onboarding, auth flow and public pages.
+      return isLogin || isSplash || isOnboarding || isPublicAuthFlow || isPublic
           ? null
-          : '/login';
+          : '/home';
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
@@ -99,8 +133,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const OnboardingScreen(),
       ),
       ShellRoute(
-        builder: (_, state, child) => MainShell(child: child),
+        builder: (_, state, child) => AdaptiveShell(child: child),
         routes: [
+          GoRoute(path: '/home', builder: (_, __) => const PublicHomeScreen()),
           GoRoute(
             path: '/dashboard',
             builder: (_, __) => const MemberDashboardScreen(),

@@ -20,6 +20,9 @@ class AppConfigController extends Controller
         $setting = AppSetting::singleton();
 
         return ApiResponse::success([
+            'logo_url' => $setting?->system_logo_path
+                ? url($setting->system_logo_path)
+                : null,
             'loading_screen' => [
                 'enabled' => (bool) $setting->loading_screen_enabled,
                 'gif_url' => $setting->loading_screen_gif_path ? url($setting->loading_screen_gif_path) : null,

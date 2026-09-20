@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Models\Article;
 use App\Models\NewsPost;
+use App\Models\NewsPostComment;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\Video;
@@ -79,11 +80,32 @@ class NewsApiTest extends TestCase
         ]);
     }
 
-    public function test_auth_required_returns_401(): void
+    public function test_public_can_browse_without_auth(): void
     {
-        $this->getJson('/api/v1/news')->assertStatus(401);
-        $this->getJson('/api/v1/articles')->assertStatus(401);
-        $this->getJson('/api/v1/videos')->assertStatus(401);
+        $this->makeNewsPost($this->org);
+        $this->makeArticle();
+        $this->makeVideo();
+
+        $this->getJson('/api/v1/news')->assertOk();
+        $this->getJson('/api/v1/articles')->assertOk();
+        $this->getJson('/api/v1/videos')->assertOk();
+    }
+
+    public function test_guest_sees_comment_count_but_not_comment_list(): void
+    {
+        $post = $this->makeNewsPost($this->org);
+
+        NewsPostComment::create([
+            'news_post_id' => $post->id,
+            'user_id' => $this->member->id,
+            'content' => 'Komen ahli.',
+            'is_hidden' => false,
+        ]);
+
+        $this->getJson("/api/v1/news/{$post->id}")
+            ->assertOk()
+            ->assertJsonPath('data.post.comments_count', 1)
+            ->assertJsonCount(0, 'data.comments');
     }
 
     public function test_member_can_list_news_with_pagination_envelope(): void

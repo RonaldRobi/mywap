@@ -11,6 +11,8 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../member/application/member_providers.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../public/presentation/guest_prompt.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
 
@@ -28,6 +30,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   String? _rsvpError;
 
   Future<void> _toggleRsvp(String? currentStatus) async {
+    if (ref.read(currentUserProvider) == null) {
+      await showLoginPrompt(
+        context,
+        message: 'Log masuk sebagai ahli untuk RSVP kehadiran program.',
+      );
+      return;
+    }
     setState(() {
       _rsvpLoading = true;
       _rsvpError = null;
@@ -55,6 +64,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   void _openRegistration(EventDetail detail) {
+    if (ref.read(currentUserProvider) == null) {
+      showLoginPrompt(
+        context,
+        message: 'Log masuk sebagai ahli untuk mendaftar program ini.',
+      );
+      return;
+    }
     final forms = detail.registration_forms ?? const <RegistrationForm>[];
     if (forms.isEmpty) return;
 

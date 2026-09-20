@@ -333,6 +333,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: Spacing.sm),
+                          SizedBox(
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: () => context.go('/home'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.textSecondary,
+                                side: const BorderSide(
+                                  color: AppColors.divider,
+                                ),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: AppRadius.xl,
+                                ),
+                              ),
+                              icon: const Icon(Icons.explore_outlined, size: 20),
+                              label: const Text('Layari sebagai tetamu'),
+                            ),
+                          ),
                           const SizedBox(height: Spacing.xl),
                           Text(
                             'PLATFORM RASMI EKOSISTEM',
@@ -438,7 +456,7 @@ InputDecoration _inputDecoration(String hint, IconData icon, Color accent) =>
       hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
       prefixIcon: Icon(icon, color: accent),
       filled: true,
-      fillColor: AppColors.white.withValues(alpha: .88),
+      fillColor: AppColors.white,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Spacing.lg,
         vertical: Spacing.lg,

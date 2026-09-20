@@ -7,6 +7,7 @@ use App\Models\NewsPost;
 use App\Models\NewsPostComment;
 use App\Models\NewsPostReaction;
 use App\Models\User;
+use App\Models\UserBlock;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -55,31 +56,36 @@ class NewsService
 
     /**
      * Senarai post diterbitkan mengikut skop organisasi user + penapis kategori.
+     * Tetamu (user null) melihat semua post yang diterbitkan.
      */
-    public function list(Request $request, User $user): LengthAwarePaginator
+    public function list(Request $request, ?User $user = null): LengthAwarePaginator
     {
         $categoryId = $request->integer('category_id');
 
+        $relations = ['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')];
+
+        if ($user) {
+            $relations['reactions'] = fn ($q) => $q->where('user_id', $user->id)->select('id', 'news_post_id', 'user_id', 'reaction');
+        }
+
         $query = NewsPost::query()
-            ->with(['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
-            ->with(['reactions' => fn ($q) => $q->where('user_id', $user->id)->select('id', 'news_post_id', 'user_id', 'reaction')])
+            ->with($relations)
             ->withCount([
                 'reactions as likes_count' => fn ($q) => $q->where('reaction', 'like'),
                 'reactions as dislikes_count' => fn ($q) => $q->where('reaction', 'dislike'),
                 'comments as comments_count' => fn ($q) => $q->where('is_hidden', false),
             ])
             ->where('is_published', true)
-            ->where(function ($q) use ($user) {
-                if ($user->hasRole('Superadmin')) {
-                    return;
-                }
-
-                $q->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
-            })
             ->where(function ($q) {
                 $q->whereNull('published_at')->orWhere('published_at', '<=', now());
             });
+
+        if ($user && ! $user->hasRole('Superadmin')) {
+            $query->where(function ($q) use ($user) {
+                $q->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            });
+        }
 
         if ($categoryId) {
             $query->where('news_category_id', $categoryId);
@@ -94,33 +100,45 @@ class NewsService
 
     /**
      * Payload penuh untuk halaman/endpoint show post.
+     * Tetamu (user null) melihat kandungan + kiraan komen, tetapi bukan senarai
+     * komen (komen adalah ciri ahli).
      */
-    public function showDetail(NewsPost $post, User $user): array
+    public function showDetail(NewsPost $post, ?User $user = null): array
     {
         $post->loadMissing(['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')]);
 
         $likes = $post->reactions()->where('reaction', 'like')->count();
         $dislikes = $post->reactions()->where('reaction', 'dislike')->count();
-        $myReaction = $post->reactions()->where('user_id', $user->id)->value('reaction');
+        $myReaction = $user ? $post->reactions()->where('user_id', $user->id)->value('reaction') : null;
+        $commentsCount = $post->comments()->where('is_hidden', false)->count();
 
-        $comments = $post->comments()
-            ->where('is_hidden', false)
-            ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
-            ->latest()
-            ->take(100)
-            ->get()
-            ->map(fn (NewsPostComment $comment) => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'user_name' => $comment->user?->name ?? 'Ahli',
-                'created_at' => $comment->created_at?->diffForHumans(),
-            ])
-            ->values();
+        $blockedIds = $user
+            ? UserBlock::query()->where('blocker_id', $user->id)->pluck('blocked_id')->all()
+            : [];
 
-        $canEdit = $user->hasRole('Superadmin')
-            || ($user->hasRole('Admin')
-                && (is_null($post->organization_id)
-                    || (int) $post->organization_id === (int) $user->current_organization_id));
+        $comments = $user
+            ? $post->comments()
+                ->where('is_hidden', false)
+                ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('user_id', $blockedIds))
+                ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
+                ->latest()
+                ->take(100)
+                ->get()
+                ->map(fn (NewsPostComment $comment) => [
+                    'id' => $comment->id,
+                    'user_id' => $comment->user_id,
+                    'content' => $comment->content,
+                    'user_name' => $comment->user?->name ?? 'Ahli',
+                    'created_at' => $comment->created_at?->diffForHumans(),
+                ])
+                ->values()
+            : collect();
+
+        $canEdit = $user
+            && ($user->hasRole('Superadmin')
+                || ($user->hasRole('Admin')
+                    && (is_null($post->organization_id)
+                        || (int) $post->organization_id === (int) $user->current_organization_id)));
 
         return [
             'post' => [
@@ -138,6 +156,7 @@ class NewsService
                 'author_name' => $post->author?->name ?? '-',
                 'likes_count' => $likes,
                 'dislikes_count' => $dislikes,
+                'comments_count' => $commentsCount,
                 'my_reaction' => $myReaction,
                 'can_edit' => $canEdit,
             ],
@@ -197,15 +216,22 @@ class NewsService
 
     /**
      * Bolehkah user melihat post ini (diterbitkan & dalam skop)?
+     * Tetamu (user null) boleh melihat mana-mana post yang diterbitkan.
      */
-    public function canViewPost(User $user, NewsPost $post): bool
+    public function canViewPost(?User $user, NewsPost $post): bool
     {
         $isPublished = (bool) $post->is_published;
         $publishedAt = $post->published_at;
         $isPublishedNow = $isPublished && (is_null($publishedAt) || $publishedAt->lte(now()));
 
         if (! $isPublishedNow) {
-            return $user->hasRole(['Superadmin', 'Admin']) && $this->canAdminManagePost($user, $post);
+            return $user !== null
+                && $user->hasRole(['Superadmin', 'Admin'])
+                && $this->canAdminManagePost($user, $post);
+        }
+
+        if ($user === null) {
+            return true;
         }
 
         if ($user->hasRole('Superadmin')) {

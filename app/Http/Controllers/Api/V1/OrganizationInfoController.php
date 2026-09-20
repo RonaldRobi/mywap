@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Organization;
 use App\Models\OrganizationChartMember;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -13,10 +14,12 @@ class OrganizationInfoController extends Controller
     /**
      * Maklumat organisasi ahli semasa + carta organisasi.
      * Sama logic dengan web OrganizationInfoController::show.
+     * Tetamu (tanpa log masuk) dipaparkan organisasi utama (sort_order pertama).
      */
     public function show(Request $request): JsonResponse
     {
-        $organization = $request->user()->organization;
+        $organization = $request->user()?->organization
+            ?? Organization::query()->orderBy('sort_order')->orderBy('id')->first();
 
         if (! $organization) {
             return ApiResponse::error('Tiada organisasi untuk dipaparkan.', status: 404);

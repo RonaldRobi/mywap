@@ -91,9 +91,8 @@ class _MemberCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .15),
+                  color: AppColors.white,
                   borderRadius: AppRadius.md,
-                  border: Border.all(color: Colors.white.withValues(alpha: .2)),
                 ),
                 child: ClipRRect(
                   borderRadius: AppRadius.md,
@@ -127,12 +126,21 @@ class _MemberCard extends StatelessWidget {
               ),
               Column(
                 children: [
-                  ClipOval(
-                    child: AppImage(
-                      org?.logo_path,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: AppImage(
+                        org?.logo_path,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   SizedBox(

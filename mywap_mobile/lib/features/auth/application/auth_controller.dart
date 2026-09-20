@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/constants/prefs_keys.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/providers.dart';
 import '../../../core/push/push_providers.dart';
@@ -203,6 +205,16 @@ class AuthController extends Notifier<AuthState> {
     // lagi menerima push untuk akaun yang telah log keluar.
     await ref.read(pushServiceProvider).unregisterToken();
     await ref.read(authRepositoryProvider).logout();
+    // Selepas log keluar, tetapkan semula onboarding supaya ia dipaparkan
+    // semula pada pembukaan aplikasi berikutnya.
+    try {
+      await (await SharedPreferences.getInstance()).setBool(
+        onboardingCompletedKey,
+        false,
+      );
+    } catch (_) {
+      // Kegagalan menyimpan status tidak sepatutnya menghalang log keluar.
+    }
     state = const AuthUnauthenticated();
   }
 

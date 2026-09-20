@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mywap_mobile/features/auth/application/auth_controller.dart';
+import 'package:mywap_mobile/features/auth/data/models/user.dart';
 import 'package:mywap_mobile/features/news/application/news_providers.dart';
 import 'package:mywap_mobile/features/news/data/models/news.dart';
 import 'package:mywap_mobile/features/news/data/news_repository.dart';
@@ -47,25 +49,24 @@ class _FakeNewsRepository implements NewsRepository {
 
   @override
   Future<NewsDetail> newsDetail(int id) async => NewsDetail(
-        post: NewsDetailPost(
-          id: id,
-          title: 'Muktamar Tahunan 2026',
-          content: 'Kandungan penuh muktamar.',
-          category: const NewsCategory(id: 1, name: 'Umum'),
-          likesCount: 3,
-        ),
-        comments: const [
-          Comment(id: 1, content: 'Bagus!', userName: 'Ahmad'),
-        ],
-      );
+    post: NewsDetailPost(
+      id: id,
+      title: 'Muktamar Tahunan 2026',
+      content: 'Kandungan penuh muktamar.',
+      category: const NewsCategory(id: 1, name: 'Umum'),
+      likesCount: 3,
+      commentsCount: 1,
+    ),
+    comments: const [Comment(id: 1, content: 'Bagus!', userName: 'Ahmad')],
+  );
 
   @override
   Future<Map<String, dynamic>> reactNews(int id, String reaction) async => {
-        'post_id': id,
-        'reaction': reaction,
-        'likes_count': 4,
-        'dislikes_count': 0,
-      };
+    'post_id': id,
+    'reaction': reaction,
+    'likes_count': 4,
+    'dislikes_count': 0,
+  };
 
   @override
   Future<Comment> commentNews(int id, String content) async =>
@@ -79,19 +80,19 @@ class _FakeNewsRepository implements NewsRepository {
 
   @override
   Future<ArticleDetail> articleDetail(int id) async => ArticleDetail(
-        article: ArticleDetailPost(
-          id: id,
-          title: 'Artikel Khas',
-          content: 'Kandungan artikel.',
-          likesCount: 1,
-        ),
-      );
+    article: ArticleDetailPost(
+      id: id,
+      title: 'Artikel Khas',
+      content: 'Kandungan artikel.',
+      likesCount: 1,
+    ),
+  );
 
   @override
   Future<Map<String, dynamic>> reactArticle(int id, String reaction) async => {
-        'article_id': id,
-        'reaction': reaction,
-      };
+    'article_id': id,
+    'reaction': reaction,
+  };
 
   @override
   Future<Comment> commentArticle(int id, String content) async =>
@@ -118,12 +119,9 @@ void main() {
   group('NewsListScreen', () {
     testWidgets('renders news posts', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const NewsListScreen(),
-          [
-            newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
-          ],
-        ),
+        _wrap(const NewsListScreen(), [
+          newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
+        ]),
       );
       await tester.pumpAndSettle();
 
@@ -134,14 +132,11 @@ void main() {
 
     testWidgets('shows error then retries', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const NewsListScreen(),
-          [
-            newsRepositoryProvider.overrideWithValue(
-              _FakeNewsRepository(failLists: true),
-            ),
-          ],
-        ),
+        _wrap(const NewsListScreen(), [
+          newsRepositoryProvider.overrideWithValue(
+            _FakeNewsRepository(failLists: true),
+          ),
+        ]),
       );
       await tester.pumpAndSettle();
 
@@ -153,12 +148,12 @@ void main() {
   group('NewsDetailScreen', () {
     testWidgets('renders content, reactions and comments', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const NewsDetailScreen(newsId: 1),
-          [
-            newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
-          ],
-        ),
+        _wrap(const NewsDetailScreen(newsId: 1), [
+          newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
+          currentUserProvider.overrideWithValue(
+            const User(id: 1, name: 'Ahmad'),
+          ),
+        ]),
       );
       await tester.pumpAndSettle();
 
@@ -167,17 +162,29 @@ void main() {
       expect(find.text('Bagus!'), findsOneWidget);
       expect(find.text('Komen (1)'), findsOneWidget);
     });
+
+    testWidgets('guests see comment count but not comment content', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(const NewsDetailScreen(newsId: 1), [
+          newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Komen (1)'), findsOneWidget);
+      expect(find.text('Bagus!'), findsNothing);
+      expect(find.text('Log Masuk'), findsOneWidget);
+    });
   });
 
   group('ArticlesListScreen', () {
     testWidgets('renders articles', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const ArticlesListScreen(),
-          [
-            newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
-          ],
-        ),
+        _wrap(const ArticlesListScreen(), [
+          newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
+        ]),
       );
       await tester.pumpAndSettle();
 
@@ -189,12 +196,9 @@ void main() {
   group('VideosScreen', () {
     testWidgets('renders video cards', (tester) async {
       await tester.pumpWidget(
-        _wrap(
-          const VideosScreen(),
-          [
-            newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
-          ],
-        ),
+        _wrap(const VideosScreen(), [
+          newsRepositoryProvider.overrideWithValue(_FakeNewsRepository()),
+        ]),
       );
       await tester.pumpAndSettle();
 

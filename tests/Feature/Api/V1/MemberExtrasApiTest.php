@@ -115,9 +115,15 @@ class MemberExtrasApiTest extends TestCase
 
     public function test_organization_info_requires_organization(): void
     {
-        $userWithoutOrg = User::factory()->create(['current_organization_id' => null]);
-        Sanctum::actingAs($userWithoutOrg, ['*']);
+        Organization::query()->delete();
 
         $this->getJson('/api/v1/organization/info')->assertStatus(404);
+    }
+
+    public function test_organization_info_is_public_and_falls_back_to_primary_org(): void
+    {
+        $this->getJson('/api/v1/organization/info')
+            ->assertOk()
+            ->assertJsonPath('data.organization.name', 'PKPIM');
     }
 }

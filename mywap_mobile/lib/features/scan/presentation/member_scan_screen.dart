@@ -7,6 +7,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../events/application/event_providers.dart';
 
 /// Floating-button "Imbas QR" — member self check-in ke program/event.
@@ -80,6 +81,18 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
       return;
     }
 
+    // Tetamu boleh mengimbas, tetapi kehadiran diikat pada akaun ahli —
+    // gesa log masuk/daftar sebelum merekod.
+    if (ref.read(currentUserProvider) == null) {
+      setState(() => _processing = true);
+      try {
+        await _controller.stop();
+      } catch (_) {}
+      if (!mounted) return;
+      await _showGuestLoginDialog();
+      return;
+    }
+
     setState(() => _processing = true);
     try {
       await _controller.stop();
@@ -105,6 +118,46 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
         message: 'Ralat tidak dijangka. Sila cuba lagi.',
       );
     }
+  }
+
+  /// Dialog untuk tetamu yang mengimbas QR kehadiran tanpa log masuk.
+  Future<void> _showGuestLoginDialog() async {
+    final goLogin = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: const Icon(
+              Icons.lock_outline,
+              color: AppColors.movementGreen,
+              size: 40,
+            ),
+            title: const Text('Log Masuk Diperlukan'),
+            content: const Text(
+              'Kod kehadiran program dikesan. Sila log masuk atau daftar '
+              'sebagai ahli untuk merekodkan kehadiran anda.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Log Masuk'),
+              ),
+            ],
+          ),
+    );
+    if (!mounted) return;
+    if (goLogin == true) {
+      context.go('/login');
+      return;
+    }
+    setState(() => _processing = false);
+    try {
+      _controller.start();
+    } catch (_) {}
   }
 
   Future<void> _showResultDialog({

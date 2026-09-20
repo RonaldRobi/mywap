@@ -123,7 +123,14 @@ class AuthTest extends TestCase
     {
         $this->getJson('/api/v1/auth/me')->assertStatus(401);
         $this->getJson('/api/v1/member/dashboard')->assertStatus(401);
-        $this->getJson('/api/v1/events')->assertStatus(401);
+    }
+
+    public function test_public_content_routes_do_not_require_token(): void
+    {
+        $this->getJson('/api/v1/events')->assertOk();
+        $this->getJson('/api/v1/news')->assertOk();
+        $this->getJson('/api/v1/articles')->assertOk();
+        $this->getJson('/api/v1/videos')->assertOk();
     }
 
     public function test_logout_revokes_current_token(): void

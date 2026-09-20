@@ -10,6 +10,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../../member/presentation/widgets/shell_scaffold_key.dart';
 
@@ -19,26 +20,29 @@ class EventsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(eventsProvider);
+    final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppMenuButton(),
         title: const Text('Program & Acara'),
         actions: [
-          IconButton(
-            tooltip: 'Pendaftaran Saya',
-            onPressed: () => context.push('/events/my-registrations'),
-            icon: const Icon(Icons.event_available_outlined),
-          ),
+          if (isAuthenticated)
+            IconButton(
+              tooltip: 'Pendaftaran Saya',
+              onPressed: () => context.push('/events/my-registrations'),
+              icon: const Icon(Icons.event_available_outlined),
+            ),
           const NotificationBell(),
           const SizedBox(width: Spacing.sm),
         ],
       ),
       body: eventsAsync.when(
-        data: (events) => _EventsList(
-          events: events,
-          onRefresh: () async => ref.invalidate(eventsProvider),
-        ),
+        data:
+            (events) => _EventsList(
+              events: events,
+              onRefresh: () async => ref.invalidate(eventsProvider),
+            ),
         loading: () => const _EventsSkeleton(),
         error:
             (error, _) => ErrorRetry(

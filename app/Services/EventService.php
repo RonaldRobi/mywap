@@ -62,9 +62,10 @@ class EventService
 
     /**
      * Senarai event (upcoming/past) mengikut skop organisasi user.
+     * Tetamu (user null) melihat semua event.
      * Item paginator sudah diserialize.
      */
-    public function list(Request $request, User $user): LengthAwarePaginator
+    public function list(Request $request, ?User $user = null): LengthAwarePaginator
     {
         $tab = $request->input('tab', 'upcoming');
         $search = $request->input('search');
@@ -82,7 +83,7 @@ class EventService
             $query->where('start_time', '>=', now())->orderBy('start_time', 'asc');
         }
 
-        if (! $user->hasRole('Superadmin')) {
+        if ($user && ! $user->hasRole('Superadmin')) {
             $query->where(function ($innerQuery) use ($user) {
                 $innerQuery->where('organization_id', $user->current_organization_id)
                     ->orWhereNull('organization_id')
@@ -105,9 +106,9 @@ class EventService
 
         return $query->paginate($perPage)->withQueryString()->through(
             function (Event $e) use ($user) {
-                $eventArr = $this->serialize($e, $user->id);
+                $eventArr = $this->serialize($e, $user?->id);
 
-                if ($user->hasRole(['Superadmin', 'Admin'])) {
+                if ($user && $user->hasRole(['Superadmin', 'Admin'])) {
                     $eventArr['attendance'] = $e->rsvps
                         ->where('status', 'attended')
                         ->map(function ($rsvp) {

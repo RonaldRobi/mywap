@@ -86,6 +86,7 @@ class NewsDetailPost {
     this.authorName,
     this.likesCount = 0,
     this.dislikesCount = 0,
+    this.commentsCount = 0,
     this.myReaction,
     this.canEdit = false,
   });
@@ -101,6 +102,7 @@ class NewsDetailPost {
   final String? authorName;
   final int likesCount;
   final int dislikesCount;
+  final int commentsCount;
   final String? myReaction;
   final bool canEdit;
 
@@ -118,6 +120,7 @@ class NewsDetailPost {
         authorName: json['author_name'] as String?,
         likesCount: _int(json['likes_count']) ?? 0,
         dislikesCount: _int(json['dislikes_count']) ?? 0,
+        commentsCount: _int(json['comments_count']) ?? 0,
         myReaction: json['my_reaction'] as String?,
         canEdit: json['can_edit'] == true,
       );
@@ -126,18 +129,21 @@ class NewsDetailPost {
 class Comment {
   const Comment({
     this.id,
+    this.userId,
     this.content,
     this.userName,
     this.createdAt,
   });
 
   final int? id;
+  final int? userId;
   final String? content;
   final String? userName;
   final String? createdAt;
 
   factory Comment.fromJson(Map<String, dynamic> json) => Comment(
         id: _int(json['id']),
+        userId: _int(json['user_id']),
         content: json['content'] as String?,
         userName: json['user_name'] as String?,
         createdAt: json['created_at'] as String?,
@@ -210,6 +216,7 @@ class ArticleDetailPost {
     this.authorName,
     this.likesCount = 0,
     this.dislikesCount = 0,
+    this.commentsCount = 0,
     this.myReaction,
     this.categories = const [],
     this.tags = const [],
@@ -227,6 +234,7 @@ class ArticleDetailPost {
   final String? authorName;
   final int likesCount;
   final int dislikesCount;
+  final int commentsCount;
   final String? myReaction;
   final List<NewsCategory> categories;
   final List<ArticleTag> tags;
@@ -245,6 +253,7 @@ class ArticleDetailPost {
         authorName: json['author_name'] as String?,
         likesCount: _int(json['likes_count']) ?? 0,
         dislikesCount: _int(json['dislikes_count']) ?? 0,
+        commentsCount: _int(json['comments_count']) ?? 0,
         myReaction: json['my_reaction'] as String?,
         categories: _listOf(json['categories'], NewsCategory.fromJson),
         tags: _listOf(json['tags'], ArticleTag.fromJson),

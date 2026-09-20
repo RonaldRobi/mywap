@@ -182,9 +182,9 @@ class InfaqApiTest extends TestCase
         $this->assertDatabaseCount('infaq_donations', 0);
     }
 
-    public function test_donate_requires_auth(): void
+    public function test_guest_can_donate_without_gateway(): void
     {
-        $infaq = $this->makeInfaq(['title' => 'Auth Test']);
+        $infaq = $this->makeInfaq(['title' => 'Guest Donation']);
 
         $this->postJson("/api/v1/infaq/{$infaq->slug}/donate", [
             'amount' => 50,
@@ -192,9 +192,15 @@ class InfaqApiTest extends TestCase
             'donor_phone' => '0123456789',
             'donor_email' => 'ali@example.com',
         ])
-            ->assertUnauthorized();
+            ->assertOk()
+            ->assertJsonPath('data.status', 'success')
+            ->assertJsonPath('data.donation.amount', 50);
 
-        $this->assertDatabaseCount('infaq_donations', 0);
-        $this->assertDatabaseCount('payments', 0);
+        $this->assertDatabaseHas('infaq_donations', [
+            'infaq_id' => $infaq->id,
+            'user_id' => null,
+            'donor_email' => 'ali@example.com',
+        ]);
+        $this->assertDatabaseCount('payments', 1);
     }
 }

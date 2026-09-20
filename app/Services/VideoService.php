@@ -30,13 +30,16 @@ class VideoService
 
     /**
      * Senarai video (nilai org null + org sendiri), berpagina.
+     * Tetamu (user null) melihat semua video.
      */
-    public function list(Request $request, User $user): LengthAwarePaginator
+    public function list(Request $request, ?User $user = null): LengthAwarePaginator
     {
         return Video::query()
-            ->where(function ($query) use ($user) {
-                $query->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
+            ->when($user, function ($query) use ($user) {
+                $query->where(function ($q) use ($user) {
+                    $q->whereNull('organization_id')
+                        ->orWhere('organization_id', $user->current_organization_id);
+                });
             })
             ->latest()
             ->paginate(self::perPage($request))

@@ -50,6 +50,12 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp'])
         ->middleware(['throttle:10,1', 'throttle:api_account']);
 
+    // ─── Events (public — boleh dilihat tanpa log masuk) ─────────────────
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/events', [EventController::class, 'index']);
+        Route::get('/events/{event}', [EventController::class, 'show']);
+    });
+
     // ─── Protected (Fasa 0 template) ─────────────────────────────────────
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -58,9 +64,7 @@ Route::prefix('v1')->group(function () {
         // Member core
         Route::get('/member/dashboard', [MemberDashboardController::class, 'index']);
 
-        // Events
-        Route::get('/events', [EventController::class, 'index']);
-        Route::get('/events/{event}', [EventController::class, 'show']);
+        // Events (tindakan ahli)
         Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp']);
         Route::post('/events/{id}/check-in', [EventController::class, 'checkIn']);
     });

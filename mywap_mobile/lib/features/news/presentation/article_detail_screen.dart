@@ -9,6 +9,8 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/html_content.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../public/presentation/guest_prompt.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
@@ -21,6 +23,7 @@ class ArticleDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(articleDetailProvider(articleId));
+    final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,11 +35,24 @@ class ArticleDetailScreen extends ConsumerWidget {
             (detail) => _ArticleDetailBody(
               detail: detail,
               onReaction: (reaction) async {
+                if (!isAuthenticated) {
+                  await showLoginPrompt(
+                    context,
+                    message: 'Log masuk sebagai ahli untuk memberi reaksi.',
+                  );
+                  return;
+                }
                 await ref
                     .read(newsRepositoryProvider)
                     .reactArticle(articleId, reaction);
                 ref.invalidate(articleDetailProvider(articleId));
                 ref.invalidate(articleListProvider);
+              },
+              onComment: (content) async {
+                await ref
+                    .read(newsRepositoryProvider)
+                    .commentArticle(articleId, content);
+                ref.invalidate(articleDetailProvider(articleId));
               },
               onRefresh:
                   () async => ref.invalidate(articleDetailProvider(articleId)),
@@ -59,11 +75,13 @@ class _ArticleDetailBody extends StatelessWidget {
   const _ArticleDetailBody({
     required this.detail,
     required this.onReaction,
+    required this.onComment,
     required this.onRefresh,
   });
 
   final ArticleDetail detail;
   final Future<void> Function(String reaction) onReaction;
+  final Future<void> Function(String content) onComment;
   final Future<void> Function() onRefresh;
 
   @override
@@ -145,6 +163,15 @@ class _ArticleDetailBody extends StatelessWidget {
             myReaction: article.myReaction,
             onLike: () => onReaction('like'),
             onDislike: () => onReaction('dislike'),
+          ),
+          const SizedBox(height: Spacing.xl),
+          const Divider(),
+          const SizedBox(height: Spacing.lg),
+          CommentSection(
+            comments: detail.comments,
+            commentsCount: article.commentsCount,
+            reportableType: 'article_comment',
+            onSubmit: onComment,
           ),
         ],
       ),

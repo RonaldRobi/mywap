@@ -7,10 +7,12 @@ import 'package:video_player/video_player.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../core/constants/prefs_keys.dart';
+import '../../loading_screen/application/loading_screen_providers.dart';
 import '../application/onboarding_providers.dart';
 import '../data/onboarding_repository.dart';
 
-const onboardingCompletedKey = 'onboarding_completed_v2';
+export '../../../core/constants/prefs_keys.dart' show onboardingCompletedKey;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -52,7 +54,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OnboardingSlideData(
       order: 3,
       title: 'Bersedia Untuk Bermula',
-      body: 'Log masuk untuk meneruskan ke pengalaman myWAP anda.',
+      body:
+          'Terokai berita, artikel dan program tanpa akaun — atau daftar '
+          'sebagai ahli untuk akses penuh.',
       buttonLabel: 'Mula',
       backgroundStart: '#2F6B32',
       backgroundEnd: '#071525',
@@ -73,7 +77,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } catch (_) {
       // Kegagalan menyimpan status tidak sepatutnya menghalang navigasi.
     }
-    if (mounted) context.go('/login');
+    if (mounted) context.go('/home');
   }
 
   Future<void> _next(List<OnboardingSlideData> slides) async {
@@ -111,6 +115,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             itemCount: slides.length,
             onPageChanged: (page) => setState(() => _page = page),
             itemBuilder: (_, index) => _Slide(slide: slides[index]),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20, top: 8),
+                child: const _OnboardingLogo(),
+              ),
+            ),
           ),
           SafeArea(
             child: Align(
@@ -180,6 +193,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OnboardingLogo extends ConsumerWidget {
+  const _OnboardingLogo();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logo = ref.watch(appLogoProvider);
+    if (logo == null || logo.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: 46,
+      height: 46,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.md,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Image.network(
+        logo,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),
     );
   }

@@ -7,6 +7,7 @@ use App\Models\ArticleCategory;
 use App\Models\ArticleComment;
 use App\Models\ArticleReaction;
 use App\Models\User;
+use App\Models\UserBlock;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -82,6 +83,8 @@ class ArticleService
 
     /**
      * Payload penuh untuk halaman/endpoint show artikel.
+     * Tetamu (user null) melihat kandungan + kiraan komen, tetapi bukan senarai
+     * komen (komen adalah ciri ahli).
      */
     public function showDetail(Article $article, ?User $user = null, ?string $sessionId = null): array
     {
@@ -97,20 +100,29 @@ class ArticleService
                     $q->where('session_id', $sessionId);
                 }
             })->value('reaction');
+        $commentsCount = $article->comments()->where('is_hidden', false)->count();
 
-        $comments = $article->comments()
-            ->where('is_hidden', false)
-            ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
-            ->latest()
-            ->take(100)
-            ->get()
-            ->map(fn ($comment) => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Anonim',
-                'created_at' => $comment->created_at?->diffForHumans(),
-            ])
-            ->values();
+        $blockedIds = $user
+            ? UserBlock::query()->where('blocker_id', $user->id)->pluck('blocked_id')->all()
+            : [];
+
+        $comments = $user
+            ? $article->comments()
+                ->where('is_hidden', false)
+                ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('user_id', $blockedIds))
+                ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
+                ->latest()
+                ->take(100)
+                ->get()
+                ->map(fn ($comment) => [
+                    'id' => $comment->id,
+                    'user_id' => $comment->user_id,
+                    'content' => $comment->content,
+                    'user_name' => $comment->user?->name ?? $comment->anonymous_name ?? 'Anonim',
+                    'created_at' => $comment->created_at?->diffForHumans(),
+                ])
+                ->values()
+            : collect();
 
         return [
             'article' => [
@@ -125,6 +137,7 @@ class ArticleService
                 'author_name' => $article->author?->name ?? '-',
                 'likes_count' => $likes,
                 'dislikes_count' => $dislikes,
+                'comments_count' => $commentsCount,
                 'my_reaction' => $myReaction,
                 'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
                 'tags' => $article->tags->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),

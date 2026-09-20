@@ -72,11 +72,7 @@ class _FakeInfaqRepository implements InfaqRepository {
   }
 }
 
-const _user = User(
-  name: 'Ali',
-  email: 'ali@test.com',
-  phone: '0123456789',
-);
+const _user = User(name: 'Ali', email: 'ali@test.com', phone: '0123456789');
 
 const _listData = InfaqListData(
   infaqs: [
@@ -167,7 +163,10 @@ void main() {
   testWidgets('InfaqScreen renders list with progress and org', (tester) async {
     await setViewSize(tester);
     await tester.pumpWidget(
-      _wrap(const InfaqScreen(), repo: _FakeInfaqRepository(listData: _listData)),
+      _wrap(
+        const InfaqScreen(),
+        repo: _FakeInfaqRepository(listData: _listData),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -212,7 +211,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('InfaqDetailScreen renders description, donations, related', (tester) async {
+  testWidgets('InfaqDetailScreen renders description, donations, related', (
+    tester,
+  ) async {
     await setViewSize(tester);
     await tester.pumpWidget(
       _wrap(
@@ -227,14 +228,22 @@ void main() {
     expect(find.text('Penerangan'), findsOneWidget);
     expect(find.text('Sumbang Sekarang'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Sumbangan Terkini'));
+    await tester.scrollUntilVisible(
+      find.text('Sumbangan Terkini'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Sumbangan Terkini'), findsOneWidget);
     expect(find.text('Ali'), findsOneWidget);
     expect(find.textContaining('Semoga dipermudahkan'), findsOneWidget);
     expect(find.textContaining(Formatters.currency(100)), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Infaq Lain'));
+    await tester.scrollUntilVisible(
+      find.text('Infaq Lain'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Infaq Lain'), findsOneWidget);
     expect(find.text('Kempen Buku Raya'), findsOneWidget);

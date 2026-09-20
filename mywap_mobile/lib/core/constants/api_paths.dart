@@ -4,6 +4,7 @@
 abstract final class ApiPaths {
   // ---- App config (public, sebelum login) ----
   static const String appConfig = '/app-config';
+  static const String publicHome = '/public/home';
 
   // ---- Auth ----
   static const String login = '/auth/login';
@@ -28,8 +29,10 @@ abstract final class ApiPaths {
   static const String memberFeeStatus = '/member/fee-status';
   static const String memberPayFee = '/member/pay-fee';
   static const String memberAnnouncements = '/member/announcements';
-  static String memberAnnouncementReact(int id) => '/member/announcements/$id/react';
-  static String memberAnnouncementRead(int id) => '/member/announcements/$id/read';
+  static String memberAnnouncementReact(int id) =>
+      '/member/announcements/$id/react';
+  static String memberAnnouncementRead(int id) =>
+      '/member/announcements/$id/read';
   static const String memberLibrary = '/member/library';
   static const String memberReferral = '/member/referral';
   static const String memberFinancialOverview = '/member/financial/overview';
@@ -39,7 +42,8 @@ abstract final class ApiPaths {
   // ---- Event registration (member) ----
   static String eventRegistrationForm(int eventId, int formId) =>
       '/events/$eventId/registration/$formId';
-  static String eventRegistration(int eventId) => '/events/$eventId/registration';
+  static String eventRegistration(int eventId) =>
+      '/events/$eventId/registration';
 
   // ---- Organization ----
   static const String organizationInfo = '/organization/info';
@@ -114,4 +118,9 @@ abstract final class ApiPaths {
   // ---- Push notification / FCM ----
   static const String deviceTokens = '/device-tokens';
   static const String pushDebug = '/push-debug';
+
+  // ---- Moderation (report & block UGC) ----
+  static const String reports = '/reports';
+  static const String blocks = '/blocks';
+  static String unblock(int userId) => '/blocks/$userId';
 }

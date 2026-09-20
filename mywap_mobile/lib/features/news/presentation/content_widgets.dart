@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../moderation/application/moderation_providers.dart';
+import '../../public/presentation/guest_prompt.dart';
 import '../data/models/news.dart';
 
 /// Like / dislike reaction bar shared by news + article detail screens.
@@ -70,13 +74,19 @@ class _ReactionChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: Spacing.sm,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(selected ? selectedIcon : icon, size: 20, color: color),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+              Text(
+                label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
         ),
@@ -86,17 +96,31 @@ class _ReactionChip extends StatelessWidget {
 }
 
 /// Comment list + composer shared by news + article detail screens.
-class CommentSection extends StatefulWidget {
-  const CommentSection({super.key, required this.comments, required this.onSubmit});
+///
+/// Komen ialah ciri ahli: tetamu hanya melihat kiraan komen dan gesaan log
+/// masuk. Setiap komen ahli boleh dilaporkan atau penggunanya disekat
+/// (keperluan App Review — report/block UGC).
+class CommentSection extends ConsumerStatefulWidget {
+  const CommentSection({
+    super.key,
+    required this.comments,
+    required this.commentsCount,
+    required this.reportableType,
+    required this.onSubmit,
+  });
 
   final List<Comment> comments;
+  final int commentsCount;
+
+  /// `article_comment` atau `news_comment`.
+  final String reportableType;
   final Future<void> Function(String content) onSubmit;
 
   @override
-  State<CommentSection> createState() => _CommentSectionState();
+  ConsumerState<CommentSection> createState() => _CommentSectionState();
 }
 
-class _CommentSectionState extends State<CommentSection> {
+class _CommentSectionState extends ConsumerState<CommentSection> {
   final _controller = TextEditingController();
   bool _submitting = false;
 
@@ -121,7 +145,9 @@ class _CommentSectionState extends State<CommentSection> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Komen gagal dihantar. Sila cuba lagi.')),
+          const SnackBar(
+            content: Text('Komen gagal dihantar. Sila cuba lagi.'),
+          ),
         );
       }
     } finally {
@@ -129,13 +155,135 @@ class _CommentSectionState extends State<CommentSection> {
     }
   }
 
+  Future<void> _report(Comment comment) async {
+    const reasons = <String, String>{
+      'spam': 'Spam atau iklan',
+      'harassment': 'Gangguan / buli',
+      'hate': 'Ucapan kebencian',
+      'sexual': 'Kandungan seksual',
+      'violence': 'Keganasan',
+      'misinformation': 'Maklumat palsu',
+      'other': 'Lain-lain',
+    };
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder:
+          (sheetContext) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  child: Text(
+                    'Laporkan Komen',
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                ),
+                for (final entry in reasons.entries)
+                  ListTile(
+                    title: Text(entry.value),
+                    onTap: () => Navigator.of(sheetContext).pop(entry.key),
+                  ),
+              ],
+            ),
+          ),
+    );
+    if (reason == null || comment.id == null || !mounted) return;
+
+    try {
+      await ref
+          .read(moderationRepositoryProvider)
+          .reportComment(
+            reportableType: widget.reportableType,
+            reportableId: comment.id!,
+            reason: reason,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Laporan dihantar. Terima kasih.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Laporan gagal dihantar.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _block(Comment comment) async {
+    final userId = comment.userId;
+    if (userId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Sekat Pengguna'),
+            content: Text(
+              'Komen daripada ${comment.userName ?? 'pengguna ini'} tidak '
+              'akan dipaparkan lagi kepada anda.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Sekat'),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(moderationRepositoryProvider).blockUser(userId);
+      ref.invalidate(blockedUserIdsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pengguna telah disekat.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sekatan gagal. Sila cuba lagi.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isAuthenticated = ref.watch(currentUserProvider) != null;
+
+    if (!isAuthenticated) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Komen (${widget.commentsCount})',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: Spacing.md),
+          const GuestLoginBanner(
+            message: 'Log masuk sebagai ahli untuk membaca dan menulis komen.',
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Komen (${widget.comments.length})', style: theme.textTheme.titleMedium),
+        Text(
+          'Komen (${widget.commentsCount})',
+          style: theme.textTheme.titleMedium,
+        ),
         const SizedBox(height: Spacing.md),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -169,20 +317,36 @@ class _CommentSectionState extends State<CommentSection> {
             child: Center(child: Text('Tiada komen lagi.')),
           )
         else
-          ...widget.comments.map((c) => _CommentTile(comment: c)),
+          ...widget.comments.map(
+            (c) => _CommentTile(
+              comment: c,
+              onReport: () => _report(c),
+              onBlock: () => _block(c),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment});
+class _CommentTile extends ConsumerWidget {
+  const _CommentTile({
+    required this.comment,
+    required this.onReport,
+    required this.onBlock,
+  });
 
   final Comment comment;
+  final VoidCallback onReport;
+  final VoidCallback onBlock;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final currentUserId = ref.watch(currentUserProvider)?.id;
+    final isOwnComment =
+        comment.userId != null && comment.userId == currentUserId;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
       child: Row(
@@ -194,7 +358,10 @@ class _CommentTile extends StatelessWidget {
               (comment.userName?.isNotEmpty ?? false)
                   ? comment.userName![0].toUpperCase()
                   : 'A',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: Spacing.md),
@@ -207,13 +374,42 @@ class _CommentTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         comment.userName ?? 'Ahli',
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     Text(
                       comment.createdAt ?? '',
-                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
+                    if (!isOwnComment && comment.userId != null)
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          iconSize: 18,
+                          tooltip: 'Pilihan',
+                          onSelected: (value) {
+                            if (value == 'report') onReport();
+                            if (value == 'block') onBlock();
+                          },
+                          itemBuilder:
+                              (_) => const [
+                                PopupMenuItem(
+                                  value: 'report',
+                                  child: Text('Lapor komen'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'block',
+                                  child: Text('Sekat pengguna'),
+                                ),
+                              ],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 2),
