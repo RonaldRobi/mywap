@@ -79,6 +79,7 @@ class InformationHubAdminController extends Controller
         $organizationIdFilter = $request->input('organization_id');
         $roleFilter = $request->input('role');
         $branchIdFilter = $request->input('branch_id');
+        $stateFilter = $request->input('state');
         $feeStatusFilter = $request->input('fee_status');
         $registeredFrom = $request->input('registered_from');
         $registeredTo = $request->input('registered_to');
@@ -106,6 +107,8 @@ class InformationHubAdminController extends Controller
 
         if ($branchIdFilter) {
             $query->where('branch_id', $branchIdFilter);
+        } elseif ($stateFilter) {
+            $query->whereHas('branch', fn ($q) => $q->where('state', $stateFilter));
         }
 
         if ($search) {
@@ -158,13 +161,20 @@ class InformationHubAdminController extends Controller
         }
 
         $branches = $isSuperadmin
-            ? Branch::where('is_active', true)->orderBy('name')->get(['id', 'name'])
-            : Branch::where('organization_id', $user->current_organization_id)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+            ? Branch::where('is_active', true)
+                ->when($organizationIdFilter, fn ($q) => $q->where('organization_id', $organizationIdFilter))
+                ->orderBy('state')->orderBy('name')
+                ->get(['id', 'name', 'state', 'organization_id'])
+            : Branch::where('organization_id', $user->current_organization_id)
+                ->where('is_active', true)
+                ->orderBy('state')->orderBy('name')
+                ->get(['id', 'name', 'state', 'organization_id']);
 
         $members = $query->when($sort === 'recent_activation', fn ($q) => $q->orderByDesc('first_login_at')->orderByDesc('id'))
             ->when($sort === 'name_asc', fn ($q) => $q->orderBy('name')->orderBy('id'))
             ->when($sort === 'name_desc', fn ($q) => $q->orderByDesc('name')->orderByDesc('id'))
-            ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation']), fn ($q) => $q->orderByDesc('created_at')->orderByDesc('id'))
+            ->when($sort === 'oldest', fn ($q) => $q->orderBy('created_at')->orderBy('id'))
+            ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation', 'oldest']), fn ($q) => $q->orderByDesc('created_at')->orderByDesc('id'))
             ->paginate($perPage)->withQueryString()
             ->through(fn (User $u) => [
                 'id' => $u->id,
@@ -172,6 +182,7 @@ class InformationHubAdminController extends Controller
                 'email' => $u->email,
                 'member_no' => $u->member_no,
                 'original_member_no' => $u->original_member_no,
+                'created_at' => $u->created_at?->format('d M Y'),
                 'ic_number' => $this->maskIcNumber($u->ic_number),
                 'phone' => $u->phone,
                 'dob' => $u->dob?->format('d M Y'),
@@ -267,6 +278,7 @@ class InformationHubAdminController extends Controller
                 'organization_id' => $organizationIdFilter,
                 'role' => $roleFilter,
                 'branch_id' => $branchIdFilter,
+                'state' => $stateFilter,
                 'fee_status' => $feeStatusFilter,
                 'registered_from' => $registeredFrom,
                 'registered_to' => $registeredTo,

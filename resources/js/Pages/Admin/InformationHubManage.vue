@@ -32,7 +32,7 @@ const props = defineProps({
     },
     filters: {
         type: Object,
-        default: () => ({ search: '', organization_id: '', role: '', sort: 'newest' }),
+        default: () => ({ search: '', organization_id: '', role: '', state: '', sort: 'newest' }),
     },
 });
 
@@ -205,11 +205,43 @@ function submitMember() {
 const searchQuery = ref(props.filters?.search ?? '');
 const organizationIdFilter = ref(props.filters?.organization_id ?? '');
 const roleFilter = ref(props.filters?.role ?? '');
+const stateFilter = ref(props.filters?.state ?? '');
 const branchIdFilter = ref(props.filters?.branch_id ?? '');
 const feeStatusFilter = ref(props.filters?.fee_status ?? '');
 const registeredFrom = ref(props.filters?.registered_from ?? '');
 const registeredTo = ref(props.filters?.registered_to ?? '');
 const sortBy = ref(props.filters?.sort ?? 'newest');
+
+// Cawangan yang sepadan dengan organisasi terpilih (superadmin) — asas cascade.
+const scopedBranches = computed(() => {
+    if (!props.isSuperadmin || !organizationIdFilter.value) return props.branches;
+    return props.branches.filter(b => String(b.organization_id) === String(organizationIdFilter.value));
+});
+
+// Senarai negeri unik daripada cawangan dalam skop.
+const availableStates = computed(() => {
+    const states = new Set();
+    scopedBranches.value.forEach(b => {
+        if (b.state) states.add(b.state);
+    });
+    return [...states].sort((a, b) => a.localeCompare(b));
+});
+
+// Cawangan ditapis ikut organisasi terpilih dan negeri terpilih.
+const availableBranches = computed(() => {
+    return scopedBranches.value.filter(b => !stateFilter.value || b.state === stateFilter.value);
+});
+
+// Label cawangan — tambah nama organisasi bila superadmin lihat semua organisasi
+// supaya nama negeri yang sama (cth. "Negeri Sembilan") tak mengelirukan.
+function branchLabel(b) {
+    if (!b) return '';
+    if (props.isSuperadmin && !organizationIdFilter.value) {
+        const org = props.organizations.find(o => String(o.id) === String(b.organization_id));
+        return org ? `${b.name} (${org.name})` : b.name;
+    }
+    return b.name;
+}
 
 let filterDebounce;
 let suppressNextWatch = false;
@@ -219,6 +251,7 @@ function buildFilterParams() {
         search: searchQuery.value?.trim() || '',
         organization_id: organizationIdFilter.value || '',
         role: roleFilter.value || '',
+        state: stateFilter.value || '',
         branch_id: branchIdFilter.value || '',
         fee_status: feeStatusFilter.value || '',
         registered_from: registeredFrom.value || '',
@@ -234,10 +267,20 @@ function requestNow() {
     setTimeout(() => { suppressNextWatch = false; }, 0);
 }
 
-watch([searchQuery, organizationIdFilter, roleFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
+watch([searchQuery, organizationIdFilter, roleFilter, stateFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
     if (suppressNextWatch) return;
     clearTimeout(filterDebounce);
     filterDebounce = setTimeout(requestNow, 300);
+});
+
+// Cascade: tukar organisasi → kosongkan negeri & cawangan; tukar negeri → kosongkan cawangan.
+watch(organizationIdFilter, () => {
+    stateFilter.value = '';
+    branchIdFilter.value = '';
+});
+
+watch(stateFilter, () => {
+    branchIdFilter.value = '';
 });
 
 function applyDateFilter() {
@@ -249,6 +292,7 @@ const hasActiveFilters = computed(() =>
         searchQuery.value?.trim() ||
         organizationIdFilter.value ||
         roleFilter.value ||
+        stateFilter.value ||
         branchIdFilter.value ||
         feeStatusFilter.value ||
         registeredFrom.value ||
@@ -274,8 +318,9 @@ const activeFilterChips = computed(() => {
     const org = props.organizations.find(o => String(o.id) === String(organizationIdFilter.value));
     if (org) chips.push({ key: 'organization_id', label: org.name });
     if (roleFilter.value) chips.push({ key: 'role', label: roleFilterLabels[roleFilter.value] ?? `Peranan: ${roleFilter.value}` });
+    if (stateFilter.value) chips.push({ key: 'state', label: `Negeri: ${stateFilter.value}` });
     const branch = props.branches.find(b => String(b.id) === String(branchIdFilter.value));
-    if (branch) chips.push({ key: 'branch_id', label: branch.name });
+    if (branch) chips.push({ key: 'branch_id', label: branchLabel(branch) });
     if (feeStatusFilter.value) chips.push({ key: 'fee_status', label: feeStatusFilterLabels[feeStatusFilter.value] ?? `Yuran: ${feeStatusFilter.value}` });
     if (registeredFrom.value || registeredTo.value) {
         const fmt = v => v ? new Date(`${v}T00:00:00`).toLocaleDateString('ms-MY') : '…';
@@ -288,11 +333,21 @@ function removeFilterChip(key) {
     switch (key) {
         case 'organization_id': organizationIdFilter.value = ''; break;
         case 'role': roleFilter.value = ''; break;
+        case 'state': stateFilter.value = ''; break;
         case 'branch_id': branchIdFilter.value = ''; break;
         case 'fee_status': feeStatusFilter.value = ''; break;
         default:
             clearDateRange();
             return;
+    }
+    requestNow();
+}
+
+function setSort(field) {
+    if (field === 'name') {
+        sortBy.value = sortBy.value === 'name_asc' ? 'name_desc' : 'name_asc';
+    } else if (field === 'created_at') {
+        sortBy.value = sortBy.value === 'newest' ? 'oldest' : 'newest';
     }
     requestNow();
 }
@@ -312,6 +367,7 @@ function resetFilters() {
     searchQuery.value = '';
     organizationIdFilter.value = '';
     roleFilter.value = '';
+    stateFilter.value = '';
     branchIdFilter.value = '';
     feeStatusFilter.value = '';
     registeredFrom.value = '';
@@ -889,7 +945,7 @@ async function finishImport() {
                 <!-- Filters grid -->
                 <div class="border-t border-gray-100 pt-4">
                     <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2.5">Tapis Ahli</p>
-                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" :class="isSuperadmin ? '' : 'lg:grid-cols-3'">
+                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5" :class="isSuperadmin ? '' : 'lg:grid-cols-4'">
                         <div v-if="isSuperadmin">
                             <label class="block text-[11px] font-semibold text-gray-500 mb-1">Organisasi</label>
                             <div class="relative">
@@ -918,11 +974,24 @@ async function finishImport() {
                         </div>
 
                         <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Negeri</label>
+                            <div class="relative">
+                                <select v-model="stateFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Negeri</option>
+                                    <option v-for="s in availableStates" :key="s" :value="s">{{ s }}</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
                             <label class="block text-[11px] font-semibold text-gray-500 mb-1">Cawangan</label>
                             <div class="relative">
                                 <select v-model="branchIdFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
                                     <option value="">Semua Cawangan</option>
-                                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                                    <option v-for="b in availableBranches" :key="b.id" :value="b.id">{{ branchLabel(b) }}</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -971,15 +1040,26 @@ async function finishImport() {
                         <thead class="bg-gray-50/70 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
                             <tr>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">No Ahli</th>
-                                <th scope="col" class="px-4 py-3 font-bold text-xs">Ahli</th>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">
+                                    <button type="button" @click="setSort('name')" class="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-gray-900">
+                                        Ahli
+                                        <svg class="h-3 w-3 transition-transform" :class="{ 'text-gray-900': ['name_asc', 'name_desc'].includes(sortBy), 'text-gray-300': !['name_asc', 'name_desc'].includes(sortBy), 'rotate-180': sortBy === 'name_desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                                    </button>
+                                </th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Organisasi & Yuran</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Peranan</th>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">
+                                    <button type="button" @click="setSort('created_at')" class="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-gray-900">
+                                        Didaftar
+                                        <svg class="h-3 w-3 transition-transform" :class="{ 'text-gray-900': ['newest', 'oldest'].includes(sortBy), 'text-gray-300': !['newest', 'oldest'].includes(sortBy), 'rotate-180': sortBy === 'oldest' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                                    </button>
+                                </th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs text-right">Tindakan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
                             <tr v-if="members.data.length === 0">
-                                <td colspan="5" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
+                                <td colspan="6" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
                             </tr>
                             <tr v-for="member in members.data" :key="member.id" class="hover:bg-gray-50/50 transition-colors">
                                 <td class="px-4 py-3">
@@ -1032,6 +1112,9 @@ async function finishImport() {
                                         <option v-if="!isSuperadmin" value="Admin Cawangan">Admin Cawangan</option>
                                         <option v-if="member.role === 'Superadmin'" value="Superadmin" disabled>Superadmin</option>
                                     </select>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs text-gray-500">{{ member.created_at || '—' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <div class="relative inline-flex items-center gap-1">
