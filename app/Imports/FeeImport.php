@@ -111,7 +111,7 @@ class FeeImport implements ToCollection, WithHeadingRow, WithStartRow
 
     protected function findUser(string $ic, string $memberNo): ?User
     {
-        $query = User::withoutGlobalScopes();
+        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
 
         if ($this->orgId) {
             $query->where('current_organization_id', $this->orgId);

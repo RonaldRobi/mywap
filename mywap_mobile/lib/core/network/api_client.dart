@@ -27,10 +27,16 @@ class ApiClient {
   final TokenStorage tokenStorage;
   final Dio _dio;
 
-  Future<dynamic> get(String path, {Map<String, dynamic>? query}) async {
+  /// Set [unwrap] to `false` for paginated endpoints so the full envelope
+  /// (`data` + `meta` + `links`) is returned instead of just the item list.
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? query,
+    bool unwrap = true,
+  }) async {
     try {
       final response = await _dio.get<dynamic>(path, queryParameters: query);
-      return _unwrap(response);
+      return unwrap ? _unwrap(response) : response.data;
     } on DioException catch (e) {
       throw mapApiError(e);
     }
@@ -39,6 +45,15 @@ class ApiClient {
   Future<dynamic> post(String path, {Object? body, Map<String, dynamic>? query}) async {
     try {
       final response = await _dio.post<dynamic>(path, data: body, queryParameters: query);
+      return _unwrap(response);
+    } on DioException catch (e) {
+      throw mapApiError(e);
+    }
+  }
+
+  Future<dynamic> patch(String path, {Object? body, Map<String, dynamic>? query}) async {
+    try {
+      final response = await _dio.patch<dynamic>(path, data: body, queryParameters: query);
       return _unwrap(response);
     } on DioException catch (e) {
       throw mapApiError(e);

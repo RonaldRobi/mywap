@@ -316,7 +316,7 @@ class AdminFinanceController extends Controller
     {
         $query = Payment::query()->where('status', 'successful')->whereYear('created_at', $year);
         if ($orgId) {
-            $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('current_organization_id', $orgId));
+            $query->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $orgId));
         }
 
         return $query;

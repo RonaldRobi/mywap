@@ -62,7 +62,7 @@ class NewsService
     {
         $categoryId = $request->integer('category_id');
 
-        $relations = ['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')];
+        $relations = ['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name')];
 
         if ($user) {
             $relations['reactions'] = fn ($q) => $q->where('user_id', $user->id)->select('id', 'news_post_id', 'user_id', 'reaction');
@@ -105,7 +105,7 @@ class NewsService
      */
     public function showDetail(NewsPost $post, ?User $user = null): array
     {
-        $post->loadMissing(['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')]);
+        $post->loadMissing(['category:id,name,slug', 'organization:id,name,slug', 'author' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name')]);
 
         $likes = $post->reactions()->where('reaction', 'like')->count();
         $dislikes = $post->reactions()->where('reaction', 'dislike')->count();
@@ -120,7 +120,7 @@ class NewsService
             ? $post->comments()
                 ->where('is_hidden', false)
                 ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('user_id', $blockedIds))
-                ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
+                ->with(['user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name')])
                 ->latest()
                 ->take(100)
                 ->get()

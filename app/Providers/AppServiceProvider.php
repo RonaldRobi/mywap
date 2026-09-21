@@ -52,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
         // web, DAN mesti didaftar di service provider — bukan dalam fail route —
         // kerana route:cache (dijalankan deploy via optimize) membuang binders
         // yang diisytihar dalam fail route.
-        Route::bind('poll', fn ($value) => Poll::withoutGlobalScopes()->findOrFail($value));
+        Route::bind('poll', fn ($value) => Poll::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->findOrFail($value));
     }
 
     private function registerApiRateLimiters(): void

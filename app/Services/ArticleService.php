@@ -88,7 +88,7 @@ class ArticleService
      */
     public function showDetail(Article $article, ?User $user = null, ?string $sessionId = null): array
     {
-        $article->loadMissing(['author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name'), 'organization:id,name,slug', 'categories', 'tags', 'media']);
+        $article->loadMissing(['author' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name'), 'organization:id,name,slug', 'categories', 'tags', 'media']);
 
         $likes = $article->reactions()->where('reaction', 'like')->count();
         $dislikes = $article->reactions()->where('reaction', 'dislike')->count();
@@ -110,7 +110,7 @@ class ArticleService
             ? $article->comments()
                 ->where('is_hidden', false)
                 ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('user_id', $blockedIds))
-                ->with(['user' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
+                ->with(['user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name')])
                 ->latest()
                 ->take(100)
                 ->get()
@@ -219,7 +219,7 @@ class ArticleService
     private function publishedQuery()
     {
         return Article::with([
-            'author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name'),
+            'author' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name'),
             'organization:id,name,slug',
             'categories',
             'tags',

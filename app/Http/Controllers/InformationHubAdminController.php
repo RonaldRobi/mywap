@@ -16,6 +16,7 @@ use App\Models\Organization;
 use App\Models\OrganizationPosition;
 use App\Models\User;
 use App\Services\FeeService;
+use App\Support\MemberSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -80,23 +81,24 @@ class InformationHubAdminController extends Controller
         $roleFilter = $request->input('role');
         $branchIdFilter = $request->input('branch_id');
         $stateFilter = $request->input('state');
+        $activeFilter = $request->input('active');
         $feeStatusFilter = $request->input('fee_status');
         $registeredFrom = $request->input('registered_from');
         $registeredTo = $request->input('registered_to');
         $sort = $request->input('sort', 'newest');
+        $trashed = $request->boolean('trashed');
         $perPage = (int) ($request->input('per_page', 25));
         $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 25;
 
         $year = now()->year;
 
-        $query = User::query()->with([
+        $query = ($trashed ? User::onlyTrashed() : User::query())->with([
             'organization:id,name,color_theme',
             'branch:id,name,organization_id',
             'roles',
             'membershipFees',
             'transitionHistory.fromOrganization',
             'transitionHistory.toOrganization',
-            'rsvps.event.organization',
         ]);
 
         if (! $isSuperadmin) {
@@ -112,32 +114,22 @@ class InformationHubAdminController extends Controller
         }
 
         if ($search) {
-            // Split on every kind of whitespace (incl. non-breaking space from
-            // Excel/legacy imports) so "Muhamad hafizzudin" still matches names
-            // stored with NBSP or multiple spaces between words.
-            $tokens = preg_split('/[\s\x{00A0}\x{3000}]+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY);
-
-            if ($tokens) {
-                $query->where(function ($q) use ($tokens) {
-                    foreach ($tokens as $token) {
-                        $escaped = addcslashes($token, '\\%_');
-                        $q->where(function ($sub) use ($escaped) {
-                            $sub->where('name', 'like', "%{$escaped}%")
-                                ->orWhere('email', 'like', "%{$escaped}%")
-                                ->orWhere('phone', 'like', "%{$escaped}%")
-                                ->orWhere('ic_number', 'like', "%{$escaped}%")
-                                ->orWhere('member_no', 'like', "%{$escaped}%")
-                                ->orWhere('original_member_no', 'like', "%{$escaped}%");
-                        });
-                    }
-                });
-            }
+            // Padanan tidak sensitif huruf besar/kecil + tahan NBSP / berbilang
+            // ruang, dan OR antara token supaya nama penuh tetap muncul walaupun
+            // ada perkataan tambahan (cth. "bin Abdullah").
+            MemberSearch::apply($query, $search);
         }
 
         if ($roleFilter) {
             $query->whereHas('roles', function ($q) use ($roleFilter) {
                 $q->where('name', $roleFilter);
             });
+        }
+
+        if ($activeFilter === 'active') {
+            $query->where('is_active', true);
+        } elseif ($activeFilter === 'inactive') {
+            $query->where('is_active', false);
         }
 
         if ($feeStatusFilter) {
@@ -212,23 +204,13 @@ class InformationHubAdminController extends Controller
                 'role' => $u->roles->pluck('name')->first() ?? 'Member',
                 'has_role_admin_cawangan' => $u->roles->pluck('name')->contains('Admin Cawangan'),
                 'is_active' => (bool) $u->is_active,
+                'deleted_at' => $u->deleted_at?->format('d M Y H:i'),
                 'transition_history' => $u->transitionHistory->map(fn ($h) => [
                     'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
                     'to' => $h->toOrganization->name,
                     'date' => $h->transitioned_at->format('d M Y'),
                     'color' => $h->toOrganization?->color_theme ?? '#6b7280',
                 ])->values(),
-                'attended_programs' => $u->rsvps
-                    ->where('status', 'attended')
-                    ->sortByDesc('attended_at')
-                    ->values()
-                    ->map(fn ($rsvp) => [
-                        'title' => $rsvp->event?->title ?? 'Program tidak wujud',
-                        'date' => $rsvp->attended_at?->format('d M Y'),
-                        'year' => $rsvp->attended_at?->year,
-                        'org' => $rsvp->event?->organization?->name ?? '—',
-                        'color' => $rsvp->event?->organization?->color_theme ?? '#6b7280',
-                    ]),
                 'fee_status' => $u->membershipFees
                     ->where('year', $year)
                     ->first()?->status ?? 'unpaid',
@@ -237,12 +219,13 @@ class InformationHubAdminController extends Controller
         $positions = OrganizationPosition::where('organization_id', $user->current_organization_id)
             ->orderBy('display_order')->get(['id', 'name']);
 
-        $userQuery = User::withoutGlobalScopes()
+        $userQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id));
         $stats = [
             'total' => (clone $userQuery)->count(),
             'aktif' => (clone $userQuery)->where('is_active', true)->count(),
             'tidak_aktif' => (clone $userQuery)->where('is_active', false)->count(),
+            'trashed' => (clone $userQuery)->onlyTrashed()->count(),
         ];
 
         $orgStats = [];
@@ -279,11 +262,13 @@ class InformationHubAdminController extends Controller
                 'role' => $roleFilter,
                 'branch_id' => $branchIdFilter,
                 'state' => $stateFilter,
+                'active' => $activeFilter,
                 'fee_status' => $feeStatusFilter,
                 'registered_from' => $registeredFrom,
                 'registered_to' => $registeredTo,
                 'sort' => $sort,
                 'per_page' => $perPage,
+                'trashed' => $trashed,
             ],
         ]);
     }
@@ -616,7 +601,7 @@ class InformationHubAdminController extends Controller
         $next = ($max ?? 0) + 1;
         $memberNo = $prefix.str_pad($next, $padding, '0', STR_PAD_LEFT);
 
-        $user = User::withoutGlobalScopes()->create([
+        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'ic_number' => $data['ic_number'],
@@ -924,6 +909,143 @@ class InformationHubAdminController extends Controller
         return back()->with('success', 'Link reset kata laluan telah dihantar ke emel ahli.');
     }
 
+    /**
+     * Pindahkan ahli ke Tong Sampah (soft delete). Rekod & sejarah kekal.
+     * Superadmin (semua org) atau Admin (org sendiri) sahaja.
+     */
+    public function destroyMember(Request $request, User $user): RedirectResponse
+    {
+        $authUser = $request->user();
+        $isSuperadmin = (bool) $authUser?->hasRole('Superadmin');
+
+        abort_unless($isSuperadmin || $authUser?->hasRole('Admin'), 403);
+
+        if (! $isSuperadmin && $user->current_organization_id !== $authUser->current_organization_id) {
+            abort(403);
+        }
+
+        if ($authUser->id === $user->id) {
+            return back()->with('error', 'Anda tidak boleh memadam akaun anda sendiri.');
+        }
+
+        if ($user->hasRole('Superadmin')) {
+            return back()->with('error', 'Akaun Superadmin tidak boleh dipadam.');
+        }
+
+        $name = $user->name;
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'delete_member',
+            'description' => "Ahli \"{$name}\" dipindahkan ke Tong Sampah.",
+        ]);
+
+        $user->delete();
+
+        return back()->with('success', "Ahli \"{$name}\" telah dipindahkan ke Tong Sampah.");
+    }
+
+    /**
+     * Pindahkan beberapa ahli ke Tong Sampah sekaligus.
+     */
+    public function bulkDestroyMembers(Request $request): RedirectResponse
+    {
+        $authUser = $request->user();
+        $isSuperadmin = (bool) $authUser?->hasRole('Superadmin');
+        abort_unless($isSuperadmin || $authUser?->hasRole('Admin'), 403);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $query = User::query()->whereIn('id', $validated['ids']);
+        if (! $isSuperadmin) {
+            $query->where('current_organization_id', $authUser->current_organization_id);
+        }
+
+        $count = 0;
+        foreach ($query->get() as $user) {
+            if ($user->id === $authUser->id || $user->hasRole('Superadmin')) {
+                continue;
+            }
+
+            ActivityLog::create([
+                'user_id' => $authUser->id,
+                'organization_id' => $user->current_organization_id,
+                'target_type' => User::class,
+                'target_id' => $user->id,
+                'action' => 'delete_member',
+                'description' => "Ahli \"{$user->name}\" dipindahkan ke Tong Sampah (pukal).",
+            ]);
+
+            $user->delete();
+            $count++;
+        }
+
+        return back()->with('success', "{$count} ahli telah dipindahkan ke Tong Sampah.");
+    }
+
+    /**
+     * Pulihkan ahli dari Tong Sampah. Superadmin sahaja.
+     */
+    public function restoreMember(Request $request, int $id): RedirectResponse
+    {
+        $authUser = $request->user();
+        abort_unless($authUser?->hasRole('Superadmin'), 403);
+
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'restore_member',
+            'description' => "Ahli \"{$user->name}\" dipulihkan dari Tong Sampah.",
+        ]);
+
+        return back()->with('success', "Ahli \"{$user->name}\" telah dipulihkan.");
+    }
+
+    /**
+     * Padam ahli secara KEKAL dari Tong Sampah. Superadmin sahaja.
+     *
+     * AMARAN: rekod berkaitan yang mempunyai FK cascade (yuran, pembayaran,
+     * tempahan, respons undian, dll.) turut dipadam.
+     */
+    public function forceDeleteMember(Request $request, int $id): RedirectResponse
+    {
+        $authUser = $request->user();
+        abort_unless($authUser?->hasRole('Superadmin'), 403);
+
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        if ($user->hasRole('Superadmin')) {
+            return back()->with('error', 'Akaun Superadmin tidak boleh dipadam.');
+        }
+
+        $name = $user->name;
+        $organizationId = $user->current_organization_id;
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $organizationId,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'force_delete_member',
+            'description' => "Ahli \"{$name}\" dipadam secara kekal dari Tong Sampah.",
+        ]);
+
+        $user->forceDelete();
+
+        return back()->with('success', "Ahli \"{$name}\" telah dipadam secara kekal.");
+    }
+
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
@@ -949,6 +1071,38 @@ class InformationHubAdminController extends Controller
             ]);
 
         return response()->json(['data' => $logs]);
+    }
+
+    /**
+     * Program yang dihadiri oleh ahli — dimuatkan secara lazy apabila tab
+     * "Aktiviti" panel profil dibuka (elak muat berat pada senarai utama).
+     */
+    public function memberPrograms(Request $request, User $targetUser): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+            abort(403);
+        }
+
+        if (! $user->hasRole('Superadmin') && $targetUser->current_organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        $programs = $targetUser->rsvps()
+            ->with('event.organization:id,name,color_theme')
+            ->where('status', 'attended')
+            ->orderByDesc('attended_at')
+            ->get()
+            ->map(fn ($rsvp) => [
+                'title' => $rsvp->event?->title ?? 'Program tidak wujud',
+                'date' => $rsvp->attended_at?->format('d M Y'),
+                'year' => $rsvp->attended_at?->year,
+                'org' => $rsvp->event?->organization?->name ?? '—',
+                'color' => $rsvp->event?->organization?->color_theme ?? '#6b7280',
+            ])
+            ->values();
+
+        return response()->json(['data' => $programs]);
     }
 
     public function bulkBranch(Request $request): Response

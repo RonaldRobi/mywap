@@ -132,7 +132,7 @@ class FacilityBookingNotifier
             return collect();
         }
 
-        return User::withoutGlobalScopes()
+        return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->role($roleNames)
             ->where('current_organization_id', $organizationId)
             ->get(['id']);

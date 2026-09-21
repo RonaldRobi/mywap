@@ -222,7 +222,7 @@ class BroadcastController extends Controller
             return [];
         }
 
-        $users = User::withoutGlobalScopes()
+        $users = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->whereIn('id', $ids)
             ->get(['id', 'name', 'current_organization_id'])
             ->keyBy('id');

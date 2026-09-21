@@ -43,3 +43,15 @@ Build iOS/Android memerlukan beberapa GB. Jika `No space left on device`:
 - Endpoint awam untuk app (tanpa log masuk): `GET /api/v1/public/home`,
   `GET /api/v1/app-config` (pulangkan `logo_url`).
 - Selepas ubah backend, deploy (`./deploy.sh`) sebelum app release diuji.
+
+## Peraturan App Store — derma kebajikan (WAJIB)
+
+Apple (Guideline 3.2.2(iv)) tidak benarkan app mengumpul derma kebajikan
+(infaq) **di dalam** app melainkan organisasi diluluskan Benevity/Candid.
+
+- App **tidak boleh** kumpul jumlah/maklumat penderma dalam app.
+- Butang derma mesti **buka laman web kempen** dalam default browser atau
+  SFSafariViewController (`url_launcher` `LaunchMode.inAppBrowserView`).
+- Rujuk `mywap_mobile/lib/features/infaq/presentation/infaq_detail_screen.dart`.
+- Bayaran bukan-derma (yuran, e-dagang, tempahan) belum dihadkan, tetapi
+  perlu diberi perhatian.

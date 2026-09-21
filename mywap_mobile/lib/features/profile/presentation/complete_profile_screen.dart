@@ -8,6 +8,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
@@ -72,6 +73,13 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/profile'),
         title: const Text('Lengkapkan Profil'),
+        actions: [
+          IconButton(
+            tooltip: 'Log Keluar',
+            icon: const Icon(Icons.logout),
+            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+          ),
+        ],
       ),
       body: metaAsync.when(
         data: (meta) {
@@ -388,6 +396,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       await ref.read(profileRepositoryProvider).completeProfile(_payload());
       if (!mounted) return;
       ref.invalidate(profileProvider);
+      // Muat semula pengguna supaya pengawal penghalaan berhenti memaksa
+      // pengguna kembali ke skrin ini.
+      await ref.read(authControllerProvider.notifier).refreshCurrentUser();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profil berjaya dilengkapkan.')),
       );

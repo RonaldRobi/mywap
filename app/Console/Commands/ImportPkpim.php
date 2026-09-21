@@ -56,7 +56,7 @@ class ImportPkpim extends Command
         }
 
         // ── Cari max sequence no ahli P─ ────────────────────────────────
-        $maxSeq = User::withoutGlobalScopes()
+        $maxSeq = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('member_no', 'like', 'P%')
             ->max('member_no_sequence') ?? 0;
 
@@ -74,7 +74,7 @@ class ImportPkpim extends Command
 
         // ── Build records ───────────────────────────────────────────────
         $this->line('🔍 Memeriksa duplikasi IC...');
-        $existingIcs = User::withoutGlobalScopes()
+        $existingIcs = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('ic_number', '!=', '')
             ->pluck('id', 'ic_number')
             ->toArray();
@@ -132,7 +132,7 @@ class ImportPkpim extends Command
             }
 
             $ics = array_column($toInsert, 'ic_number');
-            $newUsers = User::withoutGlobalScopes()
+            $newUsers = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->whereIn('ic_number', $ics)
                 ->get(['id', 'ic_number']);
             $newIds = $newUsers->pluck('id')->toArray();

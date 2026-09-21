@@ -62,14 +62,14 @@ class PaymentController extends Controller
     public function allTransactions(Request $request): Response
     {
         $query = Payment::with(['user.organization'])
-            ->withoutGlobalScopes()
+            ->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->latest();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         if ($request->filled('org')) {
-            $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+            $query->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', (int) $request->org));
         }
         if ($request->filled('type')) {
@@ -81,7 +81,7 @@ class PaymentController extends Controller
                 $q->where('reference', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('gateway_ref', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%"));
             });
@@ -109,9 +109,9 @@ class PaymentController extends Controller
 
         $organizations = Organization::orderBy('min_age')->get(['id', 'name']);
         $summary = [
-            'total' => Payment::withoutGlobalScopes()->sum('amount'),
-            'successful' => Payment::withoutGlobalScopes()->where('status', 'successful')->sum('amount'),
-            'pending' => Payment::withoutGlobalScopes()->where('status', 'pending')->count(),
+            'total' => Payment::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->sum('amount'),
+            'successful' => Payment::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('status', 'successful')->sum('amount'),
+            'pending' => Payment::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('status', 'pending')->count(),
         ];
 
         return Inertia::render('Superadmin/Transactions', [
@@ -146,7 +146,7 @@ class PaymentController extends Controller
         $user = $request->user()->load('organization');
 
         $query = Payment::with('user')
-            ->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+            ->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id))
             ->latest();
 
@@ -159,7 +159,7 @@ class PaymentController extends Controller
                 $q->where('reference', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('gateway_ref', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%"));
             });
@@ -185,11 +185,11 @@ class PaymentController extends Controller
         ]);
 
         $summary = [
-            'total_collected' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+            'total_collected' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id))
                 ->where('status', 'successful')
                 ->sum('amount'),
-            'pending_count' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+            'pending_count' => Payment::whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id))
                 ->where('status', 'pending')
                 ->count(),
@@ -282,14 +282,14 @@ class PaymentController extends Controller
         $query = Payment::with('user');
 
         if ($isSuperadmin) {
-            $query->withoutGlobalScopes();
+            $query->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
 
             if ($request->filled('org')) {
-                $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+                $query->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                     ->where('current_organization_id', (int) $request->org));
             }
         } else {
-            $query->whereHas('user', fn ($q) => $q->withoutGlobalScopes()
+            $query->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id));
         }
 
@@ -304,7 +304,7 @@ class PaymentController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScopes()
+                    ->orWhereHas('user', fn ($u) => $u->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%"));
             });

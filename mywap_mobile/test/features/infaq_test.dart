@@ -25,18 +25,12 @@ class _FakeInfaqRepository implements InfaqRepository {
   _FakeInfaqRepository({
     this.listData,
     this.detailData,
-    this.donateResult,
     this.error,
   });
 
   final InfaqListData? listData;
   final InfaqDetail? detailData;
-  final InfaqDonateResult? donateResult;
   final ApiException? error;
-
-  int donateCalls = 0;
-  String? lastDonateSlug;
-  double? lastAmount;
 
   @override
   Future<InfaqListData> list() async {
@@ -65,10 +59,7 @@ class _FakeInfaqRepository implements InfaqRepository {
     bool isRecurring = false,
     String? frequency,
   }) async {
-    donateCalls++;
-    lastDonateSlug = slug;
-    lastAmount = amount;
-    return donateResult ?? const InfaqDonateSuccess(donation: InfaqDonation());
+    return const InfaqDonateSuccess(donation: InfaqDonation());
   }
 }
 
@@ -119,6 +110,7 @@ const _detailData = InfaqDetail(
     allowRecurring: true,
     totalDonors: 25,
     daysRunning: 12,
+    publicUrl: 'https://mywap.my/sumbangan/2026/07/07/bina-surau',
   ),
   recentDonations: [
     RecentDonation(
@@ -250,46 +242,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('donate flow success shows reference', (tester) async {
-    await setViewSize(tester);
-    final repo = _FakeInfaqRepository(
-      detailData: _detailData,
-      donateResult: const InfaqDonateSuccess(
-        donation: InfaqDonation(
-          reference: 'INFQ-TEST123',
-          amount: 50,
-          status: 'confirmed',
-        ),
-      ),
-    );
-
-    await tester.pumpWidget(
-      _wrap(const InfaqDetailScreen(slug: 'bina-surau'), repo: repo),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.text('Sumbang Sekarang'));
-    await tester.tap(find.text('Sumbang Sekarang'));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).first, '50');
-    await tester.pump();
-
-    await tester.ensureVisible(find.text('Sahkan Sumbangan'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Sahkan Sumbangan'));
-    await tester.pumpAndSettle();
-
-    expect(repo.donateCalls, 1);
-    expect(repo.lastDonateSlug, 'bina-surau');
-    expect(repo.lastAmount, 50);
-
-    expect(find.text('Terima kasih!'), findsOneWidget);
-    expect(find.text('INFQ-TEST123'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('donate flow validation requires amount', (tester) async {
+  testWidgets('donate button opens the campaign page outside the app', (
+    tester,
+  ) async {
     await setViewSize(tester);
     final repo = _FakeInfaqRepository(detailData: _detailData);
 
@@ -298,17 +253,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Sumbang Sekarang'));
+    await tester.scrollUntilVisible(
+      find.text('Sumbang Sekarang'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Sumbang Sekarang'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Sahkan Sumbangan'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Sahkan Sumbangan'));
-    await tester.pumpAndSettle();
-
-    expect(repo.donateCalls, 0);
-    expect(find.text('Sila masukkan jumlah sumbangan.'), findsOneWidget);
+    // Donations are completed outside the app (on the website). In tests the
+    // url_launcher plugin is absent, so the app must fail gracefully without
+    // crashing and without collecting any donation in-app.
     expect(tester.takeException(), isNull);
   });
 }

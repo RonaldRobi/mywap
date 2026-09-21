@@ -16,13 +16,13 @@ class SendAnnouncementJob implements ShouldQueue
 
     public function handle(): void
     {
-        $announcement = Announcement::withoutGlobalScopes()->find($this->announcementId);
+        $announcement = Announcement::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->find($this->announcementId);
 
         if (! $announcement) {
             return;
         }
 
-        $query = User::withoutGlobalScopes()
+        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $announcement->organization_id);
 
         if ($announcement->target_criteria === 'unpaid_fees') {

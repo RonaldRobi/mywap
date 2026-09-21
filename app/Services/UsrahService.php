@@ -38,7 +38,7 @@ class UsrahService
     public function myGroup(User $user): array
     {
         $groups = $user->usrahGroups()
-            ->with(['members' => fn ($q) => $q->withoutGlobalScopes()->select('users.id', 'name')])
+            ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
             ->get();
 
         $groupsData = $groups->map(fn (UsrahGroup $group) => $this->serializeGroup($group, $user->id));

@@ -18,7 +18,7 @@ class NotifyAnnualFees extends Command
 
         $this->info("Sending fee reminder notifications for year {$year}...");
 
-        $members = User::withoutGlobalScopes()
+        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->with('organization:id,name,fee_amount')
             ->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'unpaid'))
             ->get();

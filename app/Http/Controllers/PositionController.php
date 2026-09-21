@@ -151,7 +151,7 @@ class PositionController extends Controller
 
     public function members(Request $request, OrganizationPosition $position): JsonResponse
     {
-        $members = User::withoutGlobalScopes()
+        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $request->user()->current_organization_id)
             ->where('position', $position->name)
             ->select('id', 'name', 'email', 'phone', 'branch_name')

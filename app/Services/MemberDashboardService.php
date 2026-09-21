@@ -225,7 +225,7 @@ class MemberDashboardService
                 'public_url' => $infaq->public_url,
             ]);
 
-        $activePolls = Poll::withoutGlobalScopes()
+        $activePolls = Poll::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->with(['questions' => function ($q) {
                 $q->orderBy('sort_order')->take(1)->with(['options' => fn ($o) => $o->orderBy('sort_order')]);
             }])

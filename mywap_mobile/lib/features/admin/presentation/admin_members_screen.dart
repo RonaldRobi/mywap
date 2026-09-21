@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -10,6 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
 
@@ -66,8 +68,90 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (_) => _MemberDetailSheet(member: member),
+      builder: (_) => _MemberDetailSheet(
+        member: member,
+        canDelete:
+            ref.read(currentUserProvider)?.roles?.contains('Superadmin') ??
+                false,
+        onToggleActive: () => _toggleActive(member),
+        onDelete: () => _deleteMember(member),
+      ),
     );
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _toggleActive(AdminMember member) async {
+    final id = member.id;
+    if (id == null) return;
+    final activate = !member.activeFlag;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(activate ? 'Aktifkan semula ahli?' : 'Nyahaktifkan ahli?'),
+        content: Text('${member.name} (${member.memberNo})'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(activate ? 'Aktifkan' : 'Nyahaktifkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(adminMembersControllerProvider.notifier).toggleActive(id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _snack(activate ? 'Ahli diaktifkan semula.' : 'Ahli dinyahaktifkan.');
+    } on ApiException catch (e) {
+      if (mounted) _snack(e.message);
+    }
+  }
+
+  Future<void> _deleteMember(AdminMember member) async {
+    final id = member.id;
+    if (id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Padam ahli?'),
+        content: Text(
+          '${member.name} akan dipindahkan ke Tong Sampah. '
+          'Rekod kewangan & sejarah kekal dan boleh dipulihkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Padam'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(adminMembersControllerProvider.notifier).deleteMember(id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _snack('Ahli telah dipindahkan ke Tong Sampah.');
+    } on ApiException catch (e) {
+      if (mounted) _snack(e.message);
+    }
   }
 
   @override
@@ -213,9 +297,17 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _MemberDetailSheet extends StatelessWidget {
-  const _MemberDetailSheet({required this.member});
+  const _MemberDetailSheet({
+    required this.member,
+    required this.canDelete,
+    required this.onToggleActive,
+    required this.onDelete,
+  });
 
   final AdminMember member;
+  final bool canDelete;
+  final VoidCallback onToggleActive;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -228,6 +320,7 @@ class _MemberDetailSheet extends StatelessWidget {
       ('Cawangan', member.branchName),
       ('Organisasi', member.organizationName ?? '-'),
       ('Status', member.isActive ? 'Aktif' : 'Belum Lengkap'),
+      ('Akaun', member.activeFlag ? 'Diaktifkan' : 'Dinyahaktifkan'),
       ('Didaftarkan', Formatters.date(member.createdAt)),
       ('Profil Lengkap', Formatters.date(member.profileCompletedAt)),
     ];
@@ -266,6 +359,35 @@ class _MemberDetailSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: Spacing.sm),
+            ],
+            const SizedBox(height: Spacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onToggleActive,
+                icon: Icon(
+                  member.activeFlag
+                      ? Icons.person_off_outlined
+                      : Icons.person_outline,
+                ),
+                label: Text(
+                  member.activeFlag ? 'Nyahaktifkan Ahli' : 'Aktifkan Semula',
+                ),
+              ),
+            ),
+            if (canDelete) ...[
+              const SizedBox(height: Spacing.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                  ),
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Padam Ahli'),
+                ),
+              ),
             ],
           ],
         ),

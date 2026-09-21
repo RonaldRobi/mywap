@@ -243,6 +243,45 @@ class AdminApiTest extends TestCase
             ->assertJsonPath('data.0.status', 'pending');
     }
 
+    public function test_admin_can_toggle_member_active(): void
+    {
+        $this->member->update(['is_active' => true]);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->patchJson('/api/v1/admin/members/'.$this->member->id.'/toggle-active')
+            ->assertOk()
+            ->assertJsonPath('data.id', $this->member->id)
+            ->assertJsonPath('data.is_active', false);
+
+        $this->assertFalse((bool) $this->member->fresh()->is_active);
+
+        $this->patchJson('/api/v1/admin/members/'.$this->member->id.'/toggle-active')
+            ->assertOk()
+            ->assertJsonPath('data.is_active', true);
+    }
+
+    public function test_superadmin_can_soft_delete_member_via_api(): void
+    {
+        Sanctum::actingAs($this->superadmin);
+
+        $this->deleteJson('/api/v1/admin/members/'.$this->member->id)
+            ->assertOk()
+            ->assertJsonPath('data.id', $this->member->id);
+
+        $this->assertSoftDeleted('users', ['id' => $this->member->id]);
+    }
+
+    public function test_regular_admin_cannot_delete_member_via_api(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->deleteJson('/api/v1/admin/members/'.$this->member->id)
+            ->assertForbidden();
+
+        $this->assertNotSoftDeleted('users', ['id' => $this->member->id]);
+    }
+
     // ─── Yuran ───────────────────────────────────────────────────────────────
 
     public function test_fees_returns_summary_and_fees(): void

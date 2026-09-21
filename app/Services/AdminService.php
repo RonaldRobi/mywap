@@ -15,6 +15,7 @@ use App\Models\Payment;
 use App\Models\Registration;
 use App\Models\User;
 use App\Models\UsrahGroup;
+use App\Support\MemberSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class AdminService
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
 
-        $users = User::withoutGlobalScopes()
+        $users = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId));
 
         $totalMembers = (clone $users)->count();
@@ -66,7 +67,7 @@ class AdminService
         $payments = Payment::query()
             ->where('status', 'successful')
             ->when(! $isSuperadmin, function ($q) use ($orgId) {
-                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScopes()->where('current_organization_id', $orgId));
+                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $orgId));
             });
 
         $totalRevenue = (float) (clone $payments)->sum('amount');
@@ -74,7 +75,7 @@ class AdminService
         $pendingPayments = Payment::query()
             ->where('status', 'pending')
             ->when(! $isSuperadmin, function ($q) use ($orgId) {
-                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScopes()->where('current_organization_id', $orgId));
+                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $orgId));
             })
             ->count();
 
@@ -85,7 +86,7 @@ class AdminService
             ->where('created_at', '<=', now()->endOfMonth())
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->whereHas('user', function ($innerQuery) use ($user) {
-                    $innerQuery->withoutGlobalScopes()->where('current_organization_id', $user->current_organization_id);
+                    $innerQuery->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $user->current_organization_id);
                 });
             })
             ->sum('amount');
@@ -160,7 +161,7 @@ class AdminService
                 ->orderBy('min_age')
                 ->get(['id', 'name', 'slug', 'color_theme']);
 
-            $counts = User::withoutGlobalScopes()
+            $counts = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->whereIn('current_organization_id', $orgs->pluck('id'))
                 ->selectRaw('current_organization_id, COUNT(*) as total')
                 ->groupBy('current_organization_id')
@@ -339,17 +340,10 @@ class AdminService
         $search = $request->input('search');
         $status = $request->input('status');
 
-        $query = User::withoutGlobalScopes()
+        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->with('organization:id,name')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner->where('name', 'like', "%{$search}%")
-                        ->orWhere('member_no', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('ic_number', 'like', "%{$search}%");
-                });
-            })
+            ->when($search, fn ($q) => MemberSearch::apply($q, $search))
             ->when($status === 'active', fn ($q) => $q->whereNotNull('profile_completed_at'))
             ->when($status === 'pending', fn ($q) => $q->whereNull('profile_completed_at'))
             ->latest('created_at');
@@ -368,6 +362,7 @@ class AdminService
                 ? ['id' => $u->organization->id, 'name' => $u->organization->name]
                 : null,
             'status' => $u->profile_completed_at ? 'active' : 'pending',
+            'is_active' => (bool) $u->is_active,
             'created_at' => $u->created_at?->toISOString(),
             'profile_completed_at' => $u->profile_completed_at?->toISOString(),
         ]);
@@ -386,7 +381,7 @@ class AdminService
 
         $year = (int) $request->input('year', now()->year);
 
-        $query = User::withoutGlobalScopes()
+        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)])
             ->with('organization:id,name,slug')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
@@ -454,7 +449,7 @@ class AdminService
             ->where('status', 'successful')
             ->whereYear('created_at', $year)
             ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request) {
-                $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScopes()->where('current_organization_id',
+                $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id',
                     $isSuperadmin ? (int) $request->organization_id : $orgId));
             })
             ->groupBy('month')
@@ -476,7 +471,7 @@ class AdminService
         $expectedAmount = 0;
         $activeMembers = 0;
         if ($orgIds) {
-            $counts = User::withoutGlobalScopes()
+            $counts = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->whereIn('current_organization_id', array_keys($orgIds))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->selectRaw('current_organization_id, COUNT(*) as total')

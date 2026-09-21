@@ -20,7 +20,7 @@ class UsrahController extends Controller
         $user = $request->user();
 
         $groups = UsrahGroup::query()
-            ->with(['members' => fn ($q) => $q->withoutGlobalScopes()->select('users.id', 'name')])
+            ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
             ->latest()
             ->get()
             ->map(fn (UsrahGroup $group) => [
@@ -38,7 +38,7 @@ class UsrahController extends Controller
                     ->values(),
             ]);
 
-        $members = User::withoutGlobalScopes()
+        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $user->current_organization_id)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);

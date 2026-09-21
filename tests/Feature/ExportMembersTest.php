@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ExportMembersTest extends TestCase
@@ -12,6 +13,8 @@ class ExportMembersTest extends TestCase
 
     public function test_full_export_contains_address_columns(): void
     {
+        Role::create(['name' => 'Superadmin', 'guard_name' => 'web']);
+
         $superadmin = User::factory()->create();
         $superadmin->assignRole('Superadmin');
 

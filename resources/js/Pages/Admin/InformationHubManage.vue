@@ -24,7 +24,7 @@ const props = defineProps({
     },
     stats: {
         type: Object,
-        default: () => ({ total: 0, paid: 0, due: 0, life_member: 0 }),
+        default: () => ({ total: 0, paid: 0, due: 0, life_member: 0, trashed: 0 }),
     },
     orgStats: {
         type: Array,
@@ -32,7 +32,7 @@ const props = defineProps({
     },
     filters: {
         type: Object,
-        default: () => ({ search: '', organization_id: '', role: '', state: '', sort: 'newest' }),
+        default: () => ({ search: '', organization_id: '', role: '', state: '', sort: 'newest', trashed: false }),
     },
 });
 
@@ -115,19 +115,123 @@ function resetPassword(member) {
     });
 }
 
+// ─── Padam / Pulih Ahli ───────────────────────────────────────────────────────
+
+const showDeleteModal = ref(false);
+const deleteTargetMember = ref(null);
+const deleteConfirmName = ref('');
+const deletingMember = ref(false);
+const deleteMode = ref('trash'); // 'trash' (soft) | 'force' (kekal)
+
+function openDeleteModal(member, mode = 'trash') {
+    deleteTargetMember.value = member;
+    deleteMode.value = mode;
+    deleteConfirmName.value = '';
+    showDeleteModal.value = true;
+}
+
+function closeDeleteModal() {
+    showDeleteModal.value = false;
+    deleteTargetMember.value = null;
+    deleteConfirmName.value = '';
+}
+
+const canConfirmDelete = computed(() => {
+    const target = deleteTargetMember.value;
+    if (!target) return false;
+    return deleteConfirmName.value.trim() !== '' &&
+        deleteConfirmName.value.trim().toLowerCase() === (target.name ?? '').trim().toLowerCase();
+});
+
+function confirmDeleteMember() {
+    if (!deleteTargetMember.value || !canConfirmDelete.value) return;
+    deletingMember.value = true;
+    const isForce = deleteMode.value === 'force';
+    const routeName = isForce ? 'admin.hub.members.force-delete' : 'admin.hub.members.destroy';
+    router.delete(route(routeName, deleteTargetMember.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeDeleteModal();
+            openDropdownId.value = null;
+        },
+        onFinish: () => { deletingMember.value = false; },
+    });
+}
+
+function restoreMember(member) {
+    if (!confirm(`Pulihkan ahli "${member.name}"?`)) return;
+    router.patch(route('admin.hub.members.restore', member.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => { openDropdownId.value = null; },
+    });
+}
+
+// ─── Padam Pukal ──────────────────────────────────────────────────────────────
+
+const selectedIds = ref([]);
+const bulkDeleting = ref(false);
+
+const allOnPageSelected = computed(() =>
+    props.members.data.length > 0 &&
+    props.members.data.every(m => selectedIds.value.includes(m.id))
+);
+
+function toggleSelectAll() {
+    if (allOnPageSelected.value) {
+        const pageIds = props.members.data.map(m => m.id);
+        selectedIds.value = selectedIds.value.filter(id => !pageIds.includes(id));
+    } else {
+        const merged = new Set([...selectedIds.value, ...props.members.data.map(m => m.id)]);
+        selectedIds.value = [...merged];
+    }
+}
+
+function toggleSelect(id) {
+    if (selectedIds.value.includes(id)) {
+        selectedIds.value = selectedIds.value.filter(x => x !== id);
+    } else {
+        selectedIds.value = [...selectedIds.value, id];
+    }
+}
+
+function bulkDelete() {
+    if (!selectedIds.value.length) return;
+    if (!confirm(`Pindahkan ${selectedIds.value.length} ahli terpilih ke Tong Sampah?`)) return;
+    bulkDeleting.value = true;
+    router.post(route('admin.hub.members.bulk-destroy'), { ids: selectedIds.value }, {
+        preserveScroll: true,
+        onSuccess: () => { selectedIds.value = []; },
+        onFinish: () => { bulkDeleting.value = false; },
+    });
+}
+
 // ─── Program Year Filter ──────────────────────────────────────────────────
 
+const memberPrograms = ref([]);
+const loadingPrograms = ref(false);
+
 const availableProgramYears = computed(() => {
-    const programs = selectedMember.value?.attended_programs ?? [];
-    const years = [...new Set(programs.map(p => p.year).filter(Boolean))];
+    const years = [...new Set(memberPrograms.value.map(p => p.year).filter(Boolean))];
     return years.sort((a, b) => b - a);
 });
 
 const filteredPrograms = computed(() => {
-    const programs = selectedMember.value?.attended_programs ?? [];
-    if (!programYearFilter.value) return programs;
-    return programs.filter(p => p.year === parseInt(programYearFilter.value));
+    if (!programYearFilter.value) return memberPrograms.value;
+    return memberPrograms.value.filter(p => p.year === parseInt(programYearFilter.value));
 });
+
+async function fetchMemberPrograms(memberId) {
+    loadingPrograms.value = true;
+    memberPrograms.value = [];
+    try {
+        const res = await window.axios.get(route('admin.hub.members.programs', memberId));
+        memberPrograms.value = res.data.data ?? [];
+    } catch (e) {
+        console.error('Failed to load member programs', e);
+    } finally {
+        loadingPrograms.value = false;
+    }
+}
 
 // ─── Pagination ────────────────────────────────────────────────────────────
 
@@ -205,12 +309,19 @@ function submitMember() {
 const searchQuery = ref(props.filters?.search ?? '');
 const organizationIdFilter = ref(props.filters?.organization_id ?? '');
 const roleFilter = ref(props.filters?.role ?? '');
+const activeFilter = ref(props.filters?.active ?? '');
 const stateFilter = ref(props.filters?.state ?? '');
 const branchIdFilter = ref(props.filters?.branch_id ?? '');
 const feeStatusFilter = ref(props.filters?.fee_status ?? '');
 const registeredFrom = ref(props.filters?.registered_from ?? '');
 const registeredTo = ref(props.filters?.registered_to ?? '');
 const sortBy = ref(props.filters?.sort ?? 'newest');
+const trashed = ref(Boolean(props.filters?.trashed));
+
+function toggleTrashed() {
+    trashed.value = !trashed.value;
+    requestNow();
+}
 
 // Cawangan yang sepadan dengan organisasi terpilih (superadmin) — asas cascade.
 const scopedBranches = computed(() => {
@@ -245,29 +356,39 @@ function branchLabel(b) {
 
 let filterDebounce;
 let suppressNextWatch = false;
+const isSearching = ref(false);
 
 function buildFilterParams() {
     return {
         search: searchQuery.value?.trim() || '',
         organization_id: organizationIdFilter.value || '',
         role: roleFilter.value || '',
+        active: activeFilter.value || '',
         state: stateFilter.value || '',
         branch_id: branchIdFilter.value || '',
         fee_status: feeStatusFilter.value || '',
         registered_from: registeredFrom.value || '',
         registered_to: registeredTo.value || '',
         sort: sortBy.value || 'newest',
+        trashed: trashed.value ? 1 : '',
     };
 }
 
 function requestNow() {
     clearTimeout(filterDebounce);
-    router.get(route('admin.hub.manage'), buildFilterParams(), { preserveState: true, preserveScroll: true, replace: true });
+    selectedIds.value = [];
+    router.get(route('admin.hub.manage'), buildFilterParams(), {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+        onStart: () => { isSearching.value = true; },
+        onFinish: () => { isSearching.value = false; },
+    });
     suppressNextWatch = true;
     setTimeout(() => { suppressNextWatch = false; }, 0);
 }
 
-watch([searchQuery, organizationIdFilter, roleFilter, stateFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
+watch([searchQuery, organizationIdFilter, roleFilter, activeFilter, stateFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
     if (suppressNextWatch) return;
     clearTimeout(filterDebounce);
     filterDebounce = setTimeout(requestNow, 300);
@@ -292,6 +413,7 @@ const hasActiveFilters = computed(() =>
         searchQuery.value?.trim() ||
         organizationIdFilter.value ||
         roleFilter.value ||
+        activeFilter.value ||
         stateFilter.value ||
         branchIdFilter.value ||
         feeStatusFilter.value ||
@@ -318,6 +440,7 @@ const activeFilterChips = computed(() => {
     const org = props.organizations.find(o => String(o.id) === String(organizationIdFilter.value));
     if (org) chips.push({ key: 'organization_id', label: org.name });
     if (roleFilter.value) chips.push({ key: 'role', label: roleFilterLabels[roleFilter.value] ?? `Peranan: ${roleFilter.value}` });
+    if (activeFilter.value) chips.push({ key: 'active', label: activeFilter.value === 'active' ? 'Status: Aktif' : 'Status: Nyahaktif' });
     if (stateFilter.value) chips.push({ key: 'state', label: `Negeri: ${stateFilter.value}` });
     const branch = props.branches.find(b => String(b.id) === String(branchIdFilter.value));
     if (branch) chips.push({ key: 'branch_id', label: branchLabel(branch) });
@@ -333,21 +456,13 @@ function removeFilterChip(key) {
     switch (key) {
         case 'organization_id': organizationIdFilter.value = ''; break;
         case 'role': roleFilter.value = ''; break;
+        case 'active': activeFilter.value = ''; break;
         case 'state': stateFilter.value = ''; break;
         case 'branch_id': branchIdFilter.value = ''; break;
         case 'fee_status': feeStatusFilter.value = ''; break;
         default:
             clearDateRange();
             return;
-    }
-    requestNow();
-}
-
-function setSort(field) {
-    if (field === 'name') {
-        sortBy.value = sortBy.value === 'name_asc' ? 'name_desc' : 'name_asc';
-    } else if (field === 'created_at') {
-        sortBy.value = sortBy.value === 'newest' ? 'oldest' : 'newest';
     }
     requestNow();
 }
@@ -367,6 +482,7 @@ function resetFilters() {
     searchQuery.value = '';
     organizationIdFilter.value = '';
     roleFilter.value = '';
+    activeFilter.value = '';
     stateFilter.value = '';
     branchIdFilter.value = '';
     feeStatusFilter.value = '';
@@ -474,6 +590,7 @@ const programYearFilter = ref('');
 watch(panelTab, (newTab) => {
     if (newTab === 'aktiviti' && selectedMember.value?.id) {
         fetchActivityLogs(selectedMember.value.id);
+        fetchMemberPrograms(selectedMember.value.id);
     }
 });
 
@@ -481,7 +598,12 @@ function viewProfile(member) {
     selectedMember.value = member;
     editing.value = false;
     panelTab.value = 'peribadi';
+    programYearFilter.value = '';
+    memberPrograms.value = [];
     showProfilePanel.value = true;
+    if (member?.id) {
+        fetchMemberPrograms(member.id);
+    }
 }
 
 function handlePanelKeydown(e) {
@@ -722,6 +844,15 @@ async function finishImport() {
                 </span>
             </div>
 
+            <!-- Trashed mode banner -->
+            <div v-if="trashed" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 shadow-sm">
+                <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Mod Tong Sampah — ahli di sini telah dipadam tetapi rekod mereka masih tersimpan.
+                    Pulihkan ahli, atau padam kekal jika pasti.
+                </span>
+            </div>
+
             <!-- Stats Bar -->
             <div class="grid grid-cols-3 gap-3 md:gap-4">
                 <div class="rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm">
@@ -745,7 +876,22 @@ async function finishImport() {
                     <p class="text-sm font-medium text-gray-500 mt-1">Urus keahlian, organisasi, dan peranan sistem.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="relative" @click.stop>
+                    <button
+                        type="button"
+                        @click="toggleTrashed"
+                        class="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5"
+                        :class="trashed ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        {{ trashed ? 'Kembali ke Senarai' : 'Tong Sampah' }}
+                        <span
+                            v-if="!trashed && (stats.trashed ?? 0) > 0"
+                            class="inline-flex items-center justify-center rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-black text-red-700"
+                        >
+                            {{ stats.trashed }}
+                        </span>
+                    </button>
+                    <div v-if="!trashed" class="relative" @click.stop>
                         <button
                             type="button"
                             @click="toggleExportMenu"
@@ -810,7 +956,7 @@ async function finishImport() {
                         </transition>
                     </div>
                     <button
-                        v-if="isSuperadmin"
+                        v-if="isSuperadmin && !trashed"
                         @click="triggerExcelImport"
                         :disabled="importForm.processing"
                         class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-all hover:-translate-y-0.5 disabled:opacity-50"
@@ -821,7 +967,7 @@ async function finishImport() {
                     <input type="file" ref="excelFileInput" class="hidden" accept=".xlsx,.xls,.csv" @change="handleExcelUpload">
 
                     <button
-                        v-if="isSuperadmin"
+                        v-if="isSuperadmin && !trashed"
                         @click="showMemberForm = !showMemberForm"
                         class="inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-gray-800 transition-all hover:-translate-y-0.5"
                     >
@@ -894,37 +1040,25 @@ async function finishImport() {
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <input v-model="searchQuery" type="text" placeholder="Cari nama, email, no ahli, IC/passport, no telefon..." class="pl-11 pr-10 w-full rounded-2xl border-gray-200 text-sm py-2.5 focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                    <button v-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-700 transition-colors" aria-label="Kosongkan carian">
+                    <input v-model="searchQuery" type="text" @keyup.enter="requestNow" placeholder="Cari nama, email, no ahli, IC/passport, no telefon..." class="pl-11 pr-10 w-full rounded-2xl border-gray-200 text-sm py-2.5 focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                    <span v-if="isSearching" class="absolute inset-y-0 right-0 pr-4 flex items-center">
+                        <svg class="h-4 w-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                    </span>
+                    <button v-else-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-700 transition-colors" aria-label="Kosongkan carian">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <!-- Result count + sort -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                <!-- Result count -->
+                <div class="flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
                     <p class="text-sm font-medium text-gray-500">
                         <span class="font-black text-gray-900">{{ members.total ?? 0 }}</span>
                         ahli ditemui
+                        <span v-if="isSearching" class="ml-1 text-xs text-gray-400">· mencari...</span>
                     </p>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button v-if="hasActiveFilters" @click="resetFilters" class="text-xs font-semibold text-gray-500 underline underline-offset-2 hover:text-gray-900 transition-colors">
-                            Set Semula
-                        </button>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-semibold text-gray-500 whitespace-nowrap">Susun</span>
-                            <div class="relative w-56">
-                                <select v-model="sortBy" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                                    <option value="newest">Paling Baharu Didaftar</option>
-                                    <option value="recent_activation">Baru Aktifkan Akaun</option>
-                                    <option value="name_asc">Nama (A–Z)</option>
-                                    <option value="name_desc">Nama (Z–A)</option>
-                                </select>
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button v-if="hasActiveFilters" @click="resetFilters" class="text-xs font-semibold text-gray-500 underline underline-offset-2 hover:text-gray-900 transition-colors">
+                        Set Semula
+                    </button>
                 </div>
 
                 <!-- Active filter chips -->
@@ -944,8 +1078,8 @@ async function finishImport() {
 
                 <!-- Filters grid -->
                 <div class="border-t border-gray-100 pt-4">
-                    <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2.5">Tapis Ahli</p>
-                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-5" :class="isSuperadmin ? '' : 'lg:grid-cols-4'">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2.5">Tapis &amp; Susun</p>
+                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
                         <div v-if="isSuperadmin">
                             <label class="block text-[11px] font-semibold text-gray-500 mb-1">Organisasi</label>
                             <div class="relative">
@@ -966,6 +1100,20 @@ async function finishImport() {
                                     <option value="">Semua Peranan</option>
                                     <option value="Admin">Admin</option>
                                     <option value="Member">Member / Ahli</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Status Akaun</label>
+                            <div class="relative">
+                                <select v-model="activeFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Status</option>
+                                    <option value="active">Aktif</option>
+                                    <option value="inactive">Nyahaktif</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -1014,6 +1162,22 @@ async function finishImport() {
                                 </div>
                             </div>
                         </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Susun Ikut</label>
+                            <div class="relative">
+                                <select v-model="sortBy" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="newest">Paling Baharu Didaftar</option>
+                                    <option value="oldest">Paling Lama Didaftar</option>
+                                    <option value="recent_activation">Baru Aktifkan Akaun</option>
+                                    <option value="name_asc">Nama (A–Z)</option>
+                                    <option value="name_desc">Nama (Z–A)</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1033,35 +1197,53 @@ async function finishImport() {
                 </div>
             </div>
 
+            <!-- Bulk action bar -->
+            <div
+                v-if="!trashed && selectedIds.length"
+                class="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm"
+            >
+                <p class="text-sm font-semibold text-red-700">
+                    {{ selectedIds.length }} ahli dipilih
+                </p>
+                <div class="flex items-center gap-2">
+                    <button @click="selectedIds = []" class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50">
+                        Kosongkan
+                    </button>
+                    <button
+                        @click="bulkDelete"
+                        :disabled="bulkDeleting"
+                        class="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                    >
+                        {{ bulkDeleting ? 'Memproses...' : 'Pindah ke Tong Sampah' }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Members Table -->
             <div class="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-600">
                         <thead class="bg-gray-50/70 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
                             <tr>
+                                <th v-if="!trashed" scope="col" class="w-10 px-3 py-3">
+                                    <input type="checkbox" :checked="allOnPageSelected" @change="toggleSelectAll" class="rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer">
+                                </th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">No Ahli</th>
-                                <th scope="col" class="px-4 py-3 font-bold text-xs">
-                                    <button type="button" @click="setSort('name')" class="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-gray-900">
-                                        Ahli
-                                        <svg class="h-3 w-3 transition-transform" :class="{ 'text-gray-900': ['name_asc', 'name_desc'].includes(sortBy), 'text-gray-300': !['name_asc', 'name_desc'].includes(sortBy), 'rotate-180': sortBy === 'name_desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                                    </button>
-                                </th>
-                                <th scope="col" class="px-4 py-3 font-bold text-xs">Organisasi & Yuran</th>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">Ahli</th>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">Organisasi &amp; Yuran</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Peranan</th>
-                                <th scope="col" class="px-4 py-3 font-bold text-xs">
-                                    <button type="button" @click="setSort('created_at')" class="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-gray-900">
-                                        Didaftar
-                                        <svg class="h-3 w-3 transition-transform" :class="{ 'text-gray-900': ['newest', 'oldest'].includes(sortBy), 'text-gray-300': !['newest', 'oldest'].includes(sortBy), 'rotate-180': sortBy === 'oldest' }" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
-                                    </button>
-                                </th>
+                                <th scope="col" class="px-4 py-3 font-bold text-xs">Didaftar</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs text-right">Tindakan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
                             <tr v-if="members.data.length === 0">
-                                <td colspan="6" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
+                                <td :colspan="trashed ? 6 : 7" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
                             </tr>
-                            <tr v-for="member in members.data" :key="member.id" class="hover:bg-gray-50/50 transition-colors">
+                            <tr v-for="member in members.data" :key="member.id" class="hover:bg-gray-50/50 transition-colors" :class="{ 'bg-red-50/40': selectedIds.includes(member.id) }">
+                                <td v-if="!trashed" class="px-3 py-3">
+                                    <input type="checkbox" :checked="selectedIds.includes(member.id)" @change="toggleSelect(member.id)" class="rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer">
+                                </td>
                                 <td class="px-4 py-3">
                                     <span class="text-xs font-mono font-bold text-gray-900">{{ member.member_no || '—' }}</span>
                                     <div v-if="member.original_member_no && member.original_member_no !== member.member_no" class="text-[10px] text-gray-400">Asal: {{ member.original_member_no }}</div>
@@ -1072,7 +1254,7 @@ async function finishImport() {
                                             {{ (member.name ?? '?').charAt(0).toUpperCase() }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="text-sm font-bold text-gray-900 truncate">{{ member.name }} <span v-if="!member.is_active" class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 ml-1">Nyahaktif</span></div>
+                                            <div class="text-sm font-bold text-gray-900 truncate">{{ member.name }} <span v-if="trashed" class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ml-1">Dipadam {{ member.deleted_at }}</span><span v-else-if="!member.is_active" class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 ml-1">Nyahaktif</span></div>
                                             <div class="text-xs text-gray-400 truncate">{{ member.email }}</div>
                                             <div class="flex items-center gap-2 text-[11px] text-gray-400">
                                                 <span>IC: {{ member.ic_number || '-' }}</span>
@@ -1095,7 +1277,9 @@ async function finishImport() {
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
+                                    <span v-if="trashed" class="inline-flex items-center rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">{{ member.role }}</span>
                                     <select 
+                                        v-else
                                         :value="member.role" 
                                         @change="updateRole(member.id, $event.target.value)"
                                         :disabled="updatingUserId === member.id || member.role === 'Superadmin'"
@@ -1117,7 +1301,18 @@ async function finishImport() {
                                     <span class="text-xs text-gray-500">{{ member.created_at || '—' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <div class="relative inline-flex items-center gap-1">
+                                    <div v-if="trashed" class="inline-flex items-center gap-1">
+                                        <button @click="viewProfile(member)" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                                            Profil
+                                        </button>
+                                        <button v-if="isSuperadmin" @click="restoreMember(member)" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                                            Pulihkan
+                                        </button>
+                                        <button v-if="isSuperadmin" @click="openDeleteModal(member, 'force')" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors">
+                                            Padam Kekal
+                                        </button>
+                                    </div>
+                                    <div v-else class="relative inline-flex items-center gap-1">
                                         <button @click="viewProfile(member)" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors inline-flex items-center gap-1">
                                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             Profil
@@ -1149,6 +1344,10 @@ async function finishImport() {
                                             <button @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
+                                            </button>
+                                            <button v-if="isSuperadmin" @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                Padam Ahli
                                             </button>
                                         </div>
                                     </div>
@@ -1323,6 +1522,84 @@ async function finishImport() {
                                         class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
                                     >
                                         {{ moveForm.processing ? 'Memindahkan...' : 'Pindah Ahli' }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </Transition>
+
+                <!-- Padam Ahli Modal -->
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0"
+                    enter-to-class="opacity-100"
+                    leave-active-class="transition ease-in duration-150"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                >
+                    <div
+                        v-if="showDeleteModal"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm"
+                        @click.self="closeDeleteModal"
+                    >
+                        <div class="w-full max-w-md rounded-2xl border bg-white p-5 shadow-2xl" :class="deleteMode === 'force' ? 'border-red-100' : 'border-amber-100'">
+                            <div class="mb-4">
+                                <h3 class="text-lg font-black" :class="deleteMode === 'force' ? 'text-red-700' : 'text-amber-700'">
+                                    {{ deleteMode === 'force' ? 'Padam Ahli Secara Kekal' : 'Pindah Ahli ke Tong Sampah' }}
+                                </h3>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    {{ deleteMode === 'force' ? 'Anda akan memadam' : 'Anda akan menyorok' }}
+                                    <span class="font-bold text-gray-900">{{ deleteTargetMember?.name || '-' }}</span>
+                                    ({{ deleteTargetMember?.member_no || 'tiada no. ahli' }}).
+                                </p>
+                            </div>
+
+                            <p
+                                v-if="deleteMode === 'force'"
+                                class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                            >
+                                Tindakan ini tidak boleh dibatalkan. Rekod berkaitan (yuran, pembayaran,
+                                tempahan, respons undian) turut dipadam. Gunakan
+                                <span class="font-semibold">Nyahaktifkan</span> jika anda cuma mahu menyorok ahli.
+                            </p>
+                            <p
+                                v-else
+                                class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+                            >
+                                Ahli akan disorok dari senarai tetapi semua rekod & sejarah kekal.
+                                Anda boleh memulihkannya dari <span class="font-semibold">Tong Sampah</span>.
+                            </p>
+
+                            <form class="mt-4 space-y-3" @submit.prevent="confirmDeleteMember">
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Taip nama ahli untuk sahkan
+                                    </label>
+                                    <input
+                                        v-model="deleteConfirmName"
+                                        type="text"
+                                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-red-500 focus:ring-red-500"
+                                        :placeholder="deleteTargetMember?.name || ''"
+                                        autocomplete="off"
+                                    >
+                                </div>
+
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        @click="closeDeleteModal"
+                                        class="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        :disabled="!canConfirmDelete || deletingMember"
+                                        class="rounded-xl px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                        :class="deleteMode === 'force' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'"
+                                    >
+                                        {{ deletingMember ? 'Memproses...' : (deleteMode === 'force' ? 'Padam Kekal' : 'Pindah ke Tong Sampah') }}
                                     </button>
                                 </div>
                             </form>
@@ -1523,7 +1800,7 @@ async function finishImport() {
                                 </div>
 
                                 <!-- Program Dihadiri — filter by year -->
-                                <div v-if="selectedMember.attended_programs && selectedMember.attended_programs.length" class="rounded-xl border border-gray-100 bg-white overflow-hidden">
+                                <div v-if="loadingPrograms || memberPrograms.length" class="rounded-xl border border-gray-100 bg-white overflow-hidden">
                                     <div class="px-4 py-2.5 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                                         <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Program Dihadiri</p>
                                         <select v-model="programYearFilter" class="rounded-lg border border-gray-200 px-2 py-1 text-[11px] focus:border-gray-900 focus:ring-0">
@@ -1532,13 +1809,16 @@ async function finishImport() {
                                         </select>
                                     </div>
                                     <div class="p-4 space-y-2.5 max-h-60 overflow-y-auto">
-                                        <div v-for="(p, i) in filteredPrograms" :key="i" class="flex items-center gap-3">
-                                            <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: p.color || '#6b7280' }"></div>
-                                            <span class="text-[11px] text-gray-400 w-16 shrink-0">{{ p.date }}</span>
-                                            <span class="text-xs font-semibold text-gray-800 truncate flex-1">{{ p.title }}</span>
-                                            <span class="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full" :style="{ backgroundColor: (p.color ?? '#6b7280') + '15', color: p.color ?? '#6b7280' }">{{ p.org }}</span>
-                                        </div>
-                                        <p v-if="!filteredPrograms.length" class="text-xs text-gray-400 text-center py-2">Tiada program untuk tahun ini.</p>
+                                        <div v-if="loadingPrograms" class="py-6 text-center text-xs text-gray-400">Memuatkan program...</div>
+                                        <template v-else>
+                                            <div v-for="(p, i) in filteredPrograms" :key="i" class="flex items-center gap-3">
+                                                <div class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: p.color || '#6b7280' }"></div>
+                                                <span class="text-[11px] text-gray-400 w-16 shrink-0">{{ p.date }}</span>
+                                                <span class="text-xs font-semibold text-gray-800 truncate flex-1">{{ p.title }}</span>
+                                                <span class="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full" :style="{ backgroundColor: (p.color ?? '#6b7280') + '15', color: p.color ?? '#6b7280' }">{{ p.org }}</span>
+                                            </div>
+                                            <p v-if="!filteredPrograms.length" class="text-xs text-gray-400 text-center py-2">Tiada program untuk tahun ini.</p>
+                                        </template>
                                     </div>
                                 </div>
                             </div>

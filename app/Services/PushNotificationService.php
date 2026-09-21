@@ -100,7 +100,7 @@ class PushNotificationService
      */
     public function sendToOrganization(int $organizationId, string $title, string $body, array $data = []): int
     {
-        $ids = User::withoutGlobalScopes()
+        $ids = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $organizationId)
             ->pluck('id')
             ->all();

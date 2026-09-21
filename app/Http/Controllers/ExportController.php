@@ -17,7 +17,7 @@ class ExportController extends Controller
 
         abort_unless($admin->hasRole(['Admin', 'Superadmin']), 403);
 
-        $query = User::withoutGlobalScopes();
+        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
 
         if ($admin->hasRole('Admin')) {
             $query->where('current_organization_id', $admin->current_organization_id);

@@ -74,7 +74,7 @@ class EventService
         $query = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScopes(),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
         ]);
 
         if ($tab === 'past') {
@@ -131,7 +131,7 @@ class EventService
      */
     public function showDetail(Event $event, ?User $user = null): array
     {
-        $event->loadMissing(['organization', 'organizations', 'rsvps.user' => fn ($q) => $q->withoutGlobalScopes()]);
+        $event->loadMissing(['organization', 'organizations', 'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)]);
 
         $eventArr = $this->serialize($event, $user?->id);
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../shared/payment/payment_webview_screen.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -13,7 +13,6 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
-import 'infaq_donate_sheet.dart';
 
 class InfaqDetailScreen extends ConsumerStatefulWidget {
   const InfaqDetailScreen({super.key, required this.slug});
@@ -25,59 +24,52 @@ class InfaqDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
+  /// Derma diproses **di luar app** melalui laman web kempen. App ini tidak
+  /// mengumpul derma kebajikan dalam app (selaras dengan keperluan App Store).
+  /// Butang membuka laman kempen dalam pelayar dalam-app
+  /// (SFSafariViewController di iOS / Custom Tabs di Android).
   Future<void> _openDonate(InfaqInfo infaq) async {
-    if (infaq.isExternal) {
-      final url = infaq.externalUrl;
-      if (url == null || url.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pautan pembayaran tidak tersedia.')),
-        );
-        return;
-      }
-      await _openWebview(url);
+    final url = (infaq.isExternal ? infaq.externalUrl : infaq.publicUrl)?.trim();
+
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pautan sumbangan tidak tersedia.')),
+      );
       return;
     }
 
-    final result = await showInfaqDonateSheet(context, infaq: infaq);
-    if (result == null || !mounted) return;
-
-    ref.invalidate(infaqListProvider);
-    ref.invalidate(infaqDetailProvider(widget.slug));
-
-    switch (result) {
-      case InfaqDonateRedirect(:final paymentUrl):
-        await _openWebview(paymentUrl);
-      case InfaqDonateSuccess(:final donation):
-        if (!mounted) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => InfaqDonationSuccessScreen(donation: donation),
-          ),
-        );
-    }
-  }
-
-  Future<void> _openWebview(String url) async {
-    final paid = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder:
-            (_) => PaymentWebviewScreen(
-              paymentUrl: url,
-              title: 'Pembayaran Infaq',
-            ),
-      ),
-    );
-    if (!mounted) return;
-    if (paid == true) {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const InfaqDonationSuccessScreen(),
-        ),
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pautan sumbangan tidak sah.')),
       );
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Pembayaran dibatalkan.')));
+      return;
+    }
+
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened) {
+      try {
+        opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        opened = false;
+      }
+    }
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka pautan sumbangan.')),
+      );
+    }
+
+    // Pengguna mungkin telah selesai derma — segarkan data apabila kembali.
+    if (mounted) {
+      ref.invalidate(infaqListProvider);
+      ref.invalidate(infaqDetailProvider(widget.slug));
     }
   }
 

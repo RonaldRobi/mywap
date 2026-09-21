@@ -30,13 +30,25 @@ class AdminRepository {
     String status = '',
     int page = 1,
   }) async {
-    final data = await _api.get(_members, query: {
-      if (search.isNotEmpty) 'search': search,
-      if (status.isNotEmpty) 'status': status,
-      'per_page': 25,
-      'page': page,
-    });
+    final data = await _api.get(
+      _members,
+      query: {
+        if (search.isNotEmpty) 'search': search,
+        if (status.isNotEmpty) 'status': status,
+        'per_page': 25,
+        'page': page,
+      },
+      unwrap: false,
+    );
     return PaginatedMembers.fromJson((data as Map<String, dynamic>?) ?? {});
+  }
+
+  Future<void> toggleMemberActive(int userId) async {
+    await _api.patch('$_members/$userId/toggle-active');
+  }
+
+  Future<void> deleteMember(int userId) async {
+    await _api.delete('$_members/$userId');
   }
 
   Future<FeesData> fees({String status = '', String search = ''}) async {

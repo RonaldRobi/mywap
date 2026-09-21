@@ -24,7 +24,7 @@ class SendBroadcastJob implements ShouldQueue
 
     public function handle(): void
     {
-        $message = BroadcastMessage::withoutGlobalScopes()->find($this->broadcastMessageId);
+        $message = BroadcastMessage::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->find($this->broadcastMessageId);
 
         if (! $message || $message->sent_at) {
             return;
@@ -54,7 +54,7 @@ class SendBroadcastJob implements ShouldQueue
         $this->log($message, 'processing', null, null, 'Siaran mula diproses.');
 
         try {
-            $query = User::withoutGlobalScopes();
+            $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
 
             if ($message->target_criteria === 'all' && $message->target_organization_id) {
                 $query->where('current_organization_id', $message->target_organization_id);

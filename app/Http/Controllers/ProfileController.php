@@ -24,7 +24,7 @@ class ProfileController extends Controller
     /**
      * Display the user's profile journey page (transition timeline).
      *
-     * We explicitly call withoutGlobalScopes() on the history query because the
+     * We explicitly call withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class) on the history query because the
      * UserTransitionHistory model has no global scope, but we want to be safe;
      * and we eager-load org names to avoid N+1 on the timeline cards.
      */
@@ -342,13 +342,15 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        abort_unless($user->hasRole(['Superadmin', 'Admin']), 403);
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
         Auth::logout();
 
-        $user->delete();
+        $user->forceDelete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

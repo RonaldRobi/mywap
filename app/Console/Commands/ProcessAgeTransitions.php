@@ -25,7 +25,7 @@ use Illuminate\Console\Command;
  * Memory efficiency: chunkById(500) processes users in pages of 500, so even a
  * database with hundreds of thousands of members never exhausts PHP memory.
  *
- * Safety: withoutGlobalScopes() bypasses OrganizationScope so the command sees
+ * Safety: withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class) bypasses OrganizationScope so the command sees
  * ALL users regardless of the authenticated session (there is none in CLI).
  */
 class ProcessAgeTransitions extends Command
@@ -56,7 +56,7 @@ class ProcessAgeTransitions extends Command
         // Preload all three organizations to avoid N+1 inside the chunk loop.
         $organizations = Organization::all()->keyBy('id');
 
-        User::withoutGlobalScopes()
+        User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->whereNotNull('dob')
             ->with('organization', 'roles')
             ->chunkById(500, function ($users) use (

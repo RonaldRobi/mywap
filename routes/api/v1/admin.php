@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'api_admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
     Route::get('/admin/members', [AdminController::class, 'members']);
+    Route::patch('/admin/members/{user}/toggle-active', [AdminController::class, 'toggleMemberActive']);
+    Route::delete('/admin/members/{user}', [AdminController::class, 'destroyMember']);
     Route::get('/admin/fees', [AdminController::class, 'fees']);
     Route::get('/admin/attendance/registrations', [AdminController::class, 'attendance']);
     Route::post('/admin/attendance/scan', [AdminController::class, 'scan']);

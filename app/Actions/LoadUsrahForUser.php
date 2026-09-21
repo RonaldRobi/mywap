@@ -9,7 +9,7 @@ class LoadUsrahForUser
     public function execute(User $user): ?array
     {
         $group = $user->usrahGroups()
-            ->with(['members' => fn ($query) => $query->withoutGlobalScopes()->select('users.id', 'name')])
+            ->with(['members' => fn ($query) => $query->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
             ->first();
 
         if (! $group) {

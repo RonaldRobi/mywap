@@ -25,7 +25,7 @@ class PollService
     {
         $orgId = (int) $user->current_organization_id;
 
-        $polls = Poll::withoutGlobalScopes()
+        $polls = Poll::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where(function ($q) use ($orgId) {
                 $q->where('organization_id', $orgId)
                     ->orWhere('target_type', 'all_orgs');

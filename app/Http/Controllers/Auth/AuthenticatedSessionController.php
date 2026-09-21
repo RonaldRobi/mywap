@@ -317,7 +317,7 @@ class AuthenticatedSessionController extends Controller
         $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
         $email = Str::lower(trim($identifier));
 
-        return User::withoutGlobalScopes()
+        return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where(function ($query) use ($normalizedId, $email) {
                 $query->where('ic_number', $normalizedId)
                     ->orWhere('member_no', $normalizedId)

@@ -83,7 +83,7 @@ class PublicHomeController extends Controller
     private function articles(): array
     {
         return Article::query()
-            ->with(['author' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
+            ->with(['author' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('id', 'name')])
             ->where('is_published', true)
             ->where(function ($query) {
                 $query->whereNull('published_at')->orWhere('published_at', '<=', now());

@@ -160,7 +160,7 @@ class FeeService
         $year ??= now()->year;
 
         return Cache::remember("due_count:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
-            return User::withoutGlobalScopes()
+            return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $organizationId)
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
@@ -212,7 +212,7 @@ class FeeService
     public function getAdminStats(?int $organizationId, int $year): array
     {
         return Cache::remember("fee_stats:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
-            $baseQuery = User::withoutGlobalScopes();
+            $baseQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
             if ($organizationId) {
                 $baseQuery->where('current_organization_id', $organizationId);
             }
@@ -248,7 +248,7 @@ class FeeService
                 ->where('payable_type', MembershipFee::class);
 
             if ($organizationId) {
-                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScopes()->where('current_organization_id', $organizationId));
+                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $organizationId));
             }
 
             $collectedAmount = $collectedQuery->sum('amount');
@@ -270,7 +270,7 @@ class FeeService
         $amount = (float) ($org->fee_amount ?? 0);
         $count = 0;
 
-        User::withoutGlobalScopes()
+        User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $org->id)
             ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
             ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year))

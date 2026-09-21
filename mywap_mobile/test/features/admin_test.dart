@@ -83,6 +83,12 @@ class FakeAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<void> toggleMemberActive(int userId) async {}
+
+  @override
+  Future<void> deleteMember(int userId) async {}
+
+  @override
   Future<FeesData> fees({String status = '', String search = ''}) async {
     feesStatusCalls.add(status);
     return feesResult;

@@ -88,7 +88,7 @@ class EventController extends Controller
         $query = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScopes(),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
         ]);
 
         if ($tab === 'past') {
@@ -210,7 +210,7 @@ class EventController extends Controller
         $event = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScopes(),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
         ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -846,7 +846,7 @@ class EventController extends Controller
     {
         $rsvps = $event->rsvps()
             ->attended()
-            ->with(['user:id,name,phone,email' => fn ($q) => $q->withoutGlobalScopes()])
+            ->with(['user:id,name,phone,email' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)])
             ->get();
 
         return view('events.print-attendance', compact('event', 'rsvps'));

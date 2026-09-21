@@ -41,6 +41,15 @@ class _AuthRefresh extends ChangeNotifier {
   void notify() => notifyListeners();
 }
 
+/// Routes a member with an incomplete profile may still open so they are not
+/// trapped while being forced to complete it: the completion screen itself,
+/// plus profile maintenance and the log-out action.
+bool _isProfileCompletionExempt(String location) {
+  return location == '/profile/complete' ||
+      location == '/profile/edit' ||
+      location == '/profile/change-password';
+}
+
 /// Routes that anyone (including logged-out visitors) may open. Everything
 /// else requires authentication. Member-only routes such as
 /// `/events/my-registrations` intentionally do NOT match.
@@ -97,6 +106,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             : '/splash';
       }
       if (auth is AuthAuthenticated) {
+        // Members who have never completed their profile are forced to do so
+        // before they can use any other part of the app.
+        if (auth.user.needsProfileCompletion &&
+            !_isProfileCompletionExempt(location)) {
+          return '/profile/complete';
+        }
         // Members land on their dashboard; public browsing stays available.
         if (isSplash || isLogin || isOnboarding || location == '/home') {
           return '/dashboard';

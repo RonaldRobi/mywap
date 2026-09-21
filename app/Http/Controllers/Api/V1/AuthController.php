@@ -360,7 +360,7 @@ class AuthController extends Controller
             preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
         );
 
-        $user = User::withoutGlobalScopes()->where('ic_number', $normalizedIcNumber)->first();
+        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('ic_number', $normalizedIcNumber)->first();
 
         if (! $user) {
             return ApiResponse::error('No IC/Passport tidak ditemui dalam sistem.', status: 404);
@@ -630,7 +630,7 @@ class AuthController extends Controller
         $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
         $email = Str::lower(trim($identifier));
 
-        return User::withoutGlobalScopes()
+        return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where(function ($query) use ($normalizedId, $email) {
                 $query->where('ic_number', $normalizedId)
                     ->orWhere('member_no', $normalizedId)
@@ -664,7 +664,7 @@ class AuthController extends Controller
     private function resolveUser(Request $request): ?User
     {
         if ($request->filled('email')) {
-            return User::withoutGlobalScopes()
+            return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('email', Str::lower(trim((string) $request->input('email'))))
                 ->first();
         }
@@ -673,7 +673,7 @@ class AuthController extends Controller
         $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
         $email = Str::lower(trim($identifier));
 
-        return User::withoutGlobalScopes()
+        return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where(function ($query) use ($normalizedId, $email) {
                 $query->where('ic_number', $normalizedId)
                     ->orWhere('member_no', $normalizedId)

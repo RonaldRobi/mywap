@@ -208,7 +208,7 @@ class BranchController extends Controller
             'user_id' => ['required', 'exists:users,id'],
         ]);
 
-        $target = User::withoutGlobalScopes()->findOrFail($data['user_id']);
+        $target = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->findOrFail($data['user_id']);
 
         if ((int) $target->branch_id !== (int) $branch->id) {
             if (! $target->branch_id) {
@@ -235,7 +235,7 @@ class BranchController extends Controller
             abort(403);
         }
 
-        $target = User::withoutGlobalScopes()->findOrFail($admin->id);
+        $target = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->findOrFail($admin->id);
 
         if (! $target->hasRole('Admin Cawangan')) {
             return back()->with('error', 'Ahli tersebut bukan admin cawangan.');

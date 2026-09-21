@@ -39,7 +39,7 @@ class PasswordResetLinkController extends Controller
             preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
         );
 
-        $user = User::withoutGlobalScopes()
+        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('ic_number', $normalizedIcNumber)
             ->first();
 

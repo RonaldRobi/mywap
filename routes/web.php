@@ -134,7 +134,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
         Route::patch('/admin/information-hub/members/{user}/toggle-active', [InformationHubAdminController::class, 'toggleActive'])->name('admin.hub.members.toggle-active');
         Route::post('/admin/information-hub/members/{user}/reset-password', [InformationHubAdminController::class, 'resetPassword'])->name('admin.hub.members.reset-password');
-        Route::get('/admin/information-hub/members/{targetUser}/logs', [InformationHubAdminController::class, 'activityLog'])->name('admin.hub.members.logs');
+        Route::delete('/admin/information-hub/members/{user}', [InformationHubAdminController::class, 'destroyMember'])->name('admin.hub.members.destroy');
+        Route::patch('/admin/information-hub/members/{id}/restore', [InformationHubAdminController::class, 'restoreMember'])->name('admin.hub.members.restore');
+        Route::delete('/admin/information-hub/members/{id}/force', [InformationHubAdminController::class, 'forceDeleteMember'])->name('admin.hub.members.force-delete');
+        Route::post('/admin/information-hub/members/bulk-delete', [InformationHubAdminController::class, 'bulkDestroyMembers'])->name('admin.hub.members.bulk-destroy');
+        Route::get('/admin/information-hub/members/{targetUser}/logs', [InformationHubAdminController::class, 'activityLog'])->name('admin.hub.members.logs')->withTrashed();
+        Route::get('/admin/information-hub/members/{targetUser}/programs', [InformationHubAdminController::class, 'memberPrograms'])->name('admin.hub.members.programs')->withTrashed();
         Route::post('/admin/information-hub/members/import-start', [InformationHubAdminController::class, 'importStart'])->name('admin.hub.members.importStart');
         Route::post('/admin/information-hub/members/import-chunk', [InformationHubAdminController::class, 'importChunk'])->name('admin.hub.members.importChunk');
         Route::post('/admin/information-hub/members/import-finish', [InformationHubAdminController::class, 'importFinish'])->name('admin.hub.members.importFinish');

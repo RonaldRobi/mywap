@@ -66,7 +66,7 @@ class ImportAbim extends Command
 
         // ── Build records dengan branch_id ──────────────────────────────
         $this->line('🔍 Memeriksa duplikasi IC...');
-        $existingIcs = User::withoutGlobalScopes()
+        $existingIcs = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('ic_number', '!=', '')
             ->pluck('id', 'ic_number')
             ->toArray();
@@ -125,13 +125,13 @@ class ImportAbim extends Command
             }
             // Kira sebenar inserted — banding IC yang wujud sekarang
             $ics = array_column($toInsert, 'ic_number');
-            $actualNew = User::withoutGlobalScopes()
+            $actualNew = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->whereIn('ic_number', $ics)
                 ->count();
             $dupSkipped = count($toInsert) - $actualNew;
             $insertedCount = $actualNew;
 
-            $newUsers = User::withoutGlobalScopes()
+            $newUsers = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->whereIn('ic_number', $ics)
                 ->get(['id', 'ic_number', 'member_no']);
             $newIds = $newUsers->pluck('id')->toArray();

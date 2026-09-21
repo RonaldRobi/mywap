@@ -159,6 +159,17 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// Muat semula data pengguna semasa (cth selepas melengkapkan profil) supaya
+  /// keadaan auth — dan pengawal penghalaan — dikemas kini tanpa log keluar.
+  Future<void> refreshCurrentUser() async {
+    try {
+      final user = await ref.read(authRepositoryProvider).me();
+      state = AuthAuthenticated(user);
+    } on ApiException {
+      // Kekalkan keadaan semasa jika muat semula gagal.
+    }
+  }
+
   /// Log masuk semula menggunakan Face ID/cap jari — mengesahkan biometrik
   /// peranti lalu memulihkan sesi dari token yang tersimpan (tiada
   /// kata laluan/OTP diperlukan semula).

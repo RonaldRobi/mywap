@@ -126,6 +126,7 @@ class AdminMember {
     this.organizationName,
     this.organizationId,
     this.status = '',
+    this.activeFlag = true,
     this.createdAt,
     this.profileCompletedAt,
   });
@@ -140,6 +141,7 @@ class AdminMember {
   final String? organizationName;
   final int? organizationId;
   final String status; // 'active' | 'pending'
+  final bool activeFlag; // is_active flag (boleh dinyahaktifkan oleh admin)
   final DateTime? createdAt;
   final DateTime? profileCompletedAt;
 
@@ -159,6 +161,7 @@ class AdminMember {
       organizationId:
           organization['id'] is num ? (organization['id'] as num).toInt() : null,
       status: _toStr(json['status']),
+      activeFlag: json['is_active'] == null ? true : _toBool(json['is_active']),
       createdAt: DateTime.tryParse(_toStr(json['created_at'])),
       profileCompletedAt: DateTime.tryParse(_toStr(json['profile_completed_at'])),
     );

@@ -69,10 +69,11 @@ class AdminMembersState {
 class AdminMembersController extends Notifier<AdminMembersState> {
   String _search = '';
   String _status = '';
+  int _requestId = 0;
 
   @override
   AdminMembersState build() {
-    Future.microtask(_load);
+    Future.microtask(() => _load(refresh: true));
     return const AdminMembersState();
   }
 
@@ -88,10 +89,29 @@ class AdminMembersController extends Notifier<AdminMembersState> {
 
   void retry() => _load(refresh: true);
 
-  void loadMore() => _load();
+  /// Nyahaktifkan / aktifkan semula ahli, kemudian muat semula senarai.
+  Future<void> toggleActive(int userId) async {
+    await ref.read(adminRepositoryProvider).toggleMemberActive(userId);
+    await _load(refresh: true);
+  }
+
+  /// Padam ahli (soft delete di backend), kemudian muat semula senarai.
+  Future<void> deleteMember(int userId) async {
+    await ref.read(adminRepositoryProvider).deleteMember(userId);
+    await _load(refresh: true);
+  }
+
+  /// Muat halaman seterusnya. Diabaikan jika tiada lagi atau sedang memuat.
+  void loadMore() {
+    if (state.loading || !state.hasMore) return;
+    _load();
+  }
 
   Future<void> _load({bool refresh = false}) async {
-    if (state.loading) return;
+    // Setiap permintaan mendapat id unik supaya carian/filter baharu tidak
+    // digugurkan (dulu `if (state.loading) return` menyebabkan carian
+    // kadang-kadang tidak dijalankan) dan respons lama tidak menimpa yang baharu.
+    final requestId = ++_requestId;
     final page = refresh ? 1 : state.page + 1;
     state = state.copyWith(loading: true, clearError: true);
     try {
@@ -100,6 +120,7 @@ class AdminMembersController extends Notifier<AdminMembersState> {
             status: _status,
             page: page,
           );
+      if (requestId != _requestId) return;
       final items = page == 1 ? result.items : [...state.items, ...result.items];
       state = AdminMembersState(
         items: items,
@@ -109,8 +130,10 @@ class AdminMembersController extends Notifier<AdminMembersState> {
         total: result.total,
       );
     } on ApiException catch (e) {
+      if (requestId != _requestId) return;
       state = state.copyWith(loading: false, error: e.message);
     } catch (_) {
+      if (requestId != _requestId) return;
       state = state.copyWith(loading: false, error: 'Ralat tidak dijangka.');
     }
   }
