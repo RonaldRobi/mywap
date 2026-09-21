@@ -511,89 +511,162 @@ class AdminService
     {
         $isSuperadmin = $user->hasRole('Superadmin');
 
-        $query = Registration::with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment'])
-            ->latest();
+        // Sekatan skop: admin biasa hanya nampak pendaftaran organisasinya
+        // (sama ada pendaftaran itu milik org, atau event milik org). Digunakan
+        // untuk senarai, statistik dan kiraan dalam kad program.
+        $restrict = function (Builder $query) use ($user, $isSuperadmin): Builder {
+            if (! $isSuperadmin) {
+                $query->where(function (Builder $q) use ($user) {
+                    $q->where('organization_id', $user->current_organization_id)
+                        ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
+                });
+            }
 
-        if (! $isSuperadmin) {
-            $query->where(function (Builder $q) use ($user) {
-                $q->where('organization_id', $user->current_organization_id)
-                    ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
-            });
-        }
+            return $query;
+        };
 
-        if ($request->filled('event_id')) {
-            $query->where('event_id', (int) $request->event_id);
-        }
+        $scope = fn (): Builder => $restrict(Registration::query());
 
-        if ($request->filled('org')) {
-            $query->where('organization_id', (int) $request->org);
-        }
+        // Skop senarai program: event milik org ATAU event yang mempunyai
+        // pendaftaran daripada org (cth program global yang disertai ahli org).
+        $eventScope = function () use ($user, $isSuperadmin): Builder {
+            $query = Event::query();
+
+            if (! $isSuperadmin) {
+                $query->where(function (Builder $q) use ($user) {
+                    $q->where('organization_id', $user->current_organization_id)
+                        ->orWhereHas('registrations', fn ($r) => $r->where('organization_id', $user->current_organization_id));
+                });
+            }
+
+            return $query;
+        };
+
+        // Penapis konteks (event / organisasi / carian) — dipakai pada senarai
+        // DAN statistik supaya angka kad sepadan dengan apa yang dipilih.
+        // Status kehadiran & bayaran TIDAK dikira dalam statistik supaya kad
+        // kekal stabil apabila salah satu kad diklik.
+        $applyContext = function (Builder $query) use ($request): Builder {
+            if ($request->filled('event_id')) {
+                $query->where('event_id', (int) $request->event_id);
+            }
+
+            if ($request->filled('org')) {
+                $query->where('organization_id', (int) $request->org);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function (Builder $q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('registration_no', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('member_no', 'like', "%{$search}%");
+                });
+            }
+
+            return $query;
+        };
+
+        $listQuery = $applyContext($scope());
 
         if ($request->filled('attendance')) {
             if ($request->attendance === 'hadir') {
-                $query->whereHas('attendance');
+                $listQuery->whereHas('attendance');
             } elseif ($request->attendance === 'tidak_hadir') {
-                $query->whereDoesntHave('attendance');
+                $listQuery->whereDoesntHave('attendance');
             }
         }
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('registration_no', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%");
-            });
+        if ($request->filled('payment')) {
+            if ($request->payment === 'pending') {
+                $listQuery->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'));
+            } elseif ($request->payment === 'paid') {
+                $listQuery->where(function (Builder $q) {
+                    $q->whereHas('latestPayment', fn ($p) => $p->where('status', 'successful'))
+                        ->orWhereDoesntHave('latestPayment');
+                });
+            }
         }
 
-        $registrations = $query->paginate(25)->withQueryString()->through(fn (Registration $r) => [
-            'id' => $r->id,
-            'registration_no' => $r->registration_no,
-            'name' => $r->name,
-            'email' => $r->email,
-            'phone' => $r->phone,
-            'member_no' => $r->member_no,
-            'status' => $r->status->value,
-            'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
-            'event_title' => $r->event?->title,
-            'form_title' => $r->form?->title,
-            'payment_status' => $r->latestPayment?->status ?? 'paid',
-            'attended' => $r->attendance !== null,
-            'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
-            'method' => $r->attendance?->method,
-            'created_at' => $r->created_at?->toDateTimeString(),
-        ]);
+        $registrations = $listQuery
+            ->with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment'])
+            ->latest()
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (Registration $r) => [
+                'id' => $r->id,
+                'registration_no' => $r->registration_no,
+                'name' => $r->name,
+                'email' => $r->email,
+                'phone' => $r->phone,
+                'member_no' => $r->member_no,
+                'status' => $r->status->value,
+                'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
+                'event_title' => $r->event?->title,
+                'form_title' => $r->form?->title,
+                'payment_status' => $r->latestPayment?->status ?? 'paid',
+                'attended' => $r->attendance !== null,
+                'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
+                'method' => $r->attendance?->method,
+                'created_at' => $r->created_at?->toDateTimeString(),
+            ]);
 
-        $statsBase = Registration::query();
-        if (! $isSuperadmin) {
-            $statsBase->where(function (Builder $q) use ($user) {
-                $q->where('organization_id', $user->current_organization_id)
-                    ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
-            });
-        }
+        $statsQuery = $applyContext($scope());
 
         $stats = [
-            'total_registered' => (clone $statsBase)->count(),
-            'total_attended' => (clone $statsBase)->whereHas('attendance')->count(),
-            'total_pending_payment' => (clone $statsBase)
+            'total_registered' => (clone $statsQuery)->count(),
+            'total_attended' => (clone $statsQuery)->whereHas('attendance')->count(),
+            'total_pending_payment' => (clone $statsQuery)
                 ->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))->count(),
         ];
 
-        $events = Event::query()
-            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+        // Ringkasan per program — asas kad grid di dashboard. Ikut penapis
+        // konteks (org / event) supaya kad sepadan dengan pilihan pengguna.
+        $programs = $eventScope()
+            ->when($request->filled('org'), fn ($q) => $q->where('organization_id', (int) $request->org))
+            ->when($request->filled('event_id'), fn ($q) => $q->where('id', (int) $request->event_id))
+            ->whereHas('registrations', fn ($q) => $restrict($q))
+            ->with('organization')
+            ->withCount([
+                'registrations as registered_count' => fn ($q) => $restrict($q),
+                'registrations as attended_count' => fn ($q) => $restrict($q)->whereHas('attendance'),
+                'registrations as pending_payment_count' => fn ($q) => $restrict($q)->whereHas('latestPayment', fn ($p) => $p->where('status', 'pending')),
+            ])
+            ->orderByDesc('start_time')
+            ->get()
+            ->map(fn (Event $e) => [
+                'id' => $e->id,
+                'title' => $e->title,
+                'slug' => $e->slug,
+                'status' => $e->status->value,
+                'status_label' => $e->status->label(),
+                'start_formatted' => $e->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'location_or_link' => $e->location_or_link,
+                'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
+                'registered_count' => (int) $e->registered_count,
+                'attended_count' => (int) $e->attended_count,
+                'pending_payment_count' => (int) $e->pending_payment_count,
+                'attendance_url' => route('admin.attendance', ['event_id' => $e->id]),
+                'registrations_url' => route('admin.events.registrations', $e->id),
+                'qr_url' => route('events.qr', $e->id),
+            ])
+            ->values();
+
+        $events = $eventScope()
             ->orderByDesc('start_time')
             ->get(['id', 'title']);
 
         return [
             'registrations' => $registrations,
             'stats' => $stats,
+            'programs' => $programs,
             'events' => $events,
             'organizations' => $isSuperadmin
                 ? Organization::orderBy('min_age')->get(['id', 'name'])
                 : [],
-            'filters' => $request->only(['event_id', 'org', 'attendance', 'search']),
+            'filters' => $request->only(['event_id', 'org', 'attendance', 'search', 'payment']),
         ];
     }
 

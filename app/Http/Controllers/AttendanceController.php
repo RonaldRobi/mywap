@@ -277,6 +277,28 @@ class AttendanceController extends Controller
             }
         }
 
+        if ($request->filled('payment')) {
+            if ($request->payment === 'pending') {
+                $query->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'));
+            } elseif ($request->payment === 'paid') {
+                $query->where(function (Builder $q) {
+                    $q->whereHas('latestPayment', fn ($p) => $p->where('status', 'successful'))
+                        ->orWhereDoesntHave('latestPayment');
+                });
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('registration_no', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('member_no', 'like', "%{$search}%");
+            });
+        }
+
         return $query->latest()->limit(5000)->get()->map(fn (Registration $r) => [
             'name' => $r->name,
             'member_no' => $r->member_no,

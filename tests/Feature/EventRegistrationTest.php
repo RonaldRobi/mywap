@@ -381,6 +381,116 @@ class EventRegistrationTest extends TestCase
                 ->where('stats.total_registered', 1));
     }
 
+    public function test_attendance_stats_follow_event_filter(): void
+    {
+        $eventA = $this->makePublishedEvent();
+        $formA = $this->makeForm($eventA);
+
+        $eventB = $this->makePublishedEvent();
+        $formB = $this->makeForm($eventB);
+
+        foreach ([$eventA, $eventA, $eventB] as $i => $event) {
+            Registration::create([
+                'event_id' => $event->id,
+                'form_id' => $event->id === $eventA->id ? $formA->id : $formB->id,
+                'organization_id' => $this->org->id,
+                'name' => 'Peserta '.$i,
+                'status' => 'confirmed',
+            ]);
+        }
+
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.attendance', ['event_id' => $eventA->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.total_registered', 2)
+                ->where('stats.total_attended', 0)
+                ->has('programs', 1)
+                ->where('programs.0.id', $eventA->id));
+    }
+
+    public function test_attendance_payment_filter_shows_only_pending(): void
+    {
+        $event = $this->makePublishedEvent();
+        $form = $this->makeForm($event, true);
+
+        $pending = Registration::create([
+            'event_id' => $event->id,
+            'form_id' => $form->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Belum Bayar',
+            'status' => 'confirmed',
+        ]);
+
+        $paid = Registration::create([
+            'event_id' => $event->id,
+            'form_id' => $form->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Sudah Bayar',
+            'status' => 'confirmed',
+        ]);
+
+        Payment::create([
+            'payable_type' => Registration::class,
+            'payable_id' => $pending->id,
+            'amount' => 50,
+            'status' => 'pending',
+            'organization_id' => $this->org->id,
+        ]);
+
+        Payment::create([
+            'payable_type' => Registration::class,
+            'payable_id' => $paid->id,
+            'amount' => 50,
+            'status' => 'successful',
+            'organization_id' => $this->org->id,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.attendance', ['payment' => 'pending']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.total_pending_payment', 1)
+                ->has('registrations.data', 1)
+                ->where('registrations.data.0.name', 'Belum Bayar'));
+    }
+
+    public function test_attendance_program_summary_only_lists_programs_with_participants(): void
+    {
+        $withRegs = $this->makePublishedEvent();
+        $form = $this->makeForm($withRegs);
+
+        $this->makePublishedEvent();
+
+        $registration = Registration::create([
+            'event_id' => $withRegs->id,
+            'form_id' => $form->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Peserta Hadir',
+            'status' => 'confirmed',
+        ]);
+
+        Attendance::create([
+            'registration_id' => $registration->id,
+            'event_id' => $withRegs->id,
+            'attended_at' => now(),
+            'method' => 'member',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.attendance'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('programs', 1)
+                ->where('programs.0.id', $withRegs->id)
+                ->where('programs.0.registered_count', 1)
+                ->where('programs.0.attended_count', 1)
+                ->where('programs.0.pending_payment_count', 0));
+    }
+
     public function test_admin_can_update_registration_status(): void
     {
         $event = $this->makePublishedEvent();
