@@ -811,6 +811,55 @@ class AdminService
             ?? $this->createWalkInRegistration($event, $user);
     }
 
+    /**
+     * Cari pendaftaran tetamu sedia ada untuk event ini berdasarkan telefon
+     * atau emel (tanpa akaun). Digunakan oleh walk-in tetamu supaya orang yang
+     * sama tidak mencipta pendaftaran berulang.
+     */
+    public function findGuestRegistration(Event $event, ?string $phone, ?string $email): ?Registration
+    {
+        $phone = $phone !== null ? trim($phone) : '';
+        $email = $email !== null ? trim($email) : '';
+
+        if ($phone === '' && $email === '') {
+            return null;
+        }
+
+        return Registration::where('event_id', $event->id)
+            ->where(function (Builder $q) use ($phone, $email) {
+                if ($phone !== '') {
+                    $q->orWhere('phone', $phone);
+                }
+                if ($email !== '') {
+                    $q->orWhere('email', $email);
+                }
+            })
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Cipta pendaftaran walk-in untuk tetamu (bukan ahli, tiada akaun) yang
+     * mengisi nama + telefon + emel di halaman kehadiran web.
+     *
+     * Sama prinsip dengan [createWalkInRegistration]: urusetia yang menayangkan
+     * QR = sengaja menjemput kehadiran. `user_id = null` menandakan tetamu.
+     *
+     * @param  array{name: string, phone: string, email?: string|null}  $data
+     */
+    public function createGuestWalkInRegistration(Event $event, array $data): Registration
+    {
+        return Registration::create([
+            'event_id' => $event->id,
+            'user_id' => null,
+            'organization_id' => $event->organization_id,
+            'name' => $data['name'],
+            'phone' => $data['phone'],
+            'email' => $data['email'] ?? null,
+            'status' => RegistrationStatus::WalkIn,
+        ]);
+    }
+
     public function registrationBlockReason(Registration $registration): ?string
     {
         if ($registration->status->value === 'cancelled') {

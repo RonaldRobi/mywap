@@ -39,7 +39,7 @@ function formatDate(iso) {
                 <!-- Colored header band -->
                 <div
                     class="h-2 w-full"
-                    :style="{ backgroundColor: event.organization?.color_theme ?? '#10b981' }"
+                    :style="{ backgroundColor: event.color_theme ?? '#10b981' }"
                 ></div>
 
                 <div class="p-8 flex flex-col items-center text-center gap-5">
@@ -108,7 +108,7 @@ function formatDate(iso) {
                         class="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl
                                font-bold text-sm text-white shadow-lg shadow-emerald-200
                                transition-transform active:scale-95"
-                        :style="{ backgroundColor: event.organization?.color_theme ?? '#10b981' }"
+                        :style="{ backgroundColor: event.color_theme ?? '#10b981' }"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>

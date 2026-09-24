@@ -463,6 +463,8 @@ Route::group(['middleware' => ['throttle:120,1']], function () {
         ->name('events.attend');
     Route::post('/events/{id}/attend/{token}/identify', [AttendanceController::class, 'guestIdentify'])
         ->name('events.attend.identify');
+    Route::post('/events/{id}/attend/{token}/walk-in', [AttendanceController::class, 'guestWalkIn'])
+        ->name('events.attend.walkin');
 });
 
 // ─── Public Poll Feedback (program poster QR) ────────────────────────────────

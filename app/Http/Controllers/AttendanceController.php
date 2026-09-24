@@ -147,6 +147,65 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Tetamu walk-in menghantar nama + telefon + emel.
+     *
+     * Berbeza daripada [guestIdentify] (yang memadankan pendaftaran sedia ada):
+     * di sini peserta TIDAK pernah mendaftar. Rekod walk-in dicipta automatik
+     * (user_id = null, status = walkin) dan kehadiran direkodkan terus.
+     *
+     * Kalau telefon/emel sudah ada pendaftaran untuk event ini, rekod itu
+     * diguna semula supaya tiada pendua.
+     */
+    public function guestWalkIn(Request $request, int $id, string $token): Response
+    {
+        $event = Event::with('organization')->findOrFail($id);
+
+        if (! hash_equals($event->attendance_token, $token)) {
+            abort(403, 'Token kehadiran tidak sah.');
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $phone = trim($data['phone']);
+        $email = isset($data['email']) ? trim((string) $data['email']) : '';
+
+        $registration = $this->admin->findGuestRegistration($event, $phone, $email);
+
+        if (! $registration) {
+            $registration = $this->admin->createGuestWalkInRegistration($event, [
+                'name' => trim($data['name']),
+                'phone' => $phone,
+                'email' => $email !== '' ? $email : null,
+            ]);
+        }
+
+        $error = $this->admin->registrationBlockReason($registration);
+        if ($error) {
+            return Inertia::render('Events/GuestCheckin', [
+                'event' => $this->serializeEvent($event),
+                'attendUrl' => route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]),
+                'error' => $error,
+            ]);
+        }
+
+        $this->admin->recordAttendance($registration, 'walkin');
+
+        return Inertia::render('Events/AttendanceSuccess', [
+            'event' => $this->serializeEvent($event),
+            'registration' => [
+                'registration_no' => $registration->registration_no,
+                'name' => $registration->name,
+            ],
+            'memberName' => $registration->name,
+            'attendedAt' => now()->toISOString(),
+        ]);
+    }
+
+    /**
      * Dashboard kehadiran admin (filter: event, org, status kehadiran).
      */
     public function adminIndex(Request $request): Response
