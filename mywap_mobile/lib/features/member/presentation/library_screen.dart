@@ -206,7 +206,7 @@ class _FilterChips extends StatelessWidget {
           child: Text(
             '$label ($count)',
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               color: selected ? AppColors.white : AppColors.textSecondary,
             ),

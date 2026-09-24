@@ -163,7 +163,7 @@ class _StatusBadge extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.white,
           fontWeight: FontWeight.w700,
-          fontSize: 12,
+          fontSize: 13,
         ),
       ),
     );

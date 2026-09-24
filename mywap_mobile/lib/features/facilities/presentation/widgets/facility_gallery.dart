@@ -79,7 +79,7 @@ class _FacilityGalleryState extends State<FacilityGallery> {
                 '${_page + 1}/${urls.length}',
                 style: const TextStyle(
                   color: AppColors.white,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
               ),

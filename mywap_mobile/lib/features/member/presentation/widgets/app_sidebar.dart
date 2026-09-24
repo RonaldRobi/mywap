@@ -326,7 +326,7 @@ class _SidebarSection extends StatelessWidget {
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: AppColors.textTertiary,
               letterSpacing: 0.6,
-              fontSize: 11,
+              fontSize: 13,
             ),
           ),
         ),

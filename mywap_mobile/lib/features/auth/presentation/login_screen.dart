@@ -75,9 +75,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     const fallback = MobileLoginBranding(
       title: 'Selamat kembali',
       subtitle: 'Log masuk untuk meneruskan ke myWAP.',
-      backgroundStart: '#F4F6F1',
-      backgroundEnd: '#EDF5EE',
-      accent: '#2F6B32',
+      backgroundStart: '#F3F6EF',
+      backgroundEnd: '#EDF4EC',
+      accent: '#147A3D',
     );
     final branding =
         ref.watch(mobileAuthConfigurationProvider).valueOrNull?.login ??
@@ -105,10 +105,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.white.withValues(alpha: .88),
                       borderRadius: AppRadius.hero,
-                      border: Border.all(color: const Color(0xFFD5E3D8)),
+                      border: Border.all(color: AppColors.paleGreen),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x14071525),
+                          color: AppColors.glassTint,
                           blurRadius: 32,
                           offset: Offset(0, 12),
                         ),
@@ -359,7 +359,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               context,
                             ).textTheme.labelMedium?.copyWith(
                               color: accent,
-                              fontSize: 9,
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                             ),
@@ -370,7 +370,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.movementDarkGreen,
-                              fontSize: 12,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1,
                             ),
@@ -404,7 +404,7 @@ class _BrandMark extends StatelessWidget {
           borderRadius: AppRadius.lg,
           boxShadow: const [
             BoxShadow(
-              color: Color(0x14071525),
+              color: AppColors.glassTint,
               blurRadius: 16,
               offset: Offset(0, 6),
             ),
@@ -431,14 +431,14 @@ class _BrandMark extends StatelessWidget {
               'myWAP',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppColors.movementDarkGreen,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
               ),
             ),
             Text(
               'Platform Digital Ekosistem Gerakan',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 10,
+                fontSize: 13,
               ),
             ),
           ],

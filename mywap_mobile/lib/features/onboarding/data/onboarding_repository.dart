@@ -28,11 +28,11 @@ class OnboardingSlideData {
     body: json['body'] as String? ?? '',
     buttonLabel: json['button_label'] as String? ?? '',
     buttonUrl: json['button_url'] as String?,
-    backgroundStart: json['background_start'] as String? ?? '#071525',
-    backgroundEnd: json['background_end'] as String? ?? '#2F6B32',
+    backgroundStart: json['background_start'] as String? ?? '#12241C',
+    backgroundEnd: json['background_end'] as String? ?? '#147A3D',
     textColor: json['text_color'] as String? ?? '#FFFFFF',
-    overlayStartColor: json['overlay_start_color'] as String? ?? '#071525',
-    overlayEndColor: json['overlay_end_color'] as String? ?? '#071525',
+    overlayStartColor: json['overlay_start_color'] as String? ?? '#12241C',
+    overlayEndColor: json['overlay_end_color'] as String? ?? '#12241C',
     overlayStartOpacity: (json['overlay_start_opacity'] as num?)?.toInt() ?? 0,
     overlayEndOpacity: (json['overlay_end_opacity'] as num?)?.toInt() ?? 90,
     overlayStartPosition:
@@ -72,9 +72,9 @@ class OnboardingRepository {
         login: MobileLoginBranding(
           title: 'Selamat kembali',
           subtitle: 'Log masuk untuk meneruskan ke myWAP.',
-          backgroundStart: '#F4F6F1',
-          backgroundEnd: '#EDF5EE',
-          accent: '#2F6B32',
+          backgroundStart: '#F3F6EF',
+          backgroundEnd: '#EDF4EC',
+          accent: '#147A3D',
         ),
       );
     }
@@ -92,9 +92,9 @@ class OnboardingRepository {
             : const MobileLoginBranding(
               title: 'Selamat kembali',
               subtitle: 'Log masuk untuk meneruskan ke myWAP.',
-              backgroundStart: '#F4F6F1',
-              backgroundEnd: '#EDF5EE',
-              accent: '#2F6B32',
+              backgroundStart: '#F3F6EF',
+              backgroundEnd: '#EDF4EC',
+              accent: '#147A3D',
             );
     return MobileAuthConfiguration(slides: slides, login: login);
   }
@@ -116,9 +116,9 @@ class MobileLoginBranding {
         subtitle:
             json['subtitle'] as String? ??
             'Log masuk untuk meneruskan ke myWAP.',
-        backgroundStart: json['background_start'] as String? ?? '#F4F6F1',
-        backgroundEnd: json['background_end'] as String? ?? '#EDF5EE',
-        accent: json['accent'] as String? ?? '#2F6B32',
+        backgroundStart: json['background_start'] as String? ?? '#F3F6EF',
+        backgroundEnd: json['background_end'] as String? ?? '#EDF4EC',
+        accent: json['accent'] as String? ?? '#147A3D',
         logoUrl: json['logo_url'] as String?,
         imageUrl: json['image_url'] as String?,
       );

@@ -230,7 +230,7 @@ class _Greeting extends StatelessWidget {
           greeting,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: AppColors.textSecondary,
-            fontSize: 10,
+            fontSize: 15,
           ),
         ),
       ],
@@ -302,7 +302,7 @@ class _SectionLabel extends StatelessWidget {
                 subtitle!,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 11,
+                  fontSize: 15,
                 ),
               ),
           ],
@@ -322,61 +322,61 @@ class _ShortcutsGrid extends StatelessWidget {
     _ShortcutItem(
       icon: Icons.receipt_long_rounded,
       label: 'Yuran',
-      color: Color(0xFF059669),
+      color: AppColors.shortcutFee,
       path: '/member/fee-status',
     ),
     _ShortcutItem(
       icon: Icons.calendar_today_rounded,
       label: 'Tempah',
-      color: Color(0xFFD97706),
+      color: AppColors.shortcutBooking,
       path: '/facilities',
     ),
     _ShortcutItem(
       icon: Icons.article_rounded,
       label: 'Berita',
-      color: Color(0xFF4F46E5),
+      color: AppColors.shortcutNews,
       path: '/news',
     ),
     _ShortcutItem(
       icon: Icons.favorite_rounded,
       label: 'Infaq',
-      color: Color(0xFFE11D48),
+      color: AppColors.shortcutInfaq,
       path: '/infaq',
     ),
     _ShortcutItem(
       icon: Icons.contact_page_rounded,
       label: 'Kad Ahli',
-      color: Color(0xFF2563EB),
+      color: AppColors.shortcutCard,
       path: '/card',
     ),
     _ShortcutItem(
       icon: Icons.groups_2_rounded,
       label: 'Usrah',
-      color: Color(0xFF7C3AED),
+      color: AppColors.shortcutUsrah,
       path: '/usrah',
     ),
     _ShortcutItem(
       icon: Icons.shopping_bag_rounded,
       label: 'Mall',
-      color: Color(0xFFEA580C),
+      color: AppColors.shortcutShop,
       path: '/products',
     ),
     _ShortcutItem(
       icon: Icons.share_rounded,
       label: 'Jemput',
-      color: Color(0xFF0D9488),
+      color: AppColors.shortcutReferral,
       path: '/member/referral',
     ),
     _ShortcutItem(
       icon: Icons.menu_book_rounded,
       label: 'Pustaka',
-      color: Color(0xFF0F766E),
+      color: AppColors.shortcutLibrary,
       path: '/member/library',
     ),
     _ShortcutItem(
       icon: Icons.poll_rounded,
       label: 'Undian',
-      color: Color(0xFF9D174D),
+      color: AppColors.shortcutPoll,
       path: '/polls',
     ),
   ];
@@ -393,7 +393,7 @@ class _ShortcutsGrid extends StatelessWidget {
         crossAxisCount: 5,
         mainAxisSpacing: Spacing.sm,
         crossAxisSpacing: Spacing.xs,
-        mainAxisExtent: 70,
+        mainAxisExtent: 92,
       ),
       itemBuilder: (context, index) => _ShortcutTile(item: _items[index]),
     );
@@ -419,24 +419,25 @@ class _ShortcutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 70,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppRadius.lg,
-          onTap: () => context.push(item.path),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.lg,
+        onTap: () => context.push(item.path),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: item.color.withValues(alpha: .12),
                   borderRadius: AppRadius.lg,
                   border: Border.all(color: item.color.withValues(alpha: .08)),
                 ),
-                child: Icon(item.icon, color: item.color, size: 20),
+                child: Icon(item.icon, color: item.color, size: 22),
               ),
               const SizedBox(height: Spacing.xs),
               Text(
@@ -444,9 +445,9 @@ class _ShortcutTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontSize: 9,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  height: 1.1,
+                  height: 1.15,
                 ),
               ),
             ],
@@ -461,8 +462,8 @@ class _MembershipCard extends StatelessWidget {
   const _MembershipCard({required this.member});
   final DashboardMember? member;
 
-  static const Color _gradientTop = Color(0xFF0F5F3E);
-  static const Color _gradientBottom = Color(0xFF1B8F5A);
+  
+  
 
   String? get _logoUrl {
     final orgLogo = member?.organization?.logo_path;
@@ -484,7 +485,7 @@ class _MembershipCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [_gradientTop, _gradientBottom],
+          colors: AppColors.heroGradient,
           stops: [0.15, 1.0],
         ),
         borderRadius: const BorderRadius.all(Radius.circular(28)),
@@ -525,8 +526,8 @@ class _MembershipCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0xCCFFFFFF),
-                              fontSize: 10,
+                              color: AppColors.textOnDark,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.6,
                             ),
@@ -571,7 +572,7 @@ class _MembershipCard extends StatelessWidget {
                           Container(
                             width: 1,
                             height: 40,
-                            color: const Color(0x33FFFFFF),
+                            color: AppColors.white.withValues(alpha: .20),
                           ),
                           Expanded(
                             child: Padding(
@@ -626,7 +627,7 @@ class _MemberAvatar extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0x59FFFFFF), width: 2),
+        border: Border.all(color: AppColors.white.withValues(alpha: .35), width: 2),
       ),
       child: ClipOval(
         child:
@@ -659,7 +660,7 @@ class _OrgLogo extends StatelessWidget {
                 ? AppImage(url, fit: BoxFit.contain)
                 : const Icon(
                   Icons.groups_2_rounded,
-                  color: _MembershipCard._gradientTop,
+                  color: AppColors.movementDarkGreen,
                   size: 24,
                 ),
       ),
@@ -685,7 +686,7 @@ class _AvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0x26FFFFFF),
+      color: AppColors.white.withValues(alpha: .15),
       alignment: Alignment.center,
       child: Text(
         _initials,
@@ -709,18 +710,18 @@ class _ActiveBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF2E8B57).withValues(alpha: .35),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: const Color(0x59FFFFFF)),
+        border: Border.all(color: AppColors.white.withValues(alpha: .35)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.circle, size: 8, color: Color(0xFFA8E6BB)),
+          Icon(Icons.circle, size: 8, color: AppColors.movementSoftGreen),
           SizedBox(width: 6),
           Text(
             'Ahli Aktif',
             style: TextStyle(
               color: AppColors.white,
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: .3,
             ),
@@ -743,7 +744,7 @@ class _FieldValue extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
+          style: const TextStyle(color: AppColors.textOnDark, fontSize: 13),
         ),
         const SizedBox(height: 3),
         Text(
@@ -821,7 +822,7 @@ class _QrBadge extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: AppColors.movementGreen,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
                     ),
@@ -831,7 +832,7 @@ class _QrBadge extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.white,
-                      border: Border.all(color: const Color(0xFFE7EAEE)),
+                      border: Border.all(color: AppColors.divider),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child:
@@ -860,7 +861,7 @@ class _QrBadge extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -897,9 +898,9 @@ class _SeeFullCardButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF123D2A),
+          color: AppColors.movementDarkGreen,
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: const Color(0x40FFFFFF)),
+          border: Border.all(color: AppColors.white.withValues(alpha: .25)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -908,7 +909,7 @@ class _SeeFullCardButton extends StatelessWidget {
               'Lihat Kad Penuh',
               style: TextStyle(
                 color: AppColors.white,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -957,7 +958,7 @@ class _Watermark extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.white,
               fontSize: 72,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -997,7 +998,7 @@ class _EventCard extends StatelessWidget {
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Color(0x66000000), Colors.transparent],
+                            colors: [AppColors.scrim, Colors.transparent],
                           ),
                         ),
                       ),
@@ -1016,7 +1017,7 @@ class _EventCard extends StatelessWidget {
                           child: Text(
                             event.type == 'physical' ? 'FIZIKAL' : 'ONLINE',
                             style: const TextStyle(
-                              fontSize: 9,
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1045,7 +1046,7 @@ class _EventCard extends StatelessWidget {
                         style: Theme.of(
                           context,
                         ).textTheme.labelMedium?.copyWith(
-                          fontSize: 11,
+                          fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -1084,7 +1085,7 @@ class _NextEvent extends StatelessWidget {
                 'ACARA SETERUSNYA',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.movementGreen,
-                  fontSize: 10,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -1163,7 +1164,7 @@ class _InfaqCard extends StatelessWidget {
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Color(0x55071525), Colors.transparent],
+                            colors: [AppColors.scrim, Colors.transparent],
                           ),
                         ),
                       ),
@@ -1204,7 +1205,7 @@ class _InfaqCard extends StatelessWidget {
                             context,
                           ).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1323,7 +1324,7 @@ class _NewsCard extends StatelessWidget {
                         style: Theme.of(
                           context,
                         ).textTheme.labelMedium?.copyWith(
-                          fontSize: 11,
+                          fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -1385,7 +1386,7 @@ class _ArticleCard extends StatelessWidget {
                         style: Theme.of(
                           context,
                         ).textTheme.labelMedium?.copyWith(
-                          fontSize: 11,
+                          fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
                       ),

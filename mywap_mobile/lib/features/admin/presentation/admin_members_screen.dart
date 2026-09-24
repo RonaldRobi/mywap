@@ -288,7 +288,7 @@ class _StatusBadge extends StatelessWidget {
         active ? 'Aktif' : 'Belum Lengkap',
         style: TextStyle(
           color: active ? AppColors.movementNavy : AppColors.warning,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
       ),

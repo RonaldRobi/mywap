@@ -219,7 +219,7 @@ class _ReferredMemberTile extends StatelessWidget {
           style: TextStyle(
             color: member.isActive ? AppColors.success : AppColors.warning,
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 13,
           ),
         ),
       ),

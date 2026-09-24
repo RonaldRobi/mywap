@@ -22,8 +22,8 @@ class LoadingScreenConfig {
         gifUrl: json['gif_url'] as String?,
         logoUrl: json['logo_url'] as String?,
         backgroundStart:
-            json['background_start'] as String? ?? '#071525',
-        backgroundEnd: json['background_end'] as String? ?? '#2F6B32',
+            json['background_start'] as String? ?? '#12241C',
+        backgroundEnd: json['background_end'] as String? ?? '#147A3D',
         durationMs: (json['duration_ms'] as num?)?.toInt() ?? 2500,
       );
 
@@ -82,8 +82,8 @@ class LoadingScreenRepository {
 
   LoadingScreenConfig _fallback() => const LoadingScreenConfig(
     enabled: true,
-    backgroundStart: '#071525',
-    backgroundEnd: '#2F6B32',
+    backgroundStart: '#12241C',
+    backgroundEnd: '#147A3D',
     durationMs: 2500,
   );
 

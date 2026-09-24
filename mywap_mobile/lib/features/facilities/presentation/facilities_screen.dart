@@ -260,7 +260,7 @@ class _FacilityTag extends StatelessWidget {
     ),
     child: Text(
       label,
-      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
     ),
   );
 }

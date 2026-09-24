@@ -214,7 +214,7 @@ class _FeeCard extends StatelessWidget {
               fee.isPaid ? 'Lunas' : 'Belum Bayar',
               style: TextStyle(
                 color: fee.isPaid ? AppColors.movementNavy : AppColors.warning,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),

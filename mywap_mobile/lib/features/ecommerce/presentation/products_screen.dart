@@ -422,7 +422,7 @@ class _ProductCard extends ConsumerWidget {
                           '-$discountPercent%',
                           style: const TextStyle(
                             color: AppColors.white,
-                            fontSize: 11,
+                            fontSize: 13,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -479,7 +479,7 @@ class _ProductCard extends ConsumerWidget {
                                                   color: AppColors.textTertiary,
                                                   decoration: TextDecoration
                                                       .lineThrough,
-                                                  fontSize: 11,
+                                                  fontSize: 13,
                                                 ),
                                       ),
                                       const SizedBox(width: 6),
@@ -500,7 +500,7 @@ class _ProductCard extends ConsumerWidget {
                                               ?.copyWith(
                                                     color:
                                                         AppColors.movementGreen,
-                                                    fontSize: 9,
+                                                    fontSize: 13,
                                                     fontWeight:
                                                         FontWeight.w700,
                                                   ),
@@ -517,7 +517,7 @@ class _ProductCard extends ConsumerWidget {
                                               ?.copyWith(
                                                     color: AppColors
                                                         .textSecondary,
-                                                    fontSize: 11,
+                                                    fontSize: 13,
                                                   ),
                                         )
                                       : const SizedBox.shrink()),

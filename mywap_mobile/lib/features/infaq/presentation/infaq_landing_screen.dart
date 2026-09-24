@@ -213,7 +213,7 @@ class _InfaqCard extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [Color(0x66071525), Colors.transparent],
+                          colors: [AppColors.scrim, Colors.transparent],
                         ),
                       ),
                     ),
@@ -278,7 +278,7 @@ class _InfaqCard extends StatelessWidget {
                         '${infaq.progressPercent ?? 0}% terkumpul',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 11,
+                          fontSize: 13,
                         ),
                       ),
                       Text(
@@ -287,7 +287,7 @@ class _InfaqCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 10,
+                          fontSize: 13,
                         ),
                       ),
                       if (infaq.daysRunning != null)
@@ -295,7 +295,7 @@ class _InfaqCard extends StatelessWidget {
                           '${infaq.daysRunning} hari berjalan',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10,
+                            fontSize: 13,
                           ),
                         ),
                     ],
@@ -389,7 +389,7 @@ class _InfaqStat extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 13,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
             ),
@@ -412,7 +412,7 @@ class _CampaignTag extends StatelessWidget {
     ),
     child: Text(
       label,
-      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
     ),
   );
 }

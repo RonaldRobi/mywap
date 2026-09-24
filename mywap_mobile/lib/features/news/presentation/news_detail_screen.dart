@@ -121,7 +121,7 @@ class _NewsDetailBody extends StatelessWidget {
                     style: const TextStyle(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      fontSize: 13,
                     ),
                   ),
                 ),

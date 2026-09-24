@@ -106,26 +106,19 @@ flutter:
   # https://flutter.dev/to/asset-from-package
 
   # Custom fonts bundled locally (offline, no runtime download).
+  #
+  # Inter (humanist sans) dipilih untuk sasaran warga emas: x-height tinggi,
+  # bentuk huruf terbuka, kurang "geometric/SaaS" berbanding Plus Jakarta Sans.
+  # Subset Latin + tanda baca + mata wang (~113KB/fail, SIL OFL 1.1).
+  # Ganti PlusJakartaSans + Poppins yang tidak digunakan (jimat ~830KB).
   fonts:
-    - family: PlusJakartaSans
+    - family: Inter
       fonts:
-        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/Inter-Regular.ttf
           weight: 400
-        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
           weight: 500
-        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+        - asset: assets/fonts/Inter-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
-          weight: 800
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
           weight: 700

@@ -182,13 +182,13 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? selectedIcon : icon, color: color, size: 22),
-            const SizedBox(height: 1),
+            Icon(selected ? selectedIcon : icon, color: color, size: 26),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
+                fontSize: 14,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
@@ -230,7 +230,7 @@ class PublicDrawer extends StatelessWidget {
                   const SizedBox(height: Spacing.xs),
                   const Text(
                     'Kandungan komuniti untuk semua',
-                    style: TextStyle(color: AppColors.textOnDark, fontSize: 12),
+                    style: TextStyle(color: AppColors.textOnDark, fontSize: 13),
                   ),
                 ],
               ),

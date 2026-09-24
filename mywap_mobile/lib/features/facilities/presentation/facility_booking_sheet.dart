@@ -171,7 +171,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
               _SectionLabel(step: 1, title: 'Pilih Hari'),
               const SizedBox(height: Spacing.sm),
               SizedBox(
-                height: 72,
+                height: 84,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: 14,
@@ -373,7 +373,7 @@ class _SectionLabel extends StatelessWidget {
           child: Text(
             '$step',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               color: AppColors.white,
             ),
@@ -454,7 +454,7 @@ class _DayChip extends StatelessWidget {
               today ? 'Hari ini' : _weekdays[date.weekday - 1],
               maxLines: 1,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: fg.withValues(alpha: selected ? .92 : .6),
               ),
@@ -470,7 +470,7 @@ class _DayChip extends StatelessWidget {
             Text(
               _months[date.month - 1],
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: fg.withValues(alpha: selected ? .9 : .6),
               ),

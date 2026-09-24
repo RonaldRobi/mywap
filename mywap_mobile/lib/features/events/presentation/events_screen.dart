@@ -135,7 +135,7 @@ class _EventCard extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [Color(0x77071525), Colors.transparent],
+                          colors: [AppColors.scrim, Colors.transparent],
                         ),
                       ),
                     ),
@@ -256,7 +256,7 @@ class _ImageChip extends StatelessWidget {
     child: Text(
       label,
       style: const TextStyle(
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),

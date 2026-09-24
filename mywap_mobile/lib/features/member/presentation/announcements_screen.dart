@@ -268,7 +268,7 @@ class _PinnedBadge extends StatelessWidget {
         style: TextStyle(
           color: AppColors.movementNavy,
           fontWeight: FontWeight.w700,
-          fontSize: 12,
+          fontSize: 13,
         ),
       ),
     );

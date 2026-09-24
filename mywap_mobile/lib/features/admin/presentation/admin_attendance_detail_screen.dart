@@ -207,7 +207,7 @@ class _RegistrationCard extends StatelessWidget {
           registration.attended ? 'Hadir' : 'Belum',
           style: TextStyle(
             color: registration.attended ? AppColors.movementNavy : AppColors.textSecondary,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),

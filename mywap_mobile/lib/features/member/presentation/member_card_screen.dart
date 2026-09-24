@@ -74,11 +74,11 @@ class _MemberCard extends StatelessWidget {
           colors: [AppColors.movementDarkGreen, AppColors.movementGreen],
         ),
         borderRadius: AppRadius.hero,
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x4D123D2A),
+            color: AppColors.movementDarkGreen.withValues(alpha: .30),
             blurRadius: 24,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -107,8 +107,8 @@ class _MemberCard extends StatelessWidget {
                     Text(
                       'myWAP',
                       style: const TextStyle(
-                        color: Color(0x99FFFFFF),
-                        fontSize: 10,
+                        color: AppColors.textOnDark,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2,
                       ),
@@ -151,8 +151,8 @@ class _MemberCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xCCFFFFFF),
-                        fontSize: 10,
+                        color: AppColors.textOnDark,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -182,7 +182,7 @@ class _MemberCard extends StatelessWidget {
           ),
           Text(
             'Ahli sejak ${card?.member_since ?? '-'}',
-            style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
+            style: const TextStyle(color: AppColors.textOnDark, fontSize: 13),
           ),
           const SizedBox(height: Spacing.lg),
           GridView.count(
@@ -191,7 +191,7 @@ class _MemberCard extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: Spacing.sm,
             crossAxisSpacing: Spacing.sm,
-            childAspectRatio: 2.3,
+            childAspectRatio: 1.9,
             children: [
               _Detail(label: 'EMAIL', value: card?.email),
               _Detail(label: 'TELEFON', value: card?.phone),
@@ -222,7 +222,7 @@ class _MemberCard extends StatelessWidget {
                   const Icon(
                     Icons.qr_code_2,
                     size: 88,
-                    color: Color(0x99FFFFFF),
+                    color: AppColors.textOnDark,
                   )
                 else
                   QrImageView(
@@ -236,7 +236,7 @@ class _MemberCard extends StatelessWidget {
                 const SizedBox(height: Spacing.sm),
                 const Text(
                   'Imbas kod QR untuk pengesahan keahlian.',
-                  style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 10),
+                  style: TextStyle(color: AppColors.textOnDark, fontSize: 13),
                 ),
               ],
             ),
@@ -266,8 +266,8 @@ class _Detail extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0x99FFFFFF),
-            fontSize: 9,
+            color: AppColors.textOnDark,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -278,7 +278,7 @@ class _Detail extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppColors.white,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
         ),

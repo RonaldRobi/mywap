@@ -68,7 +68,7 @@ class _ReactionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? AppColors.movementGreen : AppColors.textSecondary;
     return Material(
-      color: selected ? const Color(0xFFE1F0E4) : AppColors.surface,
+      color: selected ? AppColors.paleGreen : AppColors.surface,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),

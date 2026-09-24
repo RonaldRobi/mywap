@@ -187,7 +187,7 @@ class _LeaderBadge extends StatelessWidget {
           Text(
             'Pemimpin',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.movementGreen,
             ),
@@ -234,7 +234,7 @@ class _AttendanceTile extends StatelessWidget {
           child: Text(
             statusLabel,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),

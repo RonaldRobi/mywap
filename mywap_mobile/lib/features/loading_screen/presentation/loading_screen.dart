@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/loading_screen_providers.dart';
+import '../../../shared/theme/app_colors.dart';
 
 /// Loading screen yang dipaparkan setiap kali aplikasi dibuka (sebelum auth
 /// selesai). Latar belakang gradient + GIF transparen di tengah. Hanya
@@ -22,8 +23,8 @@ class LoadingScreenView extends ConsumerWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _parseColor(config?.backgroundStart ?? '#071525'),
-              _parseColor(config?.backgroundEnd ?? '#2F6B32'),
+              _parseColor(config?.backgroundStart ?? '#12241C'),
+              _parseColor(config?.backgroundEnd ?? '#147A3D'),
             ],
           ),
         ),
@@ -97,7 +98,7 @@ class _FallbackIndicator extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x33000000),
+                  color: AppColors.scrimLight,
                   blurRadius: 24,
                   offset: Offset(0, 10),
                 ),
@@ -110,7 +111,7 @@ class _FallbackIndicator extends StatelessWidget {
                   (_, __, ___) => const Icon(
                     Icons.volunteer_activism,
                     size: 56,
-                    color: Color(0xFF2F6B32),
+                    color: AppColors.movementGreen,
                   ),
             ),
           )

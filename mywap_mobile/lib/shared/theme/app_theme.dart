@@ -26,13 +26,31 @@ abstract final class AppRadius {
     topLeft: Radius.circular(28),
     topRight: Radius.circular(28),
   );
+
+  /// Pil / kapsul penuh. Dulunya 17 tempat hand-roll `circular(99)` atau
+  /// `circular(999)` — dua nilai berbeza untuk rupa yang sama.
+  static const BorderRadius pill = BorderRadius.all(Radius.circular(999));
+}
+
+/// Saiz sasaran sentuh minimum (WCAG 2.5.5 / Material).
+///
+/// Sasaran warga emas: jangan sekali-kali kecil daripada ini untuk elemen
+/// yang boleh ditekan.
+abstract final class AppSizes {
+  static const double tapTarget = 48;
+  static const double buttonHeight = 56;
+  static const double navBarHeight = 76;
+  static const double iconSm = 20;
+  static const double iconMd = 24;
+  static const double iconLg = 28;
 }
 
 /// Soft, low-opacity shadows — Apple-style elevation (diffuse, not harsh).
+/// Warna bayang mengikut `movementNavy` baharu (#12241C).
 abstract final class AppShadows {
   static const List<BoxShadow> subtle = [
     BoxShadow(
-      color: Color(0x0A071525),
+      color: Color(0x0A12241C),
       blurRadius: 12,
       offset: Offset(0, 4),
     ),
@@ -40,7 +58,7 @@ abstract final class AppShadows {
 
   static const List<BoxShadow> card = [
     BoxShadow(
-      color: Color(0x0F071525),
+      color: Color(0x0F12241C),
       blurRadius: 24,
       offset: Offset(0, 10),
     ),
@@ -48,7 +66,7 @@ abstract final class AppShadows {
 
   static const List<BoxShadow> floating = [
     BoxShadow(
-      color: Color(0x22071525),
+      color: Color(0x2212241C),
       blurRadius: 28,
       offset: Offset(0, 14),
     ),
@@ -83,7 +101,7 @@ abstract final class AppTheme {
         titleTextStyle: TextStyle(
           fontFamily: AppTextTheme.fontFamily,
           color: AppColors.textPrimary,
-          fontSize: 17,
+          fontSize: 20,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.2,
         ),
@@ -104,25 +122,28 @@ abstract final class AppTheme {
           disabledBackgroundColor: AppColors.movementGreen.withValues(
             alpha: .4,
           ),
-          minimumSize: const Size.fromHeight(52),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lg),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.movementGreen,
-          side: const BorderSide(color: AppColors.divider, width: 1.4),
-          minimumSize: const Size.fromHeight(52),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          side: const BorderSide(color: AppColors.inputBorder, width: 1.5),
+          minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lg),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.movementGreen,
-          minimumSize: const Size(48, 48),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          minimumSize: const Size(
+            AppSizes.tapTarget,
+            AppSizes.tapTarget,
+          ),
+          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -144,31 +165,31 @@ abstract final class AppTheme {
           borderRadius: AppRadius.md,
           borderSide: const BorderSide(
             color: AppColors.movementGreen,
-            width: 1.6,
+            width: 1.8,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.md,
-          borderSide: const BorderSide(color: AppColors.error, width: 1.4),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         labelStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 16,
           color: AppColors.textSecondary,
         ),
       ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.movementNavy,
-        contentTextStyle: TextStyle(fontSize: 15, color: AppColors.white),
+        contentTextStyle: TextStyle(fontSize: 16, color: AppColors.white),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.md),
       ),
       navigationBarTheme: const NavigationBarThemeData(
         backgroundColor: AppColors.white,
         indicatorColor: AppColors.paleGreen,
         elevation: 0,
-        height: 68,
+        height: AppSizes.navBarHeight,
         labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          TextStyle(fontSize: AppTextTheme.minSize, fontWeight: FontWeight.w600),
         ),
       ),
       dialogTheme: DialogThemeData(

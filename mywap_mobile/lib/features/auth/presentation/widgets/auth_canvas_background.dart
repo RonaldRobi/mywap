@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../../shared/theme/app_colors.dart';
+
 /// Recreates the web app's `.auth-canvas` background (see
 /// `resources/css/app.css`) — a soft off-white gradient with layered radial
 /// highlights plus a faint arabesque/islimi line motif, radially masked so
@@ -19,7 +21,7 @@ class AuthCanvasBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFFFAFBF8)),
+        const ColoredBox(color: AppColors.movementOffWhite),
         CustomPaint(painter: _AuthCanvasPainter(), size: Size.infinite),
         child,
       ],
@@ -38,7 +40,11 @@ class _AuthCanvasPainter extends CustomPainter {
           ..shader = const LinearGradient(
             begin: Alignment(-0.65, -1),
             end: Alignment(0.65, 1),
-            colors: [Color(0xFFFFFFFF), Color(0xFFF7FAF6), Color(0xFFEDF4EC)],
+            colors: [
+              AppColors.white,
+              AppColors.pageBackground,
+              AppColors.softGreenSurface,
+            ],
             stops: [0, 0.42, 1],
           ).createShader(rect);
     canvas.drawRect(rect, linearPaint);
@@ -50,7 +56,7 @@ class _AuthCanvasPainter extends CustomPainter {
       size,
       center: Offset(size.width * 0.12, size.height * -0.08),
       radius: math.max(size.width, size.height) * 0.62,
-      color: const Color(0xFF6FBF8A),
+      color: AppColors.movementSoftGreen,
       maxAlpha: 0.22,
     );
     _paintRadial(
@@ -58,7 +64,7 @@ class _AuthCanvasPainter extends CustomPainter {
       size,
       center: Offset(size.width * 1.05, size.height * 0.04),
       radius: math.max(size.width, size.height) * 0.55,
-      color: const Color(0xFF2F6B32),
+      color: AppColors.movementGreen,
       maxAlpha: 0.12,
     );
     _paintRadial(
@@ -66,7 +72,7 @@ class _AuthCanvasPainter extends CustomPainter {
       size,
       center: Offset(size.width * 0.48, size.height * 1.12),
       radius: math.max(size.width, size.height) * 0.5,
-      color: const Color(0xFF123D2A),
+      color: AppColors.movementDarkGreen,
       maxAlpha: 0.10,
     );
 
@@ -103,7 +109,7 @@ class _AuthCanvasPainter extends CustomPainter {
 
     final linePaint =
         Paint()
-          ..color = const Color(0xFF123D2A)
+          ..color = AppColors.movementDarkGreen
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.1
           ..strokeCap = StrokeCap.round;
@@ -124,11 +130,11 @@ class _AuthCanvasPainter extends CustomPainter {
           ..shader = ui.Gradient.radial(
             maskCenter,
             maskRadius,
-            const [
-              Color(0x29123D2A),
-              Color(0x29123D2A),
-              Color(0x16123D2A),
-              Color(0x00123D2A),
+            [
+              AppColors.movementDarkGreen.withValues(alpha: 0.16),
+              AppColors.movementDarkGreen.withValues(alpha: 0.16),
+              AppColors.movementDarkGreen.withValues(alpha: 0.086),
+              AppColors.movementDarkGreen.withValues(alpha: 0),
             ],
             const [0.0, 0.62, 0.88, 1.0],
           );

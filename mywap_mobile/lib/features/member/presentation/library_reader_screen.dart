@@ -176,7 +176,7 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
       controller: controller,
       scrollDirection: Axis.horizontal,
       onPageChanged: _onPageChanged,
-      backgroundDecoration: const BoxDecoration(color: Color(0xFFECE7DC)),
+      backgroundDecoration: const BoxDecoration(color: AppColors.readingSurface),
       builders: PdfViewBuilders<DefaultBuilderOptions>(
         options: const DefaultBuilderOptions(),
         documentLoaderBuilder: (_) => const Center(

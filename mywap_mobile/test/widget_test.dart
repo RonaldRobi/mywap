@@ -6,11 +6,11 @@ import 'package:mywap_mobile/shared/widgets/skeleton_box.dart';
 
 void main() {
   test('design tokens match blueprint', () {
-    expect(AppColors.movementNavy, const Color(0xFF071525));
-    expect(AppColors.movementDarkGreen, const Color(0xFF123d2a));
-    expect(AppColors.movementGreen, const Color(0xFF2f6b32));
-    expect(AppColors.movementSoftGreen, const Color(0xFF6fbf8a));
-    expect(AppColors.movementOffWhite, const Color(0xFFf4f6f1));
+    expect(AppColors.movementNavy, const Color(0xFF12241C));
+    expect(AppColors.movementDarkGreen, const Color(0xFF0E5C2E));
+    expect(AppColors.movementGreen, const Color(0xFF147A3D));
+    expect(AppColors.movementSoftGreen, const Color(0xFF4FAE73));
+    expect(AppColors.movementOffWhite, const Color(0xFFF3F6EF));
   });
 
   testWidgets('skeleton box renders without network', (tester) async {

@@ -220,7 +220,7 @@ class _DetailContent extends StatelessWidget {
                           'Harga Ahli',
                           style: TextStyle(
                             color: AppColors.white,
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

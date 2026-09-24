@@ -148,7 +148,7 @@ class _ArticleDetailBody extends StatelessWidget {
                   .map(
                     (t) => Chip(
                       label: Text('#${t.name}'),
-                      labelStyle: const TextStyle(fontSize: 11),
+                      labelStyle: const TextStyle(fontSize: 13),
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),

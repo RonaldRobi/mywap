@@ -362,7 +362,7 @@ class _VideoGridTile extends StatelessWidget {
                           'LIVE',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 13,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
                           ),

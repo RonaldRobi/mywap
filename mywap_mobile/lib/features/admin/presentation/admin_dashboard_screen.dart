@@ -441,7 +441,7 @@ class _RevenueChart extends StatelessWidget {
                     child: Text(
                       labels[index],
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
                     ),

@@ -165,7 +165,7 @@ class _ArticleCard extends StatelessWidget {
                           .map(
                             (c) => Chip(
                               label: Text(c.name!),
-                              labelStyle: const TextStyle(fontSize: 11),
+                              labelStyle: const TextStyle(fontSize: 13),
                               visualDensity: VisualDensity.compact,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
