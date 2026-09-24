@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Enums\RegistrationStatus;
 use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Form;
@@ -294,7 +295,7 @@ class EventRegistrationTest extends TestCase
         $this->assertSame('member', $attendance->method);
     }
 
-    public function test_member_scan_without_registration_shows_error(): void
+    public function test_member_scan_without_registration_records_walk_in(): void
     {
         $event = $this->makePublishedEvent();
 
@@ -302,7 +303,14 @@ class EventRegistrationTest extends TestCase
 
         $this->get(route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Events/AttendanceError'));
+            ->assertInertia(fn ($page) => $page->component('Events/AttendanceSuccess'));
+
+        $registration = Registration::where('event_id', $event->id)
+            ->where('user_id', $this->member->id)
+            ->firstOrFail();
+
+        $this->assertSame(RegistrationStatus::WalkIn, $registration->status);
+        $this->assertSame('walkin', $registration->attendance?->method);
     }
 
     public function test_guest_identify_records_attendance(): void

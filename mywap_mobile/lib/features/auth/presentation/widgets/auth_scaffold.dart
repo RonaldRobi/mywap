@@ -162,9 +162,10 @@ class AuthField extends StatelessWidget {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: icon != null
-                ? Icon(icon, color: AppColors.movementGreen)
-                : null,
+            prefixIcon:
+                icon != null
+                    ? Icon(icon, color: AppColors.movementGreen)
+                    : null,
             suffixIcon: suffixIcon,
           ),
         ),

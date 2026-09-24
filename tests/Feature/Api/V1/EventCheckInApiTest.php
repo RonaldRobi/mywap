@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Enums\RegistrationStatus;
+use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Organization;
 use App\Models\Registration;
@@ -80,7 +81,8 @@ class EventCheckInApiTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.event_id', $this->event->id);
+            ->assertJsonPath('data.event_id', $this->event->id)
+            ->assertJsonPath('data.walk_in', false);
 
         $this->assertDatabaseHas('attendances', [
             'event_id' => $this->event->id,
@@ -98,13 +100,72 @@ class EventCheckInApiTest extends TestCase
         ])->assertStatus(403);
     }
 
-    public function test_check_in_requires_registration(): void
+    public function test_member_without_registration_is_checked_in_as_walk_in(): void
+    {
+        Sanctum::actingAs($this->member);
+
+        $response = $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
+            'token' => $this->event->attendance_token,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.event_id', $this->event->id)
+            ->assertJsonPath('data.walk_in', true);
+
+        // Rekod walk-in dicipta untuk ahli ini.
+        $this->assertDatabaseHas('registrations', [
+            'event_id' => $this->event->id,
+            'user_id' => $this->member->id,
+            'member_no' => 'PKPIM-0001',
+            'status' => RegistrationStatus::WalkIn->value,
+        ]);
+
+        $this->assertDatabaseHas('attendances', [
+            'event_id' => $this->event->id,
+            'method' => 'walkin',
+        ]);
+    }
+
+    public function test_walk_in_is_idempotent_on_rescan(): void
     {
         Sanctum::actingAs($this->member);
 
         $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
             'token' => $this->event->attendance_token,
-        ])->assertStatus(404);
+        ])->assertOk();
+
+        // Imbas kali kedua tidak mencipta pendaftaran/kehadiran duplikat.
+        $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
+            'token' => $this->event->attendance_token,
+        ])->assertOk();
+
+        $this->assertSame(
+            1,
+            Registration::where('event_id', $this->event->id)
+                ->where('user_id', $this->member->id)
+                ->count()
+        );
+        $this->assertSame(
+            1,
+            Attendance::where('event_id', $this->event->id)->count()
+        );
+    }
+
+    public function test_existing_registration_is_not_replaced_by_walk_in(): void
+    {
+        $registration = $this->registerMember();
+        Sanctum::actingAs($this->member);
+
+        $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
+            'token' => $this->event->attendance_token,
+        ])->assertOk()->assertJsonPath('data.walk_in', false);
+
+        // Status pendaftaran asal kekal 'confirmed'.
+        $this->assertSame(RegistrationStatus::Confirmed, $registration->fresh()->status);
+        $this->assertDatabaseHas('attendances', [
+            'event_id' => $this->event->id,
+            'method' => 'member',
+        ]);
     }
 
     public function test_admin_cannot_check_in_as_participant(): void

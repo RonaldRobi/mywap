@@ -49,27 +49,15 @@ abstract final class AppSizes {
 /// Warna bayang mengikut `movementNavy` baharu (#12241C).
 abstract final class AppShadows {
   static const List<BoxShadow> subtle = [
-    BoxShadow(
-      color: Color(0x0A12241C),
-      blurRadius: 12,
-      offset: Offset(0, 4),
-    ),
+    BoxShadow(color: Color(0x0A12241C), blurRadius: 12, offset: Offset(0, 4)),
   ];
 
   static const List<BoxShadow> card = [
-    BoxShadow(
-      color: Color(0x0F12241C),
-      blurRadius: 24,
-      offset: Offset(0, 10),
-    ),
+    BoxShadow(color: Color(0x0F12241C), blurRadius: 24, offset: Offset(0, 10)),
   ];
 
   static const List<BoxShadow> floating = [
-    BoxShadow(
-      color: Color(0x2212241C),
-      blurRadius: 28,
-      offset: Offset(0, 14),
-    ),
+    BoxShadow(color: Color(0x2212241C), blurRadius: 28, offset: Offset(0, 14)),
   ];
 }
 
@@ -101,8 +89,8 @@ abstract final class AppTheme {
         titleTextStyle: TextStyle(
           fontFamily: AppTextTheme.fontFamily,
           color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
           letterSpacing: -0.2,
         ),
       ),
@@ -123,7 +111,7 @@ abstract final class AppTheme {
             alpha: .4,
           ),
           minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lg),
         ),
       ),
@@ -132,18 +120,15 @@ abstract final class AppTheme {
           foregroundColor: AppColors.movementGreen,
           side: const BorderSide(color: AppColors.inputBorder, width: 1.5),
           minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(borderRadius: AppRadius.lg),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.movementGreen,
-          minimumSize: const Size(
-            AppSizes.tapTarget,
-            AppSizes.tapTarget,
-          ),
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          minimumSize: const Size(AppSizes.tapTarget, AppSizes.tapTarget),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -173,7 +158,7 @@ abstract final class AppTheme {
           borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         labelStyle: const TextStyle(
-          fontSize: 16,
+          fontSize: 14,
           color: AppColors.textSecondary,
         ),
       ),
@@ -189,7 +174,10 @@ abstract final class AppTheme {
         elevation: 0,
         height: AppSizes.navBarHeight,
         labelTextStyle: WidgetStatePropertyAll(
-          TextStyle(fontSize: AppTextTheme.minSize, fontWeight: FontWeight.w600),
+          TextStyle(
+            fontSize: AppTextTheme.minSize,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       dialogTheme: DialogThemeData(

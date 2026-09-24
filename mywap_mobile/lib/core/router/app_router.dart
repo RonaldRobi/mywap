@@ -32,6 +32,7 @@ import '../../features/organization/presentation/organization_info_screen.dart';
 import '../../features/polls/presentation/routes.dart';
 import '../../features/profile/presentation/routes.dart';
 import '../../features/referral/presentation/referral_screen.dart';
+import '../../features/scan/presentation/attendance_check_in_screen.dart';
 import '../../features/scan/presentation/member_scan_screen.dart';
 import '../../features/usrah/presentation/routes.dart';
 import '../../shared/screens/route_not_found_screen.dart';
@@ -67,6 +68,7 @@ bool _isPublicLocation(String location) {
   if (exact.contains(location)) return true;
   if (RegExp(r'^/(articles|news)/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/events/\d+$').hasMatch(location)) return true;
+  if (RegExp(r'^/events/\d+/attend/[^/]+$').hasMatch(location)) return true;
   if (location.startsWith('/infaq/')) return true;
   if (location.startsWith('/forms/')) return true;
   if (location.startsWith('/card/')) return true;
@@ -146,6 +148,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (_, __) => const OnboardingScreen(),
+      ),
+      // Deep link kehadiran — dibuka daripada Universal/App Link (QR program).
+      GoRoute(
+        path: '/events/:id/attend/:token',
+        builder: (_, state) => AttendanceCheckInScreen(
+          eventId: int.parse(state.pathParameters['id']!),
+          token: state.pathParameters['token']!,
+        ),
       ),
       ShellRoute(
         builder: (_, state, child) => AdaptiveShell(child: child),

@@ -14,6 +14,7 @@ import '../../public/presentation/guest_prompt.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class NewsDetailScreen extends ConsumerWidget {
   const NewsDetailScreen({super.key, required this.newsId});
@@ -121,7 +122,7 @@ class _NewsDetailBody extends StatelessWidget {
                     style: const TextStyle(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: AppTextTheme.minSize,
                     ),
                   ),
                 ),

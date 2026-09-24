@@ -17,4 +17,27 @@ import UIKit
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  // Universal Links (deep link): majukan NSUserActivity kepada plugin (app_links)
+  // supaya pautan https://mywap.my/... membuka app terus.
+  override func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    return super.application(
+      application,
+      continue: userActivity,
+      restorationHandler: restorationHandler
+    )
+  }
+
+  // Skim tersuai (mywap://) — majukan openURL kepada plugin (app_links).
+  override func application(
+    _ application: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    return super.application(application, open: url, options: options)
+  }
 }

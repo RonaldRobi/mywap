@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/theme/app_text_theme.dart';
 
 /// Label Melayu untuk status kelulusan tempahan.
 String bookingStatusLabel(String? status) => switch (status) {
@@ -68,7 +69,7 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,
           color: color,
         ),

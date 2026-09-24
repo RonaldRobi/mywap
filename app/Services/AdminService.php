@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\RegistrationStatus;
 use App\Jobs\SendBroadcastJob;
 use App\Models\Attendance;
 use App\Models\BroadcastLog;
@@ -772,6 +773,42 @@ class AdminService
             })
             ->latest()
             ->first();
+    }
+
+    /**
+     * Cipta pendaftaran walk-in untuk ahli yang mengimbas QR kehadiran tanpa
+     * pendaftaran terdahulu.
+     *
+     * Konteks: urusetia memaparkan QR poster (mengandungi `attendance_token`
+     * rahsia). Menayangkan QR itu = sengaja menjemput kehadiran, jadi ahli
+     * yang mengimbas dibenarkan hadir tanpa mendaftar. Rekod ini ditandakan
+     * `status = walkin` supaya laporan boleh membezakannya daripada
+     * pendaftaran rasmi.
+     */
+    public function createWalkInRegistration(Event $event, $user): Registration
+    {
+        return Registration::create([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'organization_id' => $user->current_organization_id
+                ?? $event->organization_id,
+            'member_no' => $user->member_no,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'ic_number' => $user->ic_number,
+            'status' => RegistrationStatus::WalkIn,
+        ]);
+    }
+
+    /**
+     * Cari pendaftaran ahli, atau cipta walk-in jika tiada. Digunakan oleh
+     * aliran imbasan QR kehadiran (web & API).
+     */
+    public function findOrCreateRegistration(Event $event, $user): Registration
+    {
+        return $this->findRegistration($event, $user)
+            ?? $this->createWalkInRegistration($event, $user);
     }
 
     public function registrationBlockReason(Registration $registration): ?string

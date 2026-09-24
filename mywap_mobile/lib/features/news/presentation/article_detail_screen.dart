@@ -14,6 +14,7 @@ import '../../public/presentation/guest_prompt.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class ArticleDetailScreen extends ConsumerWidget {
   const ArticleDetailScreen({super.key, required this.articleId});
@@ -148,7 +149,9 @@ class _ArticleDetailBody extends StatelessWidget {
                   .map(
                     (t) => Chip(
                       label: Text('#${t.name}'),
-                      labelStyle: const TextStyle(fontSize: 13),
+                      labelStyle: const TextStyle(
+                        fontSize: AppTextTheme.minSize,
+                      ),
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),

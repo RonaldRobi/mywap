@@ -35,6 +35,22 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Deep link: App Links (https://mywap.my/...) — autoVerify supaya
+                 Android sahkan domain melalui /.well-known/assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="mywap.my"/>
+                <data android:scheme="https" android:host="www.mywap.my"/>
+            </intent-filter>
+            <!-- Deep link: skim tersuai (mywap://) — untuk ujian/simulator. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="mywap"/>
+            </intent-filter>
         </activity>
         <!-- Notifikasi latar FCM guna saluran high-importance yang didaftarkan
              oleh flutter_local_notifications (id mesti sepadan dengan

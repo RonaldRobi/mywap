@@ -82,9 +82,7 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
         return;
       }
 
-      final first = (saved >= 0 && saved < document.pagesCount)
-          ? saved
-          : 0;
+      final first = (saved >= 0 && saved < document.pagesCount) ? saved : 0;
 
       _controller?.dispose();
       setState(() {
@@ -131,9 +129,10 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: favourites.contains(_bookId)
-                ? 'Buang daripada kegemaran'
-                : 'Simpan ke kegemaran',
+            tooltip:
+                favourites.contains(_bookId)
+                    ? 'Buang daripada kegemaran'
+                    : 'Simpan ke kegemaran',
             onPressed: () {
               ref.read(libraryFavouritesProvider.notifier).toggle(_bookId);
             },
@@ -141,17 +140,19 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
               favourites.contains(_bookId)
                   ? Icons.favorite
                   : Icons.favorite_border,
-              color: favourites.contains(_bookId)
-                  ? AppColors.error
-                  : AppColors.textSecondary,
+              color:
+                  favourites.contains(_bookId)
+                      ? AppColors.error
+                      : AppColors.textSecondary,
             ),
           ),
         ],
       ),
       body: _buildBody(),
-      bottomNavigationBar: _phase == _ReaderPhase.ready
-          ? _ReaderControls(controller: _controller!)
-          : null,
+      bottomNavigationBar:
+          _phase == _ReaderPhase.ready
+              ? _ReaderControls(controller: _controller!)
+              : null,
     );
   }
 
@@ -176,15 +177,18 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
       controller: controller,
       scrollDirection: Axis.horizontal,
       onPageChanged: _onPageChanged,
-      backgroundDecoration: const BoxDecoration(color: AppColors.readingSurface),
+      backgroundDecoration: const BoxDecoration(
+        color: AppColors.readingSurface,
+      ),
       builders: PdfViewBuilders<DefaultBuilderOptions>(
         options: const DefaultBuilderOptions(),
-        documentLoaderBuilder: (_) => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2.5),
-        ),
-        pageLoaderBuilder: (_) => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        documentLoaderBuilder:
+            (_) => const Center(
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+        pageLoaderBuilder:
+            (_) =>
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
     );
   }
@@ -208,33 +212,36 @@ class _ReaderControls extends StatelessWidget {
             const SizedBox(width: Spacing.sm),
             IconButton(
               tooltip: 'Muka surat sebelumnya',
-              onPressed: controller.page > 1
-                  ? () => controller.previousPage(
+              onPressed:
+                  controller.page > 1
+                      ? () => controller.previousPage(
                         duration: const Duration(milliseconds: 180),
                         curve: Curves.easeOut,
                       )
-                  : null,
+                      : null,
               icon: const Icon(Icons.chevron_left),
             ),
             Expanded(
               child: PdfPageNumber(
                 controller: controller,
-                builder: (_, state, page, pagesCount) => Text(
-                  '$page / ${pagesCount ?? 0}',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                builder:
+                    (_, state, page, pagesCount) => Text(
+                      '$page / ${pagesCount ?? 0}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
               ),
             ),
             IconButton(
               tooltip: 'Muka surat seterusnya',
-              onPressed: () => controller.nextPage(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-              ),
+              onPressed:
+                  () => controller.nextPage(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                  ),
               icon: const Icon(Icons.chevron_right),
             ),
             const SizedBox(width: Spacing.sm),
@@ -322,10 +329,7 @@ class _ReaderError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Spacing.lg),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Cuba Lagi'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('Cuba Lagi')),
           ],
         ),
       ),

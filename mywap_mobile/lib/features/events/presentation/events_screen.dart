@@ -13,6 +13,7 @@ import '../data/models/event.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../../member/presentation/widgets/shell_scaffold_key.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class EventsScreen extends ConsumerWidget {
   const EventsScreen({super.key});
@@ -256,7 +257,7 @@ class _ImageChip extends StatelessWidget {
     child: Text(
       label,
       style: const TextStyle(
-        fontSize: 13,
+        fontSize: AppTextTheme.minSize,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),

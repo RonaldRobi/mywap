@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/order_providers.dart';
 import '../data/models/order.dart';
 import 'order_status.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -208,7 +209,7 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         orderStatusLabel(status),
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),

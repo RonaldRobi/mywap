@@ -71,62 +71,28 @@ class EventRegisterAfterScanTest extends TestCase
         return $member;
     }
 
-    // ─── Ahli: belum daftar → papar laluan daftar (1 borang aktif) ───────────
+    // ─── Ahli: belum daftar → walk-in (kehadiran terus direkod) ─────────────
 
-    public function test_member_not_registered_sees_register_link_on_attendance_error(): void
-    {
-        $event = $this->event();
-        $form = $this->activeForm($event);
-        $member = $this->member();
-
-        $this->actingAs($member)
-            ->get(route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Events/AttendanceError')
-                ->where('registerAction.url', route('events.register', ['event' => $event->slug, 'form' => $form->id])));
-    }
-
-    public function test_member_not_registered_gets_no_register_link_when_event_is_draft(): void
-    {
-        $event = $this->event(EventStatus::Draft->value);
-        $this->activeForm($event);
-        $member = $this->member();
-
-        $this->actingAs($member)
-            ->get(route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Events/AttendanceError')
-                ->where('registerAction', null));
-    }
-
-    public function test_member_not_registered_gets_no_register_link_when_no_active_form(): void
-    {
-        $event = $this->event();
-        $member = $this->member();
-
-        $this->actingAs($member)
-            ->get(route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Events/AttendanceError')
-                ->where('registerAction', null));
-    }
-
-    public function test_member_not_registered_with_multiple_active_forms_goes_to_overview(): void
+    public function test_member_not_registered_is_recorded_as_walk_in(): void
     {
         $event = $this->event();
         $this->activeForm($event);
-        $this->activeForm($event);
         $member = $this->member();
 
         $this->actingAs($member)
             ->get(route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Events/AttendanceError')
-                ->where('registerAction.url', route('events.show', $event->slug)));
+            ->assertInertia(fn ($page) => $page->component('Events/AttendanceSuccess'));
+
+        $this->assertDatabaseHas('registrations', [
+            'event_id' => $event->id,
+            'user_id' => $member->id,
+            'status' => 'walkin',
+        ]);
+        $this->assertDatabaseHas('attendances', [
+            'event_id' => $event->id,
+            'method' => 'walkin',
+        ]);
     }
 
     // ─── Tetamu: tiada rekod semasa identifikasi → papar pautan daftar awam ──

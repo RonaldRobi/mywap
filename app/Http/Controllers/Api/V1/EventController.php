@@ -49,6 +49,10 @@ class EventController extends Controller
      * Kehadiran ahli sendiri melalui imbasan QR kod (bukan admin) — token
      * ditanam dalam QR poster event. Sama logic dengan web
      * AttendanceController::scan (aliran "ahli login"), tapi sebagai JSON.
+     *
+     * Walk-in: jika ahli tiada pendaftaran terdahulu, satu rekod walk-in
+     * dicipta automatik. Menayangkan QR poster = urusetia sengaja menjemput
+     * kehadiran, jadi mengimbas QR itu sendiri adalah kebenaran untuk hadir.
      */
     public function checkIn(Request $request, int $id): JsonResponse
     {
@@ -69,9 +73,10 @@ class EventController extends Controller
         }
 
         $registration = $this->admin->findRegistration($event, $user);
+        $isWalkIn = $registration === null;
 
-        if (! $registration) {
-            return ApiResponse::error('Anda belum mendaftar untuk event ini. Sila daftar dahulu.', status: 404);
+        if ($isWalkIn) {
+            $registration = $this->admin->createWalkInRegistration($event, $user);
         }
 
         $blockReason = $this->admin->registrationBlockReason($registration);
@@ -79,12 +84,13 @@ class EventController extends Controller
             return ApiResponse::error($blockReason, status: 422);
         }
 
-        $this->admin->recordAttendance($registration, 'member');
+        $this->admin->recordAttendance($registration, $isWalkIn ? 'walkin' : 'member');
 
         return ApiResponse::success([
             'event_id' => $event->id,
             'event_title' => $event->title,
             'registration_no' => $registration->registration_no,
+            'walk_in' => $isWalkIn,
         ], ['message' => 'Kehadiran anda telah direkodkan.']);
     }
 }

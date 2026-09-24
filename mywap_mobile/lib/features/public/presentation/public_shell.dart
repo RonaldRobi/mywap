@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/main_shell.dart';
 import '../../member/presentation/widgets/shell_scaffold_key.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Chooses the correct shell for the current auth state:
 /// - logged in  → [MainShell] (member tabs + QR scan FAB)
@@ -182,14 +183,14 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? selectedIcon : icon, color: color, size: 26),
+            Icon(selected ? selectedIcon : icon, color: color, size: 24),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: AppTextTheme.minSize,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],
@@ -230,7 +231,10 @@ class PublicDrawer extends StatelessWidget {
                   const SizedBox(height: Spacing.xs),
                   const Text(
                     'Kandungan komuniti untuk semua',
-                    style: TextStyle(color: AppColors.textOnDark, fontSize: 13),
+                    style: TextStyle(
+                      color: AppColors.textOnDark,
+                      fontSize: AppTextTheme.minSize,
+                    ),
                   ),
                 ],
               ),

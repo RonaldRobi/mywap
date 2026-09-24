@@ -35,6 +35,9 @@ class DirectoryApiTest extends TestCase
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
             'member_no' => 'PKPIM-0001',
+            // Nama eksplisit: `fake()->name()` boleh jana nama mengandungi
+            // "Ali" dan memecahkan carian dalam test_admin_can_search_directory.
+            'name' => 'Ahli Biasa',
         ]);
         $this->member->assignRole('Member');
 
@@ -42,6 +45,7 @@ class DirectoryApiTest extends TestCase
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
             'member_no' => 'PKPIM-0002',
+            'name' => 'Pentadbir Sistem',
         ]);
         $this->admin->assignRole('Admin');
     }
@@ -80,7 +84,7 @@ class DirectoryApiTest extends TestCase
             'industry' => 'Pendidikan',
             'member_no' => 'PKPIM-0201',
         ]);
-        $this->makePublicUser(['is_public_in_directory' => false, 'member_no' => 'PKPIM-0202']);
+        $this->makePublicUser(['is_public_in_directory' => false, 'member_no' => 'PKPIM-0202', 'name' => 'Tidak Awam']);
 
         Sanctum::actingAs($this->admin);
 

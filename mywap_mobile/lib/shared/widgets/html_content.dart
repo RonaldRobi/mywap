@@ -42,7 +42,7 @@ class HtmlContent extends StatelessWidget {
         'body': Style(
           margin: Margins.zero,
           padding: HtmlPaddings.zero,
-          fontSize: FontSize(base?.fontSize ?? 17),
+          fontSize: FontSize(base?.fontSize ?? 15),
           color: base?.color ?? AppColors.textPrimary,
           lineHeight: LineHeight.number(1.5),
           fontFamily: base?.fontFamily,

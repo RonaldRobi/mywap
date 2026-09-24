@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
@@ -220,7 +221,7 @@ class _DetailContent extends StatelessWidget {
                           'Harga Ahli',
                           style: TextStyle(
                             color: AppColors.white,
-                            fontSize: 13,
+                            fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

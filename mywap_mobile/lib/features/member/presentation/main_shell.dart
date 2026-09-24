@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import 'widgets/app_sidebar.dart';
 import 'widgets/shell_scaffold_key.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Scaffold wrapping the main member tabs.
 ///
@@ -207,14 +208,14 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? selectedIcon : icon, color: color, size: 26),
+            Icon(selected ? selectedIcon : icon, color: color, size: 24),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: AppTextTheme.minSize,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
           ],

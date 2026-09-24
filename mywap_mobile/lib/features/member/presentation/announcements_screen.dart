@@ -12,6 +12,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/announcement.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Announcements list with expandable content, like (react) and mark-read.
 class AnnouncementsScreen extends ConsumerWidget {
@@ -268,7 +269,7 @@ class _PinnedBadge extends StatelessWidget {
         style: TextStyle(
           color: AppColors.movementNavy,
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
         ),
       ),
     );

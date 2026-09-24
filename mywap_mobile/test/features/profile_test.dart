@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mywap_mobile/core/network/api_client.dart';
 import 'package:mywap_mobile/core/network/api_exception.dart';
 import 'package:mywap_mobile/core/storage/token_storage.dart';
+import 'package:mywap_mobile/features/auth/application/auth_controller.dart';
 import 'package:mywap_mobile/features/profile/application/profile_providers.dart';
 import 'package:mywap_mobile/features/profile/data/models/profile_data.dart';
 import 'package:mywap_mobile/features/profile/data/profile_repository.dart';
@@ -123,8 +124,12 @@ void main() {
 
     testWidgets('shows error retry then recovers', (tester) async {
       _bigViewport(tester);
-      final repo = _FakeProfileRepository()
-        ..fetchError = const ApiException('Ralat tidak dijangka.', statusCode: 500);
+      final repo =
+          _FakeProfileRepository()
+            ..fetchError = const ApiException(
+              'Ralat tidak dijangka.',
+              statusCode: 500,
+            );
       await tester.pumpWidget(_pump(const ProfileScreen(), repo));
       await tester.pumpAndSettle();
 
@@ -141,13 +146,15 @@ void main() {
       expect(find.text('Cuba Semula'), findsNothing);
     });
 
-    testWidgets('shows complete-profile banner when profile is incomplete',
-        (tester) async {
+    testWidgets('shows complete-profile banner when profile is incomplete', (
+      tester,
+    ) async {
       _bigViewport(tester);
-      final repo = _FakeProfileRepository()
-        ..profileData = const ProfileData(
-          profileUser: ProfileUser(name: 'Budi'),
-        );
+      final repo =
+          _FakeProfileRepository()
+            ..profileData = const ProfileData(
+              profileUser: ProfileUser(name: 'Budi'),
+            );
       await tester.pumpWidget(_pump(const ProfileScreen(), repo));
       await tester.pumpAndSettle();
 
@@ -163,8 +170,8 @@ void main() {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (_, __) =>
-                const Scaffold(body: Center(child: Text('Home'))),
+            builder:
+                (_, __) => const Scaffold(body: Center(child: Text('Home'))),
           ),
           GoRoute(path: '/edit', builder: (_, __) => const EditProfileScreen()),
         ],
@@ -176,17 +183,20 @@ void main() {
       GoRouter router,
       _FakeProfileRepository repo,
     ) async {
-      await tester.pumpWidget(ProviderScope(
-        overrides: [profileRepositoryProvider.overrideWithValue(repo)],
-        child: MaterialApp.router(routerConfig: router),
-      ));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [profileRepositoryProvider.overrideWithValue(repo)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
       await tester.pumpAndSettle();
       router.push('/edit');
       await tester.pumpAndSettle();
     }
 
-    testWidgets('submits updated profile and returns with snackbar',
-        (tester) async {
+    testWidgets('submits updated profile and returns with snackbar', (
+      tester,
+    ) async {
       _bigViewport(tester);
       final repo = _FakeProfileRepository()..profileData = _sampleData();
       final router = buildRouter();
@@ -213,13 +223,16 @@ void main() {
 
     testWidgets('surfaces 422 field errors under the form', (tester) async {
       _bigViewport(tester);
-      final repo = _FakeProfileRepository()
-        ..profileData = _sampleData()
-        ..updateError = const ApiException(
-          'Sila semak semula maklumat anda.',
-          statusCode: 422,
-          errors: {'name': ['Nama telah digunakan.']},
-        );
+      final repo =
+          _FakeProfileRepository()
+            ..profileData = _sampleData()
+            ..updateError = const ApiException(
+              'Sila semak semula maklumat anda.',
+              statusCode: 422,
+              errors: {
+                'name': ['Nama telah digunakan.'],
+              },
+            );
       final router = buildRouter();
       await openEditScreen(tester, router, repo);
 
@@ -232,6 +245,50 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Edit Profil'), findsWidgets);
+    });
+
+    testWidgets('biometric tile shows Face ID when hasFaceId is true', (
+      tester,
+    ) async {
+      _bigViewport(tester);
+      final repo = _FakeProfileRepository()..profileData = _sampleData();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(repo),
+            biometricSupportedProvider.overrideWith((ref) async => true),
+            biometricEnabledProvider.overrideWith((ref) async => false),
+            hasFaceIdProvider.overrideWith((ref) async => true),
+          ],
+          child: const MaterialApp(home: ProfileScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log masuk dengan Face ID'), findsOneWidget);
+      expect(find.text('Log masuk dengan Cap Jari'), findsNothing);
+    });
+
+    testWidgets('biometric tile shows Cap Jari when hasFaceId is false', (
+      tester,
+    ) async {
+      _bigViewport(tester);
+      final repo = _FakeProfileRepository()..profileData = _sampleData();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(repo),
+            biometricSupportedProvider.overrideWith((ref) async => true),
+            biometricEnabledProvider.overrideWith((ref) async => false),
+            hasFaceIdProvider.overrideWith((ref) async => false),
+          ],
+          child: const MaterialApp(home: ProfileScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log masuk dengan Cap Jari'), findsOneWidget);
+      expect(find.text('Log masuk dengan Face ID'), findsNothing);
     });
   });
 }

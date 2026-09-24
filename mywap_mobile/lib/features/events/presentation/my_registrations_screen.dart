@@ -10,6 +10,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/event_providers.dart';
 import '../data/models/event_registration.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Pendaftaran Saya — senarai pendaftaran acara ahli.
 class MyRegistrationsScreen extends ConsumerWidget {
@@ -184,7 +185,7 @@ class _StatusChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
         ),
       ),
     );

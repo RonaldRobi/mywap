@@ -4,6 +4,7 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_image.dart';
 import '../../data/models/facility.dart';
+import '../../../../shared/theme/app_text_theme.dart';
 
 /// Imej utama + galeri kemudahan (PageView + penunjuk halaman).
 ///
@@ -79,7 +80,7 @@ class _FacilityGalleryState extends State<FacilityGallery> {
                 '${_page + 1}/${urls.length}',
                 style: const TextStyle(
                   color: AppColors.white,
-                  fontSize: 13,
+                  fontSize: AppTextTheme.minSize,
                   fontWeight: FontWeight.w700,
                 ),
               ),

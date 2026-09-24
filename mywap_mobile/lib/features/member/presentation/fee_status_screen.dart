@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../../financial/presentation/widgets/pay_fee_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/fee_status.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Membership fee status (due / active) with amounts.
 class FeeStatusScreen extends ConsumerWidget {
@@ -163,7 +164,7 @@ class _StatusBadge extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.white,
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
         ),
       ),
     );

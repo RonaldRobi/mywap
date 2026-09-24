@@ -136,17 +136,18 @@ class _OrgHeaderCard extends StatelessWidget {
               borderRadius: AppRadius.xl,
               border: Border.all(color: AppColors.paleGreen),
             ),
-            child: hasLogo
-                ? AppImage(
-                    org.logo_path,
-                    fit: BoxFit.contain,
-                    borderRadius: BorderRadius.zero,
-                  )
-                : const Icon(
-                    Icons.account_balance_outlined,
-                    color: AppColors.movementGreen,
-                    size: 56,
-                  ),
+            child:
+                hasLogo
+                    ? AppImage(
+                      org.logo_path,
+                      fit: BoxFit.contain,
+                      borderRadius: BorderRadius.zero,
+                    )
+                    : const Icon(
+                      Icons.account_balance_outlined,
+                      color: AppColors.movementGreen,
+                      size: 56,
+                    ),
           ),
           const SizedBox(height: Spacing.lg),
           Text(
@@ -280,7 +281,7 @@ class _MemberAvatar extends StatelessWidget {
         _initials(member.name),
         style: const TextStyle(
           color: AppColors.movementGreen,
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -296,7 +297,8 @@ String _initials(String? name) {
   if (parts.length == 1) {
     return parts.first.substring(0, 1).toUpperCase();
   }
-  return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+      .toUpperCase();
 }
 
 class _OrganizationSkeleton extends StatelessWidget {

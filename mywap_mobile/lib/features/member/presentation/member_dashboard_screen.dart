@@ -18,6 +18,7 @@ import '../data/models/library_item.dart';
 import 'library_reader_screen.dart';
 import 'widgets/notification_bell.dart';
 import 'widgets/shell_scaffold_key.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class MemberDashboardScreen extends ConsumerWidget {
   const MemberDashboardScreen({super.key});
@@ -129,9 +130,9 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    // 4:5 image + title/progress footer. Keeping this height
-                    // explicit prevents the portrait card footer overflowing.
-                    height: 338,
+                    // Imej anjal + footer teks. Tinggi ini menentukan saiz
+                    // imej; teks sentiasa rapat ke bawah tanpa jurang.
+                    height: 300,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: infaqItems.length,
@@ -161,7 +162,7 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 338,
+                    height: 300,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: news.length.clamp(0, 6),
@@ -180,7 +181,7 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 338,
+                    height: 300,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: articles.length.clamp(0, 6),
@@ -205,6 +206,13 @@ class _Greeting extends StatelessWidget {
   const _Greeting({required this.name});
   final String name;
 
+  /// Nama pertama sahaja — nama penuh memenuhi bar tajuk dan terpotong
+  /// ("Assalamualaikum, MUHAMAD H...") pada saiz teks mesra warga emas.
+  String get _firstName {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    return parts.isEmpty ? name : parts.first;
+  }
+
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
@@ -219,7 +227,7 @@ class _Greeting extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Assalamualaikum, $name',
+          'Assalamualaikum, $_firstName',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(
@@ -228,10 +236,9 @@ class _Greeting extends StatelessWidget {
         ),
         Text(
           greeting,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: AppColors.textSecondary,
-            fontSize: 15,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -302,7 +309,6 @@ class _SectionLabel extends StatelessWidget {
                 subtitle!,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 15,
                 ),
               ),
           ],
@@ -314,7 +320,10 @@ class _SectionLabel extends StatelessWidget {
   );
 }
 
-/// Compact 5-column grid for high-frequency member modules.
+/// Compact 4-column shortcut grid for high-frequency member modules.
+///
+/// Lapan item sahaja (Pustaka & Undian dibuang — ia ada dalam drawer dan
+/// bukan tindakan pantas). Dua baris 4-lajur supaya seimbang.
 class _ShortcutsGrid extends StatelessWidget {
   const _ShortcutsGrid();
 
@@ -367,36 +376,23 @@ class _ShortcutsGrid extends StatelessWidget {
       color: AppColors.shortcutReferral,
       path: '/member/referral',
     ),
-    _ShortcutItem(
-      icon: Icons.menu_book_rounded,
-      label: 'Pustaka',
-      color: AppColors.shortcutLibrary,
-      path: '/member/library',
-    ),
-    _ShortcutItem(
-      icon: Icons.poll_rounded,
-      label: 'Undian',
-      color: AppColors.shortcutPoll,
-      path: '/polls',
-    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      primary: false,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: Spacing.sm,
-        crossAxisSpacing: Spacing.xs,
-        mainAxisExtent: 92,
-      ),
-      itemBuilder: (context, index) => _ShortcutTile(item: _items[index]),
-    );
+    final rows = <Widget>[];
+    for (var i = 0; i < _items.length; i += 4) {
+      if (i > 0) rows.add(const SizedBox(height: Spacing.sm));
+      rows.add(
+        Row(
+          children: [
+            for (final item in _items.skip(i).take(4))
+              Expanded(child: _ShortcutTile(item: item)),
+          ],
+        ),
+      );
+    }
+    return Column(children: rows);
   }
 }
 
@@ -422,7 +418,7 @@ class _ShortcutTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: AppRadius.lg,
+        borderRadius: AppRadius.sm,
         onTap: () => context.push(item.path),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
@@ -430,23 +426,23 @@ class _ShortcutTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: item.color.withValues(alpha: .12),
-                  borderRadius: AppRadius.lg,
+                  borderRadius: AppRadius.sm,
                   border: Border.all(color: item.color.withValues(alpha: .08)),
                 ),
-                child: Icon(item.icon, color: item.color, size: 22),
+                child: Icon(item.icon, color: item.color, size: 20),
               ),
               const SizedBox(height: Spacing.xs),
               Text(
                 item.label,
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 11,
                   height: 1.15,
                 ),
               ),
@@ -461,9 +457,6 @@ class _ShortcutTile extends StatelessWidget {
 class _MembershipCard extends StatelessWidget {
   const _MembershipCard({required this.member});
   final DashboardMember? member;
-
-  
-  
 
   String? get _logoUrl {
     final orgLogo = member?.organization?.logo_path;
@@ -527,7 +520,7 @@ class _MembershipCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: AppColors.textOnDark,
-                              fontSize: 13,
+                              fontSize: AppTextTheme.minSize,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.6,
                             ),
@@ -535,15 +528,15 @@ class _MembershipCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             name.toUpperCase(),
-                            maxLines: 2,
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(
                               context,
                             ).textTheme.titleLarge?.copyWith(
                               color: AppColors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                              height: 1.05,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              height: 1.15,
                               letterSpacing: .2,
                             ),
                           ),
@@ -627,7 +620,10 @@ class _MemberAvatar extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.white.withValues(alpha: .35), width: 2),
+        border: Border.all(
+          color: AppColors.white.withValues(alpha: .35),
+          width: 2,
+        ),
       ),
       child: ClipOval(
         child:
@@ -721,7 +717,7 @@ class _ActiveBadge extends StatelessWidget {
             'Ahli Aktif',
             style: TextStyle(
               color: AppColors.white,
-              fontSize: 13,
+              fontSize: AppTextTheme.minSize,
               fontWeight: FontWeight.w700,
               letterSpacing: .3,
             ),
@@ -744,7 +740,10 @@ class _FieldValue extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: AppColors.textOnDark, fontSize: 13),
+          style: const TextStyle(
+            color: AppColors.textOnDark,
+            fontSize: AppTextTheme.minSize,
+          ),
         ),
         const SizedBox(height: 3),
         Text(
@@ -753,7 +752,7 @@ class _FieldValue extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppColors.white,
-            fontSize: 19,
+            fontSize: 16,
             fontWeight: FontWeight.w700,
             letterSpacing: .4,
           ),
@@ -822,7 +821,7 @@ class _QrBadge extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: AppColors.movementGreen,
-                      fontSize: 13,
+                      fontSize: AppTextTheme.minSize,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
                     ),
@@ -861,7 +860,7 @@ class _QrBadge extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
+                      fontSize: AppTextTheme.minSize,
                     ),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -909,7 +908,7 @@ class _SeeFullCardButton extends StatelessWidget {
               'Lihat Kad Penuh',
               style: TextStyle(
                 color: AppColors.white,
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1017,7 +1016,7 @@ class _EventCard extends StatelessWidget {
                           child: Text(
                             event.type == 'physical' ? 'FIZIKAL' : 'ONLINE',
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: AppTextTheme.minSize,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1036,17 +1035,14 @@ class _EventCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         event.start_formatted ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          fontSize: 13,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -1085,7 +1081,7 @@ class _NextEvent extends StatelessWidget {
                 'ACARA SETERUSNYA',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.movementGreen,
-                  fontSize: 13,
+                  fontSize: AppTextTheme.minSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
                 ),
@@ -1153,8 +1149,7 @@ class _InfaqCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 4 / 5,
+                Expanded(
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1171,45 +1166,41 @@ class _InfaqCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Spacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title ?? '-',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
-                          ),
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.sm),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
                         ),
-                        const Spacer(),
-                        ClipRRect(
-                          borderRadius: AppRadius.xs,
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 5,
-                            backgroundColor: AppColors.divider,
-                            color: AppColors.movementGreen,
-                          ),
+                      ),
+                      const SizedBox(height: Spacing.sm),
+                      ClipRRect(
+                        borderRadius: AppRadius.xs,
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 5,
+                          backgroundColor: AppColors.divider,
+                          color: AppColors.movementGreen,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${item.progress_percent ?? 0}% terkumpul',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${item.progress_percent ?? 0}% terkumpul',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1297,8 +1288,7 @@ class _NewsCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 4 / 5,
+                Expanded(
                   child:
                       item.cover_image_path?.isNotEmpty == true
                           ? AppImage(item.cover_image_path, fit: BoxFit.cover)
@@ -1314,17 +1304,14 @@ class _NewsCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.category_name ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          fontSize: 13,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -1359,8 +1346,7 @@ class _ArticleCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 4 / 5,
+                Expanded(
                   child:
                       item.cover_image_path?.isNotEmpty == true
                           ? AppImage(item.cover_image_path, fit: BoxFit.cover)
@@ -1376,17 +1362,14 @@ class _ArticleCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.author_name ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          fontSize: 13,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -1407,7 +1390,8 @@ class _LibrarySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(memberLibraryProvider).value ?? const <LibraryItem>[];
+    final items =
+        ref.watch(memberLibraryProvider).value ?? const <LibraryItem>[];
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -1441,9 +1425,9 @@ class _LibraryBookCard extends StatelessWidget {
   void _openReader(BuildContext context) {
     final path = item.file_path;
     if (path == null || path.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tiada fail untuk dibuka.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tiada fail untuk dibuka.')));
       return;
     }
     Navigator.of(context).push(

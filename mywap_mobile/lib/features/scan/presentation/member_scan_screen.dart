@@ -17,6 +17,9 @@ import '../../events/application/event_providers.dart';
 /// `events.attend`). Skrin ini parse URL tersebut lalu panggil
 /// `POST /events/{id}/check-in` (JSON, sepadan dgn AttendanceController::scan
 /// aliran "ahli login").
+///
+/// Walk-in: ahli yang tiada pendaftaran terdahulu tetap berjaya — backend
+/// mencipta rekod walk-in automatik. Tiada taip diperlukan.
 class MemberScanScreen extends ConsumerStatefulWidget {
   const MemberScanScreen({super.key});
 

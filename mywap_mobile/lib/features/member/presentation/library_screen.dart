@@ -12,6 +12,7 @@ import '../../../core/network/api_exception.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/library_item.dart';
 import 'library_reader_screen.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Pustaka — digital library of ebooks. Portrait book covers in a grid, with
 /// quick actions (Baca / ❤ kegemaran) on every card. "Baca" opens the in-app
@@ -31,7 +32,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final libraryAsync = ref.watch(memberLibraryProvider);
-    final favourites = ref.watch(libraryFavouritesProvider).value ?? const <int>{};
+    final favourites =
+        ref.watch(libraryFavouritesProvider).value ?? const <int>{};
 
     return Scaffold(
       appBar: AppBar(
@@ -47,9 +49,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             );
           }
 
-          final visible = _filter == _LibraryFilter.semua
-              ? items
-              : items.where((e) => favourites.contains(e.id)).toList();
+          final visible =
+              _filter == _LibraryFilter.semua
+                  ? items
+                  : items.where((e) => favourites.contains(e.id)).toList();
 
           if (_filter == _LibraryFilter.kegemaran && visible.isEmpty) {
             return Column(
@@ -92,37 +95,39 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ),
                   sliver: SliverGrid(
                     gridDelegate: _gridDelegate(context),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = visible[index];
-                        return _BookCard(
-                          item: item,
-                          isFavourite: favourites.contains(item.id),
-                          onToggleFavourite: () => ref
-                              .read(libraryFavouritesProvider.notifier)
-                              .toggle(item.id ?? 0),
-                          onOpen: () => _openReader(context, item),
-                        );
-                      },
-                      childCount: visible.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final item = visible[index];
+                      return _BookCard(
+                        item: item,
+                        isFavourite: favourites.contains(item.id),
+                        onToggleFavourite:
+                            () => ref
+                                .read(libraryFavouritesProvider.notifier)
+                                .toggle(item.id ?? 0),
+                        onOpen: () => _openReader(context, item),
+                      );
+                    }, childCount: visible.length),
                   ),
                 ),
               ],
             ),
           );
         },
-        loading: () => GridView.builder(
-          padding: const EdgeInsets.all(Spacing.lg),
-          gridDelegate: _gridDelegate(context),
-          itemCount: 6,
-          itemBuilder: (_, __) => const SkeletonBox(radius: 22),
-        ),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(memberLibraryProvider),
-        ),
+        loading:
+            () => GridView.builder(
+              padding: const EdgeInsets.all(Spacing.lg),
+              gridDelegate: _gridDelegate(context),
+              itemCount: 6,
+              itemBuilder: (_, __) => const SkeletonBox(radius: 22),
+            ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry: () => ref.invalidate(memberLibraryProvider),
+            ),
       ),
     );
   }
@@ -143,15 +148,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   void _openReader(BuildContext context, LibraryItem item) {
     final path = item.file_path;
     if (path == null || path.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tiada fail untuk dibuka.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tiada fail untuk dibuka.')));
       return;
     }
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => LibraryReaderScreen(item: item),
-      ),
+      MaterialPageRoute<void>(builder: (_) => LibraryReaderScreen(item: item)),
     );
   }
 }
@@ -182,7 +185,12 @@ class _FilterChips extends StatelessWidget {
         children: [
           _chip(context, _LibraryFilter.semua, 'Semua', total),
           const SizedBox(width: Spacing.sm),
-          _chip(context, _LibraryFilter.kegemaran, 'Kegemaran', favouritesCount),
+          _chip(
+            context,
+            _LibraryFilter.kegemaran,
+            'Kegemaran',
+            favouritesCount,
+          ),
         ],
       ),
     );
@@ -202,11 +210,14 @@ class _FilterChips extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         onTap: () => onChanged(value),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 7),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.md,
+            vertical: 7,
+          ),
           child: Text(
             '$label ($count)',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppTextTheme.minSize,
               fontWeight: FontWeight.w700,
               color: selected ? AppColors.white : AppColors.textSecondary,
             ),
@@ -247,10 +258,7 @@ class _BookCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                InkWell(
-                  onTap: onOpen,
-                  child: _BookCover(item: item),
-                ),
+                InkWell(onTap: onOpen, child: _BookCover(item: item)),
                 Positioned(
                   top: 6,
                   right: 6,
@@ -263,13 +271,12 @@ class _BookCard extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(7),
                         child: Icon(
-                          isFavourite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
+                          isFavourite ? Icons.favorite : Icons.favorite_border,
                           size: 20,
-                          color: isFavourite
-                              ? AppColors.error
-                              : AppColors.textSecondary,
+                          color:
+                              isFavourite
+                                  ? AppColors.error
+                                  : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -305,9 +312,7 @@ class _BookCard extends StatelessWidget {
                   item.title ?? '-',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    height: 1.2,
-                  ),
+                  style: theme.textTheme.titleSmall?.copyWith(height: 1.2),
                 ),
                 const SizedBox(height: Spacing.sm),
                 SizedBox(
@@ -320,7 +325,7 @@ class _BookCard extends StatelessWidget {
                       ),
                       minimumSize: const Size.fromHeight(34),
                       textStyle: const TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextTheme.minSize,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -385,10 +390,6 @@ class _BookCover extends StatelessWidget {
       );
     }
 
-    return AppImage(
-      cover,
-      fit: BoxFit.cover,
-      borderRadius: BorderRadius.zero,
-    );
+    return AppImage(cover, fit: BoxFit.cover, borderRadius: BorderRadius.zero);
   }
 }

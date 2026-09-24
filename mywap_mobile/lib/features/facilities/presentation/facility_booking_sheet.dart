@@ -7,6 +7,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Opens the facility booking form as a modal bottom sheet.
 void showFacilityBookingSheet(BuildContext context, FacilityDetailData detail) {
@@ -373,7 +374,7 @@ class _SectionLabel extends StatelessWidget {
           child: Text(
             '$step',
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppTextTheme.minSize,
               fontWeight: FontWeight.w800,
               color: AppColors.white,
             ),
@@ -454,7 +455,7 @@ class _DayChip extends StatelessWidget {
               today ? 'Hari ini' : _weekdays[date.weekday - 1],
               maxLines: 1,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w600,
                 color: fg.withValues(alpha: selected ? .92 : .6),
               ),
@@ -462,7 +463,7 @@ class _DayChip extends StatelessWidget {
             Text(
               '${date.day}',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: fg,
               ),
@@ -470,7 +471,7 @@ class _DayChip extends StatelessWidget {
             Text(
               _months[date.month - 1],
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w600,
                 color: fg.withValues(alpha: selected ? .9 : .6),
               ),

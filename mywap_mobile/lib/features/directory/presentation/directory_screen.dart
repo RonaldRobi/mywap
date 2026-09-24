@@ -222,7 +222,7 @@ class _MemberDetailSheet extends StatelessWidget {
                 child: Text(
                   user.initial,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 22,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

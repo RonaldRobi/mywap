@@ -300,8 +300,7 @@ class _Slide extends StatelessWidget {
                         context,
                       ).textTheme.headlineMedium?.copyWith(
                         color: textColor,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         height: 1.2,
                       ),
                     ),
@@ -310,8 +309,7 @@ class _Slide extends StatelessWidget {
                       slide.body,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: textColor.withValues(alpha: .9),
-                        fontSize: 17,
-                        height: 1.6,
+                        height: 1.55,
                       ),
                     ),
                   ],

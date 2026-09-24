@@ -10,7 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Rekod kehadiran peserta (melalui registration) pada hari event.
  * `method` menandakan bagaimana kehadiran direkodkan:
- *   - member  → scan QR event oleh ahli yang login
+ *   - member  → scan QR event oleh ahli yang login (pendaftaran sedia ada)
+ *   - walkin  → scan QR event oleh ahli yang login tanpa pendaftaran
  *   - guest   → scan QR event oleh bukan ahli yang dikenal pasti
  *   - manual  → ditanda oleh admin secara manual
  *

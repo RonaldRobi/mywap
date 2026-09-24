@@ -10,6 +10,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/member_card_data.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class MemberCardScreen extends ConsumerWidget {
   const MemberCardScreen({super.key});
@@ -49,9 +50,7 @@ class _CardContent extends ConsumerWidget {
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(Spacing.lg),
-        children: [
-          _MemberCard(card: data.card, qrValue: data.card?.qrValue),
-        ],
+        children: [_MemberCard(card: data.card, qrValue: data.card?.qrValue)],
       ),
     );
   }
@@ -108,7 +107,7 @@ class _MemberCard extends StatelessWidget {
                       'myWAP',
                       style: const TextStyle(
                         color: AppColors.textOnDark,
-                        fontSize: 13,
+                        fontSize: AppTextTheme.minSize,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2,
                       ),
@@ -152,7 +151,7 @@ class _MemberCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textOnDark,
-                        fontSize: 13,
+                        fontSize: AppTextTheme.minSize,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -182,7 +181,10 @@ class _MemberCard extends StatelessWidget {
           ),
           Text(
             'Ahli sejak ${card?.member_since ?? '-'}',
-            style: const TextStyle(color: AppColors.textOnDark, fontSize: 13),
+            style: const TextStyle(
+              color: AppColors.textOnDark,
+              fontSize: AppTextTheme.minSize,
+            ),
           ),
           const SizedBox(height: Spacing.lg),
           GridView.count(
@@ -236,7 +238,10 @@ class _MemberCard extends StatelessWidget {
                 const SizedBox(height: Spacing.sm),
                 const Text(
                   'Imbas kod QR untuk pengesahan keahlian.',
-                  style: TextStyle(color: AppColors.textOnDark, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textOnDark,
+                    fontSize: AppTextTheme.minSize,
+                  ),
                 ),
               ],
             ),
@@ -267,7 +272,7 @@ class _Detail extends StatelessWidget {
           label,
           style: const TextStyle(
             color: AppColors.textOnDark,
-            fontSize: 13,
+            fontSize: AppTextTheme.minSize,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -278,7 +283,7 @@ class _Detail extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppColors.white,
-            fontSize: 13,
+            fontSize: AppTextTheme.minSize,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -292,8 +297,6 @@ class _CardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(Spacing.lg),
-    children: const [
-      SkeletonBox(height: 460, radius: 28),
-    ],
+    children: const [SkeletonBox(height: 460, radius: 28)],
   );
 }

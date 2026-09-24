@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/deeplink/deep_links.dart';
 import '../../loading_screen/application/loading_screen_providers.dart';
 import '../../loading_screen/presentation/loading_screen.dart';
 import '../application/auth_controller.dart';
@@ -42,6 +43,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       await Future<void>.delayed(Duration(milliseconds: remaining));
     }
     if (!mounted) return;
+
+    // Deep link menunggu (cth. pautan QR kehadiran) — hala terus selepas
+    // auth selesai, sama ada ahli atau tetamu.
+    final pending = ref.read(pendingDeepLinkProvider);
+    if (pending != null) {
+      ref.read(pendingDeepLinkProvider.notifier).state = null;
+      context.go(pending);
+      return;
+    }
 
     if (state is AuthAuthenticated) {
       context.go('/dashboard');

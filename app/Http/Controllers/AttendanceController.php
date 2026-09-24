@@ -30,7 +30,8 @@ class AttendanceController extends Controller
     /**
      * Endpoint yang tertanam dalam QR code event.
      *
-     * - Ahli login → semak pendaftaran + bayaran, rekod kehadiran (method=member).
+     * - Ahli login → rekod kehadiran. Tiada pendaftaran → cipta walk-in
+     *   (method=walkin); pendaftaran sedia ada → method=member.
      * - Bukan ahli → papar skrin identifikasi (method=guest selepas dikenal pasti).
      * - Pentadbir → ditolak (tidak boleh "hadir" sebagai peserta).
      */
@@ -57,14 +58,13 @@ class AttendanceController extends Controller
         }
 
         // Ahli: cari pendaftaran (via user_id, atau fallback padanan emel/telefon).
+        // Tiada pendaftaran → cipta walk-in; menayangkan QR poster = sengaja
+        // menjemput kehadiran, jadi mengimbas QR itu sendiri adalah kebenaran.
         $registration = $this->admin->findRegistration($event, $user);
+        $isWalkIn = $registration === null;
 
-        if (! $registration) {
-            return Inertia::render('Events/AttendanceError', [
-                'event' => $this->serializeEvent($event),
-                'message' => 'Anda belum mendaftar untuk event ini. Sila daftar dahulu.',
-                'registerAction' => $this->registrationAction($event, true),
-            ]);
+        if ($isWalkIn) {
+            $registration = $this->admin->createWalkInRegistration($event, $user);
         }
 
         $error = $this->admin->registrationBlockReason($registration);
@@ -75,7 +75,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        $this->admin->recordAttendance($registration, 'member');
+        $this->admin->recordAttendance($registration, $isWalkIn ? 'walkin' : 'member');
 
         return Inertia::render('Events/AttendanceSuccess', [
             'event' => $this->serializeEvent($event),

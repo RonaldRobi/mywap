@@ -13,6 +13,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/main_shell.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Landing screen for the "Admin" bottom-nav tab (`/admin`).
 class AdminDashboardScreen extends ConsumerWidget {
@@ -441,7 +442,7 @@ class _RevenueChart extends StatelessWidget {
                     child: Text(
                       labels[index],
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: AppTextTheme.minSize,
                         color: AppColors.textSecondary,
                       ),
                     ),

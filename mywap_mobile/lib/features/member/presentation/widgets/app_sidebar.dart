@@ -7,6 +7,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/app_image.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../profile/application/profile_providers.dart';
+import '../../../../shared/theme/app_text_theme.dart';
 
 /// Collapsible left sidebar (hamburger menu) — secondary navigation that
 /// surfaces every member module grouped the same way as the web app's
@@ -164,7 +165,10 @@ class AppSidebar extends ConsumerWidget {
               leading: const Icon(Icons.logout, color: AppColors.error),
               title: const Text(
                 'Log Keluar',
-                style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               onTap: () => ref.read(authControllerProvider.notifier).logout(),
             ),
@@ -219,23 +223,24 @@ class _SidebarHeader extends StatelessWidget {
           Row(
             children: [
               ClipOval(
-                child: hasPhoto
-                    ? AppImage(
-                        photoUrl,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: 52,
-                        height: 52,
-                        color: AppColors.white.withValues(alpha: .16),
-                        child: const Icon(
-                          Icons.person,
-                          color: AppColors.white,
-                          size: 28,
+                child:
+                    hasPhoto
+                        ? AppImage(
+                          photoUrl,
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                        )
+                        : Container(
+                          width: 52,
+                          height: 52,
+                          color: AppColors.white.withValues(alpha: .16),
+                          child: const Icon(
+                            Icons.person,
+                            color: AppColors.white,
+                            size: 28,
+                          ),
                         ),
-                      ),
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
@@ -288,17 +293,18 @@ class _OrgLogoCard extends StatelessWidget {
         borderRadius: AppRadius.lg,
         boxShadow: AppShadows.subtle,
       ),
-      child: hasLogo
-          ? AppImage(
-              logoPath,
-              fit: BoxFit.contain,
-              borderRadius: BorderRadius.zero,
-            )
-          : const Icon(
-              Icons.groups_outlined,
-              color: AppColors.movementGreen,
-              size: 32,
-            ),
+      child:
+          hasLogo
+              ? AppImage(
+                logoPath,
+                fit: BoxFit.contain,
+                borderRadius: BorderRadius.zero,
+              )
+              : const Icon(
+                Icons.groups_outlined,
+                color: AppColors.movementGreen,
+                size: 32,
+              ),
     );
   }
 }
@@ -326,7 +332,7 @@ class _SidebarSection extends StatelessWidget {
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: AppColors.textTertiary,
               letterSpacing: 0.6,
-              fontSize: 13,
+              fontSize: AppTextTheme.minSize,
             ),
           ),
         ),

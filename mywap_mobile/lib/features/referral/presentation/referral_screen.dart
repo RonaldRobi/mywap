@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/referral_providers.dart';
 import '../data/models/referral_data.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Jemput Ahli (Referral) — sepadan dengan web `/member/referral`
 /// (MemberDashboardController::referral). Server sudah keluarkan QR sebagai
@@ -219,7 +220,7 @@ class _ReferredMemberTile extends StatelessWidget {
           style: TextStyle(
             color: member.isActive ? AppColors.success : AppColors.warning,
             fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontSize: AppTextTheme.minSize,
           ),
         ),
       ),

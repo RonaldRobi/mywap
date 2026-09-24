@@ -12,6 +12,7 @@ import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Per-event attendance + QR scanning (`/admin/attendance/:eventId`).
 class AdminAttendanceDetailScreen extends ConsumerStatefulWidget {
@@ -28,9 +29,7 @@ class _AdminAttendanceDetailScreenState
     extends ConsumerState<AdminAttendanceDetailScreen> {
   Future<void> _openScanner() async {
     final result = await Navigator.of(context).push<ScanResult>(
-      MaterialPageRoute(
-        builder: (_) => _ScannerPage(eventId: widget.eventId),
-      ),
+      MaterialPageRoute(builder: (_) => _ScannerPage(eventId: widget.eventId)),
     );
     if (result == null || !mounted) return;
     ref.invalidate(adminAttendanceRegistrationsProvider(widget.eventId));
@@ -43,19 +42,26 @@ class _AdminAttendanceDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final dataAsync = ref.watch(adminAttendanceRegistrationsProvider(widget.eventId));
+    final dataAsync = ref.watch(
+      adminAttendanceRegistrationsProvider(widget.eventId),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Kehadiran Acara')),
       body: dataAsync.when(
         data: (data) => _AttendanceContent(data: data, onScan: _openScanner),
         loading: () => const _AttendanceSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(
-            adminAttendanceRegistrationsProvider(widget.eventId),
-          ),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : 'Ralat tidak dijangka.',
+              onRetry:
+                  () => ref.invalidate(
+                    adminAttendanceRegistrationsProvider(widget.eventId),
+                  ),
+            ),
       ),
     );
   }
@@ -114,24 +120,30 @@ class _AttendanceContent extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: data.registrations.isEmpty
-              ? const EmptyState(
-                  icon: Icons.event_seat_outlined,
-                  message: 'Tiada pendaftaran untuk acara ini.',
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: Spacing.xl),
-                  itemCount: data.registrations.length,
-                  itemBuilder: (context, index) {
-                    final registration = data.registrations[index];
-                    return _RegistrationCard(registration: registration);
-                  },
-                ),
+          child:
+              data.registrations.isEmpty
+                  ? const EmptyState(
+                    icon: Icons.event_seat_outlined,
+                    message: 'Tiada pendaftaran untuk acara ini.',
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: Spacing.xl),
+                    itemCount: data.registrations.length,
+                    itemBuilder: (context, index) {
+                      final registration = data.registrations[index];
+                      return _RegistrationCard(registration: registration);
+                    },
+                  ),
         ),
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              0,
+              Spacing.lg,
+              Spacing.lg,
+            ),
             child: FilledButton.icon(
               onPressed: onScan,
               icon: const Icon(Icons.qr_code_scanner),
@@ -145,7 +157,11 @@ class _AttendanceContent extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, required this.icon});
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
@@ -198,16 +214,20 @@ class _RegistrationCard extends StatelessWidget {
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: registration.attended
-              ? AppColors.movementSoftGreen
-              : AppColors.divider,
+          color:
+              registration.attended
+                  ? AppColors.movementSoftGreen
+                  : AppColors.divider,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           registration.attended ? 'Hadir' : 'Belum',
           style: TextStyle(
-            color: registration.attended ? AppColors.movementNavy : AppColors.textSecondary,
-            fontSize: 13,
+            color:
+                registration.attended
+                    ? AppColors.movementNavy
+                    : AppColors.textSecondary,
+            fontSize: AppTextTheme.minSize,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -278,42 +298,54 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          icon: const Icon(Icons.check_circle, color: AppColors.success, size: 40),
-          title: const Text('Kehadiran Disahkan'),
-          content: Text(
-            '${registration?.name ?? 'Ahli'} (${registration?.memberNo ?? '-'}) telah direkodkan hadir.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+        builder:
+            (context) => AlertDialog(
+              icon: const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
+                size: 40,
+              ),
+              title: const Text('Kehadiran Disahkan'),
+              content: Text(
+                '${registration?.name ?? 'Ahli'} (${registration?.memberNo ?? '-'}) telah direkodkan hadir.',
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       if (!mounted) return;
       Navigator.of(context).pop(result);
       return;
     }
-    await _showErrorDialog(result.message.isEmpty ? 'Imbasan tidak dikenali.' : result.message);
+    await _showErrorDialog(
+      result.message.isEmpty ? 'Imbasan tidak dikenali.' : result.message,
+    );
     _resume();
   }
 
   Future<void> _showErrorDialog(String message) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(Icons.error_outline, color: AppColors.error, size: 40),
-        title: const Text('Imbasan Gagal'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            icon: const Icon(
+              Icons.error_outline,
+              color: AppColors.error,
+              size: 40,
+            ),
+            title: const Text('Imbasan Gagal'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -330,27 +362,28 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
     final controller = TextEditingController();
     final identifier = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Imbasan Manual'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'No. ahli / ID',
-            isDense: true,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Imbasan Manual'),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'No. ahli / ID',
+                isDense: true,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(controller.text),
+                child: const Text('Imbas'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Imbas'),
-          ),
-        ],
-      ),
     );
     controller.dispose();
     if (identifier != null && identifier.trim().isNotEmpty) {
@@ -372,8 +405,8 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
           MobileScanner(
             controller: _scannerController,
             onDetect: _onDetect,
-            errorBuilder: (context, error) =>
-                _ScannerError(errorCode: error.errorCode),
+            errorBuilder:
+                (context, error) => _ScannerError(errorCode: error.errorCode),
           ),
           Positioned(
             left: 0,
@@ -388,9 +421,9 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
                   children: [
                     Text(
                       'Halakan kamera ke kod QR ahli.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.white,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: Spacing.md),
@@ -440,7 +473,11 @@ class _ScannerError extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.no_photography_outlined, color: AppColors.white, size: 48),
+              const Icon(
+                Icons.no_photography_outlined,
+                color: AppColors.white,
+                size: 48,
+              ),
               const SizedBox(height: Spacing.md),
               Text(
                 isPermission

@@ -29,9 +29,10 @@ class LoadingScreenView extends ConsumerWidget {
           ),
         ),
         child: Center(
-          child: enabled && config?.gifUrl != null
-              ? _LoadingGif(url: config!.gifUrl!)
-              : _FallbackIndicator(logoUrl: config?.logoUrl),
+          child:
+              enabled && config?.gifUrl != null
+                  ? _LoadingGif(url: config!.gifUrl!)
+                  : _FallbackIndicator(logoUrl: config?.logoUrl),
         ),
       ),
     );
@@ -54,20 +55,21 @@ class _LoadingGif extends StatelessWidget {
           fit: BoxFit.contain,
           memCacheWidth: 1080,
           memCacheHeight: 1080,
-          placeholder: (_, __) => SizedBox(
-            width: size,
-            height: size,
-            child: const Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white70,
+          placeholder:
+              (_, __) => SizedBox(
+                width: size,
+                height: size,
+                child: const Center(
+                  child: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white70,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
           errorWidget: (_, __, ___) => const _FallbackIndicator(),
         );
       },
@@ -116,11 +118,7 @@ class _FallbackIndicator extends StatelessWidget {
             ),
           )
         else
-          const Icon(
-            Icons.volunteer_activism,
-            size: 64,
-            color: Colors.white70,
-          ),
+          const Icon(Icons.volunteer_activism, size: 64, color: Colors.white70),
         const SizedBox(height: 24),
         const SizedBox(
           width: 28,

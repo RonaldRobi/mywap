@@ -1,4 +1,29 @@
+import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
+
+/// Kaedah biometrik yang patut dipaparkan kepada pengguna.
+enum BiometricLabel { faceId, fingerprint }
+
+/// Keputusan label biometrik — fungsi tulen supaya boleh diuji tanpa
+/// platform channel.
+///
+/// `availableBiometrics()` hanya melaporkan biometrik yang **telah
+/// didaftarkan**. Jika pengguna belum daftar apa-apa, ia pulangkan senarai
+/// kosong — dan kod lama tersalah jatuh ke label "Cap Jari" pada iPhone.
+///
+/// Heuristik: Face ID jika Face ID didaftarkan; cap jari jika cap jari
+/// didaftarkan; jika tiada apa-apa didaftarkan, default kepada Face ID di
+/// iOS kerana hampir semua iPhone moden menggunakan Face ID.
+BiometricLabel biometricLabelFor({
+  required List<BiometricType> available,
+  required bool isIOS,
+}) {
+  if (available.contains(BiometricType.face)) return BiometricLabel.faceId;
+  if (available.contains(BiometricType.fingerprint)) {
+    return BiometricLabel.fingerprint;
+  }
+  return isIOS ? BiometricLabel.faceId : BiometricLabel.fingerprint;
+}
 
 /// Thin wrapper around `local_auth` — Face ID (iOS) / fingerprint & face
 /// unlock (Android). Biometrics only gate access to an *already existing*
@@ -7,7 +32,7 @@ import 'package:local_auth/local_auth.dart';
 /// beyond "let the cached session back in".
 class BiometricService {
   BiometricService([LocalAuthentication? auth])
-      : _auth = auth ?? LocalAuthentication();
+    : _auth = auth ?? LocalAuthentication();
 
   final LocalAuthentication _auth;
 
@@ -32,8 +57,14 @@ class BiometricService {
     }
   }
 
-  Future<bool> hasFaceId() async =>
-      (await availableBiometrics()).contains(BiometricType.face);
+  /// Sama ada label/ikon "Face ID" patut digunakan. Lihat [biometricLabelFor].
+  Future<bool> hasFaceId() async {
+    return biometricLabelFor(
+          available: await availableBiometrics(),
+          isIOS: defaultTargetPlatform == TargetPlatform.iOS,
+        ) ==
+        BiometricLabel.faceId;
+  }
 
   /// Minta pengesahan biometrik peranti. Kembalikan `true` jika berjaya.
   Future<bool> authenticate({String? reason}) async {

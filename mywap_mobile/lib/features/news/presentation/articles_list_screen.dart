@@ -12,6 +12,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class ArticlesListScreen extends ConsumerWidget {
   const ArticlesListScreen({super.key});
@@ -165,7 +166,9 @@ class _ArticleCard extends StatelessWidget {
                           .map(
                             (c) => Chip(
                               label: Text(c.name!),
-                              labelStyle: const TextStyle(fontSize: 13),
+                              labelStyle: const TextStyle(
+                                fontSize: AppTextTheme.minSize,
+                              ),
                               visualDensity: VisualDensity.compact,
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,

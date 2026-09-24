@@ -16,6 +16,7 @@ import '../application/order_providers.dart';
 import '../data/models/order.dart';
 import '../../financial/presentation/widgets/receipt_download_button.dart';
 import 'order_status.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -38,7 +39,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       ref.invalidate(orderDetailProvider(widget.orderId));
       ref.invalidate(ordersProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pesanan disahkan diterima. Terima kasih!')),
+        const SnackBar(
+          content: Text('Pesanan disahkan diterima. Terima kasih!'),
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -142,13 +145,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               icon:
                   _paying
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.white,
-                          ),
-                        )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.white,
+                        ),
+                      )
                       : const Icon(Icons.payment),
               label: const Text('Bayar'),
             ),
@@ -167,13 +170,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               icon:
                   _receiving
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.white,
-                          ),
-                        )
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.white,
+                        ),
+                      )
                       : const Icon(Icons.inventory_2_outlined),
               label: const Text('Terima Pesanan'),
             ),
@@ -427,9 +430,7 @@ class _TrackingCard extends StatelessWidget {
                 IconButton.outlined(
                   tooltip: 'Salin No. Penjejakan',
                   onPressed: () async {
-                    await Clipboard.setData(
-                      ClipboardData(text: number),
-                    );
+                    await Clipboard.setData(ClipboardData(text: number));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -651,7 +652,7 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         orderStatusLabel(status),
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),

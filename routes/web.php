@@ -15,6 +15,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardBannerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeepLinkController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\DokuController;
@@ -55,6 +56,14 @@ use App\Models\Infaq;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
+
+// ─── Deep link konfigurasi (Universal Links iOS + App Links Android) ─────
+// Mesti boleh diakses tanpa auth; nilai khusus datang dari .env.
+Route::get('/.well-known/apple-app-site-association', [DeepLinkController::class, 'apple'])
+    ->name('deeplink.apple');
+Route::get('/.well-known/assetlinks.json', [DeepLinkController::class, 'android'])
+    ->name('deeplink.android');
+
 Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup')->middleware('throttle:30,1');
 Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info')->middleware('throttle:30,1');
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');

@@ -11,6 +11,7 @@ import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Admin fee tracking (`/admin/fees`).
 class AdminFeesScreen extends ConsumerWidget {
@@ -47,12 +48,16 @@ class AdminFeesScreen extends ConsumerWidget {
                     child: ChoiceChip(
                       label: Text(label),
                       selected: status == value,
-                      onSelected: (_) =>
-                          ref.read(_statusProvider.notifier).state = value,
+                      onSelected:
+                          (_) =>
+                              ref.read(_statusProvider.notifier).state = value,
                       showCheckmark: false,
                       selectedColor: AppColors.movementDarkGreen,
                       labelStyle: TextStyle(
-                        color: status == value ? AppColors.white : AppColors.textPrimary,
+                        color:
+                            status == value
+                                ? AppColors.white
+                                : AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                       backgroundColor: AppColors.surface,
@@ -66,10 +71,14 @@ class AdminFeesScreen extends ConsumerWidget {
             child: feesAsync.when(
               data: (data) => _FeesContent(data: data),
               loading: () => const _FeesSkeleton(),
-              error: (error, _) => ErrorRetry(
-                message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-                onRetry: () => ref.invalidate(adminFeesProvider(status)),
-              ),
+              error:
+                  (error, _) => ErrorRetry(
+                    message:
+                        error is ApiException
+                            ? error.message
+                            : 'Ralat tidak dijangka.',
+                    onRetry: () => ref.invalidate(adminFeesProvider(status)),
+                  ),
             ),
           ),
         ],
@@ -98,7 +107,12 @@ class _FeesContent extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: Spacing.xl),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.xs),
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.lg,
+            Spacing.sm,
+            Spacing.lg,
+            Spacing.xs,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -198,23 +212,24 @@ class _FeeCard extends StatelessWidget {
           Text(
             Formatters.currency(fee.amount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: fee.isPaid ? AppColors.success : AppColors.warning,
-                ),
+              color: fee.isPaid ? AppColors.success : AppColors.warning,
+            ),
           ),
           const SizedBox(width: Spacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: fee.isPaid
-                  ? AppColors.movementSoftGreen
-                  : AppColors.warning.withValues(alpha: 0.15),
+              color:
+                  fee.isPaid
+                      ? AppColors.movementSoftGreen
+                      : AppColors.warning.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               fee.isPaid ? 'Lunas' : 'Belum Bayar',
               style: TextStyle(
                 color: fee.isPaid ? AppColors.movementNavy : AppColors.warning,
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w600,
               ),
             ),

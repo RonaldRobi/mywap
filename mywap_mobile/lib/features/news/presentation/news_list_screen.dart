@@ -12,6 +12,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class NewsListScreen extends ConsumerWidget {
   const NewsListScreen({super.key});
@@ -189,7 +190,7 @@ class _Badge extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.movementGreen,
           fontWeight: FontWeight.w600,
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
         ),
       ),
     );

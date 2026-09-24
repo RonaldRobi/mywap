@@ -16,6 +16,7 @@ import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import 'widgets/booking_status_chips.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class FacilitiesScreen extends ConsumerWidget {
   const FacilitiesScreen({super.key});
@@ -239,7 +240,7 @@ class _FacilitiesIntro extends StatelessWidget {
       children: [
         Text(
           'Perkhidmatan & Fasiliti',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
         SizedBox(height: Spacing.xs),
         Text('Tempah ruang perkhidmatan dan fasiliti yang tersedia.'),
@@ -260,7 +261,10 @@ class _FacilityTag extends StatelessWidget {
     ),
     child: Text(
       label,
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        fontSize: AppTextTheme.minSize,
+        fontWeight: FontWeight.w700,
+      ),
     ),
   );
 }

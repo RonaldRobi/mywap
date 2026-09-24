@@ -16,6 +16,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -351,21 +352,21 @@ class _ProductCard extends ConsumerWidget {
       return;
     }
 
-    ref.read(cartProvider.notifier).add(
-      CartItem(
-        key: '$id:0',
-        productId: id,
-        name: product.name ?? 'Produk',
-        image: product.displayImage,
-        unitPrice: product.effectivePrice,
-        quantity: 1,
-      ),
-    );
+    ref
+        .read(cartProvider.notifier)
+        .add(
+          CartItem(
+            key: '$id:0',
+            productId: id,
+            name: product.name ?? 'Produk',
+            image: product.displayImage,
+            unitPrice: product.effectivePrice,
+            quantity: 1,
+          ),
+        );
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Ditambah ke troli.')),
-      );
+      ..showSnackBar(const SnackBar(content: Text('Ditambah ke troli.')));
   }
 
   @override
@@ -422,7 +423,7 @@ class _ProductCard extends ConsumerWidget {
                           '-$discountPercent%',
                           style: const TextStyle(
                             color: AppColors.white,
-                            fontSize: 13,
+                            fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -469,58 +470,58 @@ class _ProductCard extends ConsumerWidget {
                           const SizedBox(height: 2),
                           SizedBox(
                             height: 16,
-                            child: hasDiscount
-                                ? Row(
-                                    children: [
-                                      Text(
-                                        Formatters.currency(product.price),
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                                  color: AppColors.textTertiary,
-                                                  decoration: TextDecoration
-                                                      .lineThrough,
-                                                  fontSize: 13,
-                                                ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 5,
-                                          vertical: 1,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.softGreenSurface,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Ahli',
+                            child:
+                                hasDiscount
+                                    ? Row(
+                                      children: [
+                                        Text(
+                                          Formatters.currency(product.price),
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                                    color:
-                                                        AppColors.movementGreen,
-                                                    fontSize: 13,
-                                                    fontWeight:
-                                                        FontWeight.w700,
-                                                  ),
+                                                color: AppColors.textTertiary,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                fontSize: AppTextTheme.minSize,
+                                              ),
                                         ),
-                                      ),
-                                    ],
-                                  )
-                                : (product.category?.name != null
-                                      ? Text(
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.softGreenSurface,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Ahli',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color:
+                                                      AppColors.movementGreen,
+                                                  fontSize:
+                                                      AppTextTheme.minSize,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                    : (product.category?.name != null
+                                        ? Text(
                                           product.category!.name!,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                                    color: AppColors
-                                                        .textSecondary,
-                                                    fontSize: 13,
-                                                  ),
+                                                color: AppColors.textSecondary,
+                                                fontSize: AppTextTheme.minSize,
+                                              ),
                                         )
-                                      : const SizedBox.shrink()),
+                                        : const SizedBox.shrink()),
                           ),
                         ],
                       ),
@@ -531,7 +532,9 @@ class _ProductCard extends ConsumerWidget {
                       height: 34,
                       child: FilledButton(
                         onPressed:
-                            product.id == null ? null : () => _buy(context, ref),
+                            product.id == null
+                                ? null
+                                : () => _buy(context, ref),
                         style: FilledButton.styleFrom(
                           padding: EdgeInsets.zero,
                           backgroundColor: AppColors.movementGreen,
@@ -540,7 +543,7 @@ class _ProductCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           textStyle: const TextStyle(
-                            fontSize: 13,
+                            fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

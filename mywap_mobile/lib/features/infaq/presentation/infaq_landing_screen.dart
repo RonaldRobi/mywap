@@ -14,6 +14,7 @@ import '../../member/presentation/widgets/notification_bell.dart';
 import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Real implementation of the "Infaq" bottom-nav tab. Alias
 /// [InfaqLandingScreen] kept for the central router (app_router.dart).
@@ -278,7 +279,7 @@ class _InfaqCard extends StatelessWidget {
                         '${infaq.progressPercent ?? 0}% terkumpul',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppTextTheme.minSize,
                         ),
                       ),
                       Text(
@@ -287,7 +288,7 @@ class _InfaqCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppTextTheme.minSize,
                         ),
                       ),
                       if (infaq.daysRunning != null)
@@ -295,7 +296,7 @@ class _InfaqCard extends StatelessWidget {
                           '${infaq.daysRunning} hari berjalan',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 13,
+                            fontSize: AppTextTheme.minSize,
                           ),
                         ),
                     ],
@@ -389,7 +390,7 @@ class _InfaqStat extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppTextTheme.minSize,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
             ),
@@ -412,7 +413,10 @@ class _CampaignTag extends StatelessWidget {
     ),
     child: Text(
       label,
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      style: const TextStyle(
+        fontSize: AppTextTheme.minSize,
+        fontWeight: FontWeight.w700,
+      ),
     ),
   );
 }

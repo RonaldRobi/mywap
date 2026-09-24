@@ -21,8 +21,7 @@ class LoadingScreenConfig {
         enabled: json['enabled'] as bool? ?? true,
         gifUrl: json['gif_url'] as String?,
         logoUrl: json['logo_url'] as String?,
-        backgroundStart:
-            json['background_start'] as String? ?? '#12241C',
+        backgroundStart: json['background_start'] as String? ?? '#12241C',
         backgroundEnd: json['background_end'] as String? ?? '#147A3D',
         durationMs: (json['duration_ms'] as num?)?.toInt() ?? 2500,
       );

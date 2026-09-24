@@ -12,6 +12,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class VideosScreen extends ConsumerWidget {
   const VideosScreen({super.key});
@@ -49,10 +50,10 @@ enum _VideoSort { latest, titleAZ, titleZA }
 
 extension on _VideoSort {
   String get label => switch (this) {
-        _VideoSort.latest => 'Terkini',
-        _VideoSort.titleAZ => 'A → Z',
-        _VideoSort.titleZA => 'Z → A',
-      };
+    _VideoSort.latest => 'Terkini',
+    _VideoSort.titleAZ => 'A → Z',
+    _VideoSort.titleZA => 'Z → A',
+  };
 }
 
 class _VideoExplorer extends StatefulWidget {
@@ -79,14 +80,15 @@ class _VideoExplorerState extends State<_VideoExplorer> {
 
   List<Video> get _filtered {
     final q = _query.trim().toLowerCase();
-    final list = widget.videos.where((video) {
-      if (_liveOnly && !video.isLive) return false;
-      if (q.isNotEmpty &&
-          !((video.title ?? '').toLowerCase().contains(q))) {
-        return false;
-      }
-      return true;
-    }).toList();
+    final list =
+        widget.videos.where((video) {
+          if (_liveOnly && !video.isLive) return false;
+          if (q.isNotEmpty &&
+              !((video.title ?? '').toLowerCase().contains(q))) {
+            return false;
+          }
+          return true;
+        }).toList();
 
     switch (_sort) {
       case _VideoSort.latest:
@@ -132,17 +134,23 @@ class _VideoExplorerState extends State<_VideoExplorer> {
             decoration: InputDecoration(
               hintText: 'Cari video…',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: _query.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: _clearSearch,
-                    )
-                  : null,
+              suffixIcon:
+                  _query.isNotEmpty
+                      ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                      )
+                      : null,
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.sm),
+          padding: const EdgeInsets.fromLTRB(
+            Spacing.lg,
+            0,
+            Spacing.lg,
+            Spacing.sm,
+          ),
           child: Row(
             children: [
               FilterChip(
@@ -167,53 +175,58 @@ class _VideoExplorerState extends State<_VideoExplorer> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: widget.onRefresh,
-            child: videos.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(
-                        height: 220,
-                        child: EmptyState(
-                          icon: widget.videos.isEmpty
-                              ? Icons.video_library_outlined
-                              : Icons.search_off,
-                          message: widget.videos.isEmpty
-                              ? 'Tiada video buat masa ini.'
-                              : 'Tiada video sepadan dengan carian.',
+            child:
+                videos.isEmpty
+                    ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: 220,
+                          child: EmptyState(
+                            icon:
+                                widget.videos.isEmpty
+                                    ? Icons.video_library_outlined
+                                    : Icons.search_off,
+                            message:
+                                widget.videos.isEmpty
+                                    ? 'Tiada video buat masa ini.'
+                                    : 'Tiada video sepadan dengan carian.',
+                          ),
                         ),
-                      ),
-                    ],
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth;
-                      final columns = width >= 600 ? 3 : 2;
-                      final cellWidth =
-                          (width -
-                              2 * Spacing.lg -
-                              (columns - 1) * Spacing.md) /
-                          columns;
-                      final cellHeight = cellWidth * 9 / 16 + 58;
-                      return GridView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          Spacing.lg,
-                          Spacing.xs,
-                          Spacing.lg,
-                          Spacing.xl,
-                        ),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          mainAxisSpacing: Spacing.md,
-                          crossAxisSpacing: Spacing.md,
-                          childAspectRatio: cellWidth / cellHeight,
-                        ),
-                        itemCount: videos.length,
-                        itemBuilder: (context, index) =>
-                            _VideoGridTile(video: videos[index]),
-                      );
-                    },
-                  ),
+                      ],
+                    )
+                    : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        final columns = width >= 600 ? 3 : 2;
+                        final cellWidth =
+                            (width -
+                                2 * Spacing.lg -
+                                (columns - 1) * Spacing.md) /
+                            columns;
+                        final cellHeight = cellWidth * 9 / 16 + 58;
+                        return GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                            Spacing.lg,
+                            Spacing.xs,
+                            Spacing.lg,
+                            Spacing.xl,
+                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                mainAxisSpacing: Spacing.md,
+                                crossAxisSpacing: Spacing.md,
+                                childAspectRatio: cellWidth / cellHeight,
+                              ),
+                          itemCount: videos.length,
+                          itemBuilder:
+                              (context, index) =>
+                                  _VideoGridTile(video: videos[index]),
+                        );
+                      },
+                    ),
           ),
         ),
       ],
@@ -233,27 +246,28 @@ class _SortMenuButton extends StatelessWidget {
       onSelected: onChanged,
       offset: const Offset(0, 48),
       shape: RoundedRectangleBorder(borderRadius: AppRadius.md),
-      itemBuilder: (context) => [
-        for (final value in _VideoSort.values)
-          PopupMenuItem(
-            value: value,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (value == sort)
-                  const Icon(
-                    Icons.check,
-                    size: 18,
-                    color: AppColors.movementGreen,
-                  )
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: Spacing.sm),
-                Text(value.label),
-              ],
-            ),
-          ),
-      ],
+      itemBuilder:
+          (context) => [
+            for (final value in _VideoSort.values)
+              PopupMenuItem(
+                value: value,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (value == sort)
+                      const Icon(
+                        Icons.check,
+                        size: 18,
+                        color: AppColors.movementGreen,
+                      )
+                    else
+                      const SizedBox(width: 18),
+                    const SizedBox(width: Spacing.sm),
+                    Text(value.label),
+                  ],
+                ),
+              ),
+          ],
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.sm + 4,
@@ -270,7 +284,7 @@ class _SortMenuButton extends StatelessWidget {
             Text(
               sort.label,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w600,
                 color: AppColors.movementGreen,
               ),
@@ -362,7 +376,7 @@ class _VideoGridTile extends StatelessWidget {
                           'LIVE',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13,
+                            fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
                           ),
@@ -412,9 +426,7 @@ class _VideoSkeleton extends StatelessWidget {
             children: [
               for (var row = 0; row < 3; row++)
                 Padding(
-                  padding: EdgeInsets.only(
-                    bottom: row < 2 ? Spacing.md : 0,
-                  ),
+                  padding: EdgeInsets.only(bottom: row < 2 ? Spacing.md : 0),
                   child: Row(
                     children: [
                       for (var col = 0; col < columns; col++)
@@ -423,10 +435,7 @@ class _VideoSkeleton extends StatelessWidget {
                             padding: EdgeInsets.only(
                               right: col < columns - 1 ? Spacing.md : 0,
                             ),
-                            child: SkeletonBox(
-                              height: cellHeight,
-                              radius: 22,
-                            ),
+                            child: SkeletonBox(height: cellHeight, radius: 22),
                           ),
                         ),
                     ],

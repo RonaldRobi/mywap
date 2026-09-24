@@ -9,6 +9,7 @@ import '../../onboarding/data/onboarding_repository.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_canvas_background.dart';
 import 'widgets/biometric_prompt.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -347,7 +348,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   borderRadius: AppRadius.xl,
                                 ),
                               ),
-                              icon: const Icon(Icons.explore_outlined, size: 20),
+                              icon: const Icon(
+                                Icons.explore_outlined,
+                                size: 20,
+                              ),
                               label: const Text('Layari sebagai tetamu'),
                             ),
                           ),
@@ -359,7 +363,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               context,
                             ).textTheme.labelMedium?.copyWith(
                               color: accent,
-                              fontSize: 13,
+                              fontSize: AppTextTheme.minSize,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                             ),
@@ -370,7 +374,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.movementDarkGreen,
-                              fontSize: 13,
+                              fontSize: AppTextTheme.minSize,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1,
                             ),
@@ -438,7 +442,7 @@ class _BrandMark extends StatelessWidget {
               'Platform Digital Ekosistem Gerakan',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: 13,
+                fontSize: AppTextTheme.minSize,
               ),
             ),
           ],

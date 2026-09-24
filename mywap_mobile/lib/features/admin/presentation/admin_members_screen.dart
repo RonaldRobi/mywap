@@ -14,6 +14,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
+import '../../../shared/theme/app_text_theme.dart';
 
 /// Admin member directory (`/admin/members`).
 class AdminMembersScreen extends ConsumerStatefulWidget {
@@ -68,19 +69,22 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (_) => _MemberDetailSheet(
-        member: member,
-        canDelete:
-            ref.read(currentUserProvider)?.roles?.contains('Superadmin') ??
+      builder:
+          (_) => _MemberDetailSheet(
+            member: member,
+            canDelete:
+                ref.read(currentUserProvider)?.roles?.contains('Superadmin') ??
                 false,
-        onToggleActive: () => _toggleActive(member),
-        onDelete: () => _deleteMember(member),
-      ),
+            onToggleActive: () => _toggleActive(member),
+            onDelete: () => _deleteMember(member),
+          ),
     );
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _toggleActive(AdminMember member) async {
@@ -90,20 +94,23 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(activate ? 'Aktifkan semula ahli?' : 'Nyahaktifkan ahli?'),
-        content: Text('${member.name} (${member.memberNo})'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Text(
+              activate ? 'Aktifkan semula ahli?' : 'Nyahaktifkan ahli?',
+            ),
+            content: Text('${member.name} (${member.memberNo})'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(activate ? 'Aktifkan' : 'Nyahaktifkan'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(activate ? 'Aktifkan' : 'Nyahaktifkan'),
-          ),
-        ],
-      ),
     );
     if (confirmed != true || !mounted) return;
 
@@ -123,24 +130,25 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Padam ahli?'),
-        content: Text(
-          '${member.name} akan dipindahkan ke Tong Sampah. '
-          'Rekod kewangan & sejarah kekal dan boleh dipulihkan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Padam ahli?'),
+            content: Text(
+              '${member.name} akan dipindahkan ke Tong Sampah. '
+              'Rekod kewangan & sejarah kekal dan boleh dipulihkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Padam'),
+              ),
+            ],
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Padam'),
-          ),
-        ],
-      ),
     );
     if (confirmed != true || !mounted) return;
 
@@ -163,7 +171,12 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.sm,
+              Spacing.lg,
+              0,
+            ),
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
@@ -181,9 +194,21 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               children: [
-                _FilterChip(label: 'Semua', selected: _status == '', onTap: () => _selectStatus('')),
-                _FilterChip(label: 'Aktif', selected: _status == 'active', onTap: () => _selectStatus('active')),
-                _FilterChip(label: 'Belum Lengkap', selected: _status == 'pending', onTap: () => _selectStatus('pending')),
+                _FilterChip(
+                  label: 'Semua',
+                  selected: _status == '',
+                  onTap: () => _selectStatus(''),
+                ),
+                _FilterChip(
+                  label: 'Aktif',
+                  selected: _status == 'active',
+                  onTap: () => _selectStatus('active'),
+                ),
+                _FilterChip(
+                  label: 'Belum Lengkap',
+                  selected: _status == 'pending',
+                  onTap: () => _selectStatus('pending'),
+                ),
               ],
             ),
           ),
@@ -200,7 +225,8 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     if (state.items.isEmpty && state.error != null) {
       return ErrorRetry(
         message: state.error!,
-        onRetry: () => ref.read(adminMembersControllerProvider.notifier).retry(),
+        onRetry:
+            () => ref.read(adminMembersControllerProvider.notifier).retry(),
       );
     }
     if (state.items.isEmpty) {
@@ -244,7 +270,11 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -253,7 +283,11 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: Spacing.sm, top: Spacing.sm, bottom: Spacing.sm),
+      padding: const EdgeInsets.only(
+        right: Spacing.sm,
+        top: Spacing.sm,
+        bottom: Spacing.sm,
+      ),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
@@ -281,14 +315,17 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: active ? AppColors.movementSoftGreen : AppColors.warning.withValues(alpha: 0.15),
+        color:
+            active
+                ? AppColors.movementSoftGreen
+                : AppColors.warning.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         active ? 'Aktif' : 'Belum Lengkap',
         style: TextStyle(
           color: active ? AppColors.movementNavy : AppColors.warning,
-          fontSize: 13,
+          fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -327,13 +364,20 @@ class _MemberDetailSheet extends StatelessWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(Spacing.xl, 0, Spacing.xl, Spacing.xl),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.xl,
+          0,
+          Spacing.xl,
+          Spacing.xl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(member.name.isEmpty ? 'Tanpa Nama' : member.name,
-                style: theme.textTheme.headlineSmall),
+            Text(
+              member.name.isEmpty ? 'Tanpa Nama' : member.name,
+              style: theme.textTheme.headlineSmall,
+            ),
             const SizedBox(height: Spacing.lg),
             for (final (label, value) in rows) ...[
               Row(
@@ -404,10 +448,11 @@ class _MembersSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.md),
-        child: SkeletonBox(height: 76),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.md),
+            child: SkeletonBox(height: 76),
+          ),
     );
   }
 }

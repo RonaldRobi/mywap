@@ -120,8 +120,6 @@ abstract final class AppColors {
   static const Color shortcutUsrah = Color(0xFF7C3AED);
   static const Color shortcutShop = Color(0xFFEA580C);
   static const Color shortcutReferral = Color(0xFF0D9488);
-  static const Color shortcutLibrary = Color(0xFF0F766E);
-  static const Color shortcutPoll = Color(0xFF9D174D);
 
   // ---------------------------------------------------------------------
   // Lapisan & overlay
@@ -142,10 +140,7 @@ abstract final class AppColors {
   // ---------------------------------------------------------------------
 
   /// Gradien hero jenama — kad ahli, pengepala, FAB.
-  static const List<Color> heroGradient = [
-    movementDarkGreen,
-    movementGreen,
-  ];
+  static const List<Color> heroGradient = [movementDarkGreen, movementGreen];
 
   /// Gradien mint lembut untuk permukaan sorotan sekunder.
   static const List<Color> mintGradient = [
