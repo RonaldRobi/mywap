@@ -1,4 +1,5 @@
 <script setup>
+import { parseDobFromIc } from '@/composables/useDob';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import axios from 'axios';
@@ -6,18 +7,6 @@ import axios from 'axios';
 const page = usePage();
 const parsedDob = page.props.parsedDob || '';
 const parsedGender = page.props.parsedGender || '';
-
-function parseDobFromIc(ic) {
-    if (!ic) return '';
-    const digits = ic.replace(/[^0-9]/g, '');
-    if (digits.length < 6) return '';
-    const yy = parseInt(digits.substring(0, 2));
-    const mm = parseInt(digits.substring(2, 4));
-    const dd = parseInt(digits.substring(4, 6));
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return '';
-    const yyyy = yy > 25 ? 1900 + yy : 2000 + yy;
-    return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-}
 
 function guessGenderFromIc(ic) {
     if (!ic) return '';

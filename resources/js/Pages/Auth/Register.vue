@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import MemberSearch from '@/Components/MemberSearch.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import TextInput from '@/Components/TextInput.vue';
+import { parseDobFromIc } from '@/composables/useDob';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -33,20 +34,9 @@ const form = useForm({
 });
 
 const selectedReferrer = ref(props.referrer ? { ...props.referrer } : null);
+const dobManuallyEdited = ref(false);
 const referredByName = ref(props.referrer?.name ?? '');
 const referredByNo = ref(props.referrer?.member_no ?? '');
-
-function parseDobFromIc(ic) {
-    if (!ic) return '';
-    const digits = ic.replace(/[^0-9]/g, '');
-    if (digits.length < 6) return '';
-    const yy = parseInt(digits.substring(0, 2));
-    const mm = parseInt(digits.substring(2, 4));
-    const dd = parseInt(digits.substring(4, 6));
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return '';
-    const yyyy = yy > 25 ? 1900 + yy : 2000 + yy;
-    return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-}
 
 function guessGenderFromIc(ic) {
     if (!ic) return '';
@@ -116,7 +106,7 @@ watch(selectedReferrer, (val) => {
 });
 
 watch(() => form.ic_number, (val) => {
-    if (val && !form.dob) {
+    if (!dobManuallyEdited.value) {
         form.dob = parseDobFromIc(val);
     }
 });
@@ -228,6 +218,7 @@ const submit = () => {
                                     class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                     v-model="form.dob"
                                     autocomplete="bday"
+                                    @input="dobManuallyEdited = true"
                                 />
                                 <InputError class="mt-2" :message="form.errors.dob" />
                                 <p v-if="inferredDob" class="mt-1 text-xs text-[#4A5A50]">Auto dari No IC. Boleh ubah jika salah.</p>

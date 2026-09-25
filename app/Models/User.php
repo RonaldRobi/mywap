@@ -270,7 +270,14 @@ class User extends Authenticatable
             return null;
         }
 
-        $yyyy = $yy > 25 ? 1900 + $yy : 2000 + $yy;
+        // Two-digit year is a sliding 100-year window ending at the current
+        // year: "00" => 2000, and in 2026 "26" => 2026 while "27" => 1927.
+        // Deriving the cutoff from the current date avoids a stale hardcoded
+        // pivot that misparses the newest birth years every January.
+        $yyyy = 2000 + $yy;
+        if ($yyyy > (int) date('Y')) {
+            $yyyy -= 100;
+        }
 
         return sprintf('%04d-%02d-%02d', $yyyy, $mm, $dd);
     }

@@ -1,0 +1,1 @@
+function i(s){if(!s)return"";const t=String(s).replace(/[^0-9]/g,"");if(t.length<6)return"";const a=parseInt(t.substring(0,2),10),r=parseInt(t.substring(2,4),10),n=parseInt(t.substring(4,6),10);if(r<1||r>12||n<1||n>31)return"";let e=2e3+a;return e>new Date().getFullYear()&&(e-=100),`${e}-${String(r).padStart(2,"0")}-${String(n).padStart(2,"0")}`}export{i as p};
