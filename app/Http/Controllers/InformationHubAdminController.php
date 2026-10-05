@@ -175,7 +175,7 @@ class InformationHubAdminController extends Controller
                 'member_no' => $u->member_no,
                 'original_member_no' => $u->original_member_no,
                 'created_at' => $u->created_at?->format('d M Y'),
-                'ic_number' => $this->maskIcNumber($u->ic_number),
+                'ic_number' => $isSuperadmin ? ($u->ic_number ?: '-') : $this->maskIcNumber($u->ic_number),
                 'phone' => $u->phone,
                 'dob' => $u->dob?->format('d M Y'),
                 'gender' => $u->gender,
