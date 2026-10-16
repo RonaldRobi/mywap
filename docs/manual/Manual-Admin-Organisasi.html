@@ -1,0 +1,626 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Manual-Admin-Organisasi</title><style>
+@page { size: A4; margin: 16mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 10.5pt;
+       line-height: 1.55; color: #1f2937; margin: 0; }
+h1 { font-size: 21pt; color: #0f172a; border-bottom: 3px solid #0f172a; padding-bottom: 8px; margin: 0 0 14px; }
+h2 { font-size: 15pt; color: #0f172a; margin: 22px 0 8px; padding: 6px 0 4px;
+     border-bottom: 1.5px solid #cbd5e1; page-break-after: avoid; }
+h3 { font-size: 12.5pt; color: #1e293b; margin: 16px 0 6px; page-break-after: avoid; }
+p, li { orphans: 2; widows: 2; }
+ul, ol { padding-left: 20px; }
+code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 9.5pt;
+       font-family: ui-monospace, Menlo, monospace; }
+blockquote { border-left: 3px solid #94a3b8; background: #f8fafc; margin: 10px 0;
+             padding: 8px 12px; color: #475569; font-size: 9.5pt; border-radius: 0 4px 4px 0; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9.5pt; }
+th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f1f5f9; font-weight: 700; }
+hr { border: 0; border-top: 1px solid #e2e8f0; margin: 18px 0; }
+img { max-width: 100%; height: auto; display: block; margin: 10px auto 4px;
+      border: 1px solid #cbd5e1; border-radius: 6px; page-break-inside: avoid; }
+em { color: #64748b; font-size: 9pt; display: block; text-align: center; margin: 0 0 14px; }
+h2 + img, h3 + img { page-break-before: avoid; }
+</style></head>
+<body><h1>MANUAL ADMIN ORGANISASI — myWAP</h1>
+<blockquote>
+<p><strong>Untuk:</strong> Admin Organisasi (role <code>Admin</code> / <code>org-admin</code>)
+<strong>Platform:</strong> App Mobile (Android &amp; iOS) + Web Panel
+<strong>Versi:</strong> 1.0
+<strong>Nota:</strong> Manual ni untuk admin organisasi sahaja. Ahli biasa ada manual sendiri (<code>Manual-Pengguna.md</code>). Fungsi khas <strong>Superadmin</strong> tak dimasukkan di sini.</p>
+</blockquote>
+<hr>
+<h2>Cara Guna Manual Ini</h2>
+<ul>
+<li>Admin organisasi boleh kerja dari <strong>dua tempat</strong>:<ul>
+<li><strong>App Mobile</strong> — untuk kerja cepat: ahli, yuran, kehadiran, siaran, ringkasan.</li>
+<li><strong>Web Panel</strong> — untuk pengurusan penuh. Buka dalam browser, guna PC/laptop.</li>
+</ul>
+</li>
+<li>Simbol <strong>📸 SCREENSHOT</strong> menandakan tempat yang perlu tangkapan skrin.</li>
+<li>Fail gambar disimpan dalam folder <code>screenshots/admin/</code>.</li>
+</ul>
+<hr>
+<h2>Kandungan</h2>
+<ol>
+<li><a href="#1-peranan--skop-admin-organisasi">Peranan &amp; Skop Admin Organisasi</a></li>
+<li><a href="#2-log-masuk--akses-panel">Log Masuk &amp; Akses Panel</a></li>
+<li><a href="#3-papan-pemuka-admin-mobile">Papan Pemuka Admin (Mobile)</a></li>
+<li><a href="#4-pengurusan-ahli">Pengurusan Ahli</a></li>
+<li><a href="#5-yuran-ahli">Yuran Ahli</a></li>
+<li><a href="#6-kehadiran-program">Kehadiran Program</a></li>
+<li><a href="#7-siaran--hebahan">Siaran &amp; Hebahan</a></li>
+<li><a href="#8-program--acara-web">Program &amp; Acara (Web)</a></li>
+<li><a href="#9-kempen-web">Kempen (Web)</a></li>
+<li><a href="#10-info-terkini--berita-web">Info Terkini / Berita (Web)</a></li>
+<li><a href="#11-artikel-web">Artikel (Web)</a></li>
+<li><a href="#12-video-web">Video (Web)</a></li>
+<li><a href="#13-popup-web">Popup (Web)</a></li>
+<li><a href="#14-infaq-web">Infaq (Web)</a></li>
+<li><a href="#15-penderma-web">Penderma (Web)</a></li>
+<li><a href="#16-borang-form-builder-web">Borang (Form Builder, Web)</a></li>
+<li><a href="#17-undian--tinjauan-web">Undian &amp; Tinjauan (Web)</a></li>
+<li><a href="#18-kemudahan--tempahan-web">Kemudahan &amp; Tempahan (Web)</a></li>
+<li><a href="#19-usrah-web">Usrah (Web)</a></li>
+<li><a href="#20-cawangan-web">Cawangan (Web)</a></li>
+<li><a href="#21-jawatan-web">Jawatan (Web)</a></li>
+<li><a href="#22-pertukaran-cawangan-web">Pertukaran Cawangan (Web)</a></li>
+<li><a href="#23-kewangan-web">Kewangan (Web)</a></li>
+<li><a href="#24-e-dagang-produk-kategori-pesanan-web">E-Dagang: Produk, Kategori, Pesanan (Web)</a></li>
+<li><a href="#25-direktori-web">Direktori (Web)</a></li>
+<li><a href="#26-info-organisasi--carta-web">Info Organisasi &amp; Carta (Web)</a></li>
+<li><a href="#27-export-data-web">Export Data (Web)</a></li>
+<li><a href="#28-ringkasan-fungsi-mobile-vs-web">Ringkasan: Fungsi Mobile vs Web</a></li>
+<li><a href="#29-soalan-lazim-faq">Soalan Lazim (FAQ)</a></li>
+</ol>
+<hr>
+<h2>1. Peranan &amp; Skop Admin Organisasi</h2>
+<p>Sebagai <strong>Admin Organisasi</strong>, anda uruskan ahli dan operasi organisasi sendiri sahaja. Semua data <strong>terhad pada organisasi anda</strong> (<code>current_organization_id</code>). Anda <strong>tak boleh</strong>:</p>
+<ul>
+<li>Lihat data organisasi lain.</li>
+<li>Ubah tetapan peringkat platform — itu kerja Superadmin.</li>
+<li>Hantar siaran ke seluruh platform. Audiens <code>Semua</code> akan terhad pada ahli organisasi anda.</li>
+</ul>
+<p>Yang anda boleh urus:</p>
+<ul>
+<li><strong>Ahli</strong> — lihat, aktif/deactivate, kemas kini profil, tukar role.</li>
+<li><strong>Yuran</strong> — generate, kutip, reconcile, import, export.</li>
+<li><strong>Program</strong> — program/acara, borang pendaftaran, peserta, kehadiran.</li>
+<li><strong>Content</strong> — Info Terkini, artikel, video, popup, pengumuman, pustaka.</li>
+<li><strong>Fasiliti</strong> — kemudahan dan tempahan.</li>
+<li><strong>Lain-lain</strong> — undian, usrah, borang, infaq, penderma.</li>
+<li><strong>Organisasi</strong> — cawangan, jawatan, direktori, carta organisasi, e-dagang.</li>
+</ul>
+<hr>
+<h2>2. Log Masuk &amp; Akses Panel</h2>
+<h3>2.1 Log masuk mobile</h3>
+<ol>
+<li>Buka app <strong>myWAP</strong>, log masuk dengan emel/IC dan kata laluan anda.</li>
+<li>Tab <strong>Admin</strong> akan muncul di bar bawah (ikon <code>admin_panel_settings</code>), sebab akaun anda role Admin.</li>
+</ol>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-01 — Tab Admin di Bar Bawah</strong>
+Arahan: tangkap bar bawah yang menunjukkan tab <code>Admin</code>.
+Fail: <code>screenshots/admin/01-tab-admin.png</code></p>
+</blockquote>
+<h3>2.2 Log masuk panel web</h3>
+<ol>
+<li>Buka browser (PC/laptop) dan pergi ke laman web rasmi myWAP.</li>
+<li>Log masuk guna akaun yang sama.</li>
+<li>Anda terus masuk ke <strong>Papan Pemuka Admin</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/02-login-web.png" alt="A-02 — Log Masuk Panel Web"></p>
+<p><strong>Nota:</strong> Ada fungsi yang <strong>web sahaja</strong>. Dalam app ia dilabel <code>Pengurusan Lanjutan</code>.</p>
+<hr>
+<h2>3. Papan Pemuka Admin (Mobile)</h2>
+<p><strong>Buka:</strong> Tab <strong>Admin</strong> di bar bawah.</p>
+<p><strong>Apa yang ada:</strong></p>
+<ul>
+<li><strong>Pengurusan</strong> — 4 petak: <strong>Ahli</strong>, <strong>Yuran</strong>, <strong>Kehadiran</strong>, <strong>Siaran</strong>.</li>
+<li><strong>Pengurusan Lanjutan</strong> — fungsi web sahaja: <code>Urus Program</code>, <code>Urus Yuran</code>, <code>Kewangan</code>, <code>Transaksi</code>, <code>Borang</code>, <code>Undian</code>, <code>Berita &amp; Artikel</code>, <code>Pengumuman</code>, <code>Fasiliti</code>, <code>Cawangan</code>, <code>Jawatan</code>, <code>Export Ahli</code>, <code>Penderma</code>, <code>Tukar Cawangan</code>. Kalau tekan, keluar dialog <code>Fungsi Versi Web</code>:<blockquote>
+<p><code>Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.</code></p>
+</blockquote>
+</li>
+<li><strong>Ringkasan</strong> — kad <code>Jumlah Ahli</code>, <code>Ahli Aktif</code>, <code>Hasil</code>, <code>Acara Akan Datang</code>.</li>
+<li><strong>Hasil Bulanan</strong> — carta bar pendapatan bulanan.</li>
+<li><strong>Aktiviti Terkini</strong> — senarai aktiviti terbaharu.</li>
+</ul>
+<p><strong>Tip:</strong> Tarik ke bawah (pull-to-refresh) untuk refresh.</p>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-03 — Papan Pemuka Admin Mobile</strong>
+Arahan: tangkap papan pemuka admin (Pengurusan, Ringkasan, carta).
+Fail: <code>screenshots/admin/03-dashboard-mobile.png</code></p>
+</blockquote>
+<hr>
+<h2>4. Pengurusan Ahli</h2>
+<h3>4.1 Mobile — Senarai Ahli</h3>
+<p><strong>Buka:</strong> Papan Pemuka Admin → <strong>Ahli</strong> (atau <code>/admin/members</code>).</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Cari guna medan <code>Cari nama atau no. ahli</code>.</li>
+<li>Filter guna chip: <strong>Semua</strong>, <strong>Aktif</strong>, <strong>Belum Lengkap</strong>.</li>
+<li>Tekan mana-mana ahli untuk buka butiran — No. Ahli, Emel, Telefon, No. IC, Cawangan, Organisasi, Status, Akaun, Tarikh Didaftarkan, Profil Lengkap.</li>
+<li>Nak <strong>deactivate / aktifkan balik</strong>: tekan butang tu, confirm dialog.</li>
+<li>Nak <strong>padam</strong> — Superadmin sahaja dalam tetapan. Tekan <code>Padam Ahli</code>.</li>
+</ol>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-04 — Senarai Ahli (Mobile)</strong>
+Arahan: tangkap senarai ahli dengan carian dan chip penapis.
+Fail: <code>screenshots/admin/04-senarai-ahli.png</code></p>
+</blockquote>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-05 — Butiran Ahli (Mobile)</strong>
+Arahan: tangkap bottom sheet butiran ahli.
+Fail: <code>screenshots/admin/05-butiran-ahli.png</code></p>
+</blockquote>
+<h3>4.2 Web — Pusat Maklumat / Pengurusan Ahli</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Ahli</strong>.</p>
+<p><strong>Boleh buat:</strong></p>
+<ul>
+<li>Lihat statistik: <code>Jumlah Ahli</code>, <code>Ahli Aktif</code>, <code>Tidak Aktif</code>.</li>
+<li>Search &amp; filter penuh — organisasi, role (<code>Admin</code>/<code>Member</code>), status akaun, negeri, cawangan, status yuran, susunan dan julat tarikh daftar.</li>
+<li><strong>Tukar role ahli</strong> guna menu <code>Peranan</code> (Ahli / Admin / Admin Cawangan). Terus berkuat kuasa.</li>
+<li><strong>Aktif / deactivate</strong> akaun ahli.</li>
+<li><strong>Buang ke Tong Sampah</strong> (soft delete) dan <strong>Restore</strong>. <strong>Padam kekal</strong> — Superadmin.</li>
+<li><strong>Lihat Kad Ahli</strong>, <strong>Update IC</strong> (Superadmin), <strong>Reset Kata Laluan</strong> (Superadmin), <strong>Pindah Organisasi</strong> (Superadmin).</li>
+<li><strong>Profil Ahli</strong> (panel sisi) — tab <code>Peribadi</code>, <code>Kerjaya</code>, <code>Alamat</code>, <code>Lain</code>, <code>Aktiviti</code>.</li>
+<li><strong>Edit Profil Ahli</strong> — kemas kini maklumat asas, kerjaya, alamat, kecemasan, dan tetapan visibility dalam direktori (nak muncul ke tak).</li>
+</ul>
+<p><img src="screenshots/admin/06-ahli-web.png" alt="A-06 — Pengurusan Ahli (Web)"></p>
+<p><img src="screenshots/admin/07-profil-ahli-web.png" alt="A-07 — Profil Ahli (Web)"></p>
+<p><strong>Penting:</strong> Anda boleh tukar role antara <code>Ahli</code> ↔ <code>Admin</code> ↔ <code>Admin Cawangan</code>, tapi <strong>tak boleh</strong> bagi role <code>Superadmin</code>. Semua tindakan sensitif — padam kekal, import, reset kata laluan, update IC, pindah organisasi — <strong>Superadmin sahaja</strong>.</p>
+<hr>
+<h2>5. Yuran Ahli</h2>
+<h3>5.1 Mobile — Ringkasan Yuran</h3>
+<p><strong>Buka:</strong> Papan Pemuka Admin → <strong>Yuran</strong>.</p>
+<p><strong>Apa yang ada:</strong></p>
+<ul>
+<li>Filter: <strong>Semua</strong>, <strong>Lunas</strong>, <strong>Belum Bayar</strong>.</li>
+<li>Kad ringkasan: <code>Lunas</code>, <code>Belum Bayar</code>, <code>Hasil</code>.</li>
+<li>Senarai yuran ikut ahli, dengan status <code>Lunas</code> / <code>Belum Bayar</code>.</li>
+</ul>
+<p><strong>Nota:</strong> Skrin mobile ni <strong>view sahaja</strong>. Pengurusan penuh di web.</p>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-08 — Yuran (Mobile)</strong>
+Arahan: tangkap skrin ringkasan yuran mobile.
+Fail: <code>screenshots/admin/08-yuran-mobile.png</code></p>
+</blockquote>
+<h3>5.2 Web — Pengurusan Yuran Ahli</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Yuran Ahli</strong>.</p>
+<p><strong>Boleh buat:</strong></p>
+<ul>
+<li>Kad statistik: <code>Jumlah Ahli</code>, <code>Selesai</code>, <code>Tertunggak</code>, <code>Seumur Hidup</code>, <code>Dikecualikan</code>, <code>Dikutip</code>.</li>
+<li>Carta <code>Kutipan Bulanan</code>.</li>
+<li><strong>Jana Yuran</strong> — generate rekod yuran untuk tahun yang dipilih.</li>
+<li><strong>Bayaran Manual</strong> (<code>+ Manual</code>) — rekod bayaran: <code>ID Ahli</code>, <code>Tahun</code>, <code>Jumlah</code>, <code>Rujukan</code>, <code>Bukti Pembayaran</code>.</li>
+<li><strong>Import CSV</strong> — upload fail CSV yuran, tengok <code>Preview</code>, lepas tu <code>Proses</code>.</li>
+<li><strong>Export</strong> — CSV / Excel / PDF.</li>
+<li><strong>Profil Kewangan</strong> (panel sisi) — <code>Ringkasan</code>, <code>Sejarah Pembayaran</code>, <code>Log Aktiviti</code>. Boleh edit jumlah/tarikh/catatan, batalkan bayaran (<code>Batalkan</code>), dan download resit.</li>
+<li><strong>Yuran Seumur Hidup</strong> dan <strong>Pengecualian Yuran</strong> — kena bagi sebab.</li>
+<li><strong>Laporan Rekonsiliasi</strong> — <code>Sasaran Kutipan</code>, <code>Terkumpul</code>, <code>Tertunggak</code>, <code>Kadar Kutipan</code>.</li>
+</ul>
+<p><img src="screenshots/admin/09-yuran-web.png" alt="A-09 — Pengurusan Yuran (Web)"></p>
+<p><img src="screenshots/admin/10-bayaran-manual.png" alt="A-10 — Bayaran Manual (Web)"></p>
+<hr>
+<h2>6. Kehadiran Program</h2>
+<h3>6.1 Mobile — Pilih Program &amp; Imbas QR</h3>
+<p><strong>Buka:</strong> Papan Pemuka Admin → <strong>Kehadiran</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Pilih program dari senarai acara akan datang.</li>
+<li>Skrin <strong>Kehadiran Acara</strong> tunjuk statistik <code>Pendaftaran</code> dan <code>Hadir</code>, serta senarai peserta.</li>
+<li>Tekan <strong>Imbas QR</strong>.</li>
+<li>Halakan kamera ke kod QR ahli. Boleh juga tekan <strong>Masukkan Secara Manual</strong> dan taip <code>No. ahli / ID</code>.</li>
+<li>Dialog <code>Kehadiran Disahkan</code> akan keluar. Peserta ditanda <code>Hadir</code>.</li>
+</ol>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-11 — Kehadiran Acara (Mobile)</strong>
+Arahan: tangkap skrin kehadiran acara (statistik + senarai peserta).
+Fail: <code>screenshots/admin/11-kehadiran-acara.png</code></p>
+</blockquote>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-12 — Imbas QR (Mobile)</strong>
+Arahan: tangkap skrin kamera imbas QR admin.
+Fail: <code>screenshots/admin/12-imbas-qr-admin.png</code></p>
+</blockquote>
+<p><strong>Kalau scan gagal, mesej ni mungkin keluar:</strong> <code>Tiada rekod pendaftaran dijumpai</code>, <code>Kehadiran telah direkodkan sebelum ini</code>, <code>Bayaran pendaftaran anda belum lengkap</code>, <code>Pendaftaran anda telah dibatalkan</code>.</p>
+<h3>6.2 Web — Dashboard Kehadiran</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Kehadiran</strong>.</p>
+<p><strong>Boleh buat:</strong></p>
+<ul>
+<li><strong>Export Excel</strong> dan <strong>Export PDF</strong>.</li>
+<li>Kad statistik: <code>Jumlah Daftar</code>, <code>Hadir</code>, <code>Bayaran Menunggu</code>.</li>
+<li>Kad program dengan kadar kehadiran (%), <code>Lihat Peserta</code>, <code>QR</code>, <code>Urus</code>.</li>
+<li>Jadual peserta dengan status bayaran dan kehadiran.</li>
+</ul>
+<p><img src="screenshots/admin/13-kehadiran-web.png" alt="A-13 — Dashboard Kehadiran (Web)"></p>
+<hr>
+<h2>7. Siaran &amp; Hebahan</h2>
+<h3>7.1 Mobile — Siaran (Broadcast)</h3>
+<p><strong>Buka:</strong> Papan Pemuka Admin → <strong>Siaran</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Isi <strong>Tajuk</strong> — cth. <code>Mesyuarat Agung Tahunan</code>.</li>
+<li>Isi <strong>Mesej</strong>.</li>
+<li>Pilih <strong>Khalayak</strong>: <code>Semua</code>, <code>Ahli</code>, <code>Usrah</code>, <code>Organisasi</code>. Kalau pilih <code>Organisasi</code>, isi ID Organisasi.</li>
+<li>Tekan <strong>Hantar Siaran</strong>.</li>
+</ol>
+<blockquote>
+<p>📸 <strong>SCREENSHOT A-14 — Siaran (Mobile)</strong>
+Arahan: tangkap borang siaran mobile.
+Fail: <code>screenshots/admin/14-siaran.png</code></p>
+</blockquote>
+<p><strong>Nota:</strong> Untuk admin organisasi, khalayak <code>Semua</code> terhad pada ahli organisasi anda sahaja.</p>
+<h3>7.2 Web — Push Notification &amp; Papan Pengumuman</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Push Notification</strong> dan <strong>Pengumuman</strong>.</p>
+<p><strong>Tab Push Notification:</strong></p>
+<ul>
+<li><code>Tajuk Notifikasi</code>, <code>Kandungan / Mesej</code>, <code>Kumpulan Sasar</code> (<code>Semua Ahli</code>, <code>Ahli Organisasi Sahaja</code>, <code>Individu Tertentu</code>), <code>Saluran Penghantaran</code> (<code>In-App</code>, <code>Email</code>), <code>Format Emel</code>.</li>
+<li>Sejarah penghantaran dengan status dan log.</li>
+</ul>
+<p><strong>Tab Papan Pengumuman:</strong></p>
+<ul>
+<li><code>Tajuk Pengumuman</code>, <code>Kandungan</code>, <code>Gambar Cover</code>, <code>Galeri Gambar</code>, <code>Kumpulan Sasaran</code> (<code>Kesemua Ahli</code>, <code>Ahli Tunggakan Yuran</code>, <code>Kumpulan Usrah Spesifik</code>), <code>Tarikh Terbit</code>, <code>Pin</code> (utamakan).</li>
+<li>Senarai pengumuman boleh edit/padam.</li>
+</ul>
+<p><img src="screenshots/admin/15-push-web.png" alt="A-15 — Push Notification (Web)"></p>
+<p><img src="screenshots/admin/16-pengumuman-web.png" alt="A-16 — Papan Pengumuman (Web)"></p>
+<hr>
+<h2>8. Program &amp; Acara (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Program &amp; Acara</strong>.</p>
+<h3>8.1 Senarai Program</h3>
+<ul>
+<li>Search dan filter program.</li>
+<li>Setiap kad tunjuk: status (<code>draft</code>/<code>published</code>/<code>closed</code>), kategori, tarikh, organisasi, bilangan pendaftaran.</li>
+<li>Tindakan: <code>Borang (N)</code>, <code>Urus</code>, <code>Edit</code>, <code>Lihat</code>, <code>Kongsi</code>, <code>Padam</code>.</li>
+</ul>
+<h3>8.2 Cipta / Edit Program</h3>
+<ul>
+<li>Isi <code>Tajuk</code>, <code>Penerangan</code>, <code>Kategori</code>, <code>Status</code>, <code>Jenis</code> (<code>Fizikal</code>/<code>Dalam Talian</code>), <code>Lokasi / Pautan</code>, <code>Mula</code>, <code>Tamat</code>, <code>Organisasi Terlibat</code>, <code>Poster Program</code> (1080×1350).</li>
+<li>Tekan <strong>Cipta Program</strong> / <strong>Kemas Kini Program</strong>.</li>
+</ul>
+<p><img src="screenshots/admin/17-program-web.png" alt="A-17 — Senarai Program (Web)"></p>
+<p><img src="screenshots/admin/18-cipta-program.png" alt="A-18 — Cipta Program (Web)"></p>
+<h3>8.3 Borang Pendaftaran &amp; QR</h3>
+<ul>
+<li>Cipta/edit borang pendaftaran. Guna <code>Kongsi</code> untuk dapatkan QR + pautan, atau <code>Pratonton</code> untuk semak dulu.</li>
+</ul>
+<h3>8.4 Peserta (Registrations)</h3>
+<ul>
+<li>Statistik <code>Jumlah</code>, <code>Disahkan</code>, <code>Menunggu</code>.</li>
+<li>Jadual peserta. Tukar status: <code>Disahkan</code>, <code>Menunggu</code>, <code>Dibatalkan</code>.</li>
+</ul>
+<p><img src="screenshots/admin/19-peserta-web.png" alt="A-19 — Senarai Peserta (Web)"></p>
+<hr>
+<h2>9. Kempen (Web)</h2>
+<p><strong>Buka:</strong> <strong>Papan Pemuka Web</strong> → bahagian <strong>Cipta Kempen</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Isi <code>Tajuk</code>, <code>Jumlah Sasaran</code>, <code>Penerangan</code>, <code>Status</code> (<code>Draf</code>/<code>Aktif</code>/<code>Tutup</code>).</li>
+<li>Tekan <strong>Simpan Kempen</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/20-kempen.png" alt="A-20 — Cipta Kempen (Web)"></p>
+<hr>
+<h2>10. Info Terkini / Berita (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Info Terkini</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tambah kategori (nama, ikon) kalau perlu.</li>
+<li>Cipta info: <code>Target Organisasi</code>, <code>Kategori</code>, <code>Tajuk</code>, <code>Ringkasan</code>, <code>Kandungan</code>, <code>Cover Image</code>, <code>Terbitkan sekarang</code>. Tekan <strong>Simpan Info</strong>.</li>
+<li>Senarai info boleh <code>Edit</code> / <code>Delete</code>.</li>
+</ol>
+<p><img src="screenshots/admin/21-info-terkini-web.png" alt="A-21 — Info Terkini (Web)"></p>
+<hr>
+<h2>11. Artikel (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Artikel</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>+ Tulis Artikel</strong>.</li>
+<li>Isi <code>Maklumat Artikel</code> (Target Organisasi, Tajuk, Ringkasan, Kandungan), <code>Media</code> (Cover, Galeri), <code>Kategori &amp; Tag</code>, <code>Penerbitan</code> (<code>Terbitkan sekarang</code>, <code>Featured</code>).</li>
+<li>Tekan <strong>Simpan Artikel</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/22-artikel-web.png" alt="A-22 — Tulis Artikel (Web)"></p>
+<hr>
+<h2>12. Video (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Video</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>Tambah Video</strong>.</li>
+<li>Isi <code>Organisasi</code> (kosongkan untuk global), <code>Tajuk</code>, <code>Link YouTube</code>. Tanda <strong>Sedang Langsung (LIVE)</strong> kalau perlu.</li>
+<li>Tekan <strong>Simpan Video</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/23-video-web.png" alt="A-23 — Pengurusan Video (Web)"></p>
+<hr>
+<h2>13. Popup (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Popup</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>Tambah Popup</strong>.</li>
+<li>Isi <code>Tajuk</code>, <code>Saiz Popup</code> (<code>Kecil</code>/<code>Sederhana</code>/<code>Besar</code>), <code>Kandungan</code>, <code>Imej Popup</code> (800×400), <code>Teks Butang 1</code>/<code>URL Butang 1</code>, <code>Butang 2</code> (pilihan), <code>Display Order</code>, <code>Aktifkan popup</code>, <code>Mula</code>, <code>Tamat</code>.</li>
+<li>Tekan <strong>Simpan Popup</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/24-popup-web.png" alt="A-24 — Pengurusan Popup (Web)"></p>
+<hr>
+<h2>14. Infaq (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Infaq</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>Tambah Infaq Baru</strong>.</li>
+<li>Isi <code>Tajuk</code>, <code>Penerangan</code>, <code>Pautan Bayaran Luar (DOKU)</code> (kalau ada), <code>Organisasi</code>, <code>Jenis Infaq</code> (<code>One-Off</code> / <code>Progress Bar</code>), <code>Benarkan donasi recurring</code>, <code>Sasaran (RM)</code>, <code>Susunan</code>, <code>Aktif</code>, <code>Gambar Infaq</code>.</li>
+<li>Tekan <strong>Tambah Infaq</strong>.</li>
+<li>Untuk kempen yang dah ada: <code>Kongsi</code> (QR + pautan), <code>Edit</code>, <code>Padam</code>, <code>Penderma</code>.</li>
+</ol>
+<p><img src="screenshots/admin/25-infaq-web.png" alt="A-25 — Pengurusan Infaq (Web)"></p>
+<hr>
+<h2>15. Penderma (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Penderma</strong>.</p>
+<p><strong>Apa yang ada:</strong></p>
+<ul>
+<li>Ringkasan: <code>Penderma</code>, <code>Jumlah Sumbangan</code>, <code>Purata / Penderma</code>, <code>Jumlah Transaksi</code>.</li>
+<li>Search dan susunan (<code>Terkini</code>/<code>Tertinggi</code>/<code>Kerap</code>).</li>
+<li>Butiran penderma — profil, sejarah sumbangan, status.</li>
+</ul>
+<p><img src="screenshots/admin/26-penderma-web.png" alt="A-26 — Senarai Penderma (Web)"></p>
+<hr>
+<h2>16. Borang (Form Builder, Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Borang</strong>.</p>
+<p><strong>Langkah cipta borang:</strong></p>
+<ol>
+<li>Tekan <strong>+ Borang Baru</strong>.</li>
+<li><strong>Tetapan Borang</strong> — Tajuk, Penerangan, Pertubuhan, Program (pilihan), Gambar Header, <code>Harga Asas (RM)</code>, <code>Wajib bayar</code>, <code>Harga Mengikut Kategori (Tier)</code>, Terma &amp; Syarat, <code>Aktif</code>, <code>Boleh diakses awam</code>.</li>
+<li><strong>Soalan</strong> — tambah soalan (Teks, Perenggan, Nombor, Emel, Telefon, Tarikh, Dropdown, Radio, Checkbox, Muat Naik Fail, Negeri &amp; Cawangan). Boleh susun dan tandakan <code>Wajib diisi</code>.</li>
+<li>Tekan <strong>Cipta Borang</strong>.</li>
+<li>Nak edar: <code>QR</code>, <code>Kongsi</code> (salin pautan), <code>Hantar</code> (emel), <code>Semua Ahli</code>.</li>
+<li>Tengok <code>Respons</code> dan <strong>Eksport CSV</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/27-borang-web.png" alt="A-27 — Senarai Borang (Web)"></p>
+<p><img src="screenshots/admin/28-bina-borang.png" alt="A-28 — Bina Borang (Web)"></p>
+<hr>
+<h2>17. Undian &amp; Tinjauan (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Undian</strong>.</p>
+<p><strong>Langkah cipta:</strong></p>
+<ol>
+<li>Tekan <strong>Cipta Undian</strong>.</li>
+<li>Isi <code>Organisasi</code>, <code>Tajuk</code>, <code>Penerangan</code>, <code>Jenis</code> (<code>Poll</code>/<code>Survey</code>), <code>Tarikh Tamat</code>, <code>Sasaran</code> (<code>Semua Organisasi</code>, <code>Semua Ahli</code>, <code>Ahli Tertentu</code>, <code>Usrah Group</code>), <code>Tunjukkan keputusan</code>.</li>
+<li>Tambah soalan (<code>Pilih Satu</code>/<code>Pilih Pelbagai</code>) dan pilihan jawapan.</li>
+<li>Simpan.</li>
+<li>Tengok <code>Keputusan</code> (kadar respons, peratusan), <code>QR</code>, <code>CSV</code>.</li>
+</ol>
+<p><img src="screenshots/admin/29-undian-web.png" alt="A-29 — Pengurusan Undian (Web)"></p>
+<p><img src="screenshots/admin/30-keputusan-undian.png" alt="A-30 — Keputusan Undian (Web)"></p>
+<hr>
+<h2>18. Kemudahan &amp; Tempahan (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Urus Perkhidmatan/Fasiliti</strong> dan <strong>Senarai Tempahan</strong>.</p>
+<h3>18.1 Urus Fasiliti</h3>
+<ol>
+<li>Tekan <strong>Tambah Perkhidmatan/Fasiliti</strong>.</li>
+<li>Isi Nama, Lokasi, <code>Jenis Tempahan</code> (<code>Hourly</code>/<code>Halfday</code>/<code>Daily</code>), <code>Harga Umum per Unit</code>, <code>Harga Ahli per Unit</code>, Kapasiti, <code>Aktif</code>, Deskripsi, <code>Imej Cover</code>, <code>Galeri</code>.</li>
+<li>Tekan <strong>Simpan Ruang</strong>.</li>
+</ol>
+<h3>18.2 Senarai Tempahan</h3>
+<ul>
+<li>Filter ikut status (<code>Pending</code>/<code>Approved</code>/<code>Rejected</code>).</li>
+<li>Tindakan: <strong>Approve</strong>, <strong>Reject</strong> (dengan catatan), <strong>Tandakan Dibayar</strong>.</li>
+</ul>
+<p><img src="screenshots/admin/31-fasiliti-web.png" alt="A-31 — Urus Fasiliti (Web)"></p>
+<p><img src="screenshots/admin/32-tempahan-web.png" alt="A-32 — Senarai Tempahan (Web)"></p>
+<hr>
+<h2>19. Usrah (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Usrah</strong>.</p>
+<p><strong>Boleh buat:</strong> Cipta kumpulan usrah (nama, penerangan, hari/masa pertemuan, <code>is_active</code>), edit, padam, dan <strong>assign ahli</strong> dengan role (<code>leader</code>/<code>sub_leader</code>/<code>member</code>).</p>
+<p><img src="screenshots/admin/33-usrah-web.png" alt="A-33 — Pengurusan Usrah (Web)"></p>
+<p><strong>Nota:</strong> Halaman web untuk Usrah mungkin masih dalam pembangunan, tapi fungsi belakang tabir (cipta kumpulan, assign ahli) dah berfungsi.</p>
+<hr>
+<h2>20. Cawangan (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Cawangan</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>Tambah Cawangan</strong>.</li>
+<li>Isi <code>Nama Cawangan</code>, <code>Negeri</code>, <code>Telefon</code>, <code>Emel</code>, <code>Alamat</code>.</li>
+<li>Simpan.</li>
+<li>Pada kad cawangan: <code>Edit</code> (termasuk <code>Logo Cawangan</code>, <code>Cawangan Aktif</code>), dan urus <strong>Admin Cawangan</strong> (<code>Lantik Admin</code> — hanya ahli dalam cawangan tu).</li>
+<li>Padam cawangan — cawangan yang ada ahli tak boleh dipadam.</li>
+</ol>
+<p><img src="screenshots/admin/34-cawangan-web.png" alt="A-34 — Pengurusan Cawangan (Web)"></p>
+<hr>
+<h2>21. Jawatan (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Jawatan</strong>.</p>
+<p><strong>Langkah:</strong></p>
+<ol>
+<li>Tekan <strong>Tambah Jawatan</strong>.</li>
+<li>Isi <code>Nama Jawatan</code>, <code>Kategori</code> (<code>Kepimpinan</code>, <code>Pentadbiran</code>, <code>Pengurusan</code>, <code>Teknikal</code>, <code>Keahlian</code>), <code>Deskripsi</code>, <code>Parent (Hierarki)</code>, <code>Turutan</code>, <code>Warna</code>.</li>
+<li>Boleh susun (↑/↓), aktif/deactivate, edit dan padam.</li>
+</ol>
+<p><img src="screenshots/admin/35-jawatan-web.png" alt="A-35 — Pengurusan Jawatan (Web)"></p>
+<hr>
+<h2>22. Pertukaran Cawangan (Web)</h2>
+<h3>22.1 Permohonan Pertukaran</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Tukar Cawangan</strong>.</p>
+<ul>
+<li>Senarai permohonan yang tunggu kelulusan.</li>
+<li>Tekan <strong>Approve</strong> untuk luluskan, atau <strong>Reject</strong> untuk tolak (kena bagi sebab).</li>
+</ul>
+<p><img src="screenshots/admin/36-tukar-cawangan.png" alt="A-36 — Permohonan Tukar Cawangan (Web)"></p>
+<h3>22.2 Tukar Cawangan Secara Pukal</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Tukar Cawangan (Bulk)</strong>.</p>
+<ol>
+<li>Cari dan pilih ahli — boleh pilih banyak.</li>
+<li>Pilih <code>Cawangan Sasaran</code>.</li>
+<li>Tekan <strong>Pratonton</strong> dulu, lepas tu <strong>Tukar N Ahli</strong>.</li>
+</ol>
+<p><img src="screenshots/admin/37-bulk-cawangan.png" alt="A-37 — Tukar Cawangan Pukal (Web)"></p>
+<hr>
+<h2>23. Kewangan (Web)</h2>
+<h3>23.1 Yuran &amp; Bayaran (Transaksi)</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Yuran &amp; Bayaran</strong>.</p>
+<ul>
+<li>Ringkasan <code>Jumlah Terkumpul</code>, <code>Menunggu Pengesahan</code>.</li>
+<li>Filter ikut status (<code>Berjaya</code>/<code>Menunggu</code>/<code>Gagal</code>/<code>Dipulangkan</code>) dan tarikh.</li>
+<li><strong>Eksport CSV</strong>.</li>
+<li><strong>Nota:</strong> Admin hanya pantau. Tukar status transaksi adalah fungsi Superadmin.</li>
+</ul>
+<p><img src="screenshots/admin/38-transaksi-web.png" alt="A-38 — Transaksi (Web)"></p>
+<h3>23.2 Ringkasan Kewangan</h3>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Ringkasan Kewangan</strong>.</p>
+<ul>
+<li>Kad <code>Jumlah Pendapatan</code>, pecahan ikut sumber (<code>Yuran Keahlian</code>, <code>E-Commerce</code>, <code>Infaq</code>, <code>Kempen</code>).</li>
+<li>Carta <code>Pendapatan Bulanan</code> dan <code>Pecahan Mengikut Sumber</code>.</li>
+<li>Jadual transaksi. Tekan nama ahli untuk <strong>Sejarah Transaksi</strong>.</li>
+<li>Export: PDF / Excel / CSV.</li>
+</ul>
+<p><img src="screenshots/admin/39-kewangan-web.png" alt="A-39 — Ringkasan Kewangan (Web)"></p>
+<hr>
+<h2>24. E-Dagang: Produk, Kategori, Pesanan (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Produk</strong>, <strong>Kategori</strong>, <strong>Pesanan</strong>.</p>
+<ul>
+<li><strong>Produk</strong> — <code>Tambah Produk</code>, edit, harga ahli, stok, organisasi penjual. Kalau organisasi penjual takde, akan keluar amaran <code>TIADA ORG</code>.</li>
+<li><strong>Kategori</strong> — tambah/edit kategori.</li>
+<li><strong>Pesanan</strong> — lihat semua pesanan, kemas kini <code>Status</code> (<code>pending</code>/<code>paid</code>/<code>processing</code>/<code>shipped</code>/<code>completed</code>/<code>cancelled</code>) dan <code>Tracking No</code>, tekan <strong>Kemaskini Status</strong>.</li>
+</ul>
+<p><img src="screenshots/admin/40-produk-web.png" alt="A-40 — Urus Produk (Web)"></p>
+<p><img src="screenshots/admin/41-pesanan-web.png" alt="A-41 — Butiran Pesanan (Web)"></p>
+<hr>
+<h2>25. Direktori (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Direktori</strong>.</p>
+<p><strong>Apa yang ada:</strong> Cari ahli ikut nama, industri, kepakaran. Ada filter industri dan kad ahli dengan pautan LinkedIn. Hanya ahli yang benarkan paparan direktori akan muncul.</p>
+<p><img src="screenshots/admin/42-direktori-web.png" alt="A-42 — Direktori (Web)"></p>
+<hr>
+<h2>26. Info Organisasi &amp; Carta (Web)</h2>
+<p><strong>Buka:</strong> Web Sidebar → <strong>Info <Organisasi></strong>.</p>
+<p><strong>Boleh buat:</strong></p>
+<ul>
+<li><strong>Maklumat</strong> — kemas kini penerangan organisasi dan pautan media sosial.</li>
+<li><strong>Carta Organisasi</strong> — <code>+ Tambah Ahli</code> (Gambar, Nama, Jawatan, Emel), edit dan padam.</li>
+</ul>
+<p><img src="screenshots/admin/43-info-org-web.png" alt="A-43 — Info Organisasi (Web)"></p>
+<hr>
+<h2>27. Export Data (Web)</h2>
+<p><strong>Buka:</strong> Papan Pemuka Web → <strong>Senarai Ahli Keseluruhan</strong> → <strong>Export</strong>, dan <strong>Jumlah Ahli Mengikut Negeri</strong> → <strong>Muat Turun Laporan</strong>.</p>
+<ul>
+<li><strong>Export Ahli (CSV)</strong> — pilih jenis <code>Ringkas</code> atau <code>Penuh (Alamat)</code>.</li>
+<li><strong>Laporan Mengikut Negeri</strong>.</li>
+</ul>
+<p><img src="screenshots/admin/44-export-web.png" alt="A-44 — Export Ahli (Web)"></p>
+<hr>
+<h2>28. Ringkasan: Fungsi Mobile vs Web</h2>
+<table>
+<thead>
+<tr>
+<th>Fungsi</th>
+<th>Mobile</th>
+<th>Web</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Papan pemuka &amp; ringkasan</td>
+<td>✅</td>
+<td>✅ (penuh)</td>
+</tr>
+<tr>
+<td>Senarai &amp; carian ahli</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Aktif/deactivate ahli</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Padam/pulihkan ahli</td>
+<td>❌</td>
+<td>✅ (Superadmin)</td>
+</tr>
+<tr>
+<td>Tukar role ahli</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Yuran — lihat</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Yuran — jana/import/manual/export</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Kehadiran &amp; imbas QR</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Siaran/notifikasi</td>
+<td>✅ (asas)</td>
+<td>✅ (penuh)</td>
+</tr>
+<tr>
+<td>Program, borang, peserta</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Content (berita/artikel/video/popup)</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Infaq &amp; penderma</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Undian</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Fasiliti &amp; tempahan</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cawangan, jawatan, bulk branch</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Kewangan &amp; transaksi</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>E-dagang</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Direktori &amp; carta organisasi</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>29. Soalan Lazim (FAQ)</h2>
+<p><strong>S: Kenapa tab Admin tak muncul?</strong>
+J: Pastikan akaun anda role <code>Admin</code>/<code>org-admin</code>. Kalau dah betul, cuba log keluar dan masuk balik.</p>
+<p><strong>S: Boleh tak saya tengok ahli organisasi lain?</strong>
+J: Tak boleh. Semua data terhad pada organisasi anda.</p>
+<p><strong>S: Kenapa ada butang keluar mesej &quot;Fungsi Versi Web&quot;?</strong>
+J: Fungsi tu (cth. cipta program, urus yuran) ada di Web Panel sahaja.</p>
+<p><strong>S: Macam mana nak tambah ahli baharu?</strong>
+J: Tambah ahli baharu kerja Superadmin. Hubungi Superadmin. Admin organisasi cuma urus ahli yang dah ada.</p>
+<p><strong>S: Macam mana nak padam ahli?</strong>
+J: Buang ke Tong Sampah boleh dari web (ikut role). Padam kekal — Superadmin.</p>
+<p><strong>S: Macam mana ahli nak tukar cawangan?</strong>
+J: Ahli pilih cawangan baharu di Edit Profil. Permohonan tu masuk ke <strong>Tukar Cawangan</strong> untuk anda luluskan.</p>
+<p><strong>S: Boleh tak saya hantar push notification kepada semua ahli?</strong>
+J: Boleh. Khalayak <code>Semua</code> akan terhad pada ahli organisasi anda sahaja.</p>
+<p><strong>S: Kehadiran walk-in boleh direkod tak?</strong>
+J: Boleh — guna imbas QR di skrin Kehadiran Acara.</p>
+<hr>
+<p><em>Tamat Manual Admin Organisasi — myWAP.</em></p>
+</body></html>

@@ -28,6 +28,7 @@ class MenuScreen extends StatelessWidget {
     _MenuItem('Usrah', '/usrah', Icons.groups_outlined, 'Kumpulan & jadual usrah'),
     _MenuItem('Undian', '/polls', Icons.how_to_vote_outlined, 'Undian & tinjauan'),
     _MenuItem('Notifikasi', '/notifications', Icons.notifications_outlined, 'Pemberitahuan anda'),
+    _MenuItem('Manual Pengguna', '/manual', Icons.menu_book_outlined, 'Panduan penggunaan app'),
   ];
 
   @override

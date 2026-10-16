@@ -22,6 +22,7 @@ import '../../features/infaq/presentation/infaq_landing_screen.dart';
 import '../../features/infaq/presentation/routes.dart';
 import '../../features/member/presentation/member_dashboard_screen.dart';
 import '../../features/member/presentation/routes.dart';
+import '../../features/manual/presentation/routes.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/menu/presentation/routes.dart';
 import '../../features/public/presentation/public_home_screen.dart';
@@ -204,6 +205,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ...formsRoutes,
           ...directoryRoutes,
           ...adminRoutes,
+          ...manualRoutes,
           ...menuRoutes,
         ],
       ),

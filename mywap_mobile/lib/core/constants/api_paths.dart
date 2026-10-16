@@ -115,6 +115,9 @@ abstract final class ApiPaths {
   static const String notifications = '/notifications';
   static const String notificationsReadAll = '/notifications/read-all';
 
+  // ---- Manual pengguna (panduan ikut peranan) ----
+  static const String manuals = '/manuals';
+
   // ---- Push notification / FCM ----
   static const String deviceTokens = '/device-tokens';
   static const String pushDebug = '/push-debug';

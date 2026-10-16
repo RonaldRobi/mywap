@@ -155,6 +155,11 @@ class AppSidebar extends ConsumerWidget {
                         label: 'Profil',
                         path: '/profile',
                       ),
+                      _SidebarItem(
+                        icon: Icons.menu_book_outlined,
+                        label: 'Manual Pengguna',
+                        path: '/manual',
+                      ),
                     ],
                   ),
                 ],

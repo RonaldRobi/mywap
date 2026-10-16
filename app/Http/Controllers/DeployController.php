@@ -38,6 +38,9 @@ class DeployController extends Controller
         $commands = [
             "cd $basePath && git fetch origin main && git reset --hard origin/main 2>&1",
             "cd $basePath && php artisan migrate --force 2>&1",
+            // Idempotent: cipta akaun Admin Negeri ABIM jika belum wujud.
+            // Katalaluan akaun sedia ada tidak ditimpa.
+            "cd $basePath && php artisan abim:state-admins 2>&1",
             "cd $basePath && php artisan optimize 2>&1",
         ];
 

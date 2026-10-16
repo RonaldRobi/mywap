@@ -34,6 +34,9 @@ class DatabaseSeeder extends Seeder
             // --- KREDENSIAL (Users + Roles, guna updateOrCreate utk elak delete) ---
             CredentialSeeder::class,
 
+            // --- ADMIN NEGERI ABIM (14 akaun, peranan Admin) ---
+            AbimStateAdminSeeder::class,
+
             // --- DATA KONTEN (Events, Infaq, Pustaka, Banners) ---
             EventsTableSeeder::class,
             InfaqTableSeeder::class,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
+use App\Http\Controllers\Admin\ManualController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AttendanceController;
@@ -123,7 +124,7 @@ Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show
 Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
 
-    Route::middleware('role:Superadmin|Admin')->group(function () {
+    Route::middleware('role:Superadmin|Admin|org-admin')->group(function () {
         Route::get('/admin/attendance', [AttendanceController::class, 'adminIndex'])->name('admin.attendance');
         Route::get('/admin/attendance/export/excel', [AttendanceController::class, 'exportExcel'])->name('admin.attendance.export.excel');
         Route::get('/admin/attendance/export/pdf', [AttendanceController::class, 'exportPdf'])->name('admin.attendance.export.pdf');
@@ -303,6 +304,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/knowledge-base/{knowledgeArticle}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');
         Route::delete('/superadmin/knowledge-base/{knowledgeArticle}', [KnowledgeBaseController::class, 'destroy'])->name('admin.knowledge-base.destroy');
 
+        // Manual Pengguna — muat naik PDF + sasaran peranan (ahli / admin)
+        Route::get('/superadmin/manuals', [ManualController::class, 'index'])->name('admin.manuals.index');
+        Route::post('/superadmin/manuals', [ManualController::class, 'store'])->name('admin.manuals.store');
+        Route::post('/superadmin/manuals/{manual}', [ManualController::class, 'update'])->name('admin.manuals.update');
+        Route::delete('/superadmin/manuals/{manual}', [ManualController::class, 'destroy'])->name('admin.manuals.destroy');
+
         Route::redirect('/superadmin/logo-settings', '/superadmin/organizations');
     });
 
@@ -330,7 +337,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/polls/{poll}/results', [PollController::class, 'results'])->name('member.polls.results');
     });
 
-    Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index')->middleware('role:Superadmin|Admin');
+    Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index')->middleware('role:Superadmin|Admin|org-admin');
     Route::get('/info-terkini', [NewsController::class, 'index'])->name('news.index');
     Route::get('/info-terkini/{newsPost}', [NewsController::class, 'show'])->name('news.show');
     Route::post('/info-terkini/{newsPost}/react', [NewsController::class, 'react'])->name('news.react');
@@ -343,7 +350,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
 
     // Admin/Superadmin: manage catalog + manage orders
-    Route::middleware('role:Admin|Superadmin')->group(function () {
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
         Route::resource('products', ProductController::class)->except(['index', 'show']);
 
         Route::resource('categories', CategoryController::class)->except(['show']);
@@ -407,7 +414,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
 
     // Branch change requests — Org Admin, Branch Admin
-    Route::middleware('role:Admin|Superadmin|Admin Cawangan')->group(function () {
+    Route::middleware('role:Admin|Superadmin|org-admin|Admin Cawangan')->group(function () {
         Route::get('branch-change-requests', [BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
         Route::post('branch-change-requests/{branchChangeRequest}/approve', [BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
         Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
@@ -513,7 +520,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');
 
     // ─── Admin / Staff Only ──────────────────────────────────────────────────
-    Route::middleware('role:Admin|Superadmin')->group(function () {
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
         Route::post('/events', [EventController::class, 'store'])->name('events.store');
         Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
         Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
@@ -526,7 +533,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ─── Info Organisasi — pengurusan (Admin/Superadmin sahaja) ─────────────
-    Route::middleware('role:Admin|Superadmin')->group(function () {
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
         Route::put('/info-organisasi', [OrganizationInfoController::class, 'updateDescription'])->name('org.info.update');
         Route::post('/info-organisasi/carta', [OrganizationInfoController::class, 'storeChartMember'])->name('org.chart.store');
         Route::put('/info-organisasi/carta/{member}', [OrganizationInfoController::class, 'updateChartMember'])->name('org.chart.update');

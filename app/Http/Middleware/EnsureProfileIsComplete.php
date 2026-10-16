@@ -16,7 +16,7 @@ class EnsureProfileIsComplete
 
         $user = $request->user();
 
-        if ($user->hasRole(['Superadmin', 'Admin'])) {
+        if ($user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             return $next($request);
         }
 
