@@ -121,7 +121,7 @@ const groupOpenState   = reactive({
 
 const roles = computed(() => user.value?.roles ?? []);
 const isSuperadmin = computed(() => roles.value.includes('Superadmin'));
-const isAdmin      = computed(() => roles.value.includes('Admin'));
+const isAdmin      = computed(() => roles.value.includes('Admin') || roles.value.includes('org-admin'));
 const isBranchAdmin = computed(() => roles.value.includes('Admin Cawangan'));
 const isMember     = computed(() => roles.value.includes('Member'));
 const notifications = computed(() => page.props.notifications ?? { unread_count: 0, recent: [] });

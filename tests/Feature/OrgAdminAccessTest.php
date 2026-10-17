@@ -117,6 +117,41 @@ class OrgAdminAccessTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/broadcasts')->assertOk();
     }
 
+    public function test_admin_dashboard_link_does_not_403(): void
+    {
+        // "Papan Pemuka" -> /dashboard -> admin dashboard.
+        $this->actingAs($this->admin)
+            ->get('/dashboard')
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->actingAs($this->admin)->get('/admin/dashboard')->assertOk();
+    }
+
+    public function test_org_admin_dashboard_link_does_not_403(): void
+    {
+        $this->actingAs($this->orgAdmin)
+            ->get('/dashboard')
+            ->assertRedirect(route('admin.dashboard'));
+
+        $this->actingAs($this->orgAdmin)->get('/admin/dashboard')->assertOk();
+    }
+
+    public function test_branch_admin_without_member_role_does_not_get_403(): void
+    {
+        $branchAdmin = User::factory()->create([
+            'current_organization_id' => $this->abim->id,
+            'branch_id' => $this->selangor->id,
+            'profile_completed_at' => now(),
+        ]);
+        $branchAdmin->assignRole('Admin Cawangan');
+
+        $this->actingAs($branchAdmin)
+            ->get('/dashboard')
+            ->assertRedirect(route('branch-change-requests.index'));
+
+        $this->actingAs($branchAdmin)->get('/branch-change-requests')->assertOk();
+    }
+
     public function test_admin_cannot_manage_members_of_other_organization(): void
     {
         $response = $this->actingAs($this->admin)

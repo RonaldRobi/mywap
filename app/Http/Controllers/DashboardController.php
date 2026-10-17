@@ -205,8 +205,19 @@ class DashboardController extends Controller
 
     private function dashboardRouteFor(User $user): string
     {
-        if ($user->hasRole(['Superadmin', 'Admin'])) {
+        // Semua peranan pentadbir organisasi berkongsi dashboard admin.
+        // `org-admin` ialah alias lama bagi Admin Organisasi.
+        if ($user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             return 'admin.dashboard';
+        }
+
+        // Admin Cawangan tidak dibenarkan masuk panel admin organisasi. Jika dia
+        // juga seorang ahli, beri dashboard ahli; jika tidak, hantar ke halaman
+        // yang memang dia boleh akses — jangan pulangkan 403.
+        if ($user->hasRole('Admin Cawangan')) {
+            return $user->hasRole('Member')
+                ? 'member.dashboard'
+                : 'branch-change-requests.index';
         }
 
         return 'member.dashboard';

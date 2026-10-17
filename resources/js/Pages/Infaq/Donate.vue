@@ -30,6 +30,13 @@ const currentStep = ref(1);
 const totalSteps = computed(() => props.infaq.allow_recurring ? 4 : 3);
 const showValidationSummary = ref(false);
 
+// Browser autofill sometimes fills the DOM input without firing an `input`
+// event, leaving Vue's form model empty. Read the rendered values on submit
+// so the payload always matches what the user sees.
+const donorNameInput = ref(null);
+const donorPhoneInput = ref(null);
+const donorEmailInput = ref(null);
+
 // Quick amount presets with impact descriptions
 const quickAmounts = [
     { value: 10, label: 'RM10', impact: 'Makanan untuk 1 keluarga' },
@@ -86,6 +93,7 @@ watch(formFields, (data) => {
 
 function selectQuickAmount(amount) {
     form.amount = amount;
+    form.clearErrors('amount');
 }
 
 function goToStep(step) {
@@ -103,15 +111,7 @@ function goToStep(step) {
     } else if (step === 3 && props.infaq.allow_recurring) {
         currentStep.value = 3;
     } else if (step === totalSteps.value) {
-        // Validate info fields
-        const requiredFields = { donor_name: 'Nama', donor_phone: 'No. Telefon', donor_email: 'Emel' };
-        for (const [field, label] of Object.entries(requiredFields)) {
-            if (!form[field]) {
-                form.errors[field] = `Sila isikan ${label}`;
-                showValidationSummary.value = true;
-                return;
-            }
-        }
+        // Reveal the info step; its required fields are validated on submit.
         currentStep.value = totalSteps.value;
     }
 
@@ -126,15 +126,51 @@ function nextStep() {
     goToStep(currentStep.value + 1);
 }
 
+function syncAutofilledFields() {
+    if (donorNameInput.value?.value !== undefined) form.donor_name = donorNameInput.value.value;
+    if (donorPhoneInput.value?.value !== undefined) form.donor_phone = donorPhoneInput.value.value;
+    if (donorEmailInput.value?.value !== undefined) form.donor_email = donorEmailInput.value.value;
+}
+
+function scrollToStep(step) {
+    nextTick(() => {
+        const el = document.getElementById('step-' + step);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
 function submitDonation() {
+    syncAutofilledFields();
+
     if (!form.amount || form.amount < 1) {
         form.errors.amount = 'Sila masukkan jumlah sumbangan yang sah';
         showValidationSummary.value = true;
+        scrollToStep(1);
         return;
     }
-    if (!form.donor_name) { form.errors.donor_name = 'Sila isikan nama'; showValidationSummary.value = true; return; }
-    if (!form.donor_phone) { form.errors.donor_phone = 'Sila isikan no. telefon'; showValidationSummary.value = true; return; }
-    if (!form.donor_email) { form.errors.donor_email = 'Sila isikan emel'; showValidationSummary.value = true; return; }
+
+    // Make the info fields visible before reporting errors about them, so the
+    // user can actually see and fix the field the message refers to.
+    currentStep.value = totalSteps.value;
+
+    if (!form.donor_name) {
+        form.errors.donor_name = 'Sila isikan nama';
+        showValidationSummary.value = true;
+        scrollToStep(totalSteps.value);
+        return;
+    }
+    if (!form.donor_phone) {
+        form.errors.donor_phone = 'Sila isikan no. telefon';
+        showValidationSummary.value = true;
+        scrollToStep(totalSteps.value);
+        return;
+    }
+    if (!form.donor_email) {
+        form.errors.donor_email = 'Sila isikan emel';
+        showValidationSummary.value = true;
+        scrollToStep(totalSteps.value);
+        return;
+    }
 
     // Clear draft on submit
     try { localStorage.removeItem('infaq_donate_draft'); } catch {}
@@ -251,6 +287,7 @@ const activeQuickAmount = computed(() => {
                                 v-model="form.amount"
                                 min="1"
                                 step="0.01"
+                                @input="form.clearErrors('amount')"
                                 class="w-full pl-12 pr-4 py-3 rounded-xl border-slate-200 font-bold text-lg focus:border-emerald-500 focus:ring-emerald-500"
                                 :class="{'border-red-300 focus:border-red-500 focus:ring-red-500': form.errors.amount}"
                                 placeholder="Jumlah Lain"
@@ -368,7 +405,7 @@ const activeQuickAmount = computed(() => {
 
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">Nama Penuh Pendaftar <span class="text-red-500">*</span></label>
-                            <input type="text" v-model="form.donor_name" class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_name}" placeholder="Nama seperti dalam kad pengenalan" required>
+                            <input ref="donorNameInput" type="text" v-model="form.donor_name" autocomplete="name" class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_name}" placeholder="Nama seperti dalam kad pengenalan" required @input="form.clearErrors('donor_name')">
                             <p v-if="form.errors.donor_name" class="mt-1 text-sm text-red-600">{{ form.errors.donor_name }}</p>
                         </div>
 
@@ -376,7 +413,7 @@ const activeQuickAmount = computed(() => {
                             <label class="block text-sm font-bold text-slate-700 mb-1">No. Telefon Bimbit <span class="text-red-500">*</span></label>
                             <div class="flex">
                                 <span class="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-slate-500 font-bold">+60</span>
-                                <input type="text" v-model="form.donor_phone" class="flex-1 rounded-none rounded-r-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_phone}" placeholder="01234567890" required>
+                                <input ref="donorPhoneInput" type="tel" v-model="form.donor_phone" autocomplete="tel" class="flex-1 rounded-none rounded-r-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_phone}" placeholder="01234567890" required @input="form.clearErrors('donor_phone')">
                             </div>
                             <div class="flex justify-between">
                                 <p class="mt-1 text-xs text-slate-500">Sila masukkan tanpa '-'. Contoh: 0123456789</p>
@@ -386,7 +423,7 @@ const activeQuickAmount = computed(() => {
 
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">Emel <span class="text-red-500">*</span></label>
-                            <input type="email" v-model="form.donor_email" class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_email}" placeholder="abubakr@mail.com" required>
+                            <input ref="donorEmailInput" type="email" v-model="form.donor_email" autocomplete="email" class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500" :class="{'border-red-300': form.errors.donor_email}" placeholder="abubakr@mail.com" required @input="form.clearErrors('donor_email')">
                             <p class="mt-1 text-xs text-slate-500">Pastikan emel anda betul untuk penghantaran resit</p>
                             <p v-if="form.errors.donor_email" class="mt-1 text-sm text-red-600">{{ form.errors.donor_email }}</p>
                         </div>
