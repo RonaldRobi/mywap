@@ -45,6 +45,31 @@ class DeployController extends Controller
             }
         }
 
+        // Serialize deploys. Two overlapping webhook requests run git
+        // fetch/reset at the same time, which produces `index.lock` and
+        // `refs/remotes/origin/main.lock` failures and a misleading HTTP 500
+        // even when one of the deploys actually succeeded.
+        $lockPath = storage_path('framework/deploy.lock');
+        $lockHandle = null;
+
+        if (is_dir(dirname($lockPath))) {
+            $candidate = @fopen($lockPath, 'c');
+
+            if ($candidate !== false) {
+                if (! flock($candidate, LOCK_EX | LOCK_NB)) {
+                    fclose($candidate);
+                    $this->safeLog('warning', 'Concurrent deploy rejected', ['ip' => $request->ip()]);
+
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Deploy lain sedang berjalan. Sila tunggu dan cuba lagi.',
+                    ], 409);
+                }
+
+                $lockHandle = $candidate;
+            }
+        }
+
         @set_time_limit(0);
         @ini_set('memory_limit', '512M');
 
@@ -54,6 +79,9 @@ class DeployController extends Controller
 
         // Langkah yang dijalankan. `critical` = kegagalan memulangkan HTTP 500.
         $steps = [
+            // Remove stale git locks only when no other git process is running.
+            // Safe because the flock above prevents another webhook deploy.
+            ['key' => 'cleanup_locks', 'critical' => false, 'cmd' => 'if ! pgrep -x git >/dev/null 2>&1; then find .git -name "*.lock" -type f -delete; fi'],
             ['key' => 'fetch', 'critical' => true, 'cmd' => $this->gitCommand($basePath, 'fetch origin main')],
             ['key' => 'reset', 'critical' => true, 'cmd' => $this->gitCommand($basePath, 'reset --hard origin/main')],
             ['key' => 'migrate', 'critical' => true, 'cmd' => escapeshellarg($php).' artisan migrate --force'],
@@ -122,6 +150,11 @@ class DeployController extends Controller
                 'error' => $e->getMessage(),
                 'log' => $log,
             ], 500);
+        } finally {
+            if ($lockHandle) {
+                flock($lockHandle, LOCK_UN);
+                fclose($lockHandle);
+            }
         }
 
         $this->safeLog('info', 'Deploy completed', [
