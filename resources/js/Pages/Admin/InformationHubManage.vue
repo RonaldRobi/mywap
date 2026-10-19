@@ -1761,7 +1761,13 @@ async function finishImport() {
                                     <div>
                                         <p class="text-lg font-bold text-gray-900">{{ selectedMember.name }}</p>
                                         <p v-if="selectedMember.member_no" class="text-sm font-bold" :style="{ color: selectedMember.organization_color ?? '#6b7280' }">{{ selectedMember.member_no }}</p>
-                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold mt-1" :style="{ backgroundColor: (selectedMember.organization_color ?? '#6b7280') + '20', color: selectedMember.organization_color ?? '#6b7280' }">{{ selectedMember.organization_name }}</span>
+                                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold" :style="{ backgroundColor: (selectedMember.organization_color ?? '#6b7280') + '20', color: selectedMember.organization_color ?? '#6b7280' }">{{ selectedMember.organization_name }}</span>
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                {{ selectedMember.branch_name || 'Tiada Cawangan' }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1771,6 +1777,7 @@ async function finishImport() {
                                     </div>
                                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3.5">
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">No Ahli</p><p class="text-sm font-bold text-gray-800">{{ selectedMember.member_no || '—' }}</p></div>
+                                        <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Asal No</p><p class="text-sm font-semibold text-gray-600">{{ selectedMember.original_member_no || '—' }}</p><p v-if="selectedMember.original_member_no && selectedMember.original_member_no !== selectedMember.member_no" class="text-[10px] text-gray-400">Nombor pertama semasa mendaftar</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">No IC</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.ic_number || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Jantina</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.gender || '—' }}</p></div>
