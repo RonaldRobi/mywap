@@ -14,6 +14,7 @@ const props = defineProps({
 // Polls the current attendance count every 10 seconds so the presenter
 // can see arrivals without manually refreshing.
 const liveCount = ref(props.attendedCount ?? 0);
+const showPrintOptions = ref(false);
 let pollInterval   = null;
 
 async function fetchCount() {
@@ -55,17 +56,31 @@ onUnmounted(() => { clearInterval(pollInterval); });
             </div>
 
             <div class="flex items-center gap-3">
+                <!-- Print QR (A4 options) -->
+                <button
+                    type="button"
+                    @click="showPrintOptions = true"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#123D2A]
+                           text-sm font-semibold text-white hover:bg-[#2F6B32] transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5V5.25A2.25 2.25 0 019 3h6a2.25 2.25 0 012.25 2.25V7.5M6.75 16.5H5.25A2.25 2.25 0 013 14.25v-4.5A2.25 2.25 0 015.25 7.5h13.5A2.25 2.25 0 0121 9.75v4.5a2.25 2.25 0 01-2.25 2.25h-1.5M6.75 12.75h10.5v6.75a1.5 1.5 0 01-1.5 1.5H8.25a1.5 1.5 0 01-1.5-1.5v-6.75z"/>
+                    </svg>
+                    Cetak QR
+                </button>
+
                 <!-- Download QR (PNG) -->
                 <a
                     :href="route('events.qr.download', { event: event.id })"
                     download
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600
-                           text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+                    title="PNG latar belakang telus"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200
+                           text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Muat Turun QR
+                    Muat Turun PNG
                 </a>
 
                 <!-- Print attendance sheet link -->
@@ -131,6 +146,81 @@ onUnmounted(() => { clearInterval(pollInterval); });
                 </span>
                 Dikemaskini setiap 10 saat
             </p>
+        </div>
+
+        <!-- ── Print options ───────────────────────────────────────────────── -->
+        <div
+            v-if="showPrintOptions"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#071525]/55 p-4 backdrop-blur-sm"
+            @click.self="showPrintOptions = false"
+        >
+            <div class="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2F6B32]">Cetak QR</p>
+                        <h2 class="mt-1 text-xl font-black text-gray-900">Pilih format cetakan</h2>
+                        <p class="mt-1 text-sm text-gray-500">Kedua-dua format menggunakan saiz A4 dan QR yang sama.</p>
+                    </div>
+                    <button type="button" @click="showPrintOptions = false" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <!-- Option 1 -->
+                    <a
+                        :href="route('events.qr.print', { event: event.id, layout: 'qr' })"
+                        target="_blank"
+                        rel="noopener"
+                        @click="showPrintOptions = false"
+                        class="group rounded-2xl border border-gray-200 p-4 transition-colors hover:border-[#2F6B32] hover:bg-[#F4F6F1]"
+                    >
+                        <div class="flex aspect-[210/297] items-center justify-center rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div class="w-full [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" v-html="qrSvg"></div>
+                        </div>
+                        <p class="mt-3 text-sm font-bold text-gray-900">QR Sahaja</p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
+                            QR besar tanpa teks. Sesuai untuk tampal di kaunter atau pintu masuk.
+                        </p>
+                    </a>
+
+                    <!-- Option 2 -->
+                    <a
+                        :href="route('events.qr.print', { event: event.id, layout: 'poster' })"
+                        target="_blank"
+                        rel="noopener"
+                        @click="showPrintOptions = false"
+                        class="group rounded-2xl border border-gray-200 p-4 transition-colors hover:border-[#2F6B32] hover:bg-[#F4F6F1]"
+                    >
+                        <div class="aspect-[210/297] overflow-hidden rounded-xl border border-gray-100 bg-[#F4F6F1] p-3 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[6px] font-black tracking-tight text-[#071525]">myWAP</span>
+                                <span class="h-[2px] w-6 bg-[#2F6B32]"></span>
+                            </div>
+                            <div class="mt-1.5 h-12 bg-[#123D2A]"></div>
+                            <div class="mt-1.5 h-[2px] w-8 bg-[#2F6B32]"></div>
+                            <div class="mt-1 h-2 w-4/5 bg-[#071525]/85"></div>
+                            <div class="mt-0.5 h-2 w-3/5 bg-[#071525]/85"></div>
+                            <div class="mt-2 grid grid-cols-3 gap-1">
+                                <div class="h-3 bg-[#071525]/12"></div>
+                                <div class="h-3 bg-[#071525]/12"></div>
+                                <div class="h-3 bg-[#071525]/12"></div>
+                            </div>
+                            <div class="mt-3 flex items-center gap-2 bg-white p-1.5">
+                                <div class="h-1.5 flex-1 bg-[#071525]/12"></div>
+                                <div class="w-8 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" v-html="qrSvg"></div>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-sm font-bold text-gray-900">Poster A4</p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
+                            Gambar program, nama, tarikh, lokasi dan QR — terus tampal pada hari kejadian.
+                        </p>
+                    </a>
+                </div>
+
+                <p class="mt-5 rounded-xl bg-[#F4F6F1] px-4 py-3 text-[11px] leading-relaxed text-gray-600">
+                    Dalam dialog cetak: pilih <strong>A4</strong>, <strong>Margin: None</strong>, dan aktifkan
+                    <strong>Background graphics</strong> supaya warna tema dicetak.
+                </p>
+            </div>
         </div>
 
     </div>

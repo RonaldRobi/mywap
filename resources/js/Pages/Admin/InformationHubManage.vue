@@ -71,6 +71,12 @@ function exportUrl() {
     if (props.isSuperadmin && exportOrgId.value) {
         params.organization_id = exportOrgId.value;
     }
+    if (branchIdFilter.value) {
+        params.branch_id = branchIdFilter.value;
+    }
+    if (stateFilter.value) {
+        params.state = stateFilter.value;
+    }
     return route('admin.members.export', params);
 }
 

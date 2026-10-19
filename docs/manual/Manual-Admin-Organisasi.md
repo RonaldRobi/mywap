@@ -1,7 +1,7 @@
 # MANUAL ADMIN ORGANISASI — myWAP
 
 > **Untuk:** Admin Organisasi (role `Admin` / `org-admin`)
-> **Platform:** App Mobile (Android & iOS) + Web Panel
+> **Platform:** Web Panel (browser — PC / laptop)
 > **Versi:** 1.0
 > **Nota:** Manual ni untuk admin organisasi sahaja. Ahli biasa ada manual sendiri (`Manual-Pengguna.md`). Fungsi khas **Superadmin** tak dimasukkan di sini.
 
@@ -9,11 +9,10 @@
 
 ## Cara Guna Manual Ini
 
-- Admin organisasi boleh kerja dari **dua tempat**:
-  - **App Mobile** — untuk kerja cepat: ahli, yuran, kehadiran, siaran, ringkasan.
-  - **Web Panel** — untuk pengurusan penuh. Buka dalam browser, guna PC/laptop.
-- Simbol **📸 SCREENSHOT** menandakan tempat yang perlu tangkapan skrin.
-- Fail gambar disimpan dalam folder `screenshots/admin/`.
+- Semua fungsi dalam manual ni dibuat melalui **Web Panel** — buka guna browser di PC atau laptop. App mobile tak diperlukan.
+- Login guna akaun yang sama dengan app myWAP. Menu penuh ada di **sidebar kiri**.
+- Setiap bahagian disusun ikut menu sidebar: **Buka** → **Langkah** → **Gambar**.
+- Fungsi bertanda *(Superadmin)* hanya boleh dibuat oleh akaun Superadmin. Kalau anda Admin biasa, butang tu tak akan muncul.
 
 ---
 
@@ -21,33 +20,31 @@
 
 1. [Peranan & Skop Admin Organisasi](#1-peranan--skop-admin-organisasi)
 2. [Log Masuk & Akses Panel](#2-log-masuk--akses-panel)
-3. [Papan Pemuka Admin (Mobile)](#3-papan-pemuka-admin-mobile)
-4. [Pengurusan Ahli](#4-pengurusan-ahli)
-5. [Yuran Ahli](#5-yuran-ahli)
-6. [Kehadiran Program](#6-kehadiran-program)
-7. [Siaran & Hebahan](#7-siaran--hebahan)
-8. [Program & Acara (Web)](#8-program--acara-web)
-9. [Kempen (Web)](#9-kempen-web)
-10. [Info Terkini / Berita (Web)](#10-info-terkini--berita-web)
-11. [Artikel (Web)](#11-artikel-web)
-12. [Video (Web)](#12-video-web)
-13. [Popup (Web)](#13-popup-web)
-14. [Infaq (Web)](#14-infaq-web)
-15. [Penderma (Web)](#15-penderma-web)
-16. [Borang (Form Builder, Web)](#16-borang-form-builder-web)
-17. [Undian & Tinjauan (Web)](#17-undian--tinjauan-web)
-18. [Kemudahan & Tempahan (Web)](#18-kemudahan--tempahan-web)
-19. [Usrah (Web)](#19-usrah-web)
-20. [Cawangan (Web)](#20-cawangan-web)
-21. [Jawatan (Web)](#21-jawatan-web)
-22. [Pertukaran Cawangan (Web)](#22-pertukaran-cawangan-web)
-23. [Kewangan (Web)](#23-kewangan-web)
-24. [E-Dagang: Produk, Kategori, Pesanan (Web)](#24-e-dagang-produk-kategori-pesanan-web)
-25. [Direktori (Web)](#25-direktori-web)
-26. [Info Organisasi & Carta (Web)](#26-info-organisasi--carta-web)
-27. [Export Data (Web)](#27-export-data-web)
-28. [Ringkasan: Fungsi Mobile vs Web](#28-ringkasan-fungsi-mobile-vs-web)
-29. [Soalan Lazim (FAQ)](#29-soalan-lazim-faq)
+3. [Pengurusan Ahli](#3-pengurusan-ahli)
+4. [Yuran Ahli](#4-yuran-ahli)
+5. [Kehadiran Program](#5-kehadiran-program)
+6. [Siaran & Hebahan](#6-siaran--hebahan)
+7. [Program & Acara](#7-program--acara)
+8. [Kempen](#8-kempen)
+9. [Info Terkini / Berita](#9-info-terkini--berita)
+10. [Artikel](#10-artikel)
+11. [Video](#11-video)
+12. [Popup](#12-popup)
+13. [Infaq](#13-infaq)
+14. [Penderma](#14-penderma)
+15. [Borang (Form Builder)](#15-borang-form-builder)
+16. [Undian & Tinjauan](#16-undian--tinjauan)
+17. [Kemudahan & Tempahan](#17-kemudahan--tempahan)
+18. [Usrah](#18-usrah)
+19. [Cawangan](#19-cawangan)
+20. [Jawatan](#20-jawatan)
+21. [Pertukaran Cawangan](#21-pertukaran-cawangan)
+22. [Kewangan](#22-kewangan)
+23. [E-Dagang: Produk, Kategori, Pesanan](#23-e-dagang-produk-kategori-pesanan)
+24. [Direktori](#24-direktori)
+25. [Info Organisasi & Carta](#25-info-organisasi--carta)
+26. [Export Data](#26-export-data)
+27. [Soalan Lazim (FAQ)](#27-soalan-lazim-faq)
 
 ---
 
@@ -73,77 +70,28 @@ Yang anda boleh urus:
 
 ## 2. Log Masuk & Akses Panel
 
-### 2.1 Log masuk mobile
-1. Buka app **myWAP**, log masuk dengan emel/IC dan kata laluan anda.
-2. Tab **Admin** akan muncul di bar bawah (ikon `admin_panel_settings`), sebab akaun anda role Admin.
-
-> 📸 **SCREENSHOT A-01 — Tab Admin di Bar Bawah**
-> Arahan: tangkap bar bawah yang menunjukkan tab `Admin`.
-> Fail: `screenshots/admin/01-tab-admin.png`
-
-### 2.2 Log masuk panel web
 1. Buka browser (PC/laptop) dan pergi ke laman web rasmi myWAP.
-2. Log masuk guna akaun yang sama.
-3. Anda terus masuk ke **Papan Pemuka Admin**.
+2. Log masuk guna emel/IC dan kata laluan yang sama dengan app myWAP.
+3. Anda terus masuk ke **Papan Pemuka Admin**. Menu penuh ada di **sidebar kiri**.
 
 ![A-02 — Log Masuk Panel Web](screenshots/admin/02-login-web.png)
 
-**Nota:** Ada fungsi yang **web sahaja**. Dalam app ia dilabel `Pengurusan Lanjutan`.
+**Nota:** Ada fungsi yang hanya ada di web, contohnya cipta program dan urus yuran.
 
 ---
 
-## 3. Papan Pemuka Admin (Mobile)
+## 3. Pengurusan Ahli
 
-**Buka:** Tab **Admin** di bar bawah.
-
-**Apa yang ada:**
-- **Pengurusan** — 4 petak: **Ahli**, **Yuran**, **Kehadiran**, **Siaran**.
-- **Pengurusan Lanjutan** — fungsi web sahaja: `Urus Program`, `Urus Yuran`, `Kewangan`, `Transaksi`, `Borang`, `Undian`, `Berita & Artikel`, `Pengumuman`, `Fasiliti`, `Cawangan`, `Jawatan`, `Export Ahli`, `Penderma`, `Tukar Cawangan`. Kalau tekan, keluar dialog `Fungsi Versi Web`:
-  > `Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.`
-- **Ringkasan** — kad `Jumlah Ahli`, `Ahli Aktif`, `Hasil`, `Acara Akan Datang`.
-- **Hasil Bulanan** — carta bar pendapatan bulanan.
-- **Aktiviti Terkini** — senarai aktiviti terbaharu.
-
-**Tip:** Tarik ke bawah (pull-to-refresh) untuk refresh.
-
-> 📸 **SCREENSHOT A-03 — Papan Pemuka Admin Mobile**
-> Arahan: tangkap papan pemuka admin (Pengurusan, Ringkasan, carta).
-> Fail: `screenshots/admin/03-dashboard-mobile.png`
-
----
-
-## 4. Pengurusan Ahli
-
-### 4.1 Mobile — Senarai Ahli
-
-**Buka:** Papan Pemuka Admin → **Ahli** (atau `/admin/members`).
-
-**Langkah:**
-1. Cari guna medan `Cari nama atau no. ahli`.
-2. Filter guna chip: **Semua**, **Aktif**, **Belum Lengkap**.
-3. Tekan mana-mana ahli untuk buka butiran — No. Ahli, Emel, Telefon, No. IC, Cawangan, Organisasi, Status, Akaun, Tarikh Didaftarkan, Profil Lengkap.
-4. Nak **deactivate / aktifkan balik**: tekan butang tu, confirm dialog.
-5. Nak **padam** — Superadmin sahaja dalam tetapan. Tekan `Padam Ahli`.
-
-> 📸 **SCREENSHOT A-04 — Senarai Ahli (Mobile)**
-> Arahan: tangkap senarai ahli dengan carian dan chip penapis.
-> Fail: `screenshots/admin/04-senarai-ahli.png`
-
-> 📸 **SCREENSHOT A-05 — Butiran Ahli (Mobile)**
-> Arahan: tangkap bottom sheet butiran ahli.
-> Fail: `screenshots/admin/05-butiran-ahli.png`
-
-### 4.2 Web — Pusat Maklumat / Pengurusan Ahli
-
-**Buka:** Web Sidebar → **Ahli**.
+**Buka:** Sidebar → **Ahli**
 
 **Boleh buat:**
+
 - Lihat statistik: `Jumlah Ahli`, `Ahli Aktif`, `Tidak Aktif`.
 - Search & filter penuh — organisasi, role (`Admin`/`Member`), status akaun, negeri, cawangan, status yuran, susunan dan julat tarikh daftar.
 - **Tukar role ahli** guna menu `Peranan` (Ahli / Admin / Admin Cawangan). Terus berkuat kuasa.
 - **Aktif / deactivate** akaun ahli.
-- **Buang ke Tong Sampah** (soft delete) dan **Restore**. **Padam kekal** — Superadmin.
-- **Lihat Kad Ahli**, **Update IC** (Superadmin), **Reset Kata Laluan** (Superadmin), **Pindah Organisasi** (Superadmin).
+- **Buang ke Tong Sampah** (soft delete) dan **Restore**.
+- **Lihat Kad Ahli**.
 - **Profil Ahli** (panel sisi) — tab `Peribadi`, `Kerjaya`, `Alamat`, `Lain`, `Aktiviti`.
 - **Edit Profil Ahli** — kemas kini maklumat asas, kerjaya, alamat, kecemasan, dan tetapan visibility dalam direktori (nak muncul ke tak).
 
@@ -155,28 +103,12 @@ Yang anda boleh urus:
 
 ---
 
-## 5. Yuran Ahli
+## 4. Yuran Ahli
 
-### 5.1 Mobile — Ringkasan Yuran
-
-**Buka:** Papan Pemuka Admin → **Yuran**.
-
-**Apa yang ada:**
-- Filter: **Semua**, **Lunas**, **Belum Bayar**.
-- Kad ringkasan: `Lunas`, `Belum Bayar`, `Hasil`.
-- Senarai yuran ikut ahli, dengan status `Lunas` / `Belum Bayar`.
-
-**Nota:** Skrin mobile ni **view sahaja**. Pengurusan penuh di web.
-
-> 📸 **SCREENSHOT A-08 — Yuran (Mobile)**
-> Arahan: tangkap skrin ringkasan yuran mobile.
-> Fail: `screenshots/admin/08-yuran-mobile.png`
-
-### 5.2 Web — Pengurusan Yuran Ahli
-
-**Buka:** Web Sidebar → **Yuran Ahli**.
+**Buka:** Sidebar → **Yuran Ahli**
 
 **Boleh buat:**
+
 - Kad statistik: `Jumlah Ahli`, `Selesai`, `Tertunggak`, `Seumur Hidup`, `Dikecualikan`, `Dikutip`.
 - Carta `Kutipan Bulanan`.
 - **Jana Yuran** — generate rekod yuran untuk tahun yang dipilih.
@@ -193,72 +125,38 @@ Yang anda boleh urus:
 
 ---
 
-## 6. Kehadiran Program
+## 5. Kehadiran Program
 
-### 6.1 Mobile — Pilih Program & Imbas QR
-
-**Buka:** Papan Pemuka Admin → **Kehadiran**.
-
-**Langkah:**
-1. Pilih program dari senarai acara akan datang.
-2. Skrin **Kehadiran Acara** tunjuk statistik `Pendaftaran` dan `Hadir`, serta senarai peserta.
-3. Tekan **Imbas QR**.
-4. Halakan kamera ke kod QR ahli. Boleh juga tekan **Masukkan Secara Manual** dan taip `No. ahli / ID`.
-5. Dialog `Kehadiran Disahkan` akan keluar. Peserta ditanda `Hadir`.
-
-> 📸 **SCREENSHOT A-11 — Kehadiran Acara (Mobile)**
-> Arahan: tangkap skrin kehadiran acara (statistik + senarai peserta).
-> Fail: `screenshots/admin/11-kehadiran-acara.png`
-
-> 📸 **SCREENSHOT A-12 — Imbas QR (Mobile)**
-> Arahan: tangkap skrin kamera imbas QR admin.
-> Fail: `screenshots/admin/12-imbas-qr-admin.png`
-
-**Kalau scan gagal, mesej ni mungkin keluar:** `Tiada rekod pendaftaran dijumpai`, `Kehadiran telah direkodkan sebelum ini`, `Bayaran pendaftaran anda belum lengkap`, `Pendaftaran anda telah dibatalkan`.
-
-### 6.2 Web — Dashboard Kehadiran
-
-**Buka:** Web Sidebar → **Kehadiran**.
+**Buka:** Sidebar → **Kehadiran**
 
 **Boleh buat:**
-- **Export Excel** dan **Export PDF**.
+
 - Kad statistik: `Jumlah Daftar`, `Hadir`, `Bayaran Menunggu`.
 - Kad program dengan kadar kehadiran (%), `Lihat Peserta`, `QR`, `Urus`.
 - Jadual peserta dengan status bayaran dan kehadiran.
+- **Export Excel** dan **Export PDF**.
+
+**Tip:** Untuk rekod kehadiran walk-in, tekan `QR` pada kad program — sama seperti imbas QR dalam app.
 
 ![A-13 — Dashboard Kehadiran (Web)](screenshots/admin/13-kehadiran-web.png)
 
 ---
 
-## 7. Siaran & Hebahan
+## 6. Siaran & Hebahan
 
-### 7.1 Mobile — Siaran (Broadcast)
+**Buka:** Sidebar → **Push Notification** dan **Pengumuman**
 
-**Buka:** Papan Pemuka Admin → **Siaran**.
+**Tab Push Notification**
 
-**Langkah:**
-1. Isi **Tajuk** — cth. `Mesyuarat Agung Tahunan`.
-2. Isi **Mesej**.
-3. Pilih **Khalayak**: `Semua`, `Ahli`, `Usrah`, `Organisasi`. Kalau pilih `Organisasi`, isi ID Organisasi.
-4. Tekan **Hantar Siaran**.
-
-> 📸 **SCREENSHOT A-14 — Siaran (Mobile)**
-> Arahan: tangkap borang siaran mobile.
-> Fail: `screenshots/admin/14-siaran.png`
-
-**Nota:** Untuk admin organisasi, khalayak `Semua` terhad pada ahli organisasi anda sahaja.
-
-### 7.2 Web — Push Notification & Papan Pengumuman
-
-**Buka:** Web Sidebar → **Push Notification** dan **Pengumuman**.
-
-**Tab Push Notification:**
 - `Tajuk Notifikasi`, `Kandungan / Mesej`, `Kumpulan Sasar` (`Semua Ahli`, `Ahli Organisasi Sahaja`, `Individu Tertentu`), `Saluran Penghantaran` (`In-App`, `Email`), `Format Emel`.
 - Sejarah penghantaran dengan status dan log.
 
-**Tab Papan Pengumuman:**
+**Tab Papan Pengumuman**
+
 - `Tajuk Pengumuman`, `Kandungan`, `Gambar Cover`, `Galeri Gambar`, `Kumpulan Sasaran` (`Kesemua Ahli`, `Ahli Tunggakan Yuran`, `Kumpulan Usrah Spesifik`), `Tarikh Terbit`, `Pin` (utamakan).
 - Senarai pengumuman boleh edit/padam.
+
+**Nota:** Untuk admin organisasi, khalayak `Semua` terhad pada ahli organisasi anda sahaja.
 
 ![A-15 — Push Notification (Web)](screenshots/admin/15-push-web.png)
 
@@ -266,27 +164,32 @@ Yang anda boleh urus:
 
 ---
 
-## 8. Program & Acara (Web)
+## 7. Program & Acara
 
-**Buka:** Web Sidebar → **Program & Acara**.
+**Buka:** Sidebar → **Program & Acara**
 
-### 8.1 Senarai Program
+### 7.1 Senarai Program
+
 - Search dan filter program.
 - Setiap kad tunjuk: status (`draft`/`published`/`closed`), kategori, tarikh, organisasi, bilangan pendaftaran.
 - Tindakan: `Borang (N)`, `Urus`, `Edit`, `Lihat`, `Kongsi`, `Padam`.
 
-### 8.2 Cipta / Edit Program
-- Isi `Tajuk`, `Penerangan`, `Kategori`, `Status`, `Jenis` (`Fizikal`/`Dalam Talian`), `Lokasi / Pautan`, `Mula`, `Tamat`, `Organisasi Terlibat`, `Poster Program` (1080×1350).
-- Tekan **Cipta Program** / **Kemas Kini Program**.
+### 7.2 Cipta / Edit Program
+
+1. Isi `Tajuk`, `Penerangan`, `Kategori`, `Status`, `Jenis` (`Fizikal`/`Dalam Talian`), `Lokasi / Pautan`, `Mula`, `Tamat`, `Organisasi Terlibat`, `Poster Program` (1080×1350).
+2. Tekan **Cipta Program** atau **Kemas Kini Program**.
 
 ![A-17 — Senarai Program (Web)](screenshots/admin/17-program-web.png)
 
 ![A-18 — Cipta Program (Web)](screenshots/admin/18-cipta-program.png)
 
-### 8.3 Borang Pendaftaran & QR
-- Cipta/edit borang pendaftaran. Guna `Kongsi` untuk dapatkan QR + pautan, atau `Pratonton` untuk semak dulu.
+### 7.3 Borang Pendaftaran & QR
 
-### 8.4 Peserta (Registrations)
+- Cipta/edit borang pendaftaran.
+- Guna `Kongsi` untuk dapatkan QR + pautan, atau `Pratonton` untuk semak dulu.
+
+### 7.4 Peserta (Registrations)
+
 - Statistik `Jumlah`, `Disahkan`, `Menunggu`.
 - Jadual peserta. Tukar status: `Disahkan`, `Menunggu`, `Dibatalkan`.
 
@@ -294,11 +197,10 @@ Yang anda boleh urus:
 
 ---
 
-## 9. Kempen (Web)
+## 8. Kempen
 
-**Buka:** **Papan Pemuka Web** → bahagian **Cipta Kempen**.
+**Buka:** **Papan Pemuka** → bahagian **Cipta Kempen**
 
-**Langkah:**
 1. Isi `Tajuk`, `Jumlah Sasaran`, `Penerangan`, `Status` (`Draf`/`Aktif`/`Tutup`).
 2. Tekan **Simpan Kempen**.
 
@@ -306,77 +208,80 @@ Yang anda boleh urus:
 
 ---
 
-## 10. Info Terkini / Berita (Web)
+## 9. Info Terkini / Berita
 
-**Buka:** Web Sidebar → **Info Terkini**.
+**Buka:** Sidebar → **Info Terkini**
 
-**Langkah:**
 1. Tambah kategori (nama, ikon) kalau perlu.
-2. Cipta info: `Target Organisasi`, `Kategori`, `Tajuk`, `Ringkasan`, `Kandungan`, `Cover Image`, `Terbitkan sekarang`. Tekan **Simpan Info**.
-3. Senarai info boleh `Edit` / `Delete`.
+2. Cipta info: `Target Organisasi`, `Kategori`, `Tajuk`, `Ringkasan`, `Kandungan`, `Cover Image`, `Terbitkan sekarang`.
+3. Tekan **Simpan Info**.
+4. Senarai info boleh `Edit` / `Delete`.
 
 ![A-21 — Info Terkini (Web)](screenshots/admin/21-info-terkini-web.png)
 
 ---
 
-## 11. Artikel (Web)
+## 10. Artikel
 
-**Buka:** Web Sidebar → **Artikel**.
+**Buka:** Sidebar → **Artikel**
 
-**Langkah:**
 1. Tekan **+ Tulis Artikel**.
-2. Isi `Maklumat Artikel` (Target Organisasi, Tajuk, Ringkasan, Kandungan), `Media` (Cover, Galeri), `Kategori & Tag`, `Penerbitan` (`Terbitkan sekarang`, `Featured`).
-3. Tekan **Simpan Artikel**.
+2. Isi `Maklumat Artikel` (Target Organisasi, Tajuk, Ringkasan, Kandungan).
+3. Isi `Media` (Cover, Galeri) dan `Kategori & Tag`.
+4. Tetapkan `Penerbitan` (`Terbitkan sekarang`, `Featured`).
+5. Tekan **Simpan Artikel**.
 
 ![A-22 — Tulis Artikel (Web)](screenshots/admin/22-artikel-web.png)
 
 ---
 
-## 12. Video (Web)
+## 11. Video
 
-**Buka:** Web Sidebar → **Video**.
+**Buka:** Sidebar → **Video**
 
-**Langkah:**
 1. Tekan **Tambah Video**.
-2. Isi `Organisasi` (kosongkan untuk global), `Tajuk`, `Link YouTube`. Tanda **Sedang Langsung (LIVE)** kalau perlu.
-3. Tekan **Simpan Video**.
+2. Isi `Organisasi` (kosongkan untuk global), `Tajuk`, `Link YouTube`.
+3. Tanda **Sedang Langsung (LIVE)** kalau perlu.
+4. Tekan **Simpan Video**.
 
 ![A-23 — Pengurusan Video (Web)](screenshots/admin/23-video-web.png)
 
 ---
 
-## 13. Popup (Web)
+## 12. Popup
 
-**Buka:** Web Sidebar → **Popup**.
+**Buka:** Sidebar → **Popup**
 
-**Langkah:**
 1. Tekan **Tambah Popup**.
-2. Isi `Tajuk`, `Saiz Popup` (`Kecil`/`Sederhana`/`Besar`), `Kandungan`, `Imej Popup` (800×400), `Teks Butang 1`/`URL Butang 1`, `Butang 2` (pilihan), `Display Order`, `Aktifkan popup`, `Mula`, `Tamat`.
-3. Tekan **Simpan Popup**.
+2. Isi `Tajuk`, `Saiz Popup` (`Kecil`/`Sederhana`/`Besar`), `Kandungan`, `Imej Popup` (800×400).
+3. Isi `Teks Butang 1` / `URL Butang 1`, dan `Butang 2` (pilihan).
+4. Tetapkan `Display Order`, `Aktifkan popup`, `Mula`, `Tamat`.
+5. Tekan **Simpan Popup**.
 
 ![A-24 — Pengurusan Popup (Web)](screenshots/admin/24-popup-web.png)
 
 ---
 
-## 14. Infaq (Web)
+## 13. Infaq
 
-**Buka:** Web Sidebar → **Infaq**.
+**Buka:** Sidebar → **Infaq**
 
-**Langkah:**
 1. Tekan **Tambah Infaq Baru**.
-2. Isi `Tajuk`, `Penerangan`, `Pautan Bayaran Luar (DOKU)` (kalau ada), `Organisasi`, `Jenis Infaq` (`One-Off` / `Progress Bar`), `Benarkan donasi recurring`, `Sasaran (RM)`, `Susunan`, `Aktif`, `Gambar Infaq`.
-3. Tekan **Tambah Infaq**.
-4. Untuk kempen yang dah ada: `Kongsi` (QR + pautan), `Edit`, `Padam`, `Penderma`.
+2. Isi `Tajuk`, `Penerangan`, `Organisasi`, `Jenis Infaq` (`One-Off` / `Progress Bar`).
+3. Isi `Pautan Bayaran Luar (DOKU)` kalau ada, `Benarkan donasi recurring`, `Sasaran (RM)`, `Susunan`, `Aktif`, `Gambar Infaq`.
+4. Tekan **Tambah Infaq**.
+5. Untuk kempen yang dah ada: `Kongsi` (QR + pautan), `Edit`, `Padam`, `Penderma`.
 
 ![A-25 — Pengurusan Infaq (Web)](screenshots/admin/25-infaq-web.png)
 
 ---
 
-## 15. Penderma (Web)
+## 14. Penderma
 
-**Buka:** Web Sidebar → **Penderma**.
+**Buka:** Sidebar → **Penderma**
 
 **Apa yang ada:**
+
 - Ringkasan: `Penderma`, `Jumlah Sumbangan`, `Purata / Penderma`, `Jumlah Transaksi`.
 - Search dan susunan (`Terkini`/`Tertinggi`/`Kerap`).
 - Butiran penderma — profil, sejarah sumbangan, status.
@@ -385,11 +290,12 @@ Yang anda boleh urus:
 
 ---
 
-## 16. Borang (Form Builder, Web)
+## 15. Borang (Form Builder)
 
-**Buka:** Web Sidebar → **Borang**.
+**Buka:** Sidebar → **Borang**
 
 **Langkah cipta borang:**
+
 1. Tekan **+ Borang Baru**.
 2. **Tetapan Borang** — Tajuk, Penerangan, Pertubuhan, Program (pilihan), Gambar Header, `Harga Asas (RM)`, `Wajib bayar`, `Harga Mengikut Kategori (Tier)`, Terma & Syarat, `Aktif`, `Boleh diakses awam`.
 3. **Soalan** — tambah soalan (Teks, Perenggan, Nombor, Emel, Telefon, Tarikh, Dropdown, Radio, Checkbox, Muat Naik Fail, Negeri & Cawangan). Boleh susun dan tandakan `Wajib diisi`.
@@ -403,11 +309,12 @@ Yang anda boleh urus:
 
 ---
 
-## 17. Undian & Tinjauan (Web)
+## 16. Undian & Tinjauan
 
-**Buka:** Web Sidebar → **Undian**.
+**Buka:** Sidebar → **Undian**
 
 **Langkah cipta:**
+
 1. Tekan **Cipta Undian**.
 2. Isi `Organisasi`, `Tajuk`, `Penerangan`, `Jenis` (`Poll`/`Survey`), `Tarikh Tamat`, `Sasaran` (`Semua Organisasi`, `Semua Ahli`, `Ahli Tertentu`, `Usrah Group`), `Tunjukkan keputusan`.
 3. Tambah soalan (`Pilih Satu`/`Pilih Pelbagai`) dan pilihan jawapan.
@@ -420,16 +327,18 @@ Yang anda boleh urus:
 
 ---
 
-## 18. Kemudahan & Tempahan (Web)
+## 17. Kemudahan & Tempahan
 
-**Buka:** Web Sidebar → **Urus Perkhidmatan/Fasiliti** dan **Senarai Tempahan**.
+**Buka:** Sidebar → **Urus Perkhidmatan/Fasiliti** dan **Senarai Tempahan**
 
-### 18.1 Urus Fasiliti
+### 17.1 Urus Fasiliti
+
 1. Tekan **Tambah Perkhidmatan/Fasiliti**.
 2. Isi Nama, Lokasi, `Jenis Tempahan` (`Hourly`/`Halfday`/`Daily`), `Harga Umum per Unit`, `Harga Ahli per Unit`, Kapasiti, `Aktif`, Deskripsi, `Imej Cover`, `Galeri`.
 3. Tekan **Simpan Ruang**.
 
-### 18.2 Senarai Tempahan
+### 17.2 Senarai Tempahan
+
 - Filter ikut status (`Pending`/`Approved`/`Rejected`).
 - Tindakan: **Approve**, **Reject** (dengan catatan), **Tandakan Dibayar**.
 
@@ -439,9 +348,9 @@ Yang anda boleh urus:
 
 ---
 
-## 19. Usrah (Web)
+## 18. Usrah
 
-**Buka:** Web Sidebar → **Usrah**.
+**Buka:** Sidebar → **Usrah**
 
 **Boleh buat:** Cipta kumpulan usrah (nama, penerangan, hari/masa pertemuan, `is_active`), edit, padam, dan **assign ahli** dengan role (`leader`/`sub_leader`/`member`).
 
@@ -451,26 +360,25 @@ Yang anda boleh urus:
 
 ---
 
-## 20. Cawangan (Web)
+## 19. Cawangan
 
-**Buka:** Web Sidebar → **Cawangan**.
+**Buka:** Sidebar → **Cawangan**
 
-**Langkah:**
 1. Tekan **Tambah Cawangan**.
 2. Isi `Nama Cawangan`, `Negeri`, `Telefon`, `Emel`, `Alamat`.
 3. Simpan.
-4. Pada kad cawangan: `Edit` (termasuk `Logo Cawangan`, `Cawangan Aktif`), dan urus **Admin Cawangan** (`Lantik Admin` — hanya ahli dalam cawangan tu).
-5. Padam cawangan — cawangan yang ada ahli tak boleh dipadam.
+4. Pada kad cawangan: `Edit` (termasuk `Logo Cawangan`, `Cawangan Aktif`).
+5. Urus **Admin Cawangan** — `Lantik Admin` hanya untuk ahli dalam cawangan tu.
+6. Padam cawangan — cawangan yang ada ahli tak boleh dipadam.
 
 ![A-34 — Pengurusan Cawangan (Web)](screenshots/admin/34-cawangan-web.png)
 
 ---
 
-## 21. Jawatan (Web)
+## 20. Jawatan
 
-**Buka:** Web Sidebar → **Jawatan**.
+**Buka:** Sidebar → **Jawatan**
 
-**Langkah:**
 1. Tekan **Tambah Jawatan**.
 2. Isi `Nama Jawatan`, `Kategori` (`Kepimpinan`, `Pentadbiran`, `Pengurusan`, `Teknikal`, `Keahlian`), `Deskripsi`, `Parent (Hierarki)`, `Turutan`, `Warna`.
 3. Boleh susun (↑/↓), aktif/deactivate, edit dan padam.
@@ -479,17 +387,19 @@ Yang anda boleh urus:
 
 ---
 
-## 22. Pertukaran Cawangan (Web)
+## 21. Pertukaran Cawangan
 
-### 22.1 Permohonan Pertukaran
-**Buka:** Web Sidebar → **Tukar Cawangan**.
+**Buka:** Sidebar → **Tukar Cawangan** dan **Tukar Cawangan (Bulk)**
+
+### 21.1 Permohonan Pertukaran
+
 - Senarai permohonan yang tunggu kelulusan.
 - Tekan **Approve** untuk luluskan, atau **Reject** untuk tolak (kena bagi sebab).
 
 ![A-36 — Permohonan Tukar Cawangan (Web)](screenshots/admin/36-tukar-cawangan.png)
 
-### 22.2 Tukar Cawangan Secara Pukal
-**Buka:** Web Sidebar → **Tukar Cawangan (Bulk)**.
+### 21.2 Tukar Cawangan Secara Pukal
+
 1. Cari dan pilih ahli — boleh pilih banyak.
 2. Pilih `Cawangan Sasaran`.
 3. Tekan **Pratonton** dulu, lepas tu **Tukar N Ahli**.
@@ -498,10 +408,12 @@ Yang anda boleh urus:
 
 ---
 
-## 23. Kewangan (Web)
+## 22. Kewangan
 
-### 23.1 Yuran & Bayaran (Transaksi)
-**Buka:** Web Sidebar → **Yuran & Bayaran**.
+**Buka:** Sidebar → **Yuran & Bayaran** dan **Ringkasan Kewangan**
+
+### 22.1 Yuran & Bayaran (Transaksi)
+
 - Ringkasan `Jumlah Terkumpul`, `Menunggu Pengesahan`.
 - Filter ikut status (`Berjaya`/`Menunggu`/`Gagal`/`Dipulangkan`) dan tarikh.
 - **Eksport CSV**.
@@ -509,8 +421,8 @@ Yang anda boleh urus:
 
 ![A-38 — Transaksi (Web)](screenshots/admin/38-transaksi-web.png)
 
-### 23.2 Ringkasan Kewangan
-**Buka:** Web Sidebar → **Ringkasan Kewangan**.
+### 22.2 Ringkasan Kewangan
+
 - Kad `Jumlah Pendapatan`, pecahan ikut sumber (`Yuran Keahlian`, `E-Commerce`, `Infaq`, `Kempen`).
 - Carta `Pendapatan Bulanan` dan `Pecahan Mengikut Sumber`.
 - Jadual transaksi. Tekan nama ahli untuk **Sejarah Transaksi**.
@@ -520,9 +432,9 @@ Yang anda boleh urus:
 
 ---
 
-## 24. E-Dagang: Produk, Kategori, Pesanan (Web)
+## 23. E-Dagang: Produk, Kategori, Pesanan
 
-**Buka:** Web Sidebar → **Produk**, **Kategori**, **Pesanan**.
+**Buka:** Sidebar → **Produk**, **Kategori**, **Pesanan**
 
 - **Produk** — `Tambah Produk`, edit, harga ahli, stok, organisasi penjual. Kalau organisasi penjual takde, akan keluar amaran `TIADA ORG`.
 - **Kategori** — tambah/edit kategori.
@@ -534,9 +446,9 @@ Yang anda boleh urus:
 
 ---
 
-## 25. Direktori (Web)
+## 24. Direktori
 
-**Buka:** Web Sidebar → **Direktori**.
+**Buka:** Sidebar → **Direktori**
 
 **Apa yang ada:** Cari ahli ikut nama, industri, kepakaran. Ada filter industri dan kad ahli dengan pautan LinkedIn. Hanya ahli yang benarkan paparan direktori akan muncul.
 
@@ -544,11 +456,12 @@ Yang anda boleh urus:
 
 ---
 
-## 26. Info Organisasi & Carta (Web)
+## 25. Info Organisasi & Carta
 
-**Buka:** Web Sidebar → **Info <Organisasi>**.
+**Buka:** Sidebar → **Info Organisasi**
 
 **Boleh buat:**
+
 - **Maklumat** — kemas kini penerangan organisasi dan pautan media sosial.
 - **Carta Organisasi** — `+ Tambah Ahli` (Gambar, Nama, Jawatan, Emel), edit dan padam.
 
@@ -556,9 +469,9 @@ Yang anda boleh urus:
 
 ---
 
-## 27. Export Data (Web)
+## 26. Export Data
 
-**Buka:** Papan Pemuka Web → **Senarai Ahli Keseluruhan** → **Export**, dan **Jumlah Ahli Mengikut Negeri** → **Muat Turun Laporan**.
+**Buka:** Papan Pemuka → **Senarai Ahli Keseluruhan** → **Export**, dan **Jumlah Ahli Mengikut Negeri** → **Muat Turun Laporan**
 
 - **Export Ahli (CSV)** — pilih jenis `Ringkas` atau `Penuh (Alamat)`.
 - **Laporan Mengikut Negeri**.
@@ -567,41 +480,16 @@ Yang anda boleh urus:
 
 ---
 
-## 28. Ringkasan: Fungsi Mobile vs Web
+## 27. Soalan Lazim (FAQ)
 
-| Fungsi | Mobile | Web |
-|---|---|---|
-| Papan pemuka & ringkasan | ✅ | ✅ (penuh) |
-| Senarai & carian ahli | ✅ | ✅ |
-| Aktif/deactivate ahli | ✅ | ✅ |
-| Padam/pulihkan ahli | ❌ | ✅ (Superadmin) |
-| Tukar role ahli | ❌ | ✅ |
-| Yuran — lihat | ✅ | ✅ |
-| Yuran — jana/import/manual/export | ❌ | ✅ |
-| Kehadiran & imbas QR | ✅ | ✅ |
-| Siaran/notifikasi | ✅ (asas) | ✅ (penuh) |
-| Program, borang, peserta | ❌ | ✅ |
-| Content (berita/artikel/video/popup) | ❌ | ✅ |
-| Infaq & penderma | ❌ | ✅ |
-| Undian | ❌ | ✅ |
-| Fasiliti & tempahan | ❌ | ✅ |
-| Cawangan, jawatan, bulk branch | ❌ | ✅ |
-| Kewangan & transaksi | ❌ | ✅ |
-| E-dagang | ❌ | ✅ |
-| Direktori & carta organisasi | ❌ | ✅ |
-
----
-
-## 29. Soalan Lazim (FAQ)
-
-**S: Kenapa tab Admin tak muncul?**
-J: Pastikan akaun anda role `Admin`/`org-admin`. Kalau dah betul, cuba log keluar dan masuk balik.
+**S: Kenapa saya tak nampak menu tertentu?**
+J: Menu ikut role. Admin organisasi nampak menu organisasi sendiri sahaja. Fungsi peringkat platform (cth. tetapan sistem) hanya untuk Superadmin.
 
 **S: Boleh tak saya tengok ahli organisasi lain?**
 J: Tak boleh. Semua data terhad pada organisasi anda.
 
-**S: Kenapa ada butang keluar mesej "Fungsi Versi Web"?**
-J: Fungsi tu (cth. cipta program, urus yuran) ada di Web Panel sahaja.
+**S: Kenapa sesetengah butang tak boleh ditekan?**
+J: Fungsi sensitif — padam kekal, import, reset kata laluan, update IC, pindah organisasi, tukar status transaksi — Superadmin sahaja.
 
 **S: Macam mana nak tambah ahli baharu?**
 J: Tambah ahli baharu kerja Superadmin. Hubungi Superadmin. Admin organisasi cuma urus ahli yang dah ada.
@@ -616,7 +504,10 @@ J: Ahli pilih cawangan baharu di Edit Profil. Permohonan tu masuk ke **Tukar Caw
 J: Boleh. Khalayak `Semua` akan terhad pada ahli organisasi anda sahaja.
 
 **S: Kehadiran walk-in boleh direkod tak?**
-J: Boleh — guna imbas QR di skrin Kehadiran Acara.
+J: Boleh — tekan `QR` pada kad program di halaman **Kehadiran**.
+
+**S: Boleh export data ke Excel?**
+J: Boleh. Ikut halaman — ada yang CSV, ada yang CSV / Excel / PDF. Contoh: Ahli → CSV, Yuran Ahli → CSV / Excel / PDF.
 
 ---
 

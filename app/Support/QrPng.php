@@ -23,11 +23,17 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
  */
 class QrPng
 {
-    public static function render(string $text, int $size = 1024, int $margin = 2, string $errorCorrection = 'H'): string
+    public static function render(string $text, int $size = 1024, int $margin = 2, string $errorCorrection = 'H', bool $transparent = false): string
     {
         set_error_handler(static fn (int $severity): bool => ($severity & E_DEPRECATED) !== 0);
 
         try {
+            // Transparent output uses the local GD renderer for deterministic
+            // alpha handling across Imagick and non-Imagick servers.
+            if ($transparent) {
+                return self::renderWithGd($text, $size, $margin, $errorCorrection, true);
+            }
+
             if (extension_loaded('imagick')) {
                 return (string) QrCode::format('png')
                     ->size($size)
@@ -42,7 +48,7 @@ class QrPng
         }
     }
 
-    private static function renderWithGd(string $text, int $size, int $margin, string $errorCorrection): string
+    private static function renderWithGd(string $text, int $size, int $margin, string $errorCorrection, bool $transparent = false): string
     {
         $ecLevel = match (strtoupper($errorCorrection)) {
             'L' => ErrorCorrectionLevel::L(),
@@ -62,9 +68,17 @@ class QrPng
         $pixelSize = $total * $scale;
 
         $image = imagecreatetruecolor($pixelSize, $pixelSize);
-        $white = imagecolorallocate($image, 255, 255, 255);
+
+        if ($transparent) {
+            imagealphablending($image, false);
+            imagesavealpha($image, true);
+            $background = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        } else {
+            $background = imagecolorallocate($image, 255, 255, 255);
+        }
+
         $black = imagecolorallocate($image, 0, 0, 0);
-        imagefilledrectangle($image, 0, 0, $pixelSize, $pixelSize, $white);
+        imagefilledrectangle($image, 0, 0, $pixelSize, $pixelSize, $background);
 
         for ($y = 0; $y < $modules; $y++) {
             for ($x = 0; $x < $modules; $x++) {

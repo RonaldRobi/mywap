@@ -48,6 +48,35 @@ function approve(r) {
                 <h2 class="text-2xl font-bold text-gray-900">Permohonan Tukar Cawangan</h2>
             </div>
 
+            <div class="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">Eksport Data Ahli</p>
+                        <p class="text-xs text-gray-500">Muat turun senarai ahli cawangan/negeri anda dalam format CSV.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a
+                            :href="route('admin.members.export', { type: 'simple' })"
+                            class="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 12l-3-3m3 3l3-3M4 20h16"/>
+                            </svg>
+                            Ringkas
+                        </a>
+                        <a
+                            :href="route('admin.members.export', { type: 'full' })"
+                            class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 12l-3-3m3 3l3-3M4 20h16"/>
+                            </svg>
+                            Penuh
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="requests.length === 0" class="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
                 <p class="text-gray-500">Tiada permohonan yang menunggu kelulusan.</p>
             </div>

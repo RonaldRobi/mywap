@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput.vue';
 import Modal from '@/Components/Modal.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 defineProps({
     canResetPassword: {
@@ -49,6 +49,24 @@ const memberMaskedEmail = ref('');
 const memberHasRequestedOtp = ref(false);
 
 const biometricAlert = ref('');
+
+const APP_STORE_URL = 'https://apps.apple.com/my/app/mywap/id6813153674';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mywap.mywap_mobile';
+const STORE_BANNER_KEY = 'mywap-store-banner-seen';
+const showStoreBanner = ref(false);
+
+function dismissStoreBanner() {
+    showStoreBanner.value = false;
+}
+
+onMounted(() => {
+    // Hanya papar sekali pada viewport mudah alih; desktop tidak terjejas.
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    if (localStorage.getItem(STORE_BANNER_KEY)) return;
+
+    showStoreBanner.value = true;
+    localStorage.setItem(STORE_BANNER_KEY, '1');
+});
 
 const showBiometricAlert = (type) => {
     biometricAlert.value = type;
@@ -262,7 +280,10 @@ const submit = () => {
     <div class="min-h-screen bg-[#F4F6F1]">
         <Head title="Log in" />
 
-        <main class="grid min-h-screen lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]">
+        <main
+            class="grid min-h-screen lg:grid-cols-[minmax(0,3fr)_minmax(400px,2fr)]"
+            :class="{ 'pb-44 md:pb-0': showStoreBanner }"
+        >
             <section class="identity-panel relative overflow-hidden bg-[#071525] px-4 py-6 sm:px-8 sm:py-8 lg:flex lg:min-h-screen lg:items-stretch lg:px-10 lg:py-10 xl:px-14">
                 <div class="relative z-10 mx-auto w-full max-w-4xl">
                     <MovementBranding />
@@ -713,6 +734,73 @@ const submit = () => {
                 </div>
             </section>
         </main>
+
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="translate-y-full opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="translate-y-full opacity-0"
+        >
+            <div
+                v-if="showStoreBanner"
+                class="fixed inset-x-0 bottom-0 z-[70] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden"
+            >
+                <div class="mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#D5E3D8] bg-white/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl">
+                    <img
+                        src="/pwa-icon-192.png"
+                        alt="myWAP"
+                        class="h-11 w-11 shrink-0 rounded-xl ring-1 ring-black/5"
+                    >
+
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[13px] font-bold leading-tight text-[#071525]">Muat turun aplikasi myWAP</p>
+                        <p class="mt-0.5 text-[11px] leading-snug text-slate-500">Log masuk lebih pantas dari telefon anda.</p>
+
+                        <div class="mt-2.5 flex flex-wrap items-center gap-2">
+                            <a
+                                :href="APP_STORE_URL"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Muat turun di App Store"
+                                class="inline-flex transition active:scale-95"
+                            >
+                                <img
+                                    src="/images/store/app-store.svg"
+                                    alt="Download on the App Store"
+                                    class="h-9 w-auto"
+                                >
+                            </a>
+                            <a
+                                :href="PLAY_STORE_URL"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Dapatkan di Google Play"
+                                class="inline-flex transition active:scale-95"
+                            >
+                                <img
+                                    src="/images/store/google-play.png"
+                                    alt="Get it on Google Play"
+                                    class="h-[47px] w-auto"
+                                >
+                            </a>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        aria-label="Tutup"
+                        @click="dismissStoreBanner"
+                    >
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </Transition>
     </div>
 
     <Modal :show="showIcNotFoundModal" @close="showIcNotFoundModal = false" maxWidth="md">

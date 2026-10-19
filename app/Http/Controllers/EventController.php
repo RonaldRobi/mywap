@@ -9,6 +9,7 @@ use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
+use App\Models\Scopes\OrganizationScope;
 use App\Support\QrPng;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -88,7 +89,7 @@ class EventController extends Controller
         $query = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class),
         ]);
 
         if ($tab === 'past') {
@@ -210,7 +211,7 @@ class EventController extends Controller
         $event = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class),
         ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -743,8 +744,10 @@ class EventController extends Controller
      * Error-correction level H (30 % recovery) ensures the code remains
      * scannable even if the projector image partially obscures it.
      */
-    public function showQr(Event $event): Response|JsonResponse
+    public function showQr(Request $request, Event $event): Response|JsonResponse
     {
+        $this->authorizeEventAdmin($request, $event);
+
         $attendanceUrl = $event->attendance_url;
 
         $qrSvg = QrCode::format('svg')
@@ -773,16 +776,88 @@ class EventController extends Controller
      *
      * Returns the attendance QR code as a downloadable PNG image.
      */
-    public function downloadQr(Event $event): \Symfony\Component\HttpFoundation\Response
+    public function downloadQr(Request $request, Event $event): \Symfony\Component\HttpFoundation\Response
     {
-        $png = QrPng::render($event->attendance_url, 1024, 4, 'H');
+        $this->authorizeEventAdmin($request, $event);
 
-        $filename = 'qr-'.Str::slug($event->title).'-'.$event->id.'.png';
+        // Transparent by default so designers can drop the PNG onto any
+        // artwork. Add ?white=1 for a white-backed copy.
+        $transparent = ! $request->boolean('white');
+
+        $png = QrPng::render($event->attendance_url, 1024, 4, 'H', $transparent);
+
+        $filename = 'qr-'.Str::slug($event->title).'-'.$event->id.($transparent ? '-transparent' : '').'.png';
 
         return response($png, 200, [
             'Content-Type' => 'image/png',
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
+    }
+
+    /**
+     * printQr()
+     *
+     * Print-ready A4 sheets for the attendance QR. Two layouts:
+     *   - qr     → QR only, maximum scan size
+     *   - poster → myWAP-themed A4 poster with featured image, event details
+     *              and the QR at the bottom
+     *
+     * Rendered as a bare Blade view so the print output has no app shell or
+     * JavaScript bundle attached.
+     */
+    public function printQr(Request $request, Event $event): View
+    {
+        $this->authorizeEventAdmin($request, $event);
+
+        $layout = (string) $request->query('layout', 'poster');
+        abort_unless(in_array($layout, ['qr', 'poster'], true), 404);
+
+        $event->load('organization');
+
+        $qrSvg = (string) QrCode::format('svg')
+            ->size(420)
+            ->margin(1)
+            ->errorCorrection('H')
+            ->generate($event->attendance_url);
+
+        return view('events.print-qr', [
+            'event' => $event,
+            'layout' => $layout,
+            'qrSvg' => $qrSvg,
+            'featuredImage' => $this->featuredImageDataUri($event),
+        ]);
+    }
+
+    /**
+     * Embed the featured image as a data URI so the print sheet does not depend
+     * on an authenticated asset request or a network round-trip.
+     */
+    private function authorizeEventAdmin(Request $request, Event $event): void
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user->hasRole('Superadmin') || $this->adminOwnsEvent($user, $event),
+            403
+        );
+    }
+
+    private function featuredImageDataUri(Event $event): ?string
+    {
+        if (! $event->featured_image_path) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($event->featured_image_path)) {
+            return null;
+        }
+
+        $path = $disk->path($event->featured_image_path);
+        $mime = mime_content_type($path) ?: 'image/jpeg';
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path));
     }
 
     /**
@@ -846,7 +921,7 @@ class EventController extends Controller
     {
         $rsvps = $event->rsvps()
             ->attended()
-            ->with(['user:id,name,phone,email' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)])
+            ->with(['user:id,name,phone,email' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class)])
             ->get();
 
         return view('events.print-attendance', compact('event', 'rsvps'));

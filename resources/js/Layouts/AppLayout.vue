@@ -3,7 +3,6 @@ import { ref, computed, reactive, watch, onMounted, onUnmounted, nextTick } from
 import { Link, router, usePage } from '@inertiajs/vue3';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
-import PwaInstallPrompt from '@/Components/PwaInstallPrompt.vue';
 import ChatBot from '@/Components/ChatBot.vue';
 import BackButton from '@/Components/BackButton.vue';
 import { locale, t, toggleLocale } from '@/i18n';
@@ -1223,8 +1222,6 @@ const bottomNavItems = computed(() => {
             </div>
         </nav>
 
-        <!-- PWA Install Prompt -->
-        <PwaInstallPrompt />
         <AppSplashScreen />
 
         <!-- AI Chatbot -->

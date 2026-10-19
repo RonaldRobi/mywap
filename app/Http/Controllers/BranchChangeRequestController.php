@@ -27,10 +27,16 @@ class BranchChangeRequestController extends Controller
         if ($isSuperadmin) {
             // Superadmin sees all requests across all organizations
         } elseif ($isBranchAdmin) {
-            $query->whereHas('user', function ($q) use ($user) {
-                $q->where('current_organization_id', $user->current_organization_id)
-                    ->where('branch_id', $user->branch_id);
-            });
+            abort_if(! $user->branch_id, 403, 'Akaun admin cawangan ini tiada cawangan.');
+
+            // Admin cawangan melihat permohonan yang melibatkan cawangannya,
+            // sama ada ahli keluar dari cawangan itu (sumber) atau masuk ke
+            // cawangan itu (destinasi).
+            $query->whereHas('user', fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
+                ->where(function ($q) use ($user) {
+                    $q->where('to_branch_id', $user->branch_id)
+                        ->orWhereHas('user', fn ($inner) => $inner->where('branch_id', $user->branch_id));
+                });
         } else {
             $query->whereHas('user', function ($q) use ($user) {
                 $q->where('current_organization_id', $user->current_organization_id);
@@ -126,9 +132,14 @@ class BranchChangeRequestController extends Controller
             abort(403, 'Akses ditolak.');
         }
 
-        // Branch admin can only manage requests for their own branch
+        // Admin cawangan boleh urus permohonan yang melibatkan cawangannya —
+        // sama ada ahli keluar dari cawangan itu (sumber) atau masuk ke
+        // cawangan itu (destinasi).
         if ($authUser->hasRole('Admin Cawangan')) {
-            abort_if((int) $targetUser->branch_id !== (int) $authUser->branch_id, 403, 'Akses ditolak.');
+            $isSourceBranch = (int) $targetUser->branch_id === (int) $authUser->branch_id;
+            $isDestinationBranch = (int) $request->to_branch_id === (int) $authUser->branch_id;
+
+            abort_unless($isSourceBranch || $isDestinationBranch, 403, 'Akses ditolak.');
         }
     }
 }

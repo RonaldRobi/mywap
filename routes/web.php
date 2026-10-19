@@ -135,6 +135,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/events/{event}/edit', [EventController::class, 'edit'])->name('admin.events.edit');
         Route::put('/admin/events/{event}', [EventController::class, 'updateAdmin'])->name('admin.events.update');
         Route::get('/admin/events/{event}/registrations', [RegistrationController::class, 'adminIndex'])->name('admin.events.registrations');
+        Route::post('/admin/events/{event}/registrations/import/preview', [RegistrationController::class, 'importPreview'])->name('admin.events.registrations.import.preview');
+        Route::post('/admin/events/{event}/registrations/import', [RegistrationController::class, 'importStore'])->name('admin.events.registrations.import');
         Route::patch('/admin/events/registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('admin.events.registrations.update');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
@@ -164,8 +166,6 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         // Admin: monitor-only transactions
         Route::get('/admin/transactions', [PaymentController::class, 'orgTransactions'])->name('admin.transactions');
         Route::get('/admin/transactions/export/csv', [PaymentController::class, 'exportCsv'])->name('admin.transactions.export.csv');
-        Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
-        Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
         Route::get('/admin/usrah', [UsrahController::class, 'adminIndex'])->name('admin.usrah.index');
         Route::post('/admin/usrah/groups', [UsrahController::class, 'storeGroup'])->name('admin.usrah.groups.store');
         Route::put('/admin/usrah/groups/{usrahGroup}', [UsrahController::class, 'updateGroup'])->name('admin.usrah.groups.update');
@@ -413,8 +413,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
     Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
 
-    // Branch change requests — Org Admin, Branch Admin
+    // Branch change requests + member export — Org Admin, Branch Admin
     Route::middleware('role:Admin|Superadmin|org-admin|Admin Cawangan')->group(function () {
+        Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
+        Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
         Route::get('branch-change-requests', [BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
         Route::post('branch-change-requests/{branchChangeRequest}/approve', [BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
         Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
@@ -528,6 +530,8 @@ Route::middleware('auth')->group(function () {
             ->name('events.qr');
         Route::get('/events/{event}/qr/download', [EventController::class, 'downloadQr'])
             ->name('events.qr.download');
+        Route::get('/events/{event}/qr/print', [EventController::class, 'printQr'])
+            ->name('events.qr.print');
         Route::get('/events/{event}/print', [EventController::class, 'printAttendance'])
             ->name('events.print');
     });

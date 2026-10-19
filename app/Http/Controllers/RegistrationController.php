@@ -2,25 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\RegistrationStatus;
 use App\Models\Event;
 use App\Models\Form;
-use App\Models\FormAnswer;
-use App\Models\FormQuestion;
-use App\Models\FormResponse;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\User;
 use App\Services\PaymentGatewayManager;
+use App\Services\RegistrationImportService;
 use App\Services\RegistrationPaymentService;
 use App\Services\RegistrationService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -37,6 +31,7 @@ class RegistrationController extends Controller
     public function __construct(
         protected PaymentGatewayManager $gateways,
         protected RegistrationService $registrations,
+        protected RegistrationImportService $registrationImports,
     ) {}
 
     // ─── MEMBER: Daftar Event ─────────────────────────────────────────────────
@@ -300,6 +295,55 @@ class RegistrationController extends Controller
         ]);
     }
 
+    /**
+     * Preview a Google Form export (CSV/XLSX): headers, sample rows and
+     * auto-detected column mapping. Nothing is written to the database.
+     */
+    public function importPreview(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEventAdmin($request, $event);
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+        ]);
+
+        return response()->json(
+            $this->registrationImports->preview($request->file('file')),
+        );
+    }
+
+    /**
+     * Commit an import. Existing registrations are updated in place; new rows
+     * are created. Re-uploading the same/updated export never duplicates rows
+     * or deletes participants missing from the latest file.
+     */
+    public function importStore(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEventAdmin($request, $event);
+
+        $data = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+            'mapping' => ['required', 'array'],
+            'mapping.name' => ['required', 'integer', 'min:0'],
+            'mapping.ic_number' => ['nullable', 'integer', 'min:0'],
+            'mapping.phone' => ['nullable', 'integer', 'min:0'],
+            'mapping.email' => ['nullable', 'integer', 'min:0'],
+            'mapping.member_no' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $result = $this->registrationImports->import(
+            $event,
+            $request->file('file'),
+            $data['mapping'],
+            $request->user(),
+        );
+
+        return response()->json([
+            'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['skipped']} dilewati.",
+            'summary' => $result,
+        ]);
+    }
+
     public function updateStatus(Request $request, Registration $registration): RedirectResponse
     {
         $user = $request->user();
@@ -318,6 +362,15 @@ class RegistrationController extends Controller
         $registration->update(['status' => $data['status']]);
 
         return back()->with('success', 'Status pendaftaran dikemas kini.');
+    }
+
+    protected function authorizeEventAdmin(Request $request, Event $event): void
+    {
+        $user = $request->user();
+
+        if (! $user->hasRole('Superadmin') && ! $this->adminOwnsEvent($user, $event)) {
+            abort(403);
+        }
     }
 
     /**

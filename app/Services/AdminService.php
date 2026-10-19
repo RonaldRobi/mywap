@@ -14,6 +14,7 @@ use App\Models\Infaq;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Registration;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Models\UsrahGroup;
 use App\Support\MemberSearch;
@@ -53,7 +54,7 @@ class AdminService
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = $user->current_organization_id;
 
-        $users = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $users = User::withoutGlobalScope(OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId));
 
         $totalMembers = (clone $users)->count();
@@ -68,7 +69,7 @@ class AdminService
         $payments = Payment::query()
             ->where('status', 'successful')
             ->when(! $isSuperadmin, function ($q) use ($orgId) {
-                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $orgId));
+                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(OrganizationScope::class)->where('current_organization_id', $orgId));
             });
 
         $totalRevenue = (float) (clone $payments)->sum('amount');
@@ -76,7 +77,7 @@ class AdminService
         $pendingPayments = Payment::query()
             ->where('status', 'pending')
             ->when(! $isSuperadmin, function ($q) use ($orgId) {
-                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $orgId));
+                $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(OrganizationScope::class)->where('current_organization_id', $orgId));
             })
             ->count();
 
@@ -87,7 +88,7 @@ class AdminService
             ->where('created_at', '<=', now()->endOfMonth())
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->whereHas('user', function ($innerQuery) use ($user) {
-                    $innerQuery->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $user->current_organization_id);
+                    $innerQuery->withoutGlobalScope(OrganizationScope::class)->where('current_organization_id', $user->current_organization_id);
                 });
             })
             ->sum('amount');
@@ -162,7 +163,7 @@ class AdminService
                 ->orderBy('min_age')
                 ->get(['id', 'name', 'slug', 'color_theme']);
 
-            $counts = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            $counts = User::withoutGlobalScope(OrganizationScope::class)
                 ->whereIn('current_organization_id', $orgs->pluck('id'))
                 ->selectRaw('current_organization_id, COUNT(*) as total')
                 ->groupBy('current_organization_id')
@@ -341,7 +342,7 @@ class AdminService
         $search = $request->input('search');
         $status = $request->input('status');
 
-        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $query = User::withoutGlobalScope(OrganizationScope::class)
             ->with('organization:id,name')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->when($search, fn ($q) => MemberSearch::apply($q, $search))
@@ -382,7 +383,7 @@ class AdminService
 
         $year = (int) $request->input('year', now()->year);
 
-        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $query = User::withoutGlobalScope(OrganizationScope::class)
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)])
             ->with('organization:id,name,slug')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
@@ -450,7 +451,7 @@ class AdminService
             ->where('status', 'successful')
             ->whereYear('created_at', $year)
             ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request) {
-                $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id',
+                $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScope(OrganizationScope::class)->where('current_organization_id',
                     $isSuperadmin ? (int) $request->organization_id : $orgId));
             })
             ->groupBy('month')
@@ -472,7 +473,7 @@ class AdminService
         $expectedAmount = 0;
         $activeMembers = 0;
         if ($orgIds) {
-            $counts = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            $counts = User::withoutGlobalScope(OrganizationScope::class)
                 ->whereIn('current_organization_id', array_keys($orgIds))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->selectRaw('current_organization_id, COUNT(*) as total')
@@ -722,14 +723,7 @@ class AdminService
             abort(403, 'Tiada kebenaran.');
         }
 
-        $registration = Registration::where('event_id', $event->id)
-            ->where(function (Builder $q) use ($identifier) {
-                $q->where('member_no', $identifier)
-                    ->orWhere('ic_number', $identifier)
-                    ->orWhere('phone', $identifier);
-            })
-            ->latest()
-            ->first();
+        $registration = Registration::findForIdentity($event->id, $identifier);
 
         if (! $registration) {
             return ['status' => 'error', 'message' => 'Tiada rekod pendaftaran dijumpai. Sila semak semula maklumat.', 'registration' => null];
@@ -761,14 +755,24 @@ class AdminService
 
     public function findRegistration(Event $event, $user): ?Registration
     {
+        $phoneNormalized = $user->phone ? Registration::normalizePhone($user->phone) : null;
+        $icNormalized = $user->ic_number ? Registration::normalizeIc($user->ic_number) : null;
+
         return Registration::where('event_id', $event->id)
-            ->where(function (Builder $q) use ($user) {
+            ->where(function (Builder $q) use ($user, $phoneNormalized, $icNormalized) {
                 $q->where('user_id', $user->id);
+
                 if ($user->email) {
-                    $q->orWhere('email', $user->email);
+                    $q->orWhereRaw('LOWER(email) = ?', [mb_strtolower($user->email)]);
                 }
-                if ($user->phone) {
-                    $q->orWhere('phone', $user->phone);
+
+                if ($phoneNormalized !== null) {
+                    $q->orWhere('phone_normalized', $phoneNormalized)
+                        ->orWhere('phone', $user->phone);
+                }
+
+                if ($icNormalized !== null) {
+                    $q->orWhere('ic_normalized', $icNormalized);
                 }
             })
             ->latest()
@@ -825,13 +829,16 @@ class AdminService
             return null;
         }
 
+        $phoneNormalized = $phone !== '' ? Registration::normalizePhone($phone) : null;
+
         return Registration::where('event_id', $event->id)
-            ->where(function (Builder $q) use ($phone, $email) {
-                if ($phone !== '') {
-                    $q->orWhere('phone', $phone);
+            ->where(function (Builder $q) use ($phone, $phoneNormalized, $email) {
+                if ($phoneNormalized !== null) {
+                    $q->orWhere('phone_normalized', $phoneNormalized)
+                        ->orWhere('phone', $phone);
                 }
                 if ($email !== '') {
-                    $q->orWhere('email', $email);
+                    $q->orWhereRaw('LOWER(email) = ?', [mb_strtolower($email)]);
                 }
             })
             ->latest()

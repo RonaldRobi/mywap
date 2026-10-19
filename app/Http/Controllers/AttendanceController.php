@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Form;
-use App\Models\Organization;
 use App\Models\Registration;
 use App\Services\AdminService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -105,15 +104,7 @@ class AttendanceController extends Controller
 
         $identifier = trim($data['identifier']);
 
-        $registration = Registration::where('event_id', $event->id)
-            ->where(function (Builder $q) use ($identifier) {
-                $q->where('registration_no', $identifier)
-                    ->orWhere('phone', $identifier)
-                    ->orWhere('ic_number', $identifier)
-                    ->orWhere('email', $identifier);
-            })
-            ->latest()
-            ->first();
+        $registration = Registration::findForIdentity($event->id, $identifier);
 
         if (! $registration) {
             return Inertia::render('Events/GuestCheckin', [
