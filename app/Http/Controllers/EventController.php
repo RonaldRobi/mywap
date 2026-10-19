@@ -798,11 +798,11 @@ class EventController extends Controller
     /**
      * printQr()
      *
-     * Print-ready sheets for the attendance QR. Two layouts:
-     *   - qr     → QR only, maximum scan size on A4
-     *   - poster → 1080 × 1350 px (4:5) programme poster with the myWAP
-     *              wordmark, organisation logo, featured image, event details
-     *              and the QR at the bottom
+     * Print-ready A4 sheets for the attendance QR. Two layouts:
+     *   - qr     → QR only, maximum scan size
+     *   - poster → A4 sheet containing a full 4:5 programme poster area with
+     *              the myWAP wordmark, organisation logo(s), featured image,
+     *              event details and the QR at the bottom
      *
      * Rendered as a bare Blade view so the print output has no app shell or
      * JavaScript bundle attached.
@@ -822,12 +822,24 @@ class EventController extends Controller
             ->errorCorrection('H')
             ->generate($event->attendance_url);
 
+        // A global event belongs to all three movements, so show all three
+        // logos instead of falling back to a single initial.
+        $brands = $event->organization
+            ? collect([$event->organization])
+            : Organization::query()
+                ->whereIn('slug', ['pkpim', 'abim', 'wadah'])
+                ->orderBy('min_age')
+                ->get();
+
         return view('events.print-qr', [
             'event' => $event,
             'layout' => $layout,
             'qrSvg' => $qrSvg,
             'featuredImage' => $this->storageImageDataUri($event->featured_image_path),
-            'organizationLogo' => $this->storageImageDataUri($event->organization?->logo_path),
+            'organizationBrands' => $brands->map(fn (Organization $organization) => [
+                'name' => $organization->name,
+                'logo' => $this->storageImageDataUri($organization->logo_path),
+            ])->values(),
             'systemLogo' => $this->storageImageDataUri(
                 AppSetting::query()->value('system_logo_path')
             ),

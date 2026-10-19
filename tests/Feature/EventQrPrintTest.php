@@ -59,7 +59,7 @@ class EventQrPrintTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('events.qr.print', ['event' => $event->id, 'layout' => 'qr']))
             ->assertOk()
-            ->assertSee('sheet-qr', false)
+            ->assertSee('qr-only', false)
             ->assertSee('<svg', false);
     }
 
@@ -98,6 +98,61 @@ class EventQrPrintTest extends TestCase
             ->assertSee('Anjuran')
             ->assertSee('Logo PKPIM')
             ->assertSee('data:image/png;base64,', false);
+    }
+
+    public function test_global_event_poster_shows_all_three_organization_logos(): void
+    {
+        Storage::fake('public');
+
+        $png = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lK3V9wAAAABJRU5ErkJggg=='
+        );
+
+        $this->org->update([
+            'name' => 'PKPIM',
+            'slug' => 'pkpim',
+            'min_age' => 15,
+            'logo_path' => '/storage/logos/organizations/pkpim.png',
+        ]);
+        Storage::disk('public')->put('logos/organizations/pkpim.png', $png);
+
+        $abim = Organization::factory()->create([
+            'name' => 'ABIM',
+            'slug' => 'abim',
+            'min_age' => 25,
+            'logo_path' => '/storage/logos/organizations/abim.png',
+        ]);
+        Storage::disk('public')->put('logos/organizations/abim.png', $png);
+
+        $wadah = Organization::factory()->create([
+            'name' => 'WADAH',
+            'slug' => 'wadah',
+            'min_age' => 40,
+            'logo_path' => '/storage/logos/organizations/wadah.png',
+        ]);
+        Storage::disk('public')->put('logos/organizations/wadah.png', $png);
+
+        $event = Event::create([
+            'organization_id' => null,
+            'title' => 'Program Semua Organisasi',
+            'description' => 'Test',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Seminar->value,
+            'location_or_link' => 'Kuala Lumpur',
+            'start_time' => now()->addDay(),
+            'end_time' => now()->addDay()->addHours(3),
+        ]);
+
+        $this->admin->assignRole('Superadmin');
+
+        $this->actingAs($this->admin)
+            ->get(route('events.qr.print', ['event' => $event->id, 'layout' => 'poster']))
+            ->assertOk()
+            ->assertSee('Logo PKPIM')
+            ->assertSee('Logo ABIM')
+            ->assertSee('Logo WADAH')
+            ->assertSee('PKPIM · ABIM · WADAH');
     }
 
     public function test_other_organization_admin_cannot_print_event_qr(): void
