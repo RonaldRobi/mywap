@@ -222,19 +222,29 @@
             color: var(--navy);
         }
 
-        .hero {
-            position: relative;
-            height: 62mm;
-            margin-top: 6mm;
+        /* Featured programme artwork is shown whole (4:5), never cropped. */
+        .hero-row {
+            display: grid;
+            grid-template-columns: 104mm 1fr;
+            gap: 7mm;
+            height: 130mm;
+            margin-top: 5mm;
             flex: none;
-            overflow: hidden;
-            background: var(--dark-green);
         }
 
-        .hero img {
+        .poster-image {
+            position: relative;
+            width: 104mm;
+            height: 130mm;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--line);
+        }
+
+        .poster-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block;
         }
 
@@ -244,6 +254,7 @@
             display: flex;
             align-items: flex-end;
             padding: 6mm;
+            background: var(--dark-green);
             color: #fff;
         }
         .hero-fallback::before,
@@ -256,13 +267,13 @@
         .hero-fallback::before {
             width: 86mm;
             height: 86mm;
-            right: -22mm;
+            right: -30mm;
             top: -34mm;
         }
         .hero-fallback::after {
             width: 44mm;
             height: 44mm;
-            left: -14mm;
+            left: -18mm;
             bottom: -22mm;
         }
         .hero-fallback span {
@@ -275,13 +286,16 @@
             color: var(--soft-green);
         }
 
-        .content { margin-top: 6mm; }
+        .content {
+            min-width: 0;
+            padding-top: 2mm;
+        }
 
         .kicker {
             display: flex;
             align-items: center;
             gap: 3mm;
-            font-size: 6.8pt;
+            font-size: 6.6pt;
             font-weight: 800;
             letter-spacing: 0.18em;
             text-transform: uppercase;
@@ -295,29 +309,28 @@
         }
 
         .title {
-            margin: 2.5mm 0 0;
-            font-size: 25pt;
-            line-height: 1.04;
-            letter-spacing: -0.9px;
+            margin: 3mm 0 0;
+            font-size: 21pt;
+            line-height: 1.05;
+            letter-spacing: -0.7px;
             font-weight: 800;
             color: var(--navy);
-            max-width: 178mm;
             overflow-wrap: break-word;
         }
 
         .meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1.45fr;
-            gap: 5mm;
-            margin-top: 4.5mm;
-            padding-top: 3mm;
+            display: flex;
+            flex-direction: column;
+            gap: 3.2mm;
+            margin-top: 5mm;
+            padding-top: 3.5mm;
             border-top: 1px solid var(--line);
         }
 
         .meta .label {
             display: block;
             margin-bottom: 1mm;
-            font-size: 6.2pt;
+            font-size: 6pt;
             font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
@@ -326,7 +339,7 @@
 
         .meta .value {
             display: block;
-            font-size: 9pt;
+            font-size: 8.6pt;
             font-weight: 700;
             line-height: 1.35;
             color: var(--navy);
@@ -454,7 +467,7 @@
     @else
         @php
             $titleLength = mb_strlen($event->title);
-            $titleSize = $titleLength > 72 ? '20pt' : ($titleLength > 48 ? '22pt' : '25pt');
+            $titleSize = $titleLength > 72 ? '17pt' : ($titleLength > 48 ? '19pt' : '21pt');
             $brandNames = $organizationBrands->pluck('name');
             $brandLabel = $brandNames->count() > 1
                 ? 'PKPIM · ABIM · WADAH'
@@ -495,41 +508,43 @@
                     </div>
                 </header>
 
-                <div class="hero">
-                    @if ($featuredImage)
-                        <img src="{{ $featuredImage }}" alt="{{ $event->title }}">
-                    @else
-                        <div class="hero-fallback"><span>Kehadiran Program</span></div>
-                    @endif
+                <div class="hero-row">
+                    <div class="poster-image">
+                        @if ($featuredImage)
+                            <img src="{{ $featuredImage }}" alt="{{ $event->title }}">
+                        @else
+                            <div class="hero-fallback"><span>Kehadiran Program</span></div>
+                        @endif
+                    </div>
+
+                    <main class="content">
+                        <div class="kicker">
+                            Kehadiran Program &middot; {{ $event->category?->label() ?? 'Acara' }}
+                        </div>
+
+                        <h1 class="title" style="font-size: {{ $titleSize }};">{{ $event->title }}</h1>
+
+                        <div class="meta">
+                            <div>
+                                <span class="label">Tarikh</span>
+                                <span class="value">{{ $event->start_time->locale('ms')->isoFormat('D MMMM YYYY') }}</span>
+                            </div>
+                            <div>
+                                <span class="label">Masa</span>
+                                <span class="value">
+                                    {{ $event->start_time->locale('ms')->isoFormat('h:mm A') }}
+                                    @if ($event->end_time)
+                                        – {{ $event->end_time->locale('ms')->isoFormat('h:mm A') }}
+                                    @endif
+                                </span>
+                            </div>
+                            <div>
+                                <span class="label">{{ $event->type === 'online' ? 'Pautan' : 'Lokasi' }}</span>
+                                <span class="value">{{ $event->location_or_link ?: 'Akan dimaklumkan' }}</span>
+                            </div>
+                        </div>
+                    </main>
                 </div>
-
-                <main class="content">
-                    <div class="kicker">
-                        Kehadiran Program &middot; {{ $event->category?->label() ?? 'Acara' }}
-                    </div>
-
-                    <h1 class="title" style="font-size: {{ $titleSize }};">{{ $event->title }}</h1>
-
-                    <div class="meta">
-                        <div>
-                            <span class="label">Tarikh</span>
-                            <span class="value">{{ $event->start_time->locale('ms')->isoFormat('D MMMM YYYY') }}</span>
-                        </div>
-                        <div>
-                            <span class="label">Masa</span>
-                            <span class="value">
-                                {{ $event->start_time->locale('ms')->isoFormat('h:mm A') }}
-                                @if ($event->end_time)
-                                    – {{ $event->end_time->locale('ms')->isoFormat('h:mm A') }}
-                                @endif
-                            </span>
-                        </div>
-                        <div>
-                            <span class="label">{{ $event->type === 'online' ? 'Pautan' : 'Lokasi' }}</span>
-                            <span class="value">{{ $event->location_or_link ?: 'Akan dimaklumkan' }}</span>
-                        </div>
-                    </div>
-                </main>
 
                 <section class="qr-block">
                     <div>
