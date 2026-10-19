@@ -9,6 +9,7 @@ use App\Models\EventRsvp;
 use App\Models\OrganizationPosition;
 use App\Models\User;
 use App\Services\FeeService;
+use App\Services\ProfileService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -166,9 +167,19 @@ class ProfileController extends Controller
         $parsedDob = User::parseDobFromIc($user->ic_number);
         $parsedGender = User::guessGenderFromIc($user->ic_number);
 
+        $branches = $user->current_organization_id
+            ? Branch::where('organization_id', $user->current_organization_id)
+                ->where('is_active', true)
+                ->orderBy('state')
+                ->orderBy('name')
+                ->get(['id', 'name', 'state'])
+            : collect();
+
         return Inertia::render('Member/CompleteProfile', [
             'parsedDob' => $parsedDob,
             'parsedGender' => $parsedGender,
+            'branches' => $branches,
+            'currentBranchId' => $user->branch_id,
         ]);
     }
 
@@ -177,39 +188,9 @@ class ProfileController extends Controller
      */
     public function storeCompleteProfile(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'education_level' => ['required', 'string', 'max:120'],
-            'current_profession' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
-            'dob' => ['nullable', 'date'],
-            'gender' => ['nullable', 'in:lelaki,perempuan'],
-            'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
-            'address_1' => ['nullable', 'string', 'max:255'],
-            'address_2' => ['nullable', 'string', 'max:255'],
-            'postcode' => ['nullable', 'string', 'max:5'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'state' => ['nullable', 'string', 'max:100'],
-            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
-            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
-            'topics' => ['nullable', 'string'],
-        ]);
+        $data = $request->validate(ProfileService::completeRules());
 
-        $user = $request->user();
-
-        // Auto-fill DOB from IC if not provided
-        if (empty($data['dob']) && $user->ic_number) {
-            $data['dob'] = User::parseDobFromIc($user->ic_number);
-        }
-
-        // Auto-draft gender from IC if not selected
-        if (empty($data['gender']) && $user->ic_number) {
-            $data['gender'] = User::guessGenderFromIc($user->ic_number);
-        }
-
-        $user->update([
-            ...$data,
-            'profile_completed_at' => now(),
-        ]);
+        app(ProfileService::class)->completeProfile($request->user(), $data);
 
         return Redirect::route('dashboard')->with('success', 'Profil berjaya dikemas kini.');
     }

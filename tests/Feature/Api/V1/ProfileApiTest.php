@@ -19,6 +19,8 @@ class ProfileApiTest extends TestCase
 
     private Organization $org;
 
+    private Branch $defaultBranch;
+
     private User $member;
 
     protected function setUp(): void
@@ -30,6 +32,13 @@ class ProfileApiTest extends TestCase
         Role::create(['name' => 'Member', 'guard_name' => 'web']);
 
         $this->org = Organization::factory()->create(['name' => 'PKPIM']);
+
+        $this->defaultBranch = Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan Induk',
+            'state' => 'Selangor',
+            'is_active' => true,
+        ]);
 
         $this->member = User::factory()->create([
             'current_organization_id' => $this->org->id,
@@ -116,15 +125,20 @@ class ProfileApiTest extends TestCase
 
     public function test_member_can_get_complete_profile_meta(): void
     {
-        $this->member->update(['ic_number' => '921231105233']);
+        $this->member->update([
+            'ic_number' => '921231105233',
+            'branch_id' => $this->defaultBranch->id,
+        ]);
 
         Sanctum::actingAs($this->member);
 
         $this->getJson('/api/v1/profile/complete')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['parsedDob', 'parsedGender']])
+            ->assertJsonStructure(['data' => ['parsedDob', 'parsedGender', 'branches', 'currentBranchId']])
             ->assertJsonPath('data.parsedDob', '1992-12-31')
-            ->assertJsonPath('data.parsedGender', 'lelaki');
+            ->assertJsonPath('data.parsedGender', 'lelaki')
+            ->assertJsonPath('data.branches.0.name', 'Cawangan Induk')
+            ->assertJsonPath('data.currentBranchId', $this->defaultBranch->id);
     }
 
     public function test_complete_profile_stores_data_and_autofills_from_ic(): void
@@ -142,6 +156,7 @@ class ProfileApiTest extends TestCase
             'education_level' => 'Ijazah',
             'current_profession' => 'Guru',
             'phone' => '0131234567',
+            'branch_id' => $this->defaultBranch->id,
         ])
             ->assertOk()
             ->assertJsonPath('data.name', $user->name);
@@ -152,6 +167,38 @@ class ProfileApiTest extends TestCase
         $this->assertSame('Guru', $user->current_profession);
         $this->assertSame('1992-12-31', $user->dob?->format('Y-m-d'));
         $this->assertSame('lelaki', $user->gender);
+        $this->assertSame($this->defaultBranch->id, $user->branch_id);
+    }
+
+    public function test_complete_profile_rejects_branch_from_other_organization(): void
+    {
+        $other = Organization::factory()->create(['name' => 'WADAH']);
+        $foreignBranch = Branch::create([
+            'organization_id' => $other->id,
+            'name' => 'Wadah Selangor',
+            'state' => 'Selangor',
+            'is_active' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'member_no' => 'PKPIM-0003',
+        ]);
+        $user->assignRole('Member');
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/profile/complete', [
+            'education_level' => 'Ijazah',
+            'current_profession' => 'Guru',
+            'phone' => '0131234567',
+            'branch_id' => $foreignBranch->id,
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('branch_id');
+
+        $this->assertNull($user->fresh()->profile_completed_at);
+        $this->assertNull($user->fresh()->branch_id);
     }
 
     public function test_complete_profile_validates_required_fields(): void
@@ -160,7 +207,7 @@ class ProfileApiTest extends TestCase
 
         $this->postJson('/api/v1/profile/complete', [])
             ->assertStatus(422)
-            ->assertJsonStructure(['message', 'errors' => ['education_level', 'current_profession', 'phone']]);
+            ->assertJsonStructure(['message', 'errors' => ['education_level', 'current_profession', 'phone', 'branch_id']]);
     }
 
     public function test_member_can_update_profile(): void
@@ -255,7 +302,7 @@ class ProfileApiTest extends TestCase
                     'pendingBranchRequest',
                 ],
             ])
-            ->assertJsonPath('data.branches.0.name', 'Cawangan KL')
+            ->assertJsonFragment(['name' => 'Cawangan KL'])
             ->assertJsonPath('data.orgPositions.0.name', 'Pengerusi')
             ->assertJsonPath('data.canEditIcNumber', false)
             ->assertJsonPath('data.pendingBranchRequest', null);

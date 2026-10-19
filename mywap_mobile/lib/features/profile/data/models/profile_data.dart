@@ -329,12 +329,19 @@ class ProfileData {
 
 /// Meta for the "complete profile" screen (`ProfileService::completeMeta()`).
 class CompleteMeta {
-  const CompleteMeta({this.parsedDob, this.parsedGender});
+  const CompleteMeta({
+    this.parsedDob,
+    this.parsedGender,
+    this.branches = const [],
+    this.currentBranchId,
+  });
 
   factory CompleteMeta.fromJson(Map<String, dynamic> json) {
     return CompleteMeta(
       parsedDob: json['parsedDob'] as String?,
       parsedGender: json['parsedGender'] as String?,
+      branches: _parseList(json['branches'], ProfileBranch.fromJson),
+      currentBranchId: json['currentBranchId'] as int?,
     );
   }
 
@@ -343,6 +350,12 @@ class CompleteMeta {
 
   /// `lelaki` or `perempuan` guessed from the IC number.
   final String? parsedGender;
+
+  /// Active branches in the member's current organization.
+  final List<ProfileBranch> branches;
+
+  /// Branch currently assigned to the member, if any.
+  final int? currentBranchId;
 }
 
 /// A branch option for the edit form (`ProfileService::editMeta()`).

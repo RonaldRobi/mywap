@@ -4,9 +4,10 @@ use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\ManualController;
 use App\Http\Controllers\AdminFinanceController;
+use App\Http\Controllers\AppSettingsController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\AppSettingsController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BayarCashController;
 use App\Http\Controllers\BranchChangeRequestController;
 use App\Http\Controllers\BranchController;
@@ -90,6 +91,7 @@ Route::get('/terma-syarat', fn () => inertia('TermsConditions'))->name('terms');
 Route::get('/keselamatan-kanak-kanak', fn () => inertia('ChildSafety'))->name('child.safety');
 
 Route::post('/__deploy/{token}', DeployController::class);
+Route::post('/__backup/{token}', BackupController::class)->middleware('throttle:6,60');
 
 Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Models\AppSetting;
 use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\Form;
@@ -797,9 +798,10 @@ class EventController extends Controller
     /**
      * printQr()
      *
-     * Print-ready A4 sheets for the attendance QR. Two layouts:
-     *   - qr     → QR only, maximum scan size
-     *   - poster → myWAP-themed A4 poster with featured image, event details
+     * Print-ready sheets for the attendance QR. Two layouts:
+     *   - qr     → QR only, maximum scan size on A4
+     *   - poster → 1080 × 1350 px (4:5) programme poster with the myWAP
+     *              wordmark, organisation logo, featured image, event details
      *              and the QR at the bottom
      *
      * Rendered as a bare Blade view so the print output has no app shell or
@@ -824,14 +826,14 @@ class EventController extends Controller
             'event' => $event,
             'layout' => $layout,
             'qrSvg' => $qrSvg,
-            'featuredImage' => $this->featuredImageDataUri($event),
+            'featuredImage' => $this->storageImageDataUri($event->featured_image_path),
+            'organizationLogo' => $this->storageImageDataUri($event->organization?->logo_path),
+            'systemLogo' => $this->storageImageDataUri(
+                AppSetting::query()->value('system_logo_path')
+            ),
         ]);
     }
 
-    /**
-     * Embed the featured image as a data URI so the print sheet does not depend
-     * on an authenticated asset request or a network round-trip.
-     */
     private function authorizeEventAdmin(Request $request, Event $event): void
     {
         $user = $request->user();
@@ -842,22 +844,33 @@ class EventController extends Controller
         );
     }
 
-    private function featuredImageDataUri(Event $event): ?string
+    /**
+     * Embed a public-disk image as a data URI so the print sheet does not
+     * depend on an authenticated asset request or a network round-trip.
+     */
+    private function storageImageDataUri(?string $path): ?string
     {
-        if (! $event->featured_image_path) {
+        if (! $path) {
             return null;
+        }
+
+        $path = parse_url($path, PHP_URL_PATH) ?: $path;
+        $path = ltrim((string) $path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, 8);
         }
 
         $disk = Storage::disk('public');
 
-        if (! $disk->exists($event->featured_image_path)) {
+        if ($path === '' || ! $disk->exists($path)) {
             return null;
         }
 
-        $path = $disk->path($event->featured_image_path);
-        $mime = mime_content_type($path) ?: 'image/jpeg';
+        $absolute = $disk->path($path);
+        $mime = mime_content_type($absolute) ?: 'image/jpeg';
 
-        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path));
+        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($absolute));
     }
 
     /**

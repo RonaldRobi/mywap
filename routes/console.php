@@ -52,3 +52,16 @@ Schedule::command('fees:notify-start-of-year')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/fees-annual.log'));
 
+/**
+ * Database Backup
+ *
+ * Setiap Ahad 2:00 pagi (waktu Malaysia). Backup disimpan di
+ * storage/app/backups dan 8 backup terakhir dikekalkan (boleh ubah
+ * melalui BACKUP_KEEP). Memerlukan cron schedule:run di VPS.
+ */
+Schedule::command('backup:database')
+    ->weeklyOn(0, '02:00')
+    ->timezone('Asia/Kuala_Lumpur')
+    ->withoutOverlapping(180)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/backup.log'));

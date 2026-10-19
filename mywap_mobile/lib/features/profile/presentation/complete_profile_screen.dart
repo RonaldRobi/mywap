@@ -53,6 +53,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   DateTime? _dob;
   String? _gender;
   String? _maritalStatus;
+  int? _branchId;
+  List<ProfileBranch> _branches = const [];
   bool _metaLoaded = false;
   bool _saving = false;
   final Map<String, String> _serverErrors = {};
@@ -107,6 +109,8 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             ? null
             : ProfileFormat.parseDate(meta.parsedDob!);
     _gender = meta.parsedGender;
+    _branches = meta.branches;
+    _branchId = meta.currentBranchId;
   }
 
   Widget _buildForm() {
@@ -153,6 +157,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ),
             ),
           _section('Maklumat Wajib', [
+            _branchField(),
             _textField(
               'education_level',
               label: 'Tahap Pendidikan',
@@ -279,6 +284,44 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     );
   }
 
+  Widget _branchField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.md),
+      child: DropdownButtonFormField<int>(
+        value: _branchId,
+        decoration: InputDecoration(
+          labelText: 'Cawangan *',
+          errorText: _serverErrors['branch_id'],
+        ),
+        hint: const Text('Pilih Cawangan'),
+        items: [
+          for (final branch in _branches)
+            if (branch.id != null)
+              DropdownMenuItem(
+                value: branch.id,
+                child: Text(
+                  branch.state != null &&
+                          branch.state!.isNotEmpty &&
+                          branch.state != branch.name
+                      ? '${branch.name ?? ''} — ${branch.state}'
+                      : (branch.name ?? ''),
+                ),
+              ),
+        ],
+        validator: (value) {
+          if (value == null) return 'Sila pilih cawangan.';
+          return null;
+        },
+        onChanged: (selected) {
+          setState(() => _branchId = selected);
+          if (_serverErrors.containsKey('branch_id')) {
+            setState(() => _serverErrors.remove('branch_id'));
+          }
+        },
+      ),
+    );
+  }
+
   Widget _optionField({
     required String key,
     required String label,
@@ -373,6 +416,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       'education_level': valueOf('education_level'),
       'current_profession': valueOf('current_profession'),
       'phone': valueOf('phone'),
+      'branch_id': _branchId,
       'dob': _dob == null ? null : ProfileFormat.apiDate(_dob!),
       'gender': _gender,
       'marital_status': _maritalStatus,

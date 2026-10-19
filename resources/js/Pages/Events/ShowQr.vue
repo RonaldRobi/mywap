@@ -190,34 +190,38 @@ onUnmounted(() => { clearInterval(pollInterval); });
                         @click="showPrintOptions = false"
                         class="group rounded-2xl border border-gray-200 p-4 transition-colors hover:border-[#2F6B32] hover:bg-[#F4F6F1]"
                     >
-                        <div class="aspect-[210/297] overflow-hidden rounded-xl border border-gray-100 bg-[#F4F6F1] p-3 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[6px] font-black tracking-tight text-[#071525]">myWAP</span>
-                                <span class="h-[2px] w-6 bg-[#2F6B32]"></span>
+                        <div class="flex aspect-[4/5] flex-col overflow-hidden rounded-xl border border-gray-100 bg-[#F4F6F1] p-3 shadow-sm">
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="flex items-center gap-1">
+                                    <span class="h-1.5 w-1.5 bg-[#2F6B32]"></span>
+                                    <span class="text-[6px] font-black tracking-tight text-[#071525]">myWAP</span>
+                                </div>
+                                <span class="h-2.5 w-5 border border-[#071525]/20 bg-white"></span>
                             </div>
-                            <div class="mt-1.5 h-12 bg-[#123D2A]"></div>
+                            <div class="mt-1.5 h-11 bg-[#123D2A]"></div>
                             <div class="mt-1.5 h-[2px] w-8 bg-[#2F6B32]"></div>
                             <div class="mt-1 h-2 w-4/5 bg-[#071525]/85"></div>
                             <div class="mt-0.5 h-2 w-3/5 bg-[#071525]/85"></div>
                             <div class="mt-2 grid grid-cols-3 gap-1">
-                                <div class="h-3 bg-[#071525]/12"></div>
-                                <div class="h-3 bg-[#071525]/12"></div>
-                                <div class="h-3 bg-[#071525]/12"></div>
+                                <div class="h-2.5 bg-[#071525]/12"></div>
+                                <div class="h-2.5 bg-[#071525]/12"></div>
+                                <div class="h-2.5 bg-[#071525]/12"></div>
                             </div>
-                            <div class="mt-3 flex items-center gap-2 bg-white p-1.5">
+                            <div class="mt-auto flex items-center gap-2 bg-white p-1.5">
                                 <div class="h-1.5 flex-1 bg-[#071525]/12"></div>
                                 <div class="w-8 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" v-html="qrSvg"></div>
                             </div>
                         </div>
-                        <p class="mt-3 text-sm font-bold text-gray-900">Poster A4</p>
+                        <p class="mt-3 text-sm font-bold text-gray-900">Poster 4:5</p>
                         <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
-                            Gambar program, nama, tarikh, lokasi dan QR — terus tampal pada hari kejadian.
+                            1080 × 1350 px. Logo myWAP, logo organisasi, gambar program, butiran dan QR — penuh tanpa terpotong.
                         </p>
                     </a>
                 </div>
 
                 <p class="mt-5 rounded-xl bg-[#F4F6F1] px-4 py-3 text-[11px] leading-relaxed text-gray-600">
-                    Dalam dialog cetak: pilih <strong>A4</strong>, <strong>Margin: None</strong>, dan aktifkan
+                    Dalam dialog cetak: pilih saiz kertas <strong>4:5</strong> untuk poster (atau <strong>A4</strong>
+                    dengan <strong>Fit to page</strong>), <strong>Margin: None</strong>, dan aktifkan
                     <strong>Background graphics</strong> supaya warna tema dicetak.
                 </p>
             </div>

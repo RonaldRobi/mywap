@@ -85,23 +85,17 @@
         }
         .btn-primary:hover { background: var(--green); }
 
-        /* ── A4 sheet ──────────────────────────────────────────────────── */
-        .sheet {
+        /* ── Layout 1: QR only (A4) ────────────────────────────────────── */
+        .sheet-qr {
             width: 210mm;
             height: 297mm;
             margin: 22px auto;
-            background: var(--off-white);
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* ── Layout 1: QR only ─────────────────────────────────────────── */
-        .sheet-qr {
             background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 18mm;
+            overflow: hidden;
         }
         .sheet-qr svg {
             display: block;
@@ -109,52 +103,130 @@
             height: 168mm;
         }
 
-        /* ── Layout 2: A4 poster ───────────────────────────────────────── */
+        /* ── Layout 2: programme poster (1080 × 1350 px, 4:5) ─────────── */
+        .poster-stage {
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
         .poster {
+            width: 1080px;
+            height: 1350px;
+            flex: none;
+            margin: 22px 0;
+            padding: 56px;
+            background: var(--off-white);
             display: flex;
             flex-direction: column;
-            padding: 13mm 14mm 10mm;
+            overflow: hidden;
+            transform-origin: top center;
         }
 
         .brandbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10mm;
+            gap: 40px;
         }
 
         .brand {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 2.2mm;
-            font-size: 12pt;
-            font-weight: 800;
-            letter-spacing: -0.035em;
-            color: var(--navy);
-        }
-        .brand::before {
-            content: "";
-            width: 3.2mm;
-            height: 3.2mm;
-            background: var(--green);
-            display: inline-block;
+            gap: 14px;
         }
 
-        .org-name {
-            max-width: 95mm;
-            text-align: right;
-            font-size: 7.4pt;
+        .brand-mark {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            flex: none;
+            background: var(--green);
+        }
+        .brand-mark::after {
+            content: "";
+            position: absolute;
+            inset: 9px;
+            border: 2.5px solid var(--off-white);
+        }
+
+        .brand-text {
+            font-size: 38px;
+            line-height: 0.95;
+            font-weight: 800;
+            letter-spacing: -1.8px;
+            color: var(--navy);
+        }
+
+        .brand-caption {
+            margin-top: 5px;
+            font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.14em;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
             color: var(--muted);
-            line-height: 1.45;
+        }
+
+        .system-logo {
+            display: block;
+            max-height: 48px;
+            max-width: 230px;
+            object-fit: contain;
+        }
+
+        .org-brand {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 16px;
+            max-width: 420px;
+        }
+
+        .org-logo {
+            display: block;
+            max-height: 68px;
+            max-width: 190px;
+            object-fit: contain;
+        }
+
+        .org-fallback {
+            width: 64px;
+            height: 64px;
+            flex: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            background: #fff;
+            font-size: 21px;
+            font-weight: 800;
+            color: var(--green);
+        }
+
+        .org-meta { text-align: right; }
+        .org-meta .label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .org-meta .name {
+            display: block;
+            font-size: 16px;
+            line-height: 1.3;
+            font-weight: 800;
+            color: var(--navy);
         }
 
         .hero {
             position: relative;
-            height: 82mm;
-            margin-top: 7mm;
+            height: 380px;
+            margin-top: 28px;
+            flex: none;
             overflow: hidden;
             background: var(--dark-green);
         }
@@ -171,45 +243,45 @@
             inset: 0;
             display: flex;
             align-items: flex-end;
-            padding: 8mm;
+            padding: 32px;
             color: var(--off-white);
         }
         .hero-fallback::before,
         .hero-fallback::after {
             content: "";
             position: absolute;
-            border: 1.5px solid rgba(111, 191, 138, 0.42);
+            border: 2px solid rgba(111, 191, 138, 0.42);
             border-radius: 50%;
         }
         .hero-fallback::before {
-            width: 105mm;
-            height: 105mm;
-            right: -28mm;
-            top: -42mm;
+            width: 520px;
+            height: 520px;
+            right: -140px;
+            top: -210px;
         }
         .hero-fallback::after {
-            width: 52mm;
-            height: 52mm;
-            left: -18mm;
-            bottom: -26mm;
+            width: 260px;
+            height: 260px;
+            left: -90px;
+            bottom: -130px;
         }
         .hero-fallback span {
             position: relative;
             z-index: 1;
-            font-size: 6.8pt;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
             color: var(--soft-green);
         }
 
-        .content { margin-top: 8mm; }
+        .content { margin-top: 30px; }
 
         .kicker {
             display: flex;
             align-items: center;
-            gap: 3mm;
-            font-size: 7.2pt;
+            gap: 16px;
+            font-size: 14px;
             font-weight: 800;
             letter-spacing: 0.2em;
             text-transform: uppercase;
@@ -223,29 +295,29 @@
         }
 
         .title {
-            margin: 4mm 0 0;
-            font-size: 29pt;
+            margin: 16px 0 0;
+            font-size: 64px;
             line-height: 1.04;
-            letter-spacing: -0.038em;
+            letter-spacing: -2.4px;
             font-weight: 800;
             color: var(--navy);
-            max-width: 172mm;
+            max-width: 920px;
             overflow-wrap: break-word;
         }
 
         .meta {
             display: grid;
-            grid-template-columns: 1fr 1fr 1.35fr;
-            gap: 6mm;
-            margin-top: 8mm;
-            padding-top: 4mm;
+            grid-template-columns: 1fr 1fr 1.45fr;
+            gap: 32px;
+            margin-top: 26px;
+            padding-top: 20px;
             border-top: 1px solid var(--line);
         }
 
         .meta .label {
             display: block;
-            margin-bottom: 1.2mm;
-            font-size: 6.8pt;
+            margin-bottom: 6px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
@@ -254,7 +326,7 @@
 
         .meta .value {
             display: block;
-            font-size: 10.5pt;
+            font-size: 22px;
             font-weight: 700;
             line-height: 1.35;
             color: var(--navy);
@@ -265,18 +337,18 @@
         .qr-block {
             margin-top: auto;
             display: grid;
-            grid-template-columns: 1fr 72mm;
-            gap: 8mm;
+            grid-template-columns: 1fr 240px;
+            gap: 38px;
             align-items: center;
-            padding: 7mm;
+            padding: 34px;
             background: #fff;
             border: 1px solid rgba(7, 21, 37, 0.09);
-            border-top: 2.2mm solid var(--green);
+            border-top: 7px solid var(--green);
         }
 
         .qr-kicker {
-            margin: 0 0 2.5mm;
-            font-size: 7.2pt;
+            margin: 0 0 10px;
+            font-size: 13px;
             font-weight: 800;
             letter-spacing: 0.2em;
             text-transform: uppercase;
@@ -285,33 +357,33 @@
 
         .qr-title {
             margin: 0;
-            font-size: 17.5pt;
-            line-height: 1.12;
-            letter-spacing: -0.025em;
+            font-size: 34px;
+            line-height: 1.1;
+            letter-spacing: -0.8px;
             font-weight: 800;
             color: var(--navy);
         }
 
         .qr-copy {
-            margin: 3mm 0 0;
-            font-size: 10.5pt;
+            margin: 14px 0 0;
+            font-size: 21px;
             line-height: 1.5;
             color: #33443a;
-            max-width: 78mm;
+            max-width: 500px;
         }
         .qr-copy strong { color: var(--navy); }
 
         .qr-note {
-            margin: 3.5mm 0 0;
-            font-size: 7.4pt;
+            margin: 14px 0 0;
+            font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.02em;
             color: var(--muted);
         }
 
         .qr-frame {
-            width: 72mm;
-            padding: 3.5mm;
+            width: 240px;
+            padding: 13px;
             background: #fff;
             border: 1px solid var(--line);
         }
@@ -325,11 +397,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8mm;
-            margin-top: 5mm;
-            padding-top: 3mm;
+            gap: 30px;
+            margin-top: 22px;
+            padding-top: 12px;
             border-top: 1px solid var(--line);
-            font-size: 6.8pt;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -338,17 +410,21 @@
 
         /* ── Print ─────────────────────────────────────────────────────── */
         @page {
-            size: A4 portrait;
+            size: {{ $layout === 'poster' ? '1080px 1350px' : 'A4 portrait' }};
             margin: 0;
         }
 
         @media print {
             html, body { background: #fff; }
             .screen-bar { display: none !important; }
-            .sheet {
+            .poster-stage { display: block; overflow: visible; height: auto !important; }
+            .poster {
                 margin: 0;
-                width: 210mm;
-                height: 297mm;
+                transform: none !important;
+                page-break-after: avoid;
+            }
+            .sheet-qr {
+                margin: 0;
                 page-break-after: avoid;
             }
             * {
@@ -363,11 +439,16 @@
     <div class="screen-bar">
         <div class="who">
             <strong>{{ $event->title }}</strong>
-            <span>{{ $layout === 'qr' ? 'QR sahaja' : 'Poster A4' }} · Saiz A4 · Margin tiada</span>
+            <span>
+                {{ $layout === 'qr' ? 'QR sahaja · Saiz A4' : 'Poster 4:5 · 1080 × 1350 px' }}
+                @if ($layout === 'poster')
+                    · Pilih “Fit to page” jika cetak atas A4
+                @endif
+            </span>
         </div>
         <div class="screen-actions">
             <a class="btn" href="{{ route('events.qr.print', ['event' => $event->id, 'layout' => $layout === 'qr' ? 'poster' : 'qr']) }}">
-                {{ $layout === 'qr' ? 'Tukar ke Poster A4' : 'Tukar ke QR Sahaja' }}
+                {{ $layout === 'qr' ? 'Tukar ke Poster' : 'Tukar ke QR Sahaja' }}
             </a>
             <button class="btn btn-primary" type="button" onclick="window.print()">
                 Cetak
@@ -376,78 +457,124 @@
     </div>
 
     @if ($layout === 'qr')
-        <div class="sheet sheet-qr">
+        <div class="sheet-qr">
             {!! $qrSvg !!}
         </div>
     @else
-        <div class="sheet poster">
-            <header class="brandbar">
-                <div class="brand">myWAP</div>
-                <div class="org-name">{{ $event->organization?->name ?? 'Semua Organisasi' }}</div>
-            </header>
+        @php
+            $titleLength = mb_strlen($event->title);
+            $titleSize = $titleLength > 72 ? '46px' : ($titleLength > 48 ? '54px' : '64px');
+            $orgName = $event->organization?->name ?? 'Semua Organisasi';
+        @endphp
 
-            <div class="hero">
-                @if ($featuredImage)
-                    <img src="{{ $featuredImage }}" alt="{{ $event->title }}">
-                @else
-                    <div class="hero-fallback"><span>Kehadiran Program</span></div>
-                @endif
+        <div class="poster-stage" id="poster-stage">
+            <div class="poster" id="poster-sheet">
+                <header class="brandbar">
+                    <div>
+                        @if ($systemLogo)
+                            <img class="system-logo" src="{{ $systemLogo }}" alt="myWAP">
+                        @else
+                            <div class="brand">
+                                <span class="brand-mark" aria-hidden="true"></span>
+                                <span class="brand-text">myWAP</span>
+                            </div>
+                        @endif
+                        <div class="brand-caption">Platform Digital Gerakan</div>
+                    </div>
+
+                    <div class="org-brand">
+                        @if ($organizationLogo)
+                            <img class="org-logo" src="{{ $organizationLogo }}" alt="Logo {{ $orgName }}">
+                        @else
+                            <span class="org-fallback">{{ mb_substr($orgName, 0, 1) }}</span>
+                        @endif
+                        <div class="org-meta">
+                            <span class="label">Anjuran</span>
+                            <span class="name">{{ $orgName }}</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="hero">
+                    @if ($featuredImage)
+                        <img src="{{ $featuredImage }}" alt="{{ $event->title }}">
+                    @else
+                        <div class="hero-fallback"><span>Kehadiran Program</span></div>
+                    @endif
+                </div>
+
+                <main class="content">
+                    <div class="kicker">
+                        Kehadiran Program &middot; {{ $event->category?->label() ?? 'Acara' }}
+                    </div>
+
+                    <h1 class="title" style="font-size: {{ $titleSize }};">{{ $event->title }}</h1>
+
+                    <div class="meta">
+                        <div>
+                            <span class="label">Tarikh</span>
+                            <span class="value">{{ $event->start_time->locale('ms')->isoFormat('D MMMM YYYY') }}</span>
+                        </div>
+                        <div>
+                            <span class="label">Masa</span>
+                            <span class="value">
+                                {{ $event->start_time->locale('ms')->isoFormat('h:mm A') }}
+                                @if ($event->end_time)
+                                    – {{ $event->end_time->locale('ms')->isoFormat('h:mm A') }}
+                                @endif
+                            </span>
+                        </div>
+                        <div>
+                            <span class="label">{{ $event->type === 'online' ? 'Pautan' : 'Lokasi' }}</span>
+                            <span class="value">{{ $event->location_or_link ?: 'Akan dimaklumkan' }}</span>
+                        </div>
+                    </div>
+                </main>
+
+                <section class="qr-block">
+                    <div>
+                        <p class="qr-kicker">Imbas untuk hadir</p>
+                        <h2 class="qr-title">Sahkan kehadiran anda</h2>
+                        <p class="qr-copy">
+                            Imbas kod QR ini, kemudian masukkan <strong>No. IC</strong> anda
+                            untuk mengesahkan kehadiran.
+                        </p>
+                        <p class="qr-note">Satu imbasan untuk setiap peserta.</p>
+                    </div>
+
+                    <div class="qr-frame">
+                        {!! $qrSvg !!}
+                    </div>
+                </section>
+
+                <footer class="footer">
+                    <span>myWAP &middot; Wadah &middot; ABIM &middot; PKPIM</span>
+                    <span>{{ now()->format('d/m/Y') }}</span>
+                </footer>
             </div>
-
-            @php
-                $titleLength = mb_strlen($event->title);
-                $titleSize = $titleLength > 72 ? '23pt' : ($titleLength > 48 ? '26pt' : '29pt');
-            @endphp
-
-            <main class="content">
-                <div class="kicker">
-                    Kehadiran Program &middot; {{ $event->category?->label() ?? 'Acara' }}
-                </div>
-
-                <h1 class="title" style="font-size: {{ $titleSize }};">{{ $event->title }}</h1>
-
-                <div class="meta">
-                    <div>
-                        <span class="label">Tarikh</span>
-                        <span class="value">{{ $event->start_time->locale('ms')->isoFormat('D MMMM YYYY') }}</span>
-                    </div>
-                    <div>
-                        <span class="label">Masa</span>
-                        <span class="value">
-                            {{ $event->start_time->locale('ms')->isoFormat('h:mm A') }}
-                            @if ($event->end_time)
-                                – {{ $event->end_time->locale('ms')->isoFormat('h:mm A') }}
-                            @endif
-                        </span>
-                    </div>
-                    <div>
-                        <span class="label">{{ $event->type === 'online' ? 'Pautan' : 'Lokasi' }}</span>
-                        <span class="value">{{ $event->location_or_link ?: 'Akan dimaklumkan' }}</span>
-                    </div>
-                </div>
-            </main>
-
-            <section class="qr-block">
-                <div>
-                    <p class="qr-kicker">Imbas untuk hadir</p>
-                    <h2 class="qr-title">Sahkan kehadiran anda</h2>
-                    <p class="qr-copy">
-                        Imbas kod QR ini, kemudian masukkan <strong>No. IC</strong> anda
-                        untuk mengesahkan kehadiran.
-                    </p>
-                    <p class="qr-note">Satu imbasan untuk setiap peserta.</p>
-                </div>
-
-                <div class="qr-frame">
-                    {!! $qrSvg !!}
-                </div>
-            </section>
-
-            <footer class="footer">
-                <span>myWAP &middot; Sistem Pengurusan Organisasi</span>
-                <span>{{ now()->format('d/m/Y') }}</span>
-            </footer>
         </div>
+
+        <script>
+            (() => {
+                const sheet = document.getElementById('poster-sheet');
+                const stage = document.getElementById('poster-stage');
+                if (!sheet || !stage) return;
+
+                const fit = () => {
+                    const scale = Math.min(1, (window.innerWidth - 32) / 1080);
+                    sheet.style.transform = `scale(${scale})`;
+                    stage.style.height = `${1350 * scale + 44}px`;
+                };
+
+                fit();
+                window.addEventListener('resize', fit);
+                window.addEventListener('beforeprint', () => {
+                    sheet.style.transform = 'none';
+                    stage.style.height = 'auto';
+                });
+                window.addEventListener('afterprint', fit);
+            })();
+        </script>
     @endif
 
 </body>

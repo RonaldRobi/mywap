@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -62,7 +63,7 @@ class EventQrPrintTest extends TestCase
             ->assertSee('<svg', false);
     }
 
-    public function test_admin_can_print_a4_poster_with_event_details(): void
+    public function test_admin_can_print_programme_poster_with_event_details(): void
     {
         $event = $this->event();
 
@@ -73,7 +74,30 @@ class EventQrPrintTest extends TestCase
             ->assertSee('Dewan Tun Dr Ismail, Kuala Lumpur')
             ->assertSee('Sahkan kehadiran anda')
             ->assertSee('Satu imbasan untuk setiap peserta.')
+            ->assertSee('myWAP &middot; Wadah &middot; ABIM &middot; PKPIM', false)
             ->assertSee('<svg', false);
+    }
+
+    public function test_poster_includes_mywap_wordmark_and_organization_logo(): void
+    {
+        Storage::fake('public');
+
+        $png = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lK3V9wAAAABJRU5ErkJggg=='
+        );
+        Storage::disk('public')->put('logos/organizations/test.png', $png);
+
+        $this->org->update(['logo_path' => '/storage/logos/organizations/test.png']);
+
+        $event = $this->event();
+
+        $this->actingAs($this->admin)
+            ->get(route('events.qr.print', ['event' => $event->id, 'layout' => 'poster']))
+            ->assertOk()
+            ->assertSee('myWAP')
+            ->assertSee('Anjuran')
+            ->assertSee('Logo PKPIM')
+            ->assertSee('data:image/png;base64,', false);
     }
 
     public function test_other_organization_admin_cannot_print_event_qr(): void

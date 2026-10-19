@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Branch;
 use App\Models\BranchChangeRequest;
+use App\Models\BranchTransitionHistory;
 use App\Models\EventRsvp;
 use App\Models\OrganizationPosition;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * ProfileService
@@ -160,9 +162,19 @@ class ProfileService
      */
     public function completeMeta(User $user): array
     {
+        $branches = $user->current_organization_id
+            ? Branch::where('organization_id', $user->current_organization_id)
+                ->where('is_active', true)
+                ->orderBy('state')
+                ->orderBy('name')
+                ->get(['id', 'name', 'state'])
+            : collect();
+
         return [
             'parsedDob' => User::parseDobFromIc($user->ic_number),
             'parsedGender' => User::guessGenderFromIc($user->ic_number),
+            'branches' => $branches,
+            'currentBranchId' => $user->branch_id,
         ];
     }
 
@@ -175,6 +187,7 @@ class ProfileService
             'education_level' => ['required', 'string', 'max:120'],
             'current_profession' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'max:30'],
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
@@ -194,6 +207,18 @@ class ProfileService
      */
     public function completeProfile(User $user, array $data): User
     {
+        $branch = Branch::query()
+            ->whereKey($data['branch_id'])
+            ->where('organization_id', $user->current_organization_id)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $branch) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Cawangan yang dipilih tidak sah untuk organisasi anda.',
+            ]);
+        }
+
         if (empty($data['dob']) && $user->ic_number) {
             $data['dob'] = User::parseDobFromIc($user->ic_number);
         }
@@ -202,10 +227,22 @@ class ProfileService
             $data['gender'] = User::guessGenderFromIc($user->ic_number);
         }
 
+        $previousBranchId = $user->branch_id;
+
         $user->update([
             ...$data,
             'profile_completed_at' => now(),
         ]);
+
+        if ((int) $previousBranchId !== (int) $data['branch_id']) {
+            BranchTransitionHistory::create([
+                'user_id' => $user->id,
+                'from_branch_id' => $previousBranchId,
+                'to_branch_id' => $data['branch_id'],
+                'changed_by' => $user->id,
+                'change_type' => 'profile_completion',
+            ]);
+        }
 
         return $user;
     }
