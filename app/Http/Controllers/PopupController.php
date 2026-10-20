@@ -17,7 +17,7 @@ class PopupController extends Controller
 
         $popups = Popup::query()
             ->with('organization:id,name,slug')
-            ->when($user->hasRole('Admin') && ! $user->hasRole('Superadmin'), function ($query) use ($user) {
+            ->when($user->isOrgAdmin() && ! $user->hasRole('Superadmin'), function ($query) use ($user) {
                 $query->where('organization_id', $user->current_organization_id);
             })
             ->orderBy('display_order')

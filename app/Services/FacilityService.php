@@ -170,7 +170,7 @@ class FacilityService
     {
         $isMember = $user && $user->hasRole('Member');
 
-        if ($user && ($user->hasRole('Superadmin') || $user->hasRole('Admin'))) {
+        if ($user && $user->isAdminPanelUser()) {
             abort(403, 'Akaun pentadbir tidak dibenarkan menempah ruang.');
         }
 

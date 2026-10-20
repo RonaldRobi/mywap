@@ -65,7 +65,7 @@ class EventController extends Controller
             return ApiResponse::error('Token kehadiran tidak sah.', status: 403);
         }
 
-        if ($user->hasRole(['Superadmin', 'Admin'])) {
+        if ($user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             return ApiResponse::error(
                 'Akaun pentadbir tidak dibenarkan merekod kehadiran program.',
                 status: 403

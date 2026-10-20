@@ -120,7 +120,7 @@ class RegistrationController extends Controller
 
         // Alat kongsi hanya untuk admin/superadmin — orang awam tidak nampak.
         $user = request()->user();
-        $canShare = (bool) ($user && $user->hasRole(['Superadmin', 'Admin']));
+        $canShare = (bool) ($user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']));
 
         $publicUrl = route('events.register.public', $form->share_token);
 
@@ -197,7 +197,7 @@ class RegistrationController extends Controller
 
         $user = $request->user();
         $allowed = $registration->user_id === $user?->id
-            || ($user && $user->hasRole(['Superadmin', 'Admin']))
+            || ($user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']))
             || ! $registration->user_id;
 
         abort_unless($allowed, 403);
@@ -357,7 +357,7 @@ class RegistrationController extends Controller
         );
 
         return response()->json([
-            'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['skipped']} dilewati.",
+            'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['removed']} import lama dibuang, {$result['skipped']} dilewati.",
             'summary' => $result,
         ]);
     }

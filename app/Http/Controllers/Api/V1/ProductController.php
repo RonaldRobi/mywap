@@ -20,7 +20,7 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product): JsonResponse
     {
-        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
+        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin']);
         abort_if(! $product->status && ! $isAdmin, 404);
 
         return ApiResponse::success($this->products->showDetail($product, $request->user()));

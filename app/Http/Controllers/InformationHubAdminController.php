@@ -568,7 +568,8 @@ class InformationHubAdminController extends Controller
 
     public function storeMember(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        $authUser = $request->user();
+        abort_unless($authUser?->isAdminPanelUser(), 403);
 
         $normalizedIcNumber = Str::upper(
             preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
@@ -585,8 +586,17 @@ class InformationHubAdminController extends Controller
         ]);
 
         $dob = $request->date('dob');
-        $organization = $dob ? Organization::forAge($dob->age) : null;
-        $organization ??= Organization::query()->orderBy('min_age')->first();
+
+        // Superadmin boleh pilih organisasi ikut umur; Admin dikunci pada
+        // organisasi sendiri supaya tiada penciptaan ahli merentas organisasi.
+        if ($authUser->isSuperadmin()) {
+            $organization = $dob ? Organization::forAge($dob->age) : null;
+            $organization ??= Organization::query()->orderBy('min_age')->first();
+        } else {
+            $organization = Organization::find($authUser->current_organization_id);
+        }
+
+        abort_if(! $organization, 422, 'Organisasi admin tidak sah.');
 
         $prefix = match ($organization?->slug) {
             'pkpim' => 'P',
@@ -727,7 +737,9 @@ class InformationHubAdminController extends Controller
 
     public function updateIcNumber(Request $request, User $user): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        $authUser = $request->user();
+        abort_unless($authUser?->isAdminPanelUser(), 403);
+        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
         $normalizedIcNumber = Str::upper(
             preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
@@ -799,13 +811,18 @@ class InformationHubAdminController extends Controller
 
     public function importStart(Request $request)
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        $authUser = $request->user();
+        abort_unless($authUser?->isAdminPanelUser(), 403);
         $request->validate([
             'excel_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
-            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+            'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
         ]);
 
-        $organization = Organization::find($request->organization_id);
+        $organization = Organization::findOrFail(
+            $authUser->isSuperadmin()
+                ? (int) $request->input('organization_id')
+                : (int) $authUser->current_organization_id
+        );
         $prefix = '';
         if ($organization->slug === 'wadah') {
             $prefix = 'W';
@@ -822,7 +839,8 @@ class InformationHubAdminController extends Controller
 
     public function importChunk(Request $request)
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        $authUser = $request->user();
+        abort_unless($authUser?->isAdminPanelUser(), 403);
         $request->validate([
             'filename' => ['required', 'string'],
             'organization_id' => ['required', 'integer'],
@@ -831,12 +849,16 @@ class InformationHubAdminController extends Controller
             'chunk_size' => ['required', 'integer'],
         ]);
 
+        $organizationId = $authUser->isSuperadmin()
+            ? (int) $request->organization_id
+            : (int) $authUser->current_organization_id;
+
         ini_set('memory_limit', '512M');
         set_time_limit(120);
 
         try {
             $import = new MembersImport(
-                $request->organization_id,
+                $organizationId,
                 $request->prefix ?? '',
                 $request->start_row,
                 $request->chunk_size
@@ -856,7 +878,7 @@ class InformationHubAdminController extends Controller
 
     public function importFinish(Request $request)
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        abort_unless($request->user()?->isAdminPanelUser(), 403);
         if ($request->filename && Storage::disk('local')->exists($request->filename)) {
             Storage::disk('local')->delete($request->filename);
         }
@@ -893,7 +915,9 @@ class InformationHubAdminController extends Controller
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole('Superadmin'), 403);
+        $authUser = $request->user();
+        abort_unless($authUser?->isAdminPanelUser(), 403);
+        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
         Password::sendResetLink(['email' => $user->email]);
 
@@ -918,7 +942,7 @@ class InformationHubAdminController extends Controller
         $authUser = $request->user();
         $isSuperadmin = (bool) $authUser?->hasRole('Superadmin');
 
-        abort_unless($isSuperadmin || $authUser?->hasRole('Admin'), 403);
+        abort_unless($isSuperadmin || $authUser?->hasRole(['Admin', 'org-admin']), 403);
 
         if (! $isSuperadmin && $user->current_organization_id !== $authUser->current_organization_id) {
             abort(403);
@@ -955,7 +979,7 @@ class InformationHubAdminController extends Controller
     {
         $authUser = $request->user();
         $isSuperadmin = (bool) $authUser?->hasRole('Superadmin');
-        abort_unless($isSuperadmin || $authUser?->hasRole('Admin'), 403);
+        abort_unless($isSuperadmin || $authUser?->hasRole(['Admin', 'org-admin']), 403);
 
         $validated = $request->validate([
             'ids' => ['required', 'array'],
@@ -995,9 +1019,11 @@ class InformationHubAdminController extends Controller
     public function restoreMember(Request $request, int $id): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->hasRole('Superadmin'), 403);
+        abort_unless($authUser?->isAdminPanelUser(), 403);
 
         $user = User::onlyTrashed()->findOrFail($id);
+        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
+
         $user->restore();
 
         ActivityLog::create([
@@ -1021,9 +1047,10 @@ class InformationHubAdminController extends Controller
     public function forceDeleteMember(Request $request, int $id): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->hasRole('Superadmin'), 403);
+        abort_unless($authUser?->isAdminPanelUser(), 403);
 
         $user = User::onlyTrashed()->findOrFail($id);
+        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
         if ($user->hasRole('Superadmin')) {
             return back()->with('error', 'Akaun Superadmin tidak boleh dipadam.');
@@ -1049,7 +1076,7 @@ class InformationHubAdminController extends Controller
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -1080,7 +1107,7 @@ class InformationHubAdminController extends Controller
     public function memberPrograms(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 

@@ -57,7 +57,11 @@ class AdminController extends Controller
     public function destroyMember(Request $request, User $user): JsonResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->hasRole('Superadmin'), 403);
+        $this->authorizeAdmin($authUser);
+
+        if (! $authUser->isSuperadmin() && $user->current_organization_id !== $authUser->current_organization_id) {
+            throw new HttpResponseException(ApiResponse::error('Tiada kebenaran.', [], 403));
+        }
 
         if ($authUser->id === $user->id || $user->hasRole('Superadmin')) {
             throw new HttpResponseException(ApiResponse::error('Akaun ini tidak boleh dipadam.', [], 422));

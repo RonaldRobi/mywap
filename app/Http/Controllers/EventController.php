@@ -79,7 +79,7 @@ class EventController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin']);
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
         $isSuperadmin = $user && $user->hasRole('Superadmin');
 
         $tab = $request->input('tab', 'upcoming');
@@ -207,7 +207,7 @@ class EventController extends Controller
     public function show(Request $request, string $slug): Response
     {
         $user = $request->user();
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin']);
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
 
         $event = Event::with([
             'organization',
@@ -322,7 +322,7 @@ class EventController extends Controller
      */
     public function update(Request $request, Event $event): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         $isSuperadmin = $request->user()->hasRole('Superadmin');
 
@@ -380,7 +380,7 @@ class EventController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         $isSuperadmin = $request->user()->hasRole('Superadmin');
 
@@ -576,14 +576,14 @@ class EventController extends Controller
 
     public function create(Request $request): Response
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         return $this->eventForm($request, null);
     }
 
     public function edit(Request $request, Event $event): Response
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         $isSuperadmin = $request->user()->hasRole('Superadmin');
         if (! $isSuperadmin && ! $this->adminOwnsEvent($request->user(), $event)) {
@@ -597,7 +597,7 @@ class EventController extends Controller
 
     public function storeAdmin(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         $event = $this->persistEvent(null, $request);
 
@@ -607,7 +607,7 @@ class EventController extends Controller
 
     public function updateAdmin(Request $request, Event $event): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
 
         $this->persistEvent($event, $request);
 
@@ -717,7 +717,7 @@ class EventController extends Controller
      */
     public function rsvp(Request $request, Event $event): RedirectResponse
     {
-        if ($request->user()->hasRole(['Superadmin', 'Admin'])) {
+        if ($request->user()->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403, 'Akaun pentadbir tidak dibenarkan mendaftar kehadiran program.');
         }
 

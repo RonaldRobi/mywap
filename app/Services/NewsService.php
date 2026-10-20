@@ -136,7 +136,7 @@ class NewsService
 
         $canEdit = $user
             && ($user->hasRole('Superadmin')
-                || ($user->hasRole('Admin')
+                || ($user->hasRole(['Admin', 'org-admin'])
                     && (is_null($post->organization_id)
                         || (int) $post->organization_id === (int) $user->current_organization_id)));
 
@@ -226,7 +226,7 @@ class NewsService
 
         if (! $isPublishedNow) {
             return $user !== null
-                && $user->hasRole(['Superadmin', 'Admin'])
+                && $user->hasRole(['Superadmin', 'Admin', 'org-admin'])
                 && $this->canAdminManagePost($user, $post);
         }
 

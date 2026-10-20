@@ -78,7 +78,7 @@ class NewsController extends Controller
 
     public function manage(Request $request): Response
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -136,7 +136,7 @@ class NewsController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -175,7 +175,7 @@ class NewsController extends Controller
 
     public function update(Request $request, NewsPost $newsPost): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $this->news->authorizeManagePost($request->user(), $newsPost);
 
         $user = $request->user();
@@ -224,7 +224,7 @@ class NewsController extends Controller
 
     public function destroy(Request $request, NewsPost $newsPost): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $this->news->authorizeManagePost($request->user(), $newsPost);
 
         $oldPath = ltrim(str_replace('/storage/', '', parse_url($newsPost->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
@@ -239,7 +239,7 @@ class NewsController extends Controller
 
     public function storeCategory(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:news_categories,name'],
@@ -259,7 +259,7 @@ class NewsController extends Controller
 
     public function destroyCategory(Request $request, NewsCategory $category): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $category->delete();
 

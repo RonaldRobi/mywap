@@ -42,7 +42,7 @@ class MemberFeeController extends Controller
     public function paymentHistory(Request $request, FeeService $feeService, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -55,7 +55,7 @@ class MemberFeeController extends Controller
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -79,7 +79,7 @@ class MemberFeeController extends Controller
     public function downloadReceipt(Request $request, Payment $payment, ReceiptService $receipts)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -103,7 +103,7 @@ class MemberFeeController extends Controller
     public function feeDetail(Request $request, User $targetUser, MembershipFee $membershipFee): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -127,7 +127,7 @@ class MemberFeeController extends Controller
     public function updateMemberFee(Request $request, User $targetUser, MembershipFee $membershipFee): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -193,7 +193,7 @@ class MemberFeeController extends Controller
     public function reversePayment(Request $request, Payment $payment): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -246,7 +246,7 @@ class MemberFeeController extends Controller
     public function manualPayment(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -305,7 +305,7 @@ class MemberFeeController extends Controller
     public function previewImport(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -386,7 +386,7 @@ class MemberFeeController extends Controller
     public function processImport(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -450,7 +450,7 @@ class MemberFeeController extends Controller
     public function exportCsv(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -484,7 +484,7 @@ class MemberFeeController extends Controller
     public function exportExcel(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -510,7 +510,7 @@ class MemberFeeController extends Controller
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -542,7 +542,7 @@ class MemberFeeController extends Controller
     public function toggleLifeMember(Request $request, FeeService $feeService, User $targetUser): RedirectResponse
     {
         $user = $request->user();
-        if (! $user->hasRole('Superadmin')) {
+        if (! $user->isAdminPanelUser()) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -584,7 +584,7 @@ class MemberFeeController extends Controller
     public function markExempted(Request $request, FeeService $feeService, User $targetUser): RedirectResponse
     {
         $user = $request->user();
-        if (! $user->hasRole('Superadmin')) {
+        if (! $user->isAdminPanelUser()) {
             abort(403);
         }
         $this->authorizeOrg($user, $targetUser);
@@ -607,7 +607,7 @@ class MemberFeeController extends Controller
     public function generateFees(Request $request, FeeService $feeService): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 

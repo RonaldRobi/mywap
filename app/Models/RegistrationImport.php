@@ -14,7 +14,7 @@ class RegistrationImport extends Model
 {
     protected $fillable = [
         'event_id', 'user_id', 'filename', 'file_path', 'headers', 'total_rows',
-        'created_count', 'updated_count', 'skipped_count', 'errors',
+        'created_count', 'updated_count', 'skipped_count', 'removed_count', 'errors',
     ];
 
     protected function casts(): array

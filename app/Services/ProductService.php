@@ -92,7 +92,7 @@ class ProductService
     {
         $query = Product::with('category', 'organization')->withCount('variations');
 
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin']);
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
 
         if ($isMall || ! $isAdmin) {
             $query->active();

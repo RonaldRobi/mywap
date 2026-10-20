@@ -90,7 +90,7 @@ class RegistrationImportService
      * Upsert every data row into the event's registrations.
      *
      * @param  array<string, int|null>  $mapping
-     * @return array{total_rows: int, created: int, updated: int, skipped: int, errors: array<int, string>, import_id: int}
+     * @return array{total_rows: int, created: int, updated: int, skipped: int, removed: int, errors: array<int, string>, import_id: int}
      */
     public function import(Event $event, UploadedFile $file, array $mapping, ?User $user = null): array
     {
@@ -119,6 +119,7 @@ class RegistrationImportService
             $total = 0;
             $errors = [];
             $seen = [];
+            $touched = [];
 
             foreach ($dataRows as $offset => $row) {
                 $rowNumber = $offset + 2;
@@ -229,22 +230,56 @@ class RegistrationImportService
                         );
                     }
 
+                    // A myWAP registration (or walk-in) must survive future
+                    // CSV syncs; everything else follows the latest import.
+                    if (! in_array($registration->source, [
+                        Registration::SOURCE_FORM,
+                        Registration::SOURCE_WALKIN,
+                    ], true)) {
+                        $attributes['source'] = Registration::SOURCE_IMPORT;
+                    }
+
                     $registration->fill($attributes)->save();
+                    $touched[] = $registration->id;
                     $updated++;
 
                     continue;
                 }
 
-                Registration::create(array_merge([
+                $createdModel = Registration::create(array_merge([
                     'event_id' => $event->id,
                     'organization_id' => $event->organization_id,
                     'status' => RegistrationStatus::Confirmed,
+                    'source' => Registration::SOURCE_IMPORT,
                 ], $attributes));
 
+                $touched[] = $createdModel->id;
                 $created++;
             }
 
-            return compact('total', 'created', 'updated', 'skipped', 'errors');
+            // The latest CSV is the authoritative import snapshot. Remove
+            // imported rows that disappeared from it, but never touch myWAP
+            // registrations, walk-ins, or records with attendance/payment/form
+            // history.
+            $removed = 0;
+
+            if ($touched !== [] && $total > 0) {
+                $staleIds = Registration::query()
+                    ->where('event_id', $event->id)
+                    ->where('source', Registration::SOURCE_IMPORT)
+                    ->whereNotIn('id', $touched)
+                    ->whereDoesntHave('attendance')
+                    ->whereDoesntHave('payments')
+                    ->whereDoesntHave('formResponse')
+                    ->pluck('id');
+
+                if ($staleIds->isNotEmpty()) {
+                    $removed = $staleIds->count();
+                    Registration::query()->whereKey($staleIds)->delete();
+                }
+            }
+
+            return compact('total', 'created', 'updated', 'skipped', 'removed', 'errors');
         });
 
         $filePath = null;
@@ -266,6 +301,7 @@ class RegistrationImportService
             'created_count' => $result['created'],
             'updated_count' => $result['updated'],
             'skipped_count' => $result['skipped'],
+            'removed_count' => $result['removed'],
             'errors' => $result['errors'] !== [] ? $result['errors'] : null,
         ]);
 
@@ -274,6 +310,7 @@ class RegistrationImportService
             'created' => $result['created'],
             'updated' => $result['updated'],
             'skipped' => $result['skipped'],
+            'removed' => $result['removed'],
             'errors' => $result['errors'],
             'import_id' => $import->id,
         ];

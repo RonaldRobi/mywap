@@ -108,7 +108,7 @@ class EventService
             function (Event $e) use ($user) {
                 $eventArr = $this->serialize($e, $user?->id);
 
-                if ($user && $user->hasRole(['Superadmin', 'Admin'])) {
+                if ($user && $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
                     $eventArr['attendance'] = $e->rsvps
                         ->where('status', 'attended')
                         ->map(function ($rsvp) {
@@ -135,7 +135,7 @@ class EventService
 
         $eventArr = $this->serialize($event, $user?->id);
 
-        if ($user && $user->hasRole(['Superadmin', 'Admin'])) {
+        if ($user && $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             $eventArr['attendance'] = $event->rsvps
                 ->where('status', 'attended')
                 ->map(function ($rsvp) {
@@ -199,7 +199,7 @@ class EventService
      */
     public function rsvp(User $user, Event $event, string $status): EventRsvp
     {
-        if ($user->hasRole(['Superadmin', 'Admin'])) {
+        if ($user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403, 'Akaun pentadbir tidak dibenarkan mendaftar kehadiran program.');
         }
 

@@ -19,7 +19,7 @@ class ProductPolicy
 
     public function create(User $user)
     {
-        return $user->hasRole(['Superadmin', 'Admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
     }
 
     public function update(User $user, Product $product)
@@ -28,7 +28,7 @@ class ProductPolicy
             return true;
         }
 
-        if (! $user->hasRole('Admin')) {
+        if (! $user->hasRole(['Admin', 'org-admin'])) {
             return false;
         }
 

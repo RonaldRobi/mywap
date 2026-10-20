@@ -32,7 +32,7 @@ class ProfileService
     {
         $user->loadMissing(['organization', 'branch']);
 
-        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin']);
+        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
 
         return [
             'id' => $user->id,
@@ -150,7 +150,7 @@ class ProfileService
         return [
             'branches' => $branches,
             'orgPositions' => $positions,
-            'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin']),
+            'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin', 'org-admin']),
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
             ] : null,
@@ -254,7 +254,7 @@ class ProfileService
     public function updateProfile(User $user, ProfileUpdateRequest $request): bool
     {
         $validated = $request->validated();
-        $canEditIcNumber = $user->hasRole(['Superadmin', 'Admin']);
+        $canEditIcNumber = $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
         $isSuperadmin = $user->hasRole('Superadmin');
 
         if (array_key_exists('ic_number', $validated)) {

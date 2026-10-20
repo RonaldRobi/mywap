@@ -192,7 +192,7 @@ function applyFilters() {
                 <p class="font-bold">Lajur tambahan belum disimpan untuk rekod ini.</p>
                 <p class="mt-1 text-xs">
                     Rekod ini diimport sebelum ciri simpan semua lajur diaktifkan. Import semula fail
-                    CSV/XLSX asal dari Google Form — rekod sedia ada akan dikemas kini, bukan diduplikasi —
+                    CSV/XLSX asal dari Google Form — import terbaru akan menggantikan senarai import lama —
                     kemudian export akan mengandungi semua lajur asal.
                 </p>
                 <button
@@ -319,8 +319,9 @@ function applyFilters() {
                     <div>
                         <h2 class="text-lg font-black text-gray-900">Import Data Google Form</h2>
                         <p class="mt-1 text-xs text-gray-500">
-                            Muat naik CSV/XLSX. Import berulang akan kemas kini peserta sedia ada dan tambah
-                            peserta baharu — tiada rekod dipadam.
+                            Muat naik CSV/XLSX terkini. Senarai import lama akan diganti dengan fail ini.
+                            Peserta yang mendaftar melalui myWAP, walk-in, atau ada kehadiran/bayaran
+                            akan dikekalkan.
                         </p>
                     </div>
                     <button type="button" @click="closeImport" class="text-gray-400 hover:text-gray-600">✕</button>
@@ -422,7 +423,7 @@ function applyFilters() {
                         <p class="font-bold">Import selesai</p>
                         <p class="mt-1">
                             {{ importResult.created }} baharu · {{ importResult.updated }} dikemas kini ·
-                            {{ importResult.skipped }} dilewati
+                            {{ importResult.removed }} import lama dibuang · {{ importResult.skipped }} dilewati
                         </p>
                         <ul v-if="importResult.errors?.length" class="mt-2 max-h-32 list-disc space-y-1 overflow-y-auto pl-5 text-xs text-amber-700">
                             <li v-for="(error, index) in importResult.errors" :key="index">{{ error }}</li>

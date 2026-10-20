@@ -19,7 +19,7 @@ class FacilityBookingController extends Controller
 
     public function manageFacilities(Request $request): Response
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -65,7 +65,7 @@ class FacilityBookingController extends Controller
 
     public function storeFacility(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -117,7 +117,7 @@ class FacilityBookingController extends Controller
 
     public function updateFacility(Request $request, Facility $facility): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $this->authorizeFacilityAccess($request->user(), $facility);
 
         $user = $request->user();
@@ -191,7 +191,7 @@ class FacilityBookingController extends Controller
 
     public function destroyFacility(Request $request, Facility $facility): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $this->authorizeFacilityAccess($request->user(), $facility);
 
         $oldPath = ltrim(str_replace('/storage/', '', parse_url($facility->image_path ?? '', PHP_URL_PATH) ?? ''), '/');
@@ -259,7 +259,7 @@ class FacilityBookingController extends Controller
         $isMember = $user && $user->hasRole('Member');
 
         // Pentadbir tidak dibenarkan menempah ruang.
-        abort_if($user && ($user->hasRole('Superadmin') || $user->hasRole('Admin')), 403);
+        abort_if($user && $user->isAdminPanelUser(), 403);
 
         $rules = [
             'start_datetime' => ['required', 'date'],
@@ -277,7 +277,7 @@ class FacilityBookingController extends Controller
 
     public function adminIndex(Request $request): Response
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = $request->user();
         $status = trim((string) $request->query('status', ''));
@@ -346,7 +346,7 @@ class FacilityBookingController extends Controller
 
     public function updateStatus(Request $request, FacilityBooking $facilityBooking): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         if (! $request->user()->hasRole('Superadmin')) {
             abort_if(
@@ -387,7 +387,7 @@ class FacilityBookingController extends Controller
 
     public function markPaid(Request $request, FacilityBooking $facilityBooking): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         if (! $request->user()->hasRole('Superadmin')) {
             abort_if(

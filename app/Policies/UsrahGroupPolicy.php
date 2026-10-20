@@ -9,7 +9,7 @@ class UsrahGroupPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['Superadmin', 'Admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
     }
 
     public function view(User $user, UsrahGroup $usrahGroup): bool
@@ -23,7 +23,7 @@ class UsrahGroupPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole(['Superadmin', 'Admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
     }
 
     public function update(User $user, UsrahGroup $usrahGroup): bool
@@ -33,7 +33,7 @@ class UsrahGroupPolicy
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
-            && $user->hasRole('Admin');
+            && $user->hasRole(['Admin', 'org-admin']);
     }
 
     public function delete(User $user, UsrahGroup $usrahGroup): bool
@@ -43,7 +43,7 @@ class UsrahGroupPolicy
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
-            && $user->hasRole('Admin');
+            && $user->hasRole(['Admin', 'org-admin']);
     }
 
     public function assignMembers(User $user, UsrahGroup $usrahGroup): bool
@@ -53,7 +53,7 @@ class UsrahGroupPolicy
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
-            && $user->hasRole('Admin');
+            && $user->hasRole(['Admin', 'org-admin']);
     }
 
     public function logAttendance(User $user, UsrahGroup $usrahGroup): bool

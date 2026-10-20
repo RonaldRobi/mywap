@@ -216,7 +216,7 @@ class InformationHubMemberManageTest extends TestCase
         $this->assertSoftDeleted('users', ['id' => $b->id]);
     }
 
-    public function test_regular_admin_can_soft_delete_own_org_member_but_not_restore(): void
+    public function test_regular_admin_can_soft_delete_and_restore_own_org_member(): void
     {
         $member = $this->makeMember(['name' => 'Ahli Org']);
 
@@ -228,7 +228,9 @@ class InformationHubMemberManageTest extends TestCase
 
         $this->actingAs($this->admin)
             ->patch(route('admin.hub.members.restore', $member->id))
-            ->assertForbidden();
+            ->assertRedirect();
+
+        $this->assertNotSoftDeleted('users', ['id' => $member->id]);
     }
 
     public function test_superadmin_cannot_delete_themselves_or_other_superadmin(): void

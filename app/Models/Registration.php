@@ -38,9 +38,17 @@ use Illuminate\Support\Str;
  */
 class Registration extends Model
 {
+    public const SOURCE_IMPORT = 'import';
+
+    public const SOURCE_FORM = 'form';
+
+    public const SOURCE_WALKIN = 'walkin';
+
+    public const SOURCE_MANUAL = 'manual';
+
     protected $fillable = [
         'event_id', 'form_id', 'user_id', 'organization_id', 'member_no',
-        'registration_no', 'name', 'email', 'phone', 'ic_number', 'status',
+        'registration_no', 'name', 'email', 'phone', 'ic_number', 'status', 'source',
         'ticket_type', 'document_path', 'confirmation_sent_at',
         'ic_normalized', 'phone_normalized', 'raw_data',
     ];

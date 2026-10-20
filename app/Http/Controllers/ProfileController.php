@@ -32,7 +32,7 @@ class ProfileController extends Controller
     public function show(Request $request): Response
     {
         $user = $request->user()->load(['organization', 'branch']);
-        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin']);
+        $isSuperadmin = $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
 
         $attendedPrograms = EventRsvp::query()
             ->where('user_id', $user->id)
@@ -145,7 +145,7 @@ class ProfileController extends Controller
             'status' => session('status'),
             'branches' => $branches,
             'orgPositions' => $positions,
-            'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin']),
+            'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin', 'org-admin']),
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
             ] : null,
@@ -201,7 +201,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        $canEditIcNumber = $request->user()->hasRole(['Superadmin', 'Admin']);
+        $canEditIcNumber = $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin']);
         $isSuperadmin = $request->user()->hasRole('Superadmin');
 
         if (array_key_exists('ic_number', $validated)) {
@@ -323,7 +323,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user->hasRole(['Superadmin', 'Admin']), 403);
+        abort_unless($user->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $request->validate([
             'password' => ['required', 'current_password'],

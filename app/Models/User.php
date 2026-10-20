@@ -227,11 +227,49 @@ class User extends Authenticatable
     {
         $abilities = ['member'];
 
-        if ($this->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+        if ($this->isAdminPanelUser()) {
             $abilities[] = 'admin';
         }
 
         return $abilities;
+    }
+
+    /**
+     * Adakah pengguna ini Superadmin?
+     */
+    public function isSuperadmin(): bool
+    {
+        return $this->hasRole('Superadmin');
+    }
+
+    /**
+     * Admin organisasi (`Admin`), termasuk alias lama `org-admin`.
+     */
+    public function isOrgAdmin(): bool
+    {
+        return $this->hasRole(['Admin', 'org-admin']);
+    }
+
+    /**
+     * Sesiapa yang boleh masuk panel admin (Superadmin atau Admin organisasi).
+     */
+    public function isAdminPanelUser(): bool
+    {
+        return $this->isSuperadmin() || $this->isOrgAdmin();
+    }
+
+    /**
+     * Superadmin boleh urus semua organisasi; Admin hanya organisasi sendiri.
+     */
+    public function canManageOrganization(?int $organizationId): bool
+    {
+        if ($this->isSuperadmin()) {
+            return true;
+        }
+
+        return $this->isOrgAdmin()
+            && $organizationId !== null
+            && (int) $this->current_organization_id === (int) $organizationId;
     }
 
     /**

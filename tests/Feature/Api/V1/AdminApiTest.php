@@ -272,14 +272,25 @@ class AdminApiTest extends TestCase
         $this->assertSoftDeleted('users', ['id' => $this->member->id]);
     }
 
-    public function test_regular_admin_cannot_delete_member_via_api(): void
+    public function test_regular_admin_can_delete_same_org_member_via_api(): void
     {
         Sanctum::actingAs($this->admin);
 
         $this->deleteJson('/api/v1/admin/members/'.$this->member->id)
-            ->assertForbidden();
+            ->assertOk()
+            ->assertJsonPath('data.id', $this->member->id);
 
-        $this->assertNotSoftDeleted('users', ['id' => $this->member->id]);
+        $this->assertSoftDeleted('users', ['id' => $this->member->id]);
+    }
+
+    public function test_regular_admin_cannot_delete_other_org_member_via_api(): void
+    {
+        Sanctum::actingAs($this->admin);
+
+        $this->deleteJson('/api/v1/admin/members/'.$this->otherMember->id)
+            ->assertNotFound();
+
+        $this->assertNotSoftDeleted('users', ['id' => $this->otherMember->id]);
     }
 
     // ─── Yuran ───────────────────────────────────────────────────────────────

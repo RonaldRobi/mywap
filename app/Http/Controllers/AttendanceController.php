@@ -50,7 +50,7 @@ class AttendanceController extends Controller
 
         $user = $request->user();
 
-        if ($user && $user->hasRole(['Superadmin', 'Admin'])) {
+        if ($user && $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403, 'Akaun pentadbir tidak dibenarkan merekod kehadiran program.');
         }
 

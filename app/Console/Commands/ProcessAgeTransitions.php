@@ -68,7 +68,7 @@ class ProcessAgeTransitions extends Command
                 foreach ($users as $user) {
                     // Administrative accounts are management-only and are not
                     // part of member age lifecycle transitions.
-                    if ($user->hasRole(['Admin', 'Superadmin'])) {
+                    if ($user->hasRole(['Admin', 'Superadmin', 'org-admin'])) {
                         $skipped++;
 
                         continue;
@@ -112,7 +112,7 @@ class ProcessAgeTransitions extends Command
                         // 2. Sync the Spatie role to reflect the new tier.
                         //    Each org tier gets the 'Member' base role; Admin/Superadmin
                         //    roles are NOT touched to preserve elevated permissions.
-                        if (! $user->hasRole(['Admin', 'Superadmin'])) {
+                        if (! $user->hasRole(['Admin', 'Superadmin', 'org-admin'])) {
                             $user->syncRoles(['Member']);
                         }
 

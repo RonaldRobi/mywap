@@ -164,6 +164,7 @@ class RegistrationService
                 $attributes = [
                     'form_id' => $form->id,
                     'name' => $name ?: $existing->name,
+                    'source' => Registration::SOURCE_FORM,
                 ];
 
                 if ($user !== null) {
@@ -214,6 +215,7 @@ class RegistrationService
                     'ticket_type' => $ticketType,
                     'document_path' => $documentPath,
                     'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
+                    'source' => Registration::SOURCE_FORM,
                 ]);
             }
 

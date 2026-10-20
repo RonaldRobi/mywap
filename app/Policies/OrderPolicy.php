@@ -17,7 +17,7 @@ class OrderPolicy
         if ($user->hasRole('Superadmin')) {
             return true;
         }
-        if ($user->hasRole('Admin') && $order->organisasi_id == $user->current_organization_id) {
+        if ($user->hasRole(['Admin', 'org-admin']) && $order->organisasi_id == $user->current_organization_id) {
             return true;
         }
         if ($order->user_id == $user->id) {
@@ -37,7 +37,7 @@ class OrderPolicy
         if ($user->hasRole('Superadmin')) {
             return true;
         }
-        if ($user->hasRole('Admin') && $order->organisasi_id == $user->current_organization_id) {
+        if ($user->hasRole(['Admin', 'org-admin']) && $order->organisasi_id == $user->current_organization_id) {
             return true;
         }
 

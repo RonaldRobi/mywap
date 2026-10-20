@@ -149,6 +149,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
         Route::patch('/admin/information-hub/members/{user}/toggle-active', [InformationHubAdminController::class, 'toggleActive'])->name('admin.hub.members.toggle-active');
         Route::post('/admin/information-hub/members/{user}/reset-password', [InformationHubAdminController::class, 'resetPassword'])->name('admin.hub.members.reset-password');
+        Route::post('/admin/information-hub/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
         Route::delete('/admin/information-hub/members/{user}', [InformationHubAdminController::class, 'destroyMember'])->name('admin.hub.members.destroy');
         Route::patch('/admin/information-hub/members/{id}/restore', [InformationHubAdminController::class, 'restoreMember'])->name('admin.hub.members.restore');
         Route::delete('/admin/information-hub/members/{id}/force', [InformationHubAdminController::class, 'forceDeleteMember'])->name('admin.hub.members.force-delete');
@@ -300,8 +301,6 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/superadmin/settings/login-image', [SuperadminSystemSettingController::class, 'removeLoginImage'])->name('superadmin.settings.login-image.remove');
         Route::get('/superadmin/email-templates', [EmailTemplateController::class, 'index'])->name('admin.email-templates.index');
         Route::put('/superadmin/email-templates/{emailTemplate}', [EmailTemplateController::class, 'update'])->name('admin.email-templates.update');
-        Route::post('/superadmin/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
-
         Route::get('/superadmin/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('admin.knowledge-base.index');
         Route::post('/superadmin/knowledge-base', [KnowledgeBaseController::class, 'store'])->name('admin.knowledge-base.store');
         Route::post('/superadmin/knowledge-base/{knowledgeArticle}', [KnowledgeBaseController::class, 'update'])->name('admin.knowledge-base.update');

@@ -358,7 +358,7 @@ class EventRegistrationTest extends TestCase
 
     // ─── Dashboard Kehadiran (Admin) ──────────────────────────────────────────
 
-    public function test_org_admin_sees_only_own_registrations_in_attendance(): void
+    public function test_org_admin_sees_all_registrations_for_coorganised_event(): void
     {
         $event = $this->makePublishedEvent();
         $form = $this->makeForm($event);
@@ -386,7 +386,7 @@ class EventRegistrationTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Events/Attendance')
-                ->where('stats.total_registered', 1));
+                ->where('stats.total_registered', 2));
     }
 
     public function test_attendance_stats_follow_event_filter(): void

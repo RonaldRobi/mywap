@@ -927,6 +927,7 @@ class RegistrationImportTest extends TestCase
         ])->assertSessionHas('success');
 
         $first = Registration::where('event_id', $event->id)->firstOrFail();
+        $this->assertSame('form', $first->source);
 
         // Same person submits again (e.g. refreshed the form).
         $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
@@ -947,6 +948,97 @@ class RegistrationImportTest extends TestCase
             ],
         ])->assertSessionHas('success');
 
+        $this->assertSame(2, Registration::where('event_id', $event->id)->count());
+    }
+
+    public function test_new_import_replaces_previous_import_but_keeps_mywap_and_walkins(): void
+    {
+        $event = $this->event();
+
+        $first = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Import Lama Satu,900101011234,0111111111,old1@example.com\n"
+            ."Import Lama Dua,900202025678,0122222222,old2@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($first),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 2);
+
+        $formRegistration = Registration::create([
+            'event_id' => $event->id,
+            'name' => 'Peserta myWAP',
+            'ic_number' => '900303-03-9999',
+            'phone' => '0133333333',
+            'status' => 'confirmed',
+            'source' => Registration::SOURCE_FORM,
+        ]);
+
+        $walkIn = Registration::create([
+            'event_id' => $event->id,
+            'name' => 'Peserta Walk In',
+            'ic_number' => '900404-04-8888',
+            'phone' => '0144444444',
+            'status' => 'walkin',
+            'source' => Registration::SOURCE_WALKIN,
+        ]);
+
+        $second = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Import Terbaru,900505055555,0155555555,new@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($second),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 1)
+            ->assertJsonPath('summary.removed', 2);
+
+        $this->assertDatabaseMissing('registrations', ['name' => 'Import Lama Satu']);
+        $this->assertDatabaseMissing('registrations', ['name' => 'Import Lama Dua']);
+        $this->assertDatabaseHas('registrations', ['name' => 'Import Terbaru']);
+        $this->assertDatabaseHas('registrations', ['id' => $formRegistration->id, 'source' => 'form']);
+        $this->assertDatabaseHas('registrations', ['id' => $walkIn->id, 'source' => 'walkin']);
+        $this->assertSame(3, Registration::where('event_id', $event->id)->count());
+    }
+
+    public function test_new_import_keeps_old_imported_participant_who_already_attended(): void
+    {
+        $event = $this->event();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile("Nama Penuh,No. IC,No. Telefon,Emel\n"
+                    ."Sudah Hadir,900101011234,0111111111,hadir@example.com\n"
+                    ."Belum Hadir,900202025678,0122222222,belum@example.com\n"),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk();
+
+        $attended = Registration::where('event_id', $event->id)->where('name', 'Sudah Hadir')->firstOrFail();
+        $notAttended = Registration::where('event_id', $event->id)->where('name', 'Belum Hadir')->firstOrFail();
+
+        Attendance::create([
+            'event_id' => $event->id,
+            'registration_id' => $attended->id,
+            'attended_at' => now(),
+            'method' => 'scan',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile("Nama Penuh,No. IC,No. Telefon,Emel\n"
+                    ."Peserta Baharu,900505055555,0155555555,baharu@example.com\n"),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.removed', 1);
+
+        $this->assertDatabaseHas('registrations', ['id' => $attended->id]);
+        $this->assertDatabaseMissing('registrations', ['id' => $notAttended->id]);
         $this->assertSame(2, Registration::where('event_id', $event->id)->count());
     }
 

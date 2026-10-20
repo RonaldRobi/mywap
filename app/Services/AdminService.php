@@ -518,9 +518,11 @@ class AdminService
         // untuk senarai, statistik dan kiraan dalam kad program.
         $restrict = function (Builder $query) use ($user, $isSuperadmin): Builder {
             if (! $isSuperadmin) {
-                $query->where(function (Builder $q) use ($user) {
-                    $q->where('organization_id', $user->current_organization_id)
-                        ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));
+                $orgId = (int) $user->current_organization_id;
+                $query->where(function (Builder $q) use ($orgId) {
+                    $q->where('organization_id', $orgId)
+                        ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $orgId)
+                            ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $orgId)));
                 });
             }
 
@@ -535,9 +537,11 @@ class AdminService
             $query = Event::query();
 
             if (! $isSuperadmin) {
-                $query->where(function (Builder $q) use ($user) {
-                    $q->where('organization_id', $user->current_organization_id)
-                        ->orWhereHas('registrations', fn ($r) => $r->where('organization_id', $user->current_organization_id));
+                $orgId = (int) $user->current_organization_id;
+                $query->where(function (Builder $q) use ($orgId) {
+                    $q->where('organization_id', $orgId)
+                        ->orWhereHas('organizations', fn ($q2) => $q2->where('organizations.id', $orgId))
+                        ->orWhereHas('registrations', fn ($r) => $r->where('organization_id', $orgId));
                 });
             }
 
@@ -677,10 +681,14 @@ class AdminService
      */
     public function attendanceRegistrations(int $eventId, User $user): array
     {
-        $event = Event::with('organization')->findOrFail($eventId);
+        $event = Event::with(['organization', 'organizations'])->findOrFail($eventId);
 
-        if (! $user->hasRole('Superadmin') && (int) $event->organization_id !== (int) $user->current_organization_id) {
-            abort(403, 'Tiada kebenaran.');
+        if (! $user->isSuperadmin()) {
+            $orgId = (int) $user->current_organization_id;
+            $ownsEvent = (int) $event->organization_id === $orgId
+                || $event->organizations->contains(fn ($org) => (int) $org->id === $orgId);
+
+            abort_unless($ownsEvent, 403, 'Tiada kebenaran.');
         }
 
         $registrations = Registration::with('attendance')
@@ -802,6 +810,7 @@ class AdminService
             'phone' => $user->phone,
             'ic_number' => $user->ic_number,
             'status' => RegistrationStatus::WalkIn,
+            'source' => Registration::SOURCE_WALKIN,
         ]);
     }
 
@@ -864,6 +873,7 @@ class AdminService
             'phone' => $data['phone'],
             'email' => $data['email'] ?? null,
             'status' => RegistrationStatus::WalkIn,
+            'source' => Registration::SOURCE_WALKIN,
         ]);
     }
 

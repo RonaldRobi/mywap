@@ -69,7 +69,7 @@ class ProductController extends Controller
     {
         // Drafts are previewable by admins only; buyers get a 404 rather than
         // a page for something that is not on sale.
-        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin']);
+        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin']);
         abort_if(! $product->status && ! $isAdmin, 404);
 
         $detail = $this->products->showDetail($product, $request->user());

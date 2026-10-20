@@ -41,7 +41,7 @@ class OrganizationInfoController extends Controller
         return Inertia::render('Org/Info', [
             'organization' => $this->organizationPayload($organization),
             'chartMembers' => $chartMembers,
-            'canManage' => $user->hasRole('Admin') || $user->hasRole('Superadmin'),
+            'canManage' => $user->isAdminPanelUser(),
         ]);
     }
 

@@ -99,7 +99,7 @@ Yang anda boleh urus:
 
 ![A-07 — Profil Ahli (Web)](screenshots/admin/07-profil-ahli-web.png)
 
-**Penting:** Anda boleh tukar role antara `Ahli` ↔ `Admin` ↔ `Admin Cawangan`, tapi **tak boleh** bagi role `Superadmin`. Semua tindakan sensitif — padam kekal, import, reset kata laluan, update IC, pindah organisasi — **Superadmin sahaja**.
+**Penting:** Anda boleh tukar role antara `Ahli` ↔ `Admin` ↔ `Admin Cawangan`, tapi **tak boleh** bagi role `Superadmin`. Tindakan sensitif — tambah ahli, padam kekal, restore, import, reset kata laluan, update IC — dibenarkan **untuk ahli organisasi anda sendiri**. Pindah ahli ke organisasi lain kekal **Superadmin sahaja**.
 
 ---
 
@@ -489,7 +489,7 @@ J: Menu ikut role. Admin organisasi nampak menu organisasi sendiri sahaja. Fungs
 J: Tak boleh. Semua data terhad pada organisasi anda.
 
 **S: Kenapa sesetengah butang tak boleh ditekan?**
-J: Fungsi sensitif — padam kekal, import, reset kata laluan, update IC, pindah organisasi, tukar status transaksi — Superadmin sahaja.
+J: Fungsi sensitif — tambah ahli, padam kekal, restore, import, reset kata laluan, update IC, tukar status transaksi — dibenarkan untuk ahli organisasi anda sendiri. Pindah ahli ke organisasi lain kekal Superadmin sahaja.
 
 **S: Macam mana nak tambah ahli baharu?**
 J: Tambah ahli baharu kerja Superadmin. Hubungi Superadmin. Admin organisasi cuma urus ahli yang dah ada.

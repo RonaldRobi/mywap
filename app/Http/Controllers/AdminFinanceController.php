@@ -23,7 +23,7 @@ class AdminFinanceController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -149,7 +149,7 @@ class AdminFinanceController extends Controller
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -182,7 +182,7 @@ class AdminFinanceController extends Controller
     public function exportExcel(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -220,7 +220,7 @@ class AdminFinanceController extends Controller
     public function exportCsv(Request $request)
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
@@ -257,7 +257,7 @@ class AdminFinanceController extends Controller
     public function memberTransactions(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             abort(403);
         }
 
