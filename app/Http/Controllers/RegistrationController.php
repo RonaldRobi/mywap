@@ -15,9 +15,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * RegistrationController
@@ -341,6 +343,38 @@ class RegistrationController extends Controller
         return response()->json([
             'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['skipped']} dilewati.",
             'summary' => $result,
+        ]);
+    }
+
+    /**
+     * Export registrations using the same columns as the original Google Form
+     * import, plus system columns. The output can be imported back as-is.
+     */
+    public function exportRegistrations(Request $request, Event $event): StreamedResponse
+    {
+        $this->authorizeEventAdmin($request, $event);
+
+        $definition = $this->registrationImports->exportDefinition($event);
+        $filename = 'pendaftaran-'.Str::slug($event->title).'-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($event, $definition) {
+            $file = fopen('php://output', 'w');
+            fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, $definition['headers']);
+
+            Registration::with('organization')
+                ->where('event_id', $event->id)
+                ->orderBy('id')
+                ->chunk(500, function ($registrations) use ($file, $definition) {
+                    foreach ($registrations as $registration) {
+                        fputcsv($file, $this->registrationImports->exportRow($registration, $definition));
+                    }
+                });
+
+            fclose($file);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 

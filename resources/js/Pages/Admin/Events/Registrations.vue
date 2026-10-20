@@ -146,16 +146,27 @@ function applyFilters() {
         <div class="max-w-6xl mx-auto px-4 py-8">
             <div class="flex items-center justify-between gap-3 mb-1">
                 <h1 class="text-2xl font-black text-gray-900">Pendaftaran</h1>
-                <button
-                    type="button"
-                    @click="openImport"
-                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
-                >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
-                    </svg>
-                    Import CSV
-                </button>
+                <div class="flex items-center gap-2">
+                    <a
+                        :href="route('admin.events.registrations.export', props.event.id)"
+                        class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V8m0 0l-4 4m4-4l4 4M4 4h16" />
+                        </svg>
+                        Export CSV
+                    </a>
+                    <button
+                        type="button"
+                        @click="openImport"
+                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+                        </svg>
+                        Import CSV
+                    </button>
+                </div>
             </div>
             <p class="text-sm text-gray-500 mb-6">{{ event.title }}</p>
 

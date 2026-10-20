@@ -181,6 +181,82 @@ class RegistrationImportTest extends TestCase
         $this->assertSame('0123456789', $registration->phone_normalized);
     }
 
+    public function test_import_preserves_every_google_form_column(): void
+    {
+        $event = $this->event();
+
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,Jantina,Negeri\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com,Lelaki,Selangor\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        $registration = Registration::where('event_id', $event->id)->firstOrFail();
+
+        $this->assertSame('Lelaki', $registration->raw_data['Jantina']);
+        $this->assertSame('Selangor', $registration->raw_data['Negeri']);
+        $this->assertSame('2026-10-19 10:00:00', $registration->raw_data['Timestamp']);
+
+        $import = RegistrationImport::where('event_id', $event->id)->firstOrFail();
+        $this->assertSame(
+            ['Timestamp', 'Nama Penuh', 'No. IC', 'No. Telefon', 'Emel', 'Jantina', 'Negeri'],
+            $import->headers,
+        );
+    }
+
+    public function test_export_keeps_original_columns_and_can_be_imported_back(): void
+    {
+        $event = $this->event();
+
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,Jantina,Negeri\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com,Lelaki,Selangor\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $response->assertOk();
+
+        $content = ltrim($response->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+
+        $this->assertContains('Timestamp', $headers);
+        $this->assertContains('Nama Penuh', $headers);
+        $this->assertContains('Jantina', $headers);
+        $this->assertContains('Negeri', $headers);
+        $this->assertContains('No. Pendaftaran', $headers);
+
+        $mapping = [
+            'name' => array_search('Nama Penuh', $headers, true),
+            'ic_number' => array_search('No. IC', $headers, true),
+            'phone' => array_search('No. Telefon', $headers, true),
+            'email' => array_search('Emel', $headers, true),
+            'member_no' => null,
+        ];
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($content),
+                'mapping' => $mapping,
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 0)
+            ->assertJsonPath('summary.updated', 1);
+
+        $this->assertSame(1, Registration::where('event_id', $event->id)->count());
+    }
+
     public function test_other_organization_admin_cannot_import(): void
     {
         $otherOrg = Organization::factory()->create(['name' => 'ABIM']);

@@ -139,6 +139,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/events/{event}/registrations', [RegistrationController::class, 'adminIndex'])->name('admin.events.registrations');
         Route::post('/admin/events/{event}/registrations/import/preview', [RegistrationController::class, 'importPreview'])->name('admin.events.registrations.import.preview');
         Route::post('/admin/events/{event}/registrations/import', [RegistrationController::class, 'importStore'])->name('admin.events.registrations.import');
+        Route::get('/admin/events/{event}/registrations/export', [RegistrationController::class, 'exportRegistrations'])->name('admin.events.registrations.export');
         Route::patch('/admin/events/registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('admin.events.registrations.update');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');

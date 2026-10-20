@@ -92,7 +92,8 @@ class RegistrationImportService
             throw ValidationException::withMessages(['file' => 'Fail kosong atau tiada baris data.']);
         }
 
-        $headers = array_values($rows[0]);
+        $headers = array_map(fn ($value) => $this->cleanHeader($value), array_values($rows[0]));
+        $headerKeys = $this->headerKeys($headers);
         $dataRows = array_slice($rows, 1);
 
         if (count($dataRows) > self::MAX_ROWS) {
@@ -103,7 +104,7 @@ class RegistrationImportService
 
         $mapping = $this->validatedMapping($mapping, count($headers));
 
-        $result = DB::transaction(function () use ($event, $dataRows, $mapping) {
+        $result = DB::transaction(function () use ($event, $dataRows, $headerKeys, $mapping) {
             $created = 0;
             $updated = 0;
             $skipped = 0;
@@ -125,6 +126,14 @@ class RegistrationImportService
                 $phone = $this->cell($row, $mapping['phone'] ?? null);
                 $email = $this->cell($row, $mapping['email'] ?? null);
                 $memberNo = $this->cell($row, $mapping['member_no'] ?? null);
+
+                $rawData = [];
+                foreach ($headerKeys as $index => $header) {
+                    $value = $this->rawCell($row[$index] ?? null);
+                    if ($value !== null) {
+                        $rawData[$header] = $value;
+                    }
+                }
 
                 if ($name === null) {
                     $skipped++;
@@ -176,6 +185,9 @@ class RegistrationImportService
                 if ($memberNo !== null && $memberNo !== '') {
                     $attributes['member_no'] = mb_substr($memberNo, 0, 255);
                 }
+                if ($rawData !== []) {
+                    $attributes['raw_data'] = $rawData;
+                }
 
                 if ($registration) {
                     $registration->fill($attributes)->save();
@@ -200,6 +212,7 @@ class RegistrationImportService
             'event_id' => $event->id,
             'user_id' => $user?->id,
             'filename' => $file->getClientOriginalName(),
+            'headers' => array_values($headerKeys),
             'total_rows' => $result['total'],
             'created_count' => $result['created'],
             'updated_count' => $result['updated'],
@@ -215,6 +228,196 @@ class RegistrationImportService
             'errors' => $result['errors'],
             'import_id' => $import->id,
         ];
+    }
+
+    /**
+     * Build the export column definition for an event.
+     *
+     * Original import headers are kept in their original order so a CSV can be
+     * exported and imported back without losing any Google Form column. System
+     * columns are appended only when their label does not collide with an
+     * existing import header.
+     *
+     * @return array{headers: array<int, string>, raw: array<int, string>, overrides: array<string, string>, system: array<string, string>}
+     */
+    public function exportDefinition(Event $event): array
+    {
+        $rawHeaders = [];
+
+        $importHeaders = RegistrationImport::query()
+            ->where('event_id', $event->id)
+            ->whereNotNull('headers')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->pluck('headers')
+            ->flatten()
+            ->filter(fn ($header) => is_string($header) && $header !== '')
+            ->values();
+
+        foreach ($importHeaders as $header) {
+            if (! in_array($header, $rawHeaders, true)) {
+                $rawHeaders[] = $header;
+            }
+        }
+
+        // Registrations imported before the headers snapshot existed still
+        // carry their columns inside raw_data.
+        Registration::query()
+            ->where('event_id', $event->id)
+            ->whereNotNull('raw_data')
+            ->select(['id', 'raw_data'])
+            ->chunkById(500, function ($rows) use (&$rawHeaders) {
+                foreach ($rows as $row) {
+                    foreach (array_keys($row->raw_data ?? []) as $header) {
+                        if (! in_array($header, $rawHeaders, true)) {
+                            $rawHeaders[] = $header;
+                        }
+                    }
+                }
+            });
+
+        $overrides = [];
+        foreach ($this->detectMapping($rawHeaders) as $field => $index) {
+            if ($index !== null && isset($rawHeaders[$index])) {
+                $overrides[$rawHeaders[$index]] = $field;
+            }
+        }
+
+        $existing = array_map(fn (string $header) => $this->normalizeHeader($header), $rawHeaders);
+        $system = [];
+
+        foreach ($this->systemColumns() as $key => $label) {
+            if (! in_array($this->normalizeHeader($label), $existing, true)) {
+                $system[$key] = $label;
+            }
+        }
+
+        return [
+            'headers' => array_merge($rawHeaders, array_values($system)),
+            'raw' => $rawHeaders,
+            'overrides' => $overrides,
+            'system' => $system,
+        ];
+    }
+
+    /**
+     * @param  array{headers: array<int, string>, raw: array<int, string>, overrides: array<string, string>, system: array<string, string>}  $definition
+     * @return array<int, string|null>
+     */
+    public function exportRow(Registration $registration, array $definition): array
+    {
+        $raw = $registration->raw_data ?? [];
+        $row = [];
+
+        foreach ($definition['raw'] as $header) {
+            $field = $definition['overrides'][$header] ?? null;
+            $value = $field !== null
+                ? $this->registrationValue($registration, $field)
+                : ($raw[$header] ?? null);
+
+            if ($field === 'ic_number' || $field === 'phone') {
+                $value = $this->excelText($value);
+            }
+
+            $row[] = $value;
+        }
+
+        foreach (array_keys($definition['system']) as $key) {
+            $row[] = $this->systemValue($registration, $key);
+        }
+
+        return $row;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function systemColumns(): array
+    {
+        return [
+            'registration_no' => 'No. Pendaftaran',
+            'status' => 'Status',
+            'ticket_type' => 'Kategori',
+            'organization' => 'Organisasi',
+            'created_at' => 'Tarikh Daftar',
+        ];
+    }
+
+    private function registrationValue(Registration $registration, string $field): ?string
+    {
+        return match ($field) {
+            'name' => $registration->name,
+            'ic_number' => $registration->ic_number,
+            'phone' => $registration->phone,
+            'email' => $registration->email,
+            'member_no' => $registration->member_no,
+            default => null,
+        };
+    }
+
+    private function systemValue(Registration $registration, string $key): ?string
+    {
+        return match ($key) {
+            'registration_no' => $registration->registration_no,
+            'status' => $registration->status?->label(),
+            'ticket_type' => $registration->ticket_type,
+            'organization' => $registration->organization?->name,
+            'created_at' => $registration->created_at?->toDateTimeString(),
+            default => null,
+        };
+    }
+
+    /**
+     * Keep leading-zero identifiers as text when the CSV is opened in Excel.
+     */
+    private function excelText(?string $value): ?string
+    {
+        if ($value !== null && preg_match('/^0\d+$/', $value)) {
+            return "'".$value;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<int, string>  $headers
+     * @return array<int, string>
+     */
+    private function headerKeys(array $headers): array
+    {
+        $keys = [];
+        $seen = [];
+
+        foreach ($headers as $index => $header) {
+            $key = $header !== '' ? $header : 'Lajur '.($index + 1);
+            $base = $key;
+            $suffix = 2;
+
+            while (isset($seen[$key])) {
+                $key = $base.' ('.$suffix.')';
+                $suffix++;
+            }
+
+            $seen[$key] = true;
+            $keys[$index] = $key;
+        }
+
+        return $keys;
+    }
+
+    private function rawCell(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_float($value) && floor($value) === $value) {
+            $value = number_format($value, 0, '', '');
+        }
+
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
     }
 
     /**

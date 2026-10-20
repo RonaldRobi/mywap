@@ -41,7 +41,7 @@ class Registration extends Model
         'event_id', 'form_id', 'user_id', 'organization_id', 'member_no',
         'registration_no', 'name', 'email', 'phone', 'ic_number', 'status',
         'ticket_type', 'document_path', 'confirmation_sent_at',
-        'ic_normalized', 'phone_normalized',
+        'ic_normalized', 'phone_normalized', 'raw_data',
     ];
 
     protected function casts(): array
@@ -49,6 +49,7 @@ class Registration extends Model
         return [
             'status' => RegistrationStatus::class,
             'confirmation_sent_at' => 'datetime',
+            'raw_data' => 'array',
         ];
     }
 
