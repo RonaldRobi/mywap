@@ -208,6 +208,38 @@ class RegistrationImportTest extends TestCase
         );
     }
 
+    public function test_partial_reimport_does_not_drop_earlier_columns(): void
+    {
+        $event = $this->event();
+
+        $full = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,Jantina,Negeri\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com,Lelaki,Selangor\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($full),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        // A filtered/partial sheet that only contains the core columns.
+        $partial = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."2026-10-20 11:00:00,Ahmad Ali,980101011234,012-3456789,ahmad@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($partial),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.updated', 1);
+
+        $registration = Registration::where('event_id', $event->id)->firstOrFail();
+
+        $this->assertSame('Lelaki', $registration->raw_data['Jantina']);
+        $this->assertSame('Selangor', $registration->raw_data['Negeri']);
+    }
+
     public function test_export_keeps_original_columns_and_can_be_imported_back(): void
     {
         $event = $this->event();
@@ -236,6 +268,10 @@ class RegistrationImportTest extends TestCase
         $this->assertContains('Jantina', $headers);
         $this->assertContains('Negeri', $headers);
         $this->assertContains('No. Pendaftaran', $headers);
+
+        $exportedRow = str_getcsv($lines[1]);
+        $this->assertSame('Lelaki', $exportedRow[array_search('Jantina', $headers, true)]);
+        $this->assertSame('Selangor', $exportedRow[array_search('Negeri', $headers, true)]);
 
         $mapping = [
             'name' => array_search('Nama Penuh', $headers, true),

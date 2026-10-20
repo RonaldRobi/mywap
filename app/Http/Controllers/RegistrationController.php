@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
+use App\Models\RegistrationImport;
 use App\Models\User;
 use App\Services\PaymentGatewayManager;
 use App\Services\RegistrationImportService;
@@ -285,6 +286,17 @@ class RegistrationController extends Controller
             ->withQueryString()
             ->through(fn (Registration $r) => $this->serialize($r));
 
+        // Imports created before raw_data existed cannot be exported with their
+        // extra Google Form columns until the original file is re-imported.
+        $stats = Registration::where('event_id', $event->id)
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN raw_data IS NULL THEN 1 ELSE 0 END) as missing')
+            ->first();
+
+        $hasImports = RegistrationImport::where('event_id', $event->id)->exists();
+        $exportIncomplete = $hasImports
+            && (int) ($stats->total ?? 0) > 0
+            && (int) ($stats->missing ?? 0) === (int) ($stats->total ?? 0);
+
         return Inertia::render('Admin/Events/Registrations', [
             'event' => [
                 'id' => $event->id,
@@ -294,6 +306,7 @@ class RegistrationController extends Controller
             'registrations' => $registrations,
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
             'filters' => $request->only(['org', 'status', 'search']),
+            'exportIncomplete' => $exportIncomplete,
         ]);
     }
 

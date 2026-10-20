@@ -9,6 +9,7 @@ const props = defineProps({
     registrations: Object, // paginator
     organizations: Array,
     filters: Object,
+    exportIncomplete: Boolean,
 });
 
 // ─── Import Google Form (CSV/XLSX) ──────────────────────────────────────────
@@ -169,6 +170,25 @@ function applyFilters() {
                 </div>
             </div>
             <p class="text-sm text-gray-500 mb-6">{{ event.title }}</p>
+
+            <div
+                v-if="exportIncomplete"
+                class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+            >
+                <p class="font-bold">Lajur tambahan belum disimpan untuk rekod ini.</p>
+                <p class="mt-1 text-xs">
+                    Rekod ini diimport sebelum ciri simpan semua lajur diaktifkan. Import semula fail
+                    CSV/XLSX asal dari Google Form — rekod sedia ada akan dikemas kini, bukan diduplikasi —
+                    kemudian export akan mengandungi semua lajur asal.
+                </p>
+                <button
+                    type="button"
+                    @click="openImport"
+                    class="mt-3 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                >
+                    Import semula fail asal
+                </button>
+            </div>
 
             <!-- Filters -->
             <div class="rounded-3xl bg-white border border-gray-100 p-4 shadow-sm mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">

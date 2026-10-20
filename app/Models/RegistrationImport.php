@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class RegistrationImport extends Model
 {
     protected $fillable = [
-        'event_id', 'user_id', 'filename', 'headers', 'total_rows',
+        'event_id', 'user_id', 'filename', 'file_path', 'headers', 'total_rows',
         'created_count', 'updated_count', 'skipped_count', 'errors',
     ];
 

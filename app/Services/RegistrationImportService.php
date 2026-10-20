@@ -190,6 +190,16 @@ class RegistrationImportService
                 }
 
                 if ($registration) {
+                    // Re-imports are often filtered/partial exports. Merge the
+                    // incoming columns so columns saved by an earlier upload are
+                    // not lost when the newer file contains fewer columns.
+                    if ($rawData !== []) {
+                        $attributes['raw_data'] = array_merge(
+                            $registration->raw_data ?? [],
+                            $rawData,
+                        );
+                    }
+
                     $registration->fill($attributes)->save();
                     $updated++;
 
@@ -208,10 +218,20 @@ class RegistrationImportService
             return compact('total', 'created', 'updated', 'skipped', 'errors');
         });
 
+        $filePath = null;
+
+        try {
+            $filePath = $file->store('registration-imports', 'local');
+        } catch (\Throwable) {
+            // Storing the source file is best-effort; the imported rows are
+            // already committed and remain authoritative.
+        }
+
         $import = RegistrationImport::create([
             'event_id' => $event->id,
             'user_id' => $user?->id,
             'filename' => $file->getClientOriginalName(),
+            'file_path' => $filePath,
             'headers' => array_values($headerKeys),
             'total_rows' => $result['total'],
             'created_count' => $result['created'],
