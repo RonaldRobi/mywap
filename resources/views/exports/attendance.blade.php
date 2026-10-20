@@ -33,7 +33,7 @@
                 <th>#</th>
                 <th>Nama</th>
                 <th>No Ahli</th>
-                <th>Organisasi</th>
+                <th>Organisasi myWAP</th>
                 <th>Event</th>
                 <th>Telefon</th>
                 <th>Bayaran</th>

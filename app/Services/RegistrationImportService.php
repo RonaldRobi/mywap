@@ -514,7 +514,7 @@ class RegistrationImportService
         return [
             'status' => 'Status',
             'ticket_type' => 'Kategori',
-            'organization' => 'Organisasi',
+            'organization' => 'Organisasi myWAP',
             'created_at' => 'Tarikh Daftar',
         ];
     }
@@ -655,7 +655,7 @@ class RegistrationImportService
             $mapping[$field] = null;
 
             foreach ($normalized as $index => $header) {
-                if ($header !== '' && in_array($header, $needles, true)) {
+                if ($header !== '' && ! $this->isCompanyLabel($header) && in_array($header, $needles, true)) {
                     $mapping[$field] = $index;
                     break;
                 }
@@ -671,7 +671,7 @@ class RegistrationImportService
 
             foreach ($normalized as $index => $header) {
                 foreach ($needles as $needle) {
-                    if ($header !== '' && str_contains($header, $needle)) {
+                    if ($header !== '' && ! $this->isCompanyLabel($header) && str_contains($header, $needle)) {
                         $mapping[$field] = $index;
                         break 2;
                     }
@@ -682,11 +682,29 @@ class RegistrationImportService
         return $mapping;
     }
 
+    /**
+     * Labels such as "Nama Syarikat/Agensi/Organisasi/NGO" are custom fields,
+     * not the participant's own name/phone/email.
+     */
+    private function isCompanyLabel(string $header): bool
+    {
+        foreach ([
+            'syarikat', 'agensi', 'organisasi', 'ngo', 'jabatan', 'institusi',
+            'universiti', 'sekolah', 'kilang', 'pertubuhan', 'badan', 'kementerian',
+        ] as $word) {
+            if (str_contains($header, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function detectField(string $label): ?string
     {
         $normalized = $this->normalizeHeader($label);
 
-        if ($normalized === '') {
+        if ($normalized === '' || $this->isCompanyLabel($normalized)) {
             return null;
         }
 

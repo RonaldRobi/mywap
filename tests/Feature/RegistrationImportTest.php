@@ -529,6 +529,78 @@ class RegistrationImportTest extends TestCase
         $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headers, true)]);
     }
 
+    public function test_company_question_is_not_replaced_by_mywap_organization(): void
+    {
+        $this->org->update(['name' => 'Wadah']);
+
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Syarikat',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $nama = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'NAMA PENUH',
+            'type' => 'text',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $company = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'NAMA SYARIKAT/AGENSI/ORGANISASI/NGO',
+            'type' => 'text',
+            'required' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => [
+                $nama->id => 'Ali Bin Abu',
+                $company->id => 'Syarikat ABC',
+            ],
+        ])->assertSessionHas('success');
+
+        $export = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $export->assertOk();
+
+        $content = ltrim($export->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+        $row = str_getcsv($lines[1]);
+
+        $companyIndex = array_search('NAMA SYARIKAT/AGENSI/ORGANISASI/NGO', $headers, true);
+        $orgIndex = array_search('Organisasi myWAP', $headers, true);
+
+        $this->assertNotFalse($companyIndex);
+        $this->assertSame('Syarikat ABC', $row[$companyIndex]);
+        $this->assertSame('Wadah', $row[$orgIndex]);
+
+        $attendance = $this->actingAs($this->admin)
+            ->get(route('admin.attendance.export.excel', ['event_id' => $event->id]));
+
+        $attendance->assertOk();
+
+        $spreadsheet = IOFactory::load(
+            $attendance->getFile()->getPathname(),
+        );
+        $sheet = $spreadsheet->getActiveSheet();
+        $lastColumn = $sheet->getHighestColumn();
+        $attendanceHeaders = $sheet->rangeToArray('A1:'.$lastColumn.'1')[0];
+        $attendanceRow = $sheet->rangeToArray('A2:'.$lastColumn.'2')[0];
+
+        $this->assertSame(
+            'Syarikat ABC',
+            $attendanceRow[array_search('NAMA SYARIKAT/AGENSI/ORGANISASI/NGO', $attendanceHeaders, true)],
+        );
+    }
+
     public function test_partial_reimport_does_not_drop_earlier_columns(): void
     {
         $event = $this->event();

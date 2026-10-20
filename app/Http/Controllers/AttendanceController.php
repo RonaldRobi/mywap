@@ -216,7 +216,7 @@ class AttendanceController extends Controller
     {
         $data = $this->buildExportData($request, 5000);
         $headings = array_merge(
-            ['#', 'Nama', 'No Ahli', 'Organisasi', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
+            ['#', 'Nama', 'No Ahli', 'Organisasi myWAP', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
             array_column($data['form_columns'], 'label'),
         );
 
@@ -522,12 +522,30 @@ class AttendanceController extends Controller
 
     protected function isAttendanceBaseColumn(string $label): bool
     {
-        if (in_array($label, ['nama', 'no ahli', 'organisasi', 'event', 'telefon', 'bayaran', 'kehadiran', 'masa hadir'], true)) {
+        if (in_array($label, ['nama', 'no ahli', 'organisasi mywap', 'event', 'telefon', 'bayaran', 'kehadiran', 'masa hadir'], true)) {
             return true;
         }
 
-        foreach (['nama', 'no ahli', 'telefon', 'organisasi'] as $base) {
+        if ($this->isCompanyLabel($label)) {
+            return false;
+        }
+
+        foreach (['nama', 'no ahli', 'telefon'] as $base) {
             if (str_contains($label, $base)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function isCompanyLabel(string $label): bool
+    {
+        foreach ([
+            'syarikat', 'agensi', 'organisasi', 'ngo', 'jabatan', 'institusi',
+            'universiti', 'sekolah', 'kilang', 'pertubuhan', 'badan', 'kementerian',
+        ] as $word) {
+            if (str_contains($label, $word)) {
                 return true;
             }
         }
