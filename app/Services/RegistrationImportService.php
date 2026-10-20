@@ -301,11 +301,12 @@ class RegistrationImportService
      * Build the export column definition for an event.
      *
      * CSV/XLSX import headers come first, followed by questions answered in
-     * the myWAP registration form, then system columns. A form question whose
-     * label matches an import header reuses that column, so the same field is
-     * never duplicated when both data sources are present.
+     * the myWAP registration form, then system columns. Form questions that
+     * map to a core participant field already present in the import reuse that
+     * column, so a name/IC/phone is never exported twice under a different
+     * label just because the CSV and the form named it differently.
      *
-     * @return array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string}>, overrides: array<string, string>, system: array<string, string>}
+     * @return array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string, field: string|null}>, overrides: array<string, string>, system: array<string, string>}
      */
     public function exportDefinition(Event $event): array
     {
@@ -313,15 +314,32 @@ class RegistrationImportService
         $normalizedRaw = array_map(fn (string $header) => $this->normalizeHeader($header), $rawHeaders);
         $seen = $normalizedRaw;
 
+        $overrides = [];
+        foreach ($this->detectMapping($rawHeaders) as $field => $index) {
+            if ($index !== null && isset($rawHeaders[$index])) {
+                $overrides[$rawHeaders[$index]] = $field;
+            }
+        }
+
+        $coveredFields = array_values(array_unique($overrides));
         $rawQuestions = [];
         $formColumns = [];
 
         foreach ($this->eventFormQuestions($event) as $question) {
+            $field = $this->detectField($question['label']);
             $rawIndex = array_search($this->normalizeHeader($question['label']), $normalizedRaw, true);
 
-            if ($rawIndex !== false && ! isset($rawQuestions[$rawHeaders[$rawIndex]])) {
-                $rawQuestions[$rawHeaders[$rawIndex]] = $question['id'];
+            if ($rawIndex !== false) {
+                if (! isset($rawQuestions[$rawHeaders[$rawIndex]])) {
+                    $rawQuestions[$rawHeaders[$rawIndex]] = $question['id'];
+                }
 
+                continue;
+            }
+
+            // The import already carries this core field (e.g. "Nama Penuh"
+            // vs a form question called "Nama"); reuse the existing column.
+            if ($field !== null && in_array($field, $coveredFields, true)) {
                 continue;
             }
 
@@ -334,13 +352,10 @@ class RegistrationImportService
             }
 
             $seen[] = $this->normalizeHeader($label);
-            $formColumns[] = ['id' => $question['id'], 'label' => $label];
-        }
+            $formColumns[] = ['id' => $question['id'], 'label' => $label, 'field' => $field];
 
-        $overrides = [];
-        foreach ($this->detectMapping($rawHeaders) as $field => $index) {
-            if ($index !== null && isset($rawHeaders[$index])) {
-                $overrides[$rawHeaders[$index]] = $field;
+            if ($field !== null) {
+                $coveredFields[] = $field;
             }
         }
 
@@ -363,7 +378,7 @@ class RegistrationImportService
     }
 
     /**
-     * @param  array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string}>, overrides: array<string, string>, system: array<string, string>}  $definition
+     * @param  array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string, field: string|null}>, overrides: array<string, string>, system: array<string, string>}  $definition
      * @return array<int, string|null>
      */
     public function exportRow(Registration $registration, array $definition): array
@@ -389,7 +404,9 @@ class RegistrationImportService
         }
 
         foreach ($definition['form'] as $column) {
-            $row[] = $this->answerValue($registration, $column['id']);
+            $row[] = $column['field'] !== null
+                ? $this->registrationValue($registration, $column['field'])
+                : $this->answerValue($registration, $column['id']);
         }
 
         foreach (array_keys($definition['system']) as $key) {
@@ -455,7 +472,6 @@ class RegistrationImportService
     private function systemColumns(): array
     {
         return [
-            'registration_no' => 'No. Pendaftaran',
             'status' => 'Status',
             'ticket_type' => 'Kategori',
             'organization' => 'Organisasi',
@@ -624,6 +640,31 @@ class RegistrationImportService
         }
 
         return $mapping;
+    }
+
+    private function detectField(string $label): ?string
+    {
+        $normalized = $this->normalizeHeader($label);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        foreach (self::ALIASES as $field => $needles) {
+            if (in_array($normalized, $needles, true)) {
+                return $field;
+            }
+        }
+
+        foreach (self::ALIASES as $field => $needles) {
+            foreach ($needles as $needle) {
+                if (str_contains($normalized, $needle)) {
+                    return $field;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function findMatching(int $eventId, ?string $ic, ?string $phone, ?string $email): ?Registration

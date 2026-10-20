@@ -287,6 +287,112 @@ class RegistrationImportTest extends TestCase
         $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headers, true)]);
     }
 
+    public function test_export_merges_csv_and_form_name_columns_and_keeps_all_rows(): void
+    {
+        $event = $this->event();
+
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Pendaftaran',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $nama = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama',
+            'type' => 'text',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $jawatan = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Jawatan',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 1,
+        ]);
+
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => [
+                $nama->id => 'Ali Form',
+                $jawatan->id => 'Setiausaha',
+            ],
+        ])->assertSessionHas('success');
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $response->assertOk();
+
+        $content = ltrim($response->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+
+        // "Nama" from the myWAP form must reuse the CSV "Nama Penuh" column.
+        $this->assertNotContains('Nama', $headers);
+        $this->assertContains('Nama Penuh', $headers);
+        $this->assertContains('Jawatan', $headers);
+        $this->assertCount(3, $lines);
+
+        $nameIndex = array_search('Nama Penuh', $headers, true);
+        $jawatanIndex = array_search('Jawatan', $headers, true);
+        $names = [];
+        $jawatanValues = [];
+
+        foreach (array_slice($lines, 1) as $line) {
+            $row = str_getcsv($line);
+            $names[] = $row[$nameIndex];
+            $jawatanValues[] = $row[$jawatanIndex];
+        }
+
+        $this->assertContains('Ahmad Ali', $names);
+        $this->assertContains('Ali Form', $names);
+        $this->assertContains('Setiausaha', $jawatanValues);
+    }
+
+    public function test_export_streams_every_registration_beyond_one_chunk(): void
+    {
+        $event = $this->event();
+        $now = now();
+        $rows = [];
+
+        for ($i = 1; $i <= 501; $i++) {
+            $rows[] = [
+                'event_id' => $event->id,
+                'organization_id' => $this->org->id,
+                'registration_no' => 'REG-CHUNK-'.$i,
+                'name' => 'Peserta '.$i,
+                'status' => 'confirmed',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        Registration::insert($rows);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $response->assertOk();
+
+        $content = ltrim($response->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+
+        $this->assertCount(502, $lines);
+    }
+
     public function test_partial_reimport_does_not_drop_earlier_columns(): void
     {
         $event = $this->event();
@@ -346,7 +452,7 @@ class RegistrationImportTest extends TestCase
         $this->assertContains('Nama Penuh', $headers);
         $this->assertContains('Jantina', $headers);
         $this->assertContains('Negeri', $headers);
-        $this->assertContains('No. Pendaftaran', $headers);
+        $this->assertNotContains('No. Pendaftaran', $headers);
 
         $exportedRow = str_getcsv($lines[1]);
         $this->assertSame('Lelaki', $exportedRow[array_search('Jantina', $headers, true)]);
