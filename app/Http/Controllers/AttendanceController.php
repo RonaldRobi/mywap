@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -212,15 +213,22 @@ class AttendanceController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $rows = $this->buildExportRows($request);
+        $data = $this->buildExportData($request);
+        $headings = array_merge(
+            ['#', 'Nama', 'No Ahli', 'Organisasi', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
+            array_column($data['form_columns'], 'label'),
+        );
 
-        return Excel::download(new class($rows) implements FromCollection, WithHeadings
+        return Excel::download(new class($data['rows'], $headings) implements FromCollection, WithHeadings
         {
-            public function __construct(protected array $rows) {}
+            public function __construct(
+                protected array $rows,
+                protected array $headings,
+            ) {}
 
             public function collection()
             {
-                return collect($this->rows)->map(fn ($r, $i) => [
+                return collect($this->rows)->map(fn ($r, $i) => array_merge([
                     $i + 1,
                     $r['name'],
                     $r['member_no'] ?? '—',
@@ -230,27 +238,28 @@ class AttendanceController extends Controller
                     $r['payment_status'] ?? '—',
                     $r['attended'] ? 'Hadir' : 'Tidak Hadir',
                     $r['attended_at'] ?? '—',
-                ]);
+                ], $r['form_values']));
             }
 
             public function headings(): array
             {
-                return ['#', 'Nama', 'No Ahli', 'Organisasi', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'];
+                return $this->headings;
             }
         }, 'kehadiran-'.now()->format('Y-m-d_His').'.xlsx');
     }
 
     public function exportPdf(Request $request)
     {
-        $rows = $this->buildExportRows($request);
+        $data = $this->buildExportData($request);
         $title = 'Laporan Kehadiran Event';
 
         $pdf = Pdf::loadView('exports.attendance', [
-            'rows' => $rows,
+            'rows' => $data['rows'],
+            'formColumns' => $data['form_columns'],
             'title' => $title,
             'generatedBy' => $request->user()->name,
             'generatedAt' => now(),
-        ]);
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('kehadiran-'.now()->format('Y-m-d_His').'.pdf');
     }
@@ -301,12 +310,18 @@ class AttendanceController extends Controller
         ];
     }
 
-    protected function buildExportRows(Request $request): array
+    /**
+     * @return array{rows: array<int, array<string, mixed>>, form_columns: array<int, array{id: int, label: string}>}
+     */
+    protected function buildExportData(Request $request): array
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
 
-        $query = Registration::with(['organization', 'event.organization', 'form', 'attendance', 'latestPayment']);
+        $query = Registration::with([
+            'organization', 'event.organization', 'form', 'attendance', 'latestPayment',
+            'formResponse.answers.question',
+        ]);
 
         if (! $isSuperadmin) {
             $query->where(function (Builder $q) use ($user) {
@@ -353,15 +368,105 @@ class AttendanceController extends Controller
             });
         }
 
-        return $query->latest()->limit(5000)->get()->map(fn (Registration $r) => [
-            'name' => $r->name,
-            'member_no' => $r->member_no,
-            'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
-            'event_title' => $r->event?->title,
-            'phone' => $r->phone,
-            'payment_status' => $r->latestPayment?->status ?? 'paid',
-            'attended' => $r->attendance !== null,
-            'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
-        ])->all();
+        $registrations = $query->latest()->limit(5000)->get();
+        $formColumns = $this->formColumnsFor($registrations);
+
+        $rows = $registrations->map(function (Registration $registration) use ($formColumns) {
+            $answers = $registration->formResponse?->answers?->keyBy('form_question_id') ?? collect();
+
+            return [
+                'name' => $registration->name,
+                'member_no' => $registration->member_no,
+                'organization_name' => $registration->organization?->name ?? $registration->event?->organization?->name,
+                'event_title' => $registration->event?->title,
+                'phone' => $registration->phone,
+                'payment_status' => $registration->latestPayment?->status ?? 'paid',
+                'attended' => $registration->attendance !== null,
+                'attended_at' => $registration->attendance?->attended_at?->toDateTimeString(),
+                'form_values' => collect($formColumns)
+                    ->map(fn (array $column) => $answers->get($column['id'])?->value)
+                    ->all(),
+            ];
+        })->all();
+
+        return ['rows' => $rows, 'form_columns' => $formColumns];
+    }
+
+    /**
+     * Form questions to append to the attendance report, in form order.
+     * Core participant columns already shown by the report are skipped.
+     *
+     * @param  Collection<int, Registration>  $registrations
+     * @return array<int, array{id: int, label: string}>
+     */
+    protected function formColumnsFor($registrations): array
+    {
+        if ($registrations->isEmpty()) {
+            return [];
+        }
+
+        $eventIds = $registrations->pluck('event_id')->filter()->unique()->values();
+        $formIds = $registrations->pluck('form_id')->filter()->unique()->values();
+
+        $forms = Form::query()
+            ->with(['questions' => fn ($query) => $query->orderBy('sort_order')->orderBy('id')])
+            ->where(function ($query) use ($eventIds, $formIds) {
+                $query->whereIn('event_id', $eventIds);
+
+                if ($formIds->isNotEmpty()) {
+                    $query->orWhereIn('id', $formIds);
+                }
+            })
+            ->orderBy('id')
+            ->get();
+
+        $seen = [];
+        $columns = [];
+
+        foreach ($forms as $form) {
+            foreach ($form->questions as $question) {
+                $label = trim((string) $question->label);
+                $label = $label !== '' ? $label : 'Soalan '.$question->id;
+
+                if ($this->isAttendanceBaseColumn($this->normalizeColumnLabel($label))) {
+                    continue;
+                }
+
+                $unique = $label;
+                $suffix = 2;
+
+                while (in_array($this->normalizeColumnLabel($unique), $seen, true)) {
+                    $unique = $label.' ('.$suffix.')';
+                    $suffix++;
+                }
+
+                $seen[] = $this->normalizeColumnLabel($unique);
+                $columns[] = ['id' => (int) $question->id, 'label' => $unique];
+            }
+        }
+
+        return $columns;
+    }
+
+    protected function isAttendanceBaseColumn(string $label): bool
+    {
+        if (in_array($label, ['nama', 'no ahli', 'organisasi', 'event', 'telefon', 'bayaran', 'kehadiran', 'masa hadir'], true)) {
+            return true;
+        }
+
+        foreach (['nama', 'no ahli', 'telefon', 'organisasi'] as $base) {
+            if (str_contains($label, $base)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function normalizeColumnLabel(string $label): string
+    {
+        $label = strtolower($label);
+
+        return trim(preg_replace('/[^a-z0-9]+/', ' ', $label) ?? '');
     }
 }

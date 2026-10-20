@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -391,6 +392,64 @@ class RegistrationImportTest extends TestCase
         $lines = preg_split('/\r\n|\n|\r/', trim($content));
 
         $this->assertCount(502, $lines);
+    }
+
+    public function test_attendance_excel_export_includes_form_answers(): void
+    {
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Kehadiran',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $nama = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama',
+            'type' => 'text',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $jawatan = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Jawatan',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 1,
+        ]);
+
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => [
+                $nama->id => 'Ali Bin Abu',
+                $jawatan->id => 'Setiausaha',
+            ],
+        ])->assertSessionHas('success');
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.attendance.export.excel', ['event_id' => $event->id]));
+
+        $response->assertOk();
+
+        $spreadsheet = IOFactory::load(
+            $response->getFile()->getPathname(),
+        );
+        $sheet = $spreadsheet->getActiveSheet();
+        $lastColumn = $sheet->getHighestColumn();
+
+        $headings = $sheet->rangeToArray('A1:'.$lastColumn.'1')[0];
+        $row = $sheet->rangeToArray('A2:'.$lastColumn.'2')[0];
+
+        $this->assertContains('Jawatan', $headings);
+        $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headings, true)]);
+
+        $pdf = $this->actingAs($this->admin)
+            ->get(route('admin.attendance.export.pdf', ['event_id' => $event->id]));
+
+        $pdf->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $pdf->headers->get('content-type'));
     }
 
     public function test_partial_reimport_does_not_drop_earlier_columns(): void

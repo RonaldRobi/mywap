@@ -31,6 +31,9 @@
                 <th>Bayaran</th>
                 <th>Kehadiran</th>
                 <th>Masa Hadir</th>
+                @foreach($formColumns as $column)
+                    <th>{{ $column['label'] }}</th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
@@ -45,6 +48,9 @@
                     <td>{{ match($r['payment_status'] ?? 'paid') { 'successful' => 'Berjaya', 'pending' => 'Menunggu', 'failed' => 'Gagal', 'refunded' => 'Dipulangkan', default => '—' } }}</td>
                     <td class="{{ $r['attended'] ? 'hadir' : 'tidak' }}">{{ $r['attended'] ? 'Hadir' : 'Tidak Hadir' }}</td>
                     <td>{{ $r['attended_at'] ?? '—' }}</td>
+                    @foreach($r['form_values'] as $value)
+                        <td>{{ $value !== null && $value !== '' ? $value : '—' }}</td>
+                    @endforeach
                 </tr>
             @endforeach
         </tbody>
