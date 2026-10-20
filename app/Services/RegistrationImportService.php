@@ -330,6 +330,15 @@ class RegistrationImportService
             $field = $this->detectField($question['label']);
             $rawIndex = array_search($this->normalizeHeader($question['label']), $normalizedRaw, true);
 
+            if ($rawIndex === false) {
+                foreach ($rawHeaders as $candidate) {
+                    if ($this->labelsMatch($candidate, $question['label'])) {
+                        $rawIndex = array_search($candidate, $rawHeaders, true);
+                        break;
+                    }
+                }
+            }
+
             if ($rawIndex !== false) {
                 if (! isset($rawQuestions[$rawHeaders[$rawIndex]])) {
                     $rawQuestions[$rawHeaders[$rawIndex]] = $question['id'];
@@ -405,9 +414,15 @@ class RegistrationImportService
         }
 
         foreach ($definition['form'] as $column) {
-            $row[] = $column['field'] !== null
+            $value = $column['field'] !== null
                 ? $this->registrationValue($registration, $column['field'])
                 : $this->answerValue($registration, $column['id']);
+
+            if ($value === null) {
+                $value = $this->matchRawValue($raw, $column['label']);
+            }
+
+            $row[] = $value;
         }
 
         foreach (array_keys($definition['system']) as $key) {
@@ -698,6 +713,71 @@ class RegistrationImportService
         }
 
         return false;
+    }
+
+    /**
+     * Match two column labels even when the CSV and the myWAP form used
+     * different wording (e.g. "ORGANISASI/SYARIKAT" vs
+     * "NAMA SYARIKAT/AGENSI/ORGANISASI/NGO").
+     */
+    public function labelsMatch(string $a, string $b): bool
+    {
+        $a = $this->normalizeHeader($a);
+        $b = $this->normalizeHeader($b);
+
+        if ($a === '' || $b === '') {
+            return false;
+        }
+
+        if ($a === $b) {
+            return true;
+        }
+
+        if ($this->isCompanyLabel($a) && $this->isCompanyLabel($b)) {
+            return true;
+        }
+
+        $aTokens = $this->labelTokens($a);
+        $bTokens = $this->labelTokens($b);
+
+        if ($aTokens === [] || $bTokens === []) {
+            return false;
+        }
+
+        $shared = array_intersect($aTokens, $bTokens);
+
+        return $shared !== []
+            && count($shared) / max(1, min(count($aTokens), count($bTokens))) >= 0.5;
+    }
+
+    /**
+     * Pick the raw_data value whose header best matches a form question.
+     *
+     * @param  array<string, mixed>  $rawData
+     */
+    public function matchRawValue(array $rawData, string $label): ?string
+    {
+        foreach ($rawData as $header => $value) {
+            if ($this->labelsMatch((string) $header, $label)) {
+                return is_scalar($value) ? (string) $value : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function labelTokens(string $label): array
+    {
+        $stopWords = ['nama', 'no', 'nombor', 'tarikh', 'masa', 'penuh'];
+        $tokens = preg_split('/\s+/', $label) ?: [];
+
+        return array_values(array_filter(
+            array_unique($tokens),
+            fn (string $token) => strlen($token) > 2 && ! in_array($token, $stopWords, true),
+        ));
     }
 
     private function detectField(string $label): ?string

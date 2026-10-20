@@ -7,6 +7,7 @@ use App\Models\Form;
 use App\Models\FormResponse;
 use App\Models\Registration;
 use App\Services\AdminService;
+use App\Services\RegistrationImportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,10 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class AttendanceController extends Controller
 {
-    public function __construct(private readonly AdminService $admin) {}
+    public function __construct(
+        private readonly AdminService $admin,
+        private readonly RegistrationImportService $registrationImports,
+    ) {}
 
     /**
      * Endpoint yang tertanam dalam QR code event.
@@ -387,11 +391,7 @@ class AttendanceController extends Controller
 
         $rows = $registrations->map(function (Registration $registration) use ($formColumns) {
             $answers = $this->formResponseFor($registration)?->answers?->keyBy('form_question_id') ?? collect();
-
-            // CSV-imported participants have no FormResponse, so fall back to
-            // raw_data by matching the form question label to the CSV header.
-            $rawData = collect($registration->raw_data ?? [])
-                ->mapWithKeys(fn ($value, $key) => [$this->normalizeColumnLabel((string) $key) => $value]);
+            $rawData = $registration->raw_data ?? [];
 
             return [
                 'name' => $registration->name,
@@ -408,7 +408,7 @@ class AttendanceController extends Controller
 
                         return $value !== null && $value !== ''
                             ? $value
-                            : $rawData->get($column['key']);
+                            : $this->registrationImports->matchRawValue($rawData, $column['label']);
                     })
                     ->all(),
             ];

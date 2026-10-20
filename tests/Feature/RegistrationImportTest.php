@@ -601,6 +601,77 @@ class RegistrationImportTest extends TestCase
         );
     }
 
+    public function test_company_answers_match_different_csv_and_form_wording(): void
+    {
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Syarikat',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'NAMA SYARIKAT/AGENSI/ORGANISASI/NGO',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 0,
+        ]);
+        FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'JAWATAN',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 1,
+        ]);
+
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,ORGANISASI/SYARIKAT,JAWATAN\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com,Syarikat CSV,Pengerusi\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        $export = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $export->assertOk();
+
+        $content = ltrim($export->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+        $row = str_getcsv($lines[1]);
+
+        $this->assertSame(
+            'Syarikat CSV',
+            $row[array_search('ORGANISASI/SYARIKAT', $headers, true)],
+        );
+
+        $attendance = $this->actingAs($this->admin)
+            ->get(route('admin.attendance.export.excel', ['event_id' => $event->id]));
+
+        $attendance->assertOk();
+
+        $spreadsheet = IOFactory::load(
+            $attendance->getFile()->getPathname(),
+        );
+        $sheet = $spreadsheet->getActiveSheet();
+        $lastColumn = $sheet->getHighestColumn();
+        $attendanceHeaders = $sheet->rangeToArray('A1:'.$lastColumn.'1')[0];
+        $attendanceRow = $sheet->rangeToArray('A2:'.$lastColumn.'2')[0];
+
+        $this->assertSame(
+            'Syarikat CSV',
+            $attendanceRow[array_search('NAMA SYARIKAT/AGENSI/ORGANISASI/NGO', $attendanceHeaders, true)],
+        );
+    }
+
     public function test_partial_reimport_does_not_drop_earlier_columns(): void
     {
         $event = $this->event();
