@@ -6,7 +6,9 @@ use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\FormAnswer;
 use App\Models\FormQuestion;
+use App\Models\FormResponse;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
@@ -421,6 +423,16 @@ class RegistrationImportTest extends TestCase
             'sort_order' => 1,
         ]);
 
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,Jawatan\n"
+            ."2026-10-19 10:00:00,Ahmad CSV,980101-01-1234,012-3456789,ahmad@example.com,Bendahari\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
         $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
             'answers' => [
                 $nama->id => 'Ali Bin Abu',
@@ -440,16 +452,81 @@ class RegistrationImportTest extends TestCase
         $lastColumn = $sheet->getHighestColumn();
 
         $headings = $sheet->rangeToArray('A1:'.$lastColumn.'1')[0];
-        $row = $sheet->rangeToArray('A2:'.$lastColumn.'2')[0];
+        $rows = $sheet->rangeToArray('A2:'.$lastColumn.$sheet->getHighestRow());
 
         $this->assertContains('Jawatan', $headings);
-        $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headings, true)]);
+
+        $nameIndex = array_search('Nama', $headings, true);
+        $jawatanIndex = array_search('Jawatan', $headings, true);
+        $jawatanByParticipant = [];
+
+        foreach ($rows as $row) {
+            $jawatanByParticipant[$row[$nameIndex]] = $row[$jawatanIndex];
+        }
+
+        $this->assertSame('Setiausaha', $jawatanByParticipant['Ali Bin Abu']);
+        $this->assertSame('Bendahari', $jawatanByParticipant['Ahmad CSV']);
 
         $pdf = $this->actingAs($this->admin)
             ->get(route('admin.attendance.export.pdf', ['event_id' => $event->id]));
 
         $pdf->assertOk();
         $this->assertStringContainsString('application/pdf', (string) $pdf->headers->get('content-type'));
+    }
+
+    public function test_export_finds_form_answers_when_response_has_no_registration_link(): void
+    {
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Lama',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $question = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Jawatan',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 0,
+        ]);
+
+        $registration = Registration::create([
+            'event_id' => $event->id,
+            'form_id' => $form->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Peserta Lama',
+            'status' => 'confirmed',
+        ]);
+
+        $response = FormResponse::create([
+            'form_id' => $form->id,
+            'registration_id' => null,
+            'respondent_name' => $registration->name,
+            'submitted_at' => now(),
+        ]);
+
+        FormAnswer::create([
+            'form_response_id' => $response->id,
+            'form_question_id' => $question->id,
+            'value' => 'Setiausaha',
+        ]);
+
+        $export = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $export->assertOk();
+
+        $content = ltrim($export->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+        $row = str_getcsv($lines[1]);
+
+        $this->assertContains('Jawatan', $headers);
+        $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headers, true)]);
     }
 
     public function test_partial_reimport_does_not_drop_earlier_columns(): void

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\FormResponse;
 use App\Models\Registration;
 use App\Services\AdminService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -213,7 +214,7 @@ class AttendanceController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $data = $this->buildExportData($request);
+        $data = $this->buildExportData($request, 5000);
         $headings = array_merge(
             ['#', 'Nama', 'No Ahli', 'Organisasi', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
             array_column($data['form_columns'], 'label'),
@@ -250,15 +251,27 @@ class AttendanceController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $data = $this->buildExportData($request);
+        @ini_set('memory_limit', '512M');
+
+        $data = $this->buildExportData($request, 500);
+
+        // DomPDF builds the whole document in memory. Keep the number of
+        // rendered cells bounded so a wide form or a large event cannot
+        // exhaust PHP memory and return a 500.
+        $columnCount = 9 + count($data['form_columns']);
+        $maxRows = max(50, (int) floor(6000 / $columnCount));
+        $rows = array_slice($data['rows'], 0, $maxRows);
+
         $title = 'Laporan Kehadiran Event';
 
         $pdf = Pdf::loadView('exports.attendance', [
-            'rows' => $data['rows'],
+            'rows' => $rows,
             'formColumns' => $data['form_columns'],
             'title' => $title,
             'generatedBy' => $request->user()->name,
             'generatedAt' => now(),
+            'shown' => count($rows),
+            'total' => $data['total'],
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('kehadiran-'.now()->format('Y-m-d_His').'.pdf');
@@ -311,9 +324,9 @@ class AttendanceController extends Controller
     }
 
     /**
-     * @return array{rows: array<int, array<string, mixed>>, form_columns: array<int, array{id: int, label: string}>}
+     * @return array{rows: array<int, array<string, mixed>>, form_columns: array<int, array{id: int, label: string, key: string}>, total: int}
      */
-    protected function buildExportData(Request $request): array
+    protected function buildExportData(Request $request, int $limit = 5000): array
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -368,11 +381,17 @@ class AttendanceController extends Controller
             });
         }
 
-        $registrations = $query->latest()->limit(5000)->get();
+        $total = (clone $query)->count();
+        $registrations = $query->latest()->limit($limit)->get();
         $formColumns = $this->formColumnsFor($registrations);
 
         $rows = $registrations->map(function (Registration $registration) use ($formColumns) {
-            $answers = $registration->formResponse?->answers?->keyBy('form_question_id') ?? collect();
+            $answers = $this->formResponseFor($registration)?->answers?->keyBy('form_question_id') ?? collect();
+
+            // CSV-imported participants have no FormResponse, so fall back to
+            // raw_data by matching the form question label to the CSV header.
+            $rawData = collect($registration->raw_data ?? [])
+                ->mapWithKeys(fn ($value, $key) => [$this->normalizeColumnLabel((string) $key) => $value]);
 
             return [
                 'name' => $registration->name,
@@ -384,12 +403,61 @@ class AttendanceController extends Controller
                 'attended' => $registration->attendance !== null,
                 'attended_at' => $registration->attendance?->attended_at?->toDateTimeString(),
                 'form_values' => collect($formColumns)
-                    ->map(fn (array $column) => $answers->get($column['id'])?->value)
+                    ->map(function (array $column) use ($answers, $rawData) {
+                        $value = $answers->get($column['id'])?->value;
+
+                        return $value !== null && $value !== ''
+                            ? $value
+                            : $rawData->get($column['key']);
+                    })
                     ->all(),
             ];
         })->all();
 
-        return ['rows' => $rows, 'form_columns' => $formColumns];
+        return [
+            'rows' => $rows,
+            'form_columns' => $formColumns,
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Resolve the form response even when an older response was never linked
+     * to its registration through registration_id.
+     */
+    protected function formResponseFor(Registration $registration): ?FormResponse
+    {
+        if ($registration->relationLoaded('formResponse')) {
+            $response = $registration->getRelation('formResponse');
+        } else {
+            $response = $registration->formResponse;
+        }
+
+        if ($response !== null || ! $registration->form_id) {
+            return $response;
+        }
+
+        $response = FormResponse::query()
+            ->where('form_id', $registration->form_id)
+            ->where(function ($query) use ($registration) {
+                if ($registration->user_id) {
+                    $query->orWhere('user_id', $registration->user_id);
+                }
+                if ($registration->email) {
+                    $query->orWhereRaw('LOWER(respondent_email) = ?', [mb_strtolower($registration->email)]);
+                }
+                if ($registration->name) {
+                    $query->orWhere('respondent_name', $registration->name);
+                }
+            })
+            ->with('answers')
+            ->latest('submitted_at')
+            ->latest('id')
+            ->first();
+
+        $registration->setRelation('formResponse', $response);
+
+        return $response;
     }
 
     /**
@@ -397,7 +465,7 @@ class AttendanceController extends Controller
      * Core participant columns already shown by the report are skipped.
      *
      * @param  Collection<int, Registration>  $registrations
-     * @return array<int, array{id: int, label: string}>
+     * @return array<int, array{id: int, label: string, key: string}>
      */
     protected function formColumnsFor($registrations): array
     {
@@ -441,7 +509,11 @@ class AttendanceController extends Controller
                 }
 
                 $seen[] = $this->normalizeColumnLabel($unique);
-                $columns[] = ['id' => (int) $question->id, 'label' => $unique];
+                $columns[] = [
+                    'id' => (int) $question->id,
+                    'label' => $unique,
+                    'key' => $this->normalizeColumnLabel($unique),
+                ];
             }
         }
 

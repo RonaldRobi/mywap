@@ -13,11 +13,19 @@
         .hadir { color: #16a34a; font-weight: bold; }
         .tidak { color: #d97706; font-weight: bold; }
         .footer { margin-top: 20px; font-size: 10px; color: #666; }
+        .notice { margin: 8px 0 0; padding: 6px 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 10px; }
     </style>
 </head>
 <body>
     <h1>{{ $title }}</h1>
     <h2>Dijana oleh {{ $generatedBy }} — {{ $generatedAt->format('d/m/Y H:i') }}</h2>
+
+    @if(isset($shown, $total) && $shown < $total)
+        <p class="notice">
+            Menunjukkan {{ $shown }} daripada {{ $total }} rekod. Gunakan <strong>Export Excel</strong>
+            untuk laporan penuh.
+        </p>
+    @endif
 
     <table>
         <thead>

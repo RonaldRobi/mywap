@@ -6,6 +6,7 @@ use App\Enums\RegistrationStatus;
 use App\Imports\RawSpreadsheet;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\FormResponse;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
@@ -458,12 +459,51 @@ class RegistrationImportService
 
     private function answerValue(Registration $registration, int $questionId): ?string
     {
-        $answer = $registration->formResponse?->answers
+        $answer = $this->formResponseFor($registration)?->answers
             ->firstWhere('form_question_id', $questionId);
 
         $value = $answer?->value;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Older responses may not have registration_id yet; match the response by
+     * form plus user/email/name and memoize it on the registration model.
+     */
+    private function formResponseFor(Registration $registration): ?FormResponse
+    {
+        if ($registration->relationLoaded('formResponse')) {
+            $response = $registration->getRelation('formResponse');
+        } else {
+            $response = $registration->formResponse;
+        }
+
+        if ($response !== null || ! $registration->form_id) {
+            return $response;
+        }
+
+        $response = FormResponse::query()
+            ->where('form_id', $registration->form_id)
+            ->where(function ($query) use ($registration) {
+                if ($registration->user_id) {
+                    $query->orWhere('user_id', $registration->user_id);
+                }
+                if ($registration->email) {
+                    $query->orWhereRaw('LOWER(respondent_email) = ?', [mb_strtolower($registration->email)]);
+                }
+                if ($registration->name) {
+                    $query->orWhere('respondent_name', $registration->name);
+                }
+            })
+            ->with('answers')
+            ->latest('submitted_at')
+            ->latest('id')
+            ->first();
+
+        $registration->setRelation('formResponse', $response);
+
+        return $response;
     }
 
     /**
