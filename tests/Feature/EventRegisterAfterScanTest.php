@@ -109,6 +109,8 @@ class EventRegisterAfterScanTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Events/GuestCheckin')
+                ->where('notFound', true)
+                ->where('identifier', '0191234567')
                 ->where('registerAction.url', route('events.register.public', $form->share_token)));
     }
 

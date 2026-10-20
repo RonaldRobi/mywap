@@ -110,7 +110,9 @@ class AttendanceController extends Controller
             return Inertia::render('Events/GuestCheckin', [
                 'event' => $this->serializeEvent($event),
                 'attendUrl' => route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]),
-                'error' => 'Tiada rekod pendaftaran dijumpai. Sila semak semula maklumat anda.',
+                'identifier' => $identifier,
+                'notFound' => true,
+                'error' => 'Tiada rekod dijumpai untuk No. IC/No. telefon tersebut. Sila semak semula, atau daftar sebagai peserta baharu di bawah.',
                 'registerAction' => $this->registrationAction($event, false),
             ]);
         }
@@ -120,7 +122,9 @@ class AttendanceController extends Controller
             return Inertia::render('Events/GuestCheckin', [
                 'event' => $this->serializeEvent($event),
                 'attendUrl' => route('events.attend', ['id' => $event->id, 'token' => $event->attendance_token]),
+                'identifier' => $identifier,
                 'error' => $error,
+                'registerAction' => $this->registrationAction($event, false),
             ]);
         }
 

@@ -200,6 +200,11 @@ class Registration extends Model
         return $this->hasOne(Attendance::class);
     }
 
+    public function formResponse(): HasOne
+    {
+        return $this->hasOne(FormResponse::class, 'registration_id')->latestOfMany();
+    }
+
     public function payments(): MorphMany
     {
         return $this->morphMany(Payment::class, 'payable');

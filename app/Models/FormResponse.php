@@ -10,6 +10,7 @@ class FormResponse extends Model
 {
     protected $fillable = [
         'form_id',
+        'registration_id',
         'user_id',
         'respondent_name',
         'respondent_email',
@@ -27,6 +28,11 @@ class FormResponse extends Model
     public function form(): BelongsTo
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public function registration(): BelongsTo
+    {
+        return $this->belongsTo(Registration::class);
     }
 
     public function user(): BelongsTo

@@ -258,8 +258,10 @@ class RegistrationController extends Controller
             abort(403);
         }
 
-        $query = Registration::with(['user', 'organization', 'form', 'latestPayment', 'attendance'])
-            ->where('event_id', $event->id);
+        $query = Registration::with([
+            'user', 'organization', 'form', 'latestPayment', 'attendance',
+            'formResponse.answers.question',
+        ])->where('event_id', $event->id);
 
         if ($request->filled('org')) {
             $query->where('organization_id', (int) $request->org);
@@ -307,6 +309,7 @@ class RegistrationController extends Controller
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
             'filters' => $request->only(['org', 'status', 'search']),
             'exportIncomplete' => $exportIncomplete,
+            'extraColumns' => $this->registrationImports->rawColumns($event),
         ]);
     }
 
@@ -376,7 +379,7 @@ class RegistrationController extends Controller
 
             fputcsv($file, $definition['headers']);
 
-            Registration::with('organization')
+            Registration::with(['organization', 'formResponse.answers.question'])
                 ->where('event_id', $event->id)
                 ->orderBy('id')
                 ->chunk(500, function ($registrations) use ($file, $definition) {

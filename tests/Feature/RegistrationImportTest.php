@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Models\Event;
+use App\Models\Form;
+use App\Models\FormQuestion;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -206,6 +209,82 @@ class RegistrationImportTest extends TestCase
             ['Timestamp', 'Nama Penuh', 'No. IC', 'No. Telefon', 'Emel', 'Jantina', 'Negeri'],
             $import->headers,
         );
+    }
+
+    public function test_registrations_page_exposes_every_imported_column(): void
+    {
+        $event = $this->event();
+
+        $csv = "Timestamp,Nama Penuh,No. IC,No. Telefon,Emel,Jantina,Negeri\n"
+            ."2026-10-19 10:00:00,Ahmad Ali,980101-01-1234,012-3456789,ahmad@example.com,Lelaki,Selangor\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => $this->mapping(),
+            ])
+            ->assertOk();
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations', $event->id))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('extraColumns', [
+                    'Timestamp', 'Nama Penuh', 'No. IC', 'No. Telefon', 'Emel', 'Jantina', 'Negeri',
+                ])
+                ->where('registrations.data.0.raw_data.Jantina', 'Lelaki')
+                ->where('registrations.data.0.raw_data.Negeri', 'Selangor'));
+    }
+
+    public function test_export_includes_answers_from_mywap_registration_form(): void
+    {
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Pendaftaran',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $nama = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama',
+            'type' => 'text',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $jawatan = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Jawatan',
+            'type' => 'text',
+            'required' => false,
+            'sort_order' => 1,
+        ]);
+
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => [
+                $nama->id => 'Ali Bin Abu',
+                $jawatan->id => 'Setiausaha',
+            ],
+        ])->assertSessionHas('success');
+
+        $registration = Registration::where('event_id', $event->id)->firstOrFail();
+        $this->assertSame($registration->id, $registration->formResponse?->registration_id);
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id));
+
+        $response->assertOk();
+
+        $content = ltrim($response->streamedContent(), "\xEF\xBB\xBF");
+        $lines = preg_split('/\r\n|\n|\r/', trim($content));
+        $headers = str_getcsv($lines[0]);
+        $row = str_getcsv($lines[1]);
+
+        $this->assertContains('Jawatan', $headers);
+        $this->assertSame('Setiausaha', $row[array_search('Jawatan', $headers, true)]);
     }
 
     public function test_partial_reimport_does_not_drop_earlier_columns(): void

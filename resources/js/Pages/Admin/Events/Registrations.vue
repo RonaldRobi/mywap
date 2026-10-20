@@ -10,6 +10,7 @@ const props = defineProps({
     organizations: Array,
     filters: Object,
     exportIncomplete: Boolean,
+    extraColumns: Array,
 });
 
 // ─── Import Google Form (CSV/XLSX) ──────────────────────────────────────────
@@ -122,6 +123,19 @@ async function commitImport() {
     }
 }
 
+
+const rawColumnsOpen = ref(false);
+const rawColumnsRegistration = ref(null);
+
+function openRawColumns(registration) {
+    rawColumnsRegistration.value = registration;
+    rawColumnsOpen.value = true;
+}
+
+function closeRawColumns() {
+    rawColumnsOpen.value = false;
+    rawColumnsRegistration.value = null;
+}
 
 const statusForm = useForm({ status: '' });
 
@@ -268,15 +282,25 @@ function applyFilters() {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <select
-                                    :value="r.status"
-                                    @change="updateStatus(r, $event.target.value)"
-                                    class="rounded-xl border border-gray-200 px-2 py-1.5 text-xs focus:ring-0"
-                                >
-                                    <option value="confirmed">Disahkan</option>
-                                    <option value="pending">Menunggu</option>
-                                    <option value="cancelled">Dibatalkan</option>
-                                </select>
+                                <div class="inline-flex flex-col items-end gap-1.5">
+                                    <button
+                                        v-if="extraColumns.length"
+                                        type="button"
+                                        @click="openRawColumns(r)"
+                                        class="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50"
+                                    >
+                                        Lajur ({{ extraColumns.length }})
+                                    </button>
+                                    <select
+                                        :value="r.status"
+                                        @change="updateStatus(r, $event.target.value)"
+                                        class="rounded-xl border border-gray-200 px-2 py-1.5 text-xs focus:ring-0"
+                                    >
+                                        <option value="confirmed">Disahkan</option>
+                                        <option value="pending">Menunggu</option>
+                                        <option value="cancelled">Dibatalkan</option>
+                                    </select>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -406,6 +430,70 @@ function applyFilters() {
                     >
                         {{ importing ? 'Mengimport...' : 'Import Sekarang' }}
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Semua lajur Google Form ───────────────────────────────────── -->
+        <div
+            v-if="rawColumnsOpen && rawColumnsRegistration"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
+            @click.self="closeRawColumns"
+        >
+            <div class="my-8 w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-6">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-900">Lajur Google Form</h2>
+                        <p class="mt-1 text-xs text-gray-500">
+                            {{ rawColumnsRegistration.name }} · {{ rawColumnsRegistration.registration_no }}
+                        </p>
+                    </div>
+                    <button type="button" @click="closeRawColumns" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <div class="max-h-[65vh] overflow-y-auto p-6">
+                    <div class="mb-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                        <p><span class="text-gray-400">No. IC:</span> {{ rawColumnsRegistration.ic_number || '—' }}</p>
+                        <p><span class="text-gray-400">Telefon:</span> {{ rawColumnsRegistration.phone || '—' }}</p>
+                        <p><span class="text-gray-400">Emel:</span> {{ rawColumnsRegistration.email || '—' }}</p>
+                        <p><span class="text-gray-400">No. Ahli:</span> {{ rawColumnsRegistration.member_no || '—' }}</p>
+                    </div>
+
+                    <div class="overflow-hidden rounded-xl border border-gray-100">
+                        <table class="w-full text-xs">
+                            <thead class="bg-gray-50 text-left text-[10px] uppercase tracking-wide text-gray-400">
+                                <tr>
+                                    <th class="w-1/3 px-3 py-2">Lajur</th>
+                                    <th class="px-3 py-2">Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                <tr v-for="column in extraColumns" :key="column">
+                                    <td class="px-3 py-2 align-top font-semibold text-gray-600">{{ column }}</td>
+                                    <td class="whitespace-pre-wrap px-3 py-2 text-gray-700">
+                                        {{ rawColumnsRegistration.raw_data?.[column] ?? '—' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div
+                        v-if="Object.keys(rawColumnsRegistration.form_answers || {}).length"
+                        class="mt-6"
+                    >
+                        <h3 class="mb-2 text-sm font-bold text-gray-800">Jawapan Borang myWAP</h3>
+                        <div class="overflow-hidden rounded-xl border border-gray-100">
+                            <table class="w-full text-xs">
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr v-for="(value, label) in rawColumnsRegistration.form_answers" :key="label">
+                                        <td class="w-1/3 px-3 py-2 align-top font-semibold text-gray-600">{{ label }}</td>
+                                        <td class="whitespace-pre-wrap px-3 py-2 text-gray-700">{{ value || '—' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

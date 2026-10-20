@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\RegistrationStatus;
 use App\Imports\RawSpreadsheet;
 use App\Models\Event;
+use App\Models\Form;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
@@ -251,16 +252,13 @@ class RegistrationImportService
     }
 
     /**
-     * Build the export column definition for an event.
+     * Every original Google Form / spreadsheet column known for an event, in
+     * first-seen order. Columns live in raw_data, so no schema change is
+     * needed when the form gains new questions.
      *
-     * Original import headers are kept in their original order so a CSV can be
-     * exported and imported back without losing any Google Form column. System
-     * columns are appended only when their label does not collide with an
-     * existing import header.
-     *
-     * @return array{headers: array<int, string>, raw: array<int, string>, overrides: array<string, string>, system: array<string, string>}
+     * @return array<int, string>
      */
-    public function exportDefinition(Event $event): array
+    public function rawColumns(Event $event): array
     {
         $rawHeaders = [];
 
@@ -296,6 +294,49 @@ class RegistrationImportService
                 }
             });
 
+        return $rawHeaders;
+    }
+
+    /**
+     * Build the export column definition for an event.
+     *
+     * CSV/XLSX import headers come first, followed by questions answered in
+     * the myWAP registration form, then system columns. A form question whose
+     * label matches an import header reuses that column, so the same field is
+     * never duplicated when both data sources are present.
+     *
+     * @return array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string}>, overrides: array<string, string>, system: array<string, string>}
+     */
+    public function exportDefinition(Event $event): array
+    {
+        $rawHeaders = $this->rawColumns($event);
+        $normalizedRaw = array_map(fn (string $header) => $this->normalizeHeader($header), $rawHeaders);
+        $seen = $normalizedRaw;
+
+        $rawQuestions = [];
+        $formColumns = [];
+
+        foreach ($this->eventFormQuestions($event) as $question) {
+            $rawIndex = array_search($this->normalizeHeader($question['label']), $normalizedRaw, true);
+
+            if ($rawIndex !== false && ! isset($rawQuestions[$rawHeaders[$rawIndex]])) {
+                $rawQuestions[$rawHeaders[$rawIndex]] = $question['id'];
+
+                continue;
+            }
+
+            $label = $question['label'];
+            $suffix = 2;
+
+            while (in_array($this->normalizeHeader($label), $seen, true)) {
+                $label = $question['label'].' ('.$suffix.')';
+                $suffix++;
+            }
+
+            $seen[] = $this->normalizeHeader($label);
+            $formColumns[] = ['id' => $question['id'], 'label' => $label];
+        }
+
         $overrides = [];
         foreach ($this->detectMapping($rawHeaders) as $field => $index) {
             if ($index !== null && isset($rawHeaders[$index])) {
@@ -303,25 +344,26 @@ class RegistrationImportService
             }
         }
 
-        $existing = array_map(fn (string $header) => $this->normalizeHeader($header), $rawHeaders);
         $system = [];
 
         foreach ($this->systemColumns() as $key => $label) {
-            if (! in_array($this->normalizeHeader($label), $existing, true)) {
+            if (! in_array($this->normalizeHeader($label), $seen, true)) {
                 $system[$key] = $label;
             }
         }
 
         return [
-            'headers' => array_merge($rawHeaders, array_values($system)),
+            'headers' => array_merge($rawHeaders, array_column($formColumns, 'label'), array_values($system)),
             'raw' => $rawHeaders,
+            'raw_questions' => $rawQuestions,
+            'form' => $formColumns,
             'overrides' => $overrides,
             'system' => $system,
         ];
     }
 
     /**
-     * @param  array{headers: array<int, string>, raw: array<int, string>, overrides: array<string, string>, system: array<string, string>}  $definition
+     * @param  array{headers: array<int, string>, raw: array<int, string>, raw_questions: array<string, int>, form: array<int, array{id: int, label: string}>, overrides: array<string, string>, system: array<string, string>}  $definition
      * @return array<int, string|null>
      */
     public function exportRow(Registration $registration, array $definition): array
@@ -335,6 +377,10 @@ class RegistrationImportService
                 ? $this->registrationValue($registration, $field)
                 : ($raw[$header] ?? null);
 
+            if ($value === null && isset($definition['raw_questions'][$header])) {
+                $value = $this->answerValue($registration, $definition['raw_questions'][$header]);
+            }
+
             if ($field === 'ic_number' || $field === 'phone') {
                 $value = $this->excelText($value);
             }
@@ -342,11 +388,65 @@ class RegistrationImportService
             $row[] = $value;
         }
 
+        foreach ($definition['form'] as $column) {
+            $row[] = $this->answerValue($registration, $column['id']);
+        }
+
         foreach (array_keys($definition['system']) as $key) {
             $row[] = $this->systemValue($registration, $key);
         }
 
         return $row;
+    }
+
+    /**
+     * Questions that belong to forms used by this event's registrations.
+     *
+     * @return array<int, array{id: int, label: string}>
+     */
+    private function eventFormQuestions(Event $event): array
+    {
+        $formIds = Registration::query()
+            ->where('event_id', $event->id)
+            ->whereNotNull('form_id')
+            ->distinct()
+            ->pluck('form_id');
+
+        $forms = Form::query()
+            ->with(['questions' => fn ($query) => $query->orderBy('sort_order')->orderBy('id')])
+            ->where(function ($query) use ($event, $formIds) {
+                $query->where('event_id', $event->id);
+
+                if ($formIds->isNotEmpty()) {
+                    $query->orWhereIn('id', $formIds);
+                }
+            })
+            ->orderBy('id')
+            ->get();
+
+        $questions = [];
+
+        foreach ($forms as $form) {
+            foreach ($form->questions as $question) {
+                $label = trim((string) $question->label);
+                $questions[] = [
+                    'id' => (int) $question->id,
+                    'label' => $label !== '' ? $label : 'Soalan '.$question->id,
+                ];
+            }
+        }
+
+        return $questions;
+    }
+
+    private function answerValue(Registration $registration, int $questionId): ?string
+    {
+        $answer = $registration->formResponse?->answers
+            ->firstWhere('form_question_id', $questionId);
+
+        $value = $answer?->value;
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**

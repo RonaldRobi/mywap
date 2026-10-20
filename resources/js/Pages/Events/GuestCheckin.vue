@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -7,15 +7,27 @@ const props = defineProps({
     attendUrl: String,
     error: { type: String, default: '' },
     registerAction: { type: Object, default: null },
+    identifier: { type: String, default: '' },
+    notFound: { type: Boolean, default: false },
 });
 
 const token = computed(() => props.attendUrl.split('/').pop());
 
-// Aliran 1: peserta yang sudah mendaftar — padankan rekod sedia ada.
-const identifyForm = useForm({ identifier: '' });
+// Aliran utama: peserta yang sudah mendaftar — sahkan guna IC / no telefon.
+const identifyForm = useForm({ identifier: props.identifier ?? '' });
 
-// Aliran 2: walk-in — tiada rekod; cipta pendaftaran baharu.
+// Aliran kedua: belum mendaftar — disembunyikan sehingga pengguna klik pautan.
 const walkInForm = useForm({ name: '', phone: '', email: '' });
+const showRegistration = ref(Boolean(props.notFound));
+
+// Inertia boleh guna semula komponen yang sama selepas POST; buka semula
+// bahagian pendaftaran apabila rekod tidak dijumpai.
+watch(
+    () => props.notFound,
+    (notFound) => {
+        if (notFound) showRegistration.value = true;
+    },
+);
 
 function submitIdentify() {
     identifyForm.post(route('events.attend.identify', { id: props.event.id, token: token.value }));
@@ -27,7 +39,7 @@ function submitWalkIn() {
 </script>
 
 <template>
-    <Head :title="`Semakan Kehadiran: ${event.title}`" />
+    <Head :title="`Sahkan Kehadiran: ${event.title}`" />
 
     <!-- Full-screen centered — no AppLayout (mobile PWA feel) -->
     <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex items-center justify-center p-5">
@@ -43,26 +55,30 @@ function submitWalkIn() {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9a2 2 0 10-4 0 2 2 0 004 0zM6 20a6 6 0 0112 0" />
                             </svg>
                         </div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-1">Semakan Kehadiran</p>
+                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-1">Sahkan Kehadiran</p>
                         <h1 class="text-xl font-extrabold text-gray-800 leading-snug">{{ event.title }}</h1>
                         <p class="text-sm text-gray-500 mt-1">{{ event.start_formatted }}</p>
                     </div>
 
                     <p v-if="error" class="text-xs text-red-600 bg-red-50 border border-red-100 rounded-2xl p-3">{{ error }}</p>
 
-                    <!-- ── Aliran 1: sudah mendaftar ───────────────────────────── -->
+                    <!-- ── Aliran utama: sudah mendaftar ───────────────────────── -->
                     <form @submit.prevent="submitIdentify" class="space-y-3">
                         <div>
-                            <p class="text-sm font-bold text-gray-800">Sudah mendaftar?</p>
+                            <label for="attendance-identifier" class="text-sm font-bold text-gray-800">
+                                No. IC atau No. Telefon
+                            </label>
                             <p class="text-xs text-gray-500 mt-0.5">
-                                Taip salah satu: No Pendaftaran / No IC / No Telefon / Emel
+                                Masukkan nombor yang digunakan semasa mendaftar.
                             </p>
                         </div>
                         <input
+                            id="attendance-identifier"
                             v-model="identifyForm.identifier"
                             required
+                            autocomplete="off"
                             class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-center text-sm font-semibold tracking-wider focus:ring-0 focus:border-indigo-300"
-                            placeholder="cth. REG-1A2B3C4D"
+                            placeholder="cth. 901234-56-7890 atau 0123456789"
                         />
                         <p v-if="identifyForm.errors.identifier" class="text-xs text-red-500 text-center">{{ identifyForm.errors.identifier }}</p>
 
@@ -72,70 +88,89 @@ function submitWalkIn() {
                             class="w-full rounded-2xl py-3.5 font-bold text-sm text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
                             :style="{ backgroundColor: event.color_theme ?? '#4f46e5' }"
                         >
-                            {{ identifyForm.processing ? 'Menyemak...' : 'Semak & Sahkan Kehadiran' }}
+                            {{ identifyForm.processing ? 'Menyemak...' : 'Sahkan Kehadiran' }}
                         </button>
                     </form>
 
-                    <!-- ── Pemisah ────────────────────────────────────────────── -->
-                    <div class="flex items-center gap-3">
-                        <span class="h-px flex-1 bg-gray-200"></span>
-                        <span class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Atau</span>
-                        <span class="h-px flex-1 bg-gray-200"></span>
+                    <!-- ── Pautan kecil: belum mendaftar ───────────────────────── -->
+                    <div class="text-center">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 underline underline-offset-4 hover:text-indigo-600"
+                            :aria-expanded="showRegistration"
+                            @click="showRegistration = !showRegistration"
+                        >
+                            {{ showRegistration ? 'Sembunyikan pendaftaran' : 'Belum mendaftar? Daftar di sini' }}
+                            <svg
+                                class="h-3 w-3 transition-transform"
+                                :class="showRegistration ? 'rotate-180' : ''"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
                     </div>
 
-                    <!-- ── Aliran 2: belum mendaftar (walk-in) ────────────────── -->
-                    <form @submit.prevent="submitWalkIn" class="space-y-3">
-                        <div>
-                            <p class="text-sm font-bold text-gray-800">Belum mendaftar?</p>
-                            <p class="text-xs text-gray-500 mt-0.5">Isi maklumat di bawah untuk daftar hadir terus.</p>
+                    <!-- ── Aliran kedua: belum mendaftar (tersembunyi) ─────────── -->
+                    <div v-if="showRegistration" class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="h-px flex-1 bg-gray-200"></span>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Belum Mendaftar</span>
+                            <span class="h-px flex-1 bg-gray-200"></span>
                         </div>
 
-                        <div>
-                            <input
-                                v-model="walkInForm.name"
-                                required
-                                class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
-                                placeholder="Nama penuh"
-                            />
-                            <p v-if="walkInForm.errors.name" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.name }}</p>
+                        <form @submit.prevent="submitWalkIn" class="space-y-3">
+                            <p class="text-xs text-gray-500">Isi maklumat ringkas untuk daftar hadir terus.</p>
+
+                            <div>
+                                <input
+                                    v-model="walkInForm.name"
+                                    required
+                                    class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
+                                    placeholder="Nama penuh"
+                                />
+                                <p v-if="walkInForm.errors.name" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.name }}</p>
+                            </div>
+
+                            <div>
+                                <input
+                                    v-model="walkInForm.phone"
+                                    required
+                                    type="tel"
+                                    class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
+                                    placeholder="No. telefon (cth. 0123456789)"
+                                />
+                                <p v-if="walkInForm.errors.phone" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.phone }}</p>
+                            </div>
+
+                            <div>
+                                <input
+                                    v-model="walkInForm.email"
+                                    type="email"
+                                    class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
+                                    placeholder="Emel (pilihan)"
+                                />
+                                <p v-if="walkInForm.errors.email" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.email }}</p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                :disabled="walkInForm.processing"
+                                class="w-full rounded-2xl bg-emerald-600 py-3.5 font-bold text-sm text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+                            >
+                                {{ walkInForm.processing ? 'Merekod...' : 'Daftar & Sahkan Kehadiran' }}
+                            </button>
+                        </form>
+
+                        <!-- Pendaftaran rasmi (jika masih dibuka) -->
+                        <div v-if="registerAction?.url" class="rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4 text-center">
+                            <p class="text-xs text-gray-600">Mahu daftar secara rasmi dengan maklumat penuh?</p>
+                            <a :href="registerAction.url" class="mt-1 inline-block text-xs font-bold text-amber-700 underline">
+                                Buka Borang Pendaftaran
+                            </a>
                         </div>
-
-                        <div>
-                            <input
-                                v-model="walkInForm.phone"
-                                required
-                                type="tel"
-                                class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
-                                placeholder="No. telefon (cth. 0123456789)"
-                            />
-                            <p v-if="walkInForm.errors.phone" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.phone }}</p>
-                        </div>
-
-                        <div>
-                            <input
-                                v-model="walkInForm.email"
-                                type="email"
-                                class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold focus:ring-0 focus:border-emerald-300"
-                                placeholder="Emel (pilihan)"
-                            />
-                            <p v-if="walkInForm.errors.email" class="mt-1 text-xs text-red-500">{{ walkInForm.errors.email }}</p>
-                        </div>
-
-                        <button
-                            type="submit"
-                            :disabled="walkInForm.processing"
-                            class="w-full rounded-2xl bg-emerald-600 py-3.5 font-bold text-sm text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
-                        >
-                            {{ walkInForm.processing ? 'Merekod...' : 'Daftar Hadir Sekali' }}
-                        </button>
-                    </form>
-
-                    <!-- Pendaftaran rasmi (jika masih dibuka) -->
-                    <div v-if="registerAction?.url" class="rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-4 text-center">
-                        <p class="text-xs text-gray-600">Mahu daftar secara rasmi dengan maklumat penuh?</p>
-                        <a :href="registerAction.url" class="mt-1 inline-block text-xs font-bold text-amber-700 underline">
-                            Sila Daftar di Sini
-                        </a>
                     </div>
                 </div>
             </div>

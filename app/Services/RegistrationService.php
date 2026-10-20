@@ -158,6 +158,7 @@ class RegistrationService
 
             $response = FormResponse::create([
                 'form_id' => $form->id,
+                'registration_id' => $registration->id,
                 'user_id' => $user?->id,
                 'respondent_name' => $registration->name,
                 'respondent_email' => $registration->email,
@@ -330,6 +331,12 @@ class RegistrationService
             'status_label' => $r->status->label(),
             'ticket_type' => $r->ticket_type,
             'document_path' => $r->document_path,
+            'raw_data' => $r->raw_data ?? [],
+            'form_answers' => $r->formResponse?->answers
+                ->mapWithKeys(fn ($answer) => [
+                    ($answer->question?->label ?? 'Soalan '.$answer->form_question_id) => $answer->value,
+                ])
+                ->all() ?? [],
             'organization_name' => $r->organization?->name,
             'form_title' => $r->form?->title,
             'payment_status' => $r->latestPayment?->status ?? 'paid',
