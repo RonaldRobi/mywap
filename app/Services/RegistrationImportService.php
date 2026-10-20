@@ -10,6 +10,7 @@ use App\Models\FormResponse;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
+use App\Support\NameMatcher;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -888,6 +889,34 @@ class RegistrationImportService
         return null;
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private function phoneVariants(string $phone): array
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+
+        if ($digits === '') {
+            return [];
+        }
+
+        $variants = [$phone, $digits];
+
+        if (str_starts_with($digits, '60')) {
+            $variants[] = '0'.substr($digits, 2);
+        }
+        if (str_starts_with($digits, '0')) {
+            $variants[] = substr($digits, 1);
+        }
+        if (! str_starts_with($digits, '0') && ! str_starts_with($digits, '60')) {
+            $variants[] = '0'.$digits;
+        }
+
+        $variants[] = '60'.ltrim($digits, '0');
+
+        return array_values(array_unique(array_filter($variants)));
+    }
+
     private function findMatching(
         int $eventId,
         ?string $ic,
@@ -907,7 +936,7 @@ class RegistrationImportService
         // match exactly, but only when the name is consistent.
         if ($rawIc !== null && ! $icNumeric && $ic === null && ! preg_match('/[eE][+-]?\d+/', $rawIc)) {
             foreach ((clone $query)->where('ic_number', $rawIc)->latest()->limit(5)->get() as $candidate) {
-                if ($this->namesSimilar($name, $candidate->name)) {
+                if (NameMatcher::similar($name, $candidate->name)) {
                     return $candidate;
                 }
             }
@@ -915,7 +944,20 @@ class RegistrationImportService
 
         if ($phone !== null) {
             foreach ((clone $query)->where('phone_normalized', $phone)->latest()->limit(5)->get() as $candidate) {
-                if ($this->namesSimilar($name, $candidate->name)) {
+                if (NameMatcher::similar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
+
+            // Legacy rows may store 123456789 instead of 0123456789.
+            $variants = $this->phoneVariants($phone);
+
+            foreach ((clone $query)
+                ->where(fn ($q) => $q->whereIn('phone_normalized', $variants)->orWhereIn('phone', $variants))
+                ->latest()
+                ->limit(10)
+                ->get() as $candidate) {
+                if (NameMatcher::similar($name, $candidate->name)) {
                     return $candidate;
                 }
             }
@@ -923,7 +965,7 @@ class RegistrationImportService
 
         if ($email !== null) {
             foreach ((clone $query)->whereRaw('LOWER(email) = ?', [$email])->latest()->limit(5)->get() as $candidate) {
-                if ($this->namesSimilar($name, $candidate->name)) {
+                if (NameMatcher::similar($name, $candidate->name)) {
                     return $candidate;
                 }
             }
@@ -960,7 +1002,7 @@ class RegistrationImportService
     {
         foreach ($keys as $key) {
             foreach ($seen[$key] ?? [] as $entry) {
-                if (str_starts_with($key, 'ic:') || $this->namesSimilar($name, $entry['name'])) {
+                if (str_starts_with($key, 'ic:') || NameMatcher::similar($name, $entry['name'])) {
                     return $entry['row'];
                 }
             }
@@ -978,70 +1020,6 @@ class RegistrationImportService
         foreach ($keys as $key) {
             $seen[$key][] = ['row' => $rowNumber, 'name' => $name];
         }
-    }
-
-    private function namesSimilar(?string $a, ?string $b): bool
-    {
-        $a = $this->normalizeName($a);
-        $b = $this->normalizeName($b);
-
-        if ($a === '' || $b === '') {
-            return false;
-        }
-
-        if ($a === $b) {
-            return true;
-        }
-
-        similar_text($a, $b, $percent);
-
-        if ($percent >= 85.0) {
-            return true;
-        }
-
-        $aTokens = explode(' ', $a);
-        $bTokens = explode(' ', $b);
-        $shared = array_intersect($aTokens, $bTokens);
-
-        // A single shared surname is not enough: couples often share a phone
-        // or email but have different names.
-        if (count($shared) >= 2) {
-            return count($shared) / max(1, min(count($aTokens), count($bTokens))) >= 0.5;
-        }
-
-        if (count($shared) === 1 && min(count($aTokens), count($bTokens)) <= 2) {
-            $aRemaining = array_values(array_diff($aTokens, $shared));
-            $bRemaining = array_values(array_diff($bTokens, $shared));
-
-            foreach ($aRemaining as $aToken) {
-                foreach ($bRemaining as $bToken) {
-                    if (strlen($aToken) >= 5 && strlen($bToken) >= 5 && levenshtein($aToken, $bToken) <= 1) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private function normalizeName(?string $name): string
-    {
-        $name = mb_strtolower(trim((string) $name));
-        $name = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $name) ?? '';
-        $tokens = preg_split('/\s+/', trim($name)) ?: [];
-
-        $stopWords = [
-            'bin', 'binti', 'bt', 'b', 'hj', 'hjh', 'haji', 'hajjah',
-            'dato', 'datuk', 'datin', 'dr', 'prof', 'ir', 'h',
-        ];
-
-        $tokens = array_values(array_filter(
-            $tokens,
-            fn (string $token) => strlen($token) > 1 && ! in_array($token, $stopWords, true),
-        ));
-
-        return implode(' ', $tokens);
     }
 
     /**

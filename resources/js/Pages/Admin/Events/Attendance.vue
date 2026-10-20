@@ -112,10 +112,24 @@ const statusColor = {
                 <div>
                     <h1 class="text-2xl font-black text-gray-900 mb-1">Dashboard Kehadiran</h1>
                     <p class="text-sm text-gray-500">Ringkasan kehadiran mengikut program. Klik kad untuk menapis senarai peserta.</p>
+                    <p
+                        class="mt-1 text-xs font-bold"
+                        :class="f.event_id ? 'text-indigo-600' : 'text-amber-600'"
+                    >
+                        {{ f.event_id
+                            ? `Penapis: ${activeEventTitle || 'Program dipilih'}`
+                            : 'Penapis: Semua program — angka di bawah merangkumi program lain juga.' }}
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    <a :href="route('admin.attendance.export.excel') + exportQuery" class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-semibold hover:bg-emerald-700">Export Excel</a>
-                    <a :href="route('admin.attendance.export.pdf') + exportQuery" class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700">Export PDF</a>
+                <div class="text-right">
+                    <div class="flex gap-2">
+                        <a :href="route('admin.attendance.export.excel') + exportQuery" class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-semibold hover:bg-emerald-700">Export Excel</a>
+                        <a :href="route('admin.attendance.export.pdf') + exportQuery" class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700">Export PDF</a>
+                    </div>
+                    <p class="mt-1 text-[11px] text-gray-400">
+                        Export ikut penapis semasa:
+                        {{ f.event_id ? (activeEventTitle || 'program dipilih') : 'semua program' }}
+                    </p>
                 </div>
             </div>
 
@@ -128,7 +142,9 @@ const statusColor = {
                     :class="statActive.all ? 'border-gray-900 ring-2 ring-gray-900/10' : 'border-gray-100'"
                 >
                     <p class="text-3xl font-black text-gray-900">{{ stats.total_registered }}</p>
-                    <p class="text-xs text-gray-400 font-semibold uppercase mt-1">Jumlah Daftar</p>
+                    <p class="text-xs text-gray-400 font-semibold uppercase mt-1">
+                        Jumlah Daftar{{ f.event_id ? '' : ' (Semua Program)' }}
+                    </p>
                 </button>
                 <button
                     type="button"

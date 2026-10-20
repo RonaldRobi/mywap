@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\RegistrationStatus;
 use App\Notifications\RegistrationConfirmationNotification;
+use App\Support\NameMatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -142,6 +143,51 @@ class Registration extends Model
                 'phone_normalized' => static::normalizePhone($value),
             ],
         );
+    }
+
+    /**
+     * Find an existing registration for manual/public form submissions.
+     * A valid IC is authoritative; otherwise phone or email is only used when
+     * the name is similar, so couples sharing a phone are not merged.
+     */
+    public static function findExistingForEvent(
+        int $eventId,
+        ?string $ic,
+        ?string $phone,
+        ?string $email,
+        ?string $name,
+    ): ?Registration {
+        $query = static::query()->where('event_id', $eventId);
+
+        $ic = static::normalizeIc($ic);
+        $phone = static::normalizePhone($phone);
+        $email = $email !== null && trim($email) !== '' ? mb_strtolower(trim($email)) : null;
+
+        if ($ic !== null) {
+            $match = (clone $query)->where('ic_normalized', $ic)->latest()->first();
+
+            if ($match !== null) {
+                return $match;
+            }
+        }
+
+        if ($phone !== null) {
+            foreach ((clone $query)->where('phone_normalized', $phone)->latest()->limit(5)->get() as $candidate) {
+                if (NameMatcher::similar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        if ($email !== null) {
+            foreach ((clone $query)->whereRaw('LOWER(email) = ?', [$email])->latest()->limit(5)->get() as $candidate) {
+                if (NameMatcher::similar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

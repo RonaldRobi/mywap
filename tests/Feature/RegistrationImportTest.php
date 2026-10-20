@@ -4,15 +4,18 @@ namespace Tests\Feature;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormAnswer;
 use App\Models\FormQuestion;
 use App\Models\FormResponse;
 use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
+use App\Services\RegistrationDedupeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -814,6 +817,137 @@ class RegistrationImportTest extends TestCase
         ]), ['identifier' => '129998888'])->assertOk();
 
         $this->assertDatabaseCount('attendances', 2);
+    }
+
+    public function test_duplicate_registrations_are_merged_and_history_is_kept(): void
+    {
+        $event = $this->event();
+
+        $keeper = Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Ahmad Ali',
+            'ic_number' => '900101-01-1234',
+            'phone' => '0123456789',
+            'email' => 'ahmad@example.com',
+            'status' => 'confirmed',
+        ]);
+
+        $duplicate = Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Ahmad Ali',
+            'ic_number' => '900101011234',
+            'phone' => '0123456789',
+            'email' => 'ahmad2@example.com',
+            'status' => 'confirmed',
+            'raw_data' => ['JAWATAN' => 'Pengerusi'],
+        ]);
+
+        // Same phone but a different person: must not be merged.
+        $spouse = Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Siti Aminah',
+            'ic_number' => '910202-02-5678',
+            'phone' => '0123456789',
+            'email' => 'siti@example.com',
+            'status' => 'confirmed',
+        ]);
+
+        Attendance::create([
+            'event_id' => $event->id,
+            'registration_id' => $keeper->id,
+            'attended_at' => now(),
+            'method' => 'scan',
+        ]);
+
+        $payment = Payment::create([
+            'payable_type' => Registration::class,
+            'payable_id' => $duplicate->id,
+            'amount' => 50,
+            'status' => 'successful',
+            'reference' => 'PAY-DUPLICATE',
+        ]);
+
+        $service = app(RegistrationDedupeService::class);
+        $summary = $service->summary($event);
+
+        $this->assertSame(3, $summary['total_rows']);
+        $this->assertSame(2, $summary['unique_identities']);
+        $this->assertSame(1, $summary['duplicate_rows']);
+        $this->assertSame(1, $summary['groups_count']);
+
+        $result = $service->merge($event);
+
+        $this->assertSame(1, $result['deleted']);
+        $this->assertSame(2, $result['remaining']);
+        $this->assertSame(2, Registration::where('event_id', $event->id)->count());
+        $this->assertNull(Registration::find($duplicate->id));
+        $this->assertNotNull(Registration::find($keeper->id));
+        $this->assertNotNull(Registration::find($spouse->id));
+
+        $this->assertSame(
+            $keeper->id,
+            Attendance::where('event_id', $event->id)->value('registration_id'),
+        );
+        $this->assertSame(
+            $keeper->id,
+            Payment::where('reference', 'PAY-DUPLICATE')->value('payable_id'),
+        );
+        $this->assertSame('Pengerusi', Registration::find($keeper->id)->raw_data['JAWATAN']);
+    }
+
+    public function test_repeated_public_form_submission_updates_existing_registration(): void
+    {
+        $event = $this->event();
+
+        $form = Form::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Pendaftaran',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $nama = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'sort_order' => 0]);
+        $ic = FormQuestion::create(['form_id' => $form->id, 'label' => 'No IC', 'type' => 'text', 'required' => true, 'sort_order' => 1]);
+        $phone = FormQuestion::create(['form_id' => $form->id, 'label' => 'No Telefon', 'type' => 'phone', 'required' => true, 'sort_order' => 2]);
+        $email = FormQuestion::create(['form_id' => $form->id, 'label' => 'Emel', 'type' => 'email', 'required' => false, 'sort_order' => 3]);
+
+        $answers = [
+            $nama->id => 'Ali Bin Abu',
+            $ic->id => '900101-01-1234',
+            $phone->id => '0123456789',
+            $email->id => 'ali@example.com',
+        ];
+
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => $answers,
+        ])->assertSessionHas('success');
+
+        $first = Registration::where('event_id', $event->id)->firstOrFail();
+
+        // Same person submits again (e.g. refreshed the form).
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => $answers,
+        ])->assertSessionHas('success');
+
+        $this->assertSame(1, Registration::where('event_id', $event->id)->count());
+        $this->assertSame($first->id, Registration::where('event_id', $event->id)->firstOrFail()->id);
+        $this->assertSame(2, FormResponse::where('registration_id', $first->id)->count());
+
+        // A different person sharing the same phone must still get a new record.
+        $this->post(route('events.register.public.store', ['token' => $form->share_token]), [
+            'answers' => [
+                $nama->id => 'Siti Aminah',
+                $ic->id => '910202-02-5678',
+                $phone->id => '0123456789',
+                $email->id => 'siti@example.com',
+            ],
+        ])->assertSessionHas('success');
+
+        $this->assertSame(2, Registration::where('event_id', $event->id)->count());
     }
 
     public function test_partial_reimport_does_not_drop_earlier_columns(): void

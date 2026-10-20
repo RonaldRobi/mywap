@@ -131,6 +131,26 @@ class RegistrationService
 
         $participant = $this->mapAnswersToParticipant($form, $data['answers'] ?? []);
 
+        $name = $participant['name'] ?: $user?->name;
+        $email = $participant['email'] ?: $user?->email;
+        $phone = $participant['phone'] ?: $user?->phone;
+        $ic = $participant['ic_number'] ?: $user?->ic_number;
+
+        // Never create a second registration for the same person. Repeated
+        // public form submissions update the existing record instead.
+        $existing = null;
+
+        if ($user) {
+            $existing = Registration::where('event_id', $event->id)
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first();
+        }
+
+        if (! $existing) {
+            $existing = Registration::findExistingForEvent($event->id, $ic, $phone, $email, $name);
+        }
+
         $ticketType = $data['ticket_type'] ?? null;
         $amount = $form->hasTiers()
             ? ($form->priceForTier($ticketType) ?: 0)
@@ -139,22 +159,63 @@ class RegistrationService
             ? $data['document']->store('registration-documents', 'public')
             : null;
 
-        $registration = DB::transaction(function () use ($form, $event, $data, $user, $participant, $ticketType, $documentPath) {
-            $registration = Registration::create([
-                'event_id' => $event->id,
-                'form_id' => $form->id,
-                'user_id' => $user?->id,
-                'organization_id' => $user?->current_organization_id
-                    ?? $form->organization_id,
-                'member_no' => $user?->member_no,
-                'name' => $participant['name'] ?: ($user?->name ?? 'Peserta'),
-                'email' => $participant['email'] ?: $user?->email,
-                'phone' => $participant['phone'] ?: $user?->phone,
-                'ic_number' => $participant['ic_number'] ?: $user?->ic_number,
-                'ticket_type' => $ticketType,
-                'document_path' => $documentPath,
-                'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
-            ]);
+        $registration = DB::transaction(function () use ($form, $event, $data, $user, $existing, $name, $email, $phone, $ic, $ticketType, $documentPath) {
+            if ($existing) {
+                $attributes = [
+                    'form_id' => $form->id,
+                    'name' => $name ?: $existing->name,
+                ];
+
+                if ($user !== null) {
+                    $attributes['user_id'] = $user->id;
+                    $attributes['member_no'] = $user->member_no ?: $existing->member_no;
+                }
+
+                if ($user?->current_organization_id ?? $form->organization_id) {
+                    $attributes['organization_id'] = $user?->current_organization_id ?? $form->organization_id;
+                }
+
+                if ($email) {
+                    $attributes['email'] = $email;
+                }
+                if ($phone) {
+                    $attributes['phone'] = $phone;
+                }
+                if ($ic) {
+                    $attributes['ic_number'] = $ic;
+                }
+                if ($ticketType) {
+                    $attributes['ticket_type'] = $ticketType;
+                }
+                if ($documentPath) {
+                    $attributes['document_path'] = $documentPath;
+                }
+
+                $existing->fill($attributes);
+
+                if ($existing->status === RegistrationStatus::Cancelled) {
+                    $existing->status = RegistrationStatus::Pending;
+                }
+
+                $existing->save();
+                $registration = $existing;
+            } else {
+                $registration = Registration::create([
+                    'event_id' => $event->id,
+                    'form_id' => $form->id,
+                    'user_id' => $user?->id,
+                    'organization_id' => $user?->current_organization_id
+                        ?? $form->organization_id,
+                    'member_no' => $user?->member_no,
+                    'name' => $name ?: 'Peserta',
+                    'email' => $email,
+                    'phone' => $phone,
+                    'ic_number' => $ic,
+                    'ticket_type' => $ticketType,
+                    'document_path' => $documentPath,
+                    'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
+                ]);
+            }
 
             $response = FormResponse::create([
                 'form_id' => $form->id,
@@ -188,6 +249,14 @@ class RegistrationService
                 'status' => 'success',
                 'registration' => $registration,
                 'message' => 'Pendaftaran berjaya! No Pendaftaran: '.$registration->registration_no,
+            ];
+        }
+
+        if ($registration->isPaid()) {
+            return [
+                'status' => 'success',
+                'registration' => $registration,
+                'message' => 'Pendaftaran anda sudah lengkap. No Pendaftaran: '.$registration->registration_no,
             ];
         }
 
