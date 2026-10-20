@@ -69,7 +69,9 @@ function submitWalkIn() {
                                 No. IC atau No. Telefon
                             </label>
                             <p class="text-xs text-gray-500 mt-0.5">
-                                Masukkan nombor yang digunakan semasa mendaftar.
+                                Masukkan nombor yang digunakan semasa mendaftar. Untuk telefon,
+                                <span class="font-semibold">0123456789</span> dan
+                                <span class="font-semibold">123456789</span> kedua-duanya diterima.
                             </p>
                         </div>
                         <input

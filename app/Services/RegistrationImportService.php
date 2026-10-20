@@ -72,11 +72,16 @@ class RegistrationImportService
             ]);
         }
 
+        $mapping = $this->detectMapping($headers);
+        $stats = $this->previewStats($dataRows, $mapping);
+
         return [
             'headers' => $headers,
-            'mapping' => $this->detectMapping($headers),
+            'mapping' => $mapping,
             'sample' => array_slice($dataRows, 0, 5),
             'total_rows' => count($dataRows),
+            'stats' => $stats,
+            'warnings' => $this->previewWarnings($stats),
         ];
     }
 
@@ -123,6 +128,9 @@ class RegistrationImportService
 
                 $total++;
 
+                $icRaw = $mapping['ic_number'] !== null ? ($row[$mapping['ic_number']] ?? null) : null;
+                $icNumeric = is_int($icRaw) || is_float($icRaw);
+
                 $name = $this->cell($row, $mapping['name'] ?? null);
                 $ic = $this->cell($row, $mapping['ic_number'] ?? null);
                 $phone = $this->cell($row, $mapping['phone'] ?? null);
@@ -149,7 +157,10 @@ class RegistrationImportService
                 $email = $this->cleanEmail($email);
                 $memberNo = $memberNo !== null ? trim($memberNo) : null;
 
-                $icNormalized = Registration::normalizeIc($ic);
+                // A numeric IC cell in XLSX has already lost leading digits and
+                // may be scientific notation under the hood. Never use it as an
+                // identity key, even if it ends up looking like 12 digits.
+                $icNormalized = $icNumeric ? null : Registration::normalizeIc($ic);
                 $phoneNormalized = Registration::normalizePhone($phone);
                 $emailNormalized = $email !== null ? mb_strtolower($email) : null;
 
@@ -160,22 +171,37 @@ class RegistrationImportService
                     continue;
                 }
 
-                $key = $icNormalized !== null
-                    ? 'ic:'.$icNormalized
-                    : ($phoneNormalized !== null ? 'phone:'.$phoneNormalized : 'email:'.$emailNormalized);
+                $identityKeys = $this->identityKeys($icNormalized, $phoneNormalized, $emailNormalized);
+                $duplicateRow = $this->seenDuplicate($seen, $identityKeys, $name);
 
-                if (isset($seen[$key])) {
+                if ($duplicateRow !== null) {
                     $skipped++;
-                    $this->pushError($errors, "Baris {$rowNumber}: pendua dalam fail yang sama (baris {$seen[$key]}), dilewati.");
+                    $this->pushError($errors, "Baris {$rowNumber}: pendua dalam fail yang sama (baris {$duplicateRow}), dilewati.");
 
                     continue;
                 }
-                $seen[$key] = $rowNumber;
 
-                $registration = $this->findMatching($event->id, $icNormalized, $phoneNormalized, $emailNormalized);
+                $this->rememberSeen($seen, $identityKeys, $name, $rowNumber);
+
+                $registration = $this->findMatching(
+                    $event->id,
+                    $icNormalized,
+                    $phoneNormalized,
+                    $emailNormalized,
+                    $name,
+                    $ic,
+                    $icNumeric,
+                );
 
                 $attributes = ['name' => mb_substr($name, 0, 255)];
-                if ($ic !== null) {
+
+                // Do not replace a valid IC with a scientific/truncated value
+                // from a later upload.
+                $keepExistingIc = $registration !== null
+                    && $icNormalized === null
+                    && $registration->ic_normalized !== null;
+
+                if ($ic !== null && ! $keepExistingIc) {
                     $attributes['ic_number'] = mb_substr($ic, 0, 255);
                 }
                 if ($phone !== null) {
@@ -616,9 +642,62 @@ class RegistrationImportService
      */
     private function readRows(UploadedFile $file): array
     {
+        // Read CSV as raw text so scientific-notation ICs ("9.50329E+11")
+        // remain detectable instead of being silently converted to numbers.
+        if (in_array(strtolower($file->getClientOriginalExtension()), ['csv', 'txt'], true)) {
+            return $this->readCsvRows($file->getRealPath());
+        }
+
         $sheets = Excel::toArray(new RawSpreadsheet, $file);
 
         return $sheets[0] ?? [];
+    }
+
+    /**
+     * @return array<int, array<int, string|null>>
+     */
+    private function readCsvRows(string $path): array
+    {
+        $handle = fopen($path, 'rb');
+
+        if ($handle === false) {
+            return [];
+        }
+
+        $delimiter = $this->detectDelimiter($path);
+        $rows = [];
+
+        while (($row = fgetcsv($handle, 0, $delimiter, '"', '')) !== false) {
+            $rows[] = array_map(
+                fn ($value) => $value === null ? null : (string) $value,
+                $row,
+            );
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function detectDelimiter(string $path): string
+    {
+        $handle = fopen($path, 'rb');
+        $line = $handle ? (string) fgets($handle) : '';
+
+        if ($handle) {
+            fclose($handle);
+        }
+
+        $counts = [
+            ',' => substr_count($line, ','),
+            ';' => substr_count($line, ';'),
+            "\t" => substr_count($line, "\t"),
+        ];
+
+        arsort($counts);
+        $delimiter = array_key_first($counts);
+
+        return $delimiter !== null && $counts[$delimiter] > 0 ? $delimiter : ',';
     }
 
     /**
@@ -669,10 +748,14 @@ class RegistrationImportService
         foreach (self::ALIASES as $field => $needles) {
             $mapping[$field] = null;
 
-            foreach ($normalized as $index => $header) {
-                if ($header !== '' && ! $this->isCompanyLabel($header) && in_array($header, $needles, true)) {
-                    $mapping[$field] = $index;
-                    break;
+            // Prefer aliases in priority order (e.g. "EMEL" before the
+            // Google account column named "Email Address").
+            foreach ($needles as $needle) {
+                foreach ($normalized as $index => $header) {
+                    if ($header !== '' && ! $this->isCompanyLabel($header) && $header === $needle) {
+                        $mapping[$field] = $index;
+                        break 2;
+                    }
                 }
             }
         }
@@ -805,23 +888,251 @@ class RegistrationImportService
         return null;
     }
 
-    private function findMatching(int $eventId, ?string $ic, ?string $phone, ?string $email): ?Registration
-    {
+    private function findMatching(
+        int $eventId,
+        ?string $ic,
+        ?string $phone,
+        ?string $email,
+        string $name,
+        ?string $rawIc = null,
+        bool $icNumeric = false,
+    ): ?Registration {
         $query = Registration::query()->where('event_id', $eventId);
 
         if ($ic !== null && $match = (clone $query)->where('ic_normalized', $ic)->latest()->first()) {
             return $match;
         }
 
-        if ($phone !== null && $match = (clone $query)->where('phone_normalized', $phone)->latest()->first()) {
-            return $match;
+        // Passports / other IDs that are not 12-digit MyKad values can still
+        // match exactly, but only when the name is consistent.
+        if ($rawIc !== null && ! $icNumeric && $ic === null && ! preg_match('/[eE][+-]?\d+/', $rawIc)) {
+            foreach ((clone $query)->where('ic_number', $rawIc)->latest()->limit(5)->get() as $candidate) {
+                if ($this->namesSimilar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
         }
 
-        if ($email !== null && $match = (clone $query)->whereRaw('LOWER(email) = ?', [$email])->latest()->first()) {
-            return $match;
+        if ($phone !== null) {
+            foreach ((clone $query)->where('phone_normalized', $phone)->latest()->limit(5)->get() as $candidate) {
+                if ($this->namesSimilar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        if ($email !== null) {
+            foreach ((clone $query)->whereRaw('LOWER(email) = ?', [$email])->latest()->limit(5)->get() as $candidate) {
+                if ($this->namesSimilar($name, $candidate->name)) {
+                    return $candidate;
+                }
+            }
         }
 
         return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function identityKeys(?string $ic, ?string $phone, ?string $email): array
+    {
+        $keys = [];
+
+        if ($ic !== null) {
+            $keys[] = 'ic:'.$ic;
+        }
+        if ($phone !== null) {
+            $keys[] = 'phone:'.$phone;
+        }
+        if ($email !== null) {
+            $keys[] = 'email:'.$email;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @param  array<string, array<int, array{row: int, name: string}>>  $seen
+     * @param  array<int, string>  $keys
+     */
+    private function seenDuplicate(array $seen, array $keys, string $name): ?int
+    {
+        foreach ($keys as $key) {
+            foreach ($seen[$key] ?? [] as $entry) {
+                if (str_starts_with($key, 'ic:') || $this->namesSimilar($name, $entry['name'])) {
+                    return $entry['row'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, array<int, array{row: int, name: string}>>  $seen
+     * @param  array<int, string>  $keys
+     */
+    private function rememberSeen(array &$seen, array $keys, string $name, int $rowNumber): void
+    {
+        foreach ($keys as $key) {
+            $seen[$key][] = ['row' => $rowNumber, 'name' => $name];
+        }
+    }
+
+    private function namesSimilar(?string $a, ?string $b): bool
+    {
+        $a = $this->normalizeName($a);
+        $b = $this->normalizeName($b);
+
+        if ($a === '' || $b === '') {
+            return false;
+        }
+
+        if ($a === $b) {
+            return true;
+        }
+
+        similar_text($a, $b, $percent);
+
+        if ($percent >= 85.0) {
+            return true;
+        }
+
+        $aTokens = explode(' ', $a);
+        $bTokens = explode(' ', $b);
+        $shared = array_intersect($aTokens, $bTokens);
+
+        // A single shared surname is not enough: couples often share a phone
+        // or email but have different names.
+        if (count($shared) >= 2) {
+            return count($shared) / max(1, min(count($aTokens), count($bTokens))) >= 0.5;
+        }
+
+        if (count($shared) === 1 && min(count($aTokens), count($bTokens)) <= 2) {
+            $aRemaining = array_values(array_diff($aTokens, $shared));
+            $bRemaining = array_values(array_diff($bTokens, $shared));
+
+            foreach ($aRemaining as $aToken) {
+                foreach ($bRemaining as $bToken) {
+                    if (strlen($aToken) >= 5 && strlen($bToken) >= 5 && levenshtein($aToken, $bToken) <= 1) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeName(?string $name): string
+    {
+        $name = mb_strtolower(trim((string) $name));
+        $name = preg_replace('/[^\p{L}\p{N}]+/u', ' ', $name) ?? '';
+        $tokens = preg_split('/\s+/', trim($name)) ?: [];
+
+        $stopWords = [
+            'bin', 'binti', 'bt', 'b', 'hj', 'hjh', 'haji', 'hajjah',
+            'dato', 'datuk', 'datin', 'dr', 'prof', 'ir', 'h',
+        ];
+
+        $tokens = array_values(array_filter(
+            $tokens,
+            fn (string $token) => strlen($token) > 1 && ! in_array($token, $stopWords, true),
+        ));
+
+        return implode(' ', $tokens);
+    }
+
+    /**
+     * @param  array<int, array<int, mixed>>  $dataRows
+     * @param  array<string, int|null>  $mapping
+     * @return array{total_rows: int, unique_identities: int, duplicate_rows: int, invalid_ic_rows: int, numeric_ic_rows: int}
+     */
+    private function previewStats(array $dataRows, array $mapping): array
+    {
+        $total = 0;
+        $unique = 0;
+        $duplicates = 0;
+        $invalidIc = 0;
+        $numericIc = 0;
+        $seen = [];
+
+        foreach ($dataRows as $row) {
+            if ($this->isEmptyRow($row)) {
+                continue;
+            }
+
+            $name = $this->cell($row, $mapping['name'] ?? null);
+
+            if ($name === null) {
+                continue;
+            }
+
+            $total++;
+
+            $icRaw = $mapping['ic_number'] !== null ? ($row[$mapping['ic_number']] ?? null) : null;
+            $icNumeric = is_int($icRaw) || is_float($icRaw);
+            $ic = $this->cleanIc($this->cell($row, $mapping['ic_number'] ?? null));
+            $phone = $this->cleanPhone($this->cell($row, $mapping['phone'] ?? null));
+            $email = $this->cleanEmail($this->cell($row, $mapping['email'] ?? null));
+
+            $icNormalized = $icNumeric ? null : Registration::normalizeIc($ic);
+            $phoneNormalized = Registration::normalizePhone($phone);
+            $emailNormalized = $email !== null ? mb_strtolower($email) : null;
+
+            if ($icNumeric) {
+                $numericIc++;
+            } elseif ($ic !== null && $icNormalized === null) {
+                $invalidIc++;
+            }
+
+            if ($icNormalized === null && $phoneNormalized === null && $emailNormalized === null) {
+                continue;
+            }
+
+            $keys = $this->identityKeys($icNormalized, $phoneNormalized, $emailNormalized);
+
+            if ($this->seenDuplicate($seen, $keys, $name) !== null) {
+                $duplicates++;
+
+                continue;
+            }
+
+            $this->rememberSeen($seen, $keys, $name, $total);
+            $unique++;
+        }
+
+        return [
+            'total_rows' => $total,
+            'unique_identities' => $unique,
+            'duplicate_rows' => $duplicates,
+            'invalid_ic_rows' => $invalidIc,
+            'numeric_ic_rows' => $numericIc,
+        ];
+    }
+
+    /**
+     * @param  array{total_rows: int, unique_identities: int, duplicate_rows: int, invalid_ic_rows: int, numeric_ic_rows: int}  $stats
+     * @return array<int, string>
+     */
+    private function previewWarnings(array $stats): array
+    {
+        $warnings = [];
+
+        if ($stats['invalid_ic_rows'] > 0) {
+            $warnings[] = "{$stats['invalid_ic_rows']} baris No. IC tidak sah atau dalam format saintifik. Padanan akan guna telefon + nama.";
+        }
+
+        if ($stats['numeric_ic_rows'] > 0) {
+            $warnings[] = "{$stats['numeric_ic_rows']} No. IC dibaca sebagai nombor. Format kolum IC sebagai Teks sebelum export.";
+        }
+
+        if ($stats['duplicate_rows'] > 0) {
+            $warnings[] = "{$stats['duplicate_rows']} baris dikesan pendua (nama/telefon sama) dan akan digabungkan.";
+        }
+
+        return $warnings;
     }
 
     private function isEmptyRow(array $row): bool
@@ -864,9 +1175,8 @@ class RegistrationImportService
         }
 
         $value = strtoupper(trim($value));
-        $digits = preg_replace('/\D+/', '', $value);
 
-        return $digits !== '' ? $digits : $value;
+        return $value !== '' ? $value : null;
     }
 
     private function cleanPhone(?string $value): ?string

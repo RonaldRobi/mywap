@@ -672,6 +672,150 @@ class RegistrationImportTest extends TestCase
         );
     }
 
+    public function test_scientific_ic_does_not_merge_different_people(): void
+    {
+        $event = $this->event();
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Orang A,6.00627E+11,0111111111,a@example.com\n"
+            ."Orang B,6.00627E+11,0222222222,b@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 2)
+            ->assertJsonPath('summary.skipped', 0);
+
+        $this->assertSame(2, Registration::where('event_id', $event->id)->count());
+
+        $registration = Registration::where('event_id', $event->id)
+            ->where('name', 'Orang A')
+            ->firstOrFail();
+
+        $this->assertSame('6.00627E+11', $registration->ic_number);
+        $this->assertNull($registration->ic_normalized);
+    }
+
+    public function test_shared_phone_does_not_merge_different_people(): void
+    {
+        $event = $this->event();
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Mohamad Amran bin Ariffin,6.20724E+11,0122955277,amran@example.com\n"
+            ."Suzana binti Osman,6.60212E+11,0122955277,suzana@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 2);
+
+        $this->assertSame(2, Registration::where('event_id', $event->id)->count());
+    }
+
+    public function test_duplicate_submission_with_name_variant_is_merged(): void
+    {
+        $event = $this->event();
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Khairani Che Ibrahim,6.5053E+11,0163383279,ummiawiz@gmail.com\n"
+            ."Khairani binti Che Ibrahim,6.5053E+11,0163383279,ummiawiz@gmail.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 1)
+            ->assertJsonPath('summary.skipped', 1);
+
+        $this->assertSame(1, Registration::where('event_id', $event->id)->count());
+    }
+
+    public function test_preview_prefers_emel_over_google_email_address(): void
+    {
+        $event = $this->event();
+
+        $csv = "Timestamp,Email Address,NAMA PENUH:,NO. KAD PENGENALAN:,NO. TELEFON:,EMEL:\n"
+            ."10/5/2026,google@example.com,Ahmad Ali,900101-01-1234,0123456789,peserta@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import.preview', $event->id), [
+                'file' => $this->csvFile($csv),
+            ])
+            ->assertOk()
+            ->assertJsonPath('mapping.email', 5)
+            ->assertJsonPath('stats.unique_identities', 1);
+    }
+
+    public function test_preview_reports_duplicates_and_invalid_ics(): void
+    {
+        $event = $this->event();
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Orang A,6.00627E+11,0111111111,a@example.com\n"
+            ."Orang A,6.00627E+11,0111111111,a@example.com\n"
+            ."Orang B,6.00627E+11,0222222222,b@example.com\n";
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import.preview', $event->id), [
+                'file' => $this->csvFile($csv),
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('stats.total_rows', 3)
+            ->assertJsonPath('stats.unique_identities', 2)
+            ->assertJsonPath('stats.duplicate_rows', 1)
+            ->assertJsonPath('stats.invalid_ic_rows', 3);
+    }
+
+    public function test_check_in_accepts_phone_with_or_without_leading_zero(): void
+    {
+        $event = $this->event();
+
+        $this->assertSame('0123456789', Registration::normalizePhone('123456789'));
+        $this->assertSame('0123456789', Registration::normalizePhone('0123456789'));
+        $this->assertSame('0123456789', Registration::normalizePhone('60123456789'));
+        $this->assertSame('0123456789', Registration::normalizePhone('+60 12-345 6789'));
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Ahmad Tanpa Sifar,900101011234,123456789,ahmad@example.com\n"
+            ."Siti Dengan Sifar,900202025678,0129998888,siti@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 2);
+
+        $this->assertSame(
+            '0123456789',
+            Registration::where('event_id', $event->id)->where('name', 'Ahmad Tanpa Sifar')->value('phone_normalized'),
+        );
+
+        // CSV stored "123456789"; participant types the full local number.
+        $this->post(route('events.attend.identify', [
+            'id' => $event->id,
+            'token' => $event->attendance_token,
+        ]), ['identifier' => '0123456789'])->assertOk();
+
+        // CSV stored "0129998888"; participant omits the leading zero.
+        $this->post(route('events.attend.identify', [
+            'id' => $event->id,
+            'token' => $event->attendance_token,
+        ]), ['identifier' => '129998888'])->assertOk();
+
+        $this->assertDatabaseCount('attendances', 2);
+    }
+
     public function test_partial_reimport_does_not_drop_earlier_columns(): void
     {
         $event = $this->event();

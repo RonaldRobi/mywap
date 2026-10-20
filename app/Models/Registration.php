@@ -76,14 +76,28 @@ class Registration extends Model
      */
     public static function normalizeIc(?string $value): ?string
     {
-        $digits = preg_replace('/\D+/', '', (string) $value);
+        $value = trim((string) $value);
 
-        return $digits !== '' ? $digits : null;
+        // Scientific notation and masked values (e.g. "9.50329E+11",
+        // "************") are not usable identities: the original digits are
+        // already lost, so matching on them merges different people.
+        if ($value === '' || preg_match('/[eE][+-]?\d+/', $value) || str_contains($value, '*')) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $value);
+
+        // Malaysian ICs are 12 digits. Passports and other IDs stay usable
+        // through their raw ic_number value instead.
+        return strlen((string) $digits) === 12 ? $digits : null;
     }
 
     /**
-     * Canonical Malaysian phone form: digits only, with the 60 country prefix
-     * converted to a leading 0 so "60123456789" and "0123456789" match.
+     * Canonical Malaysian phone form: digits only, always with the local 0.
+     *
+     * "123456789", "0123456789", "60123456789" and "+60 12-345 6789" all
+     * become "0123456789", so a participant can enter their number with or
+     * without the leading zero at check-in.
      */
     public static function normalizePhone(?string $value): ?string
     {
@@ -93,8 +107,18 @@ class Registration extends Model
             return null;
         }
 
-        if (str_starts_with($digits, '60') && strlen($digits) > 10) {
-            $digits = '0'.substr($digits, 2);
+        if (str_starts_with($digits, '60')) {
+            $digits = substr($digits, 2);
+
+            if ($digits === '') {
+                return null;
+            }
+
+            if (! str_starts_with($digits, '0')) {
+                $digits = '0'.$digits;
+            }
+        } elseif (! str_starts_with($digits, '0')) {
+            $digits = '0'.$digits;
         }
 
         return $digits;
@@ -168,7 +192,10 @@ class Registration extends Model
 
         // Legacy rows created before normalisation columns existed.
         return (clone $query)
-            ->where(fn (Builder $q) => $q->where('ic_number', $identifier)->orWhere('phone', $identifier))
+            ->where(fn (Builder $q) => $q
+                ->where('ic_number', $identifier)
+                ->orWhereRaw('UPPER(ic_number) = ?', [mb_strtoupper($identifier)])
+                ->orWhere('phone', $identifier))
             ->latest()
             ->first();
     }

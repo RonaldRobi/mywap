@@ -357,8 +357,21 @@ function applyFilters() {
                             {{ previewing ? 'Menyemak...' : 'Pratonton & Padan Lajur' }}
                         </button>
                         <span v-if="importPreview" class="text-xs text-gray-500">
-                            {{ importPreview.total_rows }} baris data dikesan
+                            {{ importPreview.total_rows }} baris ·
+                            {{ importPreview.stats?.unique_identities ?? '—' }} peserta unik
+                            <template v-if="importPreview.stats?.duplicate_rows">
+                                · {{ importPreview.stats.duplicate_rows }} pendua
+                            </template>
                         </span>
+                    </div>
+
+                    <div
+                        v-if="importPreview?.warnings?.length"
+                        class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-1"
+                    >
+                        <p v-for="(warning, index) in importPreview.warnings" :key="index">
+                            • {{ warning }}
+                        </p>
                     </div>
 
                     <template v-if="importPreview">
