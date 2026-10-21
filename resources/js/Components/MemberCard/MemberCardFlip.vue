@@ -7,6 +7,8 @@ const props = defineProps({
     qrSvg: { type: String, default: null },
 });
 
+const emit = defineEmits(['qr-click']);
+
 const flipped = ref(false);
 const fontsVersion = ref(0);
 
@@ -34,7 +36,7 @@ defineExpose({ flipped, toggle });
             <div class="flip-inner absolute inset-0" :class="{ 'is-flipped': flipped }">
                 <!-- Depan -->
                 <div id="membership-card-front" class="flip-face absolute inset-0 overflow-hidden rounded-[4.6%/2.9%] shadow-[0_18px_40px_-12px_rgba(0,60,40,0.45)]">
-                    <MemberCardFront :card="card" :qr-svg="qrSvg" :fonts-version="fontsVersion" />
+                    <MemberCardFront :card="card" :qr-svg="qrSvg" :fonts-version="fontsVersion" @qr-click="emit('qr-click')" />
                 </div>
 
                 <!-- Belakang (static) -->

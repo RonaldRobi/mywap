@@ -13,7 +13,16 @@ const props = defineProps({
 
 const flip = ref(null);
 const downloading = ref(false);
+const showQr = ref(false);
 const qrSvg = computed(() => props.qrPublic || props.qrPrivate);
+
+const qrDataUri = computed(() => {
+    if (!qrSvg.value) return null;
+    const svg = qrSvg.value.includes('xmlns=')
+        ? qrSvg.value
+        : qrSvg.value.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+});
 
 async function toDataUri(url) {
     const res = await fetch(url, { credentials: 'same-origin' });
@@ -100,6 +109,10 @@ async function shareCard() {
 function printCard() {
     window.print();
 }
+
+function onQrClick() {
+    showQr.value = true;
+}
 </script>
 
 <template>
@@ -114,7 +127,7 @@ function printCard() {
                 </div>
 
                 <div class="card-print-area mx-auto w-full max-w-[320px]">
-                    <MemberCardFlip ref="flip" :card="card" :qr-svg="qrSvg" />
+                    <MemberCardFlip ref="flip" :card="card" :qr-svg="qrSvg" @qr-click="onQrClick" />
                 </div>
 
                 <div class="flex justify-center print:hidden">
@@ -154,6 +167,25 @@ function printCard() {
                 </div>
             </div>
         </div>
+
+        <!-- Modal QR diperbesarkan -->
+        <Teleport to="body">
+            <div v-if="showQr" class="fixed inset-0 z-50 flex items-center justify-center p-6">
+                <div class="absolute inset-0 bg-black/60" @click="showQr = false"></div>
+                <div class="relative w-full max-w-xs rounded-3xl bg-white p-6 text-center shadow-2xl">
+                    <button type="button" @click="showQr = false" class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200" aria-label="Tutup">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                    <p class="text-sm font-bold text-gray-900">{{ card.name }}</p>
+                    <p class="mt-0.5 text-xs text-gray-500">{{ card.member_no }}</p>
+                    <div class="mx-auto my-4 flex h-60 w-60 items-center justify-center overflow-hidden rounded-2xl border border-gray-200">
+                        <img v-if="qrDataUri" :src="qrDataUri" class="h-full w-full" alt="Kod QR keahlian">
+                        <span v-else class="text-xs text-gray-400">QR tidak tersedia.</span>
+                    </div>
+                    <p class="text-xs text-gray-500">Imbas kod QR untuk pengesahan keahlian.</p>
+                </div>
+            </div>
+        </Teleport>
     </AppLayout>
 </template>
 

@@ -19,6 +19,8 @@ const props = defineProps({
     fontsVersion: { type: Number, default: 0 },
 });
 
+const emit = defineEmits(['qr-click']);
+
 const uid = `mc${Math.random().toString(36).slice(2, 8)}`;
 
 const name = computed(() => (props.fontsVersion, layoutName(props.card?.name)));
@@ -80,10 +82,10 @@ const qrInner = computed(() => ({
             <text
                 v-else
                 :x="L.photo.cx"
-                :y="L.photo.cy + 16"
+                :y="L.photo.cy + 24"
                 text-anchor="middle"
                 :font-family="FONT_FAMILY"
-                font-size="46"
+                font-size="72"
                 font-weight="800"
                 fill="#03553e"
             >{{ initials(card?.name) }}</text>
@@ -132,12 +134,14 @@ const qrInner = computed(() => ({
             letter-spacing="1"
         >{{ memberNo.text }}</text>
 
-        <!-- QR -->
-        <rect :x="L.qr.x" :y="L.qr.y" :width="L.qr.size" :height="L.qr.size" rx="3" :fill="L.qr.background" />
-        <image
-            v-if="qrDataUri"
-            :href="qrDataUri"
-            :x="qrInner.x" :y="qrInner.y" :width="qrInner.size" :height="qrInner.size"
-        />
+        <!-- QR (tekan untuk besarkan) -->
+        <g class="cursor-pointer" @click.stop="emit('qr-click')">
+            <rect :x="L.qr.x" :y="L.qr.y" :width="L.qr.size" :height="L.qr.size" rx="3" :fill="L.qr.background" />
+            <image
+                v-if="qrDataUri"
+                :href="qrDataUri"
+                :x="qrInner.x" :y="qrInner.y" :width="qrInner.size" :height="qrInner.size"
+            />
+        </g>
     </svg>
 </template>

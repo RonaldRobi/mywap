@@ -12,13 +12,14 @@ export const CARD_H = 1004;
 export const FONT_FAMILY = 'Figtree, ui-sans-serif, system-ui, sans-serif';
 
 export const CARD_LAYOUT = {
-    photo: { cx: 320, cy: 398, r: 80 },
+    photo: { cx: 320, cy: 398, r: 130 },
 
-    // Nama: maksimum 2 baris, ditengahkan. Font mengecil jika terlalu panjang.
+    // Nama: sentiasa reserve 2 baris supaya kotak organisasi tidak beralih
+    // bila nama pendek (1 baris) atau panjang (2 baris). Font mengecil jika perlu.
     name: {
         centerX: 319,
         maxWidth: 520,
-        baselines: { one: 659, two: [643, 675] },
+        baselines: { one: 600, two: [600, 636] },
         fontSize: 30,
         minFontSize: 20,
         fontWeight: 700,
@@ -27,9 +28,9 @@ export const CARD_LAYOUT = {
 
     // Kotak organisasi + teks putih di tengah.
     organization: {
-        box: { x: 185, y: 711, w: 272, h: 40, radius: 5, color: '#03553e' },
+        box: { x: 185, y: 693, w: 272, h: 40, radius: 5, color: '#03553e' },
         paddingX: 14,
-        baseline: 738,
+        baseline: 720,
         fontSize: 28,
         minFontSize: 12,
         fontWeight: 800,
@@ -38,8 +39,8 @@ export const CARD_LAYOUT = {
 
     memberNo: {
         centerX: 319,
-        baseline: 791,
-        fontSize: 18,
+        baseline: 797,
+        fontSize: 20,
         minFontSize: 12,
         maxWidth: 400,
         fontWeight: 700,
