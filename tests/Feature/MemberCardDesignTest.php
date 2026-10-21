@@ -104,4 +104,28 @@ class MemberCardDesignTest extends TestCase
             ->assertJsonPath('data.card.card_front_path', '/storage/member-cards/front/abim.jpg')
             ->assertJsonPath('data.card.card_back_path', '/storage/member-cards/back/all.jpg');
     }
+
+    public function test_card_front_falls_back_to_default_design_when_org_has_none(): void
+    {
+        // Org tiada design depan, tapi ada design depan lalai (global).
+        AppSetting::singleton()->update(['member_card_front_path' => '/storage/member-cards/front-default/all.jpg']);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/member/card')
+            ->assertOk()
+            ->assertJsonPath('data.card.card_front_path', '/storage/member-cards/front-default/all.jpg');
+    }
+
+    public function test_org_front_design_overrides_default(): void
+    {
+        AppSetting::singleton()->update(['member_card_front_path' => '/storage/member-cards/front-default/all.jpg']);
+        $this->org->update(['card_front_path' => '/storage/member-cards/front/abim.jpg']);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/member/card')
+            ->assertOk()
+            ->assertJsonPath('data.card.card_front_path', '/storage/member-cards/front/abim.jpg');
+    }
 }

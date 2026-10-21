@@ -278,6 +278,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
         Route::post('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'updateCardBack'])->name('superadmin.organizations.card-back.update');
         Route::delete('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'destroyCardBack'])->name('superadmin.organizations.card-back.destroy');
+        Route::post('/superadmin/organizations/card-front-default', [SuperadminOrganizationController::class, 'updateCardFrontDefault'])->name('superadmin.organizations.card-front-default.update');
+        Route::delete('/superadmin/organizations/card-front-default', [SuperadminOrganizationController::class, 'destroyCardFrontDefault'])->name('superadmin.organizations.card-front-default.destroy');
         Route::post('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'updateCardFront'])->name('superadmin.organizations.card-front.update');
         Route::delete('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'destroyCardFront'])->name('superadmin.organizations.card-front.destroy');
         Route::post('/superadmin/organizations/{organization}/chart', [SuperadminOrganizationController::class, 'storeChartMember'])->name('superadmin.organizations.chart.store');

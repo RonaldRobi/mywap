@@ -78,6 +78,9 @@ class SuperadminOrganizationController extends Controller
             'memberCardBackPath' => $hasCardColumn && Schema::hasColumn('app_settings', 'member_card_back_path')
                 ? AppSetting::query()->first()?->member_card_back_path
                 : null,
+            'memberCardFrontPath' => $hasCardColumn && Schema::hasColumn('app_settings', 'member_card_front_path')
+                ? AppSetting::query()->first()?->member_card_front_path
+                : null,
         ]);
     }
 
@@ -226,6 +229,36 @@ class SuperadminOrganizationController extends Controller
         $setting->update(['member_card_back_path' => null]);
 
         return back()->with('success', 'Design belakang kad telah dibuang.');
+    }
+
+    /**
+     * Design depan kad keahlian lalai — satu untuk semua organisasi.
+     * Organisasi yang ada design sendiri (card_front_path) mengatasi nilai ini.
+     */
+    public function updateCardFrontDefault(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $this->deletePublicFile($setting->member_card_front_path);
+
+        $storedPath = $data['card_front']->store('member-cards/front-default', 'public');
+        $setting->update([
+            'member_card_front_path' => '/storage/'.ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', 'Design depan kad lalai berjaya dikemas kini.');
+    }
+
+    public function destroyCardFrontDefault(): RedirectResponse
+    {
+        $setting = AppSetting::singleton();
+        $this->deletePublicFile($setting->member_card_front_path);
+        $setting->update(['member_card_front_path' => null]);
+
+        return back()->with('success', 'Design depan kad lalai telah dibuang.');
     }
 
     private function deletePublicFile(?string $url): void

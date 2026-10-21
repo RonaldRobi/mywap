@@ -34,6 +34,7 @@ class AppSetting extends Model
         'splash_enabled',
         'chatbot_logo_path',
         'member_card_back_path',
+        'member_card_front_path',
         'admin_contact_email',
         'admin_contact_phone',
         'resend_api_key',
@@ -107,6 +108,11 @@ class AppSetting extends Model
     }
 
     public function getMemberCardBackPathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getMemberCardFrontPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

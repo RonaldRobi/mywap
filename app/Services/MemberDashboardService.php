@@ -357,7 +357,7 @@ class MemberDashboardService
                     ? route('public.card', ['memberNo' => $user->member_no])
                     : route('member.card'),
                 'system_logo_path' => $this->normalizeStorageUrl($setting?->system_logo_path),
-                'card_front_path' => $this->normalizeStorageUrl($user->organization?->card_front_path),
+                'card_front_path' => $this->normalizeStorageUrl($user->organization?->card_front_path ?? $setting?->member_card_front_path),
                 'card_back_path' => $this->normalizeStorageUrl($setting?->member_card_back_path),
                 'organization' => [
                     'name' => $user->organization?->name,

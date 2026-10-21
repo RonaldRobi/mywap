@@ -147,4 +147,28 @@ abstract final class AppColors {
     Color(0xFF7FC99A),
     movementSoftGreen,
   ];
+
+  // ---------------------------------------------------------------------
+  // Permukaan berpola (hab Menu)
+  // ---------------------------------------------------------------------
+
+  /// Hijau paling gelap — hanya untuk hujung atas gradien berpola supaya
+  /// pola geometri kelihatan tanpa menaikkan kecerahan keseluruhan.
+  static const Color movementDeepGreen = Color(0xFF0A4523);
+
+  /// Gradien 3-hentian untuk pengepala berpola. Lebih dalam daripada
+  /// [heroGradient] supaya motif jalinan kekal nampak tetapi halus.
+  static const List<Color> patternGradient = [
+    movementDeepGreen,
+    movementDarkGreen,
+    movementGreen,
+  ];
+
+  /// Warna guratan motif seamless di atas [patternGradient].
+  /// Putih sangat lut sinar — memberi tekstur tanpa menjejaskan kontras
+  /// teks putih di atasnya (kekal > 4.5:1).
+  static const Color patternStroke = Color(0x14FFFFFF);
+
+  /// Guratan motif kedua (lebih terang) untuk nod/titik persilangan.
+  static const Color patternAccent = Color(0x24FFFFFF);
 }
