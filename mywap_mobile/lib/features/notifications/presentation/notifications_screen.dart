@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -9,6 +10,7 @@ import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/notification_providers.dart';
 import '../data/models/app_notification.dart';
+import 'notification_format.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -129,10 +131,8 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final data = notification.data;
-    final title = (data['title'] as String?) ?? '';
-    final body =
-        (data['content'] as String?) ?? (data['message'] as String?) ?? '';
+    final title = notificationTitle(notification);
+    final body = notificationBody(notification);
     final isRead = notification.isRead;
 
     return Card(
@@ -140,73 +140,86 @@ class _NotificationCard extends StatelessWidget {
         horizontal: Spacing.lg,
         vertical: Spacing.sm,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: AppColors.movementSoftGreen,
-              child: Icon(
-                _iconFor(notification),
-                color: AppColors.movementNavy,
-                size: 22,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap:
+            () => context.push('/notifications/detail', extra: notification),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.lg),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.movementSoftGreen,
+                child: Icon(
+                  notificationIconFor(notification),
+                  color: AppColors.movementNavy,
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(width: Spacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (!isRead) ...[
-                        Container(
-                          width: 8,
-                          height: 8,
-                          margin: const EdgeInsets.only(right: Spacing.sm),
-                          decoration: const BoxDecoration(
-                            color: AppColors.movementGreen,
-                            shape: BoxShape.circle,
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (!isRead) ...[
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(right: Spacing.sm),
+                            decoration: const BoxDecoration(
+                              color: AppColors.movementGreen,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                        Expanded(
+                          child: Text(
+                            title.isEmpty ? 'Pemberitahuan' : title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight:
+                                  isRead ? FontWeight.w500 : FontWeight.w700,
+                              color:
+                                  isRead
+                                      ? AppColors.textSecondary
+                                      : AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ],
-                      Expanded(
-                        child: Text(
-                          title.isEmpty ? 'Pemberitahuan' : title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight:
-                                isRead ? FontWeight.w500 : FontWeight.w700,
-                            color:
-                                isRead
-                                    ? AppColors.textSecondary
-                                    : AppColors.textPrimary,
-                          ),
-                        ),
+                    ),
+                    if (body.isNotEmpty) ...[
+                      const SizedBox(height: Spacing.xs),
+                      Text(
+                        body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
                       ),
                     ],
-                  ),
-                  if (body.isNotEmpty) ...[
                     const SizedBox(height: Spacing.xs),
                     Text(
-                      body,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
+                      notificationTimeAgo(notification.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
-                  const SizedBox(height: Spacing.xs),
-                  Text(
-                    _timeAgo(notification.createdAt),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const Padding(
+                padding: EdgeInsets.only(left: Spacing.xs),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,36 +241,4 @@ class _NotificationsSkeleton extends StatelessWidget {
           ),
     );
   }
-}
-
-IconData _iconFor(AppNotification notification) {
-  final type =
-      '${notification.type ?? ''} ${notification.data['type'] ?? ''}'
-          .toLowerCase();
-  if (type.contains('announcement')) return Icons.campaign_outlined;
-  if (type.contains('infaq')) return Icons.volunteer_activism_outlined;
-  if (type.contains('event')) return Icons.event_outlined;
-  if (type.contains('fee')) return Icons.receipt_long_outlined;
-  if (type.contains('form')) return Icons.assignment_outlined;
-  if (type.contains('facility') || type.contains('booking')) {
-    return Icons.meeting_room_outlined;
-  }
-  if (type.contains('transition') ||
-      type.contains('member') ||
-      type.contains('registration')) {
-    return Icons.group_add_outlined;
-  }
-  return Icons.notifications_outlined;
-}
-
-String _timeAgo(DateTime? time) {
-  if (time == null) return '';
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return 'Baru sahaja';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} minit lalu';
-  if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-  if (diff.inDays < 7) return '${diff.inDays} hari lalu';
-  final d = time.day.toString().padLeft(2, '0');
-  final m = time.month.toString().padLeft(2, '0');
-  return '$d/$m/${time.year}';
 }

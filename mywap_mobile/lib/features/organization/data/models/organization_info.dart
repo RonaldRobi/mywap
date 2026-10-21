@@ -2,15 +2,26 @@
 
 /// Payload from `GET /organization/info`.
 class OrganizationInfoData {
-  const OrganizationInfoData({this.organization, this.chartMembers = const []});
+  const OrganizationInfoData({
+    this.organization,
+    this.organizations = const [],
+    this.chartMembers = const [],
+  });
 
   factory OrganizationInfoData.fromJson(Map<String, dynamic> json) {
     final orgJson = json['organization'];
+    final orgsJson = json['organizations'];
     final chartJson = json['chart_members'];
     return OrganizationInfoData(
       organization: orgJson is Map<String, dynamic>
           ? OrganizationDetail.fromJson(orgJson)
           : null,
+      organizations: orgsJson is List
+          ? orgsJson
+              .whereType<Map<String, dynamic>>()
+              .map(OrganizationDetail.fromJson)
+              .toList(growable: false)
+          : const [],
       chartMembers: chartJson is List
           ? chartJson
               .whereType<Map<String, dynamic>>()
@@ -21,6 +32,7 @@ class OrganizationInfoData {
   }
 
   final OrganizationDetail? organization;
+  final List<OrganizationDetail> organizations;
   final List<OrgChartMember> chartMembers;
 }
 
@@ -32,6 +44,12 @@ class OrganizationDetail {
     this.description,
     this.logo_path,
     this.color_theme,
+    this.min_age,
+    this.max_age,
+    this.member_count,
+    this.chart_member_count,
+    this.is_current = false,
+    this.is_selected = false,
     this.website_url,
     this.facebook_url,
     this.instagram_url,
@@ -48,6 +66,12 @@ class OrganizationDetail {
         description: json['description'] as String?,
         logo_path: json['logo_path'] as String?,
         color_theme: json['color_theme'] as String?,
+        min_age: (json['min_age'] as num?)?.toInt(),
+        max_age: (json['max_age'] as num?)?.toInt(),
+        member_count: (json['member_count'] as num?)?.toInt(),
+        chart_member_count: (json['chart_member_count'] as num?)?.toInt(),
+        is_current: json['is_current'] == true,
+        is_selected: json['is_selected'] == true,
         website_url: json['website_url'] as String?,
         facebook_url: json['facebook_url'] as String?,
         instagram_url: json['instagram_url'] as String?,
@@ -62,12 +86,23 @@ class OrganizationDetail {
   final String? description;
   final String? logo_path;
   final String? color_theme;
+  final int? min_age;
+  final int? max_age;
+  final int? member_count;
+  final int? chart_member_count;
+  final bool is_current;
+  final bool is_selected;
   final String? website_url;
   final String? facebook_url;
   final String? instagram_url;
   final String? twitter_url;
   final String? youtube_url;
   final String? tiktok_url;
+
+  String get ageRangeLabel {
+    if (max_age == null) return '${min_age ?? 0}+ tahun';
+    return '${min_age ?? 0}–$max_age tahun';
+  }
 }
 
 class OrgChartMember {

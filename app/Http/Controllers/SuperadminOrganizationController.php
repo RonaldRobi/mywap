@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Organization;
 use App\Models\OrganizationChartMember;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ class SuperadminOrganizationController extends Controller
     {
         $hasLogoColumn = Schema::hasColumn('organizations', 'logo_path');
         $hasSortOrderColumn = Schema::hasColumn('organizations', 'sort_order');
+        $hasCardColumn = Schema::hasColumn('organizations', 'card_front_path');
 
         $organizations = Organization::query()
             ->withCount('members')
@@ -33,6 +35,7 @@ class SuperadminOrganizationController extends Controller
                 'min_age' => $organization->min_age,
                 'max_age' => $organization->max_age,
                 'logo_path' => $hasLogoColumn ? $this->normalizeStorageUrl($organization->logo_path) : null,
+                'card_front_path' => $hasCardColumn ? $organization->card_front_path : null,
                 'sort_order' => $hasSortOrderColumn ? $organization->sort_order : null,
                 'member_count' => $organization->members_count,
                 'chart_members' => $organization->chartMembers->map(fn ($m) => [
@@ -70,7 +73,11 @@ class SuperadminOrganizationController extends Controller
             'capabilities' => [
                 'logo' => $hasLogoColumn,
                 'sort_order' => $hasSortOrderColumn,
+                'member_card' => $hasCardColumn,
             ],
+            'memberCardBackPath' => $hasCardColumn && Schema::hasColumn('app_settings', 'member_card_back_path')
+                ? AppSetting::query()->first()?->member_card_back_path
+                : null,
         ]);
     }
 
@@ -163,6 +170,74 @@ class SuperadminOrganizationController extends Controller
         ]);
 
         return back()->with('success', "Logo {$organization->name} berjaya dikemas kini.");
+    }
+
+    /**
+     * Design depan kad keahlian (per organisasi). Saiz kad TNG: 638 × 1004 px.
+     */
+    public function updateCardFront(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $request->validate([
+            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $this->deletePublicFile($organization->card_front_path);
+
+        $storedPath = $data['card_front']->store('member-cards/front', 'public');
+        $organization->update([
+            'card_front_path' => '/storage/'.ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', "Design depan kad {$organization->name} berjaya dikemas kini.");
+    }
+
+    public function destroyCardFront(Organization $organization): RedirectResponse
+    {
+        $this->deletePublicFile($organization->card_front_path);
+        $organization->update(['card_front_path' => null]);
+
+        return back()->with('success', "Design depan kad {$organization->name} telah dibuang.");
+    }
+
+    /**
+     * Design belakang kad keahlian — satu untuk semua organisasi.
+     */
+    public function updateCardBack(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'card_back' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $this->deletePublicFile($setting->member_card_back_path);
+
+        $storedPath = $data['card_back']->store('member-cards/back', 'public');
+        $setting->update([
+            'member_card_back_path' => '/storage/'.ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', 'Design belakang kad berjaya dikemas kini.');
+    }
+
+    public function destroyCardBack(): RedirectResponse
+    {
+        $setting = AppSetting::singleton();
+        $this->deletePublicFile($setting->member_card_back_path);
+        $setting->update(['member_card_back_path' => null]);
+
+        return back()->with('success', 'Design belakang kad telah dibuang.');
+    }
+
+    private function deletePublicFile(?string $url): void
+    {
+        if (! $url) {
+            return;
+        }
+
+        $path = ltrim(str_replace('/storage/', '', parse_url($url, PHP_URL_PATH) ?? ''), '/');
+        if ($path !== '' && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     private function normalizeStorageUrl(?string $url): ?string

@@ -8,6 +8,7 @@ import 'core/deeplink/deep_links.dart';
 import 'core/push/push_providers.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/application/auth_controller.dart';
+import 'features/notifications/application/notification_providers.dart';
 import 'shared/l10n/app_localizations.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -25,6 +26,14 @@ class _MyWapAppState extends ConsumerState<MyWapApp> {
   void initState() {
     super.initState();
     _linkSub = startDeepLinkListener(ref);
+
+    // Tekan push notification (termasuk banner foreground) membuka senarai
+    // notifikasi. Pending-deep-link mengendalikan cold start selepas auth
+    // restore selesai.
+    ref.read(pushServiceProvider).onMessageTap = (_) {
+      ref.invalidate(notificationsControllerProvider);
+      ref.read(pendingDeepLinkProvider.notifier).state = '/notifications';
+    };
   }
 
   @override

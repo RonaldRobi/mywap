@@ -25,6 +25,29 @@ class NotificationService
     }
 
     /**
+     * Tanda satu notifikasi milik user sebagai telah dibaca.
+     *
+     * Pulangkan `false` bila notifikasi tiada atau bukan milik user supaya
+     * controller boleh balas 404 tanpa membocorkan notifikasi user lain.
+     */
+    public function markRead(User $user, string $notificationId): bool
+    {
+        $notification = $user->notifications()
+            ->whereKey($notificationId)
+            ->first();
+
+        if ($notification === null) {
+            return false;
+        }
+
+        if ($notification->read_at === null) {
+            $notification->markAsRead();
+        }
+
+        return true;
+    }
+
+    /**
      * Tanda semua notifikasi belum dibaca sebagai telah dibaca.
      */
     public function markAllRead(User $user): void

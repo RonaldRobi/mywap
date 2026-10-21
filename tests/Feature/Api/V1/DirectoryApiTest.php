@@ -203,9 +203,62 @@ class DirectoryApiTest extends TestCase
         $this->assertSame(0, $this->member->fresh()->unreadNotifications->count());
     }
 
+    public function test_member_can_mark_one_notification_read(): void
+    {
+        $this->member->notify(new class extends Notification
+        {
+            public function via(object $notifiable): array
+            {
+                return ['database'];
+            }
+
+            public function toDatabase(object $notifiable): array
+            {
+                return ['title' => 'Pengumuman', 'content' => 'Test'];
+            }
+        });
+
+        $notification = $this->member->notifications()->firstOrFail();
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson("/api/v1/notifications/{$notification->id}/read")
+            ->assertOk()
+            ->assertJsonPath('data.success', true);
+
+        $this->assertNotNull($notification->fresh()->read_at);
+        $this->assertSame(0, $this->member->fresh()->unreadNotifications->count());
+    }
+
+    public function test_member_cannot_mark_another_users_notification_read(): void
+    {
+        $this->admin->notify(new class extends Notification
+        {
+            public function via(object $notifiable): array
+            {
+                return ['database'];
+            }
+
+            public function toDatabase(object $notifiable): array
+            {
+                return ['title' => 'Pengumuman', 'content' => 'Test'];
+            }
+        });
+
+        $notification = $this->admin->notifications()->firstOrFail();
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson("/api/v1/notifications/{$notification->id}/read")
+            ->assertNotFound();
+
+        $this->assertNull($notification->fresh()->read_at);
+    }
+
     public function test_notifications_require_authentication(): void
     {
         $this->getJson('/api/v1/notifications')->assertUnauthorized();
         $this->postJson('/api/v1/notifications/read-all')->assertUnauthorized();
+        $this->postJson('/api/v1/notifications/'.str()->uuid().'/read')->assertUnauthorized();
     }
 }

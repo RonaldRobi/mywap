@@ -17,6 +17,7 @@ use App\Notifications\RegistrationReceived;
 use App\Services\FeeService;
 use App\Services\OtpService;
 use App\Support\ApiResponse;
+use App\Support\MemberRegistration;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -110,8 +111,11 @@ class AuthController extends Controller
      */
     public function register(Request $request, FeeService $feeService): JsonResponse
     {
-        $normalizedIcNumber = Str::upper(preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? '');
-        $request->merge(['ic_number' => $normalizedIcNumber]);
+        $normalizedIcNumber = MemberRegistration::normalizeIc($request->input('ic_number'));
+        $request->merge([
+            'ic_number' => $normalizedIcNumber,
+            'email' => MemberRegistration::normalizeEmail($request->input('email')),
+        ]);
 
         if (! $request->filled('dob') && $normalizedIcNumber) {
             $parsedDob = User::parseDobFromIc($normalizedIcNumber);
@@ -120,15 +124,11 @@ class AuthController extends Controller
             }
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'ic_number' => 'required|string|max:32|unique:'.User::class.',ic_number',
-            'phone' => 'nullable|string|max:20',
-            'dob' => 'required|date',
-            'branch_id' => 'nullable|exists:branches,id',
-            'referral_code' => 'nullable|string|max:32',
-        ]);
+        $validated = $request->validate(
+            MemberRegistration::rules() + ['referral_code' => ['nullable', 'string', 'max:32']],
+            MemberRegistration::messages(),
+            MemberRegistration::attributes(),
+        );
 
         $referrer = null;
         if (! empty($validated['referral_code'])) {

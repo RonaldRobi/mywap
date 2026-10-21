@@ -26,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _icController = TextEditingController();
   final _phoneController = TextEditingController();
+  static final _nonDigit = RegExp(r'[^0-9]');
   DateTime? _dob;
   bool _submitting = false;
   String? _error;
@@ -69,6 +70,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (picked != null) setState(() => _dob = picked);
   }
 
+  /// Semak sama ada No. IC mengandungi tarikh lahir yang boleh dibaca
+  /// (format IC Malaysia: YYMMDD di 6 digit pertama).
+  bool _icHasReadableDob(String value) {
+    final digits = value.replaceAll(_nonDigit, '');
+    if (digits.length < 6) return false;
+
+    final yy = int.parse(digits.substring(0, 2));
+    final mm = int.parse(digits.substring(2, 4));
+    final dd = int.parse(digits.substring(4, 6));
+
+    var year = 2000 + yy;
+    if (year > DateTime.now().year) year -= 100;
+
+    final date = DateTime(year, mm, dd);
+    return date.year == year && date.month == mm && date.day == dd;
+  }
+
+  String? _validateIc(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) {
+      return 'Sila masukkan No. Kad Pengenalan atau No. Passport.';
+    }
+    final cleaned = v.replaceAll(RegExp(r'[\s\-.]'), '');
+    if (cleaned.length < 6) {
+      return 'No. IC tidak sah. Masukkan 12 digit No. Kad Pengenalan '
+          '(cth: 900101011234) atau No. Passport.';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -92,7 +123,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) return;
       setState(() => _memberNo = result['member_no'] as String?);
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      final messages = <String>{};
+      e.errors?.forEach((_, values) => messages.addAll(values));
+      setState(() =>
+          _error = messages.isEmpty ? e.message : messages.join('\n'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -145,20 +179,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Sila masukkan emel.';
-                  if (!v.contains('@')) return 'Emel tidak sah.';
+                  final email = (v ?? '').trim();
+                  if (email.isEmpty) return 'Sila masukkan alamat emel.';
+                  final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                  if (!valid.hasMatch(email)) {
+                    return 'Alamat emel tidak sah. Contoh: nama@emel.com';
+                  }
                   return null;
                 },
               ),
               AuthField(
-                label: 'No. Kad Pengenalan',
+                label: 'No. Kad Pengenalan / Passport',
                 controller: _icController,
                 icon: Icons.badge_outlined,
                 hint: 'Contoh: 900101011234',
                 textInputAction: TextInputAction.next,
-                validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Sila masukkan no. IC.'
-                    : null,
+                validator: _validateIc,
               ),
               AuthField(
                 label: 'No. Telefon (Pilihan)',
@@ -167,33 +203,62 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 hint: 'Contoh: 0123456789',
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.done,
+                validator: (v) {
+                  final phone = (v ?? '').trim();
+                  if (phone.isEmpty) return null;
+                  if (!RegExp(r'^[0-9+\-\s()]{7,20}$').hasMatch(phone)) {
+                    return 'No. telefon tidak sah. Contoh: 0123456789';
+                  }
+                  return null;
+                },
               ),
-              Text(
-                'Tarikh Lahir (Pilihan — diambil dari IC jika kosong)',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: Spacing.sm),
-              InkWell(
-                onTap: _pickDob,
-                borderRadius: AppRadius.md,
-                child: InputDecorator(
-                  decoration: const InputDecoration(),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month_outlined,
-                        color: AppColors.movementGreen,
+              FormField<DateTime>(
+                validator: (_) {
+                  if (_validateIc(_icController.text) != null) return null;
+                  if (_dob == null && !_icHasReadableDob(_icController.text)) {
+                    return 'Sila pilih tarikh lahir kerana No. IC tidak lengkap '
+                        'atau bukan format IC Malaysia.';
+                  }
+                  return null;
+                },
+                builder: (field) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tarikh Lahir (Diperlukan jika No. IC bukan 12 digit)',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: Spacing.md),
-                      Text(
-                        _dob == null
-                            ? 'Pilih tarikh lahir'
-                            : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
+                    ),
+                    const SizedBox(height: Spacing.sm),
+                    InkWell(
+                      onTap: () async {
+                        await _pickDob();
+                        field.didChange(_dob);
+                        field.validate();
+                      },
+                      borderRadius: AppRadius.md,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          errorText: field.errorText,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_outlined,
+                              color: AppColors.movementGreen,
+                            ),
+                            const SizedBox(width: Spacing.md),
+                            Text(
+                              _dob == null
+                                  ? 'Pilih tarikh lahir'
+                                  : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: Spacing.xl),

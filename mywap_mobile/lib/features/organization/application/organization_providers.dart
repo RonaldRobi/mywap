@@ -8,6 +8,10 @@ final organizationRepositoryProvider = Provider<OrganizationRepository>(
   (ref) => OrganizationRepository(ref.watch(apiClientProvider)),
 );
 
-final organizationInfoProvider = FutureProvider<OrganizationInfoData>(
-  (ref) => ref.watch(organizationRepositoryProvider).info(),
-);
+/// Slug organisasi yang dipilih oleh ahli (null = organisasi semasa).
+final organizationSelectionProvider = StateProvider<String?>((ref) => null);
+
+final organizationInfoProvider = FutureProvider<OrganizationInfoData>((ref) {
+  final slug = ref.watch(organizationSelectionProvider);
+  return ref.watch(organizationRepositoryProvider).info(slug: slug);
+});

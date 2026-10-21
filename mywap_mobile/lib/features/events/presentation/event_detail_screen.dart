@@ -256,39 +256,88 @@ class _DetailContent extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: Spacing.xl),
-                FilledButton.icon(
-                  onPressed: rsvpLoading ? null : () => onRsvp(myRsvp),
-                  icon:
-                      rsvpLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.white,
-                            ),
-                          )
-                          : Icon(
-                            isGoing ? Icons.event_busy : Icons.event_available,
-                          ),
-                  label: Text(
-                    isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
-                  ),
-                ),
                 if (registrationForms.isNotEmpty) ...[
-                  const SizedBox(height: Spacing.md),
-                  if (myRegistration == null)
+                  if (myRegistration == null) ...[
                     FilledButton.icon(
                       onPressed: onRegister,
                       icon: const Icon(Icons.assignment_outlined),
-                      label: const Text('Daftar Program'),
-                    )
-                  else
+                      label: const Text('Daftar sebagai Peserta'),
+                    ),
+                    const SizedBox(height: Spacing.sm),
+                    Text(
+                      'Dapat no. pendaftaran dan tempat (yuran dikenakan jika berbayar).',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(Spacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.movementGreen.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Anda sudah mendaftar',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: AppColors.movementGreen,
+                            ),
+                          ),
+                          if (myRegistration!.registrationNo != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'No. Pendaftaran: ${myRegistration!.registrationNo}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                          if (myRegistration!.statusLabel != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Status: ${myRegistration!.statusLabel}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.sm),
                     OutlinedButton.icon(
                       onPressed: () => context.go('/events/my-registrations'),
                       icon: const Icon(Icons.event_available_outlined),
-                      label: const Text('Sudah Daftar'),
+                      label: const Text('Lihat Pendaftaran Saya'),
                     ),
+                  ],
+                ] else ...[
+                  FilledButton.icon(
+                    onPressed: rsvpLoading ? null : () => onRsvp(myRsvp),
+                    icon:
+                        rsvpLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                            : Icon(
+                              isGoing ? Icons.event_busy : Icons.event_available,
+                            ),
+                    label: Text(
+                      isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                  Text(
+                    'Maklum kehadiran sahaja — tiada borang pendaftaran diperlukan.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ],
             ),

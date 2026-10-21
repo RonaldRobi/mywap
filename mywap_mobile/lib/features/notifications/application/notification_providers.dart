@@ -74,6 +74,27 @@ class NotificationsController extends Notifier<NotificationsState> {
     await _load();
   }
 
+  Future<void> markRead(AppNotification notification) async {
+    final id = notification.id;
+    if (id == null || notification.isRead) return;
+
+    final previous = state;
+    state = state.copyWith(
+      notifications:
+          state.notifications
+              .map(
+                (n) => n.id == id ? n.copyWith(readAt: DateTime.now()) : n,
+              )
+              .toList(growable: false),
+    );
+
+    try {
+      await ref.read(notificationRepositoryProvider).read(id);
+    } on ApiException catch (e) {
+      state = previous.copyWith(error: e.message);
+    }
+  }
+
   Future<void> markAllRead() async {
     if (state.isMarking || state.notifications.isEmpty) return;
     state = state.copyWith(isMarking: true, error: null);

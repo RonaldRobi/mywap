@@ -19,6 +19,15 @@ class NotificationController extends Controller
         ]);
     }
 
+    public function read(Request $request, string $notification): JsonResponse
+    {
+        if (! $this->notifications->markRead($request->user(), $notification)) {
+            return ApiResponse::error('Notifikasi tidak dijumpai.', status: 404);
+        }
+
+        return ApiResponse::success(['success' => true]);
+    }
+
     public function readAll(Request $request): JsonResponse
     {
         $this->notifications->markAllRead($request->user());

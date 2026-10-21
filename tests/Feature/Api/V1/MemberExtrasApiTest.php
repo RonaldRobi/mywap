@@ -113,6 +113,33 @@ class MemberExtrasApiTest extends TestCase
             ->assertJsonPath('data.chart_members.0.name', 'Ahmad Firdaus');
     }
 
+    public function test_organization_info_can_select_another_organization(): void
+    {
+        Sanctum::actingAs($this->user, ['*']);
+
+        $abim = Organization::factory()->create([
+            'name' => 'ABIM',
+            'slug' => 'abim',
+            'sort_order' => 2,
+        ]);
+
+        OrganizationChartMember::create([
+            'organization_id' => $abim->id,
+            'name' => 'Siti Aminah',
+            'position' => 'Presiden ABIM',
+            'display_order' => 1,
+        ]);
+
+        $this->getJson('/api/v1/organization/info?organization=abim')
+            ->assertOk()
+            ->assertJsonPath('data.organization.name', 'ABIM')
+            ->assertJsonPath('data.organization.is_current', false)
+            ->assertJsonPath('data.chart_members.0.name', 'Siti Aminah')
+            ->assertJsonPath('data.organizations.1.slug', 'abim')
+            ->assertJsonPath('data.organizations.1.is_selected', true)
+            ->assertJsonPath('data.organizations.0.is_selected', false);
+    }
+
     public function test_organization_info_requires_organization(): void
     {
         Organization::query()->delete();

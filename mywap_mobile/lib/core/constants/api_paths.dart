@@ -114,6 +114,7 @@ abstract final class ApiPaths {
   static const String chat = '/chat';
   static const String notifications = '/notifications';
   static const String notificationsReadAll = '/notifications/read-all';
+  static String notificationRead(String id) => '/notifications/$id/read';
 
   // ---- Manual pengguna (panduan ikut peranan) ----
   static const String manuals = '/manuals';

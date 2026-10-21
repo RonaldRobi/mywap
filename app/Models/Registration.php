@@ -321,6 +321,20 @@ class Registration extends Model
             $this->update(['status' => RegistrationStatus::Confirmed]);
         }
 
+        // Pendaftaran rasmi bermakna peserta akan hadir. Selaraskan RSVP supaya
+        // butiran program tidak bertanya "Saya Akan Hadir" selepas mendaftar.
+        if ($this->user_id !== null) {
+            $rsvp = EventRsvp::firstOrNew([
+                'event_id' => $this->event_id,
+                'user_id' => $this->user_id,
+            ]);
+
+            if (! in_array($rsvp->status, ['going', 'attended'], true)) {
+                $rsvp->status = 'going';
+                $rsvp->save();
+            }
+        }
+
         if ($this->email && $this->confirmation_sent_at === null) {
             Notification::route('mail', $this->email)
                 ->notify(new RegistrationConfirmationNotification($this));

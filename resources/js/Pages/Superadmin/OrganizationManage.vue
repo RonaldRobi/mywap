@@ -13,9 +13,49 @@ const props = defineProps({
         default: () => ({
             logo: false,
             sort_order: false,
+            member_card: false,
         }),
     },
+    memberCardBackPath: {
+        type: String,
+        default: null,
+    },
 });
+
+// ─── Kad Keahlian (depan per organisasi, belakang satu untuk semua) ──────
+const cardFrontForms = Object.fromEntries(
+    props.organizations.map((organization) => [
+        organization.id,
+        useForm({ card_front: null }),
+    ])
+);
+const cardBackForm = useForm({ card_back: null });
+
+function updateCardFront(organization) {
+    cardFrontForms[organization.id].post(route('superadmin.organizations.card-front.update', organization.id), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => cardFrontForms[organization.id].reset('card_front'),
+    });
+}
+
+function removeCardFront(organization) {
+    if (!confirm(`Buang design depan kad ${organization.name}?`)) return;
+    useForm({}).delete(route('superadmin.organizations.card-front.destroy', organization.id), { preserveScroll: true });
+}
+
+function updateCardBack() {
+    cardBackForm.post(route('superadmin.organizations.card-back.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => cardBackForm.reset('card_back'),
+    });
+}
+
+function removeCardBack() {
+    if (!confirm('Buang design belakang kad?')) return;
+    useForm({}).delete(route('superadmin.organizations.card-back.destroy'), { preserveScroll: true });
+}
 
 const editForms = Object.fromEntries(
     props.organizations.map((organization) => [
@@ -170,6 +210,36 @@ function updateOrganizationLogo(organization) {
                 Sebahagian fungsi belum aktif kerana migration belum dijalankan sepenuhnya. Jalankan <strong>php artisan migrate</strong>.
             </div>
 
+            <!-- Design belakang kad keahlian (sama untuk semua organisasi) -->
+            <section v-if="capabilities.member_card" class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div class="flex flex-col gap-5 md:flex-row md:items-center">
+                    <div class="w-28 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50" style="aspect-ratio: 638 / 1004;">
+                        <img v-if="memberCardBackPath" :src="memberCardBackPath" alt="Belakang kad" class="h-full w-full object-cover">
+                        <div v-else class="flex h-full items-center justify-center p-2 text-center text-[10px] font-semibold text-gray-400">Tiada design</div>
+                    </div>
+                    <form class="flex-1 space-y-2" @submit.prevent="updateCardBack">
+                        <p class="text-sm font-black text-gray-800">Kad Keahlian — Belakang</p>
+                        <p class="text-[11px] text-gray-500">
+                            Satu design untuk semua organisasi (static, tiada data ahli).
+                            Saiz: <strong>638 × 1004 px</strong> (kad TNG 54 × 85 mm, menegak). JPG/PNG/WEBP, maks 5MB.
+                        </p>
+                        <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            @change="cardBackForm.card_back = $event.target.files[0]"
+                            class="w-full max-w-md rounded-xl border border-gray-200 px-3 py-2 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                        >
+                        <div class="flex gap-2">
+                            <button type="submit" :disabled="cardBackForm.processing || !cardBackForm.card_back" class="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-60">
+                                {{ cardBackForm.processing ? 'Memuat naik...' : 'Simpan Design Belakang' }}
+                            </button>
+                            <button v-if="memberCardBackPath" type="button" @click="removeCardBack" class="rounded-xl px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Buang</button>
+                        </div>
+                        <p v-if="cardBackForm.errors.card_back" class="text-xs text-red-500">{{ cardBackForm.errors.card_back }}</p>
+                    </form>
+                </div>
+            </section>
+
             <div class="grid gap-4 lg:grid-cols-3">
                 <article
                     v-for="organization in sortedOrganizations"
@@ -211,6 +281,33 @@ function updateOrganizationLogo(organization) {
                             <p v-if="logoForms[organization.id].errors.organization_logo" class="text-xs text-red-500">
                                 {{ logoForms[organization.id].errors.organization_logo }}
                             </p>
+                        </form>
+                    </div>
+
+                    <!-- Design depan kad keahlian (per organisasi) -->
+                    <div v-if="capabilities.member_card" class="mt-4 flex items-start gap-4 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                        <div class="w-20 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white" style="aspect-ratio: 638 / 1004;">
+                            <img v-if="organization.card_front_path" :src="organization.card_front_path" :alt="'Kad depan ' + organization.name" class="h-full w-full object-cover">
+                            <div v-else class="flex h-full items-center justify-center p-1 text-center text-[9px] font-semibold text-gray-400">Tiada design</div>
+                        </div>
+                        <form class="flex-1 space-y-2" @submit.prevent="updateCardFront(organization)">
+                            <p class="text-xs font-bold text-gray-700">Kad Keahlian — Depan</p>
+                            <p class="text-[11px] text-gray-500">
+                                Saiz: <strong>638 × 1004 px</strong>. Kosongkan ruang foto, nama, organisasi, no. ahli &amp; QR.
+                            </p>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                @change="cardFrontForms[organization.id].card_front = $event.target.files[0]"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                            >
+                            <div class="flex gap-2">
+                                <button type="submit" :disabled="cardFrontForms[organization.id].processing || !cardFrontForms[organization.id].card_front" class="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-60">
+                                    {{ cardFrontForms[organization.id].processing ? 'Memuat naik...' : 'Simpan Design Depan' }}
+                                </button>
+                                <button v-if="organization.card_front_path" type="button" @click="removeCardFront(organization)" class="rounded-xl px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Buang</button>
+                            </div>
+                            <p v-if="cardFrontForms[organization.id].errors.card_front" class="text-xs text-red-500">{{ cardFrontForms[organization.id].errors.card_front }}</p>
                         </form>
                     </div>
 

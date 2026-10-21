@@ -267,7 +267,7 @@ const navItems = computed(() => [
     // ═══════════════════════════════════
     { type: 'section', label: 'Kandungan' },
     ...(org.value?.id ? [{
-        label:  `Info ${org.value.name}`,
+        label:  'Info Organisasi',
         href:   route('org.info'),
         active: route().current('org.info') || route().current('org.chart.*'),
         colorClass: 'text-[#123D2A]',

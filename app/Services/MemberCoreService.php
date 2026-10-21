@@ -55,6 +55,8 @@ class MemberCoreService
             'photo_url' => $user->profile_photo_path,
             'member_since' => optional($user->created_at)->format('M Y'),
             'system_logo_path' => $this->normalizeStorageUrl($setting?->system_logo_path),
+            'card_front_path' => $this->normalizeStorageUrl($user->organization?->card_front_path),
+            'card_back_path' => $this->normalizeStorageUrl($setting?->member_card_back_path),
         ];
 
         if ($includeQrValue) {

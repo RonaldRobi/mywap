@@ -18,6 +18,10 @@ class NotificationRepository {
         .toList(growable: false);
   }
 
+  Future<void> read(String id) async {
+    await _api.post(ApiPaths.notificationRead(id));
+  }
+
   Future<void> readAll() async {
     await _api.post(ApiPaths.notificationsReadAll);
   }

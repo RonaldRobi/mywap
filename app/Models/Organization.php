@@ -31,6 +31,7 @@ class Organization extends Model
         'color_theme',
         'description',
         'logo_path',
+        'card_front_path',
         'sort_order',
         'min_age',
         'max_age',
@@ -207,6 +208,11 @@ class Organization extends Model
     }
 
     public function getLogoPathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getCardFrontPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

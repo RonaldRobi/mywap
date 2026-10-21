@@ -7,8 +7,11 @@ class OrganizationRepository {
   OrganizationRepository(this._api);
   final ApiClient _api;
 
-  Future<OrganizationInfoData> info() async {
-    final data = await _api.get('/organization/info');
+  Future<OrganizationInfoData> info({String? slug}) async {
+    final data = await _api.get(
+      '/organization/info',
+      query: slug != null && slug.isNotEmpty ? {'organization': slug} : null,
+    );
     if (data is String) {
       return OrganizationInfoData.fromJson(jsonDecode(data) as Map<String, dynamic>);
     }

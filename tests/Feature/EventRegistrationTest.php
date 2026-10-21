@@ -174,6 +174,24 @@ class EventRegistrationTest extends TestCase
         $this->assertSame($this->org->id, (int) $registration->organization_id);
     }
 
+    public function test_member_registration_marks_rsvp_going(): void
+    {
+        $event = $this->makePublishedEvent();
+        $form = $this->makeForm($event);
+
+        $this->actingAs($this->member);
+
+        $this->post(route('events.register.store', ['event' => $event->slug, 'form' => $form->id]), [
+            'answers' => [$form->questions->first()->id => 'Ahmad Bin Ali'],
+        ]);
+
+        $this->assertDatabaseHas('event_rsvps', [
+            'event_id' => $event->id,
+            'user_id' => $this->member->id,
+            'status' => 'going',
+        ]);
+    }
+
     public function test_member_registration_stores_answers(): void
     {
         $event = $this->makePublishedEvent();

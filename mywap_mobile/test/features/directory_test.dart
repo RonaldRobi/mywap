@@ -63,9 +63,28 @@ class _FakeNotificationRepository implements NotificationRepository {
 
   List<AppNotification> _items;
   int readAllCalls = 0;
+  int readCalls = 0;
 
   @override
   Future<List<AppNotification>> list() async => List.of(_items);
+
+  @override
+  Future<void> read(String id) async {
+    readCalls++;
+    _items = _items
+        .map(
+          (n) => n.id == id
+              ? AppNotification(
+                  id: n.id,
+                  type: n.type,
+                  data: n.data,
+                  createdAt: n.createdAt,
+                  readAt: DateTime.now(),
+                )
+              : n,
+        )
+        .toList();
+  }
 
   @override
   Future<void> readAll() async {

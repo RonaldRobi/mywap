@@ -22,12 +22,25 @@ class OrganizationInfoController extends Controller
     public function show(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
-        $organization = $user->organization;
+        $currentOrganization = $user->organization;
 
-        if (! $organization) {
+        $organizations = Organization::query()
+            ->withCount(['members', 'chartMembers'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($organizations->isEmpty()) {
             return redirect()->route('dashboard')
                 ->with('error', 'Tiada organisasi untuk dipaparkan.');
         }
+
+        $requestedSlug = $request->query('org');
+        $selected = $requestedSlug
+            ? $organizations->firstWhere('slug', $requestedSlug)
+            : null;
+
+        $organization = $selected ?? $currentOrganization ?? $organizations->first();
 
         $chartMembers = $organization->chartMembers()->get()->map(fn (OrganizationChartMember $member) => [
             'id' => $member->id,
@@ -38,10 +51,26 @@ class OrganizationInfoController extends Controller
             'display_order' => $member->display_order,
         ]);
 
+        $isOwnOrganization = $currentOrganization?->id === $organization->id;
+
         return Inertia::render('Org/Info', [
-            'organization' => $this->organizationPayload($organization),
+            'organization' => $this->organizationPayload($organization, $currentOrganization),
+            'organizations' => $organizations->map(fn (Organization $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'slug' => $item->slug,
+                'description' => $item->description,
+                'logo_path' => $item->logo_path,
+                'color_theme' => $item->color_theme,
+                'min_age' => $item->min_age,
+                'max_age' => $item->max_age,
+                'member_count' => $item->members_count,
+                'chart_member_count' => $item->chart_members_count,
+                'is_current' => $currentOrganization?->id === $item->id,
+            ])->values(),
             'chartMembers' => $chartMembers,
-            'canManage' => $user->isAdminPanelUser(),
+            'canManage' => $isOwnOrganization && $user->isAdminPanelUser(),
+            'isOwnOrganization' => $isOwnOrganization,
         ]);
     }
 
@@ -158,7 +187,7 @@ class OrganizationInfoController extends Controller
         return $organization;
     }
 
-    private function organizationPayload(Organization $organization): array
+    private function organizationPayload(Organization $organization, ?Organization $currentOrganization): array
     {
         return [
             'id' => $organization->id,
@@ -166,12 +195,16 @@ class OrganizationInfoController extends Controller
             'slug' => $organization->slug,
             'description' => $organization->description,
             'logo_path' => $organization->logo_path,
+            'color_theme' => $organization->color_theme,
+            'min_age' => $organization->min_age,
+            'max_age' => $organization->max_age,
             'website_url' => $organization->website_url,
             'facebook_url' => $organization->facebook_url,
             'instagram_url' => $organization->instagram_url,
             'twitter_url' => $organization->twitter_url,
             'youtube_url' => $organization->youtube_url,
             'tiktok_url' => $organization->tiktok_url,
+            'is_current' => $currentOrganization?->id === $organization->id,
         ];
     }
 }

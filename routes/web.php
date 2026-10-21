@@ -276,6 +276,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
         Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
+        Route::post('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'updateCardBack'])->name('superadmin.organizations.card-back.update');
+        Route::delete('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'destroyCardBack'])->name('superadmin.organizations.card-back.destroy');
+        Route::post('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'updateCardFront'])->name('superadmin.organizations.card-front.update');
+        Route::delete('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'destroyCardFront'])->name('superadmin.organizations.card-front.destroy');
         Route::post('/superadmin/organizations/{organization}/chart', [SuperadminOrganizationController::class, 'storeChartMember'])->name('superadmin.organizations.chart.store');
         Route::put('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'updateChartMember'])->name('superadmin.organizations.chart.update');
         Route::delete('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'destroyChartMember'])->name('superadmin.organizations.chart.destroy');
