@@ -12,7 +12,7 @@ export const CARD_H = 1004;
 export const FONT_FAMILY = 'Figtree, ui-sans-serif, system-ui, sans-serif';
 
 export const CARD_LAYOUT = {
-    photo: { x: 240, y: 342, w: 165, h: 232, radius: 18 },
+    photo: { cx: 320, cy: 398, r: 80 },
 
     // Nama: maksimum 2 baris, ditengahkan. Font mengecil jika terlalu panjang.
     name: {

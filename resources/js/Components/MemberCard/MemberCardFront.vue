@@ -50,11 +50,10 @@ const qrInner = computed(() => ({
     >
         <defs>
             <clipPath :id="`${uid}-photo`">
-                <rect :x="L.photo.x" :y="L.photo.y" :width="L.photo.w" :height="L.photo.h" :rx="L.photo.radius" />
+                <circle :cx="L.photo.cx" :cy="L.photo.cy" :r="L.photo.r" />
             </clipPath>
             <linearGradient :id="`${uid}-fallback`" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#f4faf6" />
-                <stop offset="60%" stop-color="#cfe9d8" />
+                <stop offset="0%" stop-color="#1a6b4f" />
                 <stop offset="100%" stop-color="#0f5a3e" />
             </linearGradient>
         </defs>
@@ -68,22 +67,23 @@ const qrInner = computed(() => ({
         />
         <rect v-else x="0" y="0" :width="CARD_W" :height="CARD_H" :fill="`url(#${uid}-fallback)`" />
 
-        <!-- Foto ahli -->
+        <!-- Foto ahli (bulat) -->
         <g :clip-path="`url(#${uid}-photo)`">
-            <rect :x="L.photo.x" :y="L.photo.y" :width="L.photo.w" :height="L.photo.h" fill="#dfeee5" />
+            <circle :cx="L.photo.cx" :cy="L.photo.cy" :r="L.photo.r" fill="#dfeee5" />
             <image
                 v-if="card?.photo_url"
                 :href="card.photo_url"
-                :x="L.photo.x" :y="L.photo.y" :width="L.photo.w" :height="L.photo.h"
+                :x="L.photo.cx - L.photo.r" :y="L.photo.cy - L.photo.r"
+                :width="L.photo.r * 2" :height="L.photo.r * 2"
                 preserveAspectRatio="xMidYMid slice"
             />
             <text
                 v-else
-                :x="L.photo.x + L.photo.w / 2"
-                :y="L.photo.y + L.photo.h / 2 + 18"
+                :x="L.photo.cx"
+                :y="L.photo.cy + 16"
                 text-anchor="middle"
                 :font-family="FONT_FAMILY"
-                font-size="52"
+                font-size="46"
                 font-weight="800"
                 fill="#03553e"
             >{{ initials(card?.name) }}</text>
