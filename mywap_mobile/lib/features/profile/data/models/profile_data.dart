@@ -391,6 +391,9 @@ class EditMeta {
   const EditMeta({
     this.branches,
     this.canEditIcNumber,
+    this.currentBranchId,
+    this.currentBranchName,
+    this.organizationName,
     this.pendingBranchRequest,
   });
 
@@ -398,6 +401,9 @@ class EditMeta {
     return EditMeta(
       branches: _parseList(json['branches'], ProfileBranch.fromJson),
       canEditIcNumber: json['canEditIcNumber'] as bool?,
+      currentBranchId: json['currentBranchId'] as int?,
+      currentBranchName: json['currentBranchName'] as String?,
+      organizationName: json['organizationName'] as String?,
       pendingBranchRequest: _fromJsonOrNull(
         json['pendingBranchRequest'],
         PendingBranchRequest.fromJson,
@@ -407,5 +413,8 @@ class EditMeta {
 
   final List<ProfileBranch>? branches;
   final bool? canEditIcNumber;
+  final int? currentBranchId;
+  final String? currentBranchName;
+  final String? organizationName;
   final PendingBranchRequest? pendingBranchRequest;
 }

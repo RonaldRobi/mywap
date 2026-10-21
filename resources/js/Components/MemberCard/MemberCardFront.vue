@@ -24,8 +24,8 @@ const emit = defineEmits(['qr-click']);
 const uid = `mc${Math.random().toString(36).slice(2, 8)}`;
 
 const name = computed(() => (props.fontsVersion, layoutName(props.card?.name)));
-const org = computed(() => (props.fontsVersion, layoutOrganization(props.card?.organization?.name)));
-const memberNo = computed(() => (props.fontsVersion, layoutMemberNo(props.card?.member_no)));
+const org = computed(() => (props.fontsVersion, layoutOrganization(props.card?.organization?.name, name.value.bottom)));
+const memberNo = computed(() => (props.fontsVersion, layoutMemberNo(props.card?.member_no, org.value.boxTop)));
 
 const qrDataUri = computed(() => {
     if (!props.qrSvg) return null;
@@ -106,14 +106,14 @@ const qrInner = computed(() => ({
 
         <!-- Kotak organisasi -->
         <rect
-            :x="L.organization.box.x" :y="L.organization.box.y"
+            :x="L.organization.box.x" :y="org.boxTop"
             :width="L.organization.box.w" :height="L.organization.box.h"
             :rx="L.organization.box.radius"
             :fill="L.organization.box.color"
         />
         <text
             :x="L.organization.box.x + L.organization.box.w / 2"
-            :y="L.organization.baseline"
+            :y="org.baseline"
             text-anchor="middle"
             :font-family="FONT_FAMILY"
             :font-size="org.size"
@@ -125,7 +125,7 @@ const qrInner = computed(() => ({
         <!-- No. ahli -->
         <text
             :x="L.memberNo.centerX"
-            :y="L.memberNo.baseline"
+            :y="memberNo.baseline"
             text-anchor="middle"
             :font-family="FONT_FAMILY"
             :font-size="memberNo.size"

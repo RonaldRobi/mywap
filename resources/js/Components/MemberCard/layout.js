@@ -14,12 +14,13 @@ export const FONT_FAMILY = 'Figtree, ui-sans-serif, system-ui, sans-serif';
 export const CARD_LAYOUT = {
     photo: { cx: 320, cy: 428, r: 130 },
 
-    // Nama: sentiasa reserve 2 baris supaya kotak organisasi tidak beralih
-    // bila nama pendek (1 baris) atau panjang (2 baris). Font mengecil jika perlu.
+    // Nama: boleh 1 atau 2 baris. Kotak organisasi dijarakkan 50px dari
+    // baris TERAKHIR nama, jadi nama 1 baris tidak simpan ruang kosong.
     name: {
         centerX: 319,
         maxWidth: 520,
-        baselines: { one: 600, two: [600, 636] },
+        line1: 600,
+        lineHeight: 36,
         fontSize: 30,
         minFontSize: 20,
         fontWeight: 700,
@@ -28,9 +29,9 @@ export const CARD_LAYOUT = {
 
     // Kotak organisasi + teks putih di tengah.
     organization: {
-        box: { x: 185, y: 693, w: 272, h: 40, radius: 5, color: '#03553e' },
+        box: { x: 185, w: 272, h: 40, radius: 5, color: '#03553e' },
         paddingX: 14,
-        baseline: 720,
+        baselineOffset: 27,
         fontSize: 28,
         minFontSize: 12,
         fontWeight: 800,
@@ -39,12 +40,16 @@ export const CARD_LAYOUT = {
 
     memberNo: {
         centerX: 319,
-        baseline: 797,
         fontSize: 20,
         minFontSize: 12,
         maxWidth: 400,
         fontWeight: 700,
         color: '#012c10',
+    },
+
+    gaps: {
+        nameToOrg: 50,
+        orgToMemberNo: 50,
     },
 
     qr: { x: 480, y: 845, size: 95, padding: 3, background: '#ffffff' },
@@ -97,7 +102,7 @@ function wrap(words, size, weight, maxWidth) {
 
 /**
  * Pecahkan nama kepada ≤ 2 baris dan kecilkan font sehingga muat.
- * Pulangkan { size, lines: [{ text, baseline }] }.
+ * Pulangkan { size, lines: [{ text, baseline }], bottom }.
  */
 export function layoutName(rawName) {
     const cfg = CARD_LAYOUT.name;
@@ -117,26 +122,44 @@ export function layoutName(rawName) {
         lines = [lines[0], lines.slice(1).join(' ')];
     }
 
-    const baselines = lines.length === 1 ? [cfg.baselines.one] : cfg.baselines.two;
+    const baselines = lines.length === 1
+        ? [cfg.line1]
+        : [cfg.line1, cfg.line1 + cfg.lineHeight];
+    const lastBaseline = baselines[baselines.length - 1];
+    const bottom = lastBaseline + size * 0.22;
 
     return {
         size,
         lines: lines.map((text, i) => ({ text, baseline: baselines[i] })),
+        bottom,
     };
 }
 
-export function layoutOrganization(rawName) {
+export function layoutOrganization(rawName, nameBottom) {
     const cfg = CARD_LAYOUT.organization;
     const text = (rawName || '').trim().toUpperCase() || 'ORGANISASI';
     const size = fitSingleLine(text, cfg, cfg.box.w - cfg.paddingX * 2);
-    return { text, size };
+    const boxTop = Math.round(nameBottom + CARD_LAYOUT.gaps.nameToOrg);
+
+    return {
+        text,
+        size,
+        boxTop,
+        baseline: boxTop + cfg.baselineOffset,
+    };
 }
 
-export function layoutMemberNo(raw) {
+export function layoutMemberNo(raw, orgBoxTop) {
     const cfg = CARD_LAYOUT.memberNo;
     const text = (raw || '').trim() || '-';
     const size = fitSingleLine(text, cfg, cfg.maxWidth);
-    return { text, size };
+    const memberNoTop = orgBoxTop + CARD_LAYOUT.organization.box.h + CARD_LAYOUT.gaps.orgToMemberNo;
+
+    return {
+        text,
+        size,
+        baseline: memberNoTop + size * 0.72,
+    };
 }
 
 export function initials(name) {

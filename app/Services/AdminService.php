@@ -343,7 +343,7 @@ class AdminService
         $status = $request->input('status');
 
         $query = User::withoutGlobalScope(OrganizationScope::class)
-            ->with('organization:id,name')
+            ->with(['organization:id,name', 'branch:id,name'])
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->when($search, fn ($q) => MemberSearch::apply($q, $search))
             ->when($status === 'active', fn ($q) => $q->whereNotNull('profile_completed_at'))
@@ -359,7 +359,7 @@ class AdminService
             'email' => $u->email,
             'phone' => $u->phone,
             'ic_number' => $u->ic_number,
-            'branch_name' => $u->branch_name,
+            'branch_name' => $u->branch?->name ?? $u->branch_name,
             'organization' => $u->organization
                 ? ['id' => $u->organization->id, 'name' => $u->organization->name]
                 : null,

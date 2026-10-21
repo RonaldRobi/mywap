@@ -58,6 +58,7 @@ abstract final class ApiPaths {
   static const String profile = '/profile';
   static const String profileComplete = '/profile/complete';
   static const String profileEditMeta = '/profile/edit-meta';
+  static const String profileBranchChange = '/profile/branch-change';
   static const String profilePassword = '/profile/password';
   static const String profilePhoto = '/profile/photo';
 

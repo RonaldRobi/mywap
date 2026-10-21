@@ -40,7 +40,7 @@ class MemberDashboardService
 
     public function buildData(User $user): array
     {
-        $user->load('organization');
+        $user->load(['organization', 'branch']);
 
         $setting = AppSetting::query()->first();
 
@@ -345,7 +345,7 @@ class MemberDashboardService
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'branch_name' => $user->branch_name,
+                'branch_name' => $user->branch?->name ?? $user->branch_name,
                 'locality' => $user->locality,
                 'profession' => $user->current_profession,
                 'photo_url' => $user->profile_photo_path,

@@ -43,6 +43,14 @@ class ProfileRepository {
     return ProfileUser.fromJson(_asMap(data));
   }
 
+  /// `POST /profile/branch-change` — hantar permohonan tukar cawangan.
+  Future<void> requestBranchChange(int branchId) async {
+    await _api.post(
+      ApiPaths.profileBranchChange,
+      body: {'branch_id': branchId},
+    );
+  }
+
   /// `POST /profile/complete` — finalizes the mandatory onboarding profile.
   Future<ProfileUser> completeProfile(Map<String, dynamic> body) async {
     final data = await _api.post(ApiPaths.profileComplete, body: body);

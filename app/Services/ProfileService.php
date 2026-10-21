@@ -129,6 +129,8 @@ class ProfileService
      */
     public function editMeta(User $user): array
     {
+        $user->loadMissing(['branch', 'organization']);
+
         $branches = $user->current_organization_id
             ? Branch::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
@@ -151,10 +153,51 @@ class ProfileService
             'branches' => $branches,
             'orgPositions' => $positions,
             'canEditIcNumber' => $user->hasRole(['Superadmin', 'Admin', 'org-admin']),
+            'currentBranchId' => $user->branch_id,
+            'currentBranchName' => $user->branch?->name,
+            'organizationName' => $user->organization?->name,
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
             ] : null,
         ];
+    }
+
+    /**
+     * Hantar permohonan tukar cawangan untuk kelulusan admin.
+     *
+     * Permohonan pending yang lama akan dibatalkan supaya hanya satu
+     * permohonan aktif pada satu masa.
+     */
+    public function requestBranchChange(User $user, int $branchId): BranchChangeRequest
+    {
+        $branch = Branch::query()
+            ->whereKey($branchId)
+            ->where('organization_id', $user->current_organization_id)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $branch) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Cawangan yang dipilih tidak sah untuk organisasi anda.',
+            ]);
+        }
+
+        if ((int) $user->branch_id === (int) $branch->id) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Anda sudah berada di cawangan ini.',
+            ]);
+        }
+
+        BranchChangeRequest::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'cancelled']);
+
+        return BranchChangeRequest::create([
+            'user_id' => $user->id,
+            'from_branch_id' => $user->branch_id,
+            'to_branch_id' => $branch->id,
+            'status' => 'pending',
+        ]);
     }
 
     /**

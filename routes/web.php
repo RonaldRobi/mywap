@@ -426,6 +426,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
         Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
         Route::get('branch-change-requests', [BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
+        Route::post('branch-change-requests/bulk-approve', [BranchChangeRequestController::class, 'approveBulk'])->name('branch-change-requests.bulk-approve');
         Route::post('branch-change-requests/{branchChangeRequest}/approve', [BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
         Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
     });
@@ -514,6 +515,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/journey', [ProfileController::class, 'show'])->name('profile.show');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/branch-change', [ProfileController::class, 'requestBranchChange'])->name('profile.branch-change');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Pembatalan akaun (member area) — untuk pematuhan Play Store

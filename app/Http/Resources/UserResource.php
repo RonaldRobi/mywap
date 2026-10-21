@@ -22,7 +22,7 @@ class UserResource extends JsonResource
             'gender' => $user->gender,
             'marital_status' => $user->marital_status,
             'branch_id' => $user->branch_id,
-            'branch_name' => $user->branch_name,
+            'branch_name' => $user->branch?->name ?? $user->branch_name,
             'locality' => $user->locality,
             'address_1' => $user->address_1,
             'address_2' => $user->address_2,

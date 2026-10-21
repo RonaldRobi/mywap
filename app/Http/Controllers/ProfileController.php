@@ -314,6 +314,27 @@ class ProfileController extends Controller
     }
 
     /**
+     * Hantar permohonan tukar cawangan untuk kelulusan admin.
+     */
+    public function requestBranchChange(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+        ]);
+
+        abort_if($request->user()->hasRole('Superadmin'), 403);
+
+        $branchChangeRequest = app(ProfileService::class)
+            ->requestBranchChange($request->user(), (int) $data['branch_id']);
+
+        return Redirect::route('profile.edit')->with(
+            'success',
+            'Permohonan tukar cawangan ke '.($branchChangeRequest->toBranch?->name ?? 'cawangan baharu').
+            ' telah dihantar untuk kelulusan admin.'
+        );
+    }
+
+    /**
      * Delete the user's account.
      *
      * Any authenticated user may delete their own account — required for

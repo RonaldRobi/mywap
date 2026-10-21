@@ -56,7 +56,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   DateTime? _dob;
   String? _gender;
   String? _maritalStatus;
-  int? _branchId;
+  String? _organizationName;
+  String? _currentBranchName;
   bool _isPublicInDirectory = true;
   bool _loaded = false;
   bool _saving = false;
@@ -128,15 +129,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _dob = user.dob == null ? null : ProfileFormat.parseDate(user.dob!);
     _gender = user.gender;
     _maritalStatus = user.marital_status;
-    // `branch_id` is not exposed on GET /profile (only branch_name), so the
-    // dropdown starts unselected; selecting a different branch files a change
-    // request on the backend.
+    _organizationName = user.organization?.name;
+    _currentBranchName = user.branch_name;
   }
 
   Widget _buildForm() {
     final editMetaAsync = ref.watch(profileEditMetaProvider);
-    final branches =
-        editMetaAsync.valueOrNull?.branches ?? const <ProfileBranch>[];
+    final meta = editMetaAsync.valueOrNull;
+    final branches = meta?.branches ?? const <ProfileBranch>[];
 
     return Form(
       key: _formKey,
@@ -162,6 +162,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
           _section('Maklumat Asas', [
+            _organizationBranchCard(meta: meta, branches: branches),
             _textField('name', label: 'Nama Penuh', required: true),
             _textField('email', label: 'Emel', required: true, isEmail: true),
             _textField(
@@ -202,32 +203,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               hint: 'Pisahkan dengan koma',
             ),
           ]),
-          _section('Cawangan & Direktori', [
-            Padding(
-              padding: const EdgeInsets.only(bottom: Spacing.md),
-              child: DropdownButtonFormField<int>(
-                value: _branchId,
-                decoration: InputDecoration(
-                  labelText: 'Cawangan',
-                  errorText: _serverErrors['branch_id'],
-                ),
-                hint: const Text('Pilih cawangan (jika bertukar)'),
-                items: [
-                  for (final branch in branches)
-                    DropdownMenuItem(
-                      value: branch.id,
-                      child: Text(branch.name ?? 'Cawangan ${branch.id ?? ''}'),
-                    ),
-                ],
-                onChanged:
-                    branches.isEmpty
-                        ? null
-                        : (value) => setState(() {
-                          _branchId = value;
-                          _serverErrors.remove('branch_id');
-                        }),
-              ),
-            ),
+          _section('Direktori', [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Papar dalam Direktori Awam'),
@@ -273,6 +249,166 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             label: Text(_saving ? 'Menyimpan...' : 'Simpan Perubahan'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _organizationBranchCard({
+    required EditMeta? meta,
+    required List<ProfileBranch> branches,
+  }) {
+    final organization =
+        meta?.organizationName ?? _organizationName ?? 'Tiada organisasi';
+    final currentBranch =
+        meta?.currentBranchName ?? _currentBranchName ?? 'Tiada cawangan';
+    final pending = meta?.pendingBranchRequest;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: Spacing.lg),
+      padding: const EdgeInsets.all(Spacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.softGreenSurface,
+        borderRadius: AppRadius.lg,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.business_outlined,
+                color: AppColors.movementGreen,
+              ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Organisasi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      organization,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: Spacing.xl),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                color: AppColors.movementGreen,
+              ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Cawangan',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currentBranch,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.sm),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed:
+                  branches.any((branch) => branch.id != meta?.currentBranchId)
+                      ? () =>
+                          _openBranchChangeSheet(meta: meta, branches: branches)
+                      : null,
+              icon: const Icon(Icons.swap_horiz, size: AppSizes.iconSm),
+              label: const Text('Tukar Cawangan'),
+            ),
+          ),
+          if (pending != null) ...[
+            const SizedBox(height: Spacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.accentTint,
+                borderRadius: AppRadius.md,
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Text(
+                'Permohonan tukar ke ${pending.to_branch ?? 'cawangan baharu'} sedang menunggu kelulusan admin.',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.warning,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openBranchChangeSheet({
+    required EditMeta? meta,
+    required List<ProfileBranch> branches,
+  }) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.white,
+      builder:
+          (_) => _BranchChangeSheet(
+            branches: branches,
+            currentBranchId: meta?.currentBranchId,
+            currentBranchName: meta?.currentBranchName ?? _currentBranchName,
+            organizationName: meta?.organizationName ?? _organizationName,
+            pendingBranchRequest: meta?.pendingBranchRequest,
+          ),
+    );
+
+    if (changed != true || !mounted) return;
+
+    ref.invalidate(profileProvider);
+    ref.invalidate(profileEditMetaProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.',
+        ),
       ),
     );
   }
@@ -427,7 +563,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       'education_level': valueOf('education_level'),
       'current_profession': valueOf('current_profession'),
       'industry': valueOf('industry'),
-      'branch_id': _branchId,
       'locality': valueOf('locality'),
       'expertise': valueOf('expertise'),
       'linkedin_url': valueOf('linkedin_url'),
@@ -484,6 +619,247 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (value.isNotEmpty) mapped[key] = value.first;
     });
     return mapped;
+  }
+}
+
+class _BranchChangeSheet extends ConsumerStatefulWidget {
+  const _BranchChangeSheet({
+    required this.branches,
+    required this.currentBranchId,
+    required this.currentBranchName,
+    required this.organizationName,
+    required this.pendingBranchRequest,
+  });
+
+  final List<ProfileBranch> branches;
+  final int? currentBranchId;
+  final String? currentBranchName;
+  final String? organizationName;
+  final PendingBranchRequest? pendingBranchRequest;
+
+  @override
+  ConsumerState<_BranchChangeSheet> createState() => _BranchChangeSheetState();
+}
+
+class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
+  int? _selectedBranchId;
+  bool _saving = false;
+  String? _error;
+
+  List<ProfileBranch> get _options =>
+      widget.branches
+          .where((branch) => branch.id != widget.currentBranchId)
+          .toList(growable: false);
+
+  Future<void> _submit() async {
+    if (_selectedBranchId == null) {
+      setState(() => _error = 'Sila pilih cawangan baharu.');
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      await ref
+          .read(profileRepositoryProvider)
+          .requestBranchChange(_selectedBranchId!);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = error.errors?['branch_id']?.first ?? error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = 'Ralat tidak dijangka. Sila cuba lagi.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.lg,
+        Spacing.lg + bottomInset,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: AppRadius.pill,
+                ),
+              ),
+            ),
+            const SizedBox(height: Spacing.lg),
+            Text(
+              'Tukar Cawangan',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: Spacing.sm),
+            const Text(
+              'Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: Spacing.lg),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: AppRadius.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Cawangan sekarang',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.currentBranchName ?? 'Tiada cawangan',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if ((widget.organizationName ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.organizationName!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (widget.pendingBranchRequest != null) ...[
+              const SizedBox(height: Spacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Spacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.accentTint,
+                  borderRadius: AppRadius.md,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Text(
+                  'Permohonan ke ${widget.pendingBranchRequest?.to_branch ?? 'cawangan baharu'} masih menunggu. Menghantar permohonan baharu akan menggantikannya.',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: Spacing.lg),
+            DropdownButtonFormField<int>(
+              value: _selectedBranchId,
+              decoration: const InputDecoration(labelText: 'Cawangan baharu'),
+              hint: const Text('Pilih cawangan'),
+              items: [
+                for (final branch in _options)
+                  DropdownMenuItem(
+                    value: branch.id,
+                    child: Text(branch.name ?? 'Cawangan ${branch.id ?? ''}'),
+                  ),
+              ],
+              onChanged:
+                  (value) => setState(() {
+                    _selectedBranchId = value;
+                    _error = null;
+                  }),
+            ),
+            if (_options.isEmpty) ...[
+              const SizedBox(height: Spacing.sm),
+              const Text(
+                'Tiada cawangan lain tersedia untuk organisasi anda.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(_error!, style: const TextStyle(color: AppColors.error)),
+            ],
+            const SizedBox(height: Spacing.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: const BoxDecoration(
+                color: AppColors.softGreenSurface,
+                borderRadius: AppRadius.md,
+              ),
+              child: const Text(
+                'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(height: Spacing.xl),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _saving
+                            ? null
+                            : () => Navigator.of(context).pop(false),
+                    child: const Text('Batal'),
+                  ),
+                ),
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed:
+                        _saving || _options.isEmpty ? null : _submit,
+                    child:
+                        _saving
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                            : const Text('Hantar Permohonan'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

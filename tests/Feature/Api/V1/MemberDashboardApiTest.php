@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Models\Branch;
 use App\Models\Event;
 use App\Models\Organization;
 use App\Models\User;
@@ -70,5 +71,26 @@ class MemberDashboardApiTest extends TestCase
                     'latestNews',
                 ],
             ]);
+    }
+
+    public function test_dashboard_uses_selected_branch_even_when_legacy_branch_name_is_empty(): void
+    {
+        $branch = Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan Kuala Lumpur',
+            'state' => 'Wilayah Persekutuan',
+            'is_active' => true,
+        ]);
+
+        $this->member->update([
+            'branch_id' => $branch->id,
+            'branch_name' => null,
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/member/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.member.branch_name', 'Cawangan Kuala Lumpur');
     }
 }

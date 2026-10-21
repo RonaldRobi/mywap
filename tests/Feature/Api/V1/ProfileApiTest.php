@@ -276,6 +276,38 @@ class ProfileApiTest extends TestCase
         ]);
     }
 
+    public function test_member_can_request_branch_change_via_dedicated_endpoint(): void
+    {
+        $current = Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan A',
+            'state' => 'Selangor',
+            'is_active' => true,
+        ]);
+        $target = Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan B',
+            'state' => 'Johor',
+            'is_active' => true,
+        ]);
+        $this->member->update(['branch_id' => $current->id]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson('/api/v1/profile/branch-change', ['branch_id' => $target->id])
+            ->assertOk()
+            ->assertJsonPath('data.pending_branch_request.to_branch', 'Cawangan B');
+
+        $this->assertDatabaseHas('branch_change_requests', [
+            'user_id' => $this->member->id,
+            'from_branch_id' => $current->id,
+            'to_branch_id' => $target->id,
+            'status' => 'pending',
+        ]);
+
+        $this->assertSame($current->id, $this->member->fresh()->branch_id);
+    }
+
     public function test_member_can_get_edit_meta(): void
     {
         $branch = Branch::create([

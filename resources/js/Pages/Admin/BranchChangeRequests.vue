@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -12,6 +12,35 @@ const user = usePage().props.auth.user;
 const showRejectModal = ref(false);
 const rejectTarget = ref(null);
 const rejectForm = useForm({ rejection_reason: '' });
+
+const selectedIds = ref([]);
+const bulkApproving = ref(false);
+
+const allSelected = computed(() =>
+    props.requests.length > 0 && props.requests.every((r) => selectedIds.value.includes(r.id))
+);
+
+function toggleSelectAll() {
+    selectedIds.value = allSelected.value ? [] : props.requests.map((r) => r.id);
+}
+
+function toggleSelect(id) {
+    selectedIds.value = selectedIds.value.includes(id)
+        ? selectedIds.value.filter((x) => x !== id)
+        : [...selectedIds.value, id];
+}
+
+function bulkApprove() {
+    if (!selectedIds.value.length) return;
+    if (!confirm(`Luluskan ${selectedIds.value.length} permohonan pertukaran cawangan sekali gus?`)) return;
+
+    bulkApproving.value = true;
+    router.post(route('branch-change-requests.bulk-approve'), { ids: selectedIds.value }, {
+        preserveScroll: true,
+        onSuccess: () => { selectedIds.value = []; },
+        onFinish: () => { bulkApproving.value = false; },
+    });
+}
 
 function openReject(r) {
     rejectTarget.value = r;
@@ -82,12 +111,52 @@ function approve(r) {
             </div>
 
             <div v-else class="space-y-3">
+                <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 shadow-sm">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-indigo-900">
+                            <input
+                                type="checkbox"
+                                :checked="allSelected"
+                                @change="toggleSelectAll"
+                                class="h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            >
+                            Pilih semua ({{ requests.length }})
+                        </label>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-semibold text-indigo-700">{{ selectedIds.length }} dipilih</span>
+                            <button
+                                @click="selectedIds = []"
+                                :disabled="!selectedIds.length"
+                                class="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition disabled:opacity-40"
+                            >
+                                Kosongkan
+                            </button>
+                            <button
+                                @click="bulkApprove"
+                                :disabled="!selectedIds.length || bulkApproving"
+                                class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50"
+                            >
+                                {{ bulkApproving ? 'Memproses...' : `Luluskan Terpilih (${selectedIds.length})` }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div
                     v-for="r in requests"
                     :key="r.id"
-                    class="rounded-2xl border border-gray-100 bg-white p-4 md:p-5 shadow-sm"
+                    class="rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition"
+                    :class="selectedIds.includes(r.id) ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-gray-100'"
                 >
-                    <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                        <input
+                            type="checkbox"
+                            :checked="selectedIds.includes(r.id)"
+                            @change="toggleSelect(r.id)"
+                            class="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            :aria-label="`Pilih permohonan ${r.user.name}`"
+                        >
+                        <div class="flex min-w-0 flex-1 items-start justify-between gap-4">
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-semibold text-gray-900">{{ r.user.name }}</p>
                             <p class="text-xs text-gray-500">{{ r.user.email }} · {{ r.user.member_no }}</p>
@@ -117,6 +186,7 @@ function approve(r) {
                             >
                                 Reject
                             </button>
+                        </div>
                         </div>
                     </div>
                 </div>

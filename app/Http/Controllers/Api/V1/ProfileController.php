@@ -67,6 +67,29 @@ class ProfileController extends Controller
     }
 
     /**
+     * Hantar permohonan tukar cawangan untuk kelulusan admin.
+     */
+    public function requestBranchChange(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+        ]);
+
+        abort_if($request->user()->hasRole('Superadmin'), 403);
+
+        $branchChangeRequest = $this->profile
+            ->requestBranchChange($request->user(), (int) $data['branch_id']);
+
+        return ApiResponse::success([
+            'pending_branch_request' => [
+                'to_branch' => $branchChangeRequest->toBranch?->name,
+            ],
+        ], [
+            'message' => 'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.',
+        ]);
+    }
+
+    /**
      * Tukar kata laluan — sahkan kata laluan semasa secara eksplisit supaya
      * berfungsi dalam konteks token Sanctum (tanpa sesi).
      */

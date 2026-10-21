@@ -65,6 +65,10 @@ bool _isPublicLocation(String location) {
     '/events',
     '/organization/info',
     '/scan',
+    // Hab menu ialah tab kelima pada kedua-dua shell. Ia merender set pautan
+    // khusus tetamu apabila tiada sesi, jadi ia mesti kekal awam — jika tidak,
+    // tetamu yang menekan tab Menu akan dilempar semula ke /home.
+    '/menu',
   };
   if (exact.contains(location)) return true;
   if (RegExp(r'^/(articles|news)/\d+$').hasMatch(location)) return true;

@@ -29,7 +29,7 @@ class MemberCoreService
      */
     public function card(User $user, bool $includeQrValue = false): array
     {
-        $user->loadMissing('organization');
+        $user->loadMissing(['organization', 'branch']);
         $setting = Schema::hasTable('app_settings')
             ? AppSetting::query()->first()
             : null;
@@ -42,7 +42,7 @@ class MemberCoreService
             'name' => $user->name,
             'email' => $user->email,
             'phone' => $user->phone,
-            'branch_name' => $user->branch_name,
+            'branch_name' => $user->branch?->name ?? $user->branch_name,
             'locality' => $user->locality,
             'profession' => $user->current_profession,
             'industry' => $user->industry,

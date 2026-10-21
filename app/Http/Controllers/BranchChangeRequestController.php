@@ -7,6 +7,8 @@ use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -77,26 +79,49 @@ class BranchChangeRequestController extends Controller
 
         abort_if($branchChangeRequest->status !== 'pending', 400, 'Permohonan ini sudah diproses.');
 
-        $branchChangeRequest->update([
-            'status' => 'approved',
-            'reviewed_by' => $user->id,
-            'reviewed_at' => now(),
-        ]);
-
-        $branchChangeRequest->user->update([
-            'branch_id' => $branchChangeRequest->to_branch_id,
-        ]);
-
-        BranchTransitionHistory::create([
-            'user_id' => $branchChangeRequest->user_id,
-            'from_branch_id' => $branchChangeRequest->from_branch_id,
-            'to_branch_id' => $branchChangeRequest->to_branch_id,
-            'changed_by' => $user->id,
-            'change_type' => 'self_request',
-            'request_id' => $branchChangeRequest->id,
-        ]);
+        DB::transaction(fn () => $this->approveRequest($branchChangeRequest, $user));
 
         return back()->with('success', 'Permohonan pertukaran cawangan telah diluluskan.');
+    }
+
+    public function approveBulk(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $user = $request->user();
+
+        $requests = BranchChangeRequest::with('user')
+            ->whereIn('id', $data['ids'])
+            ->where('status', 'pending')
+            ->get();
+
+        if ($requests->isEmpty()) {
+            return back()->with('error', 'Tiada permohonan yang menunggu kelulusan untuk diproses.');
+        }
+
+        // Semua permohonan mesti dalam skop pengguna sebelum apa-apa diubah.
+        foreach ($requests as $branchChangeRequest) {
+            $this->authorizeOrgAccess($user, $branchChangeRequest);
+        }
+
+        DB::transaction(function () use ($requests, $user) {
+            foreach ($requests as $branchChangeRequest) {
+                $this->approveRequest($branchChangeRequest, $user);
+            }
+        });
+
+        $approved = $requests->count();
+        $skipped = count($data['ids']) - $approved;
+
+        $message = "{$approved} permohonan pertukaran cawangan telah diluluskan.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} permohonan dilangkau (sudah diproses atau tidak dijumpai).";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function reject(Request $request, BranchChangeRequest $branchChangeRequest): RedirectResponse
@@ -118,6 +143,30 @@ class BranchChangeRequestController extends Controller
         ]);
 
         return back()->with('success', 'Permohonan pertukaran cawangan telah ditolak.');
+    }
+
+    private function approveRequest(BranchChangeRequest $branchChangeRequest, $user): void
+    {
+        $branchChangeRequest->update([
+            'status' => 'approved',
+            'reviewed_by' => $user->id,
+            'reviewed_at' => now(),
+        ]);
+
+        $branchChangeRequest->user->update([
+            'branch_id' => $branchChangeRequest->to_branch_id,
+        ]);
+
+        Cache::forget("member.dashboard.{$branchChangeRequest->user_id}");
+
+        BranchTransitionHistory::create([
+            'user_id' => $branchChangeRequest->user_id,
+            'from_branch_id' => $branchChangeRequest->from_branch_id,
+            'to_branch_id' => $branchChangeRequest->to_branch_id,
+            'changed_by' => $user->id,
+            'change_type' => 'self_request',
+            'request_id' => $branchChangeRequest->id,
+        ]);
     }
 
     private function authorizeOrgAccess($authUser, BranchChangeRequest $request): void

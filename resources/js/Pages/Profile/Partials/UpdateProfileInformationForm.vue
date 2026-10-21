@@ -34,12 +34,37 @@ const props = defineProps({
 });
 
 
-const user = usePage().props.auth.user;
+const page = usePage();
+const user = page.props.auth.user;
 const isSuperadmin = computed(() => (user?.roles ?? []).includes('Superadmin'));
 const photoError = ref('');
 const dobManuallyEdited = ref(false);
 
-const pendingBranchRequest = computed(() => user.pending_branch_request ?? null);
+const pendingBranchRequest = computed(() => props.pendingBranchRequest);
+const organizationName = computed(() => user?.organization?.name ?? 'Tiada organisasi');
+const currentBranchName = computed(() => user?.branch_name || 'Tiada cawangan');
+const flash = computed(() => page.props.flash ?? {});
+
+const showBranchModal = ref(false);
+const branchForm = useForm({ branch_id: '' });
+const branchOptions = computed(() =>
+    (props.branches ?? []).filter((branch) => branch.id !== user.branch_id)
+);
+
+function openBranchModal() {
+    branchForm.reset();
+    branchForm.clearErrors();
+    showBranchModal.value = true;
+}
+
+function submitBranchChange() {
+    branchForm.post(route('profile.branch-change'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showBranchModal.value = false;
+        },
+    });
+}
 
 const form = useForm({
     name: user.name,
@@ -52,7 +77,6 @@ const form = useForm({
     education_level: user.education_level ?? '',
     current_profession: user.current_profession ?? '',
     industry: user.industry ?? '',
-    branch_id: user.branch_id ?? '',
     locality: user.locality ?? '',
     expertise: user.expertise ?? '',
     linkedin_url: user.linkedin_url ?? '',
@@ -138,6 +162,13 @@ function submitProfile() {
             </p>
         </header>
 
+        <div v-if="flash.success" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            {{ flash.success }}
+        </div>
+        <div v-if="flash.error" class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {{ flash.error }}
+        </div>
+
         <form
             @submit.prevent="submitProfile"
             class="mt-6 space-y-6"
@@ -221,6 +252,34 @@ function submitProfile() {
                         </select>
                         <InputError class="mt-2" :message="form.errors.marital_status" />
                     </div>
+
+                    <div v-if="!isSuperadmin" class="md:col-span-2">
+                        <div class="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Organisasi</p>
+                                    <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ organizationName }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan</p>
+                                    <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ currentBranchName }}</p>
+                                    <p v-if="pendingBranchRequest" class="mt-1 text-xs font-medium text-amber-700">
+                                        Menunggu kelulusan: {{ pendingBranchRequest.to_branch }}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                @click="openBranchModal"
+                                class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0-4-4m4 4-4 4M16 17H4m0 0 4 4m-4-4 4-4" />
+                                </svg>
+                                Tukar Cawangan
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +292,11 @@ function submitProfile() {
                         <TextInput type="text" maxlength="5" class="mt-1 block w-full" v-model="form.postcode" placeholder="Poskod" />
                         <TextInput type="text" class="mt-1 block w-full" v-model="form.city" placeholder="Bandar" />
                         <TextInput type="text" class="mt-1 block w-full" v-model="form.state" placeholder="Negeri" />
+                    </div>
+                    <div>
+                        <InputLabel for="locality" value="Lokaliti" />
+                        <TextInput id="locality" type="text" class="mt-1 block w-full" v-model="form.locality" placeholder="Contoh: Shah Alam" />
+                        <InputError class="mt-2" :message="form.errors.locality" />
                     </div>
                 </div>
             </div>
@@ -304,39 +368,6 @@ function submitProfile() {
                 </div>
             </div>
 
-            <div v-if="!isSuperadmin" class="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5">
-                <p class="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Komuniti</p>
-                <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                        <InputLabel for="branch_id" value="Cawangan" />
-                        <div v-if="pendingBranchRequest" class="mb-3 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
-                            <p class="text-xs font-medium text-amber-800">
-                                ⏳ Permohonan tukar cawangan ke <strong>{{ pendingBranchRequest.to_branch }}</strong> sedang menunggu kelulusan admin.
-                            </p>
-                        </div>
-                        <select
-                            id="branch_id"
-                            v-model="form.branch_id"
-                            class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                        >
-                            <option value="">-- Pilih Cawangan --</option>
-                            <option v-for="branch in branches" :key="branch.id" :value="branch.id">
-                                {{ branch.name }}
-                            </option>
-                        </select>
-                        <p v-if="!branches.length" class="mt-1 text-xs text-gray-400">Tiada cawangan tersedia untuk organisasi anda.</p>
-                        <p v-else class="mt-1 text-xs text-gray-400">Tukar cawangan akan dihantar untuk kelulusan admin.</p>
-                        <InputError class="mt-2" :message="form.errors.branch_id" />
-                    </div>
-
-                    <div>
-                        <InputLabel for="locality" value="Lokaliti" />
-                        <TextInput id="locality" type="text" class="mt-1 block w-full" v-model="form.locality" placeholder="Contoh: Shah Alam" />
-                        <InputError class="mt-2" :message="form.errors.locality" />
-                    </div>
-                </div>
-            </div>
-
             <div class="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5 space-y-4">
                 <p class="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Profil & Keterlihatan</p>
 
@@ -400,5 +431,70 @@ function submitProfile() {
                 </Transition>
             </div>
         </form>
+
+        <!-- Modal Tukar Cawangan -->
+        <div
+            v-if="showBranchModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            @click.self="showBranchModal = false"
+        >
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <h3 class="text-lg font-bold text-gray-900">Tukar Cawangan</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Pilih cawangan baharu. Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.
+                </p>
+
+                <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan sekarang</p>
+                    <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ currentBranchName }}</p>
+                    <p class="text-xs text-gray-500">{{ organizationName }}</p>
+                </div>
+
+                <div v-if="pendingBranchRequest" class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                    <p class="text-xs font-medium text-amber-800">
+                        Permohonan ke <strong>{{ pendingBranchRequest.to_branch }}</strong> masih menunggu kelulusan. Menghantar permohonan baharu akan menggantikannya.
+                    </p>
+                </div>
+
+                <div class="mt-4">
+                    <InputLabel for="new_branch_id" value="Cawangan baharu" />
+                    <select
+                        id="new_branch_id"
+                        v-model="branchForm.branch_id"
+                        class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                    >
+                        <option value="">-- Pilih cawangan --</option>
+                        <option v-for="branch in branchOptions" :key="branch.id" :value="branch.id">
+                            {{ branch.name }}
+                        </option>
+                    </select>
+                    <p v-if="!branchOptions.length" class="mt-1 text-xs text-gray-400">Tiada cawangan lain tersedia untuk organisasi anda.</p>
+                    <InputError class="mt-2" :message="branchForm.errors.branch_id" />
+                </div>
+
+                <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+                    <p class="text-xs font-medium text-blue-800">
+                        Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.
+                    </p>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        @click="showBranchModal = false"
+                        class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+                    >
+                        Batal
+                    </button>
+                    <PrimaryButton
+                        type="button"
+                        :disabled="branchForm.processing || !branchForm.branch_id"
+                        @click="submitBranchChange"
+                    >
+                        {{ branchForm.processing ? 'Menghantar...' : 'Hantar Permohonan' }}
+                    </PrimaryButton>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
