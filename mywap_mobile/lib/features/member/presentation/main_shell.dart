@@ -5,77 +5,64 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
-import 'widgets/app_sidebar.dart';
-import 'widgets/shell_scaffold_key.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 /// Scaffold wrapping the main member tabs.
 ///
-/// Layout (per redesign requirements):
-/// - Collapsible left sidebar (hamburger) — [AppSidebar], opened via
-///   [AppMenuButton] from each tab's own AppBar.
-/// - Bottom navigation bar with a floating center "Imbas QR" button.
-/// - Notification bell stays top-right on every tab (see [NotificationBell]
-///   — each tab screen renders it itself since every tab keeps its own
-///   AppBar/app bar actions).
+/// Navigasi (selepas audit UX):
+/// - **Tiada drawer.** Drawer `Scaffold` lama memasang pengecam seretan pada
+///   tepi kiri skrin, zon yang sama digunakan oleh gesture "swipe untuk
+///   kembali" iOS dan predictive-back Android. Drawer menang perebutan itu,
+///   jadi pengguna kehilangan gesture kembali pada setiap skrin. Semua
+///   pautan kini berada dalam tab `Menu` — rujuk `MenuScreen`.
+/// - Bar navigasi bawah dengan butang "Imbas QR" terapung di tengah.
+/// - Loceng notifikasi kekal di kanan atas setiap tab (lihat
+///   `NotificationBell` — setiap skrin tab merendernya sendiri kerana setiap
+///   tab mengekalkan AppBar sendiri).
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
 
+  /// Laluan bagi setiap slot tab. Indeks 2 ialah takuk FAB, bukan tab.
+  static const List<String?> _tabPaths = [
+    '/dashboard',
+    '/events',
+    null,
+    '/infaq',
+    '/menu',
+  ];
+
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/events')) return 1;
     if (location.startsWith('/infaq')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    if (location.startsWith('/admin')) return 5;
+    // Profil, admin dan setiap destinasi menu lain berada di bawah tab Menu,
+    // jadi tab itu kekal diserlahkan semasa menyemak imbas cabangnya.
+    if (location.startsWith('/menu') ||
+        location.startsWith('/profile') ||
+        location.startsWith('/admin')) {
+      return 4;
+    }
     return 0;
   }
 
-  bool _isAdmin(String? role) =>
-      role == 'Admin' || role == 'org-admin' || role == 'Superadmin';
-
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final authState = ref.watch(authControllerProvider);
-        final user = authState is AuthAuthenticated ? authState.user : null;
-        final isAdmin = user != null && (user.roles ?? const []).any(_isAdmin);
-        final scaffoldKey = ref.watch(mainShellScaffoldKeyProvider);
-
-        final selectedIndex = _currentIndex(context);
-        final maxIndex = isAdmin ? 5 : 4;
-        final effectiveIndex = selectedIndex > maxIndex ? 0 : selectedIndex;
-
-        return Scaffold(
-          key: scaffoldKey,
-          drawer: const AppSidebar(),
-          body: child,
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
-          floatingActionButton: _ScanFab(onTap: () => context.push('/scan')),
-          bottomNavigationBar: _BottomNavBar(
-            selectedIndex: effectiveIndex,
-            isAdmin: isAdmin,
-            onSelect: (index) {
-              final router = GoRouter.of(context);
-              final paths = [
-                '/dashboard',
-                '/events',
-                null, // center slot — QR scan FAB, not a tab.
-                '/infaq',
-                '/profile',
-                '/admin',
-              ];
-              final path = paths[index];
-              if (path != null && router.state.matchedLocation != path) {
-                router.go(path);
-              }
-            },
-          ),
-        );
-      },
+    return Scaffold(
+      body: child,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _ScanFab(onTap: () => context.push('/scan')),
+      bottomNavigationBar: _BottomNavBar(
+        selectedIndex: _currentIndex(context),
+        onSelect: (index) {
+          final router = GoRouter.of(context);
+          final path = _tabPaths[index];
+          if (path != null && router.state.matchedLocation != path) {
+            router.go(path);
+          }
+        },
+      ),
     );
   }
 }
@@ -119,14 +106,9 @@ class _ScanFab extends StatelessWidget {
 
 /// Bottom navigation bar with a notch reserved for the floating QR button.
 class _BottomNavBar extends StatelessWidget {
-  const _BottomNavBar({
-    required this.selectedIndex,
-    required this.isAdmin,
-    required this.onSelect,
-  });
+  const _BottomNavBar({required this.selectedIndex, required this.onSelect});
 
   final int selectedIndex;
-  final bool isAdmin;
   final void Function(int index) onSelect;
 
   @override
@@ -136,7 +118,7 @@ class _BottomNavBar extends StatelessWidget {
       elevation: 0,
       shape: const CircularNotchedRectangle(),
       notchMargin: 6,
-      height: 56,
+      height: AppSizes.bottomNavHeight,
       padding: EdgeInsets.zero,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -155,7 +137,7 @@ class _BottomNavBar extends StatelessWidget {
             selected: selectedIndex == 1,
             onTap: () => onSelect(1),
           ),
-          const SizedBox(width: 52), // reserved space for the notch/FAB
+          const SizedBox(width: 52), // ruang untuk takuk/FAB
           _NavItem(
             icon: Icons.volunteer_activism_outlined,
             selectedIcon: Icons.volunteer_activism,
@@ -163,21 +145,16 @@ class _BottomNavBar extends StatelessWidget {
             selected: selectedIndex == 3,
             onTap: () => onSelect(3),
           ),
+          // Menu menggantikan tab Profil dan Admin: bilangan tab kekal lima
+          // untuk semua peranan, dan setiap pautan lama drawer kini ada di
+          // sini. Profil ialah kad pertama dalam hab tersebut.
           _NavItem(
-            icon: Icons.person_outline,
-            selectedIcon: Icons.person,
-            label: 'Profil',
+            icon: Icons.grid_view_outlined,
+            selectedIcon: Icons.grid_view_rounded,
+            label: 'Menu',
             selected: selectedIndex == 4,
             onTap: () => onSelect(4),
           ),
-          if (isAdmin)
-            _NavItem(
-              icon: Icons.admin_panel_settings_outlined,
-              selectedIcon: Icons.admin_panel_settings,
-              label: 'Admin',
-              selected: selectedIndex == 5,
-              onTap: () => onSelect(5),
-            ),
         ],
       ),
     );

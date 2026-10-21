@@ -17,7 +17,6 @@ import '../data/models/dashboard_data.dart';
 import '../data/models/library_item.dart';
 import 'library_reader_screen.dart';
 import 'widgets/notification_bell.dart';
-import 'widgets/shell_scaffold_key.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 class MemberDashboardScreen extends ConsumerWidget {
@@ -75,7 +74,6 @@ class _DashboardContent extends ConsumerWidget {
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             titleSpacing: 0,
-            leading: const AppMenuButton(),
             title: _Greeting(name: memberName),
             actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
           ),

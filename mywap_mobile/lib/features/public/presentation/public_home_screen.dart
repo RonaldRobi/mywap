@@ -11,7 +11,6 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../loading_screen/application/loading_screen_providers.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/public_home_providers.dart';
 import '../data/public_home_repository.dart';
 import 'guest_prompt.dart';
@@ -71,7 +70,6 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const AppMenuButton(),
         title: const _HomeLogo(),
         actions: [
           TextButton(

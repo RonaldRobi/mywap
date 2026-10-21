@@ -6,7 +6,6 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/main_shell.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 /// Chooses the correct shell for the current auth state:
@@ -30,37 +29,46 @@ class AdaptiveShell extends ConsumerWidget {
 }
 
 /// Scaffold wrapping the public (guest) tabs.
+///
+/// Sama seperti [MainShell], tiada drawer dipasang di sini: pengecam seretan
+/// tepi drawer melumpuhkan gesture kembali asli platform. Pautan awam berada
+/// dalam tab `Menu`.
 class PublicShell extends ConsumerWidget {
   const PublicShell({super.key, required this.child});
 
   final Widget child;
 
+  /// Laluan bagi setiap slot tab. Indeks 2 ialah takuk FAB, bukan tab.
+  static const List<String?> _tabPaths = [
+    '/home',
+    '/events',
+    null,
+    '/infaq',
+    '/menu',
+  ];
+
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/articles')) return 1;
-    if (location.startsWith('/infaq')) return 2;
-    if (location.startsWith('/events')) return 3;
+    if (location.startsWith('/events')) return 1;
+    if (location.startsWith('/infaq')) return 3;
+    if (location.startsWith('/menu')) return 4;
     return 0;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scaffoldKey = ref.watch(publicShellScaffoldKeyProvider);
-    final selectedIndex = _currentIndex(context);
-
     return Scaffold(
-      key: scaffoldKey,
-      drawer: const PublicDrawer(),
       body: child,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _PublicScanFab(onTap: () => context.push('/scan')),
       bottomNavigationBar: _PublicBottomNav(
-        selectedIndex: selectedIndex,
+        selectedIndex: _currentIndex(context),
         onSelect: (index) {
           final router = GoRouter.of(context);
-          final paths = ['/home', '/articles', '/infaq', '/events'];
-          final path = paths[index];
-          if (router.state.matchedLocation != path) router.go(path);
+          final path = _tabPaths[index];
+          if (path != null && router.state.matchedLocation != path) {
+            router.go(path);
+          }
         },
       ),
     );
@@ -119,7 +127,7 @@ class _PublicBottomNav extends StatelessWidget {
       elevation: 0,
       shape: const CircularNotchedRectangle(),
       notchMargin: 6,
-      height: 60,
+      height: AppSizes.bottomNavHeight,
       padding: EdgeInsets.zero,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -132,9 +140,9 @@ class _PublicBottomNav extends StatelessWidget {
             onTap: () => onSelect(0),
           ),
           _NavItem(
-            icon: Icons.article_outlined,
-            selectedIcon: Icons.article,
-            label: 'Artikel',
+            icon: Icons.event_outlined,
+            selectedIcon: Icons.event,
+            label: 'Program',
             selected: selectedIndex == 1,
             onTap: () => onSelect(1),
           ),
@@ -143,15 +151,17 @@ class _PublicBottomNav extends StatelessWidget {
             icon: Icons.volunteer_activism_outlined,
             selectedIcon: Icons.volunteer_activism,
             label: 'Infaq',
-            selected: selectedIndex == 2,
-            onTap: () => onSelect(2),
-          ),
-          _NavItem(
-            icon: Icons.event_outlined,
-            selectedIcon: Icons.event,
-            label: 'Program',
             selected: selectedIndex == 3,
             onTap: () => onSelect(3),
+          ),
+          // Artikel, Video, Info Organisasi dan lain-lain pautan awam kini
+          // berada dalam hab Menu, sejajar dengan shell ahli.
+          _NavItem(
+            icon: Icons.grid_view_outlined,
+            selectedIcon: Icons.grid_view_rounded,
+            label: 'Menu',
+            selected: selectedIndex == 4,
+            onTap: () => onSelect(4),
           ),
         ],
       ),
@@ -196,141 +206,6 @@ class _NavItem extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Drawer shown to guests — mirrors the public sections of the app.
-class PublicDrawer extends StatelessWidget {
-  const PublicDrawer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: AppColors.white,
-      width: 300,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(Spacing.xl),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: AppColors.heroGradient),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'myWAP',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: Spacing.xs),
-                  const Text(
-                    'Kandungan komuniti untuk semua',
-                    style: TextStyle(
-                      color: AppColors.textOnDark,
-                      fontSize: AppTextTheme.minSize,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-                children: [
-                  _DrawerItem(
-                    icon: Icons.home_outlined,
-                    label: 'Beranda',
-                    path: '/home',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.article_outlined,
-                    label: 'Artikel',
-                    path: '/articles',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.newspaper_outlined,
-                    label: 'Info Terkini',
-                    path: '/news',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.event_outlined,
-                    label: 'Program & Acara',
-                    path: '/events',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.volunteer_activism_outlined,
-                    label: 'Infaq & Sumbangan',
-                    path: '/infaq',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.play_circle_outline,
-                    label: 'Video',
-                    path: '/videos',
-                  ),
-                  _DrawerItem(
-                    icon: Icons.info_outline,
-                    label: 'Info Organisasi',
-                    path: '/organization/info',
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                children: [
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.go('/login');
-                    },
-                    child: const Text('Log Masuk'),
-                  ),
-                  const SizedBox(height: Spacing.sm),
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.go('/register');
-                    },
-                    child: const Text('Daftar Ahli'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerItem extends StatelessWidget {
-  const _DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.path,
-  });
-
-  final IconData icon;
-  final String label;
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.movementGreen),
-      title: Text(label),
-      onTap: () {
-        Navigator.of(context).pop();
-        context.go(path);
-      },
     );
   }
 }

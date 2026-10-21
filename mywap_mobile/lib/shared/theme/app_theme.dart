@@ -40,6 +40,12 @@ abstract final class AppSizes {
   static const double tapTarget = 48;
   static const double buttonHeight = 56;
   static const double navBarHeight = 76;
+
+  /// Tinggi [BottomAppBar] tersuai pada kedua-dua shell (ahli & tetamu).
+  /// Dulunya 56 pada shell ahli dan 60 pada shell tetamu — satu token kini
+  /// memastikan takuk FAB sejajar sama pada kedua-duanya.
+  static const double bottomNavHeight = 60;
+
   static const double iconSm = 20;
   static const double iconMd = 24;
   static const double iconLg = 28;

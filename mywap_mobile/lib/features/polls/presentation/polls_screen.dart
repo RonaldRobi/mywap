@@ -10,7 +10,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/poll_providers.dart';
 import '../data/models/poll.dart';
 
@@ -23,7 +22,6 @@ class PollsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const AppMenuButton(),
         title: const Text('Undian'),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),

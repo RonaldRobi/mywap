@@ -12,7 +12,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import 'widgets/booking_status_chips.dart';
@@ -27,7 +26,6 @@ class FacilitiesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const AppMenuButton(),
         title: const Text('Kemudahan'),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),

@@ -12,7 +12,6 @@ import '../application/event_providers.dart';
 import '../data/models/event.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
-import '../../member/presentation/widgets/shell_scaffold_key.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 class EventsScreen extends ConsumerWidget {
@@ -25,7 +24,6 @@ class EventsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const AppMenuButton(),
         title: const Text('Program & Acara'),
         actions: [
           if (isAuthenticated)
