@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -79,7 +80,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
     if (parsed == null) {
       await _showResultDialog(
         success: false,
-        message: 'Kod QR ini bukan kod kehadiran program myWAP.',
+        message: context.l10n.scanInvalidQr,
       );
       return;
     }
@@ -108,8 +109,9 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
       if (!mounted) return;
       await _showResultDialog(
         success: true,
-        message:
-            'Kehadiran anda untuk "${result['event_title'] ?? 'program ini'}" telah direkodkan.',
+        message: context.l10n.scanCheckInSuccess(
+          result['event_title']?.toString() ?? context.l10n.scanThisProgram,
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -118,7 +120,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
       if (!mounted) return;
       await _showResultDialog(
         success: false,
-        message: 'Ralat tidak dijangka. Sila cuba lagi.',
+        message: context.l10n.scanUnexpectedErrorRetry,
       );
     }
   }
@@ -135,19 +137,16 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
               color: AppColors.movementGreen,
               size: 40,
             ),
-            title: const Text('Log Masuk Diperlukan'),
-            content: const Text(
-              'Kod kehadiran program dikesan. Sila log masuk atau daftar '
-              'sebagai ahli untuk merekodkan kehadiran anda.',
-            ),
+            title: Text(context.l10n.scanLoginRequiredTitle),
+            content: Text(context.l10n.scanLoginRequiredBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Batal'),
+                child: Text(context.l10n.scanCancelButton),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Log Masuk'),
+                child: Text(context.l10n.scanLoginButton),
               ),
             ],
           ),
@@ -177,7 +176,11 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
               color: success ? AppColors.success : AppColors.error,
               size: 40,
             ),
-            title: Text(success ? 'Kehadiran Disahkan' : 'Imbasan Gagal'),
+            title: Text(
+              success
+                  ? context.l10n.scanAttendanceVerifiedTitle
+                  : context.l10n.scanFailedTitle,
+            ),
             content: Text(message),
             actions: [
               if (success)
@@ -186,7 +189,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
                     Navigator.of(context).pop();
                     if (mounted) context.pop();
                   },
-                  child: const Text('Selesai'),
+                  child: Text(context.l10n.scanDoneButton),
                 )
               else
                 TextButton(
@@ -197,7 +200,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
                       _controller.start();
                     } catch (_) {}
                   },
-                  child: const Text('Cuba Lagi'),
+                  child: Text(context.l10n.scanTryAgainButton),
                 ),
             ],
           ),
@@ -212,7 +215,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
         leading: const AppBackButton(),
         backgroundColor: Colors.black,
         foregroundColor: AppColors.white,
-        title: const Text('Imbas QR Kehadiran'),
+        title: Text(context.l10n.scanQrTitle),
       ),
       body: Stack(
         children: [
@@ -240,7 +243,7 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(Spacing.xl),
                 child: Text(
-                  'Halakan kamera ke kod QR pada poster/skrin program untuk daftar hadir.',
+                  context.l10n.scanPointCameraHint,
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,

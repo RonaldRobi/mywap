@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -35,14 +36,14 @@ class NotificationsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Notifikasi'),
+        title: Text(context.l10n.menuNotifications),
       ),
       body:
           state.isLoading
               ? const _NotificationsSkeleton()
               : state.error != null && state.notifications.isEmpty
               ? ErrorRetry(
-                message: state.error ?? 'Ralat tidak dijangka.',
+                message: state.error ?? context.l10n.unexpectedError,
                 onRetry:
                     () =>
                         ref
@@ -82,7 +83,7 @@ class NotificationsScreen extends ConsumerWidget {
                                     ),
                                   )
                                   : const Icon(Icons.done_all),
-                          label: const Text('Tandakan Semua Dibaca'),
+                          label: Text(context.l10n.notifMarkAllRead),
                         ),
                       ),
                     ),
@@ -97,11 +98,11 @@ class NotificationsScreen extends ConsumerWidget {
                                   .retry(),
                       child:
                           state.notifications.isEmpty
-                              ? const SingleChildScrollView(
-                                physics: AlwaysScrollableScrollPhysics(),
+                              ? SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
                                 child: EmptyState(
                                   icon: Icons.notifications_none,
-                                  message: 'Tiada notifikasi buat masa ini.',
+                                  message: context.l10n.notifEmpty,
                                 ),
                               )
                               : ListView.builder(
@@ -142,8 +143,7 @@ class _NotificationCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap:
-            () => context.push('/notifications/detail', extra: notification),
+        onTap: () => context.push('/notifications/detail', extra: notification),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.lg),
           child: Row(
@@ -178,7 +178,9 @@ class _NotificationCard extends StatelessWidget {
                         ],
                         Expanded(
                           child: Text(
-                            title.isEmpty ? 'Pemberitahuan' : title,
+                            title.isEmpty
+                                ? context.l10n.notifFallbackTitle
+                                : title,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight:
                                   isRead ? FontWeight.w500 : FontWeight.w700,
@@ -202,7 +204,7 @@ class _NotificationCard extends StatelessWidget {
                     ],
                     const SizedBox(height: Spacing.xs),
                     Text(
-                      notificationTimeAgo(notification.createdAt),
+                      notificationTimeAgo(context, notification.createdAt),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),

@@ -65,14 +65,16 @@
     </table>
 
     @php
-        $total = count($rows);
+        $shownCount = count($rows);
         $hadir = collect($rows)->where('attended', true)->count();
     @endphp
 
     <div class="summary">
-        <p><strong>Jumlah Pendaftaran:</strong> {{ $total }}</p>
+        <p>
+            <strong>Jumlah Pendaftaran:</strong> {{ $shownCount }}@if(isset($total) && $shownCount < $total) daripada {{ $total }}@endif
+        </p>
         <p><strong>Hadir:</strong> {{ $hadir }}</p>
-        <p><strong>Tidak Hadir:</strong> {{ $total - $hadir }}</p>
+        <p><strong>Tidak Hadir:</strong> {{ $shownCount - $hadir }}</p>
     </div>
 </body>
 </html>

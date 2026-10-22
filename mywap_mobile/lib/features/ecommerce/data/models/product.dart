@@ -50,6 +50,9 @@ class ProductVariationOption {
   final String? image;
   final int? sortOrder;
 
+  /// A null stock means the option is not stock-tracked (unlimited).
+  bool get isOutOfStock => stock != null && stock! <= 0;
+
   factory ProductVariationOption.fromJson(Map<String, dynamic> json) =>
       ProductVariationOption(
         id: parseIntValue(json['id']),
@@ -132,6 +135,13 @@ class Product {
   final bool isMember;
   final double? priceForMember;
   final List<ProductVariation> variations;
+
+  /// True when the catalogue says this product has no stock left.
+  ///
+  /// A null stock is treated as unknown/unlimited (the backend normally always
+  /// sends an integer), so we never hide a product just because the field is
+  /// missing from an older API response.
+  bool get isOutOfStock => stock != null && stock! <= 0;
 
   /// Primary display image (gallery first, else cover).
   String? get displayImage => images.isNotEmpty ? images.first : image;

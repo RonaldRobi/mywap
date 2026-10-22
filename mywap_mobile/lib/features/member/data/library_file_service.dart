@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/app_env.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../core/network/api_interceptor.dart';
 import '../../../core/storage/token_storage.dart';
 
@@ -13,8 +14,8 @@ import '../../../core/storage/token_storage.dart';
 /// subsequent loads are instant and work offline.
 class LibraryFileService {
   LibraryFileService({TokenStorage? tokenStorage, Directory? baseDirectory})
-      : _tokenStorage = tokenStorage ?? TokenStorage(),
-        _baseDirectory = baseDirectory;
+    : _tokenStorage = tokenStorage ?? TokenStorage(),
+      _baseDirectory = baseDirectory;
 
   final TokenStorage _tokenStorage;
 
@@ -29,7 +30,7 @@ class LibraryFileService {
     void Function(double progress)? onProgress,
   }) async {
     if (filePath == null || filePath.isEmpty) {
-      throw const ApiException('Tiada fail untuk dibuka.', statusCode: 404);
+      throw ApiException(currentAppLocalizations.noFileToOpen, statusCode: 404);
     }
 
     final root = _baseDirectory ?? await getApplicationDocumentsDirectory();
@@ -46,7 +47,10 @@ class LibraryFileService {
     await _download(AppEnv.resolveUrl(filePath), target, onProgress);
 
     if (!await target.exists() || await target.length() == 0) {
-      throw const ApiException('Fail tidak sah. Sila cuba lagi.', statusCode: 0);
+      throw const ApiException(
+        'Fail tidak sah. Sila cuba lagi.',
+        statusCode: 0,
+      );
     }
     return target;
   }

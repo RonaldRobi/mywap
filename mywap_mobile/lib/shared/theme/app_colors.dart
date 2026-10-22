@@ -40,7 +40,9 @@ abstract final class AppColors {
   static const Color white = Color(0xFFFFFFFF);
 
   /// Latar skrin. Hue hangat (90) — dulunya biru-kelabu #F7F8FA (hue 220).
-  static const Color pageBackground = Color(0xFFF7F9F5);
+  /// Dinaikkan sedikit ke arah mint (#F2FBF6) supaya kanvas terasa segar dan
+  /// bentuk organik lut-sinar (lihat `OrganicCanvasBackground`) menyatu.
+  static const Color pageBackground = Color(0xFFF2FBF6);
   static const Color background = pageBackground;
   static const Color surface = white;
   static const Color surfaceMuted = Color(0xFFF1F4EF);
@@ -171,4 +173,42 @@ abstract final class AppColors {
 
   /// Guratan motif kedua (lebih terang) untuk nod/titik persilangan.
   static const Color patternAccent = Color(0x24FFFFFF);
+
+  /// Aqua lembut untuk bentuk organik latar (pasangan mint/hijau). Hiasan
+  /// sahaja — sentiasa digunakan dengan alpha rendah.
+  static const Color organicAqua = Color(0xFF8FE0D6);
+
+  // ---------------------------------------------------------------------
+  // Kad ahli (design diselaraskan dengan web)
+  // ---------------------------------------------------------------------
+  //
+  // Rujukan: `resources/js/Components/MemberCard/layout.js`. Warna-warna ini
+  // dipilih agar teks kekal mudah dibaca di atas imej design organisasi.
+
+  /// Teks nama ahli pada kad.
+  static const Color cardNameInk = Color(0xFF00291A);
+
+  /// Pil nama organisasi.
+  static const Color cardOrgPill = Color(0xFF03553E);
+
+  /// Teks nombor ahli pada kad.
+  static const Color cardMemberNoInk = Color(0xFF012C10);
+
+  /// Latar bulatan foto apabila tiada gambar / untuk inisial.
+  static const Color cardPhotoPlaceholder = Color(0xFFDFEEE5);
+
+  /// Gradien fallback muka depan (tiada imej design di-upload).
+  static const List<Color> cardFallbackGradient = [
+    Color(0xFF1A6B4F),
+    Color(0xFF0F5A3E),
+  ];
+
+  /// Gradien fallback muka belakang.
+  static const List<Color> cardBackGradient = [
+    Color(0xFFE6F2EA),
+    Color(0xFF0F5A3E),
+  ];
+
+  /// Bayang kad ahli — `rgba(0,60,40,0.45)` daripada design web.
+  static const Color cardShadow = Color(0x73003C28);
 }

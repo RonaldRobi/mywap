@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
@@ -32,7 +33,7 @@ class ComingSoonScreen extends StatelessWidget {
               Text(title, style: theme.textTheme.headlineSmall),
               const SizedBox(height: Spacing.sm),
               Text(
-                subtitle ?? 'Fungsi ini akan tersedia tidak lama lagi.',
+                subtitle ?? context.l10n.comingSoon,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textSecondary,
                 ),

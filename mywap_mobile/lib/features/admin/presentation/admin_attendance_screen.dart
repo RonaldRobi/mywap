@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -21,14 +22,18 @@ class AdminAttendanceScreen extends ConsumerWidget {
     final eventsAsync = ref.watch(adminUpcomingEventsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kehadiran')),
+      appBar: AppBar(title: Text(context.l10n.adminAttendanceTitle)),
       body: eventsAsync.when(
         data: (events) => _EventList(events: events),
         loading: () => const _EventsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(adminUpcomingEventsProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : context.l10n.adminUnexpectedError,
+              onRetry: () => ref.invalidate(adminUpcomingEventsProvider),
+            ),
       ),
     );
   }
@@ -42,9 +47,9 @@ class _EventList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (events.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.event_outlined,
-        message: 'Tiada acara akan datang untuk diuruskan.',
+        message: context.l10n.adminNoUpcomingEventsToManage,
       );
     }
     return ListView.builder(
@@ -75,10 +80,11 @@ class _EventsSkeleton extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(Spacing.lg),
       itemCount: 6,
-      itemBuilder: (_, __) => const Padding(
-        padding: EdgeInsets.only(bottom: Spacing.md),
-        child: SkeletonBox(height: 76),
-      ),
+      itemBuilder:
+          (_, __) => const Padding(
+            padding: EdgeInsets.only(bottom: Spacing.md),
+            child: SkeletonBox(height: 76),
+          ),
     );
   }
 }

@@ -11,6 +11,7 @@ const props = defineProps({
     filters: Object,
     exportIncomplete: Boolean,
     extraColumns: Array,
+    importedCount: Number,
 });
 
 // ─── Import Google Form (CSV/XLSX) ──────────────────────────────────────────
@@ -124,6 +125,30 @@ async function commitImport() {
 }
 
 
+const showClear = ref(false);
+const clearing = ref(false);
+
+function closeClear() {
+    if (clearing.value) return;
+    showClear.value = false;
+}
+
+function clearImported() {
+    if (clearing.value) return;
+
+    clearing.value = true;
+
+    router.delete(route('admin.events.registrations.clear-imported', props.event.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showClear.value = false;
+        },
+        onFinish: () => {
+            clearing.value = false;
+        },
+    });
+}
+
 const rawColumnsOpen = ref(false);
 const rawColumnsRegistration = ref(null);
 
@@ -162,6 +187,17 @@ function applyFilters() {
             <div class="flex items-center justify-between gap-3 mb-1">
                 <h1 class="text-2xl font-black text-gray-900">Pendaftaran</h1>
                 <div class="flex items-center gap-2">
+                    <button
+                        v-if="importedCount > 0"
+                        type="button"
+                        @click="showClear = true"
+                        class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 shadow-sm hover:bg-red-100"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0l1 12a1 1 0 001 1h8a1 1 0 001-1l1-12" />
+                        </svg>
+                        Kosongkan Import ({{ importedCount }})
+                    </button>
                     <a
                         :href="route('admin.events.registrations.export', props.event.id)"
                         class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
@@ -184,6 +220,19 @@ function applyFilters() {
                 </div>
             </div>
             <p class="text-sm text-gray-500 mb-6">{{ event.title }}</p>
+
+            <div
+                v-if="$page.props.flash?.success"
+                class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
+            >
+                {{ $page.props.flash.success }}
+            </div>
+            <div
+                v-if="$page.props.flash?.error"
+                class="mb-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+            >
+                {{ $page.props.flash.error }}
+            </div>
 
             <div
                 v-if="exportIncomplete"
@@ -443,6 +492,51 @@ function applyFilters() {
                         class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                     >
                         {{ importing ? 'Mengimport...' : 'Import Sekarang' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Kosongkan data import ─────────────────────────────────────── -->
+        <div
+            v-if="showClear"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            @click.self="closeClear"
+        >
+            <div class="w-full max-w-md rounded-3xl bg-white shadow-2xl">
+                <div class="border-b border-gray-100 p-6">
+                    <h2 class="text-lg font-black text-gray-900">Kosongkan Data Import</h2>
+                    <p class="mt-1 text-xs text-gray-500">{{ event.title }}</p>
+                </div>
+
+                <div class="space-y-3 p-6 text-sm text-gray-600">
+                    <p>
+                        Semua <span class="font-bold text-gray-900">{{ importedCount }}</span> rekod
+                        peserta yang berasal dari import CSV/Google Form untuk program ini akan
+                        dipadam <span class="font-bold text-red-600">terus</span> dari pangkalan data.
+                    </p>
+                    <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        Rekod pendaftaran melalui borang myWAP dan walk-in tidak terjejas. Tindakan
+                        ini tidak boleh dibatalkan.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 border-t border-gray-100 p-4">
+                    <button
+                        type="button"
+                        @click="closeClear"
+                        :disabled="clearing"
+                        class="rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="button"
+                        @click="clearImported"
+                        :disabled="clearing"
+                        class="rounded-xl bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {{ clearing ? 'Memadam...' : 'Padam ' + importedCount + ' Rekod' }}
                     </button>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -58,7 +59,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Direktori'),
+        title: Text(context.l10n.directorySection),
       ),
       body: Column(
         children: [
@@ -74,7 +75,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
               onChanged: controller.setSearch,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Cari ahli, industri, kepakaran...',
+                hintText: context.l10n.directorySearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _searchController,
@@ -102,7 +103,10 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: Spacing.sm),
                 itemBuilder: (context, index) {
                   final isAll = index == 0;
-                  final label = isAll ? 'Semua' : state.industries[index - 1];
+                  final label =
+                      isAll
+                          ? context.l10n.directoryFilterAll
+                          : state.industries[index - 1];
                   final selected =
                       isAll ? state.industry.isEmpty : state.industry == label;
                   return ChoiceChip(
@@ -123,7 +127,7 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
   Widget _buildBody(DirectoryState state) {
     if (state.error != null && state.users.isEmpty) {
       return ErrorRetry(
-        message: state.error ?? 'Ralat tidak dijangka.',
+        message: state.error ?? context.l10n.unexpectedError,
         onRetry: () => ref.read(directoryControllerProvider.notifier).retry(),
       );
     }
@@ -134,11 +138,11 @@ class _DirectoryScreenState extends ConsumerState<DirectoryScreen> {
       return RefreshIndicator(
         onRefresh:
             () async => ref.read(directoryControllerProvider.notifier).retry(),
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: EmptyState(
             icon: Icons.people_outline,
-            message: 'Tiada ahli dijumpai.',
+            message: context.l10n.directoryNoMembers,
           ),
         ),
       );
@@ -252,13 +256,13 @@ class _MemberDetailSheet extends StatelessWidget {
             if (user.industry != null && user.industry!.isNotEmpty)
               _DetailRow(
                 icon: Icons.business_outlined,
-                label: 'Industri',
+                label: context.l10n.industryLabel,
                 value: user.industry!,
               ),
             if (user.expertise != null && user.expertise!.isNotEmpty)
               _DetailRow(
                 icon: Icons.stars_outlined,
-                label: 'Kepakaran',
+                label: context.l10n.expertiseLabel,
                 value: user.expertise!,
               ),
             _DetailRow(
@@ -266,7 +270,7 @@ class _MemberDetailSheet extends StatelessWidget {
               label: 'LinkedIn',
               value:
                   (user.linkedinUrl == null || user.linkedinUrl!.isEmpty)
-                      ? 'Tiada pautan'
+                      ? context.l10n.directoryNoLink
                       : user.linkedinUrl!,
             ),
           ],

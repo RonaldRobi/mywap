@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\Registration;
 use App\Models\RegistrationImport;
 use App\Models\User;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -310,6 +312,9 @@ class RegistrationController extends Controller
             'filters' => $request->only(['org', 'status', 'search']),
             'exportIncomplete' => $exportIncomplete,
             'extraColumns' => $this->registrationImports->rawColumns($event),
+            'importedCount' => Registration::where('event_id', $event->id)
+                ->where('source', Registration::SOURCE_IMPORT)
+                ->count(),
         ]);
     }
 
@@ -360,6 +365,44 @@ class RegistrationController extends Controller
             'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['removed']} import lama dibuang, {$result['skipped']} dilewati.",
             'summary' => $result,
         ]);
+    }
+
+    /**
+     * Padam terus semua rekod yang berasal dari import CSV/Google Form untuk
+     * event ini, termasuk log import. Pendaftaran melalui borang myWAP dan
+     * walk-in tidak terjejas.
+     */
+    public function clearImported(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeEventAdmin($request, $event);
+
+        $deleted = DB::transaction(function () use ($event) {
+            $ids = Registration::query()
+                ->where('event_id', $event->id)
+                ->where('source', Registration::SOURCE_IMPORT)
+                ->pluck('id');
+
+            if ($ids->isEmpty()) {
+                return 0;
+            }
+
+            Payment::query()
+                ->where('payable_type', Registration::class)
+                ->whereIn('payable_id', $ids)
+                ->delete();
+
+            Registration::query()->whereKey($ids)->delete();
+
+            RegistrationImport::query()->where('event_id', $event->id)->delete();
+
+            return $ids->count();
+        });
+
+        if ($deleted === 0) {
+            return back()->with('error', 'Tiada rekod import untuk dipadam.');
+        }
+
+        return back()->with('success', "{$deleted} rekod import telah dipadam.");
     }
 
     /**

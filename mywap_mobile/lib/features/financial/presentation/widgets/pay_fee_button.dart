@@ -5,6 +5,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../../member/application/member_core_providers.dart';
 import '../../../profile/application/profile_providers.dart';
 import '../../application/financial_providers.dart';
+import '../../../../shared/l10n/l10n.dart';
 import '../../../../shared/payment/payment_webview_screen.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
@@ -44,21 +45,21 @@ class _PayFeeButtonState extends ConsumerState<PayFeeButton> {
         refreshFees();
         final paid = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
-            builder: (_) =>
-                PaymentWebviewScreen(paymentUrl: result.paymentUrl!),
+            builder:
+                (_) => PaymentWebviewScreen(paymentUrl: result.paymentUrl!),
           ),
         );
         if (!mounted) return;
         refreshFees();
         message =
             paid == true
-                ? 'Pembayaran yuran berjaya. Terima kasih!'
-                : 'Pembayaran belum disahkan. Sila semak semula selepas selesai di gateway.';
+                ? context.l10n.finPaymentSuccessThanks
+                : context.l10n.finPaymentPendingGateway;
       } else if (result.isSuccess) {
         refreshFees();
-        message = result.message ?? 'Yuran keahlian berjaya dibayar.';
+        message = result.message ?? context.l10n.finFeePaidSuccess;
       } else {
-        message = result.message ?? 'Pembayaran yuran tidak dapat diproses.';
+        message = result.message ?? context.l10n.finPaymentFailed;
       }
 
       ScaffoldMessenger.of(
@@ -72,7 +73,7 @@ class _PayFeeButtonState extends ConsumerState<PayFeeButton> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+        SnackBar(content: Text(context.l10n.unexpectedErrorRetry)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -98,7 +99,9 @@ class _PayFeeButtonState extends ConsumerState<PayFeeButton> {
                 ),
               )
               : const Icon(Icons.payments_outlined, size: 20),
-      label: Text(_busy ? 'Memproses...' : 'Bayar Yuran Sekarang'),
+      label: Text(
+        _busy ? context.l10n.finProcessing : context.l10n.finPayFeeNow,
+      ),
     );
 
     if (!widget.compact) return content;

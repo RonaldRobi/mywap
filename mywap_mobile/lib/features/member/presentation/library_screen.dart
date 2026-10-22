@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -38,14 +39,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Pustaka'),
+        title: Text(context.l10n.libraryTitle),
       ),
       body: libraryAsync.when(
         data: (items) {
           if (items.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.local_library_outlined,
-              message: 'Tiada bahan pustaka buat masa ini.',
+              message: context.l10n.noLibrary,
             );
           }
 
@@ -63,10 +64,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   favouritesCount: favourites.length,
                   onChanged: (value) => setState(() => _filter = value),
                 ),
-                const Expanded(
+                Expanded(
                   child: EmptyState(
                     icon: Icons.favorite_border,
-                    message: 'Tiada buku dalam kegemaran lagi.',
+                    message: context.l10n.libraryNoFavourites,
                   ),
                 ),
               ],
@@ -125,7 +126,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(memberLibraryProvider),
             ),
       ),
@@ -150,7 +151,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Tiada fail untuk dibuka.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.noFileToOpen)));
       return;
     }
     Navigator.of(context).push(
@@ -183,12 +184,17 @@ class _FilterChips extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _chip(context, _LibraryFilter.semua, 'Semua', total),
+          _chip(
+            context,
+            _LibraryFilter.semua,
+            context.l10n.libraryFilterAll,
+            total,
+          ),
           const SizedBox(width: Spacing.sm),
           _chip(
             context,
             _LibraryFilter.kegemaran,
-            'Kegemaran',
+            context.l10n.libraryFilterFavourites,
             favouritesCount,
           ),
         ],
@@ -329,12 +335,12 @@ class _BookCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.menu_book_outlined, size: 16),
-                        SizedBox(width: 6),
-                        Text('Baca'),
+                        const Icon(Icons.menu_book_outlined, size: 16),
+                        const SizedBox(width: 6),
+                        Text(context.l10n.libraryRead),
                       ],
                     ),
                   ),

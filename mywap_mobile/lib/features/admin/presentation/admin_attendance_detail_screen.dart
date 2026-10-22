@@ -4,6 +4,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -35,7 +36,9 @@ class _AdminAttendanceDetailScreenState
     ref.invalidate(adminAttendanceRegistrationsProvider(widget.eventId));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result.isOk ? 'Kehadiran direkodkan.' : result.message),
+        content: Text(
+          result.isOk ? context.l10n.adminAttendanceRecorded : result.message,
+        ),
       ),
     );
   }
@@ -47,7 +50,7 @@ class _AdminAttendanceDetailScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kehadiran Acara')),
+      appBar: AppBar(title: Text(context.l10n.adminEventAttendanceTitle)),
       body: dataAsync.when(
         data: (data) => _AttendanceContent(data: data, onScan: _openScanner),
         loading: () => const _AttendanceSkeleton(),
@@ -56,7 +59,7 @@ class _AdminAttendanceDetailScreenState
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.adminUnexpectedError,
               onRetry:
                   () => ref.invalidate(
                     adminAttendanceRegistrationsProvider(widget.eventId),
@@ -84,7 +87,7 @@ class _AttendanceContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                data.event?.title ?? 'Program',
+                data.event?.title ?? context.l10n.adminProgramFallback,
                 style: theme.textTheme.titleLarge,
               ),
               if (data.event?.startTime != null) ...[
@@ -101,7 +104,7 @@ class _AttendanceContent extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatTile(
-                      label: 'Pendaftaran',
+                      label: context.l10n.adminRegistrationsLabel,
                       value: '${data.totalRegistered}',
                       icon: Icons.people_outline,
                     ),
@@ -109,7 +112,7 @@ class _AttendanceContent extends StatelessWidget {
                   const SizedBox(width: Spacing.md),
                   Expanded(
                     child: _StatTile(
-                      label: 'Hadir',
+                      label: context.l10n.adminAttendedLabel,
                       value: '${data.attendedCount}',
                       icon: Icons.check_circle_outline,
                     ),
@@ -122,9 +125,9 @@ class _AttendanceContent extends StatelessWidget {
         Expanded(
           child:
               data.registrations.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                     icon: Icons.event_seat_outlined,
-                    message: 'Tiada pendaftaran untuk acara ini.',
+                    message: context.l10n.adminNoRegistrations,
                   )
                   : ListView.builder(
                     padding: const EdgeInsets.only(bottom: Spacing.xl),
@@ -147,7 +150,7 @@ class _AttendanceContent extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onScan,
               icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Imbas QR'),
+              label: Text(context.l10n.adminScanQr),
             ),
           ),
         ),
@@ -205,11 +208,17 @@ class _RegistrationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListCard(
-      title: registration.name.isEmpty ? 'Tanpa Nama' : registration.name,
+      title:
+          registration.name.isEmpty
+              ? context.l10n.adminNoName
+              : registration.name,
       subtitle: [
-        if (registration.memberNo.isNotEmpty) 'No. ${registration.memberNo}',
+        if (registration.memberNo.isNotEmpty)
+          context.l10n.adminMemberNoPrefix(registration.memberNo),
         if (registration.attendedAt != null)
-          'Hadir ${Formatters.datetime(registration.attendedAt)}',
+          context.l10n.adminAttendedAt(
+            Formatters.datetime(registration.attendedAt),
+          ),
       ].join(' · '),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -221,7 +230,9 @@ class _RegistrationCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
-          registration.attended ? 'Hadir' : 'Belum',
+          registration.attended
+              ? context.l10n.adminAttendedLabel
+              : context.l10n.adminNotYetLabel,
           style: TextStyle(
             color:
                 registration.attended
@@ -287,7 +298,7 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
       _resume();
     } catch (_) {
       if (!mounted) return;
-      await _showErrorDialog('Ralat tidak dijangka.');
+      await _showErrorDialog(context.l10n.adminUnexpectedError);
       _resume();
     }
   }
@@ -305,14 +316,17 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
                 color: AppColors.success,
                 size: 40,
               ),
-              title: const Text('Kehadiran Disahkan'),
+              title: Text(context.l10n.adminAttendanceVerifiedTitle),
               content: Text(
-                '${registration?.name ?? 'Ahli'} (${registration?.memberNo ?? '-'}) telah direkodkan hadir.',
+                context.l10n.adminAttendanceScanSuccess(
+                  registration?.name ?? context.l10n.adminMemberFallback,
+                  registration?.memberNo ?? '-',
+                ),
               ),
               actions: [
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
+                  child: Text(context.l10n.adminOkButton),
                 ),
               ],
             ),
@@ -322,7 +336,9 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
       return;
     }
     await _showErrorDialog(
-      result.message.isEmpty ? 'Imbasan tidak dikenali.' : result.message,
+      result.message.isEmpty
+          ? context.l10n.adminScanNotRecognized
+          : result.message,
     );
     _resume();
   }
@@ -337,12 +353,12 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
               color: AppColors.error,
               size: 40,
             ),
-            title: const Text('Imbasan Gagal'),
+            title: Text(context.l10n.adminScanFailedTitle),
             content: Text(message),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                child: Text(context.l10n.adminOkButton),
               ),
             ],
           ),
@@ -364,23 +380,23 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Imbasan Manual'),
+            title: Text(context.l10n.adminManualScanTitle),
             content: TextField(
               controller: controller,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'No. ahli / ID',
+              decoration: InputDecoration(
+                labelText: context.l10n.adminMemberNoOrIdLabel,
                 isDense: true,
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Batal'),
+                child: Text(context.l10n.adminCancelButton),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(controller.text),
-                child: const Text('Imbas'),
+                child: Text(context.l10n.adminScanButton),
               ),
             ],
           ),
@@ -398,7 +414,7 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: AppColors.white,
-        title: const Text('Imbas QR'),
+        title: Text(context.l10n.adminScanQr),
       ),
       body: Stack(
         children: [
@@ -420,7 +436,7 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Halakan kamera ke kod QR ahli.',
+                      context.l10n.adminPointCameraToMemberQr,
                       style: Theme.of(
                         context,
                       ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
@@ -435,7 +451,7 @@ class _ScannerPageState extends ConsumerState<_ScannerPage> {
                       ),
                       onPressed: _processing ? null : _manualEntry,
                       icon: const Icon(Icons.keyboard_outlined),
-                      label: const Text('Masukkan Secara Manual'),
+                      label: Text(context.l10n.adminEnterManuallyButton),
                     ),
                   ],
                 ),
@@ -481,8 +497,8 @@ class _ScannerError extends StatelessWidget {
               const SizedBox(height: Spacing.md),
               Text(
                 isPermission
-                    ? 'Kebenaran kamera diperlukan untuk mengimbas QR.'
-                    : 'Kamera tidak dapat diakses.',
+                    ? context.l10n.adminCameraPermissionNeeded
+                    : context.l10n.adminCameraUnavailable,
                 style: const TextStyle(color: AppColors.white),
                 textAlign: TextAlign.center,
               ),

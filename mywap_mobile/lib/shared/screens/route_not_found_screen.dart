@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
@@ -14,7 +15,7 @@ class RouteNotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Halaman Tidak Dijumpai')),
+      appBar: AppBar(title: Text(context.l10n.pageNotFoundTitle)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.xl),
@@ -28,24 +29,23 @@ class RouteNotFoundScreen extends StatelessWidget {
               ),
               const SizedBox(height: Spacing.lg),
               Text(
-                'Halaman ini tidak dijumpai',
+                context.l10n.pageNotFoundBody,
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: Spacing.sm),
               Text(
-                message ??
-                    'Sila cuba semula, atau kembali ke laman utama.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                message ?? context.l10n.pageNotFoundHint,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: Spacing.xl),
               FilledButton.icon(
                 onPressed: () => context.go('/dashboard'),
                 icon: const Icon(Icons.home_outlined),
-                label: const Text('Ke Laman Utama'),
+                label: Text(context.l10n.goToHome),
               ),
             ],
           ),

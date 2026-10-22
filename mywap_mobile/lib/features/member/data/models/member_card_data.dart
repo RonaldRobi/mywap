@@ -39,6 +39,8 @@ class MemberCardInfo {
     this.member_since,
     this.system_logo_path,
     this.qrValue,
+    this.card_front_path,
+    this.card_back_path,
   });
 
   factory MemberCardInfo.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,8 @@ class MemberCardInfo {
       member_since: json['member_since'] as String?,
       system_logo_path: json['system_logo_path'] as String?,
       qrValue: json['qr_value'] as String?,
+      card_front_path: json['card_front_path'] as String?,
+      card_back_path: json['card_back_path'] as String?,
     );
   }
 
@@ -75,6 +79,11 @@ class MemberCardInfo {
   final String? member_since;
   final String? system_logo_path;
   final String? qrValue;
+
+  /// Imej design kad (dimuat naik admin organisasi). Bila null, widget kad
+  /// jatuh balik kepada gradient jenama.
+  final String? card_front_path;
+  final String? card_back_path;
 }
 
 class MemberCardOrg {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -32,9 +33,7 @@ class MenuScreen extends ConsumerWidget {
         slivers: [
           SliverToBoxAdapter(
             child:
-                isAuthenticated
-                    ? const _MemberHeader()
-                    : const _GuestHeader(),
+                isAuthenticated ? const _MemberHeader() : const _GuestHeader(),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
@@ -46,8 +45,8 @@ class MenuScreen extends ConsumerWidget {
             sliver: SliverList.list(
               children:
                   isAuthenticated
-                      ? _memberSections(user.roles ?? const [])
-                      : _guestSections(),
+                      ? _memberSections(context.l10n, user.roles ?? const [])
+                      : _guestSections(context.l10n),
             ),
           ),
         ],
@@ -62,166 +61,169 @@ class MenuScreen extends ConsumerWidget {
   static bool _isAdmin(String? role) =>
       role == 'Admin' || role == 'org-admin' || role == 'Superadmin';
 
-  static List<Widget> _memberSections(List<String> roles) {
+  static List<Widget> _memberSections(
+    AppLocalizations l10n,
+    List<String> roles,
+  ) {
     final isAdmin = roles.any(_isAdmin);
 
     return [
-      const MenuSection(
-        title: 'Keahlian',
+      MenuSection(
+        title: l10n.menuSectionMembership,
         items: [
           MenuEntry(
             icon: Icons.badge_outlined,
-            label: 'Kad Ahli',
+            label: l10n.menuCard,
             path: '/card',
-            subtitle: 'Kad digital & kod QR',
+            subtitle: l10n.menuCardSubtitle,
           ),
           MenuEntry(
             icon: Icons.person_outline,
-            label: 'Profil Saya',
+            label: l10n.menuProfile,
             path: '/profile',
-            subtitle: 'Maklumat & tetapan akaun',
+            subtitle: l10n.menuProfileSubtitle,
           ),
           MenuEntry(
             icon: Icons.person_add_alt_outlined,
-            label: 'Jemput Ahli',
+            label: l10n.menuInvite,
             path: '/member/referral',
-            subtitle: 'Kongsi pautan rujukan',
-          ),
-        ],
-      ),
-      const MenuSection(
-        title: 'Kewangan',
-        tint: AppColors.accent,
-        items: [
-          MenuEntry(
-            icon: Icons.receipt_long_outlined,
-            label: 'Yuran & Bayaran',
-            path: '/member/financial/overview',
-            subtitle: 'Status yuran dan resit',
-          ),
-          MenuEntry(
-            icon: Icons.volunteer_activism_outlined,
-            label: 'Infaq',
-            path: '/infaq',
-            subtitle: 'Salurkan sumbangan',
-          ),
-        ],
-      ),
-      const MenuSection(
-        title: 'Program & Komuniti',
-        items: [
-          MenuEntry(
-            icon: Icons.event_outlined,
-            label: 'Program',
-            path: '/events',
-            subtitle: 'Acara akan datang',
-          ),
-          MenuEntry(
-            icon: Icons.assignment_turned_in_outlined,
-            label: 'Pendaftaran Saya',
-            path: '/events/my-registrations',
-            subtitle: 'Program yang anda sertai',
-          ),
-          MenuEntry(
-            icon: Icons.groups_outlined,
-            label: 'Usrah',
-            path: '/usrah',
-            subtitle: 'Kumpulan & jadual',
-          ),
-          MenuEntry(
-            icon: Icons.how_to_vote_outlined,
-            label: 'Undian',
-            path: '/polls',
-            subtitle: 'Undian & tinjauan',
-          ),
-          MenuEntry(
-            icon: Icons.apartment_outlined,
-            label: 'Tempah Fasiliti',
-            path: '/facilities',
-            subtitle: 'Ruang, dewan & peralatan',
-          ),
-        ],
-      ),
-      const MenuSection(
-        title: 'Bacaan & Media',
-        items: [
-          MenuEntry(
-            icon: Icons.newspaper_outlined,
-            label: 'Info Terkini',
-            path: '/news',
-            subtitle: 'Berita organisasi',
-          ),
-          MenuEntry(
-            icon: Icons.article_outlined,
-            label: 'Artikel',
-            path: '/articles',
-            subtitle: 'Penulisan & rencana',
-          ),
-          MenuEntry(
-            icon: Icons.play_circle_outline,
-            label: 'Video',
-            path: '/videos',
-            subtitle: 'Kuliah & tazkirah',
-          ),
-          MenuEntry(
-            icon: Icons.local_library_outlined,
-            label: 'Pustaka',
-            path: '/member/library',
-            subtitle: 'Bahan bacaan & rujukan',
-          ),
-        ],
-      ),
-      const MenuSection(
-        title: 'myWAP Mall',
-        tint: AppColors.accent,
-        items: [
-          MenuEntry(
-            icon: Icons.storefront_outlined,
-            label: 'Produk',
-            path: '/products',
-            subtitle: 'Barangan untuk dibeli',
-          ),
-          MenuEntry(
-            icon: Icons.shopping_bag_outlined,
-            label: 'Pesanan Saya',
-            path: '/orders',
-            subtitle: 'Semak status pesanan',
+            subtitle: l10n.menuInviteSubtitle,
           ),
         ],
       ),
       MenuSection(
-        title: 'Organisasi & Bantuan',
+        title: l10n.menuSectionFinance,
+        tint: AppColors.accent,
         items: [
-          const MenuEntry(
+          MenuEntry(
+            icon: Icons.receipt_long_outlined,
+            label: l10n.menuFees,
+            path: '/member/financial/overview',
+            subtitle: l10n.menuFeesSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.volunteer_activism_outlined,
+            label: l10n.menuInfaq,
+            path: '/infaq',
+            subtitle: l10n.menuInfaqSubtitle,
+          ),
+        ],
+      ),
+      MenuSection(
+        title: l10n.menuSectionPrograms,
+        items: [
+          MenuEntry(
+            icon: Icons.event_outlined,
+            label: l10n.menuPrograms,
+            path: '/events',
+            subtitle: l10n.menuProgramsSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.assignment_turned_in_outlined,
+            label: l10n.menuMyRegistrations,
+            path: '/events/my-registrations',
+            subtitle: l10n.menuMyRegistrationsSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.groups_outlined,
+            label: l10n.menuUsrah,
+            path: '/usrah',
+            subtitle: l10n.menuUsrahSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.how_to_vote_outlined,
+            label: l10n.menuPolls,
+            path: '/polls',
+            subtitle: l10n.menuPollsSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.apartment_outlined,
+            label: l10n.menuFacilities,
+            path: '/facilities',
+            subtitle: l10n.menuFacilitiesSubtitle,
+          ),
+        ],
+      ),
+      MenuSection(
+        title: l10n.menuSectionReading,
+        items: [
+          MenuEntry(
+            icon: Icons.newspaper_outlined,
+            label: l10n.menuNews,
+            path: '/news',
+            subtitle: l10n.menuNewsSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.article_outlined,
+            label: l10n.menuArticles,
+            path: '/articles',
+            subtitle: l10n.menuArticlesSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.play_circle_outline,
+            label: l10n.menuVideos,
+            path: '/videos',
+            subtitle: l10n.menuVideosSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.local_library_outlined,
+            label: l10n.menuLibrary,
+            path: '/member/library',
+            subtitle: l10n.menuLibrarySubtitle,
+          ),
+        ],
+      ),
+      MenuSection(
+        title: l10n.menuSectionMall,
+        tint: AppColors.accent,
+        items: [
+          MenuEntry(
+            icon: Icons.storefront_outlined,
+            label: l10n.menuProducts,
+            path: '/products',
+            subtitle: l10n.menuProductsSubtitle,
+          ),
+          MenuEntry(
+            icon: Icons.shopping_bag_outlined,
+            label: l10n.menuOrders,
+            path: '/orders',
+            subtitle: l10n.menuOrdersSubtitle,
+          ),
+        ],
+      ),
+      MenuSection(
+        title: l10n.menuSectionOrgHelp,
+        items: [
+          MenuEntry(
             icon: Icons.info_outline,
-            label: 'Info Organisasi',
+            label: l10n.menuOrgInfo,
             path: '/organization/info',
-            subtitle: 'Carta & maklumat',
+            subtitle: l10n.menuOrgInfoSubtitle,
           ),
-          const MenuEntry(
+          MenuEntry(
             icon: Icons.campaign_outlined,
-            label: 'Pengumuman',
+            label: l10n.menuAnnouncements,
             path: '/member/announcements',
-            subtitle: 'Makluman terkini',
+            subtitle: l10n.menuAnnouncementsSubtitle,
           ),
-          const MenuEntry(
+          MenuEntry(
             icon: Icons.notifications_outlined,
-            label: 'Notifikasi',
+            label: l10n.menuNotifications,
             path: '/notifications',
-            subtitle: 'Pemberitahuan anda',
+            subtitle: l10n.menuNotificationsSubtitle,
           ),
-          const MenuEntry(
+          MenuEntry(
             icon: Icons.menu_book_outlined,
-            label: 'Manual Pengguna',
+            label: l10n.menuManual,
             path: '/manual',
-            subtitle: 'Panduan penggunaan app',
+            subtitle: l10n.menuManualSubtitle,
           ),
           if (isAdmin)
-            const MenuEntry(
+            MenuEntry(
               icon: Icons.admin_panel_settings_outlined,
-              label: 'Panel Admin',
+              label: l10n.menuAdmin,
               path: '/admin',
-              subtitle: 'Pengurusan organisasi',
+              subtitle: l10n.menuAdminSubtitle,
             ),
         ],
       ),
@@ -234,63 +236,63 @@ class MenuScreen extends ConsumerWidget {
   // Seksyen tetamu
   // -------------------------------------------------------------------
 
-  static List<Widget> _guestSections() {
-    return const [
+  static List<Widget> _guestSections(AppLocalizations l10n) {
+    return [
       MenuSection(
-        title: 'Terokai',
+        title: l10n.menuSectionExplore,
         items: [
           MenuEntry(
             icon: Icons.home_outlined,
-            label: 'Beranda',
+            label: l10n.menuGuestHome,
             path: '/home',
-            subtitle: 'Halaman utama',
+            subtitle: l10n.menuGuestHomeSubtitle,
           ),
           MenuEntry(
             icon: Icons.event_outlined,
-            label: 'Program & Acara',
+            label: l10n.menuGuestEvents,
             path: '/events',
-            subtitle: 'Acara terbuka kepada umum',
+            subtitle: l10n.menuGuestEventsSubtitle,
           ),
           MenuEntry(
             icon: Icons.info_outline,
-            label: 'Info Organisasi',
+            label: l10n.menuOrgInfo,
             path: '/organization/info',
-            subtitle: 'Kenali kami',
+            subtitle: l10n.menuGuestOrgInfoSubtitle,
           ),
         ],
       ),
       MenuSection(
-        title: 'Bacaan & Media',
+        title: l10n.menuSectionReading,
         items: [
           MenuEntry(
             icon: Icons.newspaper_outlined,
-            label: 'Info Terkini',
+            label: l10n.menuNews,
             path: '/news',
-            subtitle: 'Berita organisasi',
+            subtitle: l10n.menuNewsSubtitle,
           ),
           MenuEntry(
             icon: Icons.article_outlined,
-            label: 'Artikel',
+            label: l10n.menuArticles,
             path: '/articles',
-            subtitle: 'Penulisan & rencana',
+            subtitle: l10n.menuArticlesSubtitle,
           ),
           MenuEntry(
             icon: Icons.play_circle_outline,
-            label: 'Video',
+            label: l10n.menuVideos,
             path: '/videos',
-            subtitle: 'Kuliah & tazkirah',
+            subtitle: l10n.menuVideosSubtitle,
           ),
         ],
       ),
       MenuSection(
-        title: 'Sumbangan',
+        title: l10n.menuSectionDonation,
         tint: AppColors.accent,
         items: [
           MenuEntry(
             icon: Icons.volunteer_activism_outlined,
-            label: 'Infaq & Sumbangan',
+            label: l10n.menuGuestInfaq,
             path: '/infaq',
-            subtitle: 'Salurkan bantuan anda',
+            subtitle: l10n.menuGuestInfaqSubtitle,
           ),
         ],
       ),
@@ -335,7 +337,7 @@ class _MemberHeader extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Menu',
+                    context.l10n.menuTitle,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: AppColors.white,
                       fontWeight: FontWeight.w700,
@@ -343,8 +345,8 @@ class _MemberHeader extends ConsumerWidget {
                   ),
                   _HeaderIconButton(
                     icon: Icons.settings_outlined,
-                    tooltip: 'Tetapan profil',
-                    onTap: () => context.push('/profile'),
+                    tooltip: context.l10n.menuSettingsTooltip,
+                    onTap: () => context.push('/settings'),
                   ),
                 ],
               ),
@@ -387,7 +389,8 @@ class _MemberHeader extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user?.name ?? 'Ahli myWAP',
+                                user?.name ??
+                                    context.l10n.menuMemberFallbackName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleMedium?.copyWith(
@@ -396,7 +399,7 @@ class _MemberHeader extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                user?.member_no ?? 'Lihat profil anda',
+                                user?.member_no ?? context.l10n.menuViewProfile,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -448,16 +451,26 @@ class _GuestHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'myWAP',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'myWAP',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  _HeaderIconButton(
+                    icon: Icons.settings_outlined,
+                    tooltip: context.l10n.menuSettingsTooltip,
+                    onTap: () => context.push('/settings'),
+                  ),
+                ],
               ),
               const SizedBox(height: Spacing.xs),
               Text(
-                'Kandungan komuniti untuk semua',
+                context.l10n.menuGuestTagline,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textOnDark,
                 ),
@@ -472,7 +485,7 @@ class _GuestHeader extends StatelessWidget {
                         foregroundColor: AppColors.movementDarkGreen,
                       ),
                       onPressed: () => context.go('/login'),
-                      child: const Text('Log Masuk'),
+                      child: Text(context.l10n.login),
                     ),
                   ),
                   const SizedBox(width: Spacing.md),
@@ -483,7 +496,7 @@ class _GuestHeader extends StatelessWidget {
                         side: const BorderSide(color: AppColors.white),
                       ),
                       onPressed: () => context.go('/register'),
-                      child: const Text('Daftar Ahli'),
+                      child: Text(context.l10n.menuRegister),
                     ),
                   ),
                 ],
@@ -569,9 +582,9 @@ class MenuSection extends StatelessWidget {
             ),
             child: Text(
               title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Container(
@@ -700,7 +713,7 @@ class _LogoutButton extends ConsumerWidget {
     return OutlinedButton.icon(
       onPressed: () => _confirm(context, ref),
       icon: const Icon(Icons.logout_rounded, size: AppSizes.iconSm),
-      label: const Text('Log Keluar'),
+      label: Text(context.l10n.logout),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.error,
         side: const BorderSide(color: AppColors.error),
@@ -713,17 +726,17 @@ class _LogoutButton extends ConsumerWidget {
       context: context,
       builder:
           (dialogContext) => AlertDialog(
-            title: const Text('Log Keluar'),
-            content: const Text('Anda pasti mahu log keluar dari myWAP?'),
+            title: Text(context.l10n.menuLogoutConfirmTitle),
+            content: Text(context.l10n.menuLogoutConfirmMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Batal'),
+                child: Text(context.l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
                 style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                child: const Text('Log Keluar'),
+                child: Text(context.l10n.logout),
               ),
             ],
           ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -77,6 +78,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final productsAsync = ref.watch(productsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final cartCount = ref.watch(cartProvider.select((c) => c.totalCount));
@@ -84,10 +86,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Pasar'),
+        title: Text(l10n.ecomMarketTitle),
         actions: [
           IconButton(
-            tooltip: 'Troli',
+            tooltip: l10n.ecomCartTitle,
             onPressed: () => context.push('/cart'),
             icon: Badge(
               label: Text('$cartCount'),
@@ -111,7 +113,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               onChanged: _onSearchChanged,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Cari produk...',
+                hintText: l10n.ecomSearchProductsHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon:
                     _searchText.isEmpty
@@ -146,21 +148,24 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   color: AppColors.textSecondary,
                 ),
                 const SizedBox(width: Spacing.sm),
-                const Text('Susun:'),
+                Text(l10n.ecomSortLabel),
                 const SizedBox(width: Spacing.sm),
                 DropdownButton<String>(
                   value: _sort,
                   underline: const SizedBox.shrink(),
                   borderRadius: AppRadius.md,
-                  items: const [
-                    DropdownMenuItem(value: 'latest', child: Text('Terkini')),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'latest',
+                      child: Text(l10n.ecomSortLatest),
+                    ),
                     DropdownMenuItem(
                       value: 'price_low',
-                      child: Text('Harga Rendah'),
+                      child: Text(l10n.ecomSortPriceLow),
                     ),
                     DropdownMenuItem(
                       value: 'price_high',
-                      child: Text('Harga Tinggi'),
+                      child: Text(l10n.ecomSortPriceHigh),
                     ),
                   ],
                   onChanged: (value) {
@@ -181,7 +186,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     message:
                         error is ApiException
                             ? error.message
-                            : 'Ralat tidak dijangka.',
+                            : l10n.unexpectedError,
                     onRetry:
                         () => ref.read(productsProvider.notifier).refresh(),
                   ),
@@ -194,11 +199,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                                     ref
                                         .read(productsProvider.notifier)
                                         .refresh(),
-                            child: const SingleChildScrollView(
-                              physics: AlwaysScrollableScrollPhysics(),
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
                               child: EmptyState(
                                 icon: Icons.storefront_outlined,
-                                message: 'Tiada produk dijumpai.',
+                                message: l10n.ecomNoProducts,
                               ),
                             ),
                           )
@@ -245,7 +250,7 @@ class _CategoryChips extends StatelessWidget {
               right: Spacing.sm,
             ),
             child: ChoiceChip(
-              label: const Text('Semua'),
+              label: Text(context.l10n.ecomFilterAll),
               selected: selectedId == null,
               showCheckmark: false,
               onSelected: (_) => onSelected(null),
@@ -336,6 +341,14 @@ const double _cardFooterHeight = 148;
 /// `Spacing.md` cross spacing.
 double _cellWidth(double screenWidth) => (screenWidth - Spacing.md * 3) / 2;
 
+String _actionLabel(BuildContext context, Product product) {
+  if (product.isOutOfStock) return context.l10n.ecomSoldOut;
+  if ((product.variationsCount ?? 0) > 0) {
+    return context.l10n.ecomChooseOptions;
+  }
+  return context.l10n.ecomBuy;
+}
+
 class _ProductCard extends ConsumerWidget {
   const _ProductCard({required this.product});
 
@@ -343,7 +356,7 @@ class _ProductCard extends ConsumerWidget {
 
   void _buy(BuildContext context, WidgetRef ref) {
     final id = product.id;
-    if (id == null) return;
+    if (id == null || product.isOutOfStock) return;
 
     // Products with variations need an option chosen first → open the detail
     // page where the buyer picks before adding to cart.
@@ -352,21 +365,24 @@ class _ProductCard extends ConsumerWidget {
       return;
     }
 
-    ref
+    final l10n = context.l10n;
+    final added = ref
         .read(cartProvider.notifier)
         .add(
           CartItem(
             key: '$id:0',
             productId: id,
-            name: product.name ?? 'Produk',
+            name: product.name ?? l10n.ecomProductFallback,
             image: product.displayImage,
             unitPrice: product.effectivePrice,
             quantity: 1,
+            stock: product.stock,
           ),
         );
+    if (!added) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('Ditambah ke troli.')));
+      ..showSnackBar(SnackBar(content: Text(l10n.ecomAddedToCart)));
   }
 
   @override
@@ -421,6 +437,57 @@ class _ProductCard extends ConsumerWidget {
                         ),
                         child: Text(
                           '-$discountPercent%',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: AppTextTheme.minSize,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (!product.isOutOfStock &&
+                      product.stock != null &&
+                      product.stock! > 0 &&
+                      product.stock! <= 5)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.sm,
+                          vertical: 3,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          context.l10n.ecomStockLeft(product.stock!),
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: AppTextTheme.minSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (product.isOutOfStock)
+                    Container(
+                      color: AppColors.white.withValues(alpha: 0.72),
+                      alignment: Alignment.center,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.md,
+                          vertical: Spacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.textPrimary,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          context.l10n.ecomSoldOut,
                           style: const TextStyle(
                             color: AppColors.white,
                             fontSize: AppTextTheme.minSize,
@@ -497,7 +564,7 @@ class _ProductCard extends ConsumerWidget {
                                             ),
                                           ),
                                           child: Text(
-                                            'Ahli',
+                                            context.l10n.ecomMemberBadge,
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
                                                   color:
@@ -532,13 +599,15 @@ class _ProductCard extends ConsumerWidget {
                       height: 34,
                       child: FilledButton(
                         onPressed:
-                            product.id == null
+                            product.id == null || product.isOutOfStock
                                 ? null
                                 : () => _buy(context, ref),
                         style: FilledButton.styleFrom(
                           padding: EdgeInsets.zero,
                           backgroundColor: AppColors.movementGreen,
                           foregroundColor: AppColors.white,
+                          disabledBackgroundColor: AppColors.surfaceMuted,
+                          disabledForegroundColor: AppColors.textTertiary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -547,7 +616,7 @@ class _ProductCard extends ConsumerWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        child: const Text('Beli'),
+                        child: Text(_actionLabel(context, product)),
                       ),
                     ),
                   ],

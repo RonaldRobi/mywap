@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -46,21 +47,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final ordersAsync = ref.watch(ordersProvider);
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Pesanan'),
+        title: Text(l10n.ecomOrdersTitle),
       ),
       body: ordersAsync.when(
         loading: () => const _OrdersSkeleton(),
         error:
             (error, _) => ErrorRetry(
               message:
-                  error is ApiException
-                      ? error.message
-                      : 'Ralat tidak dijangka.',
+                  error is ApiException ? error.message : l10n.unexpectedError,
               onRetry: () => ref.read(ordersProvider.notifier).refresh(),
             ),
         data:
@@ -70,11 +70,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       onRefresh:
                           () async =>
                               ref.read(ordersProvider.notifier).refresh(),
-                      child: const SingleChildScrollView(
-                        physics: AlwaysScrollableScrollPhysics(),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         child: EmptyState(
                           icon: Icons.receipt_long_outlined,
-                          message: 'Tiada pesanan buat masa ini.',
+                          message: l10n.ecomNoOrders,
                         ),
                       ),
                     )
@@ -121,6 +121,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -136,7 +137,7 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Pesanan #${order.id ?? '-'}',
+                      l10n.ecomOrderNumber(order.id?.toString() ?? '-'),
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
@@ -145,14 +146,17 @@ class _OrderCard extends StatelessWidget {
               ),
               const SizedBox(height: Spacing.sm),
               Text(
-                '${order.itemCount} item • ${formatOrderDate(order.createdAt)}',
+                l10n.ecomOrderMeta(
+                  order.itemCount,
+                  formatOrderDate(order.createdAt),
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: Spacing.xs),
               Text(
-                'Jumlah: ${Formatters.currency(order.grandTotal)}',
+                l10n.ecomTotalLabel(Formatters.currency(order.grandTotal)),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: AppColors.movementGreen,
                   fontWeight: FontWeight.w700,
@@ -172,7 +176,7 @@ class _OrderCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Parcel telah dihantar — sentuh untuk Track & Terima',
+                        l10n.ecomParcelShippedHint,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -207,7 +211,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        orderStatusLabel(status),
+        orderStatusLabel(context, status),
         style: const TextStyle(
           fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,

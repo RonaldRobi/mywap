@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -17,19 +18,18 @@ import '../../../shared/theme/app_text_theme.dart';
 class AdminFeesScreen extends ConsumerWidget {
   const AdminFeesScreen({super.key});
 
-  static const _filters = <(String, String)>[
-    ('', 'Semua'),
-    ('paid', 'Lunas'),
-    ('pending', 'Belum Bayar'),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(_statusProvider);
     final feesAsync = ref.watch(adminFeesProvider(status));
+    final filters = <(String, String)>[
+      ('', context.l10n.adminFilterAll),
+      ('paid', context.l10n.adminFeePaid),
+      ('pending', context.l10n.adminFeeUnpaid),
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Yuran')),
+      appBar: AppBar(title: Text(context.l10n.adminFeesTitle)),
       body: Column(
         children: [
           SizedBox(
@@ -38,7 +38,7 @@ class AdminFeesScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               children: [
-                for (final (value, label) in _filters)
+                for (final (value, label) in filters)
                   Padding(
                     padding: const EdgeInsets.only(
                       right: Spacing.sm,
@@ -76,7 +76,7 @@ class AdminFeesScreen extends ConsumerWidget {
                     message:
                         error is ApiException
                             ? error.message
-                            : 'Ralat tidak dijangka.',
+                            : context.l10n.adminUnexpectedError,
                     onRetry: () => ref.invalidate(adminFeesProvider(status)),
                   ),
             ),
@@ -97,9 +97,9 @@ class _FeesContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.fees.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.receipt_long_outlined,
-        message: 'Tiada rekod yuran.',
+        message: context.l10n.adminNoFeeRecords,
       );
     }
     final summary = data.summary;
@@ -117,7 +117,7 @@ class _FeesContent extends StatelessWidget {
             children: [
               Expanded(
                 child: _SummaryCard(
-                  label: 'Lunas',
+                  label: context.l10n.adminFeePaid,
                   value: '${summary.paidCount}',
                   icon: Icons.check_circle_outline,
                   color: AppColors.success,
@@ -126,7 +126,7 @@ class _FeesContent extends StatelessWidget {
               const SizedBox(width: Spacing.md),
               Expanded(
                 child: _SummaryCard(
-                  label: 'Belum Bayar',
+                  label: context.l10n.adminFeeUnpaid,
                   value: '${summary.pendingCount}',
                   icon: Icons.schedule,
                   color: AppColors.warning,
@@ -135,7 +135,7 @@ class _FeesContent extends StatelessWidget {
               const SizedBox(width: Spacing.md),
               Expanded(
                 child: _SummaryCard(
-                  label: 'Hasil',
+                  label: context.l10n.adminStatRevenue,
                   value: Formatters.currency(summary.revenue),
                   icon: Icons.payments_outlined,
                   color: AppColors.movementGreen,
@@ -201,10 +201,11 @@ class _FeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListCard(
-      title: fee.name.isEmpty ? 'Tanpa Nama' : fee.name,
+      title: fee.name.isEmpty ? context.l10n.adminNoName : fee.name,
       subtitle: [
-        if (fee.memberNo.isNotEmpty) 'No. ${fee.memberNo}',
-        if (fee.year.isNotEmpty) 'Yuran ${fee.year}',
+        if (fee.memberNo.isNotEmpty)
+          context.l10n.adminMemberNoPrefix(fee.memberNo),
+        if (fee.year.isNotEmpty) context.l10n.adminFeeYear(fee.year),
       ].join(' · '),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -226,7 +227,9 @@ class _FeeCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              fee.isPaid ? 'Lunas' : 'Belum Bayar',
+              fee.isPaid
+                  ? context.l10n.adminFeePaid
+                  : context.l10n.adminFeeUnpaid,
               style: TextStyle(
                 color: fee.isPaid ? AppColors.movementNavy : AppColors.warning,
                 fontSize: AppTextTheme.minSize,

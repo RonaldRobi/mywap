@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -11,16 +12,16 @@ import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
 
-const _genderOptions = <(String, String)>[
-  ('lelaki', 'Lelaki'),
-  ('perempuan', 'Perempuan'),
+List<(String, String)> _genderOptions(AppLocalizations l10n) => [
+  ('lelaki', l10n.genderMale),
+  ('perempuan', l10n.genderFemale),
 ];
 
-const _maritalOptions = <(String, String)>[
-  ('bujang', 'Bujang'),
-  ('berkahwin', 'Berkahwin'),
-  ('bercerai', 'Bercerai'),
-  ('duda/janda', 'Duda / Janda'),
+List<(String, String)> _maritalOptions(AppLocalizations l10n) => [
+  ('bujang', l10n.maritalSingle),
+  ('berkahwin', l10n.maritalMarried),
+  ('bercerai', l10n.maritalDivorced),
+  ('duda/janda', l10n.maritalWidowed),
 ];
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -78,7 +79,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/profile'),
-        title: const Text('Edit Profil'),
+        title: Text(context.l10n.editProfile),
       ),
       body: profileAsync.when(
         data: (data) {
@@ -91,7 +92,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(profileProvider),
             ),
       ),
@@ -156,79 +157,94 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 color: AppColors.error.withValues(alpha: 0.08),
                 borderRadius: AppRadius.md,
               ),
-              child: const Text(
-                'Sila semak semula maklumat yang bertanda merah.',
-                style: TextStyle(color: AppColors.error),
+              child: Text(
+                context.l10n.checkMarkedFields,
+                style: const TextStyle(color: AppColors.error),
               ),
             ),
-          _section('Maklumat Asas', [
+          _section(context.l10n.basicInfoSection, [
             _organizationBranchCard(meta: meta, branches: branches),
-            _textField('name', label: 'Nama Penuh', required: true),
-            _textField('email', label: 'Emel', required: true, isEmail: true),
+            _textField(
+              'name',
+              label: context.l10n.fullNameLabel,
+              required: true,
+            ),
+            _textField(
+              'email',
+              label: context.l10n.emailLabel,
+              required: true,
+              isEmail: true,
+            ),
             _textField(
               'phone',
-              label: 'No. Telefon',
+              label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
             ),
             _dobField(),
             _optionField(
               key: 'gender',
-              label: 'Jantina',
+              label: context.l10n.genderLabel,
               value: _gender,
-              options: _genderOptions,
+              options: _genderOptions(context.l10n),
               onChanged: (value) => setState(() => _gender = value),
             ),
             _optionField(
               key: 'marital_status',
-              label: 'Status Perkahwinan',
+              label: context.l10n.maritalStatusLabel,
               value: _maritalStatus,
-              options: _maritalOptions,
+              options: _maritalOptions(context.l10n),
               onChanged: (value) => setState(() => _maritalStatus = value),
             ),
           ]),
-          _section('Pendidikan & Profesion', [
-            _textField('education_level', label: 'Tahap Pendidikan'),
-            _textField('current_profession', label: 'Profesion Semasa'),
-            _textField('industry', label: 'Industri'),
-            _textField('locality', label: 'Lokaliti'),
-            _textField('expertise', label: 'Kepakaran'),
+          _section(context.l10n.educationProfessionSection, [
+            _textField(
+              'education_level',
+              label: context.l10n.educationLevelLabel,
+            ),
+            _textField(
+              'current_profession',
+              label: context.l10n.currentProfessionLabel,
+            ),
+            _textField('industry', label: context.l10n.industryLabel),
+            _textField('locality', label: context.l10n.localityLabel),
+            _textField('expertise', label: context.l10n.expertiseLabel),
             _textField(
               'linkedin_url',
-              label: 'LinkedIn URL',
+              label: context.l10n.linkedinLabel,
               keyboardType: TextInputType.url,
             ),
             _textField(
               'topics',
-              label: 'Topik Minat',
-              hint: 'Pisahkan dengan koma',
+              label: context.l10n.topicsLabel,
+              hint: context.l10n.commaSeparated,
             ),
           ]),
-          _section('Direktori', [
+          _section(context.l10n.directorySection, [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Papar dalam Direktori Awam'),
-              subtitle: const Text('Benarkan orang lain melihat profil anda'),
+              title: Text(context.l10n.showInPublicDirectory),
+              subtitle: Text(context.l10n.allowOthersViewProfile),
               value: _isPublicInDirectory,
               onChanged:
                   (value) => setState(() => _isPublicInDirectory = value),
             ),
           ]),
-          _section('Alamat', [
-            _textField('address_1', label: 'Alamat (Baris 1)'),
-            _textField('address_2', label: 'Alamat (Baris 2)'),
+          _section(context.l10n.addressSection, [
+            _textField('address_1', label: context.l10n.addressLine1),
+            _textField('address_2', label: context.l10n.addressLine2),
             _textField(
               'postcode',
-              label: 'Poskod',
+              label: context.l10n.postcodeLabel,
               keyboardType: TextInputType.number,
             ),
-            _textField('city', label: 'Bandar'),
-            _textField('state', label: 'Negeri'),
+            _textField('city', label: context.l10n.cityLabel),
+            _textField('state', label: context.l10n.stateLabel),
           ]),
-          _section('Hubungan Kecemasan', [
-            _textField('emergency_contact_name', label: 'Nama'),
+          _section(context.l10n.emergencySection, [
+            _textField('emergency_contact_name', label: context.l10n.nameLabel),
             _textField(
               'emergency_contact_phone',
-              label: 'No. Telefon',
+              label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
             ),
           ]),
@@ -246,7 +262,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     )
                     : const Icon(Icons.save_outlined),
-            label: Text(_saving ? 'Menyimpan...' : 'Simpan Perubahan'),
+            label: Text(
+              _saving ? context.l10n.saving : context.l10n.saveChanges,
+            ),
           ),
         ],
       ),
@@ -258,9 +276,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required List<ProfileBranch> branches,
   }) {
     final organization =
-        meta?.organizationName ?? _organizationName ?? 'Tiada organisasi';
+        meta?.organizationName ??
+        _organizationName ??
+        context.l10n.noOrganization;
     final currentBranch =
-        meta?.currentBranchName ?? _currentBranchName ?? 'Tiada cawangan';
+        meta?.currentBranchName ?? _currentBranchName ?? context.l10n.noBranch;
     final pending = meta?.pendingBranchRequest;
 
     return Container(
@@ -287,8 +307,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Organisasi',
+                    Text(
+                      context.l10n.organizationLabel,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textTertiary,
@@ -321,8 +341,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Cawangan',
+                    Text(
+                      context.l10n.branchLabel,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textTertiary,
@@ -352,7 +372,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           _openBranchChangeSheet(meta: meta, branches: branches)
                       : null,
               icon: const Icon(Icons.swap_horiz, size: AppSizes.iconSm),
-              label: const Text('Tukar Cawangan'),
+              label: Text(context.l10n.changeBranch),
             ),
           ),
           if (pending != null) ...[
@@ -368,11 +388,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               child: Text(
-                'Permohonan tukar ke ${pending.to_branch ?? 'cawangan baharu'} sedang menunggu kelulusan admin.',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.warning,
+                context.l10n.branchRequestPending(
+                  pending.to_branch ??
+                      context.l10n.newBranchLabel.toLowerCase(),
                 ),
+                style: const TextStyle(fontSize: 13, color: AppColors.warning),
               ),
             ),
           ],
@@ -404,13 +424,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     ref.invalidate(profileProvider);
     ref.invalidate(profileEditMetaProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.',
-        ),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.branchRequestSent)));
   }
 
   Widget _section(String title, List<Widget> children) {
@@ -446,11 +462,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ),
         validator: (value) {
           final trimmed = value?.trim() ?? '';
-          if (required && trimmed.isEmpty) return 'Sila isi $label.';
+          if (required && trimmed.isEmpty) {
+            return context.l10n.fieldRequired(label);
+          }
           if (isEmail &&
               trimmed.isNotEmpty &&
               !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed)) {
-            return 'Sila masukkan emel yang sah.';
+            return context.l10n.emailInvalidEdit;
           }
           return null;
         },
@@ -478,7 +496,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           labelText: label,
           errorText: _serverErrors[key],
         ),
-        hint: const Text('Pilih'),
+        hint: Text(context.l10n.choose),
         items: [
           for (final (optionValue, optionLabel) in options)
             DropdownMenuItem(value: optionValue, child: Text(optionLabel)),
@@ -501,7 +519,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         borderRadius: AppRadius.md,
         child: InputDecorator(
           decoration: InputDecoration(
-            labelText: 'Tarikh Lahir',
+            labelText: context.l10n.dobLabel,
             errorText: _serverErrors['dob'],
           ),
           child: Row(
@@ -514,7 +532,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(width: Spacing.sm),
               Expanded(
                 child: Text(
-                  _dob == null ? 'Pilih tarikh' : ProfileFormat.date(_dob!),
+                  _dob == null
+                      ? context.l10n.selectDate
+                      : ProfileFormat.date(_dob!),
                   style: TextStyle(
                     fontSize: 16,
                     color:
@@ -588,7 +608,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       ref.invalidate(profileProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berjaya dikemas kini.')),
+        SnackBar(content: Text(context.l10n.profileUpdatedSuccess)),
       );
       Navigator.of(context).pop();
     } on ApiException catch (error) {
@@ -608,7 +628,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+        SnackBar(content: Text(context.l10n.unexpectedErrorRetry)),
       );
     }
   }
@@ -646,14 +666,13 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
   bool _saving = false;
   String? _error;
 
-  List<ProfileBranch> get _options =>
-      widget.branches
-          .where((branch) => branch.id != widget.currentBranchId)
-          .toList(growable: false);
+  List<ProfileBranch> get _options => widget.branches
+      .where((branch) => branch.id != widget.currentBranchId)
+      .toList(growable: false);
 
   Future<void> _submit() async {
     if (_selectedBranchId == null) {
-      setState(() => _error = 'Sila pilih cawangan baharu.');
+      setState(() => _error = context.l10n.chooseNewBranch);
       return;
     }
 
@@ -678,7 +697,7 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = 'Ralat tidak dijangka. Sila cuba lagi.';
+        _error = context.l10n.unexpectedErrorRetry;
       });
     }
   }
@@ -711,13 +730,13 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
             ),
             const SizedBox(height: Spacing.lg),
             Text(
-              'Tukar Cawangan',
+              context.l10n.changeBranchTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: Spacing.sm),
-            const Text(
-              'Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              context.l10n.changeBranchNote,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: Spacing.lg),
             Container(
@@ -730,8 +749,8 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Cawangan sekarang',
+                  Text(
+                    context.l10n.currentBranch,
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textTertiary,
@@ -739,7 +758,7 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    widget.currentBranchName ?? 'Tiada cawangan',
+                    widget.currentBranchName ?? context.l10n.noBranch,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -771,7 +790,10 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                   ),
                 ),
                 child: Text(
-                  'Permohonan ke ${widget.pendingBranchRequest?.to_branch ?? 'cawangan baharu'} masih menunggu. Menghantar permohonan baharu akan menggantikannya.',
+                  context.l10n.branchRequestPendingShort(
+                    widget.pendingBranchRequest?.to_branch ??
+                        context.l10n.newBranchLabel.toLowerCase(),
+                  ),
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.warning,
@@ -782,13 +804,17 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
             const SizedBox(height: Spacing.lg),
             DropdownButtonFormField<int>(
               value: _selectedBranchId,
-              decoration: const InputDecoration(labelText: 'Cawangan baharu'),
-              hint: const Text('Pilih cawangan'),
+              decoration: InputDecoration(
+                labelText: context.l10n.newBranchLabel,
+              ),
+              hint: Text(context.l10n.selectBranch),
               items: [
                 for (final branch in _options)
                   DropdownMenuItem(
                     value: branch.id,
-                    child: Text(branch.name ?? 'Cawangan ${branch.id ?? ''}'),
+                    child: Text(
+                      branch.name ?? context.l10n.branchOption('${branch.id ?? ''}'),
+                    ),
                   ),
               ],
               onChanged:
@@ -799,9 +825,9 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
             ),
             if (_options.isEmpty) ...[
               const SizedBox(height: Spacing.sm),
-              const Text(
-                'Tiada cawangan lain tersedia untuk organisasi anda.',
-                style: TextStyle(color: AppColors.textSecondary),
+              Text(
+                context.l10n.noOtherBranches,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ],
             if (_error != null) ...[
@@ -816,9 +842,9 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                 color: AppColors.softGreenSurface,
                 borderRadius: AppRadius.md,
               ),
-              child: const Text(
-                'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.',
-                style: TextStyle(
+              child: Text(
+                context.l10n.branchRequestNote,
+                style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -830,17 +856,14 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed:
-                        _saving
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                    child: const Text('Batal'),
+                        _saving ? null : () => Navigator.of(context).pop(false),
+                    child: Text(context.l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: Spacing.md),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _saving || _options.isEmpty ? null : _submit,
+                    onPressed: _saving || _options.isEmpty ? null : _submit,
                     child:
                         _saving
                             ? const SizedBox(
@@ -851,7 +874,7 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                                 color: AppColors.white,
                               ),
                             )
-                            : const Text('Hantar Permohonan'),
+                            : Text(context.l10n.sendRequest),
                   ),
                 ),
               ],

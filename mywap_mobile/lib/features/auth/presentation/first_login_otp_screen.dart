@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
@@ -97,21 +98,25 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
         .verifyOtp(
           icNumber: _icController.text.trim(),
           code: _codeController.text.trim(),
-          password: _passwordController.text.isEmpty
-              ? null
-              : _passwordController.text,
-          passwordConfirmation: _passwordConfirmController.text.isEmpty
-              ? null
-              : _passwordConfirmController.text,
+          password:
+              _passwordController.text.isEmpty
+                  ? null
+                  : _passwordController.text,
+          passwordConfirmation:
+              _passwordConfirmController.text.isEmpty
+                  ? null
+                  : _passwordConfirmController.text,
         );
 
     if (!mounted) return;
     if (!ok) {
       final auth = ref.read(authControllerProvider);
       setState(
-        () => _error = auth is AuthUnauthenticated && auth.error != null
-            ? auth.error!
-            : 'Pengesahan OTP gagal. Sila cuba lagi.',
+        () =>
+            _error =
+                auth is AuthUnauthenticated && auth.error != null
+                    ? auth.error!
+                    : context.l10n.otpFailed,
       );
       setState(() => _submitting = false);
       return;
@@ -128,20 +133,21 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
     final needsEmail = _step == _OtpStep.requestEmail;
 
     return AuthScaffold(
-      title: 'Log Masuk Kali Pertama',
-      subtitle: isVerifyStep
-          ? 'Masukkan kod 6-digit yang dihantar ke emel anda dan tetapkan kata laluan baharu.'
-          : needsEmail
-          ? 'Kami tidak jumpa emel berdaftar. Sila masukkan emel anda untuk terima kod OTP.'
-          : 'Masukkan No. Kad Pengenalan anda untuk menerima kod OTP melalui emel.',
+      title: context.l10n.firstLoginTitle,
+      subtitle:
+          isVerifyStep
+              ? context.l10n.firstLoginVerifySubtitle
+              : needsEmail
+              ? context.l10n.firstLoginNoEmailSubtitle
+              : context.l10n.firstLoginEnterIcSubtitle,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Sudah pernah log masuk?'),
+          Text(context.l10n.alreadyLoggedIn),
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk Biasa'),
+            child: Text(context.l10n.normalLogin),
           ),
         ],
       ),
@@ -153,90 +159,105 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AuthField(
-                label: 'No. Kad Pengenalan',
+                label: context.l10n.icLabel,
                 controller: _icController,
                 icon: Icons.badge_outlined,
-                hint: 'Contoh: 900101011234',
+                hint: context.l10n.icHint,
                 textInputAction: TextInputAction.next,
-                validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Sila masukkan no. IC.'
-                    : null,
+                validator:
+                    (v) =>
+                        v == null || v.trim().isEmpty
+                            ? context.l10n.icRequiredShort
+                            : null,
               ),
               if (needsEmail)
                 AuthField(
-                  label: 'Emel',
+                  label: context.l10n.emailLabel,
                   controller: _emailController,
                   icon: Icons.mail_outline,
-                  hint: 'nama@emel.com',
+                  hint: context.l10n.emailHint,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Sila masukkan emel.';
-                    if (!v.contains('@')) return 'Emel tidak sah.';
+                    if (v == null || v.trim().isEmpty) {
+                      return context.l10n.emailRequiredShort;
+                    }
+                    if (!v.contains('@')) return context.l10n.emailInvalidShort;
                     return null;
                   },
                 ),
               if (isVerifyStep) ...[
                 AuthField(
-                  label: 'Kod OTP (6-digit)',
+                  label: context.l10n.otpLabel,
                   controller: _codeController,
                   icon: Icons.pin_outlined,
                   hint: '000000',
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
-                  validator: (v) => v == null || v.trim().length != 6
-                      ? 'Kod OTP mesti 6 digit.'
-                      : null,
+                  validator:
+                      (v) =>
+                          v == null || v.trim().length != 6
+                              ? context.l10n.otpInvalid
+                              : null,
                 ),
                 AuthField(
-                  label: 'Kata Laluan Baharu',
+                  label: context.l10n.newPasswordLabel,
                   controller: _passwordController,
                   icon: Icons.lock_outline,
-                  hint: 'Minimum 8 aksara',
+                  hint: context.l10n.newPasswordHint,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   suffixIcon: IconButton(
-                    onPressed: () => setState(
-                      () => _obscurePassword = !_obscurePassword,
-                    ),
+                    onPressed:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                     icon: Icon(
                       _obscurePassword
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                     ),
                   ),
-                  validator: (v) => v == null || v.length < 8
-                      ? 'Kata laluan minimum 8 aksara.'
-                      : null,
+                  validator:
+                      (v) =>
+                          v == null || v.length < 8
+                              ? context.l10n.newPasswordMin
+                              : null,
                 ),
                 AuthField(
-                  label: 'Sahkan Kata Laluan',
+                  label: context.l10n.confirmPasswordLabel,
                   controller: _passwordConfirmController,
                   icon: Icons.lock_outline,
-                  hint: 'Masukkan semula kata laluan',
+                  hint: context.l10n.confirmPasswordHint,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _verify(),
-                  validator: (v) => v != _passwordController.text
-                      ? 'Kata laluan tidak sepadan.'
-                      : null,
+                  validator:
+                      (v) =>
+                          v != _passwordController.text
+                              ? context.l10n.passwordMismatch
+                              : null,
                 ),
               ],
               const SizedBox(height: Spacing.md),
               FilledButton(
-                onPressed: _submitting
-                    ? null
-                    : (isVerifyStep ? _verify : _sendOtp),
-                child: _submitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppColors.white,
+                onPressed:
+                    _submitting ? null : (isVerifyStep ? _verify : _sendOtp),
+                child:
+                    _submitting
+                        ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.white,
+                          ),
+                        )
+                        : Text(
+                          isVerifyStep
+                              ? context.l10n.verifyAndLogin
+                              : context.l10n.sendOtp,
                         ),
-                      )
-                    : Text(isVerifyStep ? 'Sahkan & Log Masuk' : 'Hantar Kod OTP'),
               ),
             ],
           ),

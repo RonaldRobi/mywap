@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -31,9 +32,7 @@ class _NotificationDetailScreenState
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref
-          .read(notificationsControllerProvider.notifier)
-          .markRead(notification);
+      ref.read(notificationsControllerProvider.notifier).markRead(notification);
     });
   }
 
@@ -44,7 +43,7 @@ class _NotificationDetailScreenState
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Notifikasi'),
+        title: Text(context.l10n.menuNotifications),
       ),
       body:
           notification == null
@@ -94,7 +93,10 @@ class _NotificationDetailBody extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        notificationTypeLabel(notification).toUpperCase(),
+                        notificationTypeLabel(
+                          context,
+                          notification,
+                        ).toUpperCase(),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: AppColors.movementGreen,
                           fontWeight: FontWeight.w700,
@@ -103,7 +105,7 @@ class _NotificationDetailBody extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        notificationTimeAgo(notification.createdAt),
+                        notificationTimeAgo(context, notification.createdAt),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -115,7 +117,7 @@ class _NotificationDetailBody extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.lg),
             Text(
-              title.isEmpty ? 'Pemberitahuan' : title,
+              title.isEmpty ? context.l10n.notifFallbackTitle : title,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -127,7 +129,7 @@ class _NotificationDetailBody extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             if (body.isEmpty)
               Text(
-                'Tiada kandungan tambahan untuk notifikasi ini.',
+                context.l10n.notifNoAdditionalContent,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -147,7 +149,7 @@ class _NotificationDetailBody extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: () => _openAction(context, actionUri),
                   icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  label: const Text('Buka Pautan'),
+                  label: Text(context.l10n.notifOpenLink),
                 ),
               ),
             ],
@@ -166,9 +168,9 @@ class _NotificationDetailBody extends StatelessWidget {
     }
 
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pautan tidak dapat dibuka.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.notifOpenLinkFailed)));
     }
   }
 }
@@ -191,11 +193,11 @@ class _UnavailableNotification extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.md),
             Text(
-              'Notifikasi tidak dapat dibuka.',
+              context.l10n.notifUnavailable,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),

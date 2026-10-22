@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
@@ -7,11 +8,11 @@ import '../theme/app_theme.dart';
 class LoadingOverlay extends StatelessWidget {
   const LoadingOverlay({
     super.key,
-    this.message = 'Sila tunggu...',
+    this.message,
     this.transparent = false,
   });
 
-  final String message;
+  final String? message;
   final bool transparent;
 
   @override
@@ -39,7 +40,10 @@ class LoadingOverlay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(message, style: Theme.of(context).textTheme.bodyLarge),
+                Text(
+                  message ?? context.l10n.pleaseWait,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ],
             ),
           ),

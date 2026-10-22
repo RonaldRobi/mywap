@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
@@ -44,9 +45,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           .forgotPassword(_icController.text.trim());
       if (!mounted) return;
       setState(
-        () => _successMessage =
-            (result['message'] as String?) ??
-            'Pautan reset kata laluan telah dihantar.',
+        () =>
+            _successMessage =
+                (result['message'] as String?) ?? context.l10n.resetLinkSent,
       );
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -58,17 +59,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Lupa Kata Laluan',
-      subtitle:
-          'Masukkan No. Kad Pengenalan anda. Kami akan hantar pautan reset ke emel berdaftar.',
+      title: context.l10n.forgotPasswordTitle,
+      subtitle: context.l10n.forgotPasswordSubtitle,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Ingat kata laluan?'),
+          Text(context.l10n.rememberPassword),
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
         ],
       ),
@@ -83,29 +83,32 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AuthField(
-                  label: 'No. Kad Pengenalan',
+                  label: context.l10n.icLabel,
                   controller: _icController,
                   icon: Icons.badge_outlined,
-                  hint: 'Contoh: 900101011234',
+                  hint: context.l10n.icHint,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _submit(),
-                  validator: (v) => v == null || v.trim().isEmpty
-                      ? 'Sila masukkan no. IC.'
-                      : null,
+                  validator:
+                      (v) =>
+                          v == null || v.trim().isEmpty
+                              ? context.l10n.icRequiredShort
+                              : null,
                 ),
                 const SizedBox(height: Spacing.md),
                 FilledButton(
                   onPressed: _submitting ? null : _submit,
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: AppColors.white,
-                          ),
-                        )
-                      : const Text('Hantar Pautan Reset'),
+                  child:
+                      _submitting
+                          ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppColors.white,
+                            ),
+                          )
+                          : Text(context.l10n.sendResetLink),
                 ),
               ],
             ),
@@ -114,7 +117,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: Spacing.md),
           OutlinedButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Kembali ke Log Masuk'),
+            child: Text(context.l10n.backToLogin),
           ),
         ],
       ],

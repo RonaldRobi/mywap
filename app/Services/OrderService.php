@@ -174,7 +174,11 @@ class OrderService
 
         return DB::transaction(function () use ($data, $user, $applyMemberPricing, $shippingName, $shippingPhone) {
             $productIds = collect($data['products'])->pluck('id');
-            $products = Product::whereIn('id', $productIds)->lockForUpdate()->get()->keyBy('id');
+            $products = Product::with('variations')
+                ->whereIn('id', $productIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
 
             $total = 0;
             $combinedPostage = 0;
@@ -211,8 +215,13 @@ class OrderService
                     }
                     $variationOptionId = $option->id;
 
-                    if ($option->stock !== null && $option->stock < $quantity) {
-                        throw new \Exception('Stok tidak mencukupi untuk '.$product->name.' - '.$option->name);
+                    if ($option->stock !== null) {
+                        if ($option->stock < 1) {
+                            throw new \Exception('Pilihan '.$option->name.' untuk '.$product->name.' telah kehabisan stok.');
+                        }
+                        if ($option->stock < $quantity) {
+                            throw new \Exception('Stok tidak mencukupi untuk '.$product->name.' - '.$option->name.' (tinggal '.$option->stock.').');
+                        }
                     }
                     if ($option->price_adjustment) {
                         $unitPrice += (float) $option->price_adjustment;
@@ -225,8 +234,18 @@ class OrderService
                         'option' => $option->name,
                     ]);
                 } else {
+                    // A product with variations must never fall through to the
+                    // parent stock: that would let a client skip a sold-out
+                    // variation and still place the order (backorder).
+                    if ($product->variations->isNotEmpty()) {
+                        throw new \Exception('Sila pilih variasi untuk '.$product->name.' sebelum membuat pesanan.');
+                    }
+
                     if ($product->stock < $quantity) {
-                        throw new \Exception('Stok tidak mencukupi untuk '.$product->name);
+                        if ($product->stock < 1) {
+                            throw new \Exception('Produk '.$product->name.' telah kehabisan stok.');
+                        }
+                        throw new \Exception('Stok tidak mencukupi untuk '.$product->name.' (tinggal '.$product->stock.').');
                     }
                     $product->decrement('stock', $quantity);
                     $variationSnapshot = $item['variation_snapshot'] ?? null;

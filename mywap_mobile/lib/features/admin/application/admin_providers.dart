@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../core/network/providers.dart';
 import '../../events/data/models/event.dart';
 import '../data/admin_repository.dart';
@@ -19,14 +20,19 @@ final adminUpcomingEventsProvider = FutureProvider<List<Event>>((ref) {
 });
 
 /// Fees list keyed by status filter ('' = semua, 'paid', 'pending').
-final adminFeesProvider = FutureProvider.family<FeesData, String>((ref, status) {
+final adminFeesProvider = FutureProvider.family<FeesData, String>((
+  ref,
+  status,
+) {
   return ref.watch(adminRepositoryProvider).fees(status: status);
 });
 
 final adminAttendanceRegistrationsProvider =
     FutureProvider.family<AttendanceData, int>((ref, eventId) {
-  return ref.watch(adminRepositoryProvider).attendanceRegistrations(eventId);
-});
+      return ref
+          .watch(adminRepositoryProvider)
+          .attendanceRegistrations(eventId);
+    });
 
 /// Pagination + search + filter state for the members screen.
 class AdminMembersState {
@@ -115,13 +121,12 @@ class AdminMembersController extends Notifier<AdminMembersState> {
     final page = refresh ? 1 : state.page + 1;
     state = state.copyWith(loading: true, clearError: true);
     try {
-      final result = await ref.read(adminRepositoryProvider).members(
-            search: _search,
-            status: _status,
-            page: page,
-          );
+      final result = await ref
+          .read(adminRepositoryProvider)
+          .members(search: _search, status: _status, page: page);
       if (requestId != _requestId) return;
-      final items = page == 1 ? result.items : [...state.items, ...result.items];
+      final items =
+          page == 1 ? result.items : [...state.items, ...result.items];
       state = AdminMembersState(
         items: items,
         loading: false,
@@ -134,12 +139,15 @@ class AdminMembersController extends Notifier<AdminMembersState> {
       state = state.copyWith(loading: false, error: e.message);
     } catch (_) {
       if (requestId != _requestId) return;
-      state = state.copyWith(loading: false, error: 'Ralat tidak dijangka.');
+      state = state.copyWith(
+        loading: false,
+        error: currentAppLocalizations.unexpectedError,
+      );
     }
   }
 }
 
 final adminMembersControllerProvider =
     NotifierProvider<AdminMembersController, AdminMembersState>(
-  AdminMembersController.new,
-);
+      AdminMembersController.new,
+    );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -33,7 +34,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (ref.read(currentUserProvider) == null) {
       await showLoginPrompt(
         context,
-        message: 'Log masuk sebagai ahli untuk RSVP kehadiran program.',
+        message: context.l10n.eventRsvpLoginPrompt,
       );
       return;
     }
@@ -52,9 +53,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ref.invalidate(eventDetailProvider(widget.eventId));
       ref.invalidate(eventsProvider);
       ref.invalidate(memberDashboardProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('RSVP berjaya dikemas kini.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.eventRsvpUpdated)));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _rsvpError = e.message);
@@ -65,10 +66,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _openRegistration(EventDetail detail) {
     if (ref.read(currentUserProvider) == null) {
-      showLoginPrompt(
-        context,
-        message: 'Log masuk sebagai ahli untuk mendaftar program ini.',
-      );
+      showLoginPrompt(context, message: context.l10n.eventRegisterLoginPrompt);
       return;
     }
     final forms = detail.registration_forms ?? const <RegistrationForm>[];
@@ -95,7 +93,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Daftar Program', style: theme.textTheme.titleMedium),
+                Text(
+                  context.l10n.eventRegisterProgram,
+                  style: theme.textTheme.titleMedium,
+                ),
                 const SizedBox(height: Spacing.sm),
                 for (final form in forms)
                   ListTile(
@@ -104,10 +105,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       Icons.assignment_outlined,
                       color: AppColors.movementGreen,
                     ),
-                    title: Text(form.title ?? 'Borang'),
+                    title: Text(form.title ?? context.l10n.eventFormFallback),
                     subtitle:
                         form.paymentRequired && (form.price ?? 0) > 0
-                            ? Text('Yuran: ${Formatters.currency(form.price)}')
+                            ? Text(
+                              context.l10n.eventFee(
+                                Formatters.currency(form.price),
+                              ),
+                            )
                             : null,
                     onTap: () {
                       Navigator.of(sheetContext).pop();
@@ -129,7 +134,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/events'),
-        title: const Text('Butiran Program'),
+        title: Text(context.l10n.eventDetailsTitle),
       ),
       body: detailAsync.when(
         data:
@@ -151,7 +156,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry:
                   () => ref.invalidate(eventDetailProvider(widget.eventId)),
             ),
@@ -184,7 +189,7 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = event?.title ?? 'Program & Acara';
+    final title = event?.title ?? context.l10n.eventTitleFallback;
     final description = event?.description;
     final myRsvp = event?.my_rsvp;
     final isGoing = myRsvp == 'going';
@@ -195,11 +200,16 @@ class _DetailContent extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
-          AppImage(
-            event?.featured_image_url,
-            height: 220,
-            width: double.infinity,
-            borderRadius: BorderRadius.zero,
+          // Poster program biasanya 1080×1350 (4:5). Menggunakan `height`
+          // tetap memotong sebahagian besar poster — `AspectRatio` memastikan
+          // keseluruhan imej kelihatan tanpa crop.
+          AspectRatio(
+            aspectRatio: 4 / 5,
+            child: AppImage(
+              event?.featured_image_url,
+              width: double.infinity,
+              borderRadius: BorderRadius.zero,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(Spacing.xl),
@@ -239,12 +249,17 @@ class _DetailContent extends StatelessWidget {
                   const SizedBox(height: Spacing.sm),
                   _InfoRow(
                     icon: Icons.people_outline,
-                    text: '${event!.rsvp_count} peserta',
+                    text: context.l10n.eventParticipants(
+                      event!.rsvp_count ?? 0,
+                    ),
                   ),
                 ],
                 if (description != null && description.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
-                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  Text(
+                    context.l10n.eventDescription,
+                    style: theme.textTheme.titleLarge,
+                  ),
                   const SizedBox(height: Spacing.sm),
                   Text(description, style: theme.textTheme.bodyLarge),
                 ],
@@ -261,11 +276,11 @@ class _DetailContent extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: onRegister,
                       icon: const Icon(Icons.assignment_outlined),
-                      label: const Text('Daftar sebagai Peserta'),
+                      label: Text(context.l10n.eventRegisterAsParticipant),
                     ),
                     const SizedBox(height: Spacing.sm),
                     Text(
-                      'Dapat no. pendaftaran dan tempat (yuran dikenakan jika berbayar).',
+                      context.l10n.eventRegisterHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -282,7 +297,7 @@ class _DetailContent extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Anda sudah mendaftar',
+                            context.l10n.eventAlreadyRegistered,
                             style: theme.textTheme.titleSmall?.copyWith(
                               color: AppColors.movementGreen,
                             ),
@@ -290,14 +305,18 @@ class _DetailContent extends StatelessWidget {
                           if (myRegistration!.registrationNo != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'No. Pendaftaran: ${myRegistration!.registrationNo}',
+                              context.l10n.eventRegistrationNo(
+                                myRegistration!.registrationNo ?? '-',
+                              ),
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
                           if (myRegistration!.statusLabel != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              'Status: ${myRegistration!.statusLabel}',
+                              context.l10n.eventStatus(
+                                myRegistration!.statusLabel ?? '-',
+                              ),
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
@@ -308,7 +327,7 @@ class _DetailContent extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: () => context.go('/events/my-registrations'),
                       icon: const Icon(Icons.event_available_outlined),
-                      label: const Text('Lihat Pendaftaran Saya'),
+                      label: Text(context.l10n.eventViewMyRegistrations),
                     ),
                   ],
                 ] else ...[
@@ -325,15 +344,19 @@ class _DetailContent extends StatelessWidget {
                               ),
                             )
                             : Icon(
-                              isGoing ? Icons.event_busy : Icons.event_available,
+                              isGoing
+                                  ? Icons.event_busy
+                                  : Icons.event_available,
                             ),
                     label: Text(
-                      isGoing ? 'Batalkan Kehadiran' : 'Saya Akan Hadir',
+                      isGoing
+                          ? context.l10n.eventCancelAttendance
+                          : context.l10n.eventWillAttend,
                     ),
                   ),
                   const SizedBox(height: Spacing.sm),
                   Text(
-                    'Maklum kehadiran sahaja — tiada borang pendaftaran diperlukan.',
+                    context.l10n.eventRsvpHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -384,7 +407,7 @@ class _DetailSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: const [
-        SkeletonBox(height: 220, radius: 0),
+        AspectRatio(aspectRatio: 4 / 5, child: SkeletonBox(radius: 0)),
         Padding(
           padding: EdgeInsets.all(24),
           child: Column(

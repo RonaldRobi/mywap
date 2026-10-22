@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -22,7 +23,7 @@ class PollResultsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/polls'),
-        title: const Text('Keputusan Undian'),
+        title: Text(context.l10n.pollResultsTitle),
       ),
       body: resultsAsync.when(
         data:
@@ -37,7 +38,7 @@ class PollResultsScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(pollResultsProvider(pollId)),
             ),
       ),
@@ -53,8 +54,9 @@ class _ResultsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
-    final title = results.poll?.title ?? 'Keputusan';
+    final title = results.poll?.title ?? l10n.pollResultsFallback;
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -65,7 +67,7 @@ class _ResultsBody extends StatelessWidget {
           Text(title, style: theme.textTheme.headlineSmall),
           const SizedBox(height: Spacing.xs),
           Text(
-            '${results.totalResponses} respons',
+            l10n.pollResponsesCount(results.totalResponses),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -104,7 +106,7 @@ class _QuestionResult extends StatelessWidget {
             for (final option in question.options) _OptionBar(option: option),
             const SizedBox(height: Spacing.xs),
             Text(
-              'Jumlah jawapan: ${question.totalAnswers}',
+              context.l10n.pollTotalAnswers(question.totalAnswers),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),

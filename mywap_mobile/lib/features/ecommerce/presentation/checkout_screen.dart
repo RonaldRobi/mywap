@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/payment/payment_webview_screen.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -12,6 +13,7 @@ import '../../../shared/widgets/loading_overlay.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../application/cart_notifier.dart';
 import '../application/order_providers.dart';
+import '../application/product_providers.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -54,10 +56,54 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         .toList(growable: false);
   }
 
+  /// Re-reads each cart line's current stock after the server rejects an
+  /// order. This makes the checkout UI show the real sold-out/remaining state
+  /// instead of keeping a stale quantity the buyer cannot actually order.
+  Future<void> _refreshCartStock() async {
+    final items = List.of(ref.read(cartProvider).items);
+    final updates = await Future.wait<MapEntry<String, int?>?>(
+      items.map((item) async {
+        try {
+          final detail = await ref
+              .read(productRepositoryProvider)
+              .productDetail(item.productId);
+          final product = detail.product;
+          if (product == null) return MapEntry(item.key, 0);
+
+          int? stock = product.stock;
+          if (item.variationOptionId != null) {
+            for (final variation in product.variations) {
+              for (final option in variation.options) {
+                if (option.id == item.variationOptionId) {
+                  stock = option.stock ?? product.stock;
+                }
+              }
+            }
+          }
+          return MapEntry(item.key, stock);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+
+    if (!mounted) return;
+    for (final update in updates) {
+      if (update != null) {
+        ref.read(cartProvider.notifier).updateStock(update.key, update.value);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) return;
+
+    if (cart.items.any((item) => item.isOutOfStock)) {
+      setState(() => _error = context.l10n.ecomOutOfStockBody);
+      return;
+    }
 
     setState(() {
       _submitting = true;
@@ -77,6 +123,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       ref.read(cartProvider.notifier).clear();
       ref.invalidate(ordersProvider);
+      // Stock was decremented on the server; drop cached catalogues so the
+      // product list/detail immediately show the updated sold-out state.
+      ref.invalidate(productsProvider);
+      ref.invalidate(productDetailProvider);
 
       final paymentUrl = result.paymentUrl;
       if (paymentUrl != null && paymentUrl.isNotEmpty) {
@@ -86,23 +136,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
         if (!mounted) return;
+        final l10n = context.l10n;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               paid == true
-                  ? 'Pesanan berjaya dibuat dan dibayar.'
-                  : 'Pesanan dibuat. Sila selesaikan pembayaran anda.',
+                  ? l10n.ecomOrderPaidSuccess
+                  : l10n.ecomOrderCreatedAwaitPayment,
             ),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pesanan berjaya dibuat!')),
+          SnackBar(content: Text(context.l10n.ecomOrderCreatedSuccess)),
         );
       }
       context.go('/orders');
     } on ApiException catch (e) {
       if (!mounted) return;
+      // A 422 here usually means stock changed while the buyer was checking
+      // out. Refresh the catalogue so the cart/detail screens reflect reality.
+      if (e.statusCode == 422) {
+        await _refreshCartStock();
+        if (!mounted) return;
+        ref.invalidate(productsProvider);
+        ref.invalidate(productDetailProvider);
+      }
       setState(() {
         _error = e.message;
         _submitting = false;
@@ -110,7 +169,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Ralat tidak dijangka. Sila cuba lagi.';
+        _error = context.l10n.unexpectedErrorRetry;
         _submitting = false;
       });
     }
@@ -123,19 +182,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/cart'),
-        title: const Text('Checkout'),
+        title: Text(context.l10n.ecomCheckoutTitle),
       ),
       body: Stack(
         children: [
           cart.isEmpty ? const _EmptyCheckout() : _buildCheckoutForm(cart),
           if (_submitting)
-            const LoadingOverlay(message: 'Memproses pesanan...'),
+            LoadingOverlay(message: context.l10n.ecomProcessingOrder),
         ],
       ),
     );
   }
 
   Widget _buildCheckoutForm(CartState cart) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
@@ -149,37 +209,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Maklumat Penghantaran',
+                    l10n.ecomShippingInfo,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
                     controller: _nameController,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama',
-                      hintText: 'Nama penuh',
-                      prefixIcon: Icon(Icons.person_outline),
+                    decoration: InputDecoration(
+                      labelText: l10n.nameLabel,
+                      hintText: l10n.ecomFullNameHint,
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     validator:
                         (value) =>
                             (value == null || value.trim().isEmpty)
-                                ? 'Nama diperlukan'
+                                ? l10n.ecomNameRequired
                                 : null,
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Telefon',
+                    decoration: InputDecoration(
+                      labelText: l10n.phoneLabel,
                       hintText: '012-3456789',
-                      prefixIcon: Icon(Icons.phone_outlined),
+                      prefixIcon: const Icon(Icons.phone_outlined),
                     ),
                     validator:
                         (value) =>
                             (value == null || value.trim().isEmpty)
-                                ? 'Nombor telefon diperlukan'
+                                ? l10n.ecomPhoneRequired
                                 : null,
                   ),
                   const SizedBox(height: Spacing.md),
@@ -187,18 +247,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     controller: _addressController,
                     textCapitalization: TextCapitalization.sentences,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Alamat (pilihan)',
-                      prefixIcon: Icon(Icons.home_outlined),
+                    decoration: InputDecoration(
+                      labelText: l10n.ecomAddressOptional,
+                      prefixIcon: const Icon(Icons.home_outlined),
                     ),
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
                     controller: _postcodeController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Poskod (pilihan)',
-                      prefixIcon: Icon(Icons.pin_drop_outlined),
+                    decoration: InputDecoration(
+                      labelText: l10n.ecomPostcodeOptional,
+                      prefixIcon: const Icon(Icons.pin_drop_outlined),
                     ),
                   ),
                 ],
@@ -213,13 +273,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ringkasan Pesanan', style: theme.textTheme.titleMedium),
+                Text(l10n.ecomOrderSummary, style: theme.textTheme.titleMedium),
                 const SizedBox(height: Spacing.sm),
                 for (final item in cart.items) _SummaryRow(item: item),
                 const Divider(height: Spacing.xl),
                 Row(
                   children: [
-                    Text('Jumlah', style: theme.textTheme.titleMedium),
+                    Text(l10n.ecomTotal, style: theme.textTheme.titleMedium),
                     const Spacer(),
                     Text(
                       Formatters.currency(cart.subtotal),
@@ -245,7 +305,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         FilledButton.icon(
           onPressed: _submitting ? null : _submit,
           icon: const Icon(Icons.receipt_long_outlined),
-          label: const Text('Hantar Pesanan'),
+          label: Text(l10n.ecomSubmitOrder),
         ),
         const SizedBox(height: Spacing.xl),
       ],
@@ -311,6 +371,6 @@ class _EmptyCheckout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Troli anda kosong.'));
+    return Center(child: Text(context.l10n.ecomCartEmpty));
   }
 }

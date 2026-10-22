@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -24,7 +25,7 @@ class NewsListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Info Terkini'),
+        title: Text(context.l10n.newsTitle),
       ),
       body: async.when(
         data:
@@ -40,7 +41,7 @@ class NewsListScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(newsListProvider),
             ),
       ),
@@ -64,9 +65,9 @@ class _NewsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.article_outlined,
-        message: 'Tiada info terkini buat masa ini.',
+        message: context.l10n.noNews,
       );
     }
     return RefreshIndicator(
@@ -80,7 +81,7 @@ class _NewsList extends StatelessWidget {
             return Center(
               child: TextButton(
                 onPressed: onLoadMore,
-                child: const Text('Muat Lagi'),
+                child: Text(context.l10n.newsLoadMore),
               ),
             );
           }

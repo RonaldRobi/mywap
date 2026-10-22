@@ -5,11 +5,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/deeplink/deep_links.dart';
+import 'core/localization/app_locale.dart';
 import 'core/push/push_providers.dart';
 import 'core/router/app_router.dart';
+import 'core/utils/formatters.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/notifications/application/notification_providers.dart';
-import 'shared/l10n/app_localizations.dart';
+import 'shared/l10n/l10n.dart';
 import 'shared/theme/app_theme.dart';
 
 class MyWapApp extends ConsumerStatefulWidget {
@@ -65,6 +67,9 @@ class _MyWapAppState extends ConsumerState<MyWapApp> {
 
     final router = ref.watch(routerProvider);
     final messengerKey = ref.watch(appMessengerKeyProvider);
+    final locale = ref.watch(appLocaleProvider) ?? const Locale('ms');
+    setCurrentAppLocalizations(lookupAppLocalizations(locale));
+    Formatters.setLocale(locale);
 
     return MaterialApp.router(
       title: 'myWAP',
@@ -72,7 +77,7 @@ class _MyWapAppState extends ConsumerState<MyWapApp> {
       theme: AppTheme.light,
       routerConfig: router,
       scaffoldMessengerKey: messengerKey,
-      locale: const Locale('ms'),
+      locale: locale,
       supportedLocales: const [Locale('ms'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,

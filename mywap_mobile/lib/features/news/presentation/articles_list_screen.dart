@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -24,7 +25,7 @@ class ArticlesListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Artikel'),
+        title: Text(context.l10n.articlesTitle),
       ),
       body: async.when(
         data:
@@ -41,7 +42,7 @@ class ArticlesListScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(articleListProvider),
             ),
       ),
@@ -65,9 +66,9 @@ class _ArticleList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.menu_book_outlined,
-        message: 'Tiada artikel buat masa ini.',
+        message: context.l10n.noArticles,
       );
     }
     return RefreshIndicator(
@@ -81,7 +82,7 @@ class _ArticleList extends StatelessWidget {
             return Center(
               child: TextButton(
                 onPressed: onLoadMore,
-                child: const Text('Muat Lagi'),
+                child: Text(context.l10n.newsLoadMore),
               ),
             );
           }
@@ -109,7 +110,9 @@ class _ArticleCard extends StatelessWidget {
           children: [
             if (article.coverImage != null && article.coverImage!.isNotEmpty)
               AspectRatio(
-                aspectRatio: 16 / 9,
+                // Poster artikel 1080×1350 (4:5); 16:9 lama memotong
+                // sebahagian besar poster.
+                aspectRatio: 4 / 5,
                 child: AppImage(
                   article.coverImage,
                   width: double.infinity,
@@ -126,7 +129,7 @@ class _ArticleCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          article.authorName ?? 'Admin',
+                          article.authorName ?? context.l10n.adminFallback,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.movementGreen,
                             fontWeight: FontWeight.w600,

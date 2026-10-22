@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import 'models/chat_reply.dart';
 
 class ChatRepository {
@@ -23,9 +24,7 @@ class ChatRepository {
       return ChatReply.fromJson((data as Map<String, dynamic>?) ?? const {});
     } on ApiException catch (e) {
       if (e.statusCode == 503) {
-        return const ChatReply(
-          reply: 'AI chatbot belum dikonfigurasi. Sila hubungi admin.',
-        );
+        return ChatReply(reply: currentAppLocalizations.chatNotConfigured);
       }
       rethrow;
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -27,7 +28,7 @@ class OrganizationInfoScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Info Organisasi'),
+        title: Text(context.l10n.orgInfoTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: infoAsync.when(
@@ -49,7 +50,7 @@ class OrganizationInfoScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(organizationInfoProvider),
             ),
       ),
@@ -74,11 +75,11 @@ class _OrganizationContent extends StatelessWidget {
     if (org == null) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: EmptyState(
             icon: Icons.info_outline,
-            message: 'Tiada maklumat organisasi untuk dipaparkan.',
+            message: context.l10n.orgNoInfo,
           ),
         ),
       );
@@ -96,16 +97,16 @@ class _OrganizationContent extends StatelessWidget {
         padding: EdgeInsets.only(bottom: Spacing.xxl + Spacing.lg),
         children: [
           if (data.organizations.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
                 Spacing.lg,
                 Spacing.lg,
                 Spacing.lg,
                 Spacing.sm,
               ),
               child: Text(
-                'Pilih Organisasi',
-                style: TextStyle(
+                context.l10n.orgSelectTitle,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.1,
@@ -141,7 +142,7 @@ class _OrganizationContent extends StatelessWidget {
             ),
           ),
           if (org.description?.isNotEmpty == true) ...[
-            const SectionHeader('Tentang Organisasi'),
+            SectionHeader(context.l10n.orgAbout),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               child: Container(
@@ -162,20 +163,20 @@ class _OrganizationContent extends StatelessWidget {
               ),
             ),
           ],
-          if (_socialLinks(org).isNotEmpty) ...[
-            const SectionHeader('Hubungi & Media Sosial'),
+          if (_socialLinks(context, org).isNotEmpty) ...[
+            SectionHeader(context.l10n.orgContactSocial),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               child: _SocialLinks(org: org, accent: accent),
             ),
           ],
-          const SectionHeader('Carta Organisasi'),
+          SectionHeader(context.l10n.orgChart),
           if (chart.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               child: EmptyState(
                 icon: Icons.groups_outlined,
-                message: 'Carta organisasi belum tersedia.',
+                message: context.l10n.orgChartEmpty,
               ),
             )
           else ...[
@@ -471,9 +472,9 @@ class _OrgHeroCard extends StatelessWidget {
                                 label: org.ageRangeLabel,
                               ),
                               if (org.is_current)
-                                const _GlassChip(
+                                _GlassChip(
                                   icon: Icons.verified_outlined,
-                                  label: 'Organisasi Anda',
+                                  label: context.l10n.orgYourOrganization,
                                 ),
                             ],
                           ),
@@ -500,14 +501,14 @@ class _OrgHeroCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _HeroStat(
-                        label: 'Jumlah Ahli',
+                        label: context.l10n.orgTotalMembers,
                         value: '${org.member_count ?? 0}',
                       ),
                     ),
                     const SizedBox(width: Spacing.sm),
                     Expanded(
                       child: _HeroStat(
-                        label: 'Kepimpinan',
+                        label: context.l10n.orgLeadership,
                         value: '$chartCount',
                       ),
                     ),
@@ -621,7 +622,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _InfoTile(
             icon: Icons.groups_2_outlined,
-            label: 'Ahli',
+            label: context.l10n.orgMembers,
             value: '${org.member_count ?? 0}',
             accent: accent,
           ),
@@ -630,7 +631,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _InfoTile(
             icon: Icons.badge_outlined,
-            label: 'Kepimpinan',
+            label: context.l10n.orgLeadership,
             value: '$chartCount',
             accent: accent,
           ),
@@ -639,7 +640,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _InfoTile(
             icon: Icons.timelapse_rounded,
-            label: 'Had Umur',
+            label: context.l10n.orgAgeLimit,
             value: org.ageRangeLabel,
             accent: accent,
           ),
@@ -703,9 +704,12 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-List<(IconData, String, String?)> _socialLinks(OrganizationDetail org) =>
+List<(IconData, String, String?)> _socialLinks(
+  BuildContext context,
+  OrganizationDetail org,
+) =>
     [
-      (Icons.public, 'Laman Web', org.website_url),
+      (Icons.public, context.l10n.orgWebsite, org.website_url),
       (Icons.facebook, 'Facebook', org.facebook_url),
       (Icons.alternate_email, 'X (Twitter)', org.twitter_url),
       (Icons.camera_alt_outlined, 'Instagram', org.instagram_url),
@@ -721,7 +725,7 @@ class _SocialLinks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final links = _socialLinks(org);
+    final links = _socialLinks(context, org);
 
     return Wrap(
       spacing: Spacing.sm,
@@ -813,9 +817,9 @@ class _FeaturedLeader extends StatelessWidget {
                         color: AppColors.movementNavy.withValues(alpha: .86),
                         borderRadius: AppRadius.pill,
                       ),
-                      child: const Text(
-                        'PIMPINAN UTAMA',
-                        style: TextStyle(
+                      child: Text(
+                        context.l10n.orgMainLeadership,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 8,
                           fontWeight: FontWeight.w800,
@@ -882,7 +886,7 @@ class _FeaturedLeader extends StatelessWidget {
                       onPressed:
                           () => launchUrl(Uri.parse('mailto:${member.email}')),
                       icon: const Icon(Icons.mail_outline, size: 17),
-                      label: const Text('Hubungi'),
+                      label: Text(context.l10n.orgContact),
                       style: FilledButton.styleFrom(
                         backgroundColor: accent,
                         minimumSize: const Size(0, 40),
@@ -998,7 +1002,7 @@ class _ChartMemberCard extends StatelessWidget {
                                 launchUrl(Uri.parse('mailto:${member.email}')),
                         icon: Icon(Icons.mail_outline, size: 13, color: accent),
                         label: Text(
-                          'Hubungi',
+                          context.l10n.orgContact,
                           style: TextStyle(
                             color: accent,
                             fontSize: 11,
@@ -1202,7 +1206,7 @@ void _showMemberDialog(
                                   Uri.parse('mailto:${member.email}'),
                                 ),
                             icon: const Icon(Icons.mail_outline, size: 18),
-                            label: const Text('Hubungi'),
+                            label: Text(context.l10n.orgContact),
                             style: FilledButton.styleFrom(
                               backgroundColor: accent,
                               minimumSize: const Size(0, 46),

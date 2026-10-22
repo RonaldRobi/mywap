@@ -1144,4 +1144,65 @@ class RegistrationImportTest extends TestCase
             ])
             ->assertForbidden();
     }
+
+    public function test_clear_imported_deletes_imported_registrations_and_import_log(): void
+    {
+        $event = $this->event();
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Ahmad Ali,900101-01-1234,0123456789,ahmad@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 1);
+
+        $imported = Registration::where('event_id', $event->id)
+            ->where('source', Registration::SOURCE_IMPORT)
+            ->firstOrFail();
+
+        Attendance::create([
+            'event_id' => $event->id,
+            'registration_id' => $imported->id,
+            'attended_at' => now(),
+            'method' => 'manual',
+        ]);
+
+        $formRegistration = Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Peserta Borang myWAP',
+            'status' => 'confirmed',
+            'source' => Registration::SOURCE_FORM,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->delete(route('admin.events.registrations.clear-imported', $event->id))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('registrations', ['id' => $imported->id]);
+        $this->assertDatabaseMissing('attendances', ['registration_id' => $imported->id]);
+        $this->assertDatabaseHas('registrations', ['id' => $formRegistration->id]);
+        $this->assertDatabaseMissing('registration_imports', ['event_id' => $event->id]);
+    }
+
+    public function test_other_organization_admin_cannot_clear_imported(): void
+    {
+        $otherOrg = Organization::factory()->create(['name' => 'ABIM']);
+        $otherAdmin = User::factory()->create([
+            'current_organization_id' => $otherOrg->id,
+            'profile_completed_at' => now(),
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $event = $this->event();
+
+        $this->actingAs($otherAdmin)
+            ->delete(route('admin.events.registrations.clear-imported', $event->id))
+            ->assertForbidden();
+    }
 }

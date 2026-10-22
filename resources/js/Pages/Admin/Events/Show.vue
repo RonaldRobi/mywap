@@ -92,6 +92,22 @@ function eventShareUrl() {
                     <p class="text-sm text-gray-400 mt-0.5">{{ event.organization_name }}</p>
                     <p v-if="event.organizations.length > 1" class="text-xs text-gray-400 mt-0.5">Terlibat: {{ event.organizations.join(', ') }}</p>
 
+                    <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+                        <span class="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">
+                            Peserta unik: {{ event.unique_participants_count }}
+                        </span>
+                        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                            Hadir: {{ event.attended_count }}
+                        </span>
+                        <span
+                            v-if="event.registrations_count > event.unique_participants_count"
+                            class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700"
+                            title="Rekod berulang daripada import/borang yang sama"
+                        >
+                            {{ event.registrations_count - event.unique_participants_count }} rekod pendua
+                        </span>
+                    </div>
+
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button
                             @click="shareProgram"
@@ -103,8 +119,8 @@ function eventShareUrl() {
                         <a :href="editUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Edit</a>
                         <a :href="route('events.show', event.slug)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Lihat Awam</a>
                         <a :href="qrUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">QR Kehadiran</a>
-                        <a :href="registrationsUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Peserta ({{ event.registrations_count }})</a>
-                        <a :href="attendanceUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Dashboard Kehadiran</a>
+                        <a :href="registrationsUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Peserta ({{ event.unique_participants_count }})</a>
+                        <a :href="attendanceUrl" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Hadir ({{ event.attended_count }})</a>
                         <button
                             @click="deleteEvent"
                             class="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 transition"

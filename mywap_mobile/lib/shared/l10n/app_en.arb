@@ -2,6 +2,1346 @@
   "@@locale": "en",
   "appTitle": "myWAP",
   "login": "Login",
-  "logout": "Logout",
-  "retry": "Try Again"
+  "logout": "Log Out",
+  "retry": "Try Again",
+  "back": "Back",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "pleaseWait": "Please wait...",
+  "settingsTitle": "Settings",
+  "settingsLanguage": "Language",
+  "settingsLanguageSubtitle": "App display language",
+  "settingsLanguageSheetTitle": "Choose Language",
+  "menuSettingsTooltip": "Settings",
+  "navHomeMember": "Home",
+  "navHomeGuest": "Home",
+  "navProgram": "Programs",
+  "navInfaq": "Infaq",
+  "navMenu": "Menu",
+  "menuTitle": "Menu",
+  "menuMemberFallbackName": "myWAP Member",
+  "menuViewProfile": "View your profile",
+  "menuGuestTagline": "Community content for everyone",
+  "menuRegister": "Register",
+  "menuSectionMembership": "Membership",
+  "menuCard": "Digital ID",
+  "menuCardSubtitle": "Digital card & QR code",
+  "menuProfile": "My Profile",
+  "menuProfileSubtitle": "Account details & settings",
+  "menuInvite": "Invite Member",
+  "menuInviteSubtitle": "Share referral link",
+  "menuSectionFinance": "Finance",
+  "menuFees": "Fees & Payments",
+  "menuFeesSubtitle": "Fee status and receipts",
+  "menuInfaq": "Infaq",
+  "menuInfaqSubtitle": "Make a contribution",
+  "menuSectionPrograms": "Programs & Community",
+  "menuPrograms": "Programs",
+  "menuProgramsSubtitle": "Upcoming events",
+  "menuMyRegistrations": "My Registrations",
+  "menuMyRegistrationsSubtitle": "Programs you joined",
+  "menuUsrah": "Usrah",
+  "menuUsrahSubtitle": "Groups & schedule",
+  "menuPolls": "Polls",
+  "menuPollsSubtitle": "Polls & surveys",
+  "menuFacilities": "Book Facilities",
+  "menuFacilitiesSubtitle": "Rooms, halls & equipment",
+  "menuSectionReading": "Reading & Media",
+  "menuNews": "Latest News",
+  "menuNewsSubtitle": "Organisation news",
+  "menuArticles": "Articles",
+  "menuArticlesSubtitle": "Writings & features",
+  "menuVideos": "Videos",
+  "menuVideosSubtitle": "Lectures & tazkirah",
+  "menuLibrary": "Library",
+  "menuLibrarySubtitle": "Reading & reference materials",
+  "menuSectionMall": "myWAP Mall",
+  "menuProducts": "Products",
+  "menuProductsSubtitle": "Items for sale",
+  "menuOrders": "My Orders",
+  "menuOrdersSubtitle": "Check order status",
+  "menuSectionOrgHelp": "Organisation & Help",
+  "menuOrgInfo": "Organisation Info",
+  "menuOrgInfoSubtitle": "Chart & information",
+  "menuAnnouncements": "Announcements",
+  "menuAnnouncementsSubtitle": "Latest updates",
+  "menuNotifications": "Notifications",
+  "menuNotificationsSubtitle": "Your notifications",
+  "menuManual": "User Manual",
+  "menuManualSubtitle": "App usage guide",
+  "menuAdmin": "Admin Panel",
+  "menuAdminSubtitle": "Organisation management",
+  "menuSectionExplore": "Explore",
+  "menuGuestHome": "Home",
+  "menuGuestHomeSubtitle": "Main page",
+  "menuGuestEvents": "Programs & Events",
+  "menuGuestEventsSubtitle": "Events open to the public",
+  "menuGuestOrgInfoSubtitle": "Get to know us",
+  "menuSectionDonation": "Contributions",
+  "menuGuestInfaq": "Infaq & Contributions",
+  "menuGuestInfaqSubtitle": "Give your support",
+  "menuLogoutConfirmTitle": "Log Out",
+  "menuLogoutConfirmMessage": "Are you sure you want to log out of myWAP?",
+  "loginFailed": "Login failed. Please try again.",
+  "biometricAuthFailed": "Biometric verification failed. Please log in manually.",
+  "loginWelcomeTitle": "Welcome back",
+  "loginWelcomeSubtitle": "Log in to continue to myWAP.",
+  "loginIdentifierLabel": "Email or Identification Number",
+  "loginIdentifierHint": "Example: name@email.com or 900101...",
+  "loginIdentifierRequired": "Please enter your email or identification number.",
+  "passwordLabel": "Password",
+  "passwordHint": "Enter your password",
+  "passwordRequired": "Please enter your password.",
+  "forgotPassword": "Forgot password?",
+  "biometricFaceIdLogin": "Log in with Face ID",
+  "biometricFingerprintLogin": "Log in with Fingerprint",
+  "firstLoginPrompt": "First time logging in?",
+  "clickHere": "Click here",
+  "forgotMemberNo": "Forgot Member No.?",
+  "noAccount": "Don't have an account?",
+  "registerNow": "Register Now",
+  "browseAsGuest": "Browse as guest",
+  "officialPlatform": "OFFICIAL ECOSYSTEM PLATFORM",
+  "movementPlatformTagline": "Digital Platform for the Movement Ecosystem",
+  "enableFaceIdTitle": "Enable Face ID?",
+  "enableFingerprintTitle": "Enable Fingerprint?",
+  "biometricPromptBody": "Log in faster next time using your device biometrics.",
+  "later": "Later",
+  "enable": "Enable",
+  "registerTitle": "Register New Member",
+  "registerSubtitle": "Fill in the details below to join the myWAP ecosystem.",
+  "alreadyHaveAccount": "Already have an account?",
+  "invitedBy": "Invited by {name}",
+  "fullNameLabel": "Full Name",
+  "fullNameHint": "Example: Ahmad Firdaus",
+  "fullNameRequired": "Please enter your name.",
+  "emailLabel": "Email",
+  "emailHint": "name@email.com",
+  "emailRequired": "Please enter your email address.",
+  "emailInvalid": "Invalid email address. Example: name@email.com",
+  "icPassportLabel": "Identification Number / Passport",
+  "icHint": "Example: 900101011234",
+  "icRequired": "Please enter your Identification Number or Passport No.",
+  "icInvalid": "Invalid IC No. Enter a 12-digit Identification Number (e.g. 900101011234) or Passport No.",
+  "phoneOptionalLabel": "Phone Number (Optional)",
+  "phoneHint": "Example: 0123456789",
+  "phoneInvalid": "Invalid phone number. Example: 0123456789",
+  "dobRequiredForIc": "Please select your date of birth because the IC No. is incomplete or not a Malaysian IC format.",
+  "dobLabelRequired": "Date of Birth (Required if IC No. is not 12 digits)",
+  "selectDob": "Select date of birth",
+  "registerSuccessTitle": "Registration Successful!",
+  "registerSuccessSubtitle": "Your account has been activated. Please log in for the first time using your IC No. to set a password.",
+  "yourMemberNo": "YOUR MEMBER NO.",
+  "firstTimeLogin": "First Time Login",
+  "dobRequired": "Please select your date of birth.",
+  "memberNoFoundTitle": "Member No. Found",
+  "memberNoFoundSubtitle": "Here is your registered Member No.",
+  "memberNoLabel": "Member No.",
+  "registeredEmail": "Registered email: {email}",
+  "forgotMemberNoTitle": "Forgot Member No.",
+  "forgotMemberNoVerifySubtitle": "Verify your date of birth to display your Member No.",
+  "forgotMemberNoEnterIcSubtitle": "Enter your Identification Number to find your Member No.",
+  "rememberMemberNo": "Remember your Member No.?",
+  "icLabel": "Identification Number",
+  "icRequiredShort": "Please enter your IC No.",
+  "dobLabel": "Date of Birth",
+  "verify": "Verify",
+  "next": "Next",
+  "resetLinkSent": "A password reset link has been sent.",
+  "forgotPasswordTitle": "Forgot Password",
+  "forgotPasswordSubtitle": "Enter your Identification Number. We will send a reset link to your registered email.",
+  "rememberPassword": "Remember your password?",
+  "sendResetLink": "Send Reset Link",
+  "backToLogin": "Back to Login",
+  "otpFailed": "OTP verification failed. Please try again.",
+  "firstLoginTitle": "First Time Login",
+  "firstLoginVerifySubtitle": "Enter the 6-digit code sent to your email and set a new password.",
+  "firstLoginNoEmailSubtitle": "We could not find a registered email. Please enter your email to receive an OTP code.",
+  "firstLoginEnterIcSubtitle": "Enter your Identification Number to receive an OTP code by email.",
+  "alreadyLoggedIn": "Logged in before?",
+  "normalLogin": "Normal Login",
+  "emailRequiredShort": "Please enter your email.",
+  "emailInvalidShort": "Invalid email.",
+  "otpLabel": "OTP Code (6-digit)",
+  "otpInvalid": "OTP code must be 6 digits.",
+  "newPasswordLabel": "New Password",
+  "newPasswordHint": "Minimum 8 characters",
+  "newPasswordMin": "Password must be at least 8 characters.",
+  "confirmPasswordLabel": "Confirm Password",
+  "confirmPasswordHint": "Re-enter password",
+  "passwordMismatch": "Passwords do not match.",
+  "verifyAndLogin": "Verify & Log In",
+  "sendOtp": "Send OTP Code",
+  "@invitedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@registeredEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingSlide1Title": "Welcome to myWAP",
+  "onboardingSlide1Body": "One app for membership, programs and movement services.",
+  "onboardingSlide2Title": "Everything in One Place",
+  "onboardingSlide2Body": "Follow events, manage membership and discover your organisation’s facilities.",
+  "onboardingSlide3Title": "Ready to Get Started",
+  "onboardingSlide3Body": "Explore news, articles and programs without an account — or register as a member for full access.",
+  "onboardingNext": "Next",
+  "onboardingStart": "Start",
+  "onboardingSkip": "Skip",
+  "publicWelcomeTitle": "Welcome to myWAP",
+  "publicWelcomeBody": "Log in for full member access, or continue exploring content as a guest.",
+  "close": "Close",
+  "loadContentError": "Failed to load content. Please try again.",
+  "publicHeroSubtitle": "Community news, articles, programs and infaq campaigns — open to everyone.",
+  "viewAll": "View All",
+  "articlesTitle": "Articles",
+  "noArticles": "No articles at the moment.",
+  "videoTitle": "Videos",
+  "noVideos": "No videos at the moment.",
+  "libraryTitle": "Library",
+  "noLibrary": "No library materials at the moment.",
+  "libraryMemberPrompt": "Log in as a member to read in the Digital Library.",
+  "newsTitle": "Latest News",
+  "noNews": "No latest news at the moment.",
+  "upcomingEventsTitle": "Upcoming Programs",
+  "noUpcomingEvents": "No programs scheduled.",
+  "infaqTitle": "Infaq",
+  "noInfaqCampaigns": "No infaq campaigns at the moment.",
+  "becomeMemberTitle": "Become a myWAP Member",
+  "becomeMemberBody": "Register for access to your member card, fee status, programs, usrah and more.",
+  "adminFallback": "Admin",
+  "generalCategory": "General",
+  "loginPromptTitle": "Login Required",
+  "loginPromptBody": "This feature is available to members. Please log in or register an account to continue.",
+  "guestBannerMessage": "Log in for full member access.",
+  "profileTitle": "Profile",
+  "unexpectedError": "Unexpected error.",
+  "unexpectedErrorRetry": "Unexpected error. Please try again.",
+  "saving": "Saving...",
+  "delete": "Delete",
+  "choose": "Select",
+  "notSpecified": "Not specified",
+  "noOrganization": "No organisation",
+  "noBranch": "No branch",
+  "memberNoShort": "Member No.: {number}",
+  "phoneLabel": "Phone",
+  "icNoLabel": "IC No.",
+  "branchLabel": "Branch",
+  "localityLabel": "Locality",
+  "professionLabel": "Profession",
+  "educationLabel": "Education",
+  "addressLabel": "Address",
+  "emergencyContactLabel": "Emergency Contact",
+  "noProfileData": "No profile data found.",
+  "contactInfoSection": "Contact Information",
+  "detailsSection": "Details",
+  "securitySection": "Security",
+  "editProfile": "Edit Profile",
+  "memberJourney": "Member Journey",
+  "noJourneyRecords": "No journey records yet.",
+  "accountSection": "Account",
+  "profileIncomplete": "Your profile is incomplete",
+  "completeProfilePrompt": "Complete your information for the best experience.",
+  "complete": "Complete",
+  "feeActive": "Member Fee Active",
+  "feeUnpaid": "Fee Unpaid",
+  "lastPayment": "Last payment: {date}",
+  "amountDue": "Outstanding amount: {amount}",
+  "reference": "Reference: {reference}",
+  "joinedOrg": "Joined {organization}",
+  "orgFallback": "organisation",
+  "biometricEnableFailed": "Failed to enable. Make sure Face ID / fingerprint is set up on your device.",
+  "biometricDisableFailed": "Failed to disable biometric login. Please try again.",
+  "biometricUnlockSubtitle": "Unlock your account with device biometrics.",
+  "changePassword": "Change Password",
+  "changePasswordSubtitle": "Update your account password",
+  "photoUploaded": "Photo uploaded successfully.",
+  "profileUpdated": "Your profile photo has been updated.",
+  "profilePhoto": "Profile Photo",
+  "uploading": "Uploading...",
+  "changeProfilePhoto": "Change your profile photo",
+  "deleteAccount": "Delete Account",
+  "deleteAccountWarning": "Your account will be permanently deleted. This action cannot be undone. Enter your password to confirm.",
+  "accountDeleted": "Your account has been deleted.",
+  "deleteAccountSubtitle": "Permanently delete your account",
+  "basicInfoSection": "Basic Information",
+  "educationProfessionSection": "Education & Profession",
+  "educationLevelLabel": "Education Level",
+  "currentProfessionLabel": "Current Profession",
+  "industryLabel": "Industry",
+  "expertiseLabel": "Expertise",
+  "topicsLabel": "Topics of Interest",
+  "commaSeparated": "Separate with commas",
+  "directorySection": "Directory",
+  "showInPublicDirectory": "Show in Public Directory",
+  "allowOthersViewProfile": "Allow others to view your profile",
+  "addressSection": "Address",
+  "addressLine1": "Address (Line 1)",
+  "addressLine2": "Address (Line 2)",
+  "postcodeLabel": "Postcode",
+  "cityLabel": "City",
+  "stateLabel": "State",
+  "emergencySection": "Emergency Contact",
+  "nameLabel": "Name",
+  "saveChanges": "Save Changes",
+  "organizationLabel": "Organisation",
+  "changeBranch": "Change Branch",
+  "branchRequestPending": "Request to change to {branch} is awaiting admin approval.",
+  "branchRequestSent": "Branch change request has been sent for admin approval.",
+  "fieldRequired": "Please fill in {field}.",
+  "emailInvalidEdit": "Please enter a valid email.",
+  "selectDate": "Select date",
+  "profileUpdatedSuccess": "Profile updated successfully.",
+  "chooseNewBranch": "Please select a new branch.",
+  "changeBranchTitle": "Change Branch",
+  "changeBranchNote": "This request must be approved by an admin before your branch changes.",
+  "currentBranch": "Current branch",
+  "branchRequestPendingShort": "Request to {branch} is still pending. Sending a new request will replace it.",
+  "newBranchLabel": "New branch",
+  "selectBranch": "Select branch",
+  "branchOption": "Branch {id}",
+  "noOtherBranches": "No other branches are available for your organisation.",
+  "branchRequestNote": "The request will be sent to an admin for approval. Your branch changes only after approval.",
+  "sendRequest": "Send Request",
+  "completeProfileTitle": "Complete Profile",
+  "completeProfilePrompt2": "Complete the following information to activate your profile.",
+  "requiredInfoSection": "Required Information",
+  "moreInfoSection": "More Information",
+  "interestsSection": "Interests",
+  "saveAndFinish": "Save & Finish",
+  "branchRequired": "Branch *",
+  "branchRequiredError": "Please select a branch.",
+  "profileCompleted": "Profile completed successfully.",
+  "passwordUpdated": "Your password has been updated.",
+  "changePasswordSubtitle2": "Update your myWAP account password.",
+  "currentPasswordLabel": "Current Password *",
+  "currentPasswordRequired": "Please enter your current password.",
+  "newPasswordRequiredLabel": "New Password *",
+  "newPasswordRequired": "Please enter a new password.",
+  "min8": "Minimum 8 characters.",
+  "confirmNewPasswordLabel": "Confirm New Password *",
+  "show": "Show",
+  "hide": "Hide",
+  "savePassword": "Save Password",
+  "organizationJourney": "Organisation Journey",
+  "programsAttended": "Programs Attended",
+  "genderMale": "Male",
+  "genderFemale": "Female",
+  "maritalSingle": "Single",
+  "maritalMarried": "Married",
+  "maritalDivorced": "Divorced",
+  "maritalWidowed": "Widowed",
+  "@memberNoShort": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "@lastPayment": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@amountDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@reference": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "@joinedOrg": {
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "@branchRequestPending": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "@fieldRequired": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "@branchRequestPendingShort": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "@branchOption": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "checkMarkedFields": "Please review the information marked in red.",
+  "genderLabel": "Gender",
+  "maritalStatusLabel": "Marital Status",
+  "linkedinLabel": "LinkedIn URL",
+  "memberFallback": "Member",
+  "greetingMorning": "Good Morning",
+  "greetingAfternoon": "Good Afternoon",
+  "greetingEvening": "Good Evening",
+  "greetingSalam": "Assalamualaikum, {name}",
+  "welcomeDefault": "Welcome to myWAP",
+  "sectionProgramSubtitle": "Upcoming events and activities",
+  "noUpcomingEventsShort": "No upcoming events at the moment.",
+  "sectionInfaqSubtitle": "Active donation campaigns",
+  "sectionPolls": "Polls",
+  "sectionPollsSubtitle": "Join active polls & surveys",
+  "sectionNewsSubtitle": "Latest news and announcements",
+  "sectionArticlesSubtitle": "Selected writings & features",
+  "sectionLibrary": "Library",
+  "sectionLibrarySubtitle": "Digital books to read",
+  "quickFees": "Fees",
+  "quickBook": "Book",
+  "quickNews": "News",
+  "quickCard": "Digital ID",
+  "quickUsrah": "Usrah",
+  "quickMall": "Mall",
+  "quickInvite": "Invite",
+  "memberCardTitle": "MEMBERSHIP CARD · {organization}",
+  "orgFallbackUpper": "ORGANISATION",
+  "sinceLabel": "Since",
+  "activeMember": "Active Member",
+  "scanQrHint": "Scan this QR for membership verification.",
+  "viewFullCard": "View Full Card",
+  "eventPhysical": "PHYSICAL",
+  "eventOnline": "ONLINE",
+  "nextEvent": "NEXT EVENT",
+  "collectedPercent": "{percent}% collected",
+  "pollAnswered": "You have answered",
+  "pollNotAnswered": "Not answered · {count} responses",
+  "noFileToOpen": "No file to open.",
+  "@greetingSalam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@memberCardTitle": {
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "@collectedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@pollNotAnswered": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "biometricFaceIdLoginLower": "Log in with Face ID",
+  "biometricFingerprintLoginLower": "Log in with Fingerprint",
+  "ecomMarketTitle": "Market",
+  "ecomCartTitle": "Cart",
+  "ecomSearchProductsHint": "Search products...",
+  "ecomSortLabel": "Sort:",
+  "ecomSortLatest": "Latest",
+  "ecomSortPriceLow": "Price: Low",
+  "ecomSortPriceHigh": "Price: High",
+  "ecomFilterAll": "All",
+  "ecomNoProducts": "No products found.",
+  "ecomProductFallback": "Product",
+  "ecomAddedToCart": "Added to cart.",
+  "ecomMemberBadge": "Member",
+  "ecomBuy": "Buy",
+  "ecomProductDetailTitle": "Product Details",
+  "ecomProductNotFound": "Product not found.",
+  "ecomMemberPrice": "Member Price",
+  "ecomDescription": "Description",
+  "ecomOptions": "Options",
+  "ecomRelatedProducts": "Related Products",
+  "ecomQuantity": "Quantity",
+  "ecomAddToCart": "Add to Cart",
+  "ecomBuyNow": "Buy Now",
+  "ecomCartEmpty": "Your cart is empty.",
+  "ecomExploreMarket": "Explore Market",
+  "ecomRemoveItemTitle": "Remove Item?",
+  "ecomRemoveItemMessage": "Remove \"{name}\" from the cart?",
+  "@ecomRemoveItemMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ecomRemove": "Remove",
+  "ecomTotal": "Total",
+  "ecomContinueCheckout": "Continue to Checkout",
+  "ecomOrderPaidSuccess": "Order placed and paid successfully.",
+  "ecomOrderCreatedAwaitPayment": "Order placed. Please complete your payment.",
+  "ecomOrderCreatedSuccess": "Order placed successfully!",
+  "ecomCheckoutTitle": "Checkout",
+  "ecomProcessingOrder": "Processing order...",
+  "ecomShippingInfo": "Shipping Information",
+  "ecomFullNameHint": "Full name",
+  "ecomNameRequired": "Name is required",
+  "ecomPhoneRequired": "Phone number is required",
+  "ecomAddressOptional": "Address (optional)",
+  "ecomPostcodeOptional": "Postcode (optional)",
+  "ecomOrderSummary": "Order Summary",
+  "ecomSubmitOrder": "Submit Order",
+  "ecomOrdersTitle": "Orders",
+  "ecomNoOrders": "No orders at the moment.",
+  "ecomOrderNumber": "Order #{number}",
+  "@ecomOrderNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "ecomOrderMeta": "{count} items • {date}",
+  "@ecomOrderMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ecomTotalLabel": "Total: {amount}",
+  "@ecomTotalLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ecomParcelShippedHint": "Parcel has been shipped — tap to Track & Receive",
+  "ecomOrderReceived": "Order receipt confirmed. Thank you!",
+  "ecomPaymentSuccess": "Payment successful. Thank you!",
+  "ecomPaymentIncomplete": "Payment not completed. Please try again.",
+  "ecomOrderDetailTitle": "Order Details",
+  "ecomPay": "Pay",
+  "ecomReceiveOrder": "Receive Order",
+  "ecomOrderNotFound": "Order not found.",
+  "ecomItemsSection": "Items",
+  "ecomNoItems": "No items.",
+  "ecomPaymentSection": "Payment",
+  "ecomNoPayments": "No payments.",
+  "ecomSummary": "Summary",
+  "ecomSubtotal": "Subtotal",
+  "ecomPostage": "Postage",
+  "ecomTrackingCopied": "Tracking no. copied to clipboard.",
+  "ecomParcelTracking": "Parcel Tracking",
+  "ecomTrack": "Track",
+  "ecomCopyTrackingTooltip": "Copy Tracking No.",
+  "ecomPaymentFallback": "Payment",
+  "ecomStatusPendingPayment": "Awaiting Payment",
+  "ecomStatusPaid": "Paid",
+  "ecomStatusProcessing": "Processing",
+  "ecomStatusShipped": "Shipped",
+  "ecomStatusCompleted": "Completed",
+  "ecomStatusCancelled": "Cancelled",
+  "ecomPaymentStatusSuccess": "Successful",
+  "ecomPaymentStatusPending": "Pending",
+  "ecomPaymentStatusFailed": "Failed",
+  "facTitle": "Facilities",
+  "facNoFacilities": "No facilities at the moment.",
+  "facMyBookings": "My Bookings",
+  "facNoBookings": "No bookings at the moment.",
+  "facTypeDaily": "Daily",
+  "facTypeHalfDay": "Half Day",
+  "facTypeHourly": "Hourly",
+  "facCapacity": "Capacity: {capacity}",
+  "@facCapacity": {
+    "placeholders": {
+      "capacity": {
+        "type": "String"
+      }
+    }
+  },
+  "facUnitDay": "day",
+  "facUnitHalfDay": "half day",
+  "facUnitHour": "hour",
+  "facMemberPrice": "Member: {amount}",
+  "@facMemberPrice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "facViewBook": "View & Book",
+  "facIntroTitle": "Services & Facilities",
+  "facIntroSubtitle": "Book available service spaces and facilities.",
+  "facAdminRemarks": "Admin note: {remarks}",
+  "@facAdminRemarks": {
+    "placeholders": {
+      "remarks": {
+        "type": "String"
+      }
+    }
+  },
+  "facDetailTitle": "Facility Details",
+  "facDescription": "Description",
+  "facUntil": "until {end}",
+  "@facUntil": {
+    "placeholders": {
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "facErrorCompleteDateTime": "Please complete the date, start time and duration.",
+  "facErrorSlotPast": "The selected slot has passed. Please choose another time.",
+  "facErrorContactRequired": "Please complete the contact information.",
+  "facBookingSubmitted": "Booking submitted successfully.",
+  "facBookFacility": "Book {name}",
+  "@facBookFacility": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "facBookingInstructions": "Simple steps: choose a day, start time and duration. Overlapping slots will be rejected.",
+  "facSelectDay": "Select Day",
+  "facStartTime": "Start Time",
+  "facBookingDuration": "Booking Duration",
+  "facSelectStartFirst": "Select a start time first to see available durations.",
+  "facContactName": "Contact Name",
+  "facContactPhone": "Contact Phone",
+  "facSubmitBooking": "Submit Booking",
+  "facDurationOneDay": "1 Day",
+  "facDurationDays": "{count} Days",
+  "@facDurationDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "facDurationHours": "{count} Hours",
+  "@facDurationHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "facToday": "Today",
+  "facBookingSummary": "Booking Summary",
+  "facStart": "Start",
+  "facEnd": "End",
+  "facEstimate": "Estimate",
+  "facMemberRateNote": "Member rate. Payment is confirmed on site.",
+  "facStandardRateNote": "Standard rate. Payment is confirmed on site.",
+  "facStatusApproved": "Approved",
+  "facStatusRejected": "Rejected",
+  "facStatusPending": "Pending",
+  "facStatusPendingApproval": "Awaiting approval",
+  "facBookingSent": "Booking Sent",
+  "facStatusLine": "Status: {status}",
+  "@facStatusLine": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "facBookingConfirmationNote": "You will be notified once the booking is confirmed. Payment is made when you arrive at the location.",
+  "facDone": "Done",
+  "facPaymentStatusPaid": "Paid",
+  "facPaymentStatusUnpaid": "Unpaid",
+  "pollTitle": "Polls",
+  "pollNoPolls": "No polls at the moment.",
+  "pollLatestPolls": "Latest Polls",
+  "pollNoOpenPolls": "No open polls at the moment.",
+  "pollAnsweredSection": "Answered",
+  "pollNoAnswered": "No polls answered yet.",
+  "pollTypePoll": "Poll",
+  "pollTypeSurvey": "Survey",
+  "pollResponsesCount": "{count} responses",
+  "@pollResponsesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pollEnded": "Ended",
+  "pollEndsAt": "Ends: {date}",
+  "@pollEndsAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pollNoEndDate": "No end date",
+  "pollAnswerAll": "Please answer all questions.",
+  "pollDetailTitle": "Poll Details",
+  "pollEndedLong": "Poll has ended",
+  "pollEndsOn": "Ends on {date}",
+  "@pollEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pollSubmitAnswers": "Submit Answers",
+  "pollResultsTitle": "Poll Results",
+  "pollResultsFallback": "Results",
+  "pollTotalAnswers": "Total answers: {count}",
+  "@pollTotalAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "infaqFilterAll": "All",
+  "infaqTypeFundraise": "Fundraise",
+  "infaqTypeFreeDonation": "Free Donation",
+  "infaqPercentCollected": "{percent}% collected",
+  "@infaqPercentCollected": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "infaqTargetAmount": "Target {amount}",
+  "@infaqTargetAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "infaqDaysRunning": "{days} days running",
+  "@infaqDaysRunning": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "infaqCampaignsTitle": "Infaq Campaigns",
+  "infaqIntroSubtitle": "Join us in contributing and helping those in need.",
+  "infaqActiveCampaigns": "ACTIVE CAMPAIGNS",
+  "infaqCollected": "COLLECTED",
+  "infaqDonationLinkUnavailable": "Donation link is unavailable.",
+  "infaqDonationLinkInvalid": "Invalid donation link.",
+  "infaqDonationLinkOpenFailed": "Unable to open the donation link.",
+  "infaqDetailTitle": "Infaq Details",
+  "infaqDonorsCount": "{count} donors",
+  "@infaqDonorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "infaqDescription": "Description",
+  "infaqDonateNow": "Donate Now",
+  "infaqRecentDonations": "Recent Donations",
+  "infaqOtherInfaqs": "Other Infaq",
+  "infaqAnonymousDonor": "Anonymous",
+  "referralTitle": "Invite Member",
+  "referralInviteFriends": "Invite friends to join myWAP",
+  "referralMemberNo": "Member No.: {number}",
+  "@referralMemberNo": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "referralCopyLink": "Copy Referral Link",
+  "referralStatTotal": "Total",
+  "referralStatActive": "Active",
+  "referralStatPending": "Pending",
+  "referralReferredMembers": "Referred Members",
+  "referralNoReferredMembers": "No members have been invited using your link yet.",
+  "directorySearchHint": "Search members, industries, expertise...",
+  "directoryFilterAll": "All",
+  "directoryNoMembers": "No members found.",
+  "directoryNoLink": "No link",
+  "newsLoadMore": "Load More",
+  "newsLoginToReact": "Log in as a member to react.",
+  "newsAllOrganizations": "All Organisations",
+  "newsSearchVideos": "Search videos…",
+  "newsLiveFilter": "Live",
+  "newsNoVideoSearch": "No videos match your search.",
+  "newsVideoOpenFailed": "Unable to open the video.",
+  "newsSortLatest": "Latest",
+  "newsCommentSent": "Comment sent successfully.",
+  "newsCommentFailed": "Failed to send comment. Please try again.",
+  "newsReportSpam": "Spam or advertising",
+  "newsReportHarassment": "Harassment / bullying",
+  "newsReportHate": "Hate speech",
+  "newsReportSexual": "Sexual content",
+  "newsReportViolence": "Violence",
+  "newsReportMisinformation": "False information",
+  "newsReportOther": "Other",
+  "newsReportCommentTitle": "Report Comment",
+  "newsReportSent": "Report sent. Thank you.",
+  "newsReportFailed": "Failed to send report.",
+  "newsBlockUserTitle": "Block User",
+  "newsBlockConfirmBody": "Comments from {name} will no longer be shown to you.",
+  "@newsBlockConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newsThisUser": "this user",
+  "newsBlock": "Block",
+  "newsUserBlocked": "The user has been blocked.",
+  "newsBlockFailed": "Failed to block. Please try again.",
+  "newsCommentsCount": "Comments ({count})",
+  "@newsCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "newsLoginToComment": "Log in as a member to read and write comments.",
+  "newsCommentHint": "Write a comment...",
+  "newsNoComments": "No comments yet.",
+  "newsOptionsTooltip": "Options",
+  "newsReportComment": "Report comment",
+  "newsBlockUser": "Block user",
+  "newsByAuthor": "By {name}",
+  "@newsByAuthor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newsPinned": "Pinned",
+  "libraryNoFavourites": "No books in favourites yet.",
+  "libraryFilterAll": "All",
+  "libraryFilterFavourites": "Favourites",
+  "libraryRead": "Read",
+  "libraryOpenFailed": "Unable to open the book. Check your internet connection and try again.",
+  "libraryBookFallback": "Book",
+  "libraryRemoveFavourite": "Remove from favourites",
+  "libraryAddFavourite": "Save to favourites",
+  "libraryPreviousPage": "Previous page",
+  "libraryNextPage": "Next page",
+  "libraryPreparing": "Preparing book…",
+  "libraryDownloading": "Downloading book… {percent}%",
+  "@libraryDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryTryAgain": "Try Again",
+  "manualNoManuals": "No manuals at the moment.",
+  "manualIntro": "The guides below are shown according to your account role.",
+  "manualFallback": "Manual",
+  "manualUpdated": "Updated: {date}",
+  "@manualUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "manualOpenFailed": "Unable to open the manual. Check your internet connection and try again.",
+  "manualPreviousPage": "Previous page",
+  "manualNextPage": "Next page",
+  "manualPreparing": "Preparing manual…",
+  "manualDownloading": "Downloading manual… {percent}%",
+  "@manualDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "manualTryAgain": "Try Again",
+  "orgInfoTitle": "Organisation Info",
+  "orgNoInfo": "No organisation information to display.",
+  "orgSelectTitle": "Select Organisation",
+  "orgAbout": "About the Organisation",
+  "orgContactSocial": "Contact & Social Media",
+  "orgChart": "Organisation Chart",
+  "orgChartEmpty": "The organisation chart is not available yet.",
+  "orgYourOrganization": "Your Organisation",
+  "orgTotalMembers": "Total Members",
+  "orgLeadership": "Leadership",
+  "orgMembers": "Members",
+  "orgAgeLimit": "Age Limit",
+  "orgWebsite": "Website",
+  "orgMainLeadership": "MAIN LEADERSHIP",
+  "orgContact": "Contact",
+  "orgCardTapHint": "Tap the card to view the back.",
+  "orgCardViewFront": "View card front",
+  "orgCardViewBack": "View card back",
+  "orgCardQrHint": "Scan the QR code for membership verification.",
+  "orgCardBackMissing": "The back-of-card design has not been uploaded yet.",
+  "notifMarkAllRead": "Mark All as Read",
+  "notifEmpty": "No notifications at the moment.",
+  "notifNoAnnouncements": "No announcements at the moment.",
+  "notifFallbackTitle": "Notification",
+  "notifJustNow": "Just now",
+  "notifMinutesAgo": "{count} minutes ago",
+  "@notifMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "notifHoursAgo": "{count} hours ago",
+  "@notifHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "notifDaysAgo": "{count} days ago",
+  "@notifDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEvent": "Event",
+  "notifTypeFee": "Fee",
+  "notifTypeForm": "Form",
+  "notifTypeFacilityBooking": "Facility Booking",
+  "notifTypeMembership": "Membership",
+  "notifTypeBroadcast": "Broadcast",
+  "notifTypeNotification": "Notification",
+  "notifNoAdditionalContent": "No additional content for this notification.",
+  "notifOpenLink": "Open Link",
+  "notifOpenLinkFailed": "Unable to open the link.",
+  "notifUnavailable": "Unable to open the notification.",
+  "chatTitle": "Chat",
+  "chatEmpty": "No messages yet. Send a message to ask the AI assistant.",
+  "chatTyping": "Typing...",
+  "chatInputHint": "Type a message...",
+  "formRequiredFields": "Please complete all required fields.",
+  "formTitle": "Form",
+  "formFee": "Fee: {amount}",
+  "@formFee": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "formSubmit": "Submit Form",
+  "formTerms": "Terms: {terms}",
+  "@formTerms": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "formSubmittedTitle": "Form Submitted",
+  "formSubmittedBody": "Thank you! Your response has been received.",
+  "formOpenInBrowser": "Please open the link through a web browser.",
+  "formContinueRegistration": "Continue Registration",
+  "formBackHome": "Back to Home",
+  "formSelectDate": "Select date",
+  "formSelectOption": "Select an option",
+  "formChooseFile": "Choose File",
+  "finFeeStatusTitle": "Fee Status",
+  "finAnnualFeeAmount": "Annual Fee Amount",
+  "finOutstandingAmount": "Outstanding Amount",
+  "finPaymentDate": "Payment Date",
+  "finFeeDueMessage": "Please settle your membership fee to keep your membership active.",
+  "finFeePaidMessage": "Your membership fee is PAID. Thank you for your support.",
+  "finStatusActive": "ACTIVE",
+  "finStatusUnpaid": "UNPAID",
+  "finOverviewTitle": "Fees & Finance",
+  "finActiveInfaqCampaigns": "Active Infaq Campaigns",
+  "finNoActiveCampaigns": "No active infaq campaigns at the moment.",
+  "finPaymentHistory": "Payment History",
+  "finNoPaymentHistory": "No payment history yet.",
+  "finMembershipFee": "Membership Fee",
+  "finPayment": "Payment",
+  "finPaymentSuccessThanks": "Fee payment successful. Thank you!",
+  "finPaymentPendingGateway": "Payment is not verified yet. Please check again after completing it at the gateway.",
+  "finFeePaidSuccess": "Membership fee paid successfully.",
+  "finPaymentFailed": "Fee payment could not be processed.",
+  "finProcessing": "Processing...",
+  "finPayFeeNow": "Pay Fee Now",
+  "finReceiptUnavailable": "Receipt is not available.",
+  "finReceiptOpenFailed": "Failed to open the receipt. Please try again.",
+  "finReceiptDownloadFailed": "Failed to download the receipt.",
+  "finDownloadReceipt": "Download Receipt",
+  "usrahMyGroups": "My Usrah Groups",
+  "usrahNoGroups": "You have not joined any usrah group yet.",
+  "usrahAttendanceHistory": "Attendance History",
+  "usrahNoAttendance": "No attendance records at the moment.",
+  "usrahMembersCount": "Members ({count})",
+  "@usrahMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "usrahLeader": "Leader",
+  "usrahPresent": "Present",
+  "usrahAbsent": "Absent",
+  "adminPanelTitle": "Admin Panel",
+  "adminUnexpectedError": "Unexpected error.",
+  "adminManagementSection": "Management",
+  "adminAdvancedManagementSection": "Advanced Management",
+  "adminSummarySection": "Summary",
+  "adminMonthlyRevenueSection": "Monthly Revenue",
+  "adminRecentActivitySection": "Recent Activity",
+  "adminNoRecentActivity": "No recent activity.",
+  "adminMembersTab": "Members",
+  "adminFeesTab": "Fees",
+  "adminAttendanceTab": "Attendance",
+  "adminBroadcastTab": "Broadcast",
+  "adminWebManagePrograms": "Manage Programs",
+  "adminWebManageFees": "Manage Fees",
+  "adminWebFinance": "Finance",
+  "adminWebTransactions": "Transactions",
+  "adminWebForms": "Forms",
+  "adminWebPolls": "Polls",
+  "adminWebNewsArticles": "News & Articles",
+  "adminWebAnnouncements": "Announcements",
+  "adminWebFacilities": "Facilities",
+  "adminWebBranches": "Branches",
+  "adminWebPositions": "Positions",
+  "adminWebExportMembers": "Export Members",
+  "adminWebDonors": "Donors",
+  "adminWebChangeBranch": "Change Branch",
+  "adminWebOnlyTitle": "Web Version Features",
+  "adminWebOnlyMessage": "For more complete features, please log in on the PC/laptop/web version.",
+  "adminOkButton": "OK",
+  "adminStatTotalMembers": "Total Members",
+  "adminStatActiveMembers": "Active Members",
+  "adminStatRevenue": "Revenue",
+  "adminStatUpcomingEvents": "Upcoming Events",
+  "adminNoMonthlyRevenueData": "No monthly revenue data.",
+  "adminActivityFallback": "Activity",
+  "adminActivateMemberTitle": "Reactivate member?",
+  "adminDeactivateMemberTitle": "Deactivate member?",
+  "adminCancelButton": "Cancel",
+  "adminActivateButton": "Activate",
+  "adminDeactivateButton": "Deactivate",
+  "adminMemberReactivated": "Member reactivated.",
+  "adminMemberDeactivated": "Member deactivated.",
+  "adminDeleteMemberTitle": "Delete member?",
+  "adminDeleteMemberMessage": "{name} will be moved to Trash. Financial records & history are preserved and can be restored.",
+  "@adminDeleteMemberMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDeleteButton": "Delete",
+  "adminMemberDeleted": "Member has been moved to Trash.",
+  "adminMembersTitle": "Members",
+  "adminSearchMembersHint": "Search name or member no.",
+  "adminFilterAll": "All",
+  "adminFilterActive": "Active",
+  "adminFilterIncomplete": "Incomplete",
+  "adminNoMembersFound": "No members found.",
+  "adminNoName": "No Name",
+  "adminMemberNoPrefix": "No. {number}",
+  "@adminMemberNoPrefix": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "adminFieldMemberNo": "Member No.",
+  "adminFieldEmail": "Email",
+  "adminFieldPhone": "Phone",
+  "adminFieldIcNo": "IC No.",
+  "adminFieldBranch": "Branch",
+  "adminFieldOrganization": "Organisation",
+  "adminFieldStatus": "Status",
+  "adminFieldAccount": "Account",
+  "adminFieldRegistered": "Registered",
+  "adminFieldProfileCompleted": "Profile Completed",
+  "adminAccountActivated": "Activated",
+  "adminAccountDeactivated": "Deactivated",
+  "adminDeactivateMemberButton": "Deactivate Member",
+  "adminReactivateMemberButton": "Reactivate",
+  "adminDeleteMemberButton": "Delete Member",
+  "adminFeesTitle": "Fees",
+  "adminFeePaid": "Paid",
+  "adminFeeUnpaid": "Unpaid",
+  "adminNoFeeRecords": "No fee records.",
+  "adminFeeYear": "Fee {year}",
+  "@adminFeeYear": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAttendanceTitle": "Attendance",
+  "adminNoUpcomingEventsToManage": "No upcoming events to manage.",
+  "adminAttendanceRecorded": "Attendance recorded.",
+  "adminEventAttendanceTitle": "Event Attendance",
+  "adminProgramFallback": "Program",
+  "adminRegistrationsLabel": "Registrations",
+  "adminAttendedLabel": "Attended",
+  "adminNoRegistrations": "No registrations for this event.",
+  "adminScanQr": "Scan QR",
+  "adminAttendedAt": "Attended {datetime}",
+  "@adminAttendedAt": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "adminNotYetLabel": "Not yet",
+  "adminAttendanceVerifiedTitle": "Attendance Verified",
+  "adminAttendanceScanSuccess": "{name} ({memberNo}) has been recorded as present.",
+  "@adminAttendanceScanSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "memberNo": {
+        "type": "String"
+      }
+    }
+  },
+  "adminScanNotRecognized": "Scan not recognized.",
+  "adminScanFailedTitle": "Scan Failed",
+  "adminManualScanTitle": "Manual Scan",
+  "adminMemberNoOrIdLabel": "Member no. / ID",
+  "adminScanButton": "Scan",
+  "adminPointCameraToMemberQr": "Point the camera at the member's QR code.",
+  "adminEnterManuallyButton": "Enter Manually",
+  "adminCameraPermissionNeeded": "Camera permission is required to scan QR codes.",
+  "adminCameraUnavailable": "Camera cannot be accessed.",
+  "adminMemberFallback": "Member",
+  "adminBroadcastSuccess": "Broadcast sent successfully.",
+  "adminBroadcastTitle": "Broadcast",
+  "adminBroadcastTitleLabel": "Title",
+  "adminBroadcastTitleHint": "Example: Annual General Meeting",
+  "adminBroadcastTitleRequired": "Please enter a title.",
+  "adminBroadcastMessageLabel": "Message",
+  "adminBroadcastMessageHint": "Write the broadcast message here...",
+  "adminBroadcastMessageRequired": "Please enter a message.",
+  "adminBroadcastAudienceLabel": "Audience",
+  "adminAudienceAll": "All",
+  "adminAudienceMembers": "Members",
+  "adminAudienceUsrah": "Usrah",
+  "adminAudienceOrganization": "Organisation",
+  "adminOrganizationIdOptional": "Organisation ID (optional)",
+  "adminSending": "Sending...",
+  "adminSendBroadcast": "Send Broadcast",
+  "scanInvalidQr": "This QR code is not a myWAP program attendance code.",
+  "scanCheckInSuccess": "Your attendance for \"{eventTitle}\" has been recorded.",
+  "@scanCheckInSuccess": {
+    "placeholders": {
+      "eventTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "scanThisProgram": "this program",
+  "scanUnexpectedErrorRetry": "Unexpected error. Please try again.",
+  "scanLoginRequiredTitle": "Login Required",
+  "scanLoginRequiredBody": "Program attendance code detected. Please log in or register as a member to record your attendance.",
+  "scanCancelButton": "Cancel",
+  "scanLoginButton": "Log In",
+  "scanAttendanceVerifiedTitle": "Attendance Verified",
+  "scanFailedTitle": "Scan Failed",
+  "scanDoneButton": "Done",
+  "scanTryAgainButton": "Try Again",
+  "scanQrTitle": "Scan Attendance QR",
+  "scanPointCameraHint": "Point the camera at the QR code on the program poster/screen to check in.",
+  "scanCloseButton": "Close",
+  "scanProgramAttendanceTitle": "Program Attendance",
+  "eventRsvpLoginPrompt": "Log in as a member to RSVP for this program.",
+  "eventRsvpUpdated": "RSVP updated successfully.",
+  "eventRegisterLoginPrompt": "Log in as a member to register for this program.",
+  "eventRegisterProgram": "Register for Program",
+  "eventFormFallback": "Form",
+  "eventFee": "Fee: {amount}",
+  "eventDetailsTitle": "Program Details",
+  "eventTitleFallback": "Programs & Events",
+  "eventParticipants": "{count} participants",
+  "eventDescription": "Description",
+  "eventRegisterAsParticipant": "Register as Participant",
+  "eventRegisterHint": "Get a registration number and a place (a fee applies if paid).",
+  "eventAlreadyRegistered": "You are already registered",
+  "eventRegistrationNo": "Registration No.: {number}",
+  "eventStatus": "Status: {status}",
+  "eventViewMyRegistrations": "View My Registrations",
+  "eventCancelAttendance": "Cancel Attendance",
+  "eventWillAttend": "I Will Attend",
+  "eventRsvpHint": "Attendance only — no registration form required.",
+  "eventsTitle": "Programs & Events",
+  "eventsMyRegistrationsTooltip": "My Registrations",
+  "eventsSubtitle": "Discover and join upcoming programs.",
+  "eventPhysicalTitle": "Physical",
+  "eventOnlineTitle": "Online",
+  "eventsEmpty": "No programs scheduled",
+  "eventsEmptyBody": "New programs will appear here once scheduled.",
+  "myRegistrationsTitle": "My Registrations",
+  "noRegistrations": "You have not registered for any event.",
+  "registrationPaid": "Payment Complete",
+  "registrationUnpaid": "Payment Pending",
+  "attended": "Attended",
+  "eventCompleteRequired": "Please complete all required fields.",
+  "eventUploadSupportDoc": "Please upload the supporting document.",
+  "eventRegistrationSuccess": "Registration successful.",
+  "eventRegistrationPaymentPending": "Registration submitted. Please complete payment.",
+  "eventFormNotFound": "Form not found.",
+  "eventFallbackShort": "Program",
+  "eventPaymentMethod": "Payment Method",
+  "eventFpx": "FPX (Bank Transfer)",
+  "eventDuitNow": "DuitNow QR",
+  "submitting": "Submitting...",
+  "eventSubmitRegistration": "Submit Registration",
+  "eventTerms": "Terms: {terms}",
+  "eventFeeCategory": "Fee Category",
+  "eventUploadSupportDocTitle": "Upload Supporting Document *",
+  "eventUploadSupportDocHint": "Please upload the supporting document (e.g. student card).",
+  "eventChooseFile": "Choose File",
+  "eventAlreadyRegisteredTitle": "You Are Already Registered",
+  "eventBackToProgram": "Back to Program",
+  "eventRegistrationReceived": "Your registration has been received.",
+  "eventRegistrationSuccessfulTitle": "Registration Successful",
+  "@eventFee": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@eventParticipants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@eventRegistrationNo": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "@eventStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@eventTerms": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentAlreadyPaid": "I Have Paid",
+  "pageNotFoundTitle": "Page Not Found",
+  "pageNotFoundBody": "This page was not found",
+  "pageNotFoundHint": "Please try again, or return to the home page.",
+  "goToHome": "Go to Home",
+  "paymentTitle": "Payment",
+  "comingSoon": "This feature will be available soon.",
+  "errorTimeout": "Connection timed out. Please try again.",
+  "errorOffline": "No internet connection.",
+  "errorSessionExpired": "Session expired, please log in again.",
+  "errorForbidden": "You do not have permission to access this.",
+  "errorNotFound": "Not found.",
+  "errorValidation": "Please check your information.",
+  "errorTooMany": "Too many attempts. Please try again later.",
+  "errorUnknown": "Unexpected error. Please try again.",
+  "newNotification": "New notification",
+  "chatNoAnswer": "No answer.",
+  "chatNotConfigured": "The AI chatbot is not configured yet. Please contact the admin.",
+  "biometricLoginReason": "Verify your identity to log in",
+  "biometricEnableReason": "Verify Face ID / fingerprint to enable quick login",
+  "biometricLoginMyWapReason": "Verify Face ID / fingerprint to log in to myWAP",
+  "pushChannelName": "myWAP Notifications",
+  "pushChannelDescription": "Push notifications from myWAP",
+  "ecomSoldOut": "Sold Out",
+  "ecomChooseOptions": "Choose Options",
+  "ecomStockLeft": "{count} left",
+  "@ecomStockLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ecomStockAvailable": "{count} available",
+  "ecomStockRemaining": "{count} left",
+  "ecomOutOfStockBody": "This product is out of stock.",
+  "ecomMaxStockReached": "Maximum stock reached",
+  "ecomOptionSoldOut": "Sold out",
+  "@ecomStockAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@ecomStockRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

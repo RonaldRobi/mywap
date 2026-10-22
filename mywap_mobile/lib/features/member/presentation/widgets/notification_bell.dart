@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/l10n/l10n.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../notifications/application/notification_providers.dart';
@@ -21,7 +22,7 @@ class NotificationBell extends ConsumerWidget {
     final unread = state.notifications.where((n) => !n.isRead).length;
 
     return IconButton(
-      tooltip: 'Notifikasi',
+      tooltip: context.l10n.menuNotifications,
       onPressed: () => context.push('/notifications'),
       icon: Badge(
         isLabelVisible: unread > 0,

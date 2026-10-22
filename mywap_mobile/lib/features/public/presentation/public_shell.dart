@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
@@ -135,14 +136,14 @@ class _PublicBottomNav extends StatelessWidget {
           _NavItem(
             icon: Icons.home_outlined,
             selectedIcon: Icons.home,
-            label: 'Beranda',
+            label: context.l10n.navHomeGuest,
             selected: selectedIndex == 0,
             onTap: () => onSelect(0),
           ),
           _NavItem(
             icon: Icons.event_outlined,
             selectedIcon: Icons.event,
-            label: 'Program',
+            label: context.l10n.navProgram,
             selected: selectedIndex == 1,
             onTap: () => onSelect(1),
           ),
@@ -150,7 +151,7 @@ class _PublicBottomNav extends StatelessWidget {
           _NavItem(
             icon: Icons.volunteer_activism_outlined,
             selectedIcon: Icons.volunteer_activism,
-            label: 'Infaq',
+            label: context.l10n.navInfaq,
             selected: selectedIndex == 3,
             onTap: () => onSelect(3),
           ),
@@ -159,7 +160,7 @@ class _PublicBottomNav extends StatelessWidget {
           _NavItem(
             icon: Icons.grid_view_outlined,
             selectedIcon: Icons.grid_view_rounded,
-            label: 'Menu',
+            label: context.l10n.navMenu,
             selected: selectedIndex == 4,
             onTap: () => onSelect(4),
           ),

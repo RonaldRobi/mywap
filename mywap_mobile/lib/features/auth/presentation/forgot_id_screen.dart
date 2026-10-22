@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
@@ -40,7 +41,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
       initialDate: DateTime(now.year - 20),
       firstDate: DateTime(now.year - 100),
       lastDate: now,
-      helpText: 'Pilih Tarikh Lahir',
+      helpText: context.l10n.selectDob,
     );
     if (picked != null) setState(() => _dob = picked);
   }
@@ -48,7 +49,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_needsDob && _dob == null) {
-      setState(() => _error = 'Sila pilih tarikh lahir.');
+      setState(() => _error = context.l10n.dobRequired);
       return;
     }
 
@@ -58,9 +59,10 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
     });
     try {
       final repo = ref.read(authRepositoryProvider);
-      final dobString = _dob != null
-          ? '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}'
-          : null;
+      final dobString =
+          _dob != null
+              ? '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}'
+              : null;
       final result = await repo.forgotId(
         _icController.text.trim(),
         dob: dobString,
@@ -89,8 +91,8 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
   Widget build(BuildContext context) {
     if (_memberNo != null) {
       return AuthScaffold(
-        title: 'No. Ahli Ditemui',
-        subtitle: 'Berikut adalah No. Ahli anda yang berdaftar dengan sistem.',
+        title: context.l10n.memberNoFoundTitle,
+        subtitle: context.l10n.memberNoFoundSubtitle,
         children: [
           Container(
             padding: const EdgeInsets.all(Spacing.xl),
@@ -102,7 +104,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
             child: Column(
               children: [
                 Text(
-                  'NO. AHLI',
+                  context.l10n.memberNoLabel,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: AppColors.textOnDark,
                     letterSpacing: 1.2,
@@ -119,7 +121,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
                 if (_maskedEmail != null) ...[
                   const SizedBox(height: Spacing.sm),
                   Text(
-                    'Emel berdaftar: $_maskedEmail',
+                    context.l10n.registeredEmail(_maskedEmail!),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textOnDark,
                     ),
@@ -131,25 +133,26 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
           const SizedBox(height: Spacing.xl),
           FilledButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
         ],
       );
     }
 
     return AuthScaffold(
-      title: 'Lupa No. Ahli',
-      subtitle: _needsDob
-          ? 'Sahkan tarikh lahir anda untuk memaparkan No. Ahli.'
-          : 'Masukkan No. Kad Pengenalan untuk mencari No. Ahli anda.',
+      title: context.l10n.forgotMemberNoTitle,
+      subtitle:
+          _needsDob
+              ? context.l10n.forgotMemberNoVerifySubtitle
+              : context.l10n.forgotMemberNoEnterIcSubtitle,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Ingat No. Ahli?'),
+          Text(context.l10n.rememberMemberNo),
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
         ],
       ),
@@ -161,18 +164,20 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AuthField(
-                label: 'No. Kad Pengenalan',
+                label: context.l10n.icLabel,
                 controller: _icController,
                 icon: Icons.badge_outlined,
-                hint: 'Contoh: 900101011234',
+                hint: context.l10n.icHint,
                 textInputAction: TextInputAction.next,
-                validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Sila masukkan no. IC.'
-                    : null,
+                validator:
+                    (v) =>
+                        v == null || v.trim().isEmpty
+                            ? context.l10n.icRequiredShort
+                            : null,
               ),
               if (_needsDob) ...[
                 Text(
-                  'Tarikh Lahir',
+                  context.l10n.dobLabel,
                   style: Theme.of(
                     context,
                   ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -192,7 +197,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
                         const SizedBox(width: Spacing.md),
                         Text(
                           _dob == null
-                              ? 'Pilih tarikh lahir'
+                              ? context.l10n.selectDob
                               : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
                         ),
                       ],
@@ -203,16 +208,19 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
               ],
               FilledButton(
                 onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppColors.white,
+                child:
+                    _submitting
+                        ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.white,
+                          ),
+                        )
+                        : Text(
+                          _needsDob ? context.l10n.verify : context.l10n.next,
                         ),
-                      )
-                    : Text(_needsDob ? 'Sahkan' : 'Seterusnya'),
               ),
             ],
           ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -97,17 +98,23 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       builder:
           (dialogContext) => AlertDialog(
             title: Text(
-              activate ? 'Aktifkan semula ahli?' : 'Nyahaktifkan ahli?',
+              activate
+                  ? context.l10n.adminActivateMemberTitle
+                  : context.l10n.adminDeactivateMemberTitle,
             ),
             content: Text('${member.name} (${member.memberNo})'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Batal'),
+                child: Text(context.l10n.adminCancelButton),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(activate ? 'Aktifkan' : 'Nyahaktifkan'),
+                child: Text(
+                  activate
+                      ? context.l10n.adminActivateButton
+                      : context.l10n.adminDeactivateButton,
+                ),
               ),
             ],
           ),
@@ -118,7 +125,11 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       await ref.read(adminMembersControllerProvider.notifier).toggleActive(id);
       if (!mounted) return;
       Navigator.of(context).pop();
-      _snack(activate ? 'Ahli diaktifkan semula.' : 'Ahli dinyahaktifkan.');
+      _snack(
+        activate
+            ? context.l10n.adminMemberReactivated
+            : context.l10n.adminMemberDeactivated,
+      );
     } on ApiException catch (e) {
       if (mounted) _snack(e.message);
     }
@@ -132,20 +143,17 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       context: context,
       builder:
           (dialogContext) => AlertDialog(
-            title: const Text('Padam ahli?'),
-            content: Text(
-              '${member.name} akan dipindahkan ke Tong Sampah. '
-              'Rekod kewangan & sejarah kekal dan boleh dipulihkan.',
-            ),
+            title: Text(context.l10n.adminDeleteMemberTitle),
+            content: Text(context.l10n.adminDeleteMemberMessage(member.name)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Batal'),
+                child: Text(context.l10n.adminCancelButton),
               ),
               FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: AppColors.error),
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Padam'),
+                child: Text(context.l10n.adminDeleteButton),
               ),
             ],
           ),
@@ -156,7 +164,7 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       await ref.read(adminMembersControllerProvider.notifier).deleteMember(id);
       if (!mounted) return;
       Navigator.of(context).pop();
-      _snack('Ahli telah dipindahkan ke Tong Sampah.');
+      _snack(context.l10n.adminMemberDeleted);
     } on ApiException catch (e) {
       if (mounted) _snack(e.message);
     }
@@ -167,7 +175,7 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     final state = ref.watch(adminMembersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ahli')),
+      appBar: AppBar(title: Text(context.l10n.adminMembersTitle)),
       body: Column(
         children: [
           Padding(
@@ -181,9 +189,12 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
               controller: _searchController,
               onChanged: _onSearchChanged,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                hintText: 'Cari nama atau no. ahli',
-                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
+              decoration: InputDecoration(
+                hintText: context.l10n.adminSearchMembersHint,
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
                 isDense: true,
               ),
             ),
@@ -195,17 +206,17 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               children: [
                 _FilterChip(
-                  label: 'Semua',
+                  label: context.l10n.adminFilterAll,
                   selected: _status == '',
                   onTap: () => _selectStatus(''),
                 ),
                 _FilterChip(
-                  label: 'Aktif',
+                  label: context.l10n.adminFilterActive,
                   selected: _status == 'active',
                   onTap: () => _selectStatus('active'),
                 ),
                 _FilterChip(
-                  label: 'Belum Lengkap',
+                  label: context.l10n.adminFilterIncomplete,
                   selected: _status == 'pending',
                   onTap: () => _selectStatus('pending'),
                 ),
@@ -230,9 +241,9 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
       );
     }
     if (state.items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.people_outline,
-        message: 'Tiada ahli dijumpai.',
+        message: context.l10n.adminNoMembersFound,
       );
     }
 
@@ -256,9 +267,10 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
         }
         final member = items[index];
         return ListCard(
-          title: member.name.isEmpty ? 'Tanpa Nama' : member.name,
+          title: member.name.isEmpty ? context.l10n.adminNoName : member.name,
           subtitle: [
-            if (member.memberNo.isNotEmpty) 'No. ${member.memberNo}',
+            if (member.memberNo.isNotEmpty)
+              context.l10n.adminMemberNoPrefix(member.memberNo),
             if (member.branchName.isNotEmpty) member.branchName,
           ].join(' · '),
           trailing: _StatusBadge(active: member.isActive),
@@ -322,7 +334,9 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        active ? 'Aktif' : 'Belum Lengkap',
+        active
+            ? context.l10n.adminFilterActive
+            : context.l10n.adminFilterIncomplete,
         style: TextStyle(
           color: active ? AppColors.movementNavy : AppColors.warning,
           fontSize: AppTextTheme.minSize,
@@ -350,16 +364,29 @@ class _MemberDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final rows = <(String, String)>[
-      ('No. Ahli', member.memberNo),
-      ('Emel', member.email),
-      ('Telefon', member.phone),
-      ('No. IC', member.icNumber),
-      ('Cawangan', member.branchName),
-      ('Organisasi', member.organizationName ?? '-'),
-      ('Status', member.isActive ? 'Aktif' : 'Belum Lengkap'),
-      ('Akaun', member.activeFlag ? 'Diaktifkan' : 'Dinyahaktifkan'),
-      ('Didaftarkan', Formatters.date(member.createdAt)),
-      ('Profil Lengkap', Formatters.date(member.profileCompletedAt)),
+      (context.l10n.adminFieldMemberNo, member.memberNo),
+      (context.l10n.adminFieldEmail, member.email),
+      (context.l10n.adminFieldPhone, member.phone),
+      (context.l10n.adminFieldIcNo, member.icNumber),
+      (context.l10n.adminFieldBranch, member.branchName),
+      (context.l10n.adminFieldOrganization, member.organizationName ?? '-'),
+      (
+        context.l10n.adminFieldStatus,
+        member.isActive
+            ? context.l10n.adminFilterActive
+            : context.l10n.adminFilterIncomplete,
+      ),
+      (
+        context.l10n.adminFieldAccount,
+        member.activeFlag
+            ? context.l10n.adminAccountActivated
+            : context.l10n.adminAccountDeactivated,
+      ),
+      (context.l10n.adminFieldRegistered, Formatters.date(member.createdAt)),
+      (
+        context.l10n.adminFieldProfileCompleted,
+        Formatters.date(member.profileCompletedAt),
+      ),
     ];
 
     return SafeArea(
@@ -375,7 +402,7 @@ class _MemberDetailSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              member.name.isEmpty ? 'Tanpa Nama' : member.name,
+              member.name.isEmpty ? context.l10n.adminNoName : member.name,
               style: theme.textTheme.headlineSmall,
             ),
             const SizedBox(height: Spacing.lg),
@@ -415,7 +442,9 @@ class _MemberDetailSheet extends StatelessWidget {
                       : Icons.person_outline,
                 ),
                 label: Text(
-                  member.activeFlag ? 'Nyahaktifkan Ahli' : 'Aktifkan Semula',
+                  member.activeFlag
+                      ? context.l10n.adminDeactivateMemberButton
+                      : context.l10n.adminReactivateMemberButton,
                 ),
               ),
             ),
@@ -429,7 +458,7 @@ class _MemberDetailSheet extends StatelessWidget {
                   ),
                   onPressed: onDelete,
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Padam Ahli'),
+                  label: Text(context.l10n.adminDeleteMemberButton),
                 ),
               ),
             ],

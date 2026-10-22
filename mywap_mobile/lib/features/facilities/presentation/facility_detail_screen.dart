@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -27,7 +28,7 @@ class FacilityDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/facilities'),
-        title: const Text('Butiran Kemudahan'),
+        title: Text(context.l10n.facDetailTitle),
       ),
       body: detailAsync.when(
         data:
@@ -44,7 +45,7 @@ class FacilityDetailScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(facilityDetailProvider(facilityId)),
             ),
       ),
@@ -65,9 +66,16 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final facility = detail.facility;
     final price = facility?.pricePerUnit;
+    final unitLabel =
+        facility?.type == 'daily'
+            ? l10n.facUnitDay
+            : facility?.type == 'halfday'
+            ? l10n.facUnitHalfDay
+            : l10n.facUnitHour;
 
     return Column(
       children: [
@@ -107,22 +115,21 @@ class _DetailContent extends StatelessWidget {
                       ),
                       _InfoRow(
                         icon: Icons.people_outline,
-                        text:
-                            'Kapasiti: ${facility?.capacity?.toString() ?? '-'}',
+                        text: l10n.facCapacity(
+                          facility?.capacity?.toString() ?? '-',
+                        ),
                       ),
                       _InfoRow(
                         icon: Icons.attach_money_outlined,
-                        text:
-                            '${Formatters.currency(price)} / ${facility?.type == 'daily'
-                                ? 'hari'
-                                : facility?.type == 'halfday'
-                                ? 'separuh hari'
-                                : 'jam'}',
+                        text: '${Formatters.currency(price)} / $unitLabel',
                       ),
                       if (facility?.description != null &&
                           (facility!.description!.isNotEmpty)) ...[
                         const SizedBox(height: Spacing.xl),
-                        Text('Penerangan', style: theme.textTheme.titleLarge),
+                        Text(
+                          l10n.facDescription,
+                          style: theme.textTheme.titleLarge,
+                        ),
                         const SizedBox(height: Spacing.sm),
                         Text(
                           facility.description!,
@@ -131,7 +138,7 @@ class _DetailContent extends StatelessWidget {
                       ],
                       if (detail.myBookings.isNotEmpty) ...[
                         const SizedBox(height: Spacing.xl),
-                        const SectionHeader('Tempahan Saya'),
+                        SectionHeader(l10n.facMyBookings),
                         for (final booking in detail.myBookings)
                           _MyBookingTile(booking: booking),
                       ],
@@ -149,7 +156,7 @@ class _DetailContent extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onBook,
               icon: const Icon(Icons.event_available),
-              label: const Text('Tempah'),
+              label: Text(context.l10n.quickBook),
             ),
           ),
         ),
@@ -193,7 +200,7 @@ class _MyBookingTile extends StatelessWidget {
                       if (end != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'hingga $end',
+                          context.l10n.facUntil(end),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -216,7 +223,9 @@ class _MyBookingTile extends StatelessWidget {
             if (booking.totalPrice != null) ...[
               const SizedBox(height: Spacing.sm),
               Text(
-                'Jumlah: ${Formatters.currency(booking.totalPrice)}',
+                context.l10n.ecomTotalLabel(
+                  Formatters.currency(booking.totalPrice),
+                ),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: AppColors.movementGreen,
                 ),
@@ -225,7 +234,7 @@ class _MyBookingTile extends StatelessWidget {
             if (booking.adminRemarks?.isNotEmpty == true) ...[
               const SizedBox(height: Spacing.xs),
               Text(
-                'Catatan admin: ${booking.adminRemarks}',
+                context.l10n.facAdminRemarks(booking.adminRemarks!),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),

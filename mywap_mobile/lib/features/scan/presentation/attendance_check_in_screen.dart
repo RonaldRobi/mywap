@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../events/application/event_providers.dart';
@@ -55,28 +56,26 @@ class _AttendanceCheckInScreenState
     final goLogin = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.lock_outline,
-          color: AppColors.movementGreen,
-          size: 40,
-        ),
-        title: const Text('Log Masuk Diperlukan'),
-        content: const Text(
-          'Kod kehadiran program dikesan. Sila log masuk atau daftar '
-          'sebagai ahli untuk merekodkan kehadiran anda.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Batal'),
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: const Icon(
+              Icons.lock_outline,
+              color: AppColors.movementGreen,
+              size: 40,
+            ),
+            title: Text(context.l10n.scanLoginRequiredTitle),
+            content: Text(context.l10n.scanLoginRequiredBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.scanCancelButton),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.l10n.scanLoginButton),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Log Masuk'),
-          ),
-        ],
-      ),
     );
     if (!mounted) return;
     if (goLogin == true) {
@@ -95,9 +94,9 @@ class _AttendanceCheckInScreenState
       if (!mounted) return;
       await _showResult(
         success: true,
-        message:
-            'Kehadiran anda untuk '
-            '"${result['event_title'] ?? 'program ini'}" telah direkodkan.',
+        message: context.l10n.scanCheckInSuccess(
+          result['event_title']?.toString() ?? context.l10n.scanThisProgram,
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -106,7 +105,7 @@ class _AttendanceCheckInScreenState
       if (!mounted) return;
       await _showResult(
         success: false,
-        message: 'Ralat tidak dijangka. Sila cuba lagi.',
+        message: context.l10n.scanUnexpectedErrorRetry,
       );
     }
   }
@@ -118,33 +117,38 @@ class _AttendanceCheckInScreenState
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        icon: Icon(
-          success ? Icons.check_circle_outline : Icons.error_outline,
-          color: success ? AppColors.success : AppColors.error,
-          size: 40,
-        ),
-        title: Text(success ? 'Kehadiran Disahkan' : 'Imbasan Gagal'),
-        content: Text(message),
-        actions: [
-          if (success)
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                if (mounted) context.go('/dashboard');
-              },
-              child: const Text('Selesai'),
-            )
-          else
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                if (mounted) context.go('/dashboard');
-              },
-              child: const Text('Tutup'),
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: Icon(
+              success ? Icons.check_circle_outline : Icons.error_outline,
+              color: success ? AppColors.success : AppColors.error,
+              size: 40,
             ),
-        ],
-      ),
+            title: Text(
+              success
+                  ? context.l10n.scanAttendanceVerifiedTitle
+                  : context.l10n.scanFailedTitle,
+            ),
+            content: Text(message),
+            actions: [
+              if (success)
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    if (mounted) context.go('/dashboard');
+                  },
+                  child: Text(context.l10n.scanDoneButton),
+                )
+              else
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    if (mounted) context.go('/dashboard');
+                  },
+                  child: Text(context.l10n.scanCloseButton),
+                ),
+            ],
+          ),
     );
   }
 
@@ -152,7 +156,7 @@ class _AttendanceCheckInScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Kehadiran Program')),
+      appBar: AppBar(title: Text(context.l10n.scanProgramAttendanceTitle)),
       body: const Center(child: CircularProgressIndicator()),
     );
   }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -29,7 +30,7 @@ class FinancialOverviewScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Yuran & Kewangan'),
+        title: Text(context.l10n.finOverviewTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(
@@ -44,7 +45,7 @@ class FinancialOverviewScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(financialOverviewProvider),
             ),
       ),
@@ -72,16 +73,16 @@ class _FinancialContent extends StatelessWidget {
           _FeeStatusCard(fee: fee),
           const SizedBox(height: Spacing.xl),
           Text(
-            'Kempen Infaq Aktif',
+            context.l10n.finActiveInfaqCampaigns,
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: Spacing.md),
           if (campaigns.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.volunteer_activism_outlined,
-              message: 'Tiada kempen infaq aktif buat masa ini.',
+              message: context.l10n.finNoActiveCampaigns,
             )
           else
             ...campaigns.map(
@@ -92,16 +93,16 @@ class _FinancialContent extends StatelessWidget {
             ),
           const SizedBox(height: Spacing.xl),
           Text(
-            'Sejarah Pembayaran',
+            context.l10n.finPaymentHistory,
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: Spacing.md),
           if (history.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.receipt_long_outlined,
-              message: 'Tiada sejarah pembayaran lagi.',
+              message: context.l10n.finNoPaymentHistory,
             )
           else
             ...history.map((p) => _PaymentTile(payment: p)),
@@ -143,7 +144,7 @@ class _FeeStatusCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      active ? 'Yuran Ahli Aktif' : 'Yuran Belum Dibayar',
+                      active ? context.l10n.feeActive : context.l10n.feeUnpaid,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.movementNavy,
                         fontWeight: FontWeight.w700,
@@ -152,14 +153,16 @@ class _FeeStatusCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     if (active)
                       Text(
-                        'Bayaran terakhir: ${fee?.last_paid_at ?? '-'}',
+                        context.l10n.lastPayment(fee?.last_paid_at ?? '-'),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       )
                     else
                       Text(
-                        'Amaun tertunggak: ${Formatters.currency(fee?.amount_due ?? 0)}',
+                        context.l10n.amountDue(
+                          Formatters.currency(fee?.amount_due ?? 0),
+                        ),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -232,9 +235,10 @@ class _PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = payment.description?.trim().isNotEmpty ?? false
-        ? payment.description!.trim()
-        : _typeLabel(payment.payable_type);
+    final label =
+        payment.description?.trim().isNotEmpty ?? false
+            ? payment.description!.trim()
+            : _typeLabel(context, payment.payable_type);
 
     return Card(
       child: ListTile(
@@ -244,16 +248,12 @@ class _PaymentTile extends StatelessWidget {
               : Icons.pending_outlined,
           color: payment.isSuccessful ? AppColors.success : AppColors.warning,
         ),
-        title: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(
-          [payment.created_at, if (payment.isSuccessful) payment.reference]
-              .whereType<String>()
-              .where((s) => s.trim().isNotEmpty)
-              .join('  •  '),
+          [
+            payment.created_at,
+            if (payment.isSuccessful) payment.reference,
+          ].whereType<String>().where((s) => s.trim().isNotEmpty).join('  •  '),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -270,14 +270,14 @@ class _PaymentTile extends StatelessWidget {
     );
   }
 
-  String _typeLabel(String? type) {
+  String _typeLabel(BuildContext context, String? type) {
     switch (type) {
       case 'membership_fee':
-        return 'Yuran Keahlian';
+        return context.l10n.finMembershipFee;
       case 'infaq_donation':
-        return 'Infaq';
+        return context.l10n.menuInfaq;
       default:
-        return type ?? 'Bayaran';
+        return type ?? context.l10n.finPayment;
     }
   }
 }

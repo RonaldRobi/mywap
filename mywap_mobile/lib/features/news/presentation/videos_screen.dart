@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -24,7 +25,7 @@ class VideosScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Video'),
+        title: Text(context.l10n.videoTitle),
       ),
       body: async.when(
         data:
@@ -38,7 +39,7 @@ class VideosScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(videosProvider),
             ),
       ),
@@ -49,8 +50,8 @@ class VideosScreen extends ConsumerWidget {
 enum _VideoSort { latest, titleAZ, titleZA }
 
 extension on _VideoSort {
-  String get label => switch (this) {
-    _VideoSort.latest => 'Terkini',
+  String label(BuildContext context) => switch (this) {
+    _VideoSort.latest => context.l10n.newsSortLatest,
     _VideoSort.titleAZ => 'A → Z',
     _VideoSort.titleZA => 'Z → A',
   };
@@ -132,7 +133,7 @@ class _VideoExplorerState extends State<_VideoExplorer> {
             onChanged: (value) => setState(() => _query = value),
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Cari video…',
+              hintText: context.l10n.newsSearchVideos,
               prefixIcon: const Icon(Icons.search),
               suffixIcon:
                   _query.isNotEmpty
@@ -154,7 +155,7 @@ class _VideoExplorerState extends State<_VideoExplorer> {
           child: Row(
             children: [
               FilterChip(
-                label: const Text('Live'),
+                label: Text(context.l10n.newsLiveFilter),
                 selected: _liveOnly,
                 onSelected: (value) => setState(() => _liveOnly = value),
                 showCheckmark: false,
@@ -189,8 +190,8 @@ class _VideoExplorerState extends State<_VideoExplorer> {
                                     : Icons.search_off,
                             message:
                                 widget.videos.isEmpty
-                                    ? 'Tiada video buat masa ini.'
-                                    : 'Tiada video sepadan dengan carian.',
+                                    ? context.l10n.noVideos
+                                    : context.l10n.newsNoVideoSearch,
                           ),
                         ),
                       ],
@@ -263,7 +264,7 @@ class _SortMenuButton extends StatelessWidget {
                     else
                       const SizedBox(width: 18),
                     const SizedBox(width: Spacing.sm),
-                    Text(value.label),
+                    Text(value.label(context)),
                   ],
                 ),
               ),
@@ -282,7 +283,7 @@ class _SortMenuButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              sort.label,
+              sort.label(context),
               style: const TextStyle(
                 fontSize: AppTextTheme.minSize,
                 fontWeight: FontWeight.w600,
@@ -315,9 +316,9 @@ class _VideoGridTile extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     );
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video tidak dapat dibuka.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.newsVideoOpenFailed)));
     }
   }
 
@@ -372,9 +373,9 @@ class _VideoGridTile extends StatelessWidget {
                           color: AppColors.error,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          'LIVE',
-                          style: TextStyle(
+                        child: Text(
+                          context.l10n.newsLiveFilter.toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w800,

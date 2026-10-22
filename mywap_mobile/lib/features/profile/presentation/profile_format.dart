@@ -1,3 +1,5 @@
+import '../../../core/utils/formatters.dart';
+
 /// Local formatting helpers for the Profile screens.
 ///
 /// Kept intl-free on purpose: backend date strings are pre-localized to Malay
@@ -21,9 +23,7 @@ abstract final class ProfileFormat {
   ];
 
   /// `20 Mei 1990` — for display only.
-  static String date(DateTime value) {
-    return '${value.day} ${_months[value.month - 1]} ${value.year}';
-  }
+  static String date(DateTime value) => Formatters.date(value);
 
   /// `1990-05-20` — API payload format.
   static String apiDate(DateTime value) {
@@ -40,16 +40,28 @@ abstract final class ProfileFormat {
       final year = int.tryParse(iso.group(1)!);
       final month = int.tryParse(iso.group(2)!);
       final day = int.tryParse(iso.group(3)!);
-      if (year != null && month != null && day != null && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      if (year != null &&
+          month != null &&
+          day != null &&
+          month >= 1 &&
+          month <= 12 &&
+          day >= 1 &&
+          day <= 31) {
         return DateTime(year, month, day);
       }
     }
-    final carbon = RegExp(r'^(\d{1,2}) ([A-Za-z]+) (\d{4})$').firstMatch(trimmed);
+    final carbon = RegExp(
+      r'^(\d{1,2}) ([A-Za-z]+) (\d{4})$',
+    ).firstMatch(trimmed);
     if (carbon != null) {
       final day = int.tryParse(carbon.group(1)!);
       final month = _monthIndex(carbon.group(2)!);
       final year = int.tryParse(carbon.group(3)!);
-      if (day != null && month != null && year != null && day >= 1 && day <= 31) {
+      if (day != null &&
+          month != null &&
+          year != null &&
+          day >= 1 &&
+          day <= 31) {
         return DateTime(year, month, day);
       }
     }
@@ -62,7 +74,18 @@ abstract final class ProfileFormat {
       if (lower == _months[i].toLowerCase()) return i + 1;
     }
     const english = [
-      'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
     ];
     final idx = english.indexOf(lower);
     return idx < 0 ? null : idx + 1;
@@ -71,7 +94,8 @@ abstract final class ProfileFormat {
   /// `RM50` / `RM50.50` — no currency locale data required.
   static String money(num? value) {
     if (value == null) return 'RM0';
-    final text = value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
+    final text =
+        value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
     return 'RM$text';
   }
 }

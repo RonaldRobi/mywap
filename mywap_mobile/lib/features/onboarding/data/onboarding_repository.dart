@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../shared/l10n/l10n.dart';
 
 class OnboardingSlideData {
   const OnboardingSlideData({
@@ -67,11 +68,11 @@ class OnboardingRepository {
   Future<MobileAuthConfiguration> getConfiguration() async {
     final response = await _client.get('/onboarding');
     if (response is! Map) {
-      return const MobileAuthConfiguration(
-        slides: [],
+      return MobileAuthConfiguration(
+        slides: const [],
         login: MobileLoginBranding(
-          title: 'Selamat kembali',
-          subtitle: 'Log masuk untuk meneruskan ke myWAP.',
+          title: currentAppLocalizations.loginWelcomeTitle,
+          subtitle: currentAppLocalizations.loginWelcomeSubtitle,
           backgroundStart: '#F3F6EF',
           backgroundEnd: '#EDF4EC',
           accent: '#147A3D',
@@ -89,9 +90,9 @@ class OnboardingRepository {
             ? MobileLoginBranding.fromJson(
               response['login'] as Map<String, dynamic>,
             )
-            : const MobileLoginBranding(
-              title: 'Selamat kembali',
-              subtitle: 'Log masuk untuk meneruskan ke myWAP.',
+            : MobileLoginBranding(
+              title: currentAppLocalizations.loginWelcomeTitle,
+              subtitle: currentAppLocalizations.loginWelcomeSubtitle,
               backgroundStart: '#F3F6EF',
               backgroundEnd: '#EDF4EC',
               accent: '#147A3D',
@@ -112,10 +113,12 @@ class MobileLoginBranding {
   });
   factory MobileLoginBranding.fromJson(Map<String, dynamic> json) =>
       MobileLoginBranding(
-        title: json['title'] as String? ?? 'Selamat kembali',
+        title:
+            json['title'] as String? ??
+            currentAppLocalizations.loginWelcomeTitle,
         subtitle:
             json['subtitle'] as String? ??
-            'Log masuk untuk meneruskan ke myWAP.',
+            currentAppLocalizations.loginWelcomeSubtitle,
         backgroundStart: json['background_start'] as String? ?? '#F3F6EF',
         backgroundEnd: json['background_end'] as String? ?? '#EDF4EC',
         accent: json['accent'] as String? ?? '#147A3D',

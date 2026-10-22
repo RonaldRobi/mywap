@@ -1,33 +1,36 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 
-/// Malay label for an order lifecycle status.
-String orderStatusLabel(String? status) => switch (status) {
-      'pending' => 'Menunggu Pembayaran',
-      'paid' => 'Dibayar',
-      'processing' => 'Sedang Diproses',
-      'shipped' => 'Dihantar',
-      'completed' => 'Selesai',
-      'cancelled' => 'Dibatalkan',
+/// Localized label for an order lifecycle status.
+String orderStatusLabel(BuildContext context, String? status) =>
+    switch (status) {
+      'pending' => context.l10n.ecomStatusPendingPayment,
+      'paid' => context.l10n.ecomStatusPaid,
+      'processing' => context.l10n.ecomStatusProcessing,
+      'shipped' => context.l10n.ecomStatusShipped,
+      'completed' => context.l10n.ecomStatusCompleted,
+      'cancelled' => context.l10n.ecomStatusCancelled,
       _ => status ?? '-',
     };
 
 Color orderStatusColor(String? status) => switch (status) {
-      'pending' => AppColors.warning,
-      'paid' => AppColors.success,
-      'processing' => AppColors.movementGreen,
-      'shipped' => AppColors.movementSoftGreen,
-      'completed' => AppColors.success,
-      'cancelled' => AppColors.error,
-      _ => AppColors.textSecondary,
-    };
+  'pending' => AppColors.warning,
+  'paid' => AppColors.success,
+  'processing' => AppColors.movementGreen,
+  'shipped' => AppColors.movementSoftGreen,
+  'completed' => AppColors.success,
+  'cancelled' => AppColors.error,
+  _ => AppColors.textSecondary,
+};
 
-/// Malay label for a payment status.
-String paymentStatusLabel(String? status) => switch (status) {
-      'successful' => 'Berjaya',
-      'pending' => 'Menunggu',
-      'failed' => 'Gagal',
+/// Localized label for a payment status.
+String paymentStatusLabel(BuildContext context, String? status) =>
+    switch (status) {
+      'successful' => context.l10n.ecomPaymentStatusSuccess,
+      'pending' => context.l10n.ecomPaymentStatusPending,
+      'failed' => context.l10n.ecomPaymentStatusFailed,
       _ => status ?? '-',
     };
 

@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/organic_canvas_background.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../loading_screen/application/loading_screen_providers.dart';
 import '../application/public_home_providers.dart';
@@ -44,19 +46,16 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
       context: context,
       builder:
           (dialogContext) => AlertDialog(
-            title: const Text('Selamat Datang ke myWAP'),
-            content: const Text(
-              'Log masuk untuk akses penuh sebagai ahli, atau terus terokai '
-              'kandungan sebagai tetamu.',
-            ),
+            title: Text(context.l10n.publicWelcomeTitle),
+            content: Text(context.l10n.publicWelcomeBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Tutup'),
+                child: Text(context.l10n.close),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Log Masuk'),
+                child: Text(context.l10n.login),
               ),
             ],
           ),
@@ -74,46 +73,54 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
         actions: [
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
           const SizedBox(width: Spacing.sm),
         ],
       ),
-      body: async.when(
-        data:
-            (data) => RefreshIndicator(
-              onRefresh: () async => ref.invalidate(publicHomeProvider),
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: Spacing.xxl),
-                children: [
-                  _TopCarousel(banners: data.banners),
-                  _ArticlesSection(items: data.articles),
-                  _VideosSection(items: data.videos),
-                  _LibrarySection(items: data.library),
-                  _NewsSection(items: data.news),
-                  _EventsSection(items: data.events),
-                  _InfaqSection(items: data.infaqs),
-                  const _MemberCta(),
-                ],
-              ),
-            ),
-        loading:
-            () => ListView(
-              padding: const EdgeInsets.all(Spacing.lg),
-              children: const [
-                SkeletonBox(height: 180, radius: 24),
-                SizedBox(height: Spacing.xl),
-                SkeletonBox(height: 140, radius: 16),
-                SizedBox(height: Spacing.lg),
-                SkeletonBox(height: 140, radius: 16),
-              ],
-            ),
-        error:
-            (error, _) => ErrorRetry(
-              message: 'Ralat memuatkan kandungan. Sila cuba lagi.',
-              onRetry: () => ref.invalidate(publicHomeProvider),
-            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Lapisan hiasan paling bawah — kekal di belakang kandungan untuk
+          // semua keadaan (data/loading/error).
+          const OrganicCanvasBackground(),
+          async.when(
+            data:
+                (data) => RefreshIndicator(
+                  onRefresh: () async => ref.invalidate(publicHomeProvider),
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: Spacing.xxl),
+                    children: [
+                      _TopCarousel(banners: data.banners),
+                      _ArticlesSection(items: data.articles),
+                      _VideosSection(items: data.videos),
+                      _LibrarySection(items: data.library),
+                      _NewsSection(items: data.news),
+                      _EventsSection(items: data.events),
+                      _InfaqSection(items: data.infaqs),
+                      const _MemberCta(),
+                    ],
+                  ),
+                ),
+            loading:
+                () => ListView(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  children: const [
+                    SkeletonBox(height: 180, radius: 24),
+                    SizedBox(height: Spacing.xl),
+                    SkeletonBox(height: 140, radius: 16),
+                    SizedBox(height: Spacing.lg),
+                    SkeletonBox(height: 140, radius: 16),
+                  ],
+                ),
+            error:
+                (error, _) => ErrorRetry(
+                  message: context.l10n.loadContentError,
+                  onRetry: () => ref.invalidate(publicHomeProvider),
+                ),
+          ),
+        ],
       ),
     );
   }
@@ -200,7 +207,7 @@ class _TopCarouselState extends ConsumerState<_TopCarousel> {
           AspectRatio(
             aspectRatio: 21 / 9,
             child: ClipRRect(
-              borderRadius: AppRadius.hero,
+              borderRadius: AppRadius.banner,
               child: PageView.builder(
                 controller: _controller,
                 itemCount: widget.banners.length,
@@ -225,11 +232,12 @@ class _TopCarouselState extends ConsumerState<_TopCarousel> {
                               alignment: Alignment.center,
                               child: Text(
                                 banner.title ?? 'myWAP',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: AppColors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleMedium?.copyWith(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                   );
@@ -281,7 +289,7 @@ class _BrandHero extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: AppColors.heroGradient,
         ),
-        borderRadius: AppRadius.hero,
+        borderRadius: AppRadius.banner,
         boxShadow: AppShadows.card,
       ),
       child: Row(
@@ -312,11 +320,10 @@ class _BrandHero extends ConsumerWidget {
                 ),
                 const SizedBox(height: Spacing.xs),
                 Text(
-                  'Berita, artikel, program dan kempen infaq komuniti — '
-                  'terbuka untuk semua.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textOnDark,
-                  ),
+                  context.l10n.publicHeroSubtitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textOnDark),
                 ),
               ],
             ),
@@ -356,7 +363,7 @@ class _SectionHeader extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => context.go(path),
-            child: const Text('Lihat Semua'),
+            child: Text(context.l10n.viewAll),
           ),
         ],
       ),
@@ -394,9 +401,9 @@ class _ArticlesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Artikel', path: '/articles'),
+        _SectionHeader(title: context.l10n.articlesTitle, path: '/articles'),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada artikel buat masa ini.')
+          _EmptyHint(message: context.l10n.noArticles)
         else
           ...items.take(4).map((a) => _ArticleTile(article: a)),
       ],
@@ -435,7 +442,7 @@ class _ArticleTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${article.authorName ?? 'Admin'} • ${article.publishedAt ?? ''}',
+                      '${article.authorName ?? context.l10n.adminFallback} • ${article.publishedAt ?? ''}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -462,9 +469,9 @@ class _VideosSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Video', path: '/videos'),
+        _SectionHeader(title: context.l10n.videoTitle, path: '/videos'),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada video buat masa ini.')
+          _EmptyHint(message: context.l10n.noVideos)
         else
           SizedBox(
             height: 184,
@@ -522,9 +529,9 @@ class _VideoCard extends StatelessWidget {
                   video.title ?? '-',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -546,9 +553,12 @@ class _LibrarySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Pustaka', path: '/member/library'),
+        _SectionHeader(
+          title: context.l10n.libraryTitle,
+          path: '/member/library',
+        ),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada bahan pustaka buat masa ini.')
+          _EmptyHint(message: context.l10n.noLibrary)
         else
           SizedBox(
             height: 228,
@@ -575,10 +585,11 @@ class _LibraryCard extends StatelessWidget {
       width: 130,
       child: InkWell(
         borderRadius: AppRadius.md,
-        onTap: () => showLoginPrompt(
-          context,
-          message: 'Log masuk sebagai ahli untuk membaca di Pustaka Digital.',
-        ),
+        onTap:
+            () => showLoginPrompt(
+              context,
+              message: context.l10n.libraryMemberPrompt,
+            ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -604,9 +615,9 @@ class _LibraryCard extends StatelessWidget {
               item.title ?? '-',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -626,9 +637,9 @@ class _NewsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Info Terkini', path: '/news'),
+        _SectionHeader(title: context.l10n.newsTitle, path: '/news'),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada info terkini buat masa ini.')
+          _EmptyHint(message: context.l10n.noNews)
         else
           ...items.take(4).map((n) => _NewsTile(item: n)),
       ],
@@ -667,7 +678,7 @@ class _NewsTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${item.categoryName ?? 'Umum'} • ${item.publishedAt ?? ''}',
+                      '${item.categoryName ?? context.l10n.generalCategory} • ${item.publishedAt ?? ''}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -694,9 +705,12 @@ class _EventsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Program Akan Datang', path: '/events'),
+        _SectionHeader(
+          title: context.l10n.upcomingEventsTitle,
+          path: '/events',
+        ),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada program dijadualkan.')
+          _EmptyHint(message: context.l10n.noUpcomingEvents)
         else
           ...items.take(3).map((e) => _EventTile(event: e)),
       ],
@@ -762,9 +776,9 @@ class _InfaqSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(title: 'Infaq', path: '/infaq'),
+        _SectionHeader(title: context.l10n.infaqTitle, path: '/infaq'),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Tiada kempen infaq buat masa ini.')
+          _EmptyHint(message: context.l10n.noInfaqCampaigns)
         else
           SizedBox(
             height: 192,
@@ -884,21 +898,17 @@ class _MemberCta extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Jadi Ahli myWAP',
+            context.l10n.becomeMemberTitle,
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: Spacing.sm),
-          const Text(
-            'Daftar untuk akses kad ahli, status yuran, program, usrah '
-            'dan banyak lagi.',
-            textAlign: TextAlign.center,
-          ),
+          Text(context.l10n.becomeMemberBody, textAlign: TextAlign.center),
           const SizedBox(height: Spacing.lg),
           FilledButton(
             onPressed: () => context.go('/register'),
-            child: const Text('Daftar Sekarang'),
+            child: Text(context.l10n.registerNow),
           ),
         ],
       ),

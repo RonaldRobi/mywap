@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -31,42 +32,138 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _quantity = 1;
   ProductDetail? _detail;
 
+  ProductVariationOption? _selectedOption(ProductVariation variation) {
+    if (variation.options.isEmpty) return null;
+    final selectedId = variation.id == null ? null : _selectedOptions[variation.id];
+    if (selectedId != null) {
+      for (final option in variation.options) {
+        if (option.id == selectedId) return option;
+      }
+    }
+    return _defaultOption(variation);
+  }
+
+  /// First option the buyer can actually buy, falling back to the first one
+  /// when the whole variation is sold out (so the sold-out state is visible).
+  ProductVariationOption _defaultOption(ProductVariation variation) {
+    for (final option in variation.options) {
+      if (!option.isOutOfStock) return option;
+    }
+    return variation.options.first;
+  }
+
+  void _ensureSelections(Product product) {
+    for (final variation in product.variations) {
+      final variationId = variation.id;
+      if (variationId == null || variation.options.isEmpty) continue;
+
+      ProductVariationOption? current;
+      final selectedId = _selectedOptions[variationId];
+      if (selectedId != null) {
+        for (final option in variation.options) {
+          if (option.id == selectedId) {
+            current = option;
+            break;
+          }
+        }
+      }
+
+      // Pick an in-stock option when nothing is chosen yet, or when a refresh
+      // revealed that the previously chosen option has sold out.
+      if (current == null || current.isOutOfStock) {
+        final fallback = _defaultOption(variation);
+        if (fallback.id != null) _selectedOptions[variationId] = fallback.id!;
+      }
+    }
+  }
+
+  /// Smallest known stock across the selected options, else the product stock.
+  /// A null stock means "not tracked" (unlimited).
+  int? _availableStock(Product product) {
+    int? available;
+    for (final variation in product.variations) {
+      if (variation.options.isEmpty) continue;
+      final stock = _selectedOption(variation)?.stock;
+      if (stock == null) continue;
+      available = available == null
+          ? stock
+          : (stock < available ? stock : available);
+    }
+    return available ?? product.stock;
+  }
+
+  bool _isSoldOut(Product product) {
+    final stock = _availableStock(product);
+    return stock != null && stock <= 0;
+  }
+
+  int _clampedQuantity(Product product) {
+    final max = _availableStock(product);
+    if (max == null) return _quantity;
+    if (max <= 0) return 1;
+    return _quantity.clamp(1, max).toInt();
+  }
+
+  bool _canBuy(Product product) {
+    if (product.id == null || _isSoldOut(product)) return false;
+    for (final variation in product.variations) {
+      if (variation.options.isEmpty) continue;
+      if (variation.required == true && _selectedOption(variation) == null) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _addToCart({required bool buyNow}) {
     final product = _detail?.product;
     if (product == null) return;
-    final item = _buildCartItem(product);
-    ref.read(cartProvider.notifier).add(item);
+
+    if (!_canBuy(product)) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(context.l10n.ecomOutOfStockBody)),
+        );
+      return;
+    }
+
+    final added = ref.read(cartProvider.notifier).add(_buildCartItem(product));
     if (!mounted) return;
+    if (!added) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(context.l10n.ecomOutOfStockBody)),
+        );
+      return;
+    }
     if (buyNow) {
       context.push('/checkout');
     } else {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Ditambah ke troli.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.ecomAddedToCart)));
     }
   }
 
   CartItem _buildCartItem(Product product) {
     final selected = <ProductVariationOption>[];
     for (final variation in product.variations) {
-      if (variation.options.isEmpty) continue;
-      final optionId =
-          _selectedOptions[variation.id] ?? variation.options.first.id!;
-      final option = variation.options.firstWhere(
-        (o) => o.id == optionId,
-        orElse: () => variation.options.first,
-      );
-      selected.add(option);
+      final option = _selectedOption(variation);
+      if (option != null) selected.add(option);
     }
 
     // Mirrors OrderService.createOrder: member pricing replaces the whole
-    // unit price (adjustments are only added for non-members).
+    // unit price (adjustments are only added for non-members). The backend
+    // accepts one variation option per line, so send the first one just like
+    // the web checkout does.
     final isMember = product.isMember;
-    final singleOption = selected.length == 1 ? selected.first : null;
+    final firstOption = selected.isEmpty ? null : selected.first;
     final unitPrice =
         isMember
             ? (product.priceForMember ?? (product.price ?? 0))
-            : (product.price ?? 0) + (singleOption?.priceAdjustment ?? 0);
+            : (product.price ?? 0) + (firstOption?.priceAdjustment ?? 0);
 
     final labels = <String>[];
     for (final option in selected) {
@@ -79,14 +176,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
 
     return CartItem(
-      key: '${product.id}:${singleOption?.id ?? 0}',
+      key: '${product.id}:${firstOption?.id ?? 0}',
       productId: product.id ?? 0,
-      name: product.name ?? 'Produk',
+      name: product.name ?? context.l10n.ecomProductFallback,
       image: product.displayImage,
       unitPrice: unitPrice,
-      variationOptionId: singleOption?.id,
+      variationOptionId: firstOption?.id,
       variationLabel: labels.isEmpty ? null : labels.join(' / '),
-      quantity: _quantity,
+      quantity: _clampedQuantity(product),
+      stock: _availableStock(product),
     );
   }
 
@@ -97,17 +195,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/products'),
-        title: const Text('Butiran Produk'),
+        title: Text(context.l10n.ecomProductDetailTitle),
       ),
       body: detailAsync.when(
         data: (detail) {
           _detail = detail;
+          final product = detail.product;
+          if (product != null) _ensureSelections(product);
           return _DetailContent(
             detail: detail,
             selectedOptions: _selectedOptions,
+            availableStock: product == null ? null : _availableStock(product),
             onOptionSelected:
-                (variationId, optionId) =>
-                    setState(() => _selectedOptions[variationId] = optionId),
+                (variationId, optionId) => setState(() {
+                  _selectedOptions[variationId] = optionId;
+                  final currentProduct = _detail?.product;
+                  if (currentProduct == null) return;
+                  final max = _availableStock(currentProduct);
+                  if (max != null && max > 0 && _quantity > max) {
+                    _quantity = max;
+                  }
+                }),
             onRefresh:
                 () async =>
                     ref.invalidate(productDetailProvider(widget.productId)),
@@ -119,29 +227,39 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry:
                   () => ref.invalidate(productDetailProvider(widget.productId)),
             ),
       ),
       bottomNavigationBar: detailAsync.when(
-        data:
-            (detail) =>
-                detail.product == null
-                    ? null
-                    : _BottomBar(
-                      quantity: _quantity,
-                      onDecrease:
-                          () => setState(() {
-                            if (_quantity > 1) _quantity--;
-                          }),
-                      onIncrease:
-                          () => setState(() {
-                            if (_quantity < 99) _quantity++;
-                          }),
-                      onAddToCart: () => _addToCart(buyNow: false),
-                      onBuyNow: () => _addToCart(buyNow: true),
-                    ),
+        data: (detail) {
+          final product = detail.product;
+          if (product == null) return null;
+          final max = _availableStock(product);
+          final quantity = _clampedQuantity(product);
+          final soldOut = _isSoldOut(product);
+          return _BottomBar(
+            quantity: quantity,
+            canDecrease: quantity > 1,
+            canIncrease: !soldOut && (max == null || quantity < max),
+            canBuy: _canBuy(product),
+            soldOut: soldOut,
+            onDecrease:
+                () => setState(() {
+                  final current = _clampedQuantity(product);
+                  if (current > 1) _quantity = current - 1;
+                }),
+            onIncrease:
+                () => setState(() {
+                  final current = _clampedQuantity(product);
+                  final limit = _availableStock(product);
+                  if (limit == null || current < limit) _quantity = current + 1;
+                }),
+            onAddToCart: () => _addToCart(buyNow: false),
+            onBuyNow: () => _addToCart(buyNow: true),
+          );
+        },
         loading: () => null,
         error: (_, __) => null,
       ),
@@ -153,25 +271,28 @@ class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.detail,
     required this.selectedOptions,
+    required this.availableStock,
     required this.onOptionSelected,
     required this.onRefresh,
   });
 
   final ProductDetail detail;
   final Map<int, int> selectedOptions;
+  final int? availableStock;
   final void Function(int variationId, int optionId) onOptionSelected;
   final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final product = detail.product;
     if (product == null) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Center(child: Text('Produk tidak dijumpai.')),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(child: Text(l10n.ecomProductNotFound)),
         ),
       );
     }
@@ -217,9 +338,9 @@ class _DetailContent extends StatelessWidget {
                           color: AppColors.movementGreen,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'Harga Ahli',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.ecomMemberPrice,
+                          style: const TextStyle(
                             color: AppColors.white,
                             fontSize: AppTextTheme.minSize,
                             fontWeight: FontWeight.w700,
@@ -252,6 +373,10 @@ class _DetailContent extends StatelessWidget {
                     ],
                   ],
                 ),
+                if (availableStock != null) ...[
+                  const SizedBox(height: Spacing.sm),
+                  _StockStatus(stock: availableStock!),
+                ],
                 if (product.organization?.name != null) ...[
                   const SizedBox(height: Spacing.sm),
                   Text(
@@ -265,18 +390,18 @@ class _DetailContent extends StatelessWidget {
                 if (product.description != null &&
                     product.description!.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
-                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  Text(l10n.ecomDescription, style: theme.textTheme.titleLarge),
                   const SizedBox(height: Spacing.sm),
                   Text(product.description!, style: theme.textTheme.bodyLarge),
                 ],
                 if (product.variations.any((v) => v.options.isNotEmpty)) ...[
                   const SizedBox(height: Spacing.xl),
-                  Text('Pilihan', style: theme.textTheme.titleLarge),
+                  Text(l10n.ecomOptions, style: theme.textTheme.titleLarge),
                   for (final variation in product.variations)
                     if (variation.options.isNotEmpty) ...[
                       const SizedBox(height: Spacing.md),
                       Text(
-                        variation.name ?? 'Pilihan',
+                        variation.name ?? l10n.ecomOptions,
                         style: theme.textTheme.titleSmall,
                       ),
                       const SizedBox(height: Spacing.xs),
@@ -286,17 +411,19 @@ class _DetailContent extends StatelessWidget {
                         children: [
                           for (final option in variation.options)
                             ChoiceChip(
-                              label: Text(_optionLabel(option)),
+                              label: Text(_optionLabel(context, option)),
                               selected:
-                                  (selectedOptions[variation.id] ??
-                                      variation.options.first.id!) ==
-                                  option.id,
+                                  selectedOptions[variation.id] == option.id,
                               showCheckmark: false,
                               onSelected:
-                                  (_) => onOptionSelected(
-                                    variation.id!,
-                                    option.id!,
-                                  ),
+                                  option.isOutOfStock ||
+                                          variation.id == null ||
+                                          option.id == null
+                                      ? null
+                                      : (_) => onOptionSelected(
+                                        variation.id!,
+                                        option.id!,
+                                      ),
                             ),
                         ],
                       ),
@@ -306,7 +433,7 @@ class _DetailContent extends StatelessWidget {
             ),
           ),
           if (detail.relatedProducts.isNotEmpty) ...[
-            const SectionHeader('Produk Berkaitan'),
+            SectionHeader(l10n.ecomRelatedProducts),
             SizedBox(
               height: 280,
               child: ListView.separated(
@@ -327,10 +454,49 @@ class _DetailContent extends StatelessWidget {
   }
 }
 
-String _optionLabel(ProductVariationOption option) {
+String _optionLabel(BuildContext context, ProductVariationOption option) {
   final adjustment = option.priceAdjustment;
-  if (adjustment == null || adjustment <= 0) return option.name ?? '-';
-  return '${option.name} (+${Formatters.currency(adjustment)})';
+  final price =
+      adjustment == null || adjustment <= 0
+          ? ''
+          : ' (+${Formatters.currency(adjustment)})';
+  final soldOut =
+      option.isOutOfStock ? ' • ${context.l10n.ecomOptionSoldOut}' : '';
+  return '${option.name ?? '-'}$price$soldOut';
+}
+
+class _StockStatus extends StatelessWidget {
+  const _StockStatus({required this.stock});
+
+  final int stock;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final style = Theme.of(context).textTheme.bodyMedium;
+    if (stock <= 0) {
+      return Text(
+        l10n.ecomSoldOut,
+        style: style?.copyWith(
+          color: AppColors.error,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+    if (stock <= 10) {
+      return Text(
+        l10n.ecomStockRemaining(stock),
+        style: style?.copyWith(
+          color: AppColors.warning,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+    return Text(
+      l10n.ecomStockAvailable(stock),
+      style: style?.copyWith(color: AppColors.movementGreen),
+    );
+  }
 }
 
 class _RelatedCard extends StatelessWidget {
@@ -409,6 +575,10 @@ class _RelatedCard extends StatelessWidget {
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.quantity,
+    required this.canDecrease,
+    required this.canIncrease,
+    required this.canBuy,
+    required this.soldOut,
     required this.onDecrease,
     required this.onIncrease,
     required this.onAddToCart,
@@ -416,6 +586,10 @@ class _BottomBar extends StatelessWidget {
   });
 
   final int quantity;
+  final bool canDecrease;
+  final bool canIncrease;
+  final bool canBuy;
+  final bool soldOut;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
   final VoidCallback onAddToCart;
@@ -436,10 +610,13 @@ class _BottomBar extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Kuantiti', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  context.l10n.ecomQuantity,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const Spacer(),
                 IconButton.outlined(
-                  onPressed: quantity > 1 ? onDecrease : null,
+                  onPressed: canDecrease ? onDecrease : null,
                   icon: const Icon(Icons.remove),
                 ),
                 Padding(
@@ -447,26 +624,40 @@ class _BottomBar extends StatelessWidget {
                   child: Text('$quantity'),
                 ),
                 IconButton.outlined(
-                  onPressed: quantity < 99 ? onIncrease : null,
+                  onPressed: canIncrease ? onIncrease : null,
                   icon: const Icon(Icons.add),
                 ),
               ],
             ),
+            if (soldOut) ...[
+              const SizedBox(height: Spacing.xs),
+              Text(
+                context.l10n.ecomOutOfStockBody,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
             const SizedBox(height: Spacing.sm),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: onAddToCart,
+                    onPressed: canBuy ? onAddToCart : null,
                     icon: const Icon(Icons.add_shopping_cart),
-                    label: const Text('Masukkan ke Troli'),
+                    label: Text(context.l10n.ecomAddToCart),
                   ),
                 ),
                 const SizedBox(width: Spacing.md),
                 Expanded(
                   child: FilledButton(
-                    onPressed: onBuyNow,
-                    child: const Text('Beli Sekarang'),
+                    onPressed: canBuy ? onBuyNow : null,
+                    child: Text(
+                      soldOut
+                          ? context.l10n.ecomSoldOut
+                          : context.l10n.ecomBuyNow,
+                    ),
                   ),
                 ),
               ],

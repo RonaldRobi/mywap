@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../shared/l10n/l10n.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../application/financial_providers.dart';
 
@@ -30,7 +31,7 @@ class ReceiptDownloadButton extends ConsumerWidget {
 
       if (url == null || url.isEmpty) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Resit tidak tersedia.')),
+          SnackBar(content: Text(context.l10n.finReceiptUnavailable)),
         );
         return;
       }
@@ -41,7 +42,7 @@ class ReceiptDownloadButton extends ConsumerWidget {
       );
       if (!launched && context.mounted) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Gagal membuka resit. Sila cuba lagi.')),
+          SnackBar(content: Text(context.l10n.finReceiptOpenFailed)),
         );
       }
     } on ApiException catch (e) {
@@ -51,7 +52,7 @@ class ReceiptDownloadButton extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Gagal memuat turun resit.')),
+          SnackBar(content: Text(context.l10n.finReceiptDownloadFailed)),
         );
       }
     }
@@ -65,7 +66,7 @@ class ReceiptDownloadButton extends ConsumerWidget {
 
     return IconButton(
       onPressed: () => _download(context, ref),
-      tooltip: 'Muat Turun Resit',
+      tooltip: context.l10n.finDownloadReceipt,
       icon: Icon(
         Icons.download_outlined,
         size: 20,

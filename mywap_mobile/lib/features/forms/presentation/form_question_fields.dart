@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/models/form_model.dart';
@@ -127,7 +128,7 @@ class _QuestionField extends StatelessWidget {
             child: Text(
               value is String && (value as String).isNotEmpty
                   ? value as String
-                  : 'Pilih tarikh',
+                  : context.l10n.formSelectDate,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color:
                     value is String && (value as String).isNotEmpty
@@ -142,7 +143,7 @@ class _QuestionField extends StatelessWidget {
           value: value as String?,
           isExpanded: true,
           decoration: InputDecoration(labelText: label),
-          hint: Text(question.placeholder ?? 'Pilih pilihan'),
+          hint: Text(question.placeholder ?? context.l10n.formSelectOption),
           items: [
             for (final option in question.options)
               DropdownMenuItem(value: option, child: Text(option)),
@@ -198,7 +199,7 @@ class _QuestionField extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => onPickFile(id!),
               icon: const Icon(Icons.upload_file),
-              label: const Text('Pilih Fail'),
+              label: Text(context.l10n.formChooseFile),
             ),
             if (file != null) ...[
               const SizedBox(height: Spacing.xs),

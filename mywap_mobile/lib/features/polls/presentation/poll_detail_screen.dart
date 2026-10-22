@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -52,7 +53,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
 
     for (final question in poll.questions) {
       if (_selected[question.id] == null || _selected[question.id]!.isEmpty) {
-        setState(() => _submitError = 'Sila jawab semua soalan.');
+        setState(() => _submitError = context.l10n.pollAnswerAll);
         return;
       }
     }
@@ -94,7 +95,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/polls'),
-        title: const Text('Butiran Undian'),
+        title: Text(context.l10n.pollDetailTitle),
       ),
       body: pollAsync.when(
         data:
@@ -113,7 +114,7 @@ class _PollDetailScreenState extends ConsumerState<PollDetailScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(pollDetailProvider(widget.pollId)),
             ),
       ),
@@ -142,6 +143,7 @@ class _PollForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
 
     return ListView(
@@ -159,7 +161,7 @@ class _PollForm extends StatelessWidget {
         ],
         const SizedBox(height: Spacing.md),
         Text(
-          _endsLabel(poll),
+          _endsLabel(context, poll),
           style: theme.textTheme.bodySmall?.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -191,7 +193,7 @@ class _PollForm extends StatelessWidget {
                     ),
                   )
                   : const Icon(Icons.send),
-          label: const Text('Hantar Jawapan'),
+          label: Text(l10n.pollSubmitAnswers),
         ),
         const SizedBox(height: Spacing.xl),
       ],
@@ -284,10 +286,10 @@ class _DetailSkeleton extends StatelessWidget {
   }
 }
 
-String _endsLabel(Poll poll) {
-  if (poll.isExpired) return 'Undian telah tamat';
+String _endsLabel(BuildContext context, Poll poll) {
+  if (poll.isExpired) return context.l10n.pollEndedLong;
   if (poll.endsAtFormatted != null && poll.endsAtFormatted!.isNotEmpty) {
-    return 'Tamat pada ${poll.endsAtFormatted}';
+    return context.l10n.pollEndsOn(poll.endsAtFormatted!);
   }
-  return 'Tiada tarikh tamat';
+  return context.l10n.pollNoEndDate;
 }

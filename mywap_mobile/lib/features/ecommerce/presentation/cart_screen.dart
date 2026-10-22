@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -16,19 +17,20 @@ class CartScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/products'),
-        title: const Text('Troli'),
+        title: Text(l10n.ecomCartTitle),
       ),
       body:
           cart.isEmpty
               ? EmptyState(
                 icon: Icons.shopping_cart_outlined,
-                message: 'Troli anda kosong.',
-                actionLabel: 'Terokai Pasar',
+                message: l10n.ecomCartEmpty,
+                actionLabel: l10n.ecomExploreMarket,
                 onAction: () => context.go('/products'),
               )
               : Column(
@@ -55,11 +57,12 @@ class _CartItemCard extends ConsumerWidget {
   final CartItem item;
 
   Future<void> _confirmRemove(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     final ok = await showConfirmDialog(
       context,
-      title: 'Buang Item?',
-      message: 'Buang "${item.name}" daripada troli?',
-      confirmLabel: 'Buang',
+      title: l10n.ecomRemoveItemTitle,
+      message: l10n.ecomRemoveItemMessage(item.name),
+      confirmLabel: l10n.ecomRemove,
     );
     if (ok) ref.read(cartProvider.notifier).remove(item.key);
   }
@@ -97,6 +100,15 @@ class _CartItemCard extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (item.stock != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      context.l10n.ecomStockAvailable(item.stock!),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: Spacing.xs),
                   Row(
                     children: [
@@ -122,7 +134,9 @@ class _CartItemCard extends ConsumerWidget {
                       IconButton.outlined(
                         visualDensity: VisualDensity.compact,
                         onPressed:
-                            item.quantity < 99
+                            !item.isOutOfStock &&
+                                    (item.stock == null ||
+                                        item.quantity < item.stock!)
                                 ? () => ref
                                     .read(cartProvider.notifier)
                                     .updateQuantity(item.key, item.quantity + 1)
@@ -131,6 +145,22 @@ class _CartItemCard extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (item.isOutOfStock)
+                    Text(
+                      context.l10n.ecomOutOfStockBody,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  else if (item.isAtStockLimit)
+                    Text(
+                      context.l10n.ecomMaxStockReached,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -145,7 +175,7 @@ class _CartItemCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: Spacing.sm),
                 IconButton(
-                  tooltip: 'Buang',
+                  tooltip: context.l10n.ecomRemove,
                   onPressed: () => _confirmRemove(context, ref),
                   icon: const Icon(
                     Icons.delete_outline,
@@ -183,7 +213,10 @@ class _CartSummary extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Jumlah', style: theme.textTheme.titleMedium),
+                Text(
+                  context.l10n.ecomTotal,
+                  style: theme.textTheme.titleMedium,
+                ),
                 const Spacer(),
                 Text(
                   Formatters.currency(cart.subtotal),
@@ -193,11 +226,25 @@ class _CartSummary extends StatelessWidget {
                 ),
               ],
             ),
+            if (cart.items.any((item) => item.isOutOfStock)) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(
+                context.l10n.ecomOutOfStockBody,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: Spacing.md),
             FilledButton.icon(
-              onPressed: () => context.push('/checkout'),
+              onPressed:
+                  cart.items.any((item) => item.isOutOfStock)
+                      ? null
+                      : () => context.push('/checkout'),
               icon: const Icon(Icons.chevron_right),
-              label: const Text('Teruskan ke Checkout'),
+              label: Text(context.l10n.ecomContinueCheckout),
             ),
           ],
         ),

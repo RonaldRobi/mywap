@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -25,7 +26,7 @@ class AdminDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panel Admin'),
+        title: Text(context.l10n.adminPanelTitle),
         actions: const [LogoutIconButton()],
       ),
       body: dashboardAsync.when(
@@ -36,7 +37,7 @@ class AdminDashboardScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.adminUnexpectedError,
               onRetry: () => ref.invalidate(adminDashboardProvider),
             ),
       ),
@@ -56,15 +57,15 @@ class _DashboardContent extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: Spacing.xl),
         children: [
-          const SectionHeader('Pengurusan'),
+          SectionHeader(context.l10n.adminManagementSection),
           const _AdminActions(),
           const SizedBox(height: Spacing.sm),
-          const SectionHeader('Pengurusan Lanjutan'),
+          SectionHeader(context.l10n.adminAdvancedManagementSection),
           const _WebOnlyActions(),
           const SizedBox(height: Spacing.sm),
-          const SectionHeader('Ringkasan'),
+          SectionHeader(context.l10n.adminSummarySection),
           _StatRow(stats: data.stats),
-          const SectionHeader('Hasil Bulanan'),
+          SectionHeader(context.l10n.adminMonthlyRevenueSection),
           if (data.revenueValues.isEmpty)
             const _ChartEmpty()
           else
@@ -81,13 +82,13 @@ class _DashboardContent extends ConsumerWidget {
               ),
             ),
           SectionHeader(
-            'Aktiviti Terkini',
+            context.l10n.adminRecentActivitySection,
             trailing: _count(data.activities.length),
           ),
           if (data.activities.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(Spacing.xl),
-              child: Center(child: Text('Tiada aktiviti terkini.')),
+            Padding(
+              padding: const EdgeInsets.all(Spacing.xl),
+              child: Center(child: Text(context.l10n.adminNoRecentActivity)),
             )
           else
             for (final activity in data.activities)
@@ -117,15 +118,30 @@ class _DashboardContent extends ConsumerWidget {
 class _AdminActions extends StatelessWidget {
   const _AdminActions();
 
-  static const _actions = [
-    _Action('Ahli', '/admin/members', Icons.people_outline),
-    _Action('Yuran', '/admin/fees', Icons.payments_outlined),
-    _Action('Kehadiran', '/admin/attendance', Icons.qr_code_scanner),
-    _Action('Siaran', '/admin/broadcast', Icons.campaign_outlined),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      _Action(
+        context.l10n.adminMembersTab,
+        '/admin/members',
+        Icons.people_outline,
+      ),
+      _Action(
+        context.l10n.adminFeesTab,
+        '/admin/fees',
+        Icons.payments_outlined,
+      ),
+      _Action(
+        context.l10n.adminAttendanceTab,
+        '/admin/attendance',
+        Icons.qr_code_scanner,
+      ),
+      _Action(
+        context.l10n.adminBroadcastTab,
+        '/admin/broadcast',
+        Icons.campaign_outlined,
+      ),
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
       child: GridView.builder(
@@ -136,9 +152,9 @@ class _AdminActions extends StatelessWidget {
           mainAxisExtent: 96,
           crossAxisSpacing: Spacing.sm,
         ),
-        itemCount: _actions.length,
+        itemCount: actions.length,
         itemBuilder: (context, index) {
-          final action = _actions[index];
+          final action = actions[index];
           return Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
@@ -182,36 +198,17 @@ class _Action {
 class _WebOnlyActions extends StatelessWidget {
   const _WebOnlyActions();
 
-  static const _actions = [
-    _WebAction('Urus Program', Icons.event_note),
-    _WebAction('Urus Yuran', Icons.payments_outlined),
-    _WebAction('Kewangan', Icons.account_balance_wallet_outlined),
-    _WebAction('Transaksi', Icons.receipt_long_outlined),
-    _WebAction('Borang', Icons.assignment_outlined),
-    _WebAction('Undian', Icons.how_to_vote_outlined),
-    _WebAction('Berita & Artikel', Icons.newspaper_outlined),
-    _WebAction('Pengumuman', Icons.campaign_outlined),
-    _WebAction('Fasiliti', Icons.apartment_outlined),
-    _WebAction('Cawangan', Icons.account_tree_outlined),
-    _WebAction('Jawatan', Icons.badge_outlined),
-    _WebAction('Export Ahli', Icons.download_outlined),
-    _WebAction('Penderma', Icons.volunteer_activism_outlined),
-    _WebAction('Tukar Cawangan', Icons.swap_horiz_outlined),
-  ];
-
   void _showWebOnlyNotice(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Fungsi Versi Web'),
-          content: const Text(
-            'Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.',
-          ),
+          title: Text(context.l10n.adminWebOnlyTitle),
+          content: Text(context.l10n.adminWebOnlyMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
+              child: Text(context.l10n.adminOkButton),
             ),
           ],
         );
@@ -221,6 +218,31 @@ class _WebOnlyActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actions = [
+      _WebAction(context.l10n.adminWebManagePrograms, Icons.event_note),
+      _WebAction(context.l10n.adminWebManageFees, Icons.payments_outlined),
+      _WebAction(
+        context.l10n.adminWebFinance,
+        Icons.account_balance_wallet_outlined,
+      ),
+      _WebAction(
+        context.l10n.adminWebTransactions,
+        Icons.receipt_long_outlined,
+      ),
+      _WebAction(context.l10n.adminWebForms, Icons.assignment_outlined),
+      _WebAction(context.l10n.adminWebPolls, Icons.how_to_vote_outlined),
+      _WebAction(context.l10n.adminWebNewsArticles, Icons.newspaper_outlined),
+      _WebAction(context.l10n.adminWebAnnouncements, Icons.campaign_outlined),
+      _WebAction(context.l10n.adminWebFacilities, Icons.apartment_outlined),
+      _WebAction(context.l10n.adminWebBranches, Icons.account_tree_outlined),
+      _WebAction(context.l10n.adminWebPositions, Icons.badge_outlined),
+      _WebAction(context.l10n.adminWebExportMembers, Icons.download_outlined),
+      _WebAction(
+        context.l10n.adminWebDonors,
+        Icons.volunteer_activism_outlined,
+      ),
+      _WebAction(context.l10n.adminWebChangeBranch, Icons.swap_horiz_outlined),
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
       child: GridView.builder(
@@ -232,9 +254,9 @@ class _WebOnlyActions extends StatelessWidget {
           mainAxisSpacing: Spacing.sm,
           crossAxisSpacing: Spacing.sm,
         ),
-        itemCount: _actions.length,
+        itemCount: actions.length,
         itemBuilder: (context, index) {
-          final action = _actions[index];
+          final action = actions[index];
           return _WebOnlyAction(
             label: action.label,
             icon: action.icon,
@@ -302,22 +324,22 @@ class _StatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _StatCard(
-        label: 'Jumlah Ahli',
+        label: context.l10n.adminStatTotalMembers,
         value: '${stats.totalMembers}',
         icon: Icons.group_outlined,
       ),
       _StatCard(
-        label: 'Ahli Aktif',
+        label: context.l10n.adminStatActiveMembers,
         value: '${stats.activeMembers}',
         icon: Icons.verified_user_outlined,
       ),
       _StatCard(
-        label: 'Hasil',
+        label: context.l10n.adminStatRevenue,
         value: Formatters.currency(stats.totalRevenue),
         icon: Icons.payments_outlined,
       ),
       _StatCard(
-        label: 'Acara Akan Datang',
+        label: context.l10n.adminStatUpcomingEvents,
         value: '${stats.upcomingEvents}',
         icon: Icons.event_outlined,
       ),
@@ -462,9 +484,9 @@ class _ChartEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(Spacing.xl),
-      child: Center(child: Text('Tiada data pendapatan bulanan.')),
+    return Padding(
+      padding: const EdgeInsets.all(Spacing.xl),
+      child: Center(child: Text(context.l10n.adminNoMonthlyRevenueData)),
     );
   }
 }
@@ -505,7 +527,9 @@ class _ActivityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    activity.title.isEmpty ? 'Aktiviti' : activity.title,
+                    activity.title.isEmpty
+                        ? context.l10n.adminActivityFallback
+                        : activity.title,
                     style: theme.textTheme.titleSmall,
                   ),
                   if (activity.description.isNotEmpty) ...[

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../data/models/app_notification.dart';
 
 /// Tajuk notifikasi daripada payload Laravel (`data.title`).
@@ -15,23 +16,28 @@ String notificationBody(AppNotification notification) {
 }
 
 /// Label jenis notifikasi untuk dipaparkan kepada pengguna.
-String notificationTypeLabel(AppNotification notification) {
+String notificationTypeLabel(
+  BuildContext context,
+  AppNotification notification,
+) {
   final type = _typeOf(notification);
-  if (type.contains('announcement')) return 'Pengumuman';
-  if (type.contains('infaq')) return 'Infaq';
-  if (type.contains('event')) return 'Acara';
-  if (type.contains('fee')) return 'Yuran';
-  if (type.contains('form')) return 'Borang';
+  if (type.contains('announcement')) {
+    return context.l10n.menuAnnouncements;
+  }
+  if (type.contains('infaq')) return context.l10n.menuInfaq;
+  if (type.contains('event')) return context.l10n.notifTypeEvent;
+  if (type.contains('fee')) return context.l10n.notifTypeFee;
+  if (type.contains('form')) return context.l10n.notifTypeForm;
   if (type.contains('facility') || type.contains('booking')) {
-    return 'Tempahan Fasiliti';
+    return context.l10n.notifTypeFacilityBooking;
   }
   if (type.contains('transition') ||
       type.contains('member') ||
       type.contains('registration')) {
-    return 'Keahlian';
+    return context.l10n.notifTypeMembership;
   }
-  if (type.contains('broadcast')) return 'Siaran';
-  return 'Notifikasi';
+  if (type.contains('broadcast')) return context.l10n.notifTypeBroadcast;
+  return context.l10n.notifTypeNotification;
 }
 
 IconData notificationIconFor(AppNotification notification) {
@@ -68,13 +74,19 @@ String _typeOf(AppNotification notification) {
       .toLowerCase();
 }
 
-String notificationTimeAgo(DateTime? time) {
+String notificationTimeAgo(BuildContext context, DateTime? time) {
   if (time == null) return '';
   final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return 'Baru sahaja';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} minit lalu';
-  if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-  if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+  if (diff.inMinutes < 1) return context.l10n.notifJustNow;
+  if (diff.inMinutes < 60) {
+    return context.l10n.notifMinutesAgo('${diff.inMinutes}');
+  }
+  if (diff.inHours < 24) {
+    return context.l10n.notifHoursAgo('${diff.inHours}');
+  }
+  if (diff.inDays < 7) {
+    return context.l10n.notifDaysAgo('${diff.inDays}');
+  }
   final d = time.day.toString().padLeft(2, '0');
   final m = time.month.toString().padLeft(2, '0');
   return '$d/$m/${time.year}';

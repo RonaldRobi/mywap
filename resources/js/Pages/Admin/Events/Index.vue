@@ -121,7 +121,7 @@ function deleteEvent(event) {
                             <p v-if="e.organizations.length > 1" class="text-gray-400">
                                 Terlibat: {{ e.organizations.map(o => o.name).join(', ') }}
                             </p>
-                            <p class="text-gray-400">Pendaftaran: {{ e.registrations_count }}</p>
+                            <p class="text-gray-400">Peserta unik: {{ e.unique_participants_count }} · Hadir: {{ e.attended_count }}</p>
                         </div>
 
                         <div class="mt-auto flex gap-2 pt-2">

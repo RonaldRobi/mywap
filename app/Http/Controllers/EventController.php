@@ -11,6 +11,7 @@ use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\Scopes\OrganizationScope;
+use App\Services\RegistrationDedupeService;
 use App\Support\QrPng;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -440,7 +441,10 @@ class EventController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $query = Event::with(['organization', 'organizations', 'activeForms:id,event_id,share_token,is_active'])
-            ->withCount('registrations')
+            ->withCount([
+                'registrations',
+                'registrations as attended_count' => fn ($q) => $q->whereHas('attendance'),
+            ])
             ->orderByDesc('start_time');
 
         if (! $isSuperadmin) {
@@ -468,8 +472,11 @@ class EventController extends Controller
             $query->whereHas('organizations', fn ($q) => $q->where('organizations.id', (int) $request->org));
         }
 
-        $events = $query->paginate(15)->withQueryString()->through(function (Event $e) {
+        $dedupe = app(RegistrationDedupeService::class);
+
+        $events = $query->paginate(15)->withQueryString()->through(function (Event $e) use ($dedupe) {
             $activeForms = $e->activeForms;
+            $uniqueParticipants = $dedupe->summary($e)['unique_identities'];
 
             return [
                 'id' => $e->id,
@@ -484,6 +491,8 @@ class EventController extends Controller
                 'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
                 'organizations' => $e->organizations->map(fn ($o) => ['id' => $o->id, 'name' => $o->name])->values(),
                 'registrations_count' => $e->registrations_count,
+                'unique_participants_count' => $uniqueParticipants,
+                'attended_count' => (int) $e->attended_count,
                 'featured_image_url' => $e->featured_image_url,
                 // Butang "Borang Pendaftaran": 1 borang → buka terus; >1 → halaman urus.
                 'form_url' => $activeForms->count() === 1
@@ -519,6 +528,11 @@ class EventController extends Controller
         }
 
         $event->load(['organization', 'organizations']);
+
+        // Kira peserta unik (buang pendua import/borang) dan kehadiran sebenar.
+        // `registrations_count` kekal sebagai jumlah rekod mentah.
+        $registrationSummary = app(RegistrationDedupeService::class)->summary($event);
+        $attendedCount = $event->registrations()->whereHas('attendance')->count();
 
         $forms = Form::where('event_id', $event->id)
             ->withCount('responses')
@@ -560,7 +574,9 @@ class EventController extends Controller
                 'featured_image_url' => $event->featured_image_url,
                 'organization_name' => $event->organization?->name ?? 'Semua Organisasi',
                 'organizations' => $event->organizations->map(fn ($o) => $o->name)->values(),
-                'registrations_count' => $event->registrations()->count(),
+                'registrations_count' => $registrationSummary['total_rows'],
+                'unique_participants_count' => $registrationSummary['unique_identities'],
+                'attended_count' => $attendedCount,
             ],
             'forms' => $forms,
             'buildFormUrl' => route('admin.forms.create', [

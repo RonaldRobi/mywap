@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -43,14 +44,16 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       _error = null;
     });
     try {
-      await ref.read(profileRepositoryProvider).changePassword(
-        currentPassword: _currentController.text.trim(),
-        newPassword: _newController.text,
-      );
+      await ref
+          .read(profileRepositoryProvider)
+          .changePassword(
+            currentPassword: _currentController.text.trim(),
+            newPassword: _newController.text,
+          );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kata laluan anda telah dikemas kini.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.passwordUpdated)));
       Navigator.of(context).pop();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -62,7 +65,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = 'Ralat tidak dijangka. Sila cuba lagi.';
+        _error = context.l10n.unexpectedErrorRetry;
       });
     }
   }
@@ -73,13 +76,13 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Tukar Kata Laluan'),
+        title: Text(context.l10n.changePassword),
       ),
       body: ListView(
         padding: const EdgeInsets.all(Spacing.lg),
         children: [
           Text(
-            'Kemas kini kata laluan akaun myWAP anda.',
+            context.l10n.changePasswordSubtitle2,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -92,29 +95,30 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 TextFormField(
                   controller: _currentController,
                   obscureText: _obscure,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Laluan Semasa *',
-                    prefixIcon: Icon(Icons.lock_outline),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.currentPasswordLabel,
+                    prefixIcon: const Icon(Icons.lock_outline),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? 'Sila masukkan kata laluan semasa.'
-                          : null,
+                  validator:
+                      (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? context.l10n.currentPasswordRequired
+                              : null,
                 ),
                 const SizedBox(height: Spacing.md),
                 TextFormField(
                   controller: _newController,
                   obscureText: _obscure,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Laluan Baharu *',
-                    prefixIcon: Icon(Icons.password_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.newPasswordRequiredLabel,
+                    prefixIcon: const Icon(Icons.password_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Sila masukkan kata laluan baharu.';
+                      return context.l10n.newPasswordRequired;
                     }
                     if (value.length < 8) {
-                      return 'Minimum 8 aksara.';
+                      return context.l10n.min8;
                     }
                     return null;
                   },
@@ -123,14 +127,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 TextFormField(
                   controller: _confirmController,
                   obscureText: _obscure,
-                  decoration: const InputDecoration(
-                    labelText: 'Sahkan Kata Laluan Baharu *',
-                    prefixIcon: Icon(Icons.verified_user_outlined),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.confirmNewPasswordLabel,
+                    prefixIcon: const Icon(Icons.verified_user_outlined),
                   ),
-                  validator: (value) =>
-                      value != _newController.text
-                          ? 'Kata laluan tidak sepadan.'
-                          : null,
+                  validator:
+                      (value) =>
+                          value != _newController.text
+                              ? context.l10n.passwordMismatch
+                              : null,
                 ),
                 const SizedBox(height: Spacing.sm),
                 Align(
@@ -141,7 +146,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       _obscure ? Icons.visibility_off : Icons.visibility,
                       size: 18,
                     ),
-                    label: Text(_obscure ? 'Tunjuk' : 'Sembunyi'),
+                    label: Text(
+                      _obscure ? context.l10n.show : context.l10n.hide,
+                    ),
                   ),
                 ),
               ],
@@ -172,7 +179,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ),
                     )
                     : const Icon(Icons.check),
-            label: Text(_saving ? 'Menyimpan...' : 'Simpan Kata Laluan'),
+            label: Text(
+              _saving ? context.l10n.saving : context.l10n.savePassword,
+            ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -35,7 +36,7 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Infaq'),
+        title: Text(context.l10n.infaqTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: listAsync.when(
@@ -51,7 +52,7 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(infaqListProvider),
             ),
       ),
@@ -97,11 +98,11 @@ class _InfaqList extends ConsumerWidget {
               ),
             ),
           if (infaqs.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
                 icon: Icons.volunteer_activism_outlined,
-                message: 'Tiada kempen infaq buat masa ini.',
+                message: context.l10n.noInfaqCampaigns,
               ),
             )
           else
@@ -145,7 +146,7 @@ class _OrgFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chips = <({int? id, String label})>[
-      const (id: null, label: 'Semua'),
+      (id: null, label: context.l10n.infaqFilterAll),
       for (final org in organizations) (id: org.id, label: org.name ?? '-'),
     ];
 
@@ -182,6 +183,7 @@ class _InfaqCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final imageUrl = infaq.imagePath;
     final progress = ((infaq.progressPercent ?? 0).clamp(0, 100)) / 100;
@@ -222,8 +224,8 @@ class _InfaqCard extends StatelessWidget {
                       child: _CampaignTag(
                         label:
                             infaq.type == 'progress'
-                                ? 'Kutip Dana'
-                                : 'Derma Bebas',
+                                ? l10n.infaqTypeFundraise
+                                : l10n.infaqTypeFreeDonation,
                       ),
                     ),
                   ],
@@ -274,14 +276,18 @@ class _InfaqCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${infaq.progressPercent ?? 0}% terkumpul',
+                        l10n.infaqPercentCollected(
+                          (infaq.progressPercent ?? 0).toString(),
+                        ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                           fontSize: AppTextTheme.minSize,
                         ),
                       ),
                       Text(
-                        'Sasaran ${Formatters.currency(infaq.targetAmount)}',
+                        l10n.infaqTargetAmount(
+                          Formatters.currency(infaq.targetAmount),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -291,7 +297,7 @@ class _InfaqCard extends StatelessWidget {
                       ),
                       if (infaq.daysRunning != null)
                         Text(
-                          '${infaq.daysRunning} hari berjalan',
+                          l10n.infaqDaysRunning(infaq.daysRunning!),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                             fontSize: AppTextTheme.minSize,
@@ -314,6 +320,7 @@ class _InfaqIntro extends StatelessWidget {
   final List<Infaq> infaqs;
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final total = infaqs.fold<num>(
       0,
       (sum, item) => sum + (item.collectedAmount ?? 0),
@@ -329,14 +336,14 @@ class _InfaqIntro extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Kempen Infaq',
+            l10n.infaqCampaignsTitle,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            'Sertai kami dalam menyumbang dan membantu mereka yang memerlukan.',
+            l10n.infaqIntroSubtitle,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
@@ -345,11 +352,14 @@ class _InfaqIntro extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             Row(
               children: [
-                _InfaqStat(value: '${infaqs.length}', label: 'KEMPEN AKTIF'),
+                _InfaqStat(
+                  value: '${infaqs.length}',
+                  label: l10n.infaqActiveCampaigns,
+                ),
                 const SizedBox(width: Spacing.sm),
                 _InfaqStat(
                   value: Formatters.currency(total),
-                  label: 'TERKUMPUL',
+                  label: l10n.infaqCollected,
                 ),
               ],
             ),

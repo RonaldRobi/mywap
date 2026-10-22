@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../onboarding/application/onboarding_providers.dart';
@@ -49,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _error =
                 auth is AuthUnauthenticated && auth.error != null
                     ? auth.error!
-                    : 'Log masuk gagal. Sila cuba lagi.',
+                    : context.l10n.loginFailed,
       );
       return;
     }
@@ -64,18 +65,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final ok =
         await ref.read(authControllerProvider.notifier).loginWithBiometrics();
     if (!ok && mounted) {
-      setState(
-        () => _error = 'Pengesahan biometrik gagal. Sila log masuk manual.',
-      );
+      setState(() => _error = context.l10n.biometricAuthFailed);
     }
     if (mounted) setState(() => _bioSubmitting = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    const fallback = MobileLoginBranding(
-      title: 'Selamat kembali',
-      subtitle: 'Log masuk untuk meneruskan ke myWAP.',
+    final fallback = MobileLoginBranding(
+      title: context.l10n.loginWelcomeTitle,
+      subtitle: context.l10n.loginWelcomeSubtitle,
       backgroundStart: '#F3F6EF',
       backgroundEnd: '#EDF4EC',
       accent: '#147A3D',
@@ -147,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(height: Spacing.lg),
                           ],
                           Text(
-                            'Emel atau No. Kad Pengenalan',
+                            context.l10n.loginIdentifierLabel,
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(color: AppColors.textPrimary),
                           ),
@@ -157,19 +156,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textInputAction: TextInputAction.next,
                             autofillHints: const [AutofillHints.username],
                             decoration: _inputDecoration(
-                              'Contoh: nama@emel.com atau 900101...',
+                              context.l10n.loginIdentifierHint,
                               Icons.person_outline,
                               accent,
                             ),
                             validator:
                                 (value) =>
                                     value == null || value.trim().isEmpty
-                                        ? 'Sila masukkan emel atau nombor kad pengenalan.'
+                                        ? context.l10n.loginIdentifierRequired
                                         : null,
                           ),
                           const SizedBox(height: Spacing.lg),
                           Text(
-                            'Kata Laluan',
+                            context.l10n.passwordLabel,
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(color: AppColors.textPrimary),
                           ),
@@ -180,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _submit(),
                             decoration: _inputDecoration(
-                              'Masukkan kata laluan',
+                              context.l10n.passwordHint,
                               Icons.lock_outline,
                               accent,
                             ).copyWith(
@@ -200,7 +199,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             validator:
                                 (value) =>
                                     value == null || value.isEmpty
-                                        ? 'Sila masukkan kata laluan.'
+                                        ? context.l10n.passwordRequired
                                         : null,
                           ),
                           Align(
@@ -210,7 +209,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: TextButton.styleFrom(
                                 foregroundColor: accent,
                               ),
-                              child: const Text('Lupa kata laluan?'),
+                              child: Text(context.l10n.forgotPassword),
                             ),
                           ),
                           const SizedBox(height: Spacing.sm),
@@ -235,7 +234,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           color: AppColors.white,
                                         ),
                                       )
-                                      : const Text('Log Masuk'),
+                                      : Text(context.l10n.login),
                             ),
                           ),
                           Consumer(
@@ -287,8 +286,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 ),
                                         label: Text(
                                           hasFaceId
-                                              ? 'Log Masuk dengan Face ID'
-                                              : 'Log Masuk dengan Cap Jari',
+                                              ? context
+                                                  .l10n
+                                                  .biometricFaceIdLogin
+                                              : context
+                                                  .l10n
+                                                  .biometricFingerprintLogin,
                                         ),
                                       ),
                                     ),
@@ -302,13 +305,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Log masuk kali pertama?'),
+                              Text(context.l10n.firstLoginPrompt),
                               TextButton(
                                 onPressed: () => context.push('/first-login'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: accent,
                                 ),
-                                child: const Text('Klik di sini'),
+                                child: Text(context.l10n.clickHere),
                               ),
                             ],
                           ),
@@ -318,19 +321,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               style: TextButton.styleFrom(
                                 foregroundColor: AppColors.textSecondary,
                               ),
-                              child: const Text('Lupa No. Ahli?'),
+                              child: Text(context.l10n.forgotMemberNo),
                             ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Belum ada akaun?'),
+                              Text(context.l10n.noAccount),
                               TextButton(
                                 onPressed: () => context.push('/register'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: accent,
                                 ),
-                                child: const Text('Daftar Sekarang'),
+                                child: Text(context.l10n.registerNow),
                               ),
                             ],
                           ),
@@ -352,12 +355,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 Icons.explore_outlined,
                                 size: 20,
                               ),
-                              label: const Text('Layari sebagai tetamu'),
+                              label: Text(context.l10n.browseAsGuest),
                             ),
                           ),
                           const SizedBox(height: Spacing.xl),
                           Text(
-                            'PLATFORM RASMI EKOSISTEM',
+                            context.l10n.officialPlatform,
                             textAlign: TextAlign.center,
                             style: Theme.of(
                               context,
@@ -439,7 +442,7 @@ class _BrandMark extends StatelessWidget {
               ),
             ),
             Text(
-              'Platform Digital Ekosistem Gerakan',
+              context.l10n.movementPlatformTagline,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: AppTextTheme.minSize,

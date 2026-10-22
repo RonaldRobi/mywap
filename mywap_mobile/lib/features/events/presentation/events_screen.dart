@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -24,11 +25,11 @@ class EventsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Program & Acara'),
+        title: Text(context.l10n.eventsTitle),
         actions: [
           if (isAuthenticated)
             IconButton(
-              tooltip: 'Pendaftaran Saya',
+              tooltip: context.l10n.eventsMyRegistrationsTooltip,
               onPressed: () => context.push('/events/my-registrations'),
               icon: const Icon(Icons.event_available_outlined),
             ),
@@ -48,7 +49,7 @@ class EventsScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(eventsProvider),
             ),
       ),
@@ -87,9 +88,9 @@ class _EventsList extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: Spacing.lg),
         itemBuilder: (context, index) {
           if (index == 0) {
-            return const _PageIntro(
-              title: 'Program & Acara',
-              subtitle: 'Ketahui dan sertai program yang akan datang.',
+            return _PageIntro(
+              title: context.l10n.eventsTitle,
+              subtitle: context.l10n.eventsSubtitle,
             );
           }
           return _EventCard(event: events[index - 1]);
@@ -120,8 +121,11 @@ class _EventCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 176,
+              // Poster program 1080×1350 (4:5) — `SizedBox(height: 176)` lama
+              // memotong ~60% tinggi poster. Guna ratio sumber supaya poster
+              // penuh kelihatan.
+              AspectRatio(
+                aspectRatio: 4 / 5,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -150,8 +154,8 @@ class _EventCard extends StatelessWidget {
                       child: _ImageChip(
                         label:
                             event.type == 'physical'
-                                ? 'Fizikal'
-                                : 'Dalam Talian',
+                                ? context.l10n.eventPhysicalTitle
+                                : context.l10n.eventOnlineTitle,
                       ),
                     ),
                   ],
@@ -275,21 +279,18 @@ class _EventsEmpty extends StatelessWidget {
         borderRadius: AppRadius.hero,
         border: Border.all(color: AppColors.divider),
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.event_busy_outlined,
             size: 48,
             color: AppColors.textSecondary,
           ),
-          SizedBox(height: Spacing.md),
-          Text('Tiada program dijadualkan'),
-          SizedBox(height: Spacing.xs),
-          Text(
-            'Program baharu akan muncul di sini apabila dijadualkan.',
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: Spacing.md),
+          Text(context.l10n.eventsEmpty),
+          const SizedBox(height: Spacing.xs),
+          Text(context.l10n.eventsEmptyBody, textAlign: TextAlign.center),
         ],
       ),
     ),

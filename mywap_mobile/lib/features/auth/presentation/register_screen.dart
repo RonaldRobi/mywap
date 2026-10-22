@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
@@ -65,7 +66,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       initialDate: DateTime(now.year - 20),
       firstDate: DateTime(now.year - 100),
       lastDate: now,
-      helpText: 'Pilih Tarikh Lahir',
+      helpText: context.l10n.selectDob,
     );
     if (picked != null) setState(() => _dob = picked);
   }
@@ -90,12 +91,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _validateIc(String? value) {
     final v = (value ?? '').trim();
     if (v.isEmpty) {
-      return 'Sila masukkan No. Kad Pengenalan atau No. Passport.';
+      return context.l10n.icRequired;
     }
     final cleaned = v.replaceAll(RegExp(r'[\s\-.]'), '');
     if (cleaned.length < 6) {
-      return 'No. IC tidak sah. Masukkan 12 digit No. Kad Pengenalan '
-          '(cth: 900101011234) atau No. Passport.';
+      return context.l10n.icInvalid;
     }
     return null;
   }
@@ -112,12 +112,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         icNumber: _icController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
-        dob: _dob != null
-            ? '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}'
-            : null,
+        phone:
+            _phoneController.text.trim().isEmpty
+                ? null
+                : _phoneController.text.trim(),
+        dob:
+            _dob != null
+                ? '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}'
+                : null,
         referralCode: widget.referralCode,
       );
       if (!mounted) return;
@@ -125,8 +127,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } on ApiException catch (e) {
       final messages = <String>{};
       e.errors?.forEach((_, values) => messages.addAll(values));
-      setState(() =>
-          _error = messages.isEmpty ? e.message : messages.join('\n'));
+      setState(
+        () => _error = messages.isEmpty ? e.message : messages.join('\n'),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -139,22 +142,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
 
     return AuthScaffold(
-      title: 'Daftar Ahli Baharu',
-      subtitle: 'Isi maklumat di bawah untuk menyertai ekosistem myWAP.',
+      title: context.l10n.registerTitle,
+      subtitle: context.l10n.registerSubtitle,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Sudah ada akaun?'),
+          Text(context.l10n.alreadyHaveAccount),
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
         ],
       ),
       children: [
         if (_referrerName != null) ...[
-          AuthSuccessBanner(message: 'Dijemput oleh $_referrerName'),
+          AuthSuccessBanner(message: context.l10n.invitedBy(_referrerName!)),
         ],
         if (_error != null) AuthErrorBanner(message: _error!),
         Form(
@@ -163,51 +166,54 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AuthField(
-                label: 'Nama Penuh',
+                label: context.l10n.fullNameLabel,
                 controller: _nameController,
                 icon: Icons.person_outline,
-                hint: 'Contoh: Ahmad Firdaus',
+                hint: context.l10n.fullNameHint,
                 textInputAction: TextInputAction.next,
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Sila masukkan nama.' : null,
+                validator:
+                    (v) =>
+                        v == null || v.trim().isEmpty
+                            ? context.l10n.fullNameRequired
+                            : null,
               ),
               AuthField(
-                label: 'Emel',
+                label: context.l10n.emailLabel,
                 controller: _emailController,
                 icon: Icons.mail_outline,
-                hint: 'nama@emel.com',
+                hint: context.l10n.emailHint,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 validator: (v) {
                   final email = (v ?? '').trim();
-                  if (email.isEmpty) return 'Sila masukkan alamat emel.';
+                  if (email.isEmpty) return context.l10n.emailRequired;
                   final valid = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                   if (!valid.hasMatch(email)) {
-                    return 'Alamat emel tidak sah. Contoh: nama@emel.com';
+                    return context.l10n.emailInvalid;
                   }
                   return null;
                 },
               ),
               AuthField(
-                label: 'No. Kad Pengenalan / Passport',
+                label: context.l10n.icPassportLabel,
                 controller: _icController,
                 icon: Icons.badge_outlined,
-                hint: 'Contoh: 900101011234',
+                hint: context.l10n.icHint,
                 textInputAction: TextInputAction.next,
                 validator: _validateIc,
               ),
               AuthField(
-                label: 'No. Telefon (Pilihan)',
+                label: context.l10n.phoneOptionalLabel,
                 controller: _phoneController,
                 icon: Icons.phone_outlined,
-                hint: 'Contoh: 0123456789',
+                hint: context.l10n.phoneHint,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.done,
                 validator: (v) {
                   final phone = (v ?? '').trim();
                   if (phone.isEmpty) return null;
                   if (!RegExp(r'^[0-9+\-\s()]{7,20}$').hasMatch(phone)) {
-                    return 'No. telefon tidak sah. Contoh: 0123456789';
+                    return context.l10n.phoneInvalid;
                   }
                   return null;
                 },
@@ -216,64 +222,64 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 validator: (_) {
                   if (_validateIc(_icController.text) != null) return null;
                   if (_dob == null && !_icHasReadableDob(_icController.text)) {
-                    return 'Sila pilih tarikh lahir kerana No. IC tidak lengkap '
-                        'atau bukan format IC Malaysia.';
+                    return context.l10n.dobRequiredForIc;
                   }
                   return null;
                 },
-                builder: (field) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tarikh Lahir (Diperlukan jika No. IC bukan 12 digit)',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                    InkWell(
-                      onTap: () async {
-                        await _pickDob();
-                        field.didChange(_dob);
-                        field.validate();
-                      },
-                      borderRadius: AppRadius.md,
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          errorText: field.errorText,
+                builder:
+                    (field) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.l10n.dobLabelRequired,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_month_outlined,
-                              color: AppColors.movementGreen,
+                        const SizedBox(height: Spacing.sm),
+                        InkWell(
+                          onTap: () async {
+                            await _pickDob();
+                            field.didChange(_dob);
+                            field.validate();
+                          },
+                          borderRadius: AppRadius.md,
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              errorText: field.errorText,
                             ),
-                            const SizedBox(width: Spacing.md),
-                            Text(
-                              _dob == null
-                                  ? 'Pilih tarikh lahir'
-                                  : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_month_outlined,
+                                  color: AppColors.movementGreen,
+                                ),
+                                const SizedBox(width: Spacing.md),
+                                Text(
+                                  _dob == null
+                                      ? context.l10n.selectDob
+                                      : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
               ),
               const SizedBox(height: Spacing.xl),
               FilledButton(
                 onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: AppColors.white,
-                        ),
-                      )
-                    : const Text('Daftar Sekarang'),
+                child:
+                    _submitting
+                        ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: AppColors.white,
+                          ),
+                        )
+                        : Text(context.l10n.registerNow),
               ),
             ],
           ),
@@ -290,9 +296,8 @@ class _RegisterSuccess extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Pendaftaran Berjaya!',
-      subtitle:
-          'Akaun anda telah diaktifkan. Sila log masuk kali pertama menggunakan No. IC anda untuk menetapkan kata laluan.',
+      title: context.l10n.registerSuccessTitle,
+      subtitle: context.l10n.registerSuccessSubtitle,
       children: [
         Container(
           padding: const EdgeInsets.all(Spacing.xl),
@@ -310,7 +315,7 @@ class _RegisterSuccess extends StatelessWidget {
               ),
               const SizedBox(height: Spacing.md),
               Text(
-                'NO. AHLI ANDA',
+                context.l10n.yourMemberNo,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.textOnDark,
                   letterSpacing: 1.2,
@@ -330,7 +335,7 @@ class _RegisterSuccess extends StatelessWidget {
         const SizedBox(height: Spacing.xl),
         FilledButton(
           onPressed: () => context.go('/login'),
-          child: const Text('Log Masuk Kali Pertama'),
+          child: Text(context.l10n.firstTimeLogin),
         ),
       ],
     );

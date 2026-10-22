@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../shared/l10n/l10n.dart';
 
 import '../constants/api_paths.dart';
 import '../network/api_client.dart';
@@ -84,10 +85,15 @@ class PushNotificationService {
       // token pertama TIDAK pernah didaftarkan — punca push tak sampai.
       initialized = true;
 
-      unawaited(_reportDiagnostic('firebase_ok', extra: {
-        'apps': Firebase.apps.map((a) => a.name).toList(),
-        'device': _deviceName,
-      }));
+      unawaited(
+        _reportDiagnostic(
+          'firebase_ok',
+          extra: {
+            'apps': Firebase.apps.map((a) => a.name).toList(),
+            'device': _deviceName,
+          },
+        ),
+      );
 
       if (!_listenersAttached) {
         _listenersAttached = true;
@@ -95,7 +101,9 @@ class PushNotificationService {
         // Pasang listener token SEBELUM meminta token. Di iOS token FCM boleh
         // dijana lewat (selepas APNs token tersedia) — listener awal memastikan
         // token yang tiba lewat tidak terlepas.
-        _messaging!.onTokenRefresh.listen((newToken) => registerToken(newToken));
+        _messaging!.onTokenRefresh.listen(
+          (newToken) => registerToken(newToken),
+        );
 
         FirebaseMessaging.onMessage.listen(
           (message) => _handleForeground(message),
@@ -114,7 +122,9 @@ class PushNotificationService {
       if (initial != null) _handleTap(initial);
     } catch (e) {
       initialized = false;
-      unawaited(_reportDiagnostic('init_error', extra: {'error': e.toString()}));
+      unawaited(
+        _reportDiagnostic('init_error', extra: {'error': e.toString()}),
+      );
     }
   }
 
@@ -127,11 +137,7 @@ class PushNotificationService {
     try {
       await _api.post(
         ApiPaths.pushDebug,
-        body: {
-          'stage': stage,
-          'platform': _platformName,
-          ...?extra,
-        },
+        body: {'stage': stage, 'platform': _platformName, ...?extra},
       );
     } catch (_) {
       // Abaikan.
@@ -157,10 +163,12 @@ class PushNotificationService {
           apnsPrefix = _prefix(apns);
           if (!reportedApns) {
             reportedApns = true;
-            unawaited(_reportDiagnostic('apns_status', extra: {
-              'apns': apnsPrefix,
-              'attempt': attempt + 1,
-            }));
+            unawaited(
+              _reportDiagnostic(
+                'apns_status',
+                extra: {'apns': apnsPrefix, 'attempt': attempt + 1},
+              ),
+            );
           }
           if (apns == null || apns.isEmpty) {
             await Future<void>.delayed(const Duration(seconds: 2));
@@ -172,30 +180,41 @@ class PushNotificationService {
         tokenPrefix = _prefix(token);
         if (token != null && token.isNotEmpty) {
           await registerToken(token);
-          unawaited(_reportDiagnostic('token_ok', extra: {
-            'apns': apnsPrefix,
-            'fcm': tokenPrefix,
-            'attempt': attempt + 1,
-          }));
+          unawaited(
+            _reportDiagnostic(
+              'token_ok',
+              extra: {
+                'apns': apnsPrefix,
+                'fcm': tokenPrefix,
+                'attempt': attempt + 1,
+              },
+            ),
+          );
           return;
         }
       } catch (e) {
         lastError = e.toString();
-        unawaited(_reportDiagnostic('token_error', extra: {
-          'apns': apnsPrefix,
-          'attempt': attempt + 1,
-          'error': lastError,
-        }));
+        unawaited(
+          _reportDiagnostic(
+            'token_error',
+            extra: {
+              'apns': apnsPrefix,
+              'attempt': attempt + 1,
+              'error': lastError,
+            },
+          ),
+        );
       }
 
       await Future<void>.delayed(const Duration(seconds: 2));
     }
 
-    unawaited(_reportDiagnostic('token_failed', extra: {
-      'apns': apnsPrefix,
-      'fcm': tokenPrefix,
-      'error': lastError,
-    }));
+    unawaited(
+      _reportDiagnostic(
+        'token_failed',
+        extra: {'apns': apnsPrefix, 'fcm': tokenPrefix, 'error': lastError},
+      ),
+    );
   }
 
   String? _prefix(String? value) =>
@@ -250,14 +269,16 @@ class PushNotificationService {
       // `com.google.firebase.messaging.default_notification_channel_id` dalam
       // AndroidManifest.xml). Tanpa saluran berdaftar, sesetengah OEM
       // menyenyapkan notifikasi latar.
-      final androidPlugin = _localNotifications!
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin =
+          _localNotifications!
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
       await androidPlugin?.createNotificationChannel(
-        const AndroidNotificationChannel(
+        AndroidNotificationChannel(
           _androidChannelId,
-          'Notifikasi myWAP',
-          description: 'Notifikasi push daripada myWAP',
+          currentAppLocalizations.pushChannelName,
+          description: currentAppLocalizations.pushChannelDescription,
           importance: Importance.high,
         ),
       );
@@ -276,11 +297,11 @@ class PushNotificationService {
     if (plugin == null) return;
 
     try {
-      const details = NotificationDetails(
+      final details = NotificationDetails(
         android: AndroidNotificationDetails(
           _androidChannelId,
-          'Notifikasi myWAP',
-          channelDescription: 'Notifikasi push daripada myWAP',
+          currentAppLocalizations.pushChannelName,
+          channelDescription: currentAppLocalizations.pushChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
         ),

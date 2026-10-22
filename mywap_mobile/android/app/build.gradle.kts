@@ -33,7 +33,8 @@ android {
     defaultConfig {
         applicationId = "com.mywap.mywap_mobile"
         // mobile_scanner (androidx.camera) requires minSdk >= 23.
-        minSdk = maxOf(flutter.minSdkVersion, 23)
+        // Play automatic protection requires minSdk >= 24.
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -25,15 +26,15 @@ class AnnouncementsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Pengumuman'),
+        title: Text(context.l10n.menuAnnouncements),
       ),
       body: announcementsAsync.when(
         data:
             (items) =>
                 items.isEmpty
-                    ? const EmptyState(
+                    ? EmptyState(
                       icon: Icons.campaign_outlined,
-                      message: 'Tiada pengumuman buat masa ini.',
+                      message: context.l10n.notifNoAnnouncements,
                     )
                     : RefreshIndicator(
                       onRefresh:
@@ -45,7 +46,7 @@ class AnnouncementsScreen extends ConsumerWidget {
                         itemBuilder: (context, index) {
                           if (index == 0) {
                             return SectionHeader(
-                              'Pengumuman',
+                              context.l10n.menuAnnouncements,
                               trailing: Text(
                                 '${items.length}',
                                 style: Theme.of(context).textTheme.labelMedium
@@ -63,7 +64,7 @@ class AnnouncementsScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(memberAnnouncementsProvider),
             ),
       ),
@@ -163,7 +164,7 @@ class _AnnouncementCardState extends ConsumerState<_AnnouncementCard> {
                   if (item.author_name != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      'Oleh ${item.author_name}',
+                      context.l10n.newsByAuthor('${item.author_name}'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -264,9 +265,9 @@ class _PinnedBadge extends StatelessWidget {
         color: AppColors.movementSoftGreen,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Text(
-        'Disemat',
-        style: TextStyle(
+      child: Text(
+        context.l10n.newsPinned,
+        style: const TextStyle(
           color: AppColors.movementNavy,
           fontWeight: FontWeight.w700,
           fontSize: AppTextTheme.minSize,

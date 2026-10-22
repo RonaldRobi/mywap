@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/l10n/l10n.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/theme/app_text_theme.dart';
 
-/// Label Melayu untuk status kelulusan tempahan.
-String bookingStatusLabel(String? status) => switch (status) {
-  'approved' => 'Diluluskan',
-  'rejected' => 'Ditolak',
-  'pending' => 'Menunggu',
-  _ => status ?? '-',
-};
+/// Localized label for a booking approval status.
+String bookingStatusLabel(BuildContext context, String? status) =>
+    switch (status) {
+      'approved' => context.l10n.facStatusApproved,
+      'rejected' => context.l10n.facStatusRejected,
+      'pending' => context.l10n.facStatusPending,
+      _ => status ?? '-',
+    };
 
-/// Label Melayu untuk status bayaran tempahan.
-String paymentStatusLabel(String? status) => switch (status) {
-  'paid' => 'Dibayar',
-  'unpaid' => 'Belum Dibayar',
-  _ => status ?? '-',
-};
+/// Localized label for a booking payment status.
+String paymentStatusLabel(BuildContext context, String? status) =>
+    switch (status) {
+      'paid' => context.l10n.facPaymentStatusPaid,
+      'unpaid' => context.l10n.facPaymentStatusUnpaid,
+      _ => status ?? '-',
+    };
 
 class BookingStatusChip extends StatelessWidget {
   const BookingStatusChip({super.key, this.status});
@@ -32,7 +35,10 @@ class BookingStatusChip extends StatelessWidget {
       'pending' => AppColors.warning,
       _ => AppColors.textSecondary,
     };
-    return _StatusChip(label: bookingStatusLabel(status), color: color);
+    return _StatusChip(
+      label: bookingStatusLabel(context, status),
+      color: color,
+    );
   }
 }
 
@@ -48,7 +54,10 @@ class PaymentStatusChip extends StatelessWidget {
       'unpaid' => AppColors.warning,
       _ => AppColors.textSecondary,
     };
-    return _StatusChip(label: paymentStatusLabel(status), color: color);
+    return _StatusChip(
+      label: paymentStatusLabel(context, status),
+      color: color,
+    );
   }
 }
 

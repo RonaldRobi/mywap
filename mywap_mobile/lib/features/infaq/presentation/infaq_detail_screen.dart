@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -29,11 +30,12 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
   /// Butang membuka laman kempen dalam pelayar dalam-app
   /// (SFSafariViewController di iOS / Custom Tabs di Android).
   Future<void> _openDonate(InfaqInfo infaq) async {
-    final url = (infaq.isExternal ? infaq.externalUrl : infaq.publicUrl)?.trim();
+    final url =
+        (infaq.isExternal ? infaq.externalUrl : infaq.publicUrl)?.trim();
 
     if (url == null || url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pautan sumbangan tidak tersedia.')),
+        SnackBar(content: Text(context.l10n.infaqDonationLinkUnavailable)),
       );
       return;
     }
@@ -41,7 +43,7 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pautan sumbangan tidak sah.')),
+        SnackBar(content: Text(context.l10n.infaqDonationLinkInvalid)),
       );
       return;
     }
@@ -62,7 +64,7 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
 
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka pautan sumbangan.')),
+        SnackBar(content: Text(context.l10n.infaqDonationLinkOpenFailed)),
       );
     }
 
@@ -80,7 +82,7 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/infaq'),
-        title: const Text('Butiran Infaq'),
+        title: Text(context.l10n.infaqDetailTitle),
       ),
       body: detailAsync.when(
         data:
@@ -96,7 +98,7 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(infaqDetailProvider(widget.slug)),
             ),
       ),
@@ -117,6 +119,7 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final infaq = detail.infaq;
     final progress = ((infaq.progressPercent ?? 0).clamp(0, 100)) / 100;
@@ -171,7 +174,7 @@ class _DetailContent extends StatelessWidget {
                       if (infaq.daysRunning != null)
                         _InfoRow(
                           icon: Icons.schedule,
-                          text: '${infaq.daysRunning} hari berjalan',
+                          text: l10n.infaqDaysRunning(infaq.daysRunning!),
                         ),
                       if (infaq.daysRunning != null &&
                           infaq.totalDonors != null)
@@ -179,7 +182,7 @@ class _DetailContent extends StatelessWidget {
                       if (infaq.totalDonors != null)
                         _InfoRow(
                           icon: Icons.people_outline,
-                          text: '${infaq.totalDonors} penyumbang',
+                          text: l10n.infaqDonorsCount(infaq.totalDonors!),
                         ),
                     ],
                   ),
@@ -205,7 +208,9 @@ class _DetailContent extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      'Sasaran ${Formatters.currency(infaq.targetAmount)}',
+                      l10n.infaqTargetAmount(
+                        Formatters.currency(infaq.targetAmount),
+                      ),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -214,7 +219,10 @@ class _DetailContent extends StatelessWidget {
                 ),
                 if (description != null && description.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
-                  Text('Penerangan', style: theme.textTheme.titleLarge),
+                  Text(
+                    l10n.infaqDescription,
+                    style: theme.textTheme.titleLarge,
+                  ),
                   const SizedBox(height: Spacing.sm),
                   Text(description, style: theme.textTheme.bodyLarge),
                 ],
@@ -222,18 +230,18 @@ class _DetailContent extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onDonate,
                   icon: const Icon(Icons.volunteer_activism_outlined),
-                  label: const Text('Sumbang Sekarang'),
+                  label: Text(l10n.infaqDonateNow),
                 ),
               ],
             ),
           ),
           if (detail.recentDonations.isNotEmpty) ...[
-            const SectionHeader('Sumbangan Terkini'),
+            SectionHeader(l10n.infaqRecentDonations),
             for (final donation in detail.recentDonations)
               _RecentDonationTile(donation: donation),
           ],
           if (detail.relatedInfaqs.isNotEmpty) ...[
-            const SectionHeader('Infaq Lain'),
+            SectionHeader(l10n.infaqOtherInfaqs),
             SizedBox(
               height: 210,
               child: ListView.separated(
@@ -290,7 +298,7 @@ class _RecentDonationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final prayer = donation.prayerMessage;
-    final name = donation.donorName ?? 'Hamba Allah';
+    final name = donation.donorName ?? context.l10n.infaqAnonymousDonor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -434,10 +442,7 @@ class _DetailSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: const [
-        AspectRatio(
-          aspectRatio: 4 / 5,
-          child: SkeletonBox(radius: 0),
-        ),
+        AspectRatio(aspectRatio: 4 / 5, child: SkeletonBox(radius: 0)),
         Padding(
           padding: EdgeInsets.all(24),
           child: Column(

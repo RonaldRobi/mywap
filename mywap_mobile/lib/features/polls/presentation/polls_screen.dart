@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -18,24 +19,27 @@ class PollsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final pollsAsync = ref.watch(pollsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Undian'),
+        title: Text(l10n.pollTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: pollsAsync.when(
-        data: (data) => _PollsBody(
-          data: data,
-          onRefresh: () async => ref.invalidate(pollsProvider),
-        ),
+        data:
+            (data) => _PollsBody(
+              data: data,
+              onRefresh: () async => ref.invalidate(pollsProvider),
+            ),
         loading: () => const _PollsSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message:
-              error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(pollsProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException ? error.message : l10n.unexpectedError,
+              onRetry: () => ref.invalidate(pollsProvider),
+            ),
       ),
     );
   }
@@ -49,14 +53,15 @@ class _PollsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (data.availablePolls.isEmpty && data.answeredPolls.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: EmptyState(
             icon: Icons.poll_outlined,
-            message: 'Tiada undian buat masa ini.',
+            message: l10n.pollNoPolls,
           ),
         ),
       );
@@ -64,23 +69,23 @@ class _PollsBody extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      children: [
-        const SectionHeader('Undian Terkini'),
-        if (data.availablePolls.isEmpty)
-          const _EmptySection(message: 'Tiada undian terbuka buat masa ini.')
-        else
-          for (final poll in data.availablePolls)
-            _PollCard(poll: poll, answered: false),
-        const SectionHeader('Sudah Dijawab'),
-        if (data.answeredPolls.isEmpty)
-          const _EmptySection(message: 'Belum ada undian dijawab.')
-        else
-          for (final poll in data.answeredPolls)
-            _PollCard(poll: poll, answered: true),
-        const SizedBox(height: Spacing.xl),
-      ],
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          SectionHeader(l10n.pollLatestPolls),
+          if (data.availablePolls.isEmpty)
+            _EmptySection(message: l10n.pollNoOpenPolls)
+          else
+            for (final poll in data.availablePolls)
+              _PollCard(poll: poll, answered: false),
+          SectionHeader(l10n.pollAnsweredSection),
+          if (data.answeredPolls.isEmpty)
+            _EmptySection(message: l10n.pollNoAnswered)
+          else
+            for (final poll in data.answeredPolls)
+              _PollCard(poll: poll, answered: true),
+          const SizedBox(height: Spacing.xl),
+        ],
       ),
     );
   }
@@ -113,7 +118,7 @@ class _PollCard extends StatelessWidget {
             if (poll.type != null) ...[
               const SizedBox(height: 2),
               Text(
-                _typeLabel(poll.type!),
+                _typeLabel(context, poll.type!),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.movementGreen,
                 ),
@@ -121,14 +126,18 @@ class _PollCard extends StatelessWidget {
             ],
             const SizedBox(height: 2),
             Text(
-              '${_endsLabel(poll)} • ${poll.responseCount} respons',
+              '${_endsLabel(context, poll)} • '
+              '${context.l10n.pollResponsesCount(poll.responseCount)}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+        trailing: const Icon(
+          Icons.chevron_right,
+          color: AppColors.textSecondary,
+        ),
         onTap: () {
           if (answered) {
             context.push('/polls/${poll.id}/results');
@@ -153,9 +162,9 @@ class _EmptySection extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
       ),
     );
   }
@@ -180,16 +189,16 @@ class _PollsSkeleton extends StatelessWidget {
   }
 }
 
-String _typeLabel(String type) => switch (type) {
-      'poll' => 'Undian',
-      'survey' => 'Soal selidik',
-      _ => type,
-    };
+String _typeLabel(BuildContext context, String type) => switch (type) {
+  'poll' => context.l10n.pollTypePoll,
+  'survey' => context.l10n.pollTypeSurvey,
+  _ => type,
+};
 
-String _endsLabel(PollSummary poll) {
-  if (poll.isExpired) return 'Tamat';
+String _endsLabel(BuildContext context, PollSummary poll) {
+  if (poll.isExpired) return context.l10n.pollEnded;
   if (poll.endsAtFormatted != null && poll.endsAtFormatted!.isNotEmpty) {
-    return 'Tamat: ${poll.endsAtFormatted}';
+    return context.l10n.pollEndsAt(poll.endsAtFormatted!);
   }
-  return 'Tiada tarikh tamat';
+  return context.l10n.pollNoEndDate;
 }

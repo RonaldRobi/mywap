@@ -96,11 +96,77 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Kad Ahli'), findsOneWidget);
-    expect(find.text('Ahmad bin Ali'), findsOneWidget);
-    expect(find.text('No. Ahli: MY12345'), findsOneWidget);
-    expect(find.text('Ahli sejak Jan 2024'), findsOneWidget);
-    expect(find.text('Pertubuhan Majlis'), findsOneWidget);
+    // Design baru mengikut web: nama di-UPPERCASE, nombor ahli tanpa label,
+    // dan grid butiran (email/telefon/cawangan/…) dibuang.
+    expect(find.text('AHMAD BIN ALI'), findsOneWidget);
+    expect(find.text('MY12345'), findsOneWidget);
+    expect(find.text('PERTUBUHAN MAJLIS'), findsOneWidget);
     expect(find.byType(QrImageView), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('MemberCardScreen flips to the back face on tap',
+      (tester) async {    final data = MemberCardData.fromJson(const {
+      'card': {
+        'name': 'Ahmad bin Ali',
+        'member_no': 'MY12345',
+        'qr_value': 'https://example.com/card/MY12345',
+        'organization': {'name': 'Pertubuhan Majlis'},
+      },
+      'qrPrivate': '<svg/>',
+      'qrPublic': null,
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [memberCardProvider.overrideWith((ref) async => data)],
+        child: const MaterialApp(home: MemberCardScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Design belakang kad belum dimuat naik.'), findsNothing);
+
+    // Ketik kad (bukan QR) untuk flip.
+    await tester.tap(find.text('AHMAD BIN ALI'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Design belakang kad belum dimuat naik.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('MemberCardScreen accepts design background paths',
+      (tester) async {
+    // Imej rangkaian tidak dimuatkan dalam ujian (semua permintaan gagal),
+    // jadi guna `pump` berjangka masa dan bukan `pumpAndSettle` (skeleton
+    // shimmer berulang tanpa henti).
+    final data = MemberCardData.fromJson(const {
+      'card': {
+        'name': 'Siti Nurhaliza',
+        'member_no': 'MY99999',
+        'qr_value': 'https://example.com/card/MY99999',
+        'photo_url': 'https://example.com/photo.jpg',
+        'card_front_path': 'https://example.com/front.jpg',
+        'card_back_path': 'https://example.com/back.jpg',
+        'organization': {'name': 'Organisasi Ujian'},
+      },
+      'qrPrivate': '<svg/>',
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [memberCardProvider.overrideWith((ref) async => data)],
+        child: const MaterialApp(home: MemberCardScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('SITI NURHALIZA'), findsOneWidget);
+    expect(find.text('MY99999'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

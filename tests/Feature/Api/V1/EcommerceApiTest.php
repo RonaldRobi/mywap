@@ -260,6 +260,101 @@ class EcommerceApiTest extends TestCase
         $this->postJson("/api/v1/orders/{$order->id}/pay")->assertStatus(422);
     }
 
+    public function test_cannot_order_variation_product_without_selecting_an_option(): void
+    {
+        $product = $this->product(['stock' => 10]);
+        $variation = $product->variations()->create([
+            'name' => 'Saiz',
+            'type' => 'select',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $variation->options()->create(['name' => 'S', 'stock' => 5, 'sort_order' => 0]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(10, $product->fresh()->stock, 'Parent stock must not be reserved for variation products.');
+        $this->assertSame(5, $variation->options()->first()->stock);
+    }
+
+    public function test_cannot_order_a_sold_out_variation_option(): void
+    {
+        $product = $this->product(['stock' => 10]);
+        $variation = $product->variations()->create([
+            'name' => 'Saiz',
+            'type' => 'select',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $option = $variation->options()->create(['name' => 'S', 'stock' => 0, 'sort_order' => 0]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [[
+                'id' => $product->id,
+                'quantity' => 1,
+                'variation_option_id' => $option->id,
+            ]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(0, $option->fresh()->stock, 'A sold-out option must not go negative.');
+        $this->assertSame(10, $product->fresh()->stock);
+    }
+
+    public function test_cannot_order_more_than_the_remaining_variation_stock(): void
+    {
+        $product = $this->product(['stock' => 10]);
+        $variation = $product->variations()->create([
+            'name' => 'Saiz',
+            'type' => 'select',
+            'required' => true,
+            'sort_order' => 0,
+        ]);
+        $option = $variation->options()->create(['name' => 'S', 'stock' => 2, 'sort_order' => 0]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [[
+                'id' => $product->id,
+                'quantity' => 3,
+                'variation_option_id' => $option->id,
+            ]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(2, $option->fresh()->stock);
+    }
+
+    public function test_cannot_order_a_sold_out_product(): void
+    {
+        $product = $this->product(['stock' => 0]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(0, $product->fresh()->stock);
+    }
+
     public function test_member_cannot_view_another_members_order(): void
     {
         $product = $this->product();

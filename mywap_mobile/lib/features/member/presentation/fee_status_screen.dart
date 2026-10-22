@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -23,7 +24,7 @@ class FeeStatusScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/member/financial/overview'),
-        title: const Text('Status Yuran'),
+        title: Text(context.l10n.finFeeStatusTitle),
       ),
       body: feeAsync.when(
         data:
@@ -41,7 +42,7 @@ class FeeStatusScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(memberFeeStatusProvider),
             ),
       ),
@@ -78,7 +79,7 @@ class _FeeStatusContent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Status Yuran',
+                          context.l10n.finFeeStatusTitle,
                           style: theme.textTheme.titleMedium,
                         ),
                       ),
@@ -87,20 +88,20 @@ class _FeeStatusContent extends StatelessWidget {
                   ),
                   const SizedBox(height: Spacing.xl),
                   _InfoRow(
-                    label: 'Amaun Yuran Tahunan',
+                    label: context.l10n.finAnnualFeeAmount,
                     value: _formatMoney(fee.fee_amount),
                   ),
                   if (isDue) ...[
                     const SizedBox(height: Spacing.md),
                     _InfoRow(
-                      label: 'Amaun Belum Dibayar',
+                      label: context.l10n.finOutstandingAmount,
                       value: _formatMoney(amountDue),
                       emphasize: true,
                     ),
                   ] else if (fee.last_paid_at != null) ...[
                     const SizedBox(height: Spacing.md),
                     _InfoRow(
-                      label: 'Tarikh Dibayar',
+                      label: context.l10n.finPaymentDate,
                       value: _formatDate(fee.last_paid_at),
                     ),
                   ],
@@ -111,8 +112,8 @@ class _FeeStatusContent extends StatelessWidget {
           const SizedBox(height: Spacing.lg),
           Text(
             isDue
-                ? 'Sila jelaskan yuran keahlian anda untuk mengekalkan status ahli yang aktif.'
-                : 'Yuran keahlian anda adalah LUNAS. Terima kasih atas sokongan anda.',
+                ? context.l10n.finFeeDueMessage
+                : context.l10n.finFeePaidMessage,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -160,7 +161,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        active ? 'AKTIF' : 'BELUM BAYAR',
+        active ? context.l10n.finStatusActive : context.l10n.finStatusUnpaid,
         style: const TextStyle(
           color: AppColors.white,
           fontWeight: FontWeight.w700,

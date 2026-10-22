@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/constants/prefs_keys.dart';
@@ -24,12 +25,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _controller = PageController();
   var _page = 0;
 
-  static const _fallbackSlides = [
+  static List<OnboardingSlideData> _fallbackSlides(AppLocalizations l10n) => [
     OnboardingSlideData(
       order: 1,
-      title: 'Selamat Datang ke myWAP',
-      body: 'Satu aplikasi untuk keahlian, program dan khidmat gerakan.',
-      buttonLabel: 'Seterusnya',
+      title: l10n.onboardingSlide1Title,
+      body: l10n.onboardingSlide1Body,
+      buttonLabel: l10n.onboardingNext,
       backgroundStart: '#12241C',
       backgroundEnd: '#147A3D',
       textColor: '#FFFFFF',
@@ -40,9 +41,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     OnboardingSlideData(
       order: 2,
-      title: 'Semua Dalam Satu Tempat',
-      body: 'Ikuti acara, urus keahlian dan temui kemudahan organisasi anda.',
-      buttonLabel: 'Seterusnya',
+      title: l10n.onboardingSlide2Title,
+      body: l10n.onboardingSlide2Body,
+      buttonLabel: l10n.onboardingNext,
       backgroundStart: '#0E5C2E',
       backgroundEnd: '#4FAE73',
       textColor: '#FFFFFF',
@@ -53,11 +54,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     OnboardingSlideData(
       order: 3,
-      title: 'Bersedia Untuk Bermula',
-      body:
-          'Terokai berita, artikel dan program tanpa akaun — atau daftar '
-          'sebagai ahli untuk akses penuh.',
-      buttonLabel: 'Mula',
+      title: l10n.onboardingSlide3Title,
+      body: l10n.onboardingSlide3Body,
+      buttonLabel: l10n.onboardingStart,
       backgroundStart: '#147A3D',
       backgroundEnd: '#12241C',
       textColor: '#FFFFFF',
@@ -106,7 +105,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final configured =
         ref.watch(mobileAuthConfigurationProvider).valueOrNull?.slides ??
         const [];
-    final slides = configured.length == 3 ? configured : _fallbackSlides;
+    final slides =
+        configured.length == 3 ? configured : _fallbackSlides(context.l10n);
     return Scaffold(
       body: Stack(
         children: [
@@ -130,8 +130,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: _complete,
-                child: const Text(
-                  'Langkau',
+                child: Text(
+                  context.l10n.onboardingSkip,
                   style: TextStyle(
                     color: AppColors.white,
                     fontWeight: FontWeight.w700,
@@ -181,8 +181,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         child: Text(
                           slides[_page].buttonLabel.isEmpty
                               ? (_page == slides.length - 1
-                                  ? 'Mula'
-                                  : 'Seterusnya')
+                                  ? context.l10n.onboardingStart
+                                  : context.l10n.onboardingNext)
                               : slides[_page].buttonLabel,
                         ),
                       ),

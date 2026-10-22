@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -23,7 +24,7 @@ class JourneyScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/profile'),
-        title: const Text('Perjalanan Ahli'),
+        title: Text(context.l10n.memberJourney),
       ),
       body: profileAsync.when(
         data:
@@ -39,7 +40,7 @@ class JourneyScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(profileProvider),
             ),
       ),
@@ -63,11 +64,11 @@ class _JourneyContent extends StatelessWidget {
     if (history.isEmpty && programs.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: EmptyState(
             icon: Icons.route_outlined,
-            message: 'Tiada rekod perjalanan lagi.',
+            message: context.l10n.noJourneyRecords,
           ),
         ),
       );
@@ -80,7 +81,7 @@ class _JourneyContent extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: Spacing.xl),
         children: [
           if (history.isNotEmpty) ...[
-            const SectionHeader('Perjalanan Organisasi'),
+            SectionHeader(context.l10n.organizationJourney),
             Card(
               margin: const EdgeInsets.fromLTRB(
                 Spacing.lg,
@@ -102,7 +103,7 @@ class _JourneyContent extends StatelessWidget {
             ),
           ],
           if (programs.isNotEmpty) ...[
-            const SectionHeader('Program Dihadiri'),
+            SectionHeader(context.l10n.programsAttended),
             for (final program in programs) _ProgramCard(program: program),
           ],
         ],
@@ -121,7 +122,10 @@ class _TimelineEntry extends StatelessWidget {
     final theme = Theme.of(context);
     final from = entry.from_organization?.name;
     final to = entry.to_organization?.name;
-    final title = from == null ? 'Sertai ${to ?? 'organisasi'}' : '$from → $to';
+    final title =
+        from == null
+            ? context.l10n.joinedOrg(to ?? context.l10n.orgFallback)
+            : '$from → $to';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../shared/l10n/l10n.dart';
 import '../storage/token_storage.dart';
 import 'api_exception.dart';
 
@@ -36,38 +37,62 @@ ApiException mapApiError(DioException error) {
   if (error.type == DioExceptionType.connectionTimeout ||
       error.type == DioExceptionType.sendTimeout ||
       error.type == DioExceptionType.receiveTimeout) {
-    return const ApiException('Masa sambungan tamat. Sila cuba lagi.', statusCode: 0);
+    return ApiException(
+      currentAppLocalizations.errorTimeout,
+      statusCode: 0,
+      code: ApiErrorCode.timeout,
+    );
   }
 
   if (error.type == DioExceptionType.connectionError ||
       error.type == DioExceptionType.badCertificate) {
-    return const ApiException('Tiada sambungan internet.', statusCode: 0);
+    return ApiException(
+      currentAppLocalizations.errorOffline,
+      statusCode: 0,
+      code: ApiErrorCode.offline,
+    );
   }
 
   final body = response?.data;
   final message = switch (body) {
-    Map<String, dynamic> data when data['message'] is String => data['message'] as String,
-    Map<String, dynamic> data when data['errors'] is Map => _firstValidationError(data),
+    Map<String, dynamic> data when data['message'] is String =>
+      data['message'] as String,
+    Map<String, dynamic> data when data['errors'] is Map =>
+      _firstValidationError(data),
     _ => null,
   };
 
   return switch (status) {
-    401 => const ApiException(
-        'Sesi tamat, sila log masuk semula.',
-        statusCode: 401,
-      ),
-    403 => const ApiException('Anda tiada kebenaran untuk akses ini.', statusCode: 403),
-    404 => const ApiException('Tidak dijumpai.', statusCode: 404),
+    401 => ApiException(
+      currentAppLocalizations.errorSessionExpired,
+      statusCode: 401,
+      code: ApiErrorCode.unauthorized,
+    ),
+    403 => ApiException(
+      currentAppLocalizations.errorForbidden,
+      statusCode: 403,
+      code: ApiErrorCode.forbidden,
+    ),
+    404 => ApiException(
+      currentAppLocalizations.errorNotFound,
+      statusCode: 404,
+      code: ApiErrorCode.notFound,
+    ),
     422 => ApiException(
-        message ?? 'Sila semak semula maklumat anda.',
-        statusCode: 422,
-        errors: _extractErrors(body),
-      ),
-    429 => const ApiException('Terlalu banyak percubaan. Sila cuba lagi kemudian.', statusCode: 429),
+      message ?? currentAppLocalizations.errorValidation,
+      statusCode: 422,
+      errors: _extractErrors(body),
+      code: ApiErrorCode.validation,
+    ),
+    429 => ApiException(
+      currentAppLocalizations.errorTooMany,
+      statusCode: 429,
+      code: ApiErrorCode.tooManyRequests,
+    ),
     _ => ApiException(
-        message ?? 'Ralat tidak dijangka. Sila cuba lagi.',
-        statusCode: status,
-      ),
+      message ?? 'Ralat tidak dijangka. Sila cuba lagi.',
+      statusCode: status,
+    ),
   };
 }
 

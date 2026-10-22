@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -23,7 +24,7 @@ class MyRegistrationsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/events'),
-        title: const Text('Pendaftaran Saya'),
+        title: Text(context.l10n.myRegistrationsTitle),
       ),
       body: async.when(
         data:
@@ -37,7 +38,7 @@ class MyRegistrationsScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(myRegistrationsProvider),
             ),
       ),
@@ -54,9 +55,9 @@ class _RegistrationsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.event_available_outlined,
-        message: 'Anda belum mendaftar mana-mana acara.',
+        message: context.l10n.noRegistrations,
       );
     }
     return RefreshIndicator(
@@ -92,7 +93,9 @@ class _RegistrationCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    event?.title ?? item.formTitle ?? 'Program & Acara',
+                    event?.title ??
+                        item.formTitle ??
+                        context.l10n.eventTitleFallback,
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
@@ -134,15 +137,17 @@ class _RegistrationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  item.isPaid ? 'Bayaran Selesai' : 'Bayaran Belum Selesai',
+                  item.isPaid
+                      ? context.l10n.registrationPaid
+                      : context.l10n.registrationUnpaid,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
                 const Spacer(),
                 if (item.attended)
-                  const Text(
-                    'Hadir',
+                  Text(
+                    context.l10n.attended,
                     style: TextStyle(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w700,
@@ -153,7 +158,7 @@ class _RegistrationCard extends StatelessWidget {
             if (item.registrationNo != null) ...[
               const SizedBox(height: Spacing.sm),
               Text(
-                'No. Pendaftaran: ${item.registrationNo}',
+                context.l10n.eventRegistrationNo(item.registrationNo ?? '-'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/prefs_keys.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/providers.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../core/push/push_providers.dart';
 import '../../notifications/application/notification_providers.dart';
 import '../data/auth_repository.dart';
@@ -116,7 +117,9 @@ class AuthController extends Notifier<AuthState> {
       final text =
           body.isNotEmpty
               ? body
-              : (title.isEmpty ? 'Notifikasi baharu' : title);
+              : (title.isEmpty
+                  ? currentAppLocalizations.newNotification
+                  : title);
       ref
           .read(appMessengerKeyProvider)
           .currentState
@@ -176,7 +179,7 @@ class AuthController extends Notifier<AuthState> {
   Future<bool> loginWithBiometrics() async {
     final biometric = ref.read(biometricServiceProvider);
     final ok = await biometric.authenticate(
-      reason: 'Sahkan Face ID / cap jari untuk log masuk ke myWAP',
+      reason: currentAppLocalizations.biometricLoginMyWapReason,
     );
     if (!ok) return false;
 
@@ -200,7 +203,7 @@ class AuthController extends Notifier<AuthState> {
       final supported = await biometric.isDeviceSupported();
       if (!supported) return false;
       final ok = await biometric.authenticate(
-        reason: 'Sahkan Face ID / cap jari untuk mendayakan log masuk pantas',
+        reason: currentAppLocalizations.biometricEnableReason,
       );
       if (!ok) return false;
     }

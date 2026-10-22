@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -29,7 +30,7 @@ class ArticleDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/articles'),
-        title: const Text('Artikel'),
+        title: Text(context.l10n.articlesTitle),
       ),
       body: async.when(
         data:
@@ -39,7 +40,7 @@ class ArticleDetailScreen extends ConsumerWidget {
                 if (!isAuthenticated) {
                   await showLoginPrompt(
                     context,
-                    message: 'Log masuk sebagai ahli untuk memberi reaksi.',
+                    message: context.l10n.newsLoginToReact,
                   );
                   return;
                 }
@@ -64,7 +65,7 @@ class ArticleDetailScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(articleDetailProvider(articleId)),
             ),
       ),
@@ -98,17 +99,22 @@ class _ArticleDetailBody extends StatelessWidget {
         children: [
           if (article.coverImagePath != null &&
               article.coverImagePath!.isNotEmpty)
-            AppImage(
-              article.coverImagePath,
-              height: 200,
-              borderRadius: BorderRadius.circular(12),
+            // Poster artikel 1080×1350 (4:5) — `height: 200` lama memotong
+            // ~55% tinggi poster.
+            AspectRatio(
+              aspectRatio: 4 / 5,
+              child: AppImage(
+                article.coverImagePath,
+                width: double.infinity,
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           const SizedBox(height: Spacing.lg),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  '${article.authorName ?? 'Admin'} • ${article.publishedAt ?? ''}',
+                  '${article.authorName ?? context.l10n.adminFallback} • ${article.publishedAt ?? ''}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.movementGreen,
                     fontWeight: FontWeight.w600,
@@ -130,8 +136,10 @@ class _ArticleDetailBody extends StatelessWidget {
                 itemCount: article.gallery.length,
                 separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
                 itemBuilder:
-                    (_, i) => SizedBox(
-                      width: 260,
+                    (_, i) => AspectRatio(
+                      // Imej galeri juga poster 4:5 — lebar dikira automatik
+                      // daripada tinggi strip (180) dan bukan hardcode 260.
+                      aspectRatio: 4 / 5,
                       child: AppImage(
                         article.gallery[i].path,
                         borderRadius: BorderRadius.circular(12),

@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../core/deeplink/deep_links.dart';
+import '../../../core/constants/prefs_keys.dart';
+import '../../../core/router/startup_destination.dart';
 import '../../loading_screen/application/loading_screen_providers.dart';
 import '../../loading_screen/presentation/loading_screen.dart';
 import '../application/auth_controller.dart';
-import '../../onboarding/presentation/onboarding_screen.dart';
 
 /// Startup screen shown while auth state resolves. Memaparkan loading screen
 /// GIF (latar gradient + GIF di tengah) yang boleh dikonfigurasi di admin
@@ -38,31 +38,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final config = ref.read(loadingScreenControllerProvider);
     final duration =
         (config?.enabled ?? true) ? (config?.durationMs ?? 2500) : 0;
-    final remaining = duration - DateTime.now().difference(_startedAt).inMilliseconds;
+    final remaining =
+        duration - DateTime.now().difference(_startedAt).inMilliseconds;
     if (remaining > 0) {
       await Future<void>.delayed(Duration(milliseconds: remaining));
     }
     if (!mounted) return;
 
-    // Deep link menunggu (cth. pautan QR kehadiran) — hala terus selepas
-    // auth selesai, sama ada ahli atau tetamu.
-    final pending = ref.read(pendingDeepLinkProvider);
-    if (pending != null) {
-      ref.read(pendingDeepLinkProvider.notifier).state = null;
-      context.go(pending);
+    // Pengguna baharu (belum pilih bahasa dan belum selesai onboarding)
+    // memilih bahasa dahulu. Pengguna sedia ada kekal dengan Bahasa Melayu.
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString(appLanguageKey);
+    final onboardingCompleted = prefs.getBool(onboardingCompletedKey) ?? false;
+    if (languageCode == null && !onboardingCompleted) {
+      if (mounted) context.go('/language');
       return;
     }
 
-    if (state is AuthAuthenticated) {
-      context.go('/dashboard');
-      return;
-    }
-    final completed =
-        (await SharedPreferences.getInstance()).getBool(
-          onboardingCompletedKey,
-        ) ??
-        false;
-    if (mounted) context.go(completed ? '/home' : '/onboarding');
+    // Deep link menunggu (cth. pautan QR kehadiran) — hala terus selepas
+    // auth selesai, sama ada ahli atau tetamu.
+    final destination = await resolveStartDestination(ref);
+    if (mounted) context.go(destination);
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -31,7 +32,7 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Profil'),
+        title: Text(context.l10n.profileTitle),
       ),
       body: profileAsync.when(
         data:
@@ -45,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(profileProvider),
             ),
       ),
@@ -65,11 +66,11 @@ class _ProfileContent extends ConsumerWidget {
     if (user == null) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: EmptyState(
             icon: Icons.person_outline,
-            message: 'Tiada data profil ditemui.',
+            message: context.l10n.noProfileData,
           ),
         ),
       );
@@ -94,11 +95,11 @@ class _ProfileContent extends ConsumerWidget {
             const SizedBox(height: Spacing.md),
             _FeeStatusCard(feeStatus: user.feeStatus!),
           ],
-          const SectionHeader('Maklumat Perhubungan'),
+          SectionHeader(context.l10n.contactInfoSection),
           _ContactCard(user: user),
-          const SectionHeader('Butiran'),
+          SectionHeader(context.l10n.detailsSection),
           _DetailsCard(user: user),
-          const SectionHeader('Keselamatan'),
+          SectionHeader(context.l10n.securitySection),
           const _BiometricSetting(),
           const _ChangePasswordTile(),
           Padding(
@@ -106,25 +107,25 @@ class _ProfileContent extends ConsumerWidget {
             child: FilledButton.icon(
               onPressed: () => context.push('/profile/edit'),
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Edit Profil'),
+              label: Text(context.l10n.editProfile),
             ),
           ),
           SectionHeader(
-            'Perjalanan Ahli',
+            context.l10n.memberJourney,
             trailing:
                 history.isEmpty
                     ? null
                     : TextButton(
                       onPressed: () => context.push('/profile/journey'),
-                      child: const Text('Lihat Semua'),
+                      child: Text(context.l10n.viewAll),
                     ),
           ),
           if (history.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: Spacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               child: EmptyState(
                 icon: Icons.route_outlined,
-                message: 'Tiada rekod perjalanan lagi.',
+                message: context.l10n.noJourneyRecords,
               ),
             )
           else ...[
@@ -134,11 +135,11 @@ class _ProfileContent extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
                 child: OutlinedButton(
                   onPressed: () => context.push('/profile/journey'),
-                  child: Text('Lihat Semua (${history.length})'),
+                  child: Text('${context.l10n.viewAll} (${history.length})'),
                 ),
               ),
           ],
-          const SectionHeader('Akaun'),
+          SectionHeader(context.l10n.accountSection),
           const _ProfilePhotoTile(),
           const _DeleteAccountTile(),
         ],
@@ -188,7 +189,7 @@ class _ProfileHeader extends StatelessWidget {
                         user.member_no!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'No. Ahli: ${user.member_no}',
+                        context.l10n.memberNoShort(user.member_no!),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: AppColors.textOnDark,
                         ),
@@ -264,14 +265,14 @@ class _CompleteProfileBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Profil anda belum lengkap',
+                      context.l10n.profileIncomplete,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: AppColors.movementNavy,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Lengkapkan maklumat anda untuk pengalaman terbaik.',
+                      context.l10n.completeProfilePrompt,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -281,7 +282,7 @@ class _CompleteProfileBanner extends StatelessWidget {
               ),
               FilledButton(
                 onPressed: onPressed,
-                child: const Text('Lengkapkan'),
+                child: Text(context.l10n.complete),
               ),
             ],
           ),
@@ -320,7 +321,7 @@ class _FeeStatusCard extends StatelessWidget {
                   const SizedBox(width: Spacing.sm),
                   Expanded(
                     child: Text(
-                      active ? 'Yuran Ahli Aktif' : 'Yuran Belum Dibayar',
+                      active ? context.l10n.feeActive : context.l10n.feeUnpaid,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: AppColors.movementNavy,
                       ),
@@ -331,14 +332,16 @@ class _FeeStatusCard extends StatelessWidget {
               const SizedBox(height: Spacing.sm),
               if (active && feeStatus.last_paid_at != null)
                 Text(
-                  'Bayaran terakhir: ${feeStatus.last_paid_at}',
+                  context.l10n.lastPayment(feeStatus.last_paid_at!),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 )
               else if (!active)
                 Text(
-                  'Amaun tertunggak: ${ProfileFormat.money(feeStatus.amount_due)}',
+                  context.l10n.amountDue(
+                    ProfileFormat.money(feeStatus.amount_due),
+                  ),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppColors.movementNavy,
                     fontWeight: FontWeight.w600,
@@ -346,7 +349,7 @@ class _FeeStatusCard extends StatelessWidget {
                 ),
               if (!active && feeStatus.last_reference != null)
                 Text(
-                  'Rujukan: ${feeStatus.last_reference}',
+                  context.l10n.reference(feeStatus.last_reference!),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -372,15 +375,19 @@ class _ContactCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _DetailRow(icon: Icons.mail_outline, label: 'Emel', value: user.email),
+        _DetailRow(
+          icon: Icons.mail_outline,
+          label: context.l10n.emailLabel,
+          value: user.email,
+        ),
         _DetailRow(
           icon: Icons.phone_outlined,
-          label: 'Telefon',
+          label: context.l10n.phoneLabel,
           value: user.phone,
         ),
         _DetailRow(
           icon: Icons.badge_outlined,
-          label: 'No. IC',
+          label: context.l10n.icNoLabel,
           value: user.ic_number,
         ),
       ],
@@ -411,32 +418,32 @@ class _DetailsCard extends StatelessWidget {
       children: [
         _DetailRow(
           icon: Icons.account_tree_outlined,
-          label: 'Cawangan',
+          label: context.l10n.branchLabel,
           value: user.branch_name,
         ),
         _DetailRow(
           icon: Icons.place_outlined,
-          label: 'Lokaliti',
+          label: context.l10n.localityLabel,
           value: user.locality,
         ),
         _DetailRow(
           icon: Icons.work_outline,
-          label: 'Profesion',
+          label: context.l10n.professionLabel,
           value: user.current_profession,
         ),
         _DetailRow(
           icon: Icons.school_outlined,
-          label: 'Pendidikan',
+          label: context.l10n.educationLabel,
           value: user.education_level,
         ),
         _DetailRow(
           icon: Icons.home_outlined,
-          label: 'Alamat',
+          label: context.l10n.addressLabel,
           value: _address.isEmpty ? null : _address,
         ),
         _DetailRow(
           icon: Icons.emergency_outlined,
-          label: 'Hubungan Kecemasan',
+          label: context.l10n.emergencyContactLabel,
           value:
               user.emergency_contact_name != null
                   ? '${user.emergency_contact_name} (${user.emergency_contact_phone ?? '-'})'
@@ -460,7 +467,9 @@ class _DetailRow extends StatelessWidget {
       leading: Icon(icon, color: AppColors.movementGreen, size: 22),
       title: label,
       subtitle:
-          (value == null || value!.trim().isEmpty) ? 'Tidak dinyatakan' : value,
+          (value == null || value!.trim().isEmpty)
+              ? context.l10n.notSpecified
+              : value,
     );
   }
 }
@@ -477,7 +486,10 @@ class _JourneyPreview extends StatelessWidget {
 
     return ListCard(
       leading: const Icon(Icons.swap_horiz, color: AppColors.movementGreen),
-      title: from == null ? 'Sertai ${to ?? 'organisasi'}' : '$from → $to',
+      title:
+          from == null
+              ? context.l10n.joinedOrg(to ?? context.l10n.orgFallback)
+              : '$from → $to',
       subtitle: entry.transitioned_at_human,
     );
   }
@@ -508,9 +520,8 @@ class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
         SnackBar(
           content: Text(
             value
-                ? 'Gagal mendayakan. Pastikan Face ID / cap jari telah '
-                    'didaftarkan pada peranti anda.'
-                : 'Gagal melumpuhkan log masuk biometrik. Sila cuba lagi.',
+                ? context.l10n.biometricEnableFailed
+                : context.l10n.biometricDisableFailed,
           ),
         ),
       );
@@ -536,12 +547,10 @@ class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
               ),
               title: Text(
                 hasFaceId
-                    ? 'Log masuk dengan Face ID'
-                    : 'Log masuk dengan Cap Jari',
+                    ? context.l10n.biometricFaceIdLoginLower
+                    : context.l10n.biometricFingerprintLoginLower,
               ),
-              subtitle: const Text(
-                'Buka kunci akaun anda dengan biometrik peranti.',
-              ),
+              subtitle: Text(context.l10n.biometricUnlockSubtitle),
               value: enabledAsync.valueOrNull ?? false,
               onChanged: _busy ? null : _toggle,
             ),
@@ -599,8 +608,8 @@ class _ChangePasswordTile extends StatelessWidget {
         margin: EdgeInsets.zero,
         child: ListTile(
           leading: const Icon(Icons.lock_reset, color: AppColors.movementGreen),
-          title: const Text('Tukar Kata Laluan'),
-          subtitle: const Text('Kemas kini kata laluan akaun anda'),
+          title: Text(context.l10n.changePassword),
+          subtitle: Text(context.l10n.changePasswordSubtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/profile/change-password'),
         ),
@@ -640,8 +649,8 @@ class _ProfilePhotoTileState extends ConsumerState<_ProfilePhotoTile> {
         SnackBar(
           content: Text(
             url == null || url.isEmpty
-                ? 'Foto berjaya dimuat naik.'
-                : 'Foto profil anda telah dikemas kini.',
+                ? context.l10n.photoUploaded
+                : context.l10n.profileUpdated,
           ),
         ),
       );
@@ -653,7 +662,7 @@ class _ProfilePhotoTileState extends ConsumerState<_ProfilePhotoTile> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+        SnackBar(content: Text(context.l10n.unexpectedErrorRetry)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -662,11 +671,8 @@ class _ProfilePhotoTileState extends ConsumerState<_ProfilePhotoTile> {
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = ref
-        .watch(profileProvider)
-        .valueOrNull
-        ?.profileUser
-        ?.photo_url;
+    final photoUrl =
+        ref.watch(profileProvider).valueOrNull?.profileUser?.photo_url;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
@@ -674,32 +680,34 @@ class _ProfilePhotoTileState extends ConsumerState<_ProfilePhotoTile> {
         margin: EdgeInsets.zero,
         child: ListTile(
           leading: ClipOval(
-            child: photoUrl == null || photoUrl.isEmpty
-                ? Container(
-                    width: 40,
-                    height: 40,
-                    color: AppColors.divider,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.person_outline),
-                  )
-                : AppImage(
-                    photoUrl,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                  ),
+            child:
+                photoUrl == null || photoUrl.isEmpty
+                    ? Container(
+                      width: 40,
+                      height: 40,
+                      color: AppColors.divider,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.person_outline),
+                    )
+                    : AppImage(
+                      photoUrl,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
           ),
-          title: const Text('Foto Profil'),
+          title: Text(context.l10n.profilePhoto),
           subtitle: Text(
-            _busy ? 'Memuat naik...' : 'Tukar gambar profil anda',
+            _busy ? context.l10n.uploading : context.l10n.changeProfilePhoto,
           ),
-          trailing: _busy
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.chevron_right),
+          trailing:
+              _busy
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.chevron_right),
           onTap: _busy ? null : _pickPhoto,
         ),
       ),
@@ -712,8 +720,7 @@ class _DeleteAccountTile extends ConsumerStatefulWidget {
   const _DeleteAccountTile();
 
   @override
-  ConsumerState<_DeleteAccountTile> createState() =>
-      _DeleteAccountTileState();
+  ConsumerState<_DeleteAccountTile> createState() => _DeleteAccountTileState();
 }
 
 class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
@@ -725,13 +732,12 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Padam Akaun'),
+          title: Text(context.l10n.deleteAccount),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Akaun anda akan dipadam secara kekal. Tindakan ini tidak '
-                'boleh dibatalkan. Masukkan kata laluan untuk mengesahkan.',
+              Text(
+                context.l10n.deleteAccountWarning,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: Spacing.md),
@@ -739,20 +745,21 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
                 controller: controller,
                 obscureText: true,
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Kata Laluan'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.passwordLabel,
+                ),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Batal'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(controller.text),
-              child: const Text('Padam'),
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: Text(context.l10n.delete),
             ),
           ],
         );
@@ -765,13 +772,11 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
 
     setState(() => _busy = true);
     try {
-      await ref
-          .read(profileRepositoryProvider)
-          .deleteAccount(password.trim());
+      await ref.read(profileRepositoryProvider).deleteAccount(password.trim());
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akaun anda telah dipadam.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.accountDeleted)));
       ref.read(authControllerProvider.notifier).logout();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -782,7 +787,7 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+        SnackBar(content: Text(context.l10n.unexpectedErrorRetry)),
       );
       if (mounted) setState(() => _busy = false);
     }
@@ -796,13 +801,18 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
         margin: EdgeInsets.zero,
         color: AppColors.error.withValues(alpha: 0.06),
         child: ListTile(
-          leading: const Icon(Icons.delete_forever_outlined,
-              color: AppColors.error),
-          title: const Text(
-            'Padam Akaun',
-            style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+          leading: const Icon(
+            Icons.delete_forever_outlined,
+            color: AppColors.error,
           ),
-          subtitle: const Text('Padam akaun anda secara kekal'),
+          title: Text(
+            context.l10n.deleteAccount,
+            style: const TextStyle(
+              color: AppColors.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(context.l10n.deleteAccountSubtitle),
           trailing: const Icon(Icons.chevron_right, color: AppColors.error),
           onTap: _busy ? null : _confirmDelete,
         ),

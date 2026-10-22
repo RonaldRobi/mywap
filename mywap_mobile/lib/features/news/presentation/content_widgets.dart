@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
@@ -138,17 +139,15 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
       await widget.onSubmit(content);
       _controller.clear();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Komen berjaya dihantar.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsCommentSent)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Komen gagal dihantar. Sila cuba lagi.'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsCommentFailed)));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -156,14 +155,14 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
   }
 
   Future<void> _report(Comment comment) async {
-    const reasons = <String, String>{
-      'spam': 'Spam atau iklan',
-      'harassment': 'Gangguan / buli',
-      'hate': 'Ucapan kebencian',
-      'sexual': 'Kandungan seksual',
-      'violence': 'Keganasan',
-      'misinformation': 'Maklumat palsu',
-      'other': 'Lain-lain',
+    final reasons = <String, String>{
+      'spam': context.l10n.newsReportSpam,
+      'harassment': context.l10n.newsReportHarassment,
+      'hate': context.l10n.newsReportHate,
+      'sexual': context.l10n.newsReportSexual,
+      'violence': context.l10n.newsReportViolence,
+      'misinformation': context.l10n.newsReportMisinformation,
+      'other': context.l10n.newsReportOther,
     };
     final reason = await showModalBottomSheet<String>(
       context: context,
@@ -176,7 +175,7 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
                 Padding(
                   padding: const EdgeInsets.all(Spacing.lg),
                   child: Text(
-                    'Laporkan Komen',
+                    context.l10n.newsReportCommentTitle,
                     style: Theme.of(sheetContext).textTheme.titleMedium,
                   ),
                 ),
@@ -200,15 +199,15 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
             reason: reason,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Laporan dihantar. Terima kasih.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsReportSent)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Laporan gagal dihantar.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsReportFailed)));
       }
     }
   }
@@ -220,19 +219,20 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
       context: context,
       builder:
           (dialogContext) => AlertDialog(
-            title: const Text('Sekat Pengguna'),
+            title: Text(context.l10n.newsBlockUserTitle),
             content: Text(
-              'Komen daripada ${comment.userName ?? 'pengguna ini'} tidak '
-              'akan dipaparkan lagi kepada anda.',
+              context.l10n.newsBlockConfirmBody(
+                comment.userName ?? context.l10n.newsThisUser,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Batal'),
+                child: Text(context.l10n.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Sekat'),
+                child: Text(context.l10n.newsBlock),
               ),
             ],
           ),
@@ -243,15 +243,15 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
       await ref.read(moderationRepositoryProvider).blockUser(userId);
       ref.invalidate(blockedUserIdsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pengguna telah disekat.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsUserBlocked)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sekatan gagal. Sila cuba lagi.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.newsBlockFailed)));
       }
     }
   }
@@ -266,13 +266,11 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Komen (${widget.commentsCount})',
+            context.l10n.newsCommentsCount('${widget.commentsCount}'),
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: Spacing.md),
-          const GuestLoginBanner(
-            message: 'Log masuk sebagai ahli untuk membaca dan menulis komen.',
-          ),
+          GuestLoginBanner(message: context.l10n.newsLoginToComment),
         ],
       );
     }
@@ -281,7 +279,7 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Komen (${widget.commentsCount})',
+          context.l10n.newsCommentsCount('${widget.commentsCount}'),
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: Spacing.md),
@@ -293,10 +291,10 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
                 controller: _controller,
                 minLines: 1,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: 'Tulis komen...',
+                decoration: InputDecoration(
+                  hintText: context.l10n.newsCommentHint,
                   isDense: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _submit(),
@@ -312,9 +310,9 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
         ),
         const SizedBox(height: Spacing.lg),
         if (widget.comments.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: Spacing.lg),
-            child: Center(child: Text('Tiada komen lagi.')),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.lg),
+            child: Center(child: Text(context.l10n.newsNoComments)),
           )
         else
           ...widget.comments.map(
@@ -373,7 +371,7 @@ class _CommentTile extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        comment.userName ?? 'Ahli',
+                        comment.userName ?? context.l10n.memberFallback,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -392,20 +390,20 @@ class _CommentTile extends ConsumerWidget {
                         child: PopupMenuButton<String>(
                           padding: EdgeInsets.zero,
                           iconSize: 18,
-                          tooltip: 'Pilihan',
+                          tooltip: context.l10n.newsOptionsTooltip,
                           onSelected: (value) {
                             if (value == 'report') onReport();
                             if (value == 'block') onBlock();
                           },
                           itemBuilder:
-                              (_) => const [
+                              (_) => [
                                 PopupMenuItem(
                                   value: 'report',
-                                  child: Text('Lapor komen'),
+                                  child: Text(context.l10n.newsReportComment),
                                 ),
                                 PopupMenuItem(
                                   value: 'block',
-                                  child: Text('Sekat pengguna'),
+                                  child: Text(context.l10n.newsBlockUser),
                                 ),
                               ],
                         ),

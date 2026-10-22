@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../core/network/api_interceptor.dart';
 import '../../../core/storage/token_storage.dart';
 
@@ -14,8 +15,8 @@ import '../../../core/storage/token_storage.dart';
 /// header is strictly required, but the token is sent when available.
 class ManualFileService {
   ManualFileService({TokenStorage? tokenStorage, Directory? baseDirectory})
-      : _tokenStorage = tokenStorage ?? TokenStorage(),
-        _baseDirectory = baseDirectory;
+    : _tokenStorage = tokenStorage ?? TokenStorage(),
+      _baseDirectory = baseDirectory;
 
   final TokenStorage _tokenStorage;
 
@@ -28,7 +29,7 @@ class ManualFileService {
     void Function(double progress)? onProgress,
   }) async {
     if (url == null || url.isEmpty) {
-      throw const ApiException('Tiada fail untuk dibuka.', statusCode: 404);
+      throw ApiException(currentAppLocalizations.noFileToOpen, statusCode: 404);
     }
 
     final root = _baseDirectory ?? await getApplicationDocumentsDirectory();
@@ -45,7 +46,10 @@ class ManualFileService {
     await _download(url, target, onProgress);
 
     if (!await target.exists() || await target.length() == 0) {
-      throw const ApiException('Fail tidak sah. Sila cuba lagi.', statusCode: 0);
+      throw const ApiException(
+        'Fail tidak sah. Sila cuba lagi.',
+        statusCode: 0,
+      );
     }
     return target;
   }

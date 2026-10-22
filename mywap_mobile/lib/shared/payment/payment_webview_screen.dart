@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../l10n/l10n.dart';
+
 import '../theme/app_theme.dart';
 
 /// Full-screen WebView for hosted payment pages.
@@ -8,14 +10,10 @@ import '../theme/app_theme.dart';
 /// Pops with `true` when the user taps "Saya Sudah Bayar" (caller polls the
 /// payment status) or `false` when closed via "Tutup"/"Batal".
 class PaymentWebviewScreen extends StatefulWidget {
-  const PaymentWebviewScreen({
-    super.key,
-    required this.paymentUrl,
-    this.title = 'Pembayaran',
-  });
+  const PaymentWebviewScreen({super.key, required this.paymentUrl, this.title});
 
   final String paymentUrl;
-  final String title;
+  final String? title;
 
   @override
   State<PaymentWebviewScreen> createState() => _PaymentWebviewScreenState();
@@ -27,20 +25,21 @@ class _PaymentWebviewScreenState extends State<PaymentWebviewScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) {
-            if (request.url.startsWith('mywap://')) {
-              Navigator.of(context).pop(true);
-              return NavigationDecision.prevent;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.paymentUrl));
+    _controller =
+        WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setNavigationDelegate(
+            NavigationDelegate(
+              onNavigationRequest: (request) {
+                if (request.url.startsWith('mywap://')) {
+                  Navigator.of(context).pop(true);
+                  return NavigationDecision.prevent;
+                }
+                return NavigationDecision.navigate;
+              },
+            ),
+          )
+          ..loadRequest(Uri.parse(widget.paymentUrl));
   }
 
   void _pop(bool paid) => Navigator.of(context).pop(paid);
@@ -49,19 +48,17 @@ class _PaymentWebviewScreenState extends State<PaymentWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title ?? context.l10n.paymentTitle),
         actions: [
           TextButton(
             onPressed: () => _pop(false),
-            child: const Text('Tutup'),
+            child: Text(context.l10n.close),
           ),
         ],
       ),
       body: Column(
         children: [
-          Expanded(
-            child: WebViewWidget(controller: _controller),
-          ),
+          Expanded(child: WebViewWidget(controller: _controller)),
           SafeArea(
             top: false,
             child: Padding(
@@ -72,12 +69,12 @@ class _PaymentWebviewScreenState extends State<PaymentWebviewScreen> {
                   FilledButton.icon(
                     onPressed: () => _pop(true),
                     icon: const Icon(Icons.check_circle),
-                    label: const Text('Saya Sudah Bayar'),
+                    label: Text(context.l10n.paymentAlreadyPaid),
                   ),
                   const SizedBox(height: Spacing.sm),
                   OutlinedButton(
                     onPressed: () => _pop(false),
-                    child: const Text('Batal'),
+                    child: Text(context.l10n.cancel),
                   ),
                 ],
               ),

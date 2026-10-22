@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/payment/payment_webview_screen.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -38,11 +39,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (!mounted) return;
       ref.invalidate(orderDetailProvider(widget.orderId));
       ref.invalidate(ordersProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pesanan disahkan diterima. Terima kasih!'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.ecomOrderReceived)));
     } on ApiException catch (e) {
       if (!mounted) return;
       ref.invalidate(orderDetailProvider(widget.orderId));
@@ -76,18 +75,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         if (!mounted) return;
         ref.invalidate(orderDetailProvider(widget.orderId));
         ref.invalidate(ordersProvider);
+        final l10n = context.l10n;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               paid == true
-                  ? 'Pembayaran berjaya. Terima kasih!'
-                  : 'Pembayaran belum selesai. Sila cuba lagi.',
+                  ? l10n.ecomPaymentSuccess
+                  : l10n.ecomPaymentIncomplete,
             ),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pembayaran berjaya. Terima kasih!')),
+          SnackBar(content: Text(context.l10n.ecomPaymentSuccess)),
         );
       }
     } on ApiException catch (e) {
@@ -110,7 +110,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/orders'),
-        title: const Text('Butiran Pesanan'),
+        title: Text(context.l10n.ecomOrderDetailTitle),
       ),
       body: detailAsync.when(
         data:
@@ -126,7 +126,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry:
                   () => ref.invalidate(orderDetailProvider(widget.orderId)),
             ),
@@ -153,7 +153,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         ),
                       )
                       : const Icon(Icons.payment),
-              label: const Text('Bayar'),
+              label: Text(context.l10n.ecomPay),
             ),
           ),
         ),
@@ -178,7 +178,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         ),
                       )
                       : const Icon(Icons.inventory_2_outlined),
-              label: const Text('Terima Pesanan'),
+              label: Text(context.l10n.ecomReceiveOrder),
             ),
           ),
         ),
@@ -196,14 +196,15 @@ class _DetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final o = order;
     if (o == null) {
       return RefreshIndicator(
         onRefresh: onRefresh,
-        child: const SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Center(child: Text('Pesanan tidak dijumpai.')),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(child: Text(l10n.ecomOrderNotFound)),
         ),
       );
     }
@@ -224,7 +225,7 @@ class _DetailBody extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Pesanan #${o.id ?? '-'}',
+                          l10n.ecomOrderNumber(o.id?.toString() ?? '-'),
                           style: theme.textTheme.titleLarge,
                         ),
                       ),
@@ -240,7 +241,7 @@ class _DetailBody extends StatelessWidget {
                   ),
                   const SizedBox(height: Spacing.sm),
                   Text(
-                    'Jumlah: ${Formatters.currency(o.grandTotal)}',
+                    l10n.ecomTotalLabel(Formatters.currency(o.grandTotal)),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w700,
@@ -252,10 +253,10 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.md),
           _SectionCard(
-            title: 'Item',
+            title: l10n.ecomItemsSection,
             child:
                 o.items.isEmpty
-                    ? const Text('Tiada item.')
+                    ? Text(l10n.ecomNoItems)
                     : Column(
                       children: [
                         for (final item in o.items) _ItemRow(item: item),
@@ -264,13 +265,13 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.md),
           _SectionCard(
-            title: 'Maklumat Penghantaran',
+            title: l10n.ecomShippingInfo,
             child: Column(
               children: [
-                _InfoLine(label: 'Nama', value: o.shippingName),
-                _InfoLine(label: 'Telefon', value: o.shippingPhone),
-                _InfoLine(label: 'Alamat', value: o.shippingAddress),
-                _InfoLine(label: 'Poskod', value: o.shippingPostcode),
+                _InfoLine(label: l10n.nameLabel, value: o.shippingName),
+                _InfoLine(label: l10n.phoneLabel, value: o.shippingPhone),
+                _InfoLine(label: l10n.addressLabel, value: o.shippingAddress),
+                _InfoLine(label: l10n.postcodeLabel, value: o.shippingPostcode),
               ],
             ),
           ),
@@ -280,10 +281,10 @@ class _DetailBody extends StatelessWidget {
           ],
           const SizedBox(height: Spacing.md),
           _SectionCard(
-            title: 'Pembayaran',
+            title: l10n.ecomPaymentSection,
             child:
                 o.payments.isEmpty
-                    ? const Text('Tiada pembayaran.')
+                    ? Text(l10n.ecomNoPayments)
                     : Column(
                       children: [
                         for (final payment in o.payments)
@@ -293,20 +294,20 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.md),
           _SectionCard(
-            title: 'Ringkasan',
+            title: l10n.ecomSummary,
             child: Column(
               children: [
                 _InfoLine(
-                  label: 'Subjumlah',
+                  label: l10n.ecomSubtotal,
                   value: Formatters.currency(o.total),
                 ),
                 _InfoLine(
-                  label: 'Pos',
+                  label: l10n.ecomPostage,
                   value: Formatters.currency(o.postageCost),
                 ),
                 const Divider(height: Spacing.lg),
                 _InfoLine(
-                  label: 'Jumlah',
+                  label: l10n.ecomTotal,
                   value: Formatters.currency(o.grandTotal),
                   bold: true,
                 ),
@@ -336,9 +337,9 @@ class _TrackingCard extends StatelessWidget {
     if (!context.mounted) return;
 
     if (url == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No. penjejakan disalin ke papan klip.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.ecomTrackingCopied)));
       return;
     }
 
@@ -347,9 +348,9 @@ class _TrackingCard extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     );
     if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No. penjejakan disalin ke papan klip.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.ecomTrackingCopied)));
     }
   }
 
@@ -373,7 +374,7 @@ class _TrackingCard extends StatelessWidget {
                 ),
                 const SizedBox(width: Spacing.sm),
                 Text(
-                  'Penjejakan Parcel',
+                  context.l10n.ecomParcelTracking,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: AppColors.movementGreen,
                     fontWeight: FontWeight.w700,
@@ -420,7 +421,7 @@ class _TrackingCard extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: () => _track(context),
                     icon: const Icon(Icons.travel_explore, size: 20),
-                    label: const Text('Track'),
+                    label: Text(context.l10n.ecomTrack),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                     ),
@@ -428,14 +429,12 @@ class _TrackingCard extends StatelessWidget {
                 ),
                 const SizedBox(width: Spacing.sm),
                 IconButton.outlined(
-                  tooltip: 'Salin No. Penjejakan',
+                  tooltip: context.l10n.ecomCopyTrackingTooltip,
                   onPressed: () async {
                     await Clipboard.setData(ClipboardData(text: number));
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No. penjejakan disalin ke papan klip.'),
-                      ),
+                      SnackBar(content: Text(context.l10n.ecomTrackingCopied)),
                     );
                   },
                   icon: const Icon(Icons.copy, size: 20),
@@ -492,7 +491,7 @@ class _ItemRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.product?.name ?? 'Produk',
+                  item.product?.name ?? context.l10n.ecomProductFallback,
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (item.variationSnapshot != null &&
@@ -549,7 +548,7 @@ class _PaymentRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payment.reference ?? 'Pembayaran',
+                  payment.reference ?? context.l10n.ecomPaymentFallback,
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (payment.gateway != null)
@@ -572,7 +571,7 @@ class _PaymentRow extends StatelessWidget {
                 ),
               ),
               Text(
-                paymentStatusLabel(payment.status),
+                paymentStatusLabel(context, payment.status),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: orderStatusColor(
                     payment.status == 'successful'
@@ -650,7 +649,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        orderStatusLabel(status),
+        orderStatusLabel(context, status),
         style: const TextStyle(
           fontSize: AppTextTheme.minSize,
           fontWeight: FontWeight.w600,

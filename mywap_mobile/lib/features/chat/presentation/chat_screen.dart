@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -55,16 +56,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _scrollToBottom();
 
     return Scaffold(
-      appBar: AppBar(leading: const AppBackButton(), title: const Text('Chat')),
+      appBar: AppBar(
+        leading: const AppBackButton(),
+        title: Text(context.l10n.chatTitle),
+      ),
       body: Column(
         children: [
           Expanded(
             child:
                 state.messages.isEmpty
-                    ? const EmptyState(
+                    ? EmptyState(
                       icon: Icons.chat_bubble_outline,
-                      message:
-                          'Tiada mesej lagi. Hantar mesej untuk bertanya kepada pembantu AI.',
+                      message: context.l10n.chatEmpty,
                     )
                     : ListView.builder(
                       controller: _scrollController,
@@ -133,20 +136,20 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: Spacing.sm),
+        padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: Spacing.sm),
-            Text('Menaip...'),
+            const SizedBox(width: Spacing.sm),
+            Text(context.l10n.chatTyping),
           ],
         ),
       ),
@@ -186,7 +189,9 @@ class _ChatInput extends StatelessWidget {
                 maxLines: 4,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => onSend(),
-                decoration: const InputDecoration(hintText: 'Taip mesej...'),
+                decoration: InputDecoration(
+                  hintText: context.l10n.chatInputHint,
+                ),
               ),
             ),
             const SizedBox(width: Spacing.sm),

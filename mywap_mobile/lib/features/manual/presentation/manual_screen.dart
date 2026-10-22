@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -26,14 +27,14 @@ class ManualScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Manual Pengguna'),
+        title: Text(context.l10n.menuManual),
       ),
       body: manualsAsync.when(
         data: (manuals) {
           if (manuals.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.menu_book_outlined,
-              message: 'Tiada manual buat masa ini.',
+              message: context.l10n.manualNoManuals,
             );
           }
 
@@ -43,8 +44,9 @@ class ManualScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(Spacing.lg),
               itemCount: manuals.length + 1,
-              separatorBuilder: (_, index) =>
-                  SizedBox(height: index == 0 ? Spacing.md : Spacing.md),
+              separatorBuilder:
+                  (_, index) =>
+                      SizedBox(height: index == 0 ? Spacing.md : Spacing.md),
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return const _IntroCard();
@@ -57,25 +59,33 @@ class ManualScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => ListView.builder(
-          padding: const EdgeInsets.all(Spacing.lg),
-          itemCount: 4,
-          itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.only(bottom: Spacing.md),
-            child: SkeletonBox(radius: 18, height: 96),
-          ),
-        ),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException ? error.message : 'Ralat tidak dijangka.',
-          onRetry: () => ref.invalidate(manualsProvider),
-        ),
+        loading:
+            () => ListView.builder(
+              padding: const EdgeInsets.all(Spacing.lg),
+              itemCount: 4,
+              itemBuilder:
+                  (_, __) => const Padding(
+                    padding: EdgeInsets.only(bottom: Spacing.md),
+                    child: SkeletonBox(radius: 18, height: 96),
+                  ),
+            ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : context.l10n.unexpectedError,
+              onRetry: () => ref.invalidate(manualsProvider),
+            ),
       ),
     );
   }
 
   void _open(BuildContext context, Manual manual) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ManualViewerScreen(manual: manual)),
+      MaterialPageRoute<void>(
+        builder: (_) => ManualViewerScreen(manual: manual),
+      ),
     );
   }
 }
@@ -98,7 +108,7 @@ class _IntroCard extends StatelessWidget {
           const SizedBox(width: Spacing.md),
           Expanded(
             child: Text(
-              'Panduan di bawah dipaparkan mengikut peranan akaun anda.',
+              context.l10n.manualIntro,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.movementNavy,
               ),
@@ -152,7 +162,7 @@ class _ManualCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      manual.title ?? 'Manual',
+                      manual.title ?? context.l10n.manualFallback,
                       style: theme.textTheme.titleSmall,
                     ),
                     if ((manual.description ?? '').isNotEmpty) ...[
@@ -169,7 +179,7 @@ class _ManualCard extends StatelessWidget {
                     if (updated != null) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Dikemas kini: $updated',
+                        context.l10n.manualUpdated(updated),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: AppColors.textTertiary,
                         ),
@@ -179,10 +189,7 @@ class _ManualCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: Spacing.sm),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.textSecondary,
-              ),
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
             ],
           ),
         ),

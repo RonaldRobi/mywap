@@ -11,6 +11,7 @@ class CartItem {
     this.variationOptionId,
     this.variationLabel,
     this.quantity = 1,
+    this.stock,
   });
 
   final String key;
@@ -24,9 +25,17 @@ class CartItem {
   final String? variationLabel;
   final int quantity;
 
+  /// Maximum quantity available when the item was added to the cart.
+  /// Null means stock is either unknown or not tracked.
+  final int? stock;
+
   double get lineTotal => unitPrice * quantity;
 
-  CartItem copyWith({int? quantity}) => CartItem(
+  bool get isOutOfStock => stock != null && stock! <= 0;
+
+  bool get isAtStockLimit => stock != null && quantity >= stock!;
+
+  CartItem copyWith({int? quantity, int? stock}) => CartItem(
         key: key,
         productId: productId,
         name: name,
@@ -35,6 +44,7 @@ class CartItem {
         variationOptionId: variationOptionId,
         variationLabel: variationLabel,
         quantity: quantity ?? this.quantity,
+        stock: stock ?? this.stock,
       );
 }
 
@@ -60,29 +70,73 @@ class CartNotifier extends Notifier<CartState> {
   CartState build() => const CartState();
 
   /// Adds an item, merging with the existing line for the same product+variation.
-  void add(CartItem item) {
+  ///
+  /// Returns false when the item is already sold out, and clamps the merged
+  /// quantity to the stock captured when it was added. This prevents the cart
+  /// from silently exceeding what the backend can actually fulfil.
+  bool add(CartItem item) {
+    if (item.isOutOfStock) return false;
+
     final index = state.items.indexWhere((i) => i.key == item.key);
     if (index >= 0) {
       final existing = state.items[index];
-      final updated = existing.copyWith(
-        quantity: existing.quantity + item.quantity,
-      );
+      final max = item.stock ?? existing.stock;
+      var quantity = existing.quantity + item.quantity;
+      if (max != null) quantity = quantity.clamp(1, max).toInt();
+      final updated = existing.copyWith(quantity: quantity, stock: max);
       state = CartState(items: [...state.items]..[index] = updated);
     } else {
-      state = CartState(items: [...state.items, item]);
+      final max = item.stock;
+      final quantity =
+          max == null ? item.quantity : item.quantity.clamp(1, max).toInt();
+      state = CartState(
+        items: [...state.items, item.copyWith(quantity: quantity)],
+      );
     }
+    return true;
   }
 
-  /// Quantity ≤ 0 removes the line.
+  /// Quantity ≤ 0 removes the line. Quantities above the available stock are
+  /// clamped so the UI can never create an unfulfillable cart line.
   void updateQuantity(String key, int quantity) {
     if (quantity <= 0) {
       remove(key);
       return;
     }
     state = CartState(
-      items: state.items
-          .map((i) => i.key == key ? i.copyWith(quantity: quantity) : i)
-          .toList(growable: false),
+      items: state.items.map((i) {
+        if (i.key != key) return i;
+        final max = i.stock;
+        return i.copyWith(
+          quantity: max == null ? quantity : quantity.clamp(1, max).toInt(),
+        );
+      }).toList(growable: false),
+    );
+  }
+
+  /// Replaces the captured stock for a line after a checkout revalidation.
+  /// A non-positive stock marks the line as sold out; a lower stock also
+  /// clamps the quantity so the buyer sees exactly what can be fulfilled.
+  void updateStock(String key, int? stock) {
+    state = CartState(
+      items: state.items.map((i) {
+        if (i.key != key) return i;
+        var quantity = i.quantity;
+        if (stock != null && stock > 0 && quantity > stock) {
+          quantity = stock;
+        }
+        return CartItem(
+          key: i.key,
+          productId: i.productId,
+          name: i.name,
+          image: i.image,
+          unitPrice: i.unitPrice,
+          variationOptionId: i.variationOptionId,
+          variationLabel: i.variationLabel,
+          quantity: quantity,
+          stock: stock,
+        );
+      }).toList(growable: false),
     );
   }
 

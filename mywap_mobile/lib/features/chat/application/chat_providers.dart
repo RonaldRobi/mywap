@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../core/network/providers.dart';
 import '../data/chat_repository.dart';
 import '../data/models/chat_message.dart';
@@ -9,15 +10,12 @@ final chatRepositoryProvider = Provider<ChatRepository>(
   (ref) => ChatRepository(ref.watch(apiClientProvider)),
 );
 
-final chatControllerProvider =
-    NotifierProvider<ChatController, ChatState>(ChatController.new);
+final chatControllerProvider = NotifierProvider<ChatController, ChatState>(
+  ChatController.new,
+);
 
 class ChatState {
-  const ChatState({
-    this.messages = const [],
-    this.sending = false,
-    this.error,
-  });
+  const ChatState({this.messages = const [], this.sending = false, this.error});
 
   final List<ChatMessage> messages;
   final bool sending;
@@ -56,7 +54,10 @@ class ChatController extends Notifier<ChatState> {
     try {
       final reply = await ref.read(chatRepositoryProvider).send(message);
       state = state.copyWith(
-        messages: [...state.messages, ChatMessage.bot(reply.reply ?? 'Tiada jawapan.')],
+        messages: [
+          ...state.messages,
+          ChatMessage.bot(reply.reply ?? currentAppLocalizations.chatNoAnswer),
+        ],
         sending: false,
       );
     } on ApiException catch (e) {

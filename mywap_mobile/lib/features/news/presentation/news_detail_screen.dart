@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -29,7 +30,7 @@ class NewsDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/news'),
-        title: const Text('Info Terkini'),
+        title: Text(context.l10n.newsTitle),
       ),
       body: async.when(
         data:
@@ -39,7 +40,7 @@ class NewsDetailScreen extends ConsumerWidget {
                 if (!isAuthenticated) {
                   await showLoginPrompt(
                     context,
-                    message: 'Log masuk sebagai ahli untuk memberi reaksi.',
+                    message: context.l10n.newsLoginToReact,
                   );
                   return;
                 }
@@ -63,7 +64,7 @@ class NewsDetailScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(newsDetailProvider(newsId)),
             ),
       ),
@@ -142,7 +143,7 @@ class _NewsDetailBody extends StatelessWidget {
           Text(post.title ?? '-', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 4),
           Text(
-            post.organizationName ?? 'Semua Organisasi',
+            post.organizationName ?? context.l10n.newsAllOrganizations,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -22,7 +23,7 @@ class UsrahScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Usrah'),
+        title: Text(context.l10n.menuUsrah),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: usrahAsync.when(
@@ -37,7 +38,7 @@ class UsrahScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(usrahProvider),
             ),
       ),
@@ -59,24 +60,24 @@ class _UsrahBody extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
-          const SectionHeader('Kumpulan Usrah Saya'),
+          SectionHeader(context.l10n.usrahMyGroups),
           if (data.groups.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(Spacing.lg),
+            Padding(
+              padding: const EdgeInsets.all(Spacing.lg),
               child: EmptyState(
                 icon: Icons.groups_outlined,
-                message: 'Anda belum menyertai mana-mana kumpulan usrah.',
+                message: context.l10n.usrahNoGroups,
               ),
             )
           else
             for (final group in data.groups) _GroupCard(group: group),
-          const SectionHeader('Sejarah Kehadiran'),
+          SectionHeader(context.l10n.usrahAttendanceHistory),
           if (data.attendanceHistory.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(Spacing.lg),
+            Padding(
+              padding: const EdgeInsets.all(Spacing.lg),
               child: EmptyState(
                 icon: Icons.fact_check_outlined,
-                message: 'Tiada rekod kehadiran buat masa ini.',
+                message: context.l10n.usrahNoAttendance,
               ),
             )
           else
@@ -132,7 +133,7 @@ class _GroupCard extends StatelessWidget {
             _InfoRow(icon: Icons.schedule, text: group.meetingTime ?? '-'),
             const SizedBox(height: Spacing.md),
             Text(
-              'Ahli (${group.members.length})',
+              context.l10n.usrahMembersCount('${group.members.length}'),
               style: theme.textTheme.labelLarge,
             ),
             const SizedBox(height: Spacing.sm),
@@ -185,14 +186,14 @@ class _LeaderBadge extends StatelessWidget {
         color: AppColors.movementGreen.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star, size: 14, color: AppColors.warning),
-          SizedBox(width: 4),
+          const Icon(Icons.star, size: 14, color: AppColors.warning),
+          const SizedBox(width: 4),
           Text(
-            'Pemimpin',
-            style: TextStyle(
+            context.l10n.usrahLeader,
+            style: const TextStyle(
               fontSize: AppTextTheme.minSize,
               fontWeight: FontWeight.w600,
               color: AppColors.movementGreen,
@@ -213,8 +214,8 @@ class _AttendanceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final date = _formatDate(record.date);
     final statusLabel = switch (record.status) {
-      'present' => 'Hadir',
-      'absent' => 'Tidak Hadir',
+      'present' => context.l10n.usrahPresent,
+      'absent' => context.l10n.usrahAbsent,
       _ => record.status ?? '-',
     };
     final color = switch (record.status) {

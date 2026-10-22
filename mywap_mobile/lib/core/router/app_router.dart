@@ -35,6 +35,8 @@ import '../../features/profile/presentation/routes.dart';
 import '../../features/referral/presentation/referral_screen.dart';
 import '../../features/scan/presentation/attendance_check_in_screen.dart';
 import '../../features/scan/presentation/member_scan_screen.dart';
+import '../../features/settings/presentation/language_screen.dart';
+import '../../features/settings/presentation/routes.dart';
 import '../../features/usrah/presentation/routes.dart';
 import '../../shared/screens/route_not_found_screen.dart';
 
@@ -47,7 +49,8 @@ class _AuthRefresh extends ChangeNotifier {
 /// trapped while being forced to complete it: the completion screen itself,
 /// plus profile maintenance and the log-out action.
 bool _isProfileCompletionExempt(String location) {
-  return location == '/profile/complete' ||
+  return location == '/language' ||
+      location == '/profile/complete' ||
       location == '/profile/edit' ||
       location == '/profile/change-password';
 }
@@ -58,6 +61,8 @@ bool _isProfileCompletionExempt(String location) {
 bool _isPublicLocation(String location) {
   const exact = {
     '/home',
+    '/language',
+    '/settings',
     '/articles',
     '/news',
     '/videos',
@@ -96,6 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplash = location == '/splash';
       final isLogin = location == '/login';
       final isOnboarding = location == '/onboarding';
+      final isLanguage = location == '/language';
       final isPublicAuthFlow =
           location == '/register' ||
           location == '/forgot-password' ||
@@ -107,6 +113,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isSplash ||
                 isLogin ||
                 isOnboarding ||
+                isLanguage ||
                 isPublicAuthFlow ||
                 isPublic
             ? null
@@ -132,6 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/language', builder: (_, __) => const LanguageScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/register',
@@ -157,10 +165,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Deep link kehadiran — dibuka daripada Universal/App Link (QR program).
       GoRoute(
         path: '/events/:id/attend/:token',
-        builder: (_, state) => AttendanceCheckInScreen(
-          eventId: int.parse(state.pathParameters['id']!),
-          token: state.pathParameters['token']!,
-        ),
+        builder:
+            (_, state) => AttendanceCheckInScreen(
+              eventId: int.parse(state.pathParameters['id']!),
+              token: state.pathParameters['token']!,
+            ),
       ),
       ShellRoute(
         builder: (_, state, child) => AdaptiveShell(child: child),
@@ -200,6 +209,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           ...memberRoutes,
           ...profileRoutes,
+          ...settingsRoutes,
           ...infaqRoutes,
           ...ecommerceRoutes,
           ...newsRoutes,

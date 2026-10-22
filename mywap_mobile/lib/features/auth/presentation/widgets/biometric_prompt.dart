@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/network/providers.dart';
+import '../../../../shared/l10n/l10n.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../application/auth_controller.dart';
 
@@ -16,10 +17,7 @@ import '../../application/auth_controller.dart';
 class BiometricPrompt {
   static const String promptSeenKey = 'biometric_prompt_seen';
 
-  static Future<void> offerEnable(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  static Future<void> offerEnable(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context, rootNavigator: true);
     final biometric = ref.read(biometricServiceProvider);
 
@@ -34,34 +32,35 @@ class BiometricPrompt {
 
     final enable = await navigator.push<bool>(
       RawDialogRoute<bool>(
-        pageBuilder: (dialogContext, _, __) => AlertDialog(
-          icon: Icon(
-            hasFaceId ? Icons.face_retouching_natural : Icons.fingerprint,
-            color: AppColors.movementGreen,
-            size: 40,
-          ),
-          title: Text(
-            hasFaceId ? 'Aktifkan Face ID?' : 'Aktifkan Cap Jari?',
-          ),
-          content: const Text(
-            'Log masuk lebih pantas pada masa akan datang menggunakan '
-            'biometrik peranti anda.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Nanti'),
+        pageBuilder:
+            (dialogContext, _, __) => AlertDialog(
+              icon: Icon(
+                hasFaceId ? Icons.face_retouching_natural : Icons.fingerprint,
+                color: AppColors.movementGreen,
+                size: 40,
+              ),
+              title: Text(
+                hasFaceId
+                    ? context.l10n.enableFaceIdTitle
+                    : context.l10n.enableFingerprintTitle,
+              ),
+              content: Text(context.l10n.biometricPromptBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(context.l10n.later),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(context.l10n.enable),
+                ),
+              ],
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Dayakan'),
-            ),
-          ],
-        ),
         barrierDismissible: false,
-        barrierLabel: MaterialLocalizations.of(
-          navigator.context,
-        ).modalBarrierDismissLabel,
+        barrierLabel:
+            MaterialLocalizations.of(
+              navigator.context,
+            ).modalBarrierDismissLabel,
       ),
     );
 

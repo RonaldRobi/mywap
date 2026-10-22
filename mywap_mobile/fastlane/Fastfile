@@ -1,0 +1,50 @@
+default_platform(:ios)
+
+def env_path(name, default)
+  File.expand_path(ENV.fetch(name, default), __dir__)
+end
+
+platform :ios do
+  desc "Upload IPA ke TestFlight"
+  lane :beta do
+    api_key_path = env_path("ASC_KEY_JSON", "asc_key.json")
+    ipa = File.expand_path(
+      ENV.fetch("IPA_PATH", "../build/ios/ipa/myWAP.ipa"),
+      __dir__
+    )
+
+    UI.user_error!("Fail API key tiada: #{api_key_path}") unless File.exist?(api_key_path)
+    UI.user_error!("IPA tiada: #{ipa}") unless File.exist?(ipa)
+
+    pilot(
+      ipa: ipa,
+      api_key_path: api_key_path,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
+
+platform :android do
+  desc "Upload AAB ke Play Console"
+  lane :beta do
+    json_key = env_path("PLAY_JSON_KEY", "play_service_account.json")
+    aab = File.expand_path(
+      ENV.fetch("AAB_PATH", "../build/app/outputs/bundle/release/app-release.aab"),
+      __dir__
+    )
+
+    UI.user_error!("Fail service account tiada: #{json_key}") unless File.exist?(json_key)
+    UI.user_error!("AAB tiada: #{aab}") unless File.exist?(aab)
+
+    supply(
+      aab: aab,
+      json_key: json_key,
+      package_name: "com.mywap.mywap_mobile",
+      track: ENV.fetch("PLAY_TRACK", "internal"),
+      release_status: "completed",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
+import '../../shared/l10n/l10n.dart';
 
 /// Kaedah biometrik yang patut dipaparkan kepada pengguna.
 enum BiometricLabel { faceId, fingerprint }
@@ -70,7 +71,7 @@ class BiometricService {
   Future<bool> authenticate({String? reason}) async {
     try {
       return await _auth.authenticate(
-        localizedReason: reason ?? 'Sahkan identiti anda untuk log masuk',
+        localizedReason: reason ?? currentAppLocalizations.biometricLoginReason,
         options: const AuthenticationOptions(
           biometricOnly: false,
           stickyAuth: true,

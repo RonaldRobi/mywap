@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/payment/payment_webview_screen.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -137,7 +138,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     for (final question in form.questions) {
       if (question.isFile) {
         if (question.required && _files[question.id] == null) {
-          setState(() => _error = 'Sila lengkapkan semua ruangan yang wajib.');
+          setState(() => _error = context.l10n.eventCompleteRequired);
           return;
         }
         continue;
@@ -156,7 +157,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               : value == null || (value is List && value.isEmpty);
 
       if (question.required && isEmpty) {
-        setState(() => _error = 'Sila lengkapkan semua ruangan yang wajib.');
+        setState(() => _error = context.l10n.eventCompleteRequired);
         return;
       }
 
@@ -170,7 +171,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final needsDocument =
         (form.tiers?.isNotEmpty ?? false) && (tier?.requiresDocument ?? false);
     if (needsDocument && _document == null) {
-      setState(() => _error = 'Sila muat naik dokumen sokongan.');
+      setState(() => _error = context.l10n.eventUploadSupportDoc);
       return;
     }
 
@@ -205,8 +206,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           SnackBar(
             content: Text(
               paid == true
-                  ? 'Pendaftaran berjaya.'
-                  : 'Pendaftaran dihantar. Sila lengkapkan pembayaran.',
+                  ? context.l10n.eventRegistrationSuccess
+                  : context.l10n.eventRegistrationPaymentPending,
             ),
           ),
         );
@@ -248,7 +249,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: AppBackButton(fallback: '/events/${widget.eventId}'),
-        title: const Text('Daftar Program'),
+        title: Text(context.l10n.eventRegisterProgram),
       ),
       body: dataAsync.when(
         data: (data) => _buildData(data),
@@ -258,7 +259,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry:
                   () => ref.invalidate(
                     eventRegistrationFormProvider((
@@ -274,7 +275,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Widget _buildData(EventRegistrationData data) {
     final form = data.form;
     if (form == null) {
-      return const Center(child: Text('Borang tidak ditemui.'));
+      return Center(child: Text(context.l10n.eventFormNotFound));
     }
 
     if (data.myRegistration != null) {
@@ -326,7 +327,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   const SizedBox(height: Spacing.xs),
                 ],
                 Text(
-                  event?.title ?? form.title ?? 'Program',
+                  event?.title ?? form.title ?? context.l10n.eventFallbackShort,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 if (event != null) ...[
@@ -366,7 +367,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 ] else if (needsPayment) ...[
                   const SizedBox(height: Spacing.lg),
                   Text(
-                    'Yuran: ${Formatters.currency(_amount(form))}',
+                    context.l10n.eventFee(Formatters.currency(_amount(form))),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w700,
@@ -376,7 +377,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 if (showMethods) ...[
                   const SizedBox(height: Spacing.lg),
                   Text(
-                    'Kaedah Pembayaran',
+                    context.l10n.eventPaymentMethod,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: Spacing.xs),
@@ -388,7 +389,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                         setState(() => _paymentMethod = value);
                       }
                     },
-                    title: const Text('FPX (Pindahan Bank)'),
+                    title: Text(context.l10n.eventFpx),
                     dense: true,
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
@@ -400,7 +401,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                         setState(() => _paymentMethod = value);
                       }
                     },
-                    title: const Text('DuitNow QR'),
+                    title: Text(context.l10n.eventDuitNow),
                     dense: true,
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
@@ -438,13 +439,15 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           )
                           : const Icon(Icons.assignment_outlined),
                   label: Text(
-                    _submitting ? 'Menghantar...' : 'Hantar Pendaftaran',
+                    _submitting
+                        ? context.l10n.submitting
+                        : context.l10n.eventSubmitRegistration,
                   ),
                 ),
                 if (form.terms != null && form.terms!.isNotEmpty) ...[
                   const SizedBox(height: Spacing.md),
                   Text(
-                    'Terma: ${form.terms}',
+                    context.l10n.eventTerms(form.terms ?? ''),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -518,7 +521,7 @@ class _TierSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Kategori Yuran', style: theme.textTheme.titleMedium),
+        Text(context.l10n.eventFeeCategory, style: theme.textTheme.titleMedium),
         const SizedBox(height: Spacing.xs),
         for (final tier in tiers)
           RadioListTile<String>(
@@ -564,12 +567,12 @@ class _DocumentUpload extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Muat Naik Dokumen Sokongan *',
+            context.l10n.eventUploadSupportDocTitle,
             style: theme.textTheme.titleSmall,
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            'Sila muat naik dokumen sokongan (cth. kad pelajar).',
+            context.l10n.eventUploadSupportDocHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -578,7 +581,7 @@ class _DocumentUpload extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onPick,
             icon: const Icon(Icons.upload_file),
-            label: const Text('Pilih Fail'),
+            label: Text(context.l10n.eventChooseFile),
           ),
           if (fileName != null) ...[
             const SizedBox(height: Spacing.xs),
@@ -639,17 +642,22 @@ class _AlreadyRegisteredView extends StatelessWidget {
                 color: AppColors.movementGreen,
               ),
               const SizedBox(height: Spacing.lg),
-              Text('Anda Sudah Mendaftar', style: theme.textTheme.titleLarge),
+              Text(
+                context.l10n.eventAlreadyRegisteredTitle,
+                style: theme.textTheme.titleLarge,
+              ),
               const SizedBox(height: Spacing.sm),
               if (summary.registrationNo != null)
                 Text(
-                  'No. Pendaftaran: ${summary.registrationNo}',
+                  context.l10n.eventRegistrationNo(
+                    summary.registrationNo ?? '-',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium,
                 ),
               if (summary.statusLabel != null)
                 Text(
-                  'Status: ${summary.statusLabel}',
+                  context.l10n.eventStatus(summary.statusLabel ?? '-'),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
@@ -659,12 +667,12 @@ class _AlreadyRegisteredView extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => context.go('/events/my-registrations'),
                 icon: const Icon(Icons.list_alt_outlined),
-                label: const Text('Lihat Pendaftaran Saya'),
+                label: Text(context.l10n.eventViewMyRegistrations),
               ),
               const SizedBox(height: Spacing.sm),
               TextButton(
                 onPressed: () => _backToEvent(context),
-                child: const Text('Kembali ke Program'),
+                child: Text(context.l10n.eventBackToProgram),
               ),
             ],
           ),
@@ -691,10 +699,10 @@ class _SuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final message = result.message ?? 'Pendaftaran anda telah diterima.';
+    final message = result.message ?? context.l10n.eventRegistrationReceived;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Program')),
+      appBar: AppBar(title: Text(context.l10n.eventRegisterProgram)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.xl),
@@ -707,11 +715,16 @@ class _SuccessScreen extends StatelessWidget {
                 color: AppColors.success,
               ),
               const SizedBox(height: Spacing.lg),
-              Text('Pendaftaran Berjaya', style: theme.textTheme.headlineSmall),
+              Text(
+                context.l10n.eventRegistrationSuccessfulTitle,
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: Spacing.sm),
               if (result.registration?.registrationNo != null) ...[
                 Text(
-                  'No. Pendaftaran: ${result.registration!.registrationNo}',
+                  context.l10n.eventRegistrationNo(
+                    result.registration!.registrationNo ?? '-',
+                  ),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: AppColors.movementGreen,
                     fontWeight: FontWeight.w700,
@@ -730,7 +743,7 @@ class _SuccessScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => context.go('/events/my-registrations'),
                 icon: const Icon(Icons.list_alt_outlined),
-                label: const Text('Lihat Pendaftaran Saya'),
+                label: Text(context.l10n.eventViewMyRegistrations),
               ),
               const SizedBox(height: Spacing.sm),
               OutlinedButton(
@@ -741,7 +754,7 @@ class _SuccessScreen extends StatelessWidget {
                     context.go('/events/$eventId');
                   }
                 },
-                child: const Text('Kembali ke Program'),
+                child: Text(context.l10n.eventBackToProgram),
               ),
             ],
           ),

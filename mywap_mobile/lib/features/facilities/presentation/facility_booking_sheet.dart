@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../application/facility_providers.dart';
@@ -81,19 +82,17 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
     final end = _endDateTime;
 
     if (start == null || end == null) {
-      setState(() => _error = 'Sila lengkapkan tarikh, masa mula dan tempoh.');
+      setState(() => _error = context.l10n.facErrorCompleteDateTime);
       return;
     }
     if (_isPastToday() && start.isBefore(DateTime.now())) {
-      setState(
-        () => _error = 'Slot yang dipilih telah berlalu. Sila pilih masa lain.',
-      );
+      setState(() => _error = context.l10n.facErrorSlotPast);
       return;
     }
     if (!_isMember &&
         (_nameController.text.trim().isEmpty ||
             _phoneController.text.trim().isEmpty)) {
-      setState(() => _error = 'Sila lengkapkan maklumat hubungi.');
+      setState(() => _error = context.l10n.facErrorContactRequired);
       return;
     }
 
@@ -126,9 +125,9 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
       if (_facility?.id != null) {
         ref.invalidate(facilityDetailProvider(_facility!.id!));
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tempahan berjaya dihantar.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.facBookingSubmitted)));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -143,6 +142,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
     if (_result != null) {
       return _BookingSuccess(result: _result!);
     }
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final now = DateTime.now();
 
@@ -157,19 +157,19 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tempah ${_facility?.name ?? ''}',
+                l10n.facBookFacility(_facility?.name ?? ''),
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: Spacing.xs),
               Text(
-                'Langkah mudah: pilih hari, masa mula dan tempoh. Slot bertindih dengan tempahan lain akan ditolak.',
+                l10n.facBookingInstructions,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: Spacing.lg),
 
-              _SectionLabel(step: 1, title: 'Pilih Hari'),
+              _SectionLabel(step: 1, title: l10n.facSelectDay),
               const SizedBox(height: Spacing.sm),
               SizedBox(
                 height: 84,
@@ -198,7 +198,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
               ),
               const SizedBox(height: Spacing.lg),
 
-              _SectionLabel(step: 2, title: 'Masa Mula'),
+              _SectionLabel(step: 2, title: l10n.facStartTime),
               const SizedBox(height: Spacing.sm),
               Wrap(
                 spacing: Spacing.sm,
@@ -224,7 +224,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
               ),
               const SizedBox(height: Spacing.lg),
 
-              _SectionLabel(step: 3, title: 'Tempoh Tempahan'),
+              _SectionLabel(step: 3, title: l10n.facBookingDuration),
               const SizedBox(height: Spacing.sm),
               Wrap(
                 spacing: Spacing.sm,
@@ -246,7 +246,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
               const SizedBox(height: Spacing.md),
               if (_startHour == null)
                 Text(
-                  'Pilih masa mula dahulu untuk melihat tempoh yang tersedia.',
+                  l10n.facSelectStartFirst,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -266,18 +266,18 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
                 TextFormField(
                   controller: _nameController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Hubungi',
-                    prefixIcon: Icon(Icons.person_outline),
+                  decoration: InputDecoration(
+                    labelText: l10n.facContactName,
+                    prefixIcon: const Icon(Icons.person_outline),
                   ),
                 ),
                 const SizedBox(height: Spacing.md),
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Telefon Hubungi',
-                    prefixIcon: Icon(Icons.phone_outlined),
+                  decoration: InputDecoration(
+                    labelText: l10n.facContactPhone,
+                    prefixIcon: const Icon(Icons.phone_outlined),
                   ),
                 ),
                 const SizedBox(height: Spacing.lg),
@@ -299,7 +299,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
                           ),
                         )
                         : const Icon(Icons.check),
-                label: const Text('Hantar Tempahan'),
+                label: Text(l10n.facSubmitBooking),
               ),
             ],
           ),
@@ -347,10 +347,13 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
   }
 
   String _durationLabel(int hours) {
+    final l10n = context.l10n;
     if (_type == 'daily') {
-      return hours == 24 ? '1 Hari' : '${hours ~/ 24} Hari';
+      return hours == 24
+          ? l10n.facDurationOneDay
+          : l10n.facDurationDays(hours ~/ 24);
     }
-    return '$hours Jam';
+    return l10n.facDurationHours(hours);
   }
 
   static bool _isSameDay(DateTime a, DateTime b) =>
@@ -452,7 +455,7 @@ class _DayChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              today ? 'Hari ini' : _weekdays[date.weekday - 1],
+              today ? context.l10n.facToday : _weekdays[date.weekday - 1],
               maxLines: 1,
               style: TextStyle(
                 fontSize: AppTextTheme.minSize,
@@ -581,26 +584,29 @@ class _BookingSummary extends StatelessWidget {
                 color: AppColors.movementGreen,
               ),
               const SizedBox(width: Spacing.sm),
-              Text('Ringkasan Tempahan', style: theme.textTheme.titleSmall),
+              Text(
+                context.l10n.facBookingSummary,
+                style: theme.textTheme.titleSmall,
+              ),
             ],
           ),
           const SizedBox(height: Spacing.sm),
           _SummaryRow(
             icon: Icons.event_outlined,
-            label: 'Mula',
+            label: context.l10n.facStart,
             value: _formatDateTime(start),
           ),
           const SizedBox(height: Spacing.xs),
           _SummaryRow(
             icon: Icons.event_available,
-            label: 'Tamat',
+            label: context.l10n.facEnd,
             value: _formatDateTime(end),
           ),
           if (estimate != null) ...[
             const SizedBox(height: Spacing.xs),
             _SummaryRow(
               icon: Icons.payments_outlined,
-              label: 'Anggaran',
+              label: context.l10n.facEstimate,
               value: Formatters.currency(estimate),
               valueColor: AppColors.movementGreen,
             ),
@@ -609,8 +615,8 @@ class _BookingSummary extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 26),
                 child: Text(
                   isMember
-                      ? 'Kadar ahli. Bayaran disahkan di lokasi.'
-                      : 'Kadar biasa. Bayaran disahkan di lokasi.',
+                      ? context.l10n.facMemberRateNote
+                      : context.l10n.facStandardRateNote,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -675,11 +681,12 @@ class _BookingSuccess extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final statusLabel = switch (result.bookingStatus) {
-      'approved' => 'Diluluskan',
-      'rejected' => 'Ditolak',
-      _ => 'Menunggu kelulusan',
+      'approved' => l10n.facStatusApproved,
+      'rejected' => l10n.facStatusRejected,
+      _ => l10n.facStatusPendingApproval,
     };
 
     return Padding(
@@ -689,15 +696,15 @@ class _BookingSuccess extends StatelessWidget {
         children: [
           const Icon(Icons.check_circle, size: 56, color: AppColors.success),
           const SizedBox(height: Spacing.lg),
-          Text('Tempahan Dihantar', style: theme.textTheme.titleLarge),
+          Text(l10n.facBookingSent, style: theme.textTheme.titleLarge),
           const SizedBox(height: Spacing.sm),
           Text(
-            'Jumlah: ${Formatters.currency(result.totalPrice)}',
+            l10n.ecomTotalLabel(Formatters.currency(result.totalPrice)),
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: Spacing.xs),
           Text(
-            'Status: $statusLabel',
+            l10n.facStatusLine(statusLabel),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -706,7 +713,7 @@ class _BookingSuccess extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
             child: Text(
-              'Anda akan menerima notifikasi sebaik tempahan disahkan. Bayaran dibuat apabila tiba di lokasi.',
+              l10n.facBookingConfirmationNote,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
@@ -716,7 +723,7 @@ class _BookingSuccess extends StatelessWidget {
           const SizedBox(height: Spacing.xl),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Selesai'),
+            child: Text(l10n.facDone),
           ),
         ],
       ),

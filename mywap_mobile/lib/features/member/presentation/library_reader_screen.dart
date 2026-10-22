@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -94,8 +95,7 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _ReaderPhase.error;
-        _errorMessage =
-            'Buku tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
+        _errorMessage = context.l10n.libraryOpenFailed;
       });
     }
   }
@@ -123,7 +123,7 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text(
-          widget.item.title ?? 'Buku',
+          widget.item.title ?? context.l10n.libraryBookFallback,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -131,8 +131,8 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
           IconButton(
             tooltip:
                 favourites.contains(_bookId)
-                    ? 'Buang daripada kegemaran'
-                    : 'Simpan ke kegemaran',
+                    ? context.l10n.libraryRemoveFavourite
+                    : context.l10n.libraryAddFavourite,
             onPressed: () {
               ref.read(libraryFavouritesProvider.notifier).toggle(_bookId);
             },
@@ -211,7 +211,7 @@ class _ReaderControls extends StatelessWidget {
           children: [
             const SizedBox(width: Spacing.sm),
             IconButton(
-              tooltip: 'Muka surat sebelumnya',
+              tooltip: context.l10n.libraryPreviousPage,
               onPressed:
                   controller.page > 1
                       ? () => controller.previousPage(
@@ -236,7 +236,7 @@ class _ReaderControls extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Muka surat seterusnya',
+              tooltip: context.l10n.libraryNextPage,
               onPressed:
                   () => controller.nextPage(
                     duration: const Duration(milliseconds: 180),
@@ -278,8 +278,10 @@ class _DownloadProgressView extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             Text(
               indeterminate
-                  ? 'Menyediakan buku…'
-                  : 'Memuat turun buku… ${(progress * 100).round()}%',
+                  ? context.l10n.libraryPreparing
+                  : context.l10n.libraryDownloading(
+                    '${(progress * 100).round()}',
+                  ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),
@@ -322,14 +324,17 @@ class _ReaderError extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.lg),
             Text(
-              message ?? 'Ralat tidak dijangka.',
+              message ?? context.l10n.unexpectedError,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: Spacing.lg),
-            FilledButton(onPressed: onRetry, child: const Text('Cuba Lagi')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.libraryTryAgain),
+            ),
           ],
         ),
       ),

@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/organic_canvas_background.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../events/data/models/event.dart';
@@ -28,17 +30,26 @@ class MemberDashboardScreen extends ConsumerWidget {
     final dashboardAsync = ref.watch(memberDashboardProvider);
 
     return Scaffold(
-      body: dashboardAsync.when(
-        data: (data) => _DashboardContent(userName: user?.name, data: data),
-        loading: () => const _DashboardSkeleton(),
-        error:
-            (error, _) => ErrorRetry(
-              message:
-                  error is ApiException
-                      ? error.message
-                      : 'Ralat tidak dijangka.',
-              onRetry: () => ref.invalidate(memberDashboardProvider),
-            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Lapisan hiasan paling bawah — kekal di belakang kandungan untuk
+          // semua keadaan (data/loading/error) tanpa menjejaskan SafeArea
+          // atau scroll.
+          const OrganicCanvasBackground(),
+          dashboardAsync.when(
+            data: (data) => _DashboardContent(userName: user?.name, data: data),
+            loading: () => const _DashboardSkeleton(),
+            error:
+                (error, _) => ErrorRetry(
+                  message:
+                      error is ApiException
+                          ? error.message
+                          : context.l10n.unexpectedError,
+                  onRetry: () => ref.invalidate(memberDashboardProvider),
+                ),
+          ),
+        ],
       ),
     );
   }
@@ -53,7 +64,7 @@ class _DashboardContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final member = data.member;
-    final memberName = member?.name ?? userName ?? 'Ahli';
+    final memberName = member?.name ?? userName ?? context.l10n.memberFallback;
     final banners = data.banners ?? const [];
     final events = data.upcoming_events ?? const [];
     final infaqItems = data.infaq_items ?? const [];
@@ -97,19 +108,22 @@ class _DashboardContent extends ConsumerWidget {
                 ],
                 const SizedBox(height: Spacing.xl),
                 _SectionLabel(
-                  title: 'Program',
-                  subtitle: 'Acara dan aktiviti akan datang',
+                  title: context.l10n.menuPrograms,
+                  subtitle: context.l10n.sectionProgramSubtitle,
                   action: () => context.go('/events'),
                 ),
                 const SizedBox(height: Spacing.md),
                 if (events.isEmpty)
-                  const _EmptySection(
+                  _EmptySection(
                     icon: Icons.event_busy_outlined,
-                    message: 'Tiada acara akan datang buat masa ini.',
+                    message: context.l10n.noUpcomingEventsShort,
                   )
                 else
                   SizedBox(
-                    height: 230,
+                    // Kad program kini guna poster 4:5 penuh (175 × 218.75)
+                    // + blok teks di bawah; 230 lama terlalu rendah dan
+                    // menyebabkan limpahan (overflow).
+                    height: 320,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: events.length,
@@ -122,8 +136,8 @@ class _DashboardContent extends ConsumerWidget {
                 if (infaqItems.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
-                    title: 'Infaq',
-                    subtitle: 'Kempen sumbangan aktif',
+                    title: context.l10n.infaqTitle,
+                    subtitle: context.l10n.sectionInfaqSubtitle,
                     action: () => context.go('/infaq'),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -144,8 +158,8 @@ class _DashboardContent extends ConsumerWidget {
                 if (polls.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
-                    title: 'Undian',
-                    subtitle: 'Sertai undian & tinjauan aktif',
+                    title: context.l10n.sectionPolls,
+                    subtitle: context.l10n.sectionPollsSubtitle,
                     action: () => context.push('/polls'),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -154,8 +168,8 @@ class _DashboardContent extends ConsumerWidget {
                 if (news.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
-                    title: 'Info Terkini',
-                    subtitle: 'Berita dan pengumuman terbaharu',
+                    title: context.l10n.newsTitle,
+                    subtitle: context.l10n.sectionNewsSubtitle,
                     action: () => context.push('/news'),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -173,8 +187,8 @@ class _DashboardContent extends ConsumerWidget {
                 if (articles.isNotEmpty) ...[
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
-                    title: 'Artikel',
-                    subtitle: 'Penulisan & rencana pilihan',
+                    title: context.l10n.articlesTitle,
+                    subtitle: context.l10n.sectionArticlesSubtitle,
                     action: () => context.push('/articles'),
                   ),
                   const SizedBox(height: Spacing.md),
@@ -216,29 +230,35 @@ class _Greeting extends StatelessWidget {
     final hour = DateTime.now().hour;
     final greeting =
         hour < 12
-            ? 'Selamat Pagi'
+            ? context.l10n.greetingMorning
             : hour < 18
-            ? 'Selamat Petang'
-            : 'Selamat Malam';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Assalamualaikum, $_firstName',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        Text(
-          greeting,
-          style: Theme.of(
-            context,
-          ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
-        ),
-      ],
+            ? context.l10n.greetingAfternoon
+            : context.l10n.greetingEvening;
+    // `SliverAppBar` menetapkan `titleSpacing: 0`, jadi tanpa padding ini
+    // teks mula tepat pada tepi skrin — tak selari dengan padding
+    // `Spacing.lg` yang dipakai kandungan di bawahnya dan skrin lain.
+    return Padding(
+      padding: const EdgeInsets.only(left: Spacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.l10n.greetingSalam(_firstName),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            greeting,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -252,7 +272,7 @@ class _Banner extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 21 / 9,
       child: ClipRRect(
-        borderRadius: AppRadius.hero,
+        borderRadius: AppRadius.banner,
         child:
             banner?.image_path?.isNotEmpty == true
                 ? AppImage(
@@ -271,7 +291,7 @@ class _Banner extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    banner?.title ?? 'Selamat datang ke myWAP',
+                    banner?.title ?? context.l10n.welcomeDefault,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.white,
                       fontWeight: FontWeight.w700,
@@ -313,7 +333,7 @@ class _SectionLabel extends StatelessWidget {
         ),
       ),
       if (action != null)
-        TextButton(onPressed: action, child: const Text('Lihat Semua')),
+        TextButton(onPressed: action, child: Text(context.l10n.viewAll)),
     ],
   );
 }
@@ -325,52 +345,52 @@ class _SectionLabel extends StatelessWidget {
 class _ShortcutsGrid extends StatelessWidget {
   const _ShortcutsGrid();
 
-  static const List<_ShortcutItem> _items = [
+  static List<_ShortcutItem> _items(AppLocalizations l10n) => [
     _ShortcutItem(
       icon: Icons.receipt_long_rounded,
-      label: 'Yuran',
+      label: l10n.quickFees,
       color: AppColors.shortcutFee,
       path: '/member/fee-status',
     ),
     _ShortcutItem(
       icon: Icons.calendar_today_rounded,
-      label: 'Tempah',
+      label: l10n.quickBook,
       color: AppColors.shortcutBooking,
       path: '/facilities',
     ),
     _ShortcutItem(
       icon: Icons.article_rounded,
-      label: 'Berita',
+      label: l10n.quickNews,
       color: AppColors.shortcutNews,
       path: '/news',
     ),
     _ShortcutItem(
       icon: Icons.favorite_rounded,
-      label: 'Infaq',
+      label: l10n.menuInfaq,
       color: AppColors.shortcutInfaq,
       path: '/infaq',
     ),
     _ShortcutItem(
       icon: Icons.contact_page_rounded,
-      label: 'Kad Ahli',
+      label: l10n.quickCard,
       color: AppColors.shortcutCard,
       path: '/card',
     ),
     _ShortcutItem(
       icon: Icons.groups_2_rounded,
-      label: 'Usrah',
+      label: l10n.menuUsrah,
       color: AppColors.shortcutUsrah,
       path: '/usrah',
     ),
     _ShortcutItem(
       icon: Icons.shopping_bag_rounded,
-      label: 'Mall',
+      label: l10n.quickMall,
       color: AppColors.shortcutShop,
       path: '/products',
     ),
     _ShortcutItem(
       icon: Icons.share_rounded,
-      label: 'Jemput',
+      label: l10n.quickInvite,
       color: AppColors.shortcutReferral,
       path: '/member/referral',
     ),
@@ -378,13 +398,14 @@ class _ShortcutsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = _items(context.l10n);
     final rows = <Widget>[];
-    for (var i = 0; i < _items.length; i += 4) {
+    for (var i = 0; i < items.length; i += 4) {
       if (i > 0) rows.add(const SizedBox(height: Spacing.sm));
       rows.add(
         Row(
           children: [
-            for (final item in _items.skip(i).take(4))
+            for (final item in items.skip(i).take(4))
               Expanded(child: _ShortcutTile(item: item)),
           ],
         ),
@@ -439,10 +460,9 @@ class _ShortcutTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: 11,
-                  height: 1.15,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(fontSize: 11, height: 1.15),
               ),
             ],
           ),
@@ -467,7 +487,7 @@ class _MembershipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final orgName = member?.organization?.name?.trim();
     final photo = member?.photo_url;
-    final name = member?.name ?? 'Ahli';
+    final name = member?.name ?? context.l10n.memberFallback;
 
     return Container(
       constraints: const BoxConstraints(minHeight: 248),
@@ -556,7 +576,7 @@ class _MembershipCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _FieldValue(
-                              label: 'No Ahli',
+                              label: context.l10n.memberNoLabel,
                               value: member?.member_no ?? '-',
                             ),
                           ),
@@ -569,7 +589,7 @@ class _MembershipCard extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.only(left: Spacing.md),
                               child: _FieldValue(
-                                label: 'Sejak',
+                                label: context.l10n.sinceLabel,
                                 value: member?.member_since ?? '-',
                               ),
                             ),
@@ -706,13 +726,13 @@ class _ActiveBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         border: Border.all(color: AppColors.white.withValues(alpha: .35)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.circle, size: 8, color: AppColors.movementSoftGreen),
-          SizedBox(width: 6),
+          const Icon(Icons.circle, size: 8, color: AppColors.movementSoftGreen),
+          const SizedBox(width: 6),
           Text(
-            'Ahli Aktif',
+            context.l10n.activeMember,
             style: TextStyle(
               color: AppColors.white,
               fontSize: AppTextTheme.minSize,
@@ -812,7 +832,9 @@ class _QrBadge extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    (label?.isNotEmpty == true ? label! : 'Kad Ahli')
+                    (label?.isNotEmpty == true
+                            ? label!
+                            : context.l10n.quickCard)
                         .toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -853,10 +875,10 @@ class _QrBadge extends StatelessWidget {
                             ),
                   ),
                   const SizedBox(height: Spacing.lg),
-                  const Text(
-                    'Imbas QR ini untuk pengesahan keahlian.',
+                  Text(
+                    context.l10n.scanQrHint,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: AppTextTheme.minSize,
                     ),
@@ -874,7 +896,7 @@ class _QrBadge extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: const Text('Tutup'),
+                      child: Text(context.l10n.close),
                     ),
                   ),
                 ],
@@ -899,11 +921,11 @@ class _SeeFullCardButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           border: Border.all(color: AppColors.white.withValues(alpha: .25)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Lihat Kad Penuh',
+              context.l10n.viewFullCard,
               style: TextStyle(
                 color: AppColors.white,
                 fontSize: AppTextTheme.minSize,
@@ -982,7 +1004,12 @@ class _EventCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
+                // Poster program 1080×1350 (4:5). `Expanded` + `BoxFit.cover`
+                // lama memotong poster; guna ratio sumber supaya poster penuh
+                // kelihatan. Tinggi senarai mendatar di atas dinaikkan untuk
+                // memberi ruang.
+                AspectRatio(
+                  aspectRatio: 4 / 5,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1012,7 +1039,9 @@ class _EventCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(99),
                           ),
                           child: Text(
-                            event.type == 'physical' ? 'FIZIKAL' : 'ONLINE',
+                            event.type == 'physical'
+                                ? context.l10n.eventPhysical
+                                : context.l10n.eventOnline,
                             style: const TextStyle(
                               fontSize: AppTextTheme.minSize,
                               fontWeight: FontWeight.w700,
@@ -1023,28 +1052,32 @@ class _EventCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.title ?? '-',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        event.start_formatted ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                // `Flexible` supaya blok teks boleh mengecil apabila pengguna
+                // membesarkan saiz teks sistem, tanpa limpahan (overflow).
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          event.title ?? '-',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          event.start_formatted ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1076,7 +1109,7 @@ class _NextEvent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ACARA SETERUSNYA',
+                context.l10n.nextEvent,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.movementGreen,
                   fontSize: AppTextTheme.minSize,
@@ -1193,7 +1226,9 @@ class _InfaqCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${item.progress_percent ?? 0}% terkumpul',
+                        context.l10n.collectedPercent(
+                          (item.progress_percent ?? 0).toInt(),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -1249,8 +1284,10 @@ class _PollPreviewCard extends StatelessWidget {
                       ),
                       Text(
                         responded
-                            ? 'Anda telah menjawab'
-                            : 'Belum dijawab · ${poll.response_count ?? 0} respons',
+                            ? context.l10n.pollAnswered
+                            : context.l10n.pollNotAnswered(
+                              poll.response_count ?? 0,
+                            ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -1397,8 +1434,8 @@ class _LibrarySection extends ConsumerWidget {
       children: [
         const SizedBox(height: Spacing.xl),
         _SectionLabel(
-          title: 'Pustaka',
-          subtitle: 'Buku digital untuk dibaca',
+          title: context.l10n.sectionLibrary,
+          subtitle: context.l10n.sectionLibrarySubtitle,
           action: () => context.push('/member/library'),
         ),
         const SizedBox(height: Spacing.md),
@@ -1425,7 +1462,7 @@ class _LibraryBookCard extends StatelessWidget {
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Tiada fail untuk dibuka.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.noFileToOpen)));
       return;
     }
     Navigator.of(context).push(

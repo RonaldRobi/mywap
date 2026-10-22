@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -22,11 +23,12 @@ class FacilitiesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final facilitiesAsync = ref.watch(facilitiesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kemudahan'),
+        title: Text(l10n.facTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(
@@ -39,9 +41,7 @@ class FacilitiesScreen extends ConsumerWidget {
         error:
             (error, _) => ErrorRetry(
               message:
-                  error is ApiException
-                      ? error.message
-                      : 'Ralat tidak dijangka.',
+                  error is ApiException ? error.message : l10n.unexpectedError,
               onRetry: () => ref.invalidate(facilitiesProvider),
             ),
       ),
@@ -57,6 +57,7 @@ class _FacilitiesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: CustomScrollView(
@@ -64,10 +65,10 @@ class _FacilitiesBody extends StatelessWidget {
         slivers: [
           const SliverToBoxAdapter(child: _FacilitiesIntro()),
           if (data.facilities.isEmpty)
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: EmptyState(
                 icon: Icons.apartment,
-                message: 'Tiada kemudahan buat masa ini.',
+                message: l10n.facNoFacilities,
               ),
             )
           else
@@ -77,12 +78,12 @@ class _FacilitiesBody extends StatelessWidget {
                   (context, index) =>
                       _FacilityCard(facility: data.facilities[index]),
             ),
-          const SliverToBoxAdapter(child: SectionHeader('Tempahan Saya')),
+          SliverToBoxAdapter(child: SectionHeader(l10n.facMyBookings)),
           if (data.myBookings.isEmpty)
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: EmptyState(
                 icon: Icons.event_note_outlined,
-                message: 'Tiada tempahan buat masa ini.',
+                message: l10n.facNoBookings,
               ),
             )
           else
@@ -106,9 +107,16 @@ class _FacilityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final price = facility.pricePerUnit;
     final memberPrice = facility.memberPricePerUnit;
+    final unitLabel =
+        facility.type == 'daily'
+            ? l10n.facUnitDay
+            : facility.type == 'halfday'
+            ? l10n.facUnitHalfDay
+            : l10n.facUnitHour;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -129,7 +137,7 @@ class _FacilityCard extends StatelessWidget {
                   top: Spacing.md,
                   left: Spacing.md,
                   child: _FacilityTag(
-                    label: facility.organizationName ?? 'Organisasi',
+                    label: facility.organizationName ?? l10n.organizationLabel,
                   ),
                 ),
                 Positioned(
@@ -138,10 +146,10 @@ class _FacilityCard extends StatelessWidget {
                   child: _FacilityTag(
                     label:
                         facility.type == 'daily'
-                            ? 'Harian'
+                            ? l10n.facTypeDaily
                             : facility.type == 'halfday'
-                            ? 'Separuh Hari'
-                            : 'Sejam',
+                            ? l10n.facTypeHalfDay
+                            : l10n.facTypeHourly,
                   ),
                 ),
               ],
@@ -175,7 +183,7 @@ class _FacilityCard extends StatelessWidget {
                   if (facility.capacity != null)
                     _RowIcon(
                       icon: Icons.people_outline,
-                      text: 'Kapasiti: ${facility.capacity}',
+                      text: l10n.facCapacity(facility.capacity.toString()),
                     ),
                   const SizedBox(height: Spacing.sm),
                   Row(
@@ -188,11 +196,7 @@ class _FacilityCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        ' / ${facility.type == 'daily'
-                            ? 'hari'
-                            : facility.type == 'halfday'
-                            ? 'separuh hari'
-                            : 'jam'}',
+                        ' / $unitLabel',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -200,7 +204,7 @@ class _FacilityCard extends StatelessWidget {
                       if (memberPrice != null) ...[
                         const Spacer(),
                         Text(
-                          'Ahli: ${Formatters.currency(memberPrice)}',
+                          l10n.facMemberPrice(Formatters.currency(memberPrice)),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: AppColors.movementSoftGreen,
                           ),
@@ -211,7 +215,7 @@ class _FacilityCard extends StatelessWidget {
                   const SizedBox(height: Spacing.md),
                   FilledButton.tonal(
                     onPressed: () => context.push('/facilities/${facility.id}'),
-                    child: const Text('Lihat & Tempah'),
+                    child: Text(l10n.facViewBook),
                   ),
                 ],
               ),
@@ -226,8 +230,8 @@ class _FacilityCard extends StatelessWidget {
 class _FacilitiesIntro extends StatelessWidget {
   const _FacilitiesIntro();
   @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.fromLTRB(
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
       Spacing.lg,
       Spacing.lg,
       Spacing.lg,
@@ -237,11 +241,11 @@ class _FacilitiesIntro extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Perkhidmatan & Fasiliti',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          context.l10n.facIntroTitle,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        SizedBox(height: Spacing.xs),
-        Text('Tempah ruang perkhidmatan dan fasiliti yang tersedia.'),
+        const SizedBox(height: Spacing.xs),
+        Text(context.l10n.facIntroSubtitle),
       ],
     ),
   );
@@ -318,7 +322,9 @@ class _MyBookingCard extends StatelessWidget {
             if (end != null) _RowIcon(icon: Icons.event_available, text: end),
             const SizedBox(height: Spacing.sm),
             Text(
-              'Jumlah: ${Formatters.currency(booking.totalPrice)}',
+              context.l10n.ecomTotalLabel(
+                Formatters.currency(booking.totalPrice),
+              ),
               style: theme.textTheme.titleSmall?.copyWith(
                 color: AppColors.movementGreen,
               ),
@@ -326,7 +332,7 @@ class _MyBookingCard extends StatelessWidget {
             if (booking.adminRemarks?.isNotEmpty == true) ...[
               const SizedBox(height: Spacing.sm),
               Text(
-                'Catatan admin: ${booking.adminRemarks}',
+                context.l10n.facAdminRemarks(booking.adminRemarks!),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),

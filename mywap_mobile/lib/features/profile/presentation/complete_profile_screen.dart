@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -13,16 +14,16 @@ import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
 
-const _genderOptions = <(String, String)>[
-  ('lelaki', 'Lelaki'),
-  ('perempuan', 'Perempuan'),
+List<(String, String)> _genderOptions(AppLocalizations l10n) => [
+  ('lelaki', l10n.genderMale),
+  ('perempuan', l10n.genderFemale),
 ];
 
-const _maritalOptions = <(String, String)>[
-  ('bujang', 'Bujang'),
-  ('berkahwin', 'Berkahwin'),
-  ('bercerai', 'Bercerai'),
-  ('duda/janda', 'Duda / Janda'),
+List<(String, String)> _maritalOptions(AppLocalizations l10n) => [
+  ('bujang', l10n.maritalSingle),
+  ('berkahwin', l10n.maritalMarried),
+  ('bercerai', l10n.maritalDivorced),
+  ('duda/janda', l10n.maritalWidowed),
 ];
 
 class CompleteProfileScreen extends ConsumerStatefulWidget {
@@ -74,10 +75,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/profile'),
-        title: const Text('Lengkapkan Profil'),
+        title: Text(context.l10n.completeProfileTitle),
         actions: [
           IconButton(
-            tooltip: 'Log Keluar',
+            tooltip: context.l10n.logout,
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authControllerProvider.notifier).logout(),
           ),
@@ -94,7 +95,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(profileCompleteMetaProvider),
             ),
       ),
@@ -131,15 +132,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               color: AppColors.movementSoftGreen.withValues(alpha: 0.18),
               borderRadius: AppRadius.md,
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, color: AppColors.movementGreen),
-                SizedBox(width: Spacing.md),
-                Expanded(
-                  child: Text(
-                    'Lengkapkan maklumat berikut untuk mengaktifkan profil anda.',
-                  ),
-                ),
+                const Icon(Icons.info_outline, color: AppColors.movementGreen),
+                const SizedBox(width: Spacing.md),
+                Expanded(child: Text(context.l10n.completeProfilePrompt2)),
               ],
             ),
           ),
@@ -151,71 +148,71 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                 color: AppColors.error.withValues(alpha: 0.08),
                 borderRadius: AppRadius.md,
               ),
-              child: const Text(
-                'Sila semak semula maklumat yang bertanda merah.',
-                style: TextStyle(color: AppColors.error),
+              child: Text(
+                context.l10n.checkMarkedFields,
+                style: const TextStyle(color: AppColors.error),
               ),
             ),
-          _section('Maklumat Wajib', [
+          _section(context.l10n.requiredInfoSection, [
             _branchField(),
             _textField(
               'education_level',
-              label: 'Tahap Pendidikan',
+              label: context.l10n.educationLevelLabel,
               required: true,
             ),
             _textField(
               'current_profession',
-              label: 'Profesion Semasa',
+              label: context.l10n.currentProfessionLabel,
               required: true,
             ),
             _textField(
               'phone',
-              label: 'No. Telefon',
+              label: context.l10n.phoneLabel,
               required: true,
               keyboardType: TextInputType.phone,
             ),
           ]),
-          _section('Maklumat Lanjut', [
+          _section(context.l10n.moreInfoSection, [
             _dobField(),
             _optionField(
               key: 'gender',
-              label: 'Jantina',
+              label: context.l10n.genderLabel,
               value: _gender,
-              options: _genderOptions,
+              options: _genderOptions(context.l10n),
               onChanged: (value) => setState(() => _gender = value),
             ),
             _optionField(
               key: 'marital_status',
-              label: 'Status Perkahwinan',
+              label: context.l10n.maritalStatusLabel,
               value: _maritalStatus,
-              options: _maritalOptions,
+              options: _maritalOptions(context.l10n),
               onChanged: (value) => setState(() => _maritalStatus = value),
             ),
           ]),
-          _section('Alamat', [
-            _textField('address_1', label: 'Alamat (Baris 1)'),
-            _textField('address_2', label: 'Alamat (Baris 2)'),
+          _section(context.l10n.addressSection, [
+            _textField('address_1', label: context.l10n.addressLine1),
+            _textField('address_2', label: context.l10n.addressLine2),
             _textField(
               'postcode',
-              label: 'Poskod',
+              label: context.l10n.postcodeLabel,
               keyboardType: TextInputType.number,
             ),
-            _textField('city', label: 'Bandar'),
-            _textField('state', label: 'Negeri'),
+            _textField('city', label: context.l10n.cityLabel),
+            _textField('state', label: context.l10n.stateLabel),
           ]),
-          _section('Hubungan Kecemasan', [
-            _textField('emergency_contact_name', label: 'Nama'),
+          _section(context.l10n.emergencySection, [
+            _textField('emergency_contact_name', label: context.l10n.nameLabel),
             _textField(
               'emergency_contact_phone',
-              label: 'No. Telefon',
+              label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
             ),
           ]),
-          _section('Minat', [
+          _section(context.l10n.interestsSection, [
             _textField(
               'topics',
-              label: 'Topik Minat',
-              hint: 'Pisahkan dengan koma',
+              label: context.l10n.topicsLabel,
+              hint: context.l10n.commaSeparated,
             ),
           ]),
           const SizedBox(height: Spacing.md),
@@ -232,7 +229,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                       ),
                     )
                     : const Icon(Icons.check_circle_outline),
-            label: Text(_saving ? 'Menyimpan...' : 'Simpan & Selesai'),
+            label: Text(
+              _saving ? context.l10n.saving : context.l10n.saveAndFinish,
+            ),
           ),
         ],
       ),
@@ -271,7 +270,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         ),
         validator: (value) {
           if (required && (value == null || value.trim().isEmpty)) {
-            return 'Sila isi $label.';
+            return context.l10n.fieldRequired(label);
           }
           return null;
         },
@@ -290,10 +289,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       child: DropdownButtonFormField<int>(
         value: _branchId,
         decoration: InputDecoration(
-          labelText: 'Cawangan *',
+          labelText: context.l10n.branchRequired,
           errorText: _serverErrors['branch_id'],
         ),
-        hint: const Text('Pilih Cawangan'),
+        hint: Text(context.l10n.selectBranch),
         items: [
           for (final branch in _branches)
             if (branch.id != null)
@@ -309,7 +308,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ),
         ],
         validator: (value) {
-          if (value == null) return 'Sila pilih cawangan.';
+          if (value == null) return context.l10n.branchRequiredError;
           return null;
         },
         onChanged: (selected) {
@@ -337,7 +336,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           labelText: label,
           errorText: _serverErrors[key],
         ),
-        hint: const Text('Pilih'),
+        hint: Text(context.l10n.choose),
         items: [
           for (final (optionValue, optionLabel) in options)
             DropdownMenuItem(value: optionValue, child: Text(optionLabel)),
@@ -360,7 +359,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         borderRadius: AppRadius.md,
         child: InputDecorator(
           decoration: InputDecoration(
-            labelText: 'Tarikh Lahir',
+            labelText: context.l10n.dobLabel,
             errorText: _serverErrors['dob'],
           ),
           child: Row(
@@ -373,7 +372,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               const SizedBox(width: Spacing.sm),
               Expanded(
                 child: Text(
-                  _dob == null ? 'Pilih tarikh' : ProfileFormat.date(_dob!),
+                  _dob == null
+                      ? context.l10n.selectDate
+                      : ProfileFormat.date(_dob!),
                   style: TextStyle(
                     fontSize: 16,
                     color:
@@ -444,9 +445,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       // pengguna kembali ke skrin ini.
       await ref.read(authControllerProvider.notifier).refreshCurrentUser();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berjaya dilengkapkan.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.profileCompleted)));
       context.go('/profile');
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -465,7 +466,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ralat tidak dijangka. Sila cuba lagi.')),
+        SnackBar(content: Text(context.l10n.unexpectedErrorRetry)),
       );
     }
   }

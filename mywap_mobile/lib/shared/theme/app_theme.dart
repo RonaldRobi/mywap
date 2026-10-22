@@ -22,6 +22,10 @@ abstract final class AppRadius {
   static const BorderRadius xl = BorderRadius.all(Radius.circular(26));
   static const BorderRadius card = BorderRadius.all(Radius.circular(22));
   static const BorderRadius hero = BorderRadius.all(Radius.circular(32));
+
+  /// Radius untuk kad banner/hero carousel sahaja — sengaja lebih kecil
+  /// daripada [hero] supaya banner terasa kurang "gelembung" pada mobile.
+  static const BorderRadius banner = BorderRadius.all(Radius.circular(24));
   static const BorderRadius sheet = BorderRadius.only(
     topLeft: Radius.circular(28),
     topRight: Radius.circular(28),

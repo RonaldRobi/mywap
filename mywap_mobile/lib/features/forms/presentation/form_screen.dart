@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -93,7 +94,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     for (final question in form.questions) {
       if (question.isFile) {
         if (question.required && _files[question.id] == null) {
-          setState(() => _error = 'Sila lengkapkan semua ruangan yang wajib.');
+          setState(() => _error = context.l10n.formRequiredFields);
           return;
         }
         continue;
@@ -112,7 +113,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
               : value == null || (value is List && value.isEmpty);
 
       if (question.required && isEmpty) {
-        setState(() => _error = 'Sila lengkapkan semua ruangan yang wajib.');
+        setState(() => _error = context.l10n.formRequiredFields);
         return;
       }
 
@@ -155,7 +156,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Borang'),
+        title: Text(context.l10n.formTitle),
       ),
       body: formAsync.when(
         data:
@@ -178,7 +179,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(formDetailProvider(widget.token)),
             ),
       ),
@@ -234,7 +235,10 @@ class _FormBody extends StatelessWidget {
           ),
         ],
         const SizedBox(height: Spacing.xs),
-        Text(form.title ?? 'Borang', style: theme.textTheme.headlineSmall),
+        Text(
+          form.title ?? context.l10n.formTitle,
+          style: theme.textTheme.headlineSmall,
+        ),
         if (form.description != null && form.description!.isNotEmpty) ...[
           const SizedBox(height: Spacing.sm),
           Text(
@@ -247,7 +251,7 @@ class _FormBody extends StatelessWidget {
         if (form.price != null && form.price! > 0) ...[
           const SizedBox(height: Spacing.sm),
           Text(
-            'Yuran: ${Formatters.currency(form.price)}',
+            context.l10n.formFee(Formatters.currency(form.price)),
             style: theme.textTheme.titleSmall?.copyWith(
               color: AppColors.movementGreen,
             ),
@@ -282,12 +286,12 @@ class _FormBody extends StatelessWidget {
                     ),
                   )
                   : const Icon(Icons.send),
-          label: const Text('Hantar Borang'),
+          label: Text(context.l10n.formSubmit),
         ),
         if (form.terms != null && form.terms!.isNotEmpty) ...[
           const SizedBox(height: Spacing.md),
           Text(
-            'Terma: ${form.terms}',
+            context.l10n.formTerms('${form.terms}'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -311,7 +315,7 @@ class _SuccessScreen extends StatelessWidget {
     final redirectTo = form?.redirectTo;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Borang')),
+      appBar: AppBar(title: Text(context.l10n.formTitle)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(Spacing.xl),
@@ -324,10 +328,13 @@ class _SuccessScreen extends StatelessWidget {
                 color: AppColors.success,
               ),
               const SizedBox(height: Spacing.lg),
-              Text('Borang Dihantar', style: theme.textTheme.headlineSmall),
+              Text(
+                context.l10n.formSubmittedTitle,
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: Spacing.sm),
               Text(
-                'Terima kasih! Respons anda telah diterima.',
+                context.l10n.formSubmittedBody,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textSecondary,
@@ -338,19 +345,17 @@ class _SuccessScreen extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Sila buka pautan melalui pelayar web.'),
-                      ),
+                      SnackBar(content: Text(context.l10n.formOpenInBrowser)),
                     );
                   },
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('Sambung Pendaftaran'),
+                  label: Text(context.l10n.formContinueRegistration),
                 ),
               ],
               const SizedBox(height: Spacing.lg),
               TextButton(
                 onPressed: () => context.go('/dashboard'),
-                child: const Text('Kembali ke Utama'),
+                child: Text(context.l10n.formBackHome),
               ),
             ],
           ),

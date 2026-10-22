@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/l10n.dart';
+
 /// Deterministic back affordance for pushed pages and deep links.
 ///
 /// `AppBar` only creates its automatic back button when the current navigator
@@ -14,7 +16,7 @@ class AppBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Kembali',
+      tooltip: context.l10n.back,
       icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
       onPressed: () {
         if (context.canPop()) {

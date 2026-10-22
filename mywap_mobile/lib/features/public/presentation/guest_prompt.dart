@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -11,23 +12,19 @@ Future<void> showLoginPrompt(BuildContext context, {String? message}) {
     context: context,
     builder:
         (dialogContext) => AlertDialog(
-          title: const Text('Log Masuk Diperlukan'),
-          content: Text(
-            message ??
-                'Ciri ini tersedia untuk ahli. Sila log masuk atau daftar '
-                    'akaun untuk meneruskan.',
-          ),
+          title: Text(context.l10n.loginPromptTitle),
+          content: Text(message ?? context.l10n.loginPromptBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Batal'),
+              child: Text(context.l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 context.go('/login');
               },
-              child: const Text('Log Masuk'),
+              child: Text(context.l10n.login),
             ),
           ],
         ),
@@ -36,12 +33,9 @@ Future<void> showLoginPrompt(BuildContext context, {String? message}) {
 
 /// CTA banner shown to guests where a member-only action would otherwise be.
 class GuestLoginBanner extends StatelessWidget {
-  const GuestLoginBanner({
-    super.key,
-    this.message = 'Log masuk untuk akses penuh sebagai ahli.',
-  });
+  const GuestLoginBanner({super.key, this.message});
 
-  final String message;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +50,14 @@ class GuestLoginBanner extends StatelessWidget {
           const Icon(Icons.lock_outline, color: AppColors.movementGreen),
           const SizedBox(width: Spacing.md),
           Expanded(
-            child: Text(message, style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              message ?? context.l10n.guestBannerMessage,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           TextButton(
             onPressed: () => context.go('/login'),
-            child: const Text('Log Masuk'),
+            child: Text(context.l10n.login),
           ),
         ],
       ),

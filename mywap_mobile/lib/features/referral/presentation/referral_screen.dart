@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -29,7 +30,7 @@ class ReferralScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: const Text('Jemput Ahli'),
+        title: Text(context.l10n.referralTitle),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(
@@ -44,7 +45,7 @@ class ReferralScreen extends ConsumerWidget {
               message:
                   error is ApiException
                       ? error.message
-                      : 'Ralat tidak dijangka.',
+                      : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(referralDataProvider),
             ),
       ),
@@ -59,6 +60,7 @@ class _ReferralContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final link = data.referral_link ?? '';
     final members = data.referred_members;
 
@@ -78,7 +80,7 @@ class _ReferralContent extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Jemput rakan menyertai myWAP',
+                  l10n.referralInviteFriends,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.white,
@@ -101,7 +103,7 @@ class _ReferralContent extends StatelessWidget {
                   ),
                 const SizedBox(height: Spacing.lg),
                 Text(
-                  'No. Ahli: ${data.member_no ?? '-'}',
+                  l10n.referralMemberNo(data.member_no ?? '-'),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.textOnDark),
@@ -117,7 +119,7 @@ class _ReferralContent extends StatelessWidget {
                     side: const BorderSide(color: AppColors.white),
                   ),
                   icon: const Icon(Icons.copy_outlined),
-                  label: const Text('Salin Pautan Rujukan'),
+                  label: Text(l10n.referralCopyLink),
                 ),
               ],
             ),
@@ -126,16 +128,22 @@ class _ReferralContent extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _StatCard(label: 'Jumlah', value: '${data.stats.total}'),
-              ),
-              const SizedBox(width: Spacing.md),
-              Expanded(
-                child: _StatCard(label: 'Aktif', value: '${data.stats.active}'),
+                child: _StatCard(
+                  label: l10n.referralStatTotal,
+                  value: '${data.stats.total}',
+                ),
               ),
               const SizedBox(width: Spacing.md),
               Expanded(
                 child: _StatCard(
-                  label: 'Menunggu',
+                  label: l10n.referralStatActive,
+                  value: '${data.stats.active}',
+                ),
+              ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: _StatCard(
+                  label: l10n.referralStatPending,
                   value: '${data.stats.pending}',
                 ),
               ),
@@ -143,16 +151,16 @@ class _ReferralContent extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.xl),
           Text(
-            'Ahli Dijemput',
+            l10n.referralReferredMembers,
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: Spacing.md),
           if (members.isEmpty)
-            const EmptyState(
+            EmptyState(
               icon: Icons.person_add_alt_outlined,
-              message: 'Belum ada ahli yang dijemput menggunakan pautan anda.',
+              message: l10n.referralNoReferredMembers,
             )
           else
             ...members.map((m) => _ReferredMemberTile(member: m)),
@@ -216,7 +224,9 @@ class _ReferredMemberTile extends StatelessWidget {
         title: Text(member.name ?? '-'),
         subtitle: Text(member.member_no ?? '-'),
         trailing: Text(
-          member.isActive ? 'Aktif' : 'Menunggu',
+          member.isActive
+              ? context.l10n.referralStatActive
+              : context.l10n.referralStatPending,
           style: TextStyle(
             color: member.isActive ? AppColors.success : AppColors.warning,
             fontWeight: FontWeight.w600,

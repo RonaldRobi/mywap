@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -91,8 +92,7 @@ class _ManualViewerScreenState extends ConsumerState<ManualViewerScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _ViewerPhase.error;
-        _errorMessage =
-            'Manual tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
+        _errorMessage = context.l10n.manualOpenFailed;
       });
     }
   }
@@ -116,7 +116,7 @@ class _ManualViewerScreenState extends ConsumerState<ManualViewerScreen> {
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text(
-          widget.manual.title ?? 'Manual',
+          widget.manual.title ?? context.l10n.manualFallback,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -192,7 +192,7 @@ class _ViewerControls extends StatelessWidget {
           children: [
             const SizedBox(width: Spacing.sm),
             IconButton(
-              tooltip: 'Muka surat sebelumnya',
+              tooltip: context.l10n.manualPreviousPage,
               onPressed:
                   controller.page > 1
                       ? () => controller.previousPage(
@@ -217,7 +217,7 @@ class _ViewerControls extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Muka surat seterusnya',
+              tooltip: context.l10n.manualNextPage,
               onPressed:
                   () => controller.nextPage(
                     duration: const Duration(milliseconds: 180),
@@ -259,8 +259,10 @@ class _DownloadProgressView extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
             Text(
               indeterminate
-                  ? 'Menyediakan manual…'
-                  : 'Memuat turun manual… ${(progress * 100).round()}%',
+                  ? context.l10n.manualPreparing
+                  : context.l10n.manualDownloading(
+                    '${(progress * 100).round()}',
+                  ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
             ),
@@ -303,14 +305,17 @@ class _ViewerError extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.lg),
             Text(
-              message ?? 'Ralat tidak dijangka.',
+              message ?? context.l10n.unexpectedError,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: Spacing.lg),
-            FilledButton(onPressed: onRetry, child: const Text('Cuba Lagi')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.manualTryAgain),
+            ),
           ],
         ),
       ),
