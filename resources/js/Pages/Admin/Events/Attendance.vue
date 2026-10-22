@@ -143,7 +143,7 @@ const statusColor = {
                 >
                     <p class="text-3xl font-black text-gray-900">{{ stats.total_registered }}</p>
                     <p class="text-xs text-gray-400 font-semibold uppercase mt-1">
-                        Jumlah Daftar{{ f.event_id ? '' : ' (Semua Program)' }}
+                        Jumlah Peserta{{ f.event_id ? '' : ' (Semua Program)' }}
                     </p>
                 </button>
                 <button
@@ -224,7 +224,7 @@ const statusColor = {
                     <div class="grid grid-cols-3 gap-2 text-center">
                         <div class="rounded-2xl bg-gray-50 py-2">
                             <p class="text-lg font-black text-gray-900">{{ p.registered_count }}</p>
-                            <p class="text-[10px] font-semibold uppercase text-gray-400">Daftar</p>
+                            <p class="text-[10px] font-semibold uppercase text-gray-400">Peserta</p>
                         </div>
                         <div class="rounded-2xl bg-emerald-50 py-2">
                             <p class="text-lg font-black text-emerald-600">{{ p.attended_count }}</p>

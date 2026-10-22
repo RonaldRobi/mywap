@@ -8,6 +8,7 @@ use App\Models\FormResponse;
 use App\Models\Payment;
 use App\Models\Registration;
 use App\Support\NameMatcher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -44,6 +45,34 @@ class RegistrationDedupeService
             'groups_count' => count($duplicateGroups),
             'missing_identity_rows' => $missingIdentity,
         ];
+    }
+
+    /**
+     * Kira peserta unik mengikut event daripada satu set rekod.
+     * Digunakan oleh dashboard kehadiran supaya angka "Daftar" tidak
+     * mencampurkan baris pendua daripada import berulang.
+     *
+     * @param  Collection<int, Registration>  $registrations
+     * @return array<int, int>
+     */
+    public function uniqueCountsByEvent(Collection $registrations): array
+    {
+        return $registrations
+            ->groupBy('event_id')
+            ->map(fn (Collection $group) => count($this->groups($group->values())))
+            ->mapWithKeys(fn ($count, $eventId) => [(int) $eventId => (int) $count])
+            ->all();
+    }
+
+    /**
+     * Kira peserta unik bagi satu query (contoh: satu event atau mereka yang
+     * sudah hadir) tanpa mengira baris pendua.
+     */
+    public function uniqueCount(Builder $query): int
+    {
+        return count($this->groups(
+            $query->get(['id', 'name', 'email', 'phone', 'ic_number'])
+        ));
     }
 
     /**

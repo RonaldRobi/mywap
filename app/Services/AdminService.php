@@ -619,29 +619,48 @@ class AdminService
                 'created_at' => $r->created_at?->toDateTimeString(),
             ]);
 
-        $statsQuery = $applyContext($scope());
+        $dedupe = app(RegistrationDedupeService::class);
+        $identityColumns = ['id', 'event_id', 'name', 'email', 'phone', 'ic_number'];
+
+        // Angka "Daftar" mesti kira peserta unik, bukan baris mentah.
+        // Rekod pendua daripada import berulang tidak boleh menaikkan angka.
+        $uniqueTotal = function (Builder $query) use ($dedupe, $identityColumns): int {
+            return array_sum($dedupe->uniqueCountsByEvent($query->get($identityColumns)));
+        };
 
         $stats = [
-            'total_registered' => (clone $statsQuery)->count(),
-            'total_attended' => (clone $statsQuery)->whereHas('attendance')->count(),
-            'total_pending_payment' => (clone $statsQuery)
-                ->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))->count(),
+            'total_registered' => $uniqueTotal($applyContext($scope())),
+            'total_attended' => $uniqueTotal($applyContext($scope())->whereHas('attendance')),
+            'total_pending_payment' => $uniqueTotal(
+                $applyContext($scope())->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))
+            ),
         ];
 
         // Ringkasan per program — asas kad grid di dashboard. Ikut penapis
         // konteks (org / event) supaya kad sepadan dengan pilihan pengguna.
-        $programs = $eventScope()
+        $programEvents = $eventScope()
             ->when($request->filled('org'), fn ($q) => $q->where('organization_id', (int) $request->org))
             ->when($request->filled('event_id'), fn ($q) => $q->where('id', (int) $request->event_id))
             ->whereHas('registrations', fn ($q) => $restrict($q))
             ->with('organization')
-            ->withCount([
-                'registrations as registered_count' => fn ($q) => $restrict($q),
-                'registrations as attended_count' => fn ($q) => $restrict($q)->whereHas('attendance'),
-                'registrations as pending_payment_count' => fn ($q) => $restrict($q)->whereHas('latestPayment', fn ($p) => $p->where('status', 'pending')),
-            ])
             ->orderByDesc('start_time')
-            ->get()
+            ->get();
+
+        $eventIds = $programEvents->pluck('id')->all();
+
+        $countsFor = function (Builder $query) use ($restrict, $eventIds, $identityColumns, $dedupe): array {
+            $query = $restrict($query->whereIn('event_id', $eventIds));
+
+            return $dedupe->uniqueCountsByEvent($query->get($identityColumns));
+        };
+
+        $registeredByEvent = $countsFor(Registration::query());
+        $attendedByEvent = $countsFor(Registration::query()->whereHas('attendance'));
+        $pendingByEvent = $countsFor(
+            Registration::query()->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))
+        );
+
+        $programs = $programEvents
             ->map(fn (Event $e) => [
                 'id' => $e->id,
                 'title' => $e->title,
@@ -651,9 +670,9 @@ class AdminService
                 'start_formatted' => $e->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
                 'location_or_link' => $e->location_or_link,
                 'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
-                'registered_count' => (int) $e->registered_count,
-                'attended_count' => (int) $e->attended_count,
-                'pending_payment_count' => (int) $e->pending_payment_count,
+                'registered_count' => (int) ($registeredByEvent[$e->id] ?? 0),
+                'attended_count' => (int) ($attendedByEvent[$e->id] ?? 0),
+                'pending_payment_count' => (int) ($pendingByEvent[$e->id] ?? 0),
                 'attendance_url' => route('admin.attendance', ['event_id' => $e->id]),
                 'registrations_url' => route('admin.events.registrations', $e->id),
                 'qr_url' => route('events.qr', $e->id),
@@ -713,8 +732,10 @@ class AdminService
                 'start_time' => $event->start_time?->toISOString(),
             ],
             'stats' => [
-                'total_registered' => Registration::where('event_id', $eventId)->count(),
-                'attended_count' => Registration::where('event_id', $eventId)->whereHas('attendance')->count(),
+                'total_registered' => app(RegistrationDedupeService::class)
+                    ->uniqueCount(Registration::where('event_id', $eventId)),
+                'attended_count' => app(RegistrationDedupeService::class)
+                    ->uniqueCount(Registration::where('event_id', $eventId)->whereHas('attendance')),
             ],
             'registrations' => $registrations,
         ];
