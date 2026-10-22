@@ -1005,6 +1005,56 @@ class RegistrationImportTest extends TestCase
         $this->assertSame(3, Registration::where('event_id', $event->id)->count());
     }
 
+    public function test_import_skips_participant_already_registered_via_mywap_or_walkin(): void
+    {
+        $event = $this->event();
+
+        $formRegistration = Registration::create([
+            'event_id' => $event->id,
+            'name' => 'Peserta myWAP',
+            'ic_number' => '900303-03-9999',
+            'phone' => '0133333333',
+            'status' => 'confirmed',
+            'source' => Registration::SOURCE_FORM,
+        ]);
+
+        $walkIn = Registration::create([
+            'event_id' => $event->id,
+            'name' => 'Peserta Walk In',
+            'ic_number' => '900404-04-8888',
+            'phone' => '0144444444',
+            'status' => 'walkin',
+            'source' => Registration::SOURCE_WALKIN,
+        ]);
+
+        $csv = "Nama Penuh,No. IC,No. Telefon,Emel\n"
+            ."Peserta myWAP,900303-03-9999,0133333333,mywap@example.com\n"
+            ."Peserta Walk In,900404-04-8888,0144444444,walkin@example.com\n"
+            ."Peserta Import Baharu,900505-05-5555,0155555555,import@example.com\n";
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.events.registrations.import', $event->id), [
+                'file' => $this->csvFile($csv),
+                'mapping' => ['name' => 0, 'ic_number' => 1, 'phone' => 2, 'email' => 3, 'member_no' => null],
+            ])
+            ->assertOk()
+            ->assertJsonPath('summary.created', 1)
+            ->assertJsonPath('summary.updated', 0)
+            ->assertJsonPath('summary.skipped', 2);
+
+        $this->assertDatabaseHas('registrations', [
+            'id' => $formRegistration->id,
+            'name' => 'Peserta myWAP',
+            'source' => 'form',
+        ]);
+        $this->assertDatabaseHas('registrations', [
+            'id' => $walkIn->id,
+            'name' => 'Peserta Walk In',
+            'source' => 'walkin',
+        ]);
+        $this->assertSame(3, Registration::where('event_id', $event->id)->count());
+    }
+
     public function test_new_import_keeps_old_imported_participant_who_already_attended(): void
     {
         $event = $this->event();

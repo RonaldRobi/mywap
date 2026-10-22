@@ -19,10 +19,12 @@ use Maatwebsite\Excel\Facades\Excel;
 /**
  * Import Google Form responses (CSV/XLSX) into event registrations.
  *
- * Repeated uploads are safe: a row is matched within the event by IC, phone
- * or email and updated in place. Rows that disappear from a later export are
- * never deleted — admins often upload filtered/partial sheets while the form
- * is still accepting responses.
+ * Setiap import ialah snapshot terbaharu untuk data import:
+ * - Baris yang sepadan dengan rekod import sedia ada dikemas kini di tempat.
+ * - Rekod import lama yang tiada dalam fail baharu dibuang, kecuali yang
+ *   mempunyai sejarah kehadiran/bayaran/borang.
+ * - Pendaftaran terus melalui myWAP (source=form) dan walk-in tidak diubah
+ *   dan tidak diduplikasi. Baris import yang sepadan dengan mereka dilewati.
  */
 class RegistrationImportService
 {
@@ -185,6 +187,8 @@ class RegistrationImportService
 
                 $this->rememberSeen($seen, $identityKeys, $name, $rowNumber);
 
+                // Hanya padankan dengan rekod import. Rekod myWAP/walk-in
+                // tidak boleh diubah atau diduplikasi oleh import.
                 $registration = $this->findMatching(
                     $event->id,
                     $icNormalized,
@@ -194,6 +198,22 @@ class RegistrationImportService
                     $ic,
                     $icNumeric,
                 );
+
+                if ($registration === null && $this->findMatching(
+                    $event->id,
+                    $icNormalized,
+                    $phoneNormalized,
+                    $emailNormalized,
+                    $name,
+                    $ic,
+                    $icNumeric,
+                    [Registration::SOURCE_FORM, Registration::SOURCE_WALKIN],
+                ) !== null) {
+                    $skipped++;
+                    $this->pushError($errors, "Baris {$rowNumber}: sudah mendaftar melalui myWAP/walk-in — tidak diimport.");
+
+                    continue;
+                }
 
                 $attributes = ['name' => mb_substr($name, 0, 255)];
 
@@ -954,6 +974,9 @@ class RegistrationImportService
         return array_values(array_unique(array_filter($variants)));
     }
 
+    /**
+     * @param  array<int, string>  $sources  Sumber rekod yang boleh dipadankan.
+     */
     private function findMatching(
         int $eventId,
         ?string $ic,
@@ -962,8 +985,11 @@ class RegistrationImportService
         string $name,
         ?string $rawIc = null,
         bool $icNumeric = false,
+        array $sources = [Registration::SOURCE_IMPORT],
     ): ?Registration {
-        $query = Registration::query()->where('event_id', $eventId);
+        $query = Registration::query()
+            ->where('event_id', $eventId)
+            ->whereIn('source', $sources);
 
         if ($ic !== null && $match = (clone $query)->where('ic_normalized', $ic)->latest()->first()) {
             return $match;
