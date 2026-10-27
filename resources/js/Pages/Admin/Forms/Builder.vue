@@ -14,6 +14,7 @@ const props = defineProps({
 
 const isEditing = !!props.form;
 const showPreview = ref(false);
+const deletedQuestionIds = ref([]);
 
 const typeLabels = {
     text:      'Teks',
@@ -92,7 +93,8 @@ function addQuestion() {
 
 function removeQuestion(index) {
     if (formData.questions.length <= 1) return;
-    formData.questions.splice(index, 1);
+    const [removed] = formData.questions.splice(index, 1);
+    if (removed?.id) deletedQuestionIds.value.push(removed.id);
 }
 
 function onTypeChange(q) {
@@ -126,10 +128,12 @@ function moveDown(idx) {
 const busy = reactive({ saving: false });
 
 function save() {
+    if (busy.saving) return;
     busy.saving = true;
     const payload = {
         ...formData,
         back_to: props.backTo ?? '',
+        deleted_question_ids: deletedQuestionIds.value,
         price: formData.price === '' ? null : formData.price,
         price_tiers: (formData.price_tiers || [])
             .filter(t => t.label?.trim() && t.price !== '' && t.price !== null)
@@ -155,12 +159,10 @@ function save() {
     if (isEditing) {
         // Multipart PUT tidak di-parse PHP — guna POST + method spoofing.
         router.post(route('admin.forms.update', props.form.id), { ...payload, _method: 'PUT' }, {
-            forceFormData: true,
             onFinish: () => { busy.saving = false; },
         });
     } else {
         router.post(route('admin.forms.store'), payload, {
-            forceFormData: true,
             onFinish: () => { busy.saving = false; },
         });
     }
@@ -195,6 +197,13 @@ const valid = computed(() => {
             <!-- Flash error -->
             <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                 {{ $page.props.flash.error }}
+            </div>
+
+            <div v-if="Object.keys($page.props.errors || {}).length" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                <p class="font-semibold mb-1">Borang tidak disimpan:</p>
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li v-for="(msg, key) in $page.props.errors" :key="key">{{ msg }}</li>
+                </ul>
             </div>
 
             <!-- Form settings -->

@@ -297,6 +297,8 @@ class FormController extends Controller
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:500'],
+            'deleted_question_ids' => ['nullable', 'array'],
+            'deleted_question_ids.*' => ['integer'],
         ]);
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
@@ -343,8 +345,6 @@ class FormController extends Controller
 
             $form->update($updateData);
 
-            $keptIds = [];
-
             foreach ($data['questions'] as $i => $q) {
                 if (! empty($q['id'])) {
                     $question = FormQuestion::find($q['id']);
@@ -358,7 +358,6 @@ class FormController extends Controller
                             'help_text' => $q['help_text'] ?? null,
                             'sort_order' => $i,
                         ]);
-                        $keptIds[] = $question->id;
                     }
                 } else {
                     $question = FormQuestion::create([
@@ -371,11 +370,22 @@ class FormController extends Controller
                         'help_text' => $q['help_text'] ?? null,
                         'sort_order' => $i,
                     ]);
-                    $keptIds[] = $question->id;
                 }
             }
 
-            $form->questions()->whereNotIn('id', $keptIds)->delete();
+            // Hanya padam soalan yang benar-benar dibuang di UI. Jangan padam
+            // berdasarkan "tidak dihantar" — tab lama atau request terpotong
+            // (max_input_vars) boleh menyebabkan soalan baharu hilang.
+            $deletedIds = collect($data['deleted_question_ids'] ?? [])
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($deletedIds !== []) {
+                $form->questions()->whereIn('id', $deletedIds)->delete();
+            }
         });
 
         if ($backTo = $request->input('back_to')) {

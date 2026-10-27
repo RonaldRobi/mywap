@@ -264,4 +264,54 @@ class OrgAdminFormTest extends TestCase
                 ->has('form.branch_options', 1)
                 ->where('form.branch_options.0.state', 'Johor'));
     }
+
+    public function test_update_does_not_delete_questions_omitted_from_payload(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang A',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+        $kept = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'sort_order' => 0]);
+        $newer = FormQuestion::create(['form_id' => $form->id, 'label' => 'Checkbox Baharu', 'type' => 'checkbox', 'options' => ['Ya'], 'required' => false, 'sort_order' => 1]);
+
+        $this->actingAs($this->adminA)
+            ->put(route('admin.forms.update', $form->id), [
+                'title' => 'Borang A',
+                'is_active' => true,
+                'allow_public' => true,
+                'questions' => [
+                    ['id' => $kept->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'options' => [], 'placeholder' => '', 'help_text' => ''],
+                ],
+            ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('form_questions', ['id' => $newer->id, 'label' => 'Checkbox Baharu']);
+    }
+
+    public function test_update_deletes_question_explicitly_marked_deleted(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang A',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+        $kept = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'sort_order' => 0]);
+        $deleted = FormQuestion::create(['form_id' => $form->id, 'label' => 'Buang', 'type' => 'text', 'required' => false, 'sort_order' => 1]);
+
+        $this->actingAs($this->adminA)
+            ->put(route('admin.forms.update', $form->id), [
+                'title' => 'Borang A',
+                'is_active' => true,
+                'allow_public' => true,
+                'deleted_question_ids' => [$deleted->id],
+                'questions' => [
+                    ['id' => $kept->id, 'label' => 'Nama', 'type' => 'text', 'required' => true, 'options' => [], 'placeholder' => '', 'help_text' => ''],
+                ],
+            ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('form_questions', ['id' => $deleted->id]);
+        $this->assertDatabaseHas('form_questions', ['id' => $kept->id]);
+    }
 }
