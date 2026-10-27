@@ -399,9 +399,9 @@ const valid = computed(() => {
                             <label class="block text-xs font-semibold text-gray-600 mb-0.5">Placeholder</label>
                             <input v-model="q.placeholder" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="Teks bantuan dalam input..." />
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-0.5">Teks Bantuan</label>
-                            <input v-model="q.help_text" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="Penerangan tambahan..." />
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-0.5">Teks Bantuan / Pernyataan</label>
+                            <textarea v-model="q.help_text" rows="3" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="Penerangan tambahan... (boleh guna baris baru)"></textarea>
                         </div>
                     </div>
 
@@ -463,11 +463,11 @@ const valid = computed(() => {
                         <hr class="border-gray-100" />
 
                         <div v-for="(q, qi) in formData.questions" :key="qi" class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-gray-700">
+                            <label class="block text-sm font-semibold text-gray-700 whitespace-pre-line">
                                 {{ q.label || '(Tanpa label)' }}
                                 <span v-if="q.required" class="text-red-500">*</span>
                             </label>
-                            <p v-if="q.help_text" class="text-xs text-gray-400">{{ q.help_text }}</p>
+                            <p v-if="q.help_text" class="text-xs text-gray-400 whitespace-pre-line">{{ q.help_text }}</p>
 
                             <input
                                 v-if="['text', 'email', 'phone', 'number', 'date'].includes(q.type)"

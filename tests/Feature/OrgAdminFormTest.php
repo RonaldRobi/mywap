@@ -314,4 +314,31 @@ class OrgAdminFormTest extends TestCase
         $this->assertDatabaseMissing('form_questions', ['id' => $deleted->id]);
         $this->assertDatabaseHas('form_questions', ['id' => $kept->id]);
     }
+
+    public function test_update_accepts_long_question_label_and_help_text(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang Persetujuan',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+        $question = FormQuestion::create(['form_id' => $form->id, 'label' => 'Persetujuan', 'type' => 'checkbox', 'options' => ['Ya'], 'required' => true, 'sort_order' => 0]);
+        $longLabel = rtrim(str_repeat('PENGESAHAN MAKLUMAT DAN PERSETUJUAN ', 20));
+        $longHelp = rtrim(str_repeat('Saya mengesahkan semua maklumat adalah benar. ', 20));
+
+        $this->actingAs($this->adminA)
+            ->put(route('admin.forms.update', $form->id), [
+                'title' => 'Borang Persetujuan',
+                'is_active' => true,
+                'allow_public' => true,
+                'questions' => [
+                    ['id' => $question->id, 'label' => $longLabel, 'type' => 'checkbox', 'options' => ['Ya'], 'required' => true, 'placeholder' => '', 'help_text' => $longHelp],
+                ],
+            ])->assertSessionHasNoErrors();
+
+        $question->refresh();
+        $this->assertSame($longLabel, $question->label);
+        $this->assertSame($longHelp, $question->help_text);
+    }
 }

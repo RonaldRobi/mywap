@@ -136,12 +136,12 @@ class FormController extends Controller
             'recipient_emails' => ['nullable', 'array'],
             'recipient_emails.*' => ['email'],
             'questions' => ['required', 'array', 'min:1'],
-            'questions.*.label' => ['required', 'string', 'max:500'],
+            'questions.*.label' => ['required', 'string', 'max:5000'],
             'questions.*.type' => ['required', 'in:'.implode(',', self::QUESTION_TYPES)],
             'questions.*.options' => ['nullable', 'array'],
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
-            'questions.*.help_text' => ['nullable', 'string', 'max:500'],
+            'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
@@ -291,12 +291,12 @@ class FormController extends Controller
             'recipient_emails.*' => ['email'],
             'questions' => ['required', 'array', 'min:1'],
             'questions.*.id' => ['nullable', 'integer'],
-            'questions.*.label' => ['required', 'string', 'max:500'],
+            'questions.*.label' => ['required', 'string', 'max:5000'],
             'questions.*.type' => ['required', 'in:'.implode(',', self::QUESTION_TYPES)],
             'questions.*.options' => ['nullable', 'array'],
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
-            'questions.*.help_text' => ['nullable', 'string', 'max:500'],
+            'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
             'deleted_question_ids' => ['nullable', 'array'],
             'deleted_question_ids.*' => ['integer'],
         ]);

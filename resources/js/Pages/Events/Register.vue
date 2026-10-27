@@ -215,11 +215,11 @@ function submit() {
 
                 <!-- Questions -->
                 <div v-for="q in form.questions" :key="q.id" class="space-y-1.5">
-                    <label class="block text-sm font-semibold text-gray-700">
+                    <label class="block text-sm font-semibold text-gray-700 whitespace-pre-line">
                         {{ q.label }}
                         <span v-if="q.required" class="text-red-500">*</span>
                     </label>
-                    <p v-if="q.help_text" class="text-xs text-gray-400">{{ q.help_text }}</p>
+                    <p v-if="q.help_text" class="text-xs text-gray-400 whitespace-pre-line">{{ q.help_text }}</p>
 
                     <input
                         v-if="['text', 'email', 'phone', 'number', 'date'].includes(q.type)"
