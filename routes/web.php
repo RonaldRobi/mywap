@@ -130,6 +130,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/attendance', [AttendanceController::class, 'adminIndex'])->name('admin.attendance');
         Route::get('/admin/attendance/export/excel', [AttendanceController::class, 'exportExcel'])->name('admin.attendance.export.excel');
         Route::get('/admin/attendance/export/pdf', [AttendanceController::class, 'exportPdf'])->name('admin.attendance.export.pdf');
+        Route::get('/admin/attendance/{event}', [AttendanceController::class, 'adminShow'])->name('admin.attendance.show');
+        Route::post('/admin/attendance/{event}/registrations/{registration}/attendance', [AttendanceController::class, 'toggleAttendance'])->name('admin.attendance.toggle');
+        Route::post('/admin/attendance/{event}/bulk', [AttendanceController::class, 'bulkAttendance'])->name('admin.attendance.bulk');
+        Route::post('/admin/attendance/{event}/participants', [AttendanceController::class, 'addParticipant'])->name('admin.attendance.participants.store');
         Route::get('/admin/events', [EventController::class, 'adminIndex'])->name('admin.events.index');
         Route::get('/admin/events/create', [EventController::class, 'create'])->name('admin.events.create');
         Route::post('/admin/events', [EventController::class, 'storeAdmin'])->name('admin.events.store');

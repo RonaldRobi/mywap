@@ -54,8 +54,8 @@ class EventCheckInApiTest extends TestCase
             'status' => EventStatus::Published->value,
             'category' => EventCategory::Muktamar->value,
             'location_or_link' => 'Kuala Lumpur',
-            'start_time' => now()->addDay(),
-            'end_time' => now()->addDay()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
     }
 
@@ -177,5 +177,22 @@ class EventCheckInApiTest extends TestCase
         $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
             'token' => $this->event->attendance_token,
         ])->assertStatus(403);
+    }
+
+    public function test_check_in_is_rejected_after_grace_window(): void
+    {
+        $this->registerMember();
+        $this->event->update([
+            'start_time' => now()->subHours(30),
+            'end_time' => now()->subHours(25),
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->postJson("/api/v1/events/{$this->event->id}/check-in", [
+            'token' => $this->event->attendance_token,
+        ])->assertStatus(403);
+
+        $this->assertSame(0, Attendance::where('event_id', $this->event->id)->count());
     }
 }

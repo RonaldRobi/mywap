@@ -65,6 +65,15 @@ class EventController extends Controller
             return ApiResponse::error('Token kehadiran tidak sah.', status: 403);
         }
 
+        if (! $event->attendanceWindowIsOpen()) {
+            $closesAt = $event->attendanceClosesAt();
+            $message = $closesAt !== null && now()->lt($event->start_time ?? now())
+                ? 'Kehadiran belum dibuka. QR hanya sah bermula waktu program.'
+                : 'QR kehadiran telah tamat tempoh. Kehadiran hanya boleh direkodkan sehingga 24 jam selepas program tamat.';
+
+            return ApiResponse::error($message, status: 403);
+        }
+
         if ($user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             return ApiResponse::error(
                 'Akaun pentadbir tidak dibenarkan merekod kehadiran program.',

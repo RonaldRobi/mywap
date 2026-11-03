@@ -357,6 +357,51 @@ class BroadcastDeliveryTest extends TestCase
         $this->assertNull($notifications->last()->fresh()->read_at);
     }
 
+    public function test_target_search_is_case_insensitive_and_returns_defaults(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $event = Event::create([
+            'organization_id' => $this->org->id,
+            'title' => 'Program Kepimpinan Muda',
+            'description' => 'Program ujian',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Muktamar->value,
+            'location_or_link' => 'Kuala Lumpur',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(3),
+        ]);
+
+        $category = Category::create(['name' => 'Pakaian']);
+        $product = Product::create([
+            'name' => 'Jersi PKPIM Baharu',
+            'price' => 89,
+            'stock' => 50,
+            'postage_cost' => 8,
+            'category_id' => $category->id,
+            'organisasi_id' => $this->org->id,
+            'status' => true,
+        ]);
+
+        // Kata kunci huruf kecil mesti padan dengan tajuk huruf besar.
+        $this->actingAs($admin, 'web')
+            ->getJson(route('admin.broadcasts.targets', ['type' => 'event', 'q' => 'kepimpinan']))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $event->id]);
+
+        $this->actingAs($admin, 'web')
+            ->getJson(route('admin.broadcasts.targets', ['type' => 'product', 'q' => 'JERSI']))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $product->id]);
+
+        // Tanpa kata kunci, senarai lalai dipulangkan supaya dropdown tidak kosong.
+        $this->actingAs($admin, 'web')
+            ->getJson(route('admin.broadcasts.targets', ['type' => 'event', 'q' => '']))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $event->id]);
+    }
+
     private function makeAdmin(): User
     {
         $admin = User::factory()->create([

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -44,8 +45,10 @@ class AttendanceController extends Controller
     {
         $event = Event::with('organization')->findOrFail($id);
 
-        if (! hash_equals($event->attendance_token, $token)) {
-            abort(403, 'Token kehadiran tidak sah.');
+        $this->authorizeAttendanceRequest($request, $event, $token);
+
+        if (! $event->attendanceWindowIsOpen()) {
+            return $this->attendanceWindowClosed($event);
         }
 
         $user = $request->user();
@@ -100,8 +103,10 @@ class AttendanceController extends Controller
     {
         $event = Event::with('organization')->findOrFail($id);
 
-        if (! hash_equals($event->attendance_token, $token)) {
-            abort(403, 'Token kehadiran tidak sah.');
+        $this->authorizeAttendanceRequest($request, $event, $token);
+
+        if (! $event->attendanceWindowIsOpen()) {
+            return $this->attendanceWindowClosed($event);
         }
 
         $data = $request->validate([
@@ -161,8 +166,10 @@ class AttendanceController extends Controller
     {
         $event = Event::with('organization')->findOrFail($id);
 
-        if (! hash_equals($event->attendance_token, $token)) {
-            abort(403, 'Token kehadiran tidak sah.');
+        $this->authorizeAttendanceRequest($request, $event, $token);
+
+        if (! $event->attendanceWindowIsOpen()) {
+            return $this->attendanceWindowClosed($event);
         }
 
         $data = $request->validate([
@@ -216,11 +223,106 @@ class AttendanceController extends Controller
         return Inertia::render('Admin/Events/Attendance', $data);
     }
 
+    /**
+     * Butiran kehadiran satu program: statistik, penapis dan senarai peserta.
+     */
+    public function adminShow(Request $request, Event $event): Response
+    {
+        $data = $this->admin->attendanceDetail($request, $event, $request->user());
+
+        return Inertia::render('Admin/Events/AttendanceShow', $data);
+    }
+
+    /**
+     * Pembetulan manual kehadiran (tanda hadir / batal) dengan audit trail.
+     */
+    public function toggleAttendance(Request $request, Event $event, Registration $registration): RedirectResponse
+    {
+        $data = $request->validate([
+            'present' => ['required', 'boolean'],
+        ]);
+
+        $this->admin->toggleAttendance(
+            $event,
+            $registration,
+            $request->user(),
+            (bool) $data['present'],
+        );
+
+        return back()->with(
+            'success',
+            $data['present'] ? 'Kehadiran direkodkan.' : 'Rekod kehadiran dibatalkan.',
+        );
+    }
+
+    /**
+     * Tanda hadir / batal secara pukal untuk peserta terpilih.
+     */
+    public function bulkAttendance(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'present' => ['required', 'boolean'],
+            'registration_ids' => ['required', 'array', 'min:1'],
+            'registration_ids.*' => ['integer'],
+        ]);
+
+        $result = $this->admin->bulkAttendance(
+            $event,
+            $request->user(),
+            $data['registration_ids'],
+            (bool) $data['present'],
+        );
+
+        $message = $result['present']
+            ? "{$result['updated']} peserta ditanda hadir."
+            : "{$result['updated']} rekod kehadiran dibatalkan.";
+
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} rekod dilangkau (luar skop).";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Tambah peserta baharu secara manual (ahli atau bukan ahli).
+     */
+    public function addParticipant(Request $request, Event $event): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'ic_number' => ['nullable', 'string', 'max:32'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'member_no' => ['nullable', 'string', 'max:50'],
+            'mark_present' => ['sometimes', 'boolean'],
+        ]);
+
+        if (blank($data['ic_number'] ?? null) && blank($data['phone'] ?? null)) {
+            throw ValidationException::withMessages([
+                'ic_number' => 'Masukkan No. IC atau No. telefon untuk mengelakkan rekod pendua.',
+            ]);
+        }
+
+        $result = $this->admin->addParticipant($event, $request->user(), [
+            ...$data,
+            'mark_present' => $request->boolean('mark_present', true),
+        ]);
+
+        if ($result['status'] === 'exists') {
+            $field = filled($data['ic_number'] ?? null) ? 'ic_number' : 'phone';
+
+            throw ValidationException::withMessages([$field => $result['message']]);
+        }
+
+        return back()->with('success', $result['message']);
+    }
+
     public function exportExcel(Request $request)
     {
         $data = $this->buildExportData($request, 5000);
         $headings = array_merge(
-            ['#', 'Nama', 'No Ahli', 'Organisasi myWAP', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
+            ['#', 'Nama', 'No. IC', 'No Ahli', 'Organisasi myWAP', 'Event', 'Telefon', 'Bayaran', 'Kehadiran', 'Masa Hadir'],
             array_column($data['form_columns'], 'label'),
         );
 
@@ -236,6 +338,7 @@ class AttendanceController extends Controller
                 return collect($this->rows)->map(fn ($r, $i) => array_merge([
                     $i + 1,
                     $r['name'],
+                    $r['ic_number'] ?? '—',
                     $r['member_no'] ?? '—',
                     $r['organization_name'] ?? '—',
                     $r['event_title'] ?? '—',
@@ -262,7 +365,7 @@ class AttendanceController extends Controller
         // DomPDF builds the whole document in memory. Keep the number of
         // rendered cells bounded so a wide form or a large event cannot
         // exhaust PHP memory and return a 500.
-        $columnCount = 9 + count($data['form_columns']);
+        $columnCount = 10 + count($data['form_columns']);
         $maxRows = max(50, (int) floor(6000 / $columnCount));
         $rows = array_slice($data['rows'], 0, $maxRows);
 
@@ -282,6 +385,35 @@ class AttendanceController extends Controller
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Semak token QR + tandatangan tamat tempoh (jika ada). QR poster statik
+     * tidak membawa `exp`/`sig`, jadi masih tertakluk pada semakan tetingkap.
+     */
+    protected function authorizeAttendanceRequest(Request $request, Event $event, string $token): void
+    {
+        if (! hash_equals($event->attendance_token, $token)) {
+            abort(403, 'Token kehadiran tidak sah.');
+        }
+
+        if (! $event->attendanceSignatureIsValid($request->query('exp'), $request->query('sig'))) {
+            abort(403, 'Pautan kehadiran tidak sah atau telah tamat tempoh.');
+        }
+    }
+
+    protected function attendanceWindowClosed(Event $event): Response
+    {
+        $closesAt = $event->attendanceClosesAt();
+
+        $message = $closesAt !== null && now()->lt($event->start_time ?? now())
+            ? 'Kehadiran belum dibuka. QR hanya sah bermula waktu program.'
+            : 'QR kehadiran telah tamat tempoh. '.($closesAt ? 'Tempoh ditutup pada '.$closesAt->locale('ms')->isoFormat('D MMM YYYY, h:mm A').' (24 jam selepas program tamat).' : '');
+
+        return Inertia::render('Events/AttendanceError', [
+            'event' => $this->serializeEvent($event),
+            'message' => trim($message),
+        ]);
+    }
 
     /**
      * Pautan "daftar sekarang" untuk user yang belum berdaftar ketika scan
@@ -395,6 +527,7 @@ class AttendanceController extends Controller
 
             return [
                 'name' => $registration->name,
+                'ic_number' => $registration->ic_number,
                 'member_no' => $registration->member_no,
                 'organization_name' => $registration->organization?->name ?? $registration->event?->organization?->name,
                 'event_title' => $registration->event?->title,
@@ -522,7 +655,18 @@ class AttendanceController extends Controller
 
     protected function isAttendanceBaseColumn(string $label): bool
     {
-        if (in_array($label, ['nama', 'no ahli', 'organisasi mywap', 'event', 'telefon', 'bayaran', 'kehadiran', 'masa hadir'], true)) {
+        if (in_array($label, ['nama', 'no ic', 'no ahli', 'organisasi mywap', 'event', 'telefon', 'bayaran', 'kehadiran', 'masa hadir'], true)) {
+            return true;
+        }
+
+        // Soalan borang yang mengulang No. IC (lazim dalam borang pendaftaran)
+        // tidak perlu muncul sebagai kolum tambahan kerana laporan sudah
+        // membawa kolum No. IC daripada rekod pendaftaran.
+        if (in_array($label, ['ic', 'kp', 'no kp'], true)
+            || str_contains($label, 'kad pengenalan')
+            || str_contains($label, 'no ic')
+            || str_contains($label, 'ic number')
+            || str_contains($label, 'nombor ic')) {
             return true;
         }
 

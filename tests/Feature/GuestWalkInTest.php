@@ -43,8 +43,8 @@ class GuestWalkInTest extends TestCase
             'status' => EventStatus::Published->value,
             'category' => EventCategory::Seminar->value,
             'location_or_link' => 'Kuala Lumpur',
-            'start_time' => now()->addDay(),
-            'end_time' => now()->addDay()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
     }
 

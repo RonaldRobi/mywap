@@ -616,7 +616,7 @@ class EventController extends Controller
                 'back_to' => route('admin.events.show', $event->id),
             ]),
             'registrationsUrl' => route('admin.events.registrations', $event->id),
-            'attendanceUrl' => route('admin.attendance', ['event_id' => $event->id]),
+            'attendanceUrl' => route('admin.attendance.show', $event->id),
             'editUrl' => route('admin.events.edit', $event->id),
             'qrUrl' => route('events.qr', $event->id),
         ]);
@@ -820,7 +820,10 @@ class EventController extends Controller
     {
         $this->authorizeEventAdmin($request, $event);
 
-        $attendanceUrl = $event->attendance_url;
+        // QR paparan langsung ditandatangan dan tamat bersama tetingkap kehadiran
+        // (waktu tamat program + 24 jam). Poster bercetak kekal guna token statik
+        // tetapi masih disemak tetingkapnya di backend.
+        $attendanceUrl = $event->signedAttendanceUrl();
 
         $qrSvg = QrCode::format('svg')
             ->size(320)

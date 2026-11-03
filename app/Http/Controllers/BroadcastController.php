@@ -208,25 +208,38 @@ class BroadcastController extends Controller
         $query = trim((string) $request->query('q'));
         $type = (string) $request->query('type');
 
-        if (mb_strlen($query) < 2 || ! in_array($type, ['event', 'product'], true)) {
+        if (! in_array($type, ['event', 'product'], true)) {
             return response()->json([]);
         }
+
+        $hasQuery = mb_strlen($query) >= 2;
+        $needle = '%'.mb_strtolower($query).'%';
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         $orgId = (int) $user->current_organization_id;
 
         if ($type === 'event') {
+            $now = now();
+
             $items = Event::query()
-                ->where('title', 'like', "%{$query}%")
+                // LOWER() supaya carian tidak sensitif huruf besar/kecil pada
+                // PostgreSQL (LIKE biasa adalah case-sensitive di sana).
+                ->when($hasQuery, fn ($q) => $q->whereRaw('LOWER(title) LIKE ?', [$needle]))
                 ->when(! $isSuperadmin, function ($q) use ($orgId) {
                     $q->where(function ($inner) use ($orgId) {
-                        $inner->where('organization_id', $orgId)->orWhereNull('organization_id');
+                        $inner->where('organization_id', $orgId)
+                            ->orWhereNull('organization_id')
+                            ->orWhereHas('organizations', fn ($pivot) => $pivot->where('organizations.id', $orgId));
                     });
                 })
-                ->orderByDesc('start_time')
+                // Program yang masih berjalan/akan datang dahulu, kemudian
+                // program lepas yang paling baru.
+                ->orderByRaw('CASE WHEN end_time >= ? THEN 0 ELSE 1 END', [$now])
+                ->orderByRaw('CASE WHEN end_time >= ? THEN start_time END ASC', [$now])
+                ->orderByRaw('CASE WHEN end_time < ? THEN start_time END DESC', [$now])
                 ->take(20)
-                ->get(['id', 'title', 'slug', 'start_time', 'organization_id'])
+                ->get(['id', 'title', 'slug', 'start_time', 'end_time', 'organization_id'])
                 ->map(fn (Event $event) => [
                     'id' => $event->id,
                     'label' => $event->title,
@@ -237,7 +250,7 @@ class BroadcastController extends Controller
         }
 
         $items = Product::query()
-            ->where('name', 'like', "%{$query}%")
+            ->when($hasQuery, fn ($q) => $q->whereRaw('LOWER(name) LIKE ?', [$needle]))
             ->when(! $isSuperadmin, function ($q) use ($orgId) {
                 $q->where(function ($inner) use ($orgId) {
                     $inner->where('organisasi_id', $orgId)->orWhereNull('organisasi_id');

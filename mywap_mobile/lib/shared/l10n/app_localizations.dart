@@ -5306,14 +5306,26 @@ abstract class AppLocalizations {
   /// No description provided for @eventAddonsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Optional Add-ons'**
+  /// **'Additional Options'**
   String get eventAddonsTitle;
 
   /// No description provided for @eventAddonsHint.
   ///
   /// In en, this message translates to:
-  /// **'Select if you wish to purchase. Registration is still valid without add-ons.'**
+  /// **'Complete your registration with additional programme options. Choose what applies — your registration is valid without them.'**
   String get eventAddonsHint;
+
+  /// No description provided for @eventAddonsTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required & Optional Add-ons'**
+  String get eventAddonsTitleRequired;
+
+  /// No description provided for @eventAddonsHintRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your registration. Options marked “Required” must be included; the rest are your choice.'**
+  String get eventAddonsHintRequired;
 
   /// No description provided for @eventAddonSelectOption.
   ///

@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Enums\RegistrationStatus;
 use App\Jobs\SendBroadcastJob;
+use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
 use App\Models\Campaign;
 use App\Models\Event;
+use App\Models\EventRsvp;
 use App\Models\FacilityBooking;
 use App\Models\Infaq;
 use App\Models\Organization;
@@ -507,15 +509,15 @@ class AdminService
     // ─── Kehadiran ────────────────────────────────────────────────────────────
 
     /**
-     * Payload penuh dashboard kehadiran admin (web).
+     * Halaman utama kehadiran: senarai program sahaja (tiada nama peserta).
+     * Setiap kad membawa ringkasan peserta/hadir/tidak hadir. Klik kad untuk
+     * masuk ke halaman butiran program.
      */
     public function attendanceIndex(Request $request, User $user): array
     {
         $isSuperadmin = $user->hasRole('Superadmin');
 
-        // Sekatan skop: admin biasa hanya nampak pendaftaran organisasinya
-        // (sama ada pendaftaran itu milik org, atau event milik org). Digunakan
-        // untuk senarai, statistik dan kiraan dalam kad program.
+        // Sekatan skop: admin biasa hanya nampak pendaftaran organisasinya.
         $restrict = function (Builder $query) use ($user, $isSuperadmin): Builder {
             if (! $isSuperadmin) {
                 $orgId = (int) $user->current_organization_id;
@@ -528,8 +530,6 @@ class AdminService
 
             return $query;
         };
-
-        $scope = fn (): Builder => $restrict(Registration::query());
 
         // Skop senarai program: event milik org ATAU event yang mempunyai
         // pendaftaran daripada org (cth program global yang disertai ahli org).
@@ -548,118 +548,55 @@ class AdminService
             return $query;
         };
 
-        // Penapis konteks (event / organisasi / carian) — dipakai pada senarai
-        // DAN statistik supaya angka kad sepadan dengan apa yang dipilih.
-        // Status kehadiran & bayaran TIDAK dikira dalam statistik supaya kad
-        // kekal stabil apabila salah satu kad diklik.
-        $applyContext = function (Builder $query) use ($request): Builder {
-            if ($request->filled('event_id')) {
-                $query->where('event_id', (int) $request->event_id);
-            }
-
-            if ($request->filled('org')) {
-                $query->where('organization_id', (int) $request->org);
-            }
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function (Builder $q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('registration_no', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('member_no', 'like', "%{$search}%");
-                });
-            }
-
-            return $query;
-        };
-
-        $listQuery = $applyContext($scope());
-
-        if ($request->filled('attendance')) {
-            if ($request->attendance === 'hadir') {
-                $listQuery->whereHas('attendance');
-            } elseif ($request->attendance === 'tidak_hadir') {
-                $listQuery->whereDoesntHave('attendance');
-            }
-        }
-
-        if ($request->filled('payment')) {
-            if ($request->payment === 'pending') {
-                $listQuery->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'));
-            } elseif ($request->payment === 'paid') {
-                $listQuery->where(function (Builder $q) {
-                    $q->whereHas('latestPayment', fn ($p) => $p->where('status', 'successful'))
-                        ->orWhereDoesntHave('latestPayment');
-                });
-            }
-        }
-
-        $registrations = $listQuery
-            ->with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment', 'items'])
-            ->latest()
-            ->paginate(25)
-            ->withQueryString()
-            ->through(fn (Registration $r) => [
-                'id' => $r->id,
-                'registration_no' => $r->registration_no,
-                'name' => $r->name,
-                'email' => $r->email,
-                'phone' => $r->phone,
-                'member_no' => $r->member_no,
-                'status' => $r->status->value,
-                'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
-                'event_title' => $r->event?->title,
-                'form_title' => $r->form?->title,
-                'items' => $r->items->map(fn ($item) => [
-                    'name' => $item->name,
-                    'variant_name' => $item->variant_name,
-                    'quantity' => (int) $item->quantity,
-                ])->values()->all(),
-                'total_amount' => $r->totalAmount(),
-                'is_free' => $r->isFreeRegistration(),
-                'payment_status' => $r->latestPayment?->status ?? 'paid',
-                'attended' => $r->attendance !== null,
-                'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
-                'method' => $r->attendance?->method,
-                'created_at' => $r->created_at?->toDateTimeString(),
-            ]);
-
-        $dedupe = app(RegistrationDedupeService::class);
-        $identityColumns = ['id', 'event_id', 'name', 'email', 'phone', 'ic_number'];
-
-        // Angka "Daftar" mesti kira peserta unik, bukan baris mentah.
-        // Rekod pendua daripada import berulang tidak boleh menaikkan angka.
-        $uniqueTotal = function (Builder $query) use ($dedupe, $identityColumns): int {
-            return array_sum($dedupe->uniqueCountsByEvent($query->get($identityColumns)));
-        };
-
-        $stats = [
-            'total_registered' => $uniqueTotal($applyContext($scope())),
-            'total_attended' => $uniqueTotal($applyContext($scope())->whereHas('attendance')),
-            'total_pending_payment' => $uniqueTotal(
-                $applyContext($scope())->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))
-            ),
-        ];
-
-        // Ringkasan per program — asas kad grid di dashboard. Ikut penapis
-        // konteks (org / event) supaya kad sepadan dengan pilihan pengguna.
-        // Susunan: program sedang/akan berjalan dahulu (terdekat), kemudian
-        // program lepas yang paling baru.
-        $now = now();
-
         $programEvents = $eventScope()
             ->when($request->filled('org'), fn ($q) => $q->where('organization_id', (int) $request->org))
             ->when($request->filled('event_id'), fn ($q) => $q->where('id', (int) $request->event_id))
+            ->when($request->filled('search'), fn ($q) => $q->where('title', 'like', '%'.$request->search.'%'))
             ->whereHas('registrations', fn ($q) => $restrict($q))
-            ->with('organization')
-            ->orderByRaw('CASE WHEN end_time >= ? THEN 0 ELSE 1 END', [$now])
-            ->orderByRaw('CASE WHEN end_time >= ? THEN start_time END ASC', [$now])
-            ->orderByRaw('CASE WHEN end_time < ? THEN start_time END DESC', [$now])
+            ->with(['organization', 'organizations'])
             ->get();
 
+        $now = now();
+
+        // Susunan: program yang baru selesai di atas (End Date terbaru), diikuti
+        // program sedang berjalan, kemudian program akan datang (terdekat dulu).
+        $programEvents = $programEvents
+            ->sort(function (Event $a, Event $b) use ($now) {
+                $rank = function (Event $event) use ($now): int {
+                    if ($event->end_time !== null && $event->end_time->lt($now)) {
+                        return 0;
+                    }
+
+                    if ($event->start_time !== null && $event->start_time->lte($now)) {
+                        return 1;
+                    }
+
+                    return 2;
+                };
+
+                $rankA = $rank($a);
+                $rankB = $rank($b);
+
+                if ($rankA !== $rankB) {
+                    return $rankA <=> $rankB;
+                }
+
+                if ($rankA === 0) {
+                    return ($b->end_time?->timestamp ?? 0) <=> ($a->end_time?->timestamp ?? 0);
+                }
+
+                if ($rankA === 1) {
+                    return ($b->start_time?->timestamp ?? 0) <=> ($a->start_time?->timestamp ?? 0);
+                }
+
+                return ($a->start_time?->timestamp ?? 0) <=> ($b->start_time?->timestamp ?? 0);
+            })
+            ->values();
+
         $eventIds = $programEvents->pluck('id')->all();
+
+        $dedupe = app(RegistrationDedupeService::class);
+        $identityColumns = ['id', 'event_id', 'name', 'email', 'phone', 'ic_number'];
 
         $countsFor = function (Builder $query) use ($restrict, $eventIds, $identityColumns, $dedupe): array {
             $query = $restrict($query->whereIn('event_id', $eventIds));
@@ -674,42 +611,465 @@ class AdminService
         );
 
         $programs = $programEvents
-            ->map(fn (Event $e) => [
-                'id' => $e->id,
-                'title' => $e->title,
-                'slug' => $e->slug,
-                'status' => $e->status->value,
-                'status_label' => $e->status->label(),
-                'start_formatted' => $e->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
-                'end_time' => $e->end_time?->toISOString(),
-                'is_ended' => $e->end_time !== null && $e->end_time->lt($now),
-                'is_ongoing' => $e->start_time !== null && $e->end_time !== null
-                    && $e->start_time->lte($now) && $e->end_time->gte($now),
-                'location_or_link' => $e->location_or_link,
-                'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
-                'registered_count' => (int) ($registeredByEvent[$e->id] ?? 0),
-                'attended_count' => (int) ($attendedByEvent[$e->id] ?? 0),
-                'pending_payment_count' => (int) ($pendingByEvent[$e->id] ?? 0),
-                'attendance_url' => route('admin.attendance', ['event_id' => $e->id]),
-                'registrations_url' => route('admin.events.registrations', $e->id),
-                'qr_url' => route('events.qr', $e->id),
-            ])
+            ->map(function (Event $e) use ($now, $user, $isSuperadmin, $registeredByEvent, $attendedByEvent, $pendingByEvent) {
+                $registered = (int) ($registeredByEvent[$e->id] ?? 0);
+                $attended = (int) ($attendedByEvent[$e->id] ?? 0);
+                $isEnded = $e->end_time !== null && $e->end_time->lt($now);
+                $isOngoing = $e->start_time !== null && $e->end_time !== null
+                    && $e->start_time->lte($now) && $e->end_time->gte($now);
+                $canOpenQr = $isSuperadmin
+                    || (int) $e->organization_id === (int) $user->current_organization_id
+                    || $e->organizations->contains(fn ($org) => (int) $org->id === (int) $user->current_organization_id);
+
+                return [
+                    'id' => $e->id,
+                    'title' => $e->title,
+                    'slug' => $e->slug,
+                    'status' => $e->status->value,
+                    'status_label' => $e->status->label(),
+                    'start_formatted' => $e->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                    'end_formatted' => $e->end_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                    'end_time' => $e->end_time?->toISOString(),
+                    'attendance_closes_at' => $e->attendanceClosesAt()?->toISOString(),
+                    'state' => $isEnded ? 'completed' : ($isOngoing ? 'ongoing' : 'upcoming'),
+                    'is_ended' => $isEnded,
+                    'is_ongoing' => $isOngoing,
+                    'location_or_link' => $e->location_or_link,
+                    'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
+                    'registered_count' => $registered,
+                    'attended_count' => $attended,
+                    'not_attended_count' => max(0, $registered - $attended),
+                    'pending_payment_count' => (int) ($pendingByEvent[$e->id] ?? 0),
+                    'attendance_url' => route('admin.attendance.show', $e->id),
+                    'registrations_url' => route('admin.events.registrations', $e->id),
+                    'qr_url' => $canOpenQr ? route('events.qr', $e->id) : null,
+                ];
+            })
             ->values();
 
-        $events = $eventScope()
-            ->orderByDesc('start_time')
-            ->get(['id', 'title']);
+        $uniqueTotal = function (Builder $query) use ($dedupe, $restrict, $identityColumns, $eventIds): int {
+            $query = $restrict($query->whereIn('event_id', $eventIds));
+
+            return array_sum($dedupe->uniqueCountsByEvent($query->get($identityColumns)));
+        };
+
+        $totalRegistered = $uniqueTotal(Registration::query());
+        $totalAttended = $uniqueTotal(Registration::query()->whereHas('attendance'));
+        $totalPending = $uniqueTotal(
+            Registration::query()->whereHas('latestPayment', fn ($q) => $q->where('status', 'pending'))
+        );
 
         return [
-            'registrations' => $registrations,
-            'stats' => $stats,
+            'stats' => [
+                'total_programs' => count($eventIds),
+                'total_registered' => $totalRegistered,
+                'total_attended' => $totalAttended,
+                'total_not_attended' => max(0, $totalRegistered - $totalAttended),
+                'total_pending_payment' => $totalPending,
+            ],
             'programs' => $programs,
-            'events' => $events,
             'organizations' => $isSuperadmin
                 ? Organization::orderBy('min_age')->get(['id', 'name'])
                 : [],
-            'filters' => $request->only(['event_id', 'org', 'attendance', 'search', 'payment']),
+            'filters' => $request->only(['org', 'search']),
         ];
+    }
+
+    /**
+     * Butiran kehadiran satu program: statistik + senarai peserta boleh
+     * ditapis (Hadir / Tidak Hadir / Semua, carian nama/IC, ahli/bukan ahli).
+     */
+    public function attendanceDetail(Request $request, Event $event, User $user): array
+    {
+        $this->assertCanManageEvent($user, $event);
+
+        $attendanceFilter = $request->query('attendance');
+        $attendanceFilter = in_array($attendanceFilter, ['hadir', 'tidak_hadir', 'all'], true)
+            ? $attendanceFilter
+            : 'hadir';
+
+        $typeFilter = $request->query('type');
+        $typeFilter = in_array($typeFilter, ['ahli', 'bukan_ahli'], true) ? $typeFilter : '';
+
+        $search = trim((string) $request->query('search', ''));
+
+        $base = Registration::query()->where('event_id', $event->id);
+
+        // Kekalkan skop org yang sama seperti senarai program: admin biasa hanya
+        // nampak pendaftaran organisasinya (kecuali event milik/bersama org).
+        if (! $user->hasRole('Superadmin')) {
+            $orgId = (int) $user->current_organization_id;
+            $base->where(function (Builder $q) use ($orgId) {
+                $q->where('organization_id', $orgId)
+                    ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $orgId)
+                        ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $orgId)));
+            });
+        }
+
+        $listQuery = (clone $base)->with(['organization', 'event.organization', 'attendance', 'latestPayment']);
+
+        if ($attendanceFilter === 'hadir') {
+            $listQuery->whereHas('attendance');
+        } elseif ($attendanceFilter === 'tidak_hadir') {
+            $listQuery->whereDoesntHave('attendance');
+        }
+
+        if ($typeFilter === 'ahli') {
+            $listQuery->whereNotNull('user_id');
+        } elseif ($typeFilter === 'bukan_ahli') {
+            $listQuery->whereNull('user_id');
+        }
+
+        if ($search !== '') {
+            $digits = preg_replace('/\D+/', '', $search) ?? '';
+            $listQuery->where(function (Builder $q) use ($search, $digits) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('registration_no', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('member_no', 'like', "%{$search}%")
+                    ->orWhere('ic_number', 'like', "%{$search}%");
+
+                if ($digits !== '') {
+                    $q->orWhere('ic_normalized', $digits)
+                        ->orWhere('phone_normalized', $digits);
+                }
+            });
+        }
+
+        $registrations = $listQuery
+            ->orderBy('name')
+            ->paginate(50)
+            ->withQueryString()
+            ->through(fn (Registration $r) => [
+                'id' => $r->id,
+                'registration_no' => $r->registration_no,
+                'name' => $r->name,
+                'email' => $r->email,
+                'phone' => $r->phone,
+                'ic_number' => $r->ic_number,
+                'member_no' => $r->member_no,
+                'is_member' => $r->user_id !== null,
+                'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
+                'payment_status' => $r->latestPayment?->status ?? 'paid',
+                'attended' => $r->attendance !== null,
+                'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
+                'method' => $r->attendance?->method,
+                'recorded_by' => $r->attendance?->recorded_by,
+            ]);
+
+        $dedupe = app(RegistrationDedupeService::class);
+        $totalRegistered = $dedupe->uniqueCount(clone $base);
+        $totalAttended = $dedupe->uniqueCount((clone $base)->whereHas('attendance'));
+
+        $auditTrail = ActivityLog::query()
+            ->where(function (Builder $q) use ($event, $base) {
+                $q->where(function (Builder $q2) use ($base) {
+                    $q2->where('target_type', Registration::class)
+                        ->whereIn('target_id', (clone $base)->select('id'))
+                        ->whereIn('action', [
+                            'attendance_manual_set',
+                            'attendance_manual_clear',
+                            'attendance_participant_add',
+                        ]);
+                })->orWhere(function (Builder $q2) use ($event) {
+                    $q2->where('target_type', Event::class)
+                        ->where('target_id', $event->id)
+                        ->whereIn('action', ['attendance_bulk_set', 'attendance_bulk_clear']);
+                });
+            })
+            ->with('user:id,name')
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(fn (ActivityLog $log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'description' => $log->description,
+                'actor' => $log->user?->name,
+                'created_at' => $log->created_at?->toDateTimeString(),
+            ])
+            ->values();
+
+        $canOpenQr = $user->hasRole('Superadmin')
+            || (int) $event->organization_id === (int) $user->current_organization_id
+            || $event->organizations()->where('organizations.id', $user->current_organization_id)->exists();
+
+        return [
+            'event' => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'slug' => $event->slug,
+                'status' => $event->status->value,
+                'status_label' => $event->status->label(),
+                'start_formatted' => $event->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'end_formatted' => $event->end_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'location_or_link' => $event->location_or_link,
+                'organization_name' => $event->organization?->name ?? 'Semua Organisasi',
+                'attendance_closes_at' => $event->attendanceClosesAt()?->toISOString(),
+                'attendance_window_open' => $event->attendanceWindowIsOpen(),
+            ],
+            'stats' => [
+                'total_registered' => $totalRegistered,
+                'total_attended' => $totalAttended,
+                'total_not_attended' => max(0, $totalRegistered - $totalAttended),
+            ],
+            'registrations' => $registrations,
+            'audit_trail' => $auditTrail,
+            'filters' => [
+                'attendance' => $attendanceFilter,
+                'type' => $typeFilter,
+                'search' => $search,
+            ],
+            'qr_url' => $canOpenQr ? route('events.qr', $event->id) : null,
+        ];
+    }
+
+    /**
+     * Pembetulan manual: tandakan hadir atau batalkan rekod kehadiran.
+     * Setiap tindakan direkodkan dalam ActivityLog sebagai audit trail.
+     *
+     * @return array{attended: bool, attended_at: ?string, method: ?string, message: string}
+     */
+    public function toggleAttendance(Event $event, Registration $registration, User $actor, bool $present): array
+    {
+        abort_unless((int) $registration->event_id === (int) $event->id, 404);
+        $this->assertCanManageEvent($actor, $event);
+        $this->assertRegistrationInScope($actor, $event, $registration);
+
+        if ($present) {
+            $attendance = $this->recordAttendance($registration, 'manual', $actor);
+            $action = 'attendance_manual_set';
+            $description = "Kehadiran manual direkodkan untuk {$registration->name} ({$event->title}).";
+            $oldValues = null;
+            $newValues = ['attended_at' => $attendance->attended_at?->toDateTimeString(), 'method' => 'manual'];
+        } else {
+            $existing = $registration->attendance;
+            $registration->attendance()->delete();
+            $this->clearProfileAttendance($registration);
+            $attendance = null;
+            $action = 'attendance_manual_clear';
+            $description = "Rekod kehadiran {$registration->name} ({$event->title}) dibatalkan.";
+            $oldValues = ['attended_at' => $existing?->attended_at?->toDateTimeString(), 'method' => $existing?->method];
+            $newValues = null;
+        }
+
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'organization_id' => $actor->current_organization_id,
+            'target_type' => Registration::class,
+            'target_id' => $registration->id,
+            'action' => $action,
+            'description' => $description,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+        ]);
+
+        return [
+            'attended' => $present,
+            'attended_at' => $attendance?->attended_at?->toDateTimeString(),
+            'method' => $present ? 'manual' : null,
+            'message' => $present ? 'Kehadiran direkodkan.' : 'Rekod kehadiran dibatalkan.',
+        ];
+    }
+
+    /**
+     * Tanda hadir / batal secara pukal untuk peserta terpilih.
+     *
+     * @param  array<int, int>  $registrationIds
+     * @return array{updated: int, skipped: int, present: bool}
+     */
+    public function bulkAttendance(Event $event, User $actor, array $registrationIds, bool $present): array
+    {
+        $this->assertCanManageEvent($actor, $event);
+
+        $ids = collect($registrationIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $registrations = Registration::query()
+            ->where('event_id', $event->id)
+            ->whereIn('id', $ids)
+            ->get();
+
+        // Superadmin boleh urus semua; admin biasa hanya dalam skop org sendiri.
+        if (! $actor->hasRole('Superadmin')) {
+            $orgId = (int) $actor->current_organization_id;
+            $ownsEvent = (int) $event->organization_id === $orgId
+                || $event->organizations()->where('organizations.id', $orgId)->exists();
+
+            if (! $ownsEvent) {
+                $registrations = $registrations
+                    ->filter(fn (Registration $registration) => (int) $registration->organization_id === $orgId)
+                    ->values();
+            }
+        }
+
+        foreach ($registrations as $registration) {
+            if ($present) {
+                $this->recordAttendance($registration, 'manual', $actor);
+            } else {
+                $registration->attendance()->delete();
+                $this->clearProfileAttendance($registration);
+            }
+        }
+
+        $count = $registrations->count();
+        $skipped = max(0, $ids->count() - $count);
+
+        if ($count > 0) {
+            ActivityLog::create([
+                'user_id' => $actor->id,
+                'organization_id' => $actor->current_organization_id,
+                'target_type' => Event::class,
+                'target_id' => $event->id,
+                'action' => $present ? 'attendance_bulk_set' : 'attendance_bulk_clear',
+                'description' => ($present ? 'Kehadiran pukal direkodkan' : 'Rekod kehadiran pukal dibatalkan')
+                    ." untuk {$count} peserta ({$event->title}).",
+                'old_values' => null,
+                'new_values' => [
+                    'registration_ids' => $registrations->pluck('id')->all(),
+                    'present' => $present,
+                ],
+            ]);
+        }
+
+        return [
+            'updated' => $count,
+            'skipped' => $skipped,
+            'present' => $present,
+        ];
+    }
+
+    /**
+     * Tambah peserta baharu secara manual dari halaman kehadiran.
+     *
+     * Bukan ahli disokong (user_id null). Jika No. IC sepadan dengan akaun,
+     * rekod dipautkan dan sejarah profil diselaraskan. Rekod sedia ada untuk
+     * event yang sama tidak diduplikasi.
+     *
+     * @param  array{name: string, ic_number?: ?string, phone?: ?string, email?: ?string, member_no?: ?string, mark_present?: bool}  $data
+     * @return array{status: string, registration: Registration, attended: bool, message: string}
+     */
+    public function addParticipant(Event $event, User $actor, array $data): array
+    {
+        $this->assertCanManageEvent($actor, $event);
+
+        $name = trim((string) $data['name']);
+        $icNumber = isset($data['ic_number']) ? trim((string) $data['ic_number']) : '';
+        $phone = isset($data['phone']) ? trim((string) $data['phone']) : '';
+        $email = isset($data['email']) ? trim((string) $data['email']) : '';
+
+        $existing = Registration::findExistingForEvent(
+            $event->id,
+            $icNumber !== '' ? $icNumber : null,
+            $phone !== '' ? $phone : null,
+            $email !== '' ? $email : null,
+            $name,
+        );
+
+        // Passport / ID bukan Malaysia tidak dinormalisasi ke 12 digit, jadi
+        // bandingkan nilai mentah untuk elak rekod pendua.
+        if ($existing === null && $icNumber !== '' && Registration::normalizeIc($icNumber) === null) {
+            $existing = Registration::query()
+                ->where('event_id', $event->id)
+                ->whereRaw('UPPER(ic_number) = ?', [mb_strtoupper($icNumber)])
+                ->latest()
+                ->first();
+        }
+
+        if ($existing !== null) {
+            return [
+                'status' => 'exists',
+                'registration' => $existing,
+                'attended' => $existing->attendance !== null,
+                'message' => 'Peserta ini sudah ada dalam senarai program.',
+            ];
+        }
+
+        $userId = $icNumber !== '' ? $this->matchUserByIc($icNumber) : null;
+        $matchedUser = $userId !== null
+            ? User::withoutGlobalScope(OrganizationScope::class)->find($userId)
+            : null;
+
+        $registration = Registration::create([
+            'event_id' => $event->id,
+            'user_id' => $userId,
+            'organization_id' => $actor->current_organization_id ?? $event->organization_id,
+            'member_no' => ($data['member_no'] ?? null) ?: $matchedUser?->member_no,
+            'name' => $name,
+            'email' => $email !== '' ? $email : null,
+            'phone' => $phone !== '' ? $phone : null,
+            'ic_number' => $icNumber !== '' ? $icNumber : null,
+            'status' => RegistrationStatus::WalkIn,
+            'source' => Registration::SOURCE_MANUAL,
+        ]);
+
+        $markPresent = $data['mark_present'] ?? true;
+
+        if ($markPresent) {
+            $this->recordAttendance($registration, 'manual', $actor);
+        }
+
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'organization_id' => $actor->current_organization_id,
+            'target_type' => Registration::class,
+            'target_id' => $registration->id,
+            'action' => 'attendance_participant_add',
+            'description' => "Peserta manual ditambah: {$registration->name} ({$event->title}).",
+            'old_values' => null,
+            'new_values' => ['attended' => (bool) $markPresent, 'user_id' => $userId],
+        ]);
+
+        return [
+            'status' => 'created',
+            'registration' => $registration,
+            'attended' => (bool) $markPresent,
+            'message' => $markPresent
+                ? 'Peserta ditambah dan kehadiran direkodkan.'
+                : 'Peserta ditambah.',
+        ];
+    }
+
+    /**
+     * Admin organisasi layak jika event milik org sendiri, tersenarai dalam
+     * pivot organisasi terlibat, atau mempunyai pendaftaran daripada org.
+     */
+    protected function assertCanManageEvent(User $user, Event $event): void
+    {
+        if ($user->hasRole('Superadmin')) {
+            return;
+        }
+
+        $orgId = (int) $user->current_organization_id;
+
+        $owns = (int) $event->organization_id === $orgId
+            || $event->organizations()->where('organizations.id', $orgId)->exists()
+            || $event->registrations()->where('organization_id', $orgId)->exists();
+
+        abort_unless($owns, 403, 'Tiada kebenaran.');
+    }
+
+    /**
+     * Admin biasa tidak boleh mengubah peserta organisasi lain pada event
+     * global yang bukan milik/bersama organisasinya.
+     */
+    protected function assertRegistrationInScope(User $user, Event $event, Registration $registration): void
+    {
+        if ($user->hasRole('Superadmin')) {
+            return;
+        }
+
+        $orgId = (int) $user->current_organization_id;
+
+        $inScope = (int) $registration->organization_id === $orgId
+            || (int) $event->organization_id === $orgId
+            || $event->organizations()->where('organizations.id', $orgId)->exists();
+
+        abort_unless($inScope, 403, 'Tiada kebenaran.');
     }
 
     /**
@@ -783,7 +1143,7 @@ class AdminService
             return ['status' => 'error', 'message' => 'Kehadiran telah direkodkan sebelum ini.', 'registration' => null];
         }
 
-        $attendance = $this->recordAttendance($registration, 'manual');
+        $attendance = $this->recordAttendance($registration, 'manual', $user);
 
         return [
             'status' => 'ok',
@@ -932,12 +1292,92 @@ class AdminService
         return null;
     }
 
-    public function recordAttendance(Registration $registration, string $method): Attendance
+    public function recordAttendance(Registration $registration, string $method, ?User $actor = null): Attendance
     {
-        return Attendance::updateOrCreate(
+        $attendance = Attendance::updateOrCreate(
             ['registration_id' => $registration->id],
-            ['event_id' => $registration->event_id, 'attended_at' => now(), 'method' => $method],
+            [
+                'event_id' => $registration->event_id,
+                'attended_at' => now(),
+                'method' => $method,
+                'recorded_by' => $method === 'manual' ? $actor?->id : null,
+            ],
         );
+
+        // Kehadiran sebenar mesti muncul dalam sejarah penyertaan profil ahli.
+        // Sebelum ini dua jadual (`attendances` dan `event_rsvps`) tidak disambung.
+        $this->syncProfileAttendance($registration, $attendance->attended_at ?? now());
+
+        return $attendance;
+    }
+
+    /**
+     * Selaraskan rekod kehadiran ke profil individu (EventRsvp status=attended).
+     *
+     * Ahli (user_id wujud) terus diselaraskan. Peserta bukan ahli yang No. IC
+     * sepadan dengan akaun pengguna akan dipautkan, supaya rekod kehadiran tetap
+     * masuk sejarah profil mereka. Bukan ahli tanpa akaun kekal dalam
+     * `attendances` sahaja.
+     */
+    protected function syncProfileAttendance(Registration $registration, \DateTimeInterface $attendedAt): void
+    {
+        $userId = $registration->user_id;
+
+        if ($userId === null) {
+            $userId = $this->matchUserByIc($registration->ic_number);
+
+            if ($userId !== null) {
+                $registration->forceFill(['user_id' => $userId])->saveQuietly();
+            }
+        }
+
+        if ($userId === null) {
+            return;
+        }
+
+        $rsvp = EventRsvp::firstOrNew([
+            'event_id' => $registration->event_id,
+            'user_id' => $userId,
+        ]);
+
+        $rsvp->status = 'attended';
+        $rsvp->attended_at = $rsvp->attended_at ?? $attendedAt;
+        $rsvp->save();
+    }
+
+    /**
+     * Elakkan sejarah profil tersasar apabila admin membatalkan rekod kehadiran
+     * yang sebelum ini dihasilkan oleh kehadiran (bukan RSVP manual).
+     */
+    protected function clearProfileAttendance(Registration $registration): void
+    {
+        if ($registration->user_id === null) {
+            return;
+        }
+
+        EventRsvp::query()
+            ->where('event_id', $registration->event_id)
+            ->where('user_id', $registration->user_id)
+            ->where('status', 'attended')
+            ->delete();
+    }
+
+    /**
+     * Padanan No. IC tepat: normalize ke 12 digit dan bandingkan dengan
+     * `users.ic_number` (yang mungkin disimpan dengan sengkang/ruang).
+     */
+    protected function matchUserByIc(?string $icNumber): ?int
+    {
+        $digits = Registration::normalizeIc($icNumber);
+
+        if ($digits === null) {
+            return null;
+        }
+
+        return User::withoutGlobalScope(OrganizationScope::class)
+            ->whereNotNull('ic_number')
+            ->whereRaw("REPLACE(REPLACE(REPLACE(ic_number, '-', ''), ' ', ''), '.', '') = ?", [$digits])
+            ->value('id');
     }
 
     // ─── Siaran (Broadcast) ───────────────────────────────────────────────────

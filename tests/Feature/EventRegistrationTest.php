@@ -75,8 +75,8 @@ class EventRegistrationTest extends TestCase
             'status' => EventStatus::Published->value,
             'category' => EventCategory::Muktamar->value,
             'location_or_link' => 'Kuala Lumpur',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$this->org->id]);
 
@@ -436,51 +436,45 @@ class EventRegistrationTest extends TestCase
                 ->where('programs.0.id', $eventA->id));
     }
 
-    public function test_attendance_payment_filter_shows_only_pending(): void
+    public function test_attendance_detail_defaults_to_hadir_filter(): void
     {
         $event = $this->makePublishedEvent();
-        $form = $this->makeForm($event, true);
+        $form = $this->makeForm($event);
 
-        $pending = Registration::create([
+        $attended = Registration::create([
             'event_id' => $event->id,
             'form_id' => $form->id,
             'organization_id' => $this->org->id,
-            'name' => 'Belum Bayar',
+            'name' => 'Sudah Hadir',
             'status' => 'confirmed',
         ]);
 
-        $paid = Registration::create([
+        Registration::create([
             'event_id' => $event->id,
             'form_id' => $form->id,
             'organization_id' => $this->org->id,
-            'name' => 'Sudah Bayar',
+            'name' => 'Belum Hadir',
             'status' => 'confirmed',
         ]);
 
-        Payment::create([
-            'payable_type' => Registration::class,
-            'payable_id' => $pending->id,
-            'amount' => 50,
-            'status' => 'pending',
-            'organization_id' => $this->org->id,
-        ]);
-
-        Payment::create([
-            'payable_type' => Registration::class,
-            'payable_id' => $paid->id,
-            'amount' => 50,
-            'status' => 'successful',
-            'organization_id' => $this->org->id,
+        Attendance::create([
+            'registration_id' => $attended->id,
+            'event_id' => $event->id,
+            'attended_at' => now(),
+            'method' => 'member',
         ]);
 
         $this->actingAs($this->admin);
 
-        $this->get(route('admin.attendance', ['payment' => 'pending']))
+        $this->get(route('admin.attendance.show', $event->id))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('stats.total_pending_payment', 1)
+                ->where('filters.attendance', 'hadir')
                 ->has('registrations.data', 1)
-                ->where('registrations.data.0.name', 'Belum Bayar'));
+                ->where('registrations.data.0.name', 'Sudah Hadir')
+                ->where('stats.total_registered', 2)
+                ->where('stats.total_attended', 1)
+                ->where('stats.total_not_attended', 1));
     }
 
     public function test_attendance_program_summary_only_lists_programs_with_participants(): void
@@ -550,13 +544,13 @@ class EventRegistrationTest extends TestCase
         $this->get(route('admin.attendance'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                // Program sedang berjalan didahulukan, program lepas kemudian.
-                ->where('programs.0.title', 'Program Sedang')
-                ->where('programs.0.is_ongoing', true)
-                ->where('programs.0.is_ended', false)
-                ->where('programs.1.title', 'Program Lepas')
-                ->where('programs.1.is_ended', true)
-                ->where('programs.1.is_ongoing', false));
+                // Program yang baru selesai didahulukan (End Date terbaru).
+                ->where('programs.0.title', 'Program Lepas')
+                ->where('programs.0.is_ended', true)
+                ->where('programs.0.is_ongoing', false)
+                ->where('programs.1.title', 'Program Sedang')
+                ->where('programs.1.is_ongoing', true)
+                ->where('programs.1.is_ended', false));
     }
 
     public function test_qr_live_endpoint_lists_recent_attendees_from_attendance(): void

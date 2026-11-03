@@ -2731,10 +2731,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventUploadSupportDocHint => 'Sila muat naik dokumen sokongan (cth. kad pelajar).';
 
   @override
-  String get eventAddonsTitle => 'Barang Tambahan (Opsional)';
+  String get eventAddonsTitle => 'Pilihan Tambahan';
 
   @override
-  String get eventAddonsHint => 'Pilih jika anda ingin membeli. Pendaftaran tetap sah tanpa barang tambahan.';
+  String get eventAddonsHint => 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan — pendaftaran tetap sah tanpanya.';
+
+  @override
+  String get eventAddonsTitleRequired => 'Tambahan Wajib & Pilihan';
+
+  @override
+  String get eventAddonsHintRequired => 'Lengkapi pendaftaran anda. Pilihan bertanda “Wajib” perlu disertakan; yang lain mengikut pilihan anda.';
 
   @override
   String get eventAddonSelectOption => 'Pilih pilihan';

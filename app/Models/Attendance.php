@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Attendance extends Model
 {
     protected $fillable = [
-        'event_id', 'registration_id', 'attended_at', 'method',
+        'event_id', 'registration_id', 'attended_at', 'method', 'recorded_by',
     ];
 
     protected function casts(): array
@@ -47,5 +47,10 @@ class Attendance extends Model
     public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class);
+    }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 }

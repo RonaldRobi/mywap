@@ -690,6 +690,7 @@ class _AddonSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasRequired = addons.any((addon) => addon.isRequired);
 
     return Container(
       width: double.infinity,
@@ -701,10 +702,17 @@ class _AddonSelector extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.eventAddonsTitle, style: theme.textTheme.titleMedium),
+          Text(
+            hasRequired
+                ? context.l10n.eventAddonsTitleRequired
+                : context.l10n.eventAddonsTitle,
+            style: theme.textTheme.titleMedium,
+          ),
           const SizedBox(height: Spacing.xs),
           Text(
-            context.l10n.eventAddonsHint,
+            hasRequired
+                ? context.l10n.eventAddonsHintRequired
+                : context.l10n.eventAddonsHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),

@@ -181,35 +181,42 @@ function clearTarget() {
     broadcastForm.action_id = null;
 }
 
+function fetchTargets(val) {
+    if (!needsTargetSearch.value) return;
+
+    targetSearchLoading.value = true;
+    targetSearchError.value = '';
+    showTargetDropdown.value = true;
+
+    axios.get(route('admin.broadcasts.targets'), {
+        params: { q: val, type: broadcastForm.action_type },
+    })
+        .then((res) => {
+            targetResults.value = res.data || [];
+        })
+        .catch((err) => {
+            targetResults.value = [];
+            targetSearchError.value = err?.response?.status === 429
+                ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
+                : 'Ralat carian. Sila cuba lagi.';
+        })
+        .finally(() => { targetSearchLoading.value = false; });
+}
+
 function onTargetSearchInput(val) {
     targetSearchQuery.value = val;
     targetSearchError.value = '';
     clearTimeout(targetDebounceTimer);
 
-    if (!needsTargetSearch.value || val.length < 2) {
-        targetResults.value = [];
-        showTargetDropdown.value = false;
+    if (!needsTargetSearch.value) return;
+
+    // Taip 0 atau 1 huruf: papar senarai terbaru supaya dropdown tidak kosong.
+    if (val.length < 2) {
+        targetDebounceTimer = setTimeout(() => fetchTargets(''), 150);
         return;
     }
 
-    targetDebounceTimer = setTimeout(() => {
-        targetSearchLoading.value = true;
-        axios.get(route('admin.broadcasts.targets'), {
-            params: { q: val, type: broadcastForm.action_type },
-        })
-            .then((res) => {
-                targetResults.value = res.data || [];
-                showTargetDropdown.value = true;
-            })
-            .catch((err) => {
-                targetResults.value = [];
-                targetSearchError.value = err?.response?.status === 429
-                    ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
-                    : 'Ralat carian. Sila cuba lagi.';
-                showTargetDropdown.value = true;
-            })
-            .finally(() => { targetSearchLoading.value = false; });
-    }, 300);
+    targetDebounceTimer = setTimeout(() => fetchTargets(val), 300);
 }
 
 function selectTarget(item) {
@@ -226,9 +233,14 @@ function onTargetBlur() {
 }
 
 function onTargetFocus() {
+    if (!needsTargetSearch.value) return;
+
     if (targetResults.value.length > 0 || targetSearchError.value) {
         showTargetDropdown.value = true;
+        return;
     }
+
+    fetchTargets(targetSearchQuery.value.length >= 2 ? targetSearchQuery.value : '');
 }
 
 function destinationLabel(item) {
@@ -613,9 +625,17 @@ onBeforeUnmount(stopPolling);
                                             <span v-if="item.meta" class="block text-[11px] text-gray-400">{{ item.meta }}</span>
                                         </li>
                                         <li v-if="targetSearchError" class="px-4 py-3 text-sm text-red-600 text-center">{{ targetSearchError }}</li>
-                                        <li v-else-if="!targetSearchLoading && targetResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
+                                        <li v-else-if="!targetSearchLoading && targetResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">
+                                            {{ broadcastForm.action_type === 'product' ? 'Tiada produk aktif ditemui.' : 'Tiada program ditemui.' }}
+                                        </li>
                                     </ul>
                                 </div>
+
+                                <p class="mt-1 text-[11px] text-gray-400">
+                                    Taip nama atau pilih terus daripada senarai.
+                                    <template v-if="broadcastForm.action_type === 'product'">Hanya produk aktif dipaparkan.</template>
+                                    <template v-else>Hanya program yang boleh diakses organisasi anda dipaparkan.</template>
+                                </p>
 
                                 <div v-if="selectedTarget" class="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
                                     <span class="truncate">{{ selectedTarget.label }}</span>

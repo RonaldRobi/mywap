@@ -176,4 +176,85 @@ class Event extends Model
     {
         return $this->status === EventStatus::Closed;
     }
+
+    // ─ Attendance window ─────────────────────────────────────────────────────
+
+    /**
+     * QR kehadiran hanya sah dalam tetingkap ini: dari waktu mula program
+     * hingga 24 jam selepas waktu tamat. Selepas itu token tidak lagi boleh
+     * merekod kehadiran.
+     */
+    public const ATTENDANCE_GRACE_HOURS = 24;
+
+    public function attendanceClosesAt(): ?Carbon
+    {
+        $anchor = $this->end_time ?? $this->start_time;
+
+        return $anchor ? $anchor->copy()->addHours(self::ATTENDANCE_GRACE_HOURS) : null;
+    }
+
+    public function attendanceWindowIsOpen(?Carbon $at = null): bool
+    {
+        $at = $at ?? now();
+
+        if ($this->start_time === null || $at->lt($this->start_time)) {
+            return false;
+        }
+
+        $closesAt = $this->attendanceClosesAt();
+
+        return $closesAt === null || $at->lte($closesAt);
+    }
+
+    /**
+     * URL kehadiran bertandatangan dengan tamat tempoh. Digunakan untuk QR
+     * paparan langsung supaya pautan tidak boleh diubah dan terikat pada
+     * tetingkap kehadiran. QR poster statik kekal berfungsi melalui token
+     * asas + semakan tetingkap di backend.
+     */
+    public function signedAttendanceUrl(?Carbon $expiresAt = null): string
+    {
+        $expiresAt = $expiresAt ?? $this->attendanceClosesAt() ?? now()->addDay();
+
+        $expires = $expiresAt->timestamp;
+
+        return route('events.attend', [
+            'id' => $this->id,
+            'token' => $this->attendance_token,
+            'exp' => $expires,
+            'sig' => $this->attendanceSignature($expires),
+        ]);
+    }
+
+    public function attendanceSignature(int $expires): string
+    {
+        return hash_hmac(
+            'sha256',
+            $this->id.'|'.$this->attendance_token.'|'.$expires,
+            (string) config('app.key')
+        );
+    }
+
+    /**
+     * Semakan tandatangan pilihan. Pautan tanpa `exp`/`sig` dianggap QR poster
+     * statik (masih tertakluk pada semakan tetingkap masa).
+     */
+    public function attendanceSignatureIsValid(?string $expires, ?string $signature): bool
+    {
+        if ($expires === null && $signature === null) {
+            return true;
+        }
+
+        if ($expires === null || $signature === null || ! ctype_digit((string) $expires)) {
+            return false;
+        }
+
+        $expires = (int) $expires;
+
+        if ($expires < now()->timestamp) {
+            return false;
+        }
+
+        return hash_equals($this->attendanceSignature($expires), (string) $signature);
+    }
 }

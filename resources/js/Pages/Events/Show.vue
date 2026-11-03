@@ -508,7 +508,7 @@ function copyPromoLink() {
                     <a :href="route('admin.events.registrations', event.id)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                         Senarai Pendaftaran
                     </a>
-                    <a :href="route('admin.attendance')" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    <a :href="route('admin.attendance.show', event.id)" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                         Dashboard Kehadiran
                     </a>
                 </div>

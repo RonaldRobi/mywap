@@ -39,6 +39,7 @@ const needsDocument = computed(() => {
 
 // ─── Barang Tambahan (Add-ons) ───────────────────────────────────────────
 const addonItems = computed(() => props.form.items || []);
+const hasRequiredAddon = computed(() => addonItems.value.some(item => item.is_required));
 const addonSelection = reactive({});
 
 // Mandatory add-ons (e.g. a meal fee) are pre-selected so they cannot be
@@ -304,8 +305,14 @@ function submit() {
                 <!-- Barang Tambahan (Opsional) -->
                 <div v-if="addonItems.length" class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4 space-y-3">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">Barang Tambahan (Opsional)</p>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Pilih jika anda ingin membeli. Pendaftaran tetap sah tanpa barang tambahan.</p>
+                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">
+                            {{ hasRequiredAddon ? 'Tambahan Wajib & Pilihan' : 'Pilihan Tambahan' }}
+                        </p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">
+                            {{ hasRequiredAddon
+                                ? 'Lengkapi pendaftaran anda. Pilihan bertanda “Wajib” perlu disertakan; yang lain mengikut pilihan anda.'
+                                : 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan — pendaftaran tetap sah tanpanya.' }}
+                        </p>
                     </div>
 
                     <div v-for="item in addonItems" :key="item.id" class="rounded-xl border border-gray-100 bg-white p-3 space-y-2">

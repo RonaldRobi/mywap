@@ -1,100 +1,63 @@
 <script setup>
-import { computed, reactive } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, reactive, ref } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
-    registrations: Object, // paginator
     stats: Object,
     programs: Array,
-    events: Array,
     organizations: Array,
     filters: Object,
 });
 
-// Penapis aktif. Disimpan sebagai state supaya kad statistik boleh
-// menetapkan/membatalkan penapis dengan satu klik.
 const f = reactive({
     search: props.filters?.search || '',
-    event_id: props.filters?.event_id || '',
     org: props.filters?.org || '',
-    attendance: props.filters?.attendance || '',
-    payment: props.filters?.payment || '',
 });
 
-function apply(extra = {}) {
-    const data = { ...f, ...extra };
-    Object.keys(data).forEach((k) => {
-        if (data[k] === '' || data[k] === null || data[k] === undefined) delete data[k];
-    });
+const activeTab = ref('all');
+
+const tabs = computed(() => {
+    const list = props.programs || [];
+    return [
+        { key: 'all', label: 'Semua', count: list.length },
+        { key: 'completed', label: 'Telah Selesai', count: list.filter((p) => p.state === 'completed').length },
+        { key: 'ongoing', label: 'Sedang Berjalan', count: list.filter((p) => p.state === 'ongoing').length },
+        { key: 'upcoming', label: 'Akan Datang', count: list.filter((p) => p.state === 'upcoming').length },
+    ];
+});
+
+const visiblePrograms = computed(() => {
+    const list = props.programs || [];
+    if (activeTab.value === 'all') return list;
+    return list.filter((p) => p.state === activeTab.value);
+});
+
+const hasFilters = computed(() => !!(f.search || f.org));
+
+function apply() {
+    const data = {};
+    if (f.search) data.search = f.search;
+    if (f.org) data.org = f.org;
     router.get(route('admin.attendance'), data, { preserveState: true, replace: true });
 }
 
-const statActive = computed(() => ({
-    all: !f.attendance && !f.payment,
-    hadir: f.attendance === 'hadir',
-    pending: f.payment === 'pending',
-}));
-
-function setStat(kind) {
-    if (kind === 'all') {
-        apply({ attendance: '', payment: '' });
-    } else if (kind === 'hadir') {
-        apply({ attendance: f.attendance === 'hadir' ? '' : 'hadir', payment: '' });
-    } else {
-        apply({ payment: f.payment === 'pending' ? '' : 'pending', attendance: '' });
-    }
-}
-
-function selectProgram(program) {
-    apply({ event_id: String(f.event_id) === String(program.id) ? '' : String(program.id) });
-}
-
-const activeEventTitle = computed(() => {
-    if (!f.event_id) return null;
-    const program = (props.programs || []).find((p) => String(p.id) === String(f.event_id));
-    if (program) return program.title;
-    return (props.events || []).find((e) => String(e.id) === String(f.event_id))?.title || null;
-});
-
-const hasFilters = computed(() => !!(f.search || f.event_id || f.org || f.attendance || f.payment));
-
-const activeFilterChips = computed(() => {
-    const chips = [];
-    if (f.search) chips.push({ key: 'search', label: `Carian: "${f.search}"` });
-    if (f.org) {
-        const org = (props.organizations || []).find((o) => String(o.id) === String(f.org));
-        chips.push({ key: 'org', label: `Organisasi: ${org ? org.name : f.org}` });
-    }
-    if (f.attendance === 'hadir') chips.push({ key: 'attendance', label: 'Kehadiran: Hadir' });
-    if (f.attendance === 'tidak_hadir') chips.push({ key: 'attendance', label: 'Kehadiran: Tidak Hadir' });
-    if (f.payment === 'pending') chips.push({ key: 'payment', label: 'Bayaran: Menunggu' });
-    if (f.payment === 'paid') chips.push({ key: 'payment', label: 'Bayaran: Berjaya' });
-    return chips;
-});
-
 function clearFilters() {
     f.search = '';
-    f.event_id = '';
     f.org = '';
-    f.attendance = '';
-    f.payment = '';
-    apply({ search: '', event_id: '', org: '', attendance: '', payment: '' });
+    router.get(route('admin.attendance'), {}, { preserveState: true, replace: true });
 }
-
-const exportQuery = computed(() => {
-    const params = new URLSearchParams();
-    Object.entries(f).forEach(([key, value]) => {
-        if (value) params.append(key, value);
-    });
-    const query = params.toString();
-    return query ? `?${query}` : '';
-});
 
 function progressPct(program) {
     if (!program.registered_count) return 0;
     return Math.round((program.attended_count / program.registered_count) * 100);
 }
+
+const stateBadge = {
+    completed: { label: 'Telah Selesai', class: 'border-rose-200 bg-rose-50 text-rose-600' },
+    ongoing: { label: 'Sedang Berjalan', class: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    upcoming: { label: 'Akan Datang', class: 'border-sky-200 bg-sky-50 text-sky-700' },
+};
 
 const statusColor = {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
@@ -104,267 +67,166 @@ const statusColor = {
 </script>
 
 <template>
-    <Head title="Dashboard Kehadiran" />
+    <Head title="Kehadiran Program" />
 
     <AppLayout>
-        <div class="max-w-7xl mx-auto px-4 py-8">
-            <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
-                <div>
-                    <h1 class="text-2xl font-black text-gray-900 mb-1">Dashboard Kehadiran</h1>
-                    <p class="text-sm text-gray-500">Ringkasan kehadiran mengikut program. Klik kad untuk menapis senarai peserta.</p>
-                    <p
-                        class="mt-1 text-xs font-bold"
-                        :class="f.event_id ? 'text-indigo-600' : 'text-amber-600'"
+        <div class="mx-auto max-w-7xl px-4 py-8">
+            <div class="mb-6">
+                <h1 class="text-2xl font-black text-gray-900 mb-1">Kehadiran Program</h1>
+                <p class="text-sm text-gray-500">
+                    Pilih program untuk melihat statistik, menyemak peserta dan membetulkan kehadiran.
+                </p>
+            </div>
+
+            <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <p class="text-2xl font-black text-gray-900">{{ stats.total_programs }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Program</p>
+                </div>
+                <div class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <p class="text-2xl font-black text-gray-900">{{ stats.total_registered }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Jumlah Peserta</p>
+                </div>
+                <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 shadow-sm">
+                    <p class="text-2xl font-black text-emerald-600">{{ stats.total_attended }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">Hadir</p>
+                </div>
+                <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 shadow-sm">
+                    <p class="text-2xl font-black text-amber-600">{{ stats.total_not_attended }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">Tidak Hadir</p>
+                </div>
+            </div>
+
+            <div class="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <input
+                        v-model="f.search"
+                        type="search"
+                        placeholder="Cari nama program"
+                        class="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
+                        @keyup.enter="apply()"
+                    />
+                    <select
+                        v-if="organizations.length"
+                        v-model="f.org"
+                        class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
                     >
-                        {{ f.event_id
-                            ? `Penapis: ${activeEventTitle || 'Program dipilih'}`
-                            : 'Penapis: Semua program — angka di bawah merangkumi program lain juga.' }}
-                    </p>
-                </div>
-                <div class="text-right">
+                        <option value="">Semua Organisasi</option>
+                        <option v-for="o in organizations" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+                    </select>
                     <div class="flex gap-2">
-                        <a :href="route('admin.attendance.export.excel') + exportQuery" class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-semibold hover:bg-emerald-700">Export Excel</a>
-                        <a :href="route('admin.attendance.export.pdf') + exportQuery" class="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-semibold hover:bg-red-700">Export PDF</a>
+                        <button
+                            type="button"
+                            @click="apply()"
+                            class="flex-1 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                        >
+                            Tapis
+                        </button>
+                        <button
+                            v-if="hasFilters"
+                            type="button"
+                            @click="clearFilters"
+                            class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                        >
+                            Reset
+                        </button>
                     </div>
-                    <p class="mt-1 text-[11px] text-gray-400">
-                        Export ikut penapis semasa:
-                        {{ f.event_id ? (activeEventTitle || 'program dipilih') : 'semua program' }}
-                    </p>
                 </div>
             </div>
 
-            <!-- Stats (boleh klik untuk tapis) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+            <div class="mb-4 flex flex-wrap gap-2">
                 <button
+                    v-for="tab in tabs"
+                    :key="tab.key"
                     type="button"
-                    @click="setStat('all')"
-                    class="rounded-3xl bg-white border p-5 text-center shadow-sm transition hover:shadow-md"
-                    :class="statActive.all ? 'border-gray-900 ring-2 ring-gray-900/10' : 'border-gray-100'"
+                    class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition"
+                    :class="activeTab === tab.key
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                    @click="activeTab = tab.key"
                 >
-                    <p class="text-3xl font-black text-gray-900">{{ stats.total_registered }}</p>
-                    <p class="text-xs text-gray-400 font-semibold uppercase mt-1">
-                        Jumlah Peserta{{ f.event_id ? '' : ' (Semua Program)' }}
-                    </p>
-                </button>
-                <button
-                    type="button"
-                    @click="setStat('hadir')"
-                    class="rounded-3xl bg-emerald-50 border p-5 text-center shadow-sm transition hover:shadow-md"
-                    :class="statActive.hadir ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-emerald-100'"
-                >
-                    <p class="text-3xl font-black text-emerald-600">{{ stats.total_attended }}</p>
-                    <p class="text-xs text-emerald-500 font-semibold uppercase mt-1">Hadir</p>
-                </button>
-                <button
-                    type="button"
-                    @click="setStat('pending')"
-                    class="rounded-3xl bg-amber-50 border p-5 text-center shadow-sm transition hover:shadow-md"
-                    :class="statActive.pending ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-amber-100'"
-                >
-                    <p class="text-3xl font-black text-amber-600">{{ stats.total_pending_payment }}</p>
-                    <p class="text-xs text-amber-500 font-semibold uppercase mt-1">Bayaran Menunggu</p>
+                    {{ tab.label }}
+                    <span
+                        class="rounded-full px-1.5 py-0.5 text-[10px]"
+                        :class="activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'"
+                    >
+                        {{ tab.count }}
+                    </span>
                 </button>
             </div>
 
-            <!-- Filters -->
-            <div class="rounded-3xl bg-white border border-gray-100 p-4 shadow-sm mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <input
-                    v-model="f.search"
-                    placeholder="Cari nama / no reg..."
-                    class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
-                    @keyup.enter="apply()"
-                />
-                <select v-model="f.event_id" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                    <option value="">Semua Program</option>
-                    <option v-for="e in events" :key="e.id" :value="String(e.id)">{{ e.title }}</option>
-                </select>
-                <select v-if="organizations.length" v-model="f.org" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                    <option value="">Semua Organisasi</option>
-                    <option v-for="o in organizations" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
-                </select>
-                <div class="flex gap-2">
-                    <button @click="apply()" class="flex-1 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm font-semibold">Tapis</button>
-                    <button v-if="hasFilters" @click="clearFilters" class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Reset</button>
-                </div>
+            <div v-if="visiblePrograms.length === 0" class="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center">
+                <p class="text-sm font-semibold text-gray-500">Tiada program untuk dipaparkan.</p>
+                <p class="mt-1 text-xs text-gray-400">Program akan muncul di sini selepas peserta mula mendaftar.</p>
             </div>
 
-            <!-- Ringkasan program -->
-            <div class="mb-3 flex items-center justify-between">
-                <h2 class="text-lg font-black text-gray-900">Program</h2>
-                <span class="text-xs text-gray-400 font-semibold">{{ programs.length }} program</span>
-            </div>
-
-            <div v-if="programs.length === 0" class="rounded-3xl bg-white border border-gray-100 p-10 text-center mb-6">
-                <p class="text-sm text-gray-400">Tiada program untuk penapis ini.</p>
-            </div>
-
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div
-                    v-for="p in programs"
+                    v-for="p in visiblePrograms"
                     :key="p.id"
-                    @click="selectProgram(p)"
-                    class="rounded-3xl bg-white border shadow-sm p-4 flex flex-col gap-3 cursor-pointer transition hover:shadow-md"
-                    :class="String(f.event_id) === String(p.id) ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-gray-100'"
+                    class="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md"
                 >
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="flex flex-wrap gap-1.5">
-                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold" :class="statusColor[p.status] ?? statusColor.draft">
-                                {{ p.status_label }}
-                            </span>
-                            <span v-if="p.is_ongoing" class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-                                Sedang Berjalan
-                            </span>
-                            <span v-else-if="p.is_ended" class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-600">
-                                Telah Berlalu
-                            </span>
-                        </div>
-                        <span v-if="String(f.event_id) === String(p.id)" class="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Dipilih</span>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold" :class="statusColor[p.status] ?? statusColor.draft">
+                            {{ p.status_label }}
+                        </span>
+                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold" :class="stateBadge[p.state]?.class ?? 'border-gray-200 bg-gray-50 text-gray-600'">
+                            {{ stateBadge[p.state]?.label ?? 'Program' }}
+                        </span>
                     </div>
 
                     <div>
-                        <h3 class="font-bold text-gray-900 leading-snug line-clamp-2">{{ p.title }}</h3>
-                        <p class="text-xs text-gray-500 mt-1">{{ p.start_formatted }}</p>
-                        <p class="text-xs text-gray-400 mt-0.5">{{ p.organization_name }}<span v-if="p.location_or_link"> · {{ p.location_or_link }}</span></p>
+                        <h2 class="font-bold leading-snug text-gray-900 line-clamp-2">{{ p.title }}</h2>
+                        <p class="mt-1 text-xs text-gray-500">{{ p.start_formatted || 'Tarikh belum ditetapkan' }}</p>
+                        <p class="mt-0.5 text-xs text-gray-400">
+                            {{ p.organization_name }}<span v-if="p.location_or_link"> &middot; {{ p.location_or_link }}</span>
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="rounded-2xl bg-gray-50 py-2">
+                        <div class="rounded-xl bg-gray-50 py-2">
                             <p class="text-lg font-black text-gray-900">{{ p.registered_count }}</p>
                             <p class="text-[10px] font-semibold uppercase text-gray-400">Peserta</p>
                         </div>
-                        <div class="rounded-2xl bg-emerald-50 py-2">
+                        <div class="rounded-xl bg-emerald-50 py-2">
                             <p class="text-lg font-black text-emerald-600">{{ p.attended_count }}</p>
                             <p class="text-[10px] font-semibold uppercase text-emerald-500">Hadir</p>
                         </div>
-                        <div class="rounded-2xl bg-amber-50 py-2">
-                            <p class="text-lg font-black text-amber-600">{{ p.pending_payment_count }}</p>
-                            <p class="text-[10px] font-semibold uppercase text-amber-500">Menunggu</p>
+                        <div class="rounded-xl bg-amber-50 py-2">
+                            <p class="text-lg font-black text-amber-600">{{ p.not_attended_count }}</p>
+                            <p class="text-[10px] font-semibold uppercase text-amber-500">Tidak Hadir</p>
                         </div>
                     </div>
 
                     <div>
-                        <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                            <span>Kehadiran</span>
+                        <div class="mb-1 flex items-center justify-between text-[11px] text-gray-400">
+                            <span>Kadar kehadiran</span>
                             <span class="font-bold text-gray-600">{{ progressPct(p) }}%</span>
                         </div>
-                        <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-1.5 overflow-hidden rounded-full bg-gray-100">
                             <div class="h-full rounded-full bg-emerald-500" :style="{ width: progressPct(p) + '%' }"></div>
                         </div>
                     </div>
 
                     <div class="mt-auto flex gap-2 pt-1">
-                        <button
-                            @click.stop="selectProgram(p)"
-                            class="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-xs font-bold text-white hover:bg-gray-800"
+                        <a
+                            :href="p.attendance_url"
+                            class="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-xs font-bold text-white hover:bg-gray-800"
                         >
                             Lihat Peserta
-                        </button>
+                        </a>
                         <a
+                            v-if="p.qr_url"
                             :href="p.qr_url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            @click.stop
-                            title="QR Semak Masuk — untuk peserta imbas semasa hadir"
                             class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                            title="Buka QR semak masuk program"
                         >
-                            QR Masuk
-                        </a>
-                        <a
-                            :href="p.registrations_url"
-                            @click.stop
-                            class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                        >
-                            Urus
+                            QR
                         </a>
                     </div>
                 </div>
-            </div>
-
-            <!-- Senarai peserta -->
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-black text-gray-900">
-                    Peserta
-                    <span v-if="activeEventTitle" class="text-sm font-semibold text-gray-400">· {{ activeEventTitle }}</span>
-                </h2>
-                <div v-if="activeFilterChips.length" class="flex flex-wrap items-center gap-1.5">
-                    <span
-                        v-for="chip in activeFilterChips"
-                        :key="chip.key"
-                        class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600"
-                    >
-                        {{ chip.label }}
-                    </span>
-                    <button @click="clearFilters" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-700">Kosongkan</button>
-                </div>
-            </div>
-
-            <div class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-x-auto">
-                <table class="w-full text-sm min-w-[800px]">
-                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
-                        <tr>
-                            <th class="px-4 py-3">Peserta</th>
-                            <th class="px-4 py-3">Organisasi</th>
-                            <th class="px-4 py-3">Program</th>
-                            <th class="px-4 py-3">Barang</th>
-                            <th class="px-4 py-3">Bayaran</th>
-                            <th class="px-4 py-3">Kehadiran</th>
-                            <th class="px-4 py-3">Masa</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50">
-                        <tr v-for="r in registrations.data" :key="r.id">
-                            <td class="px-4 py-3">
-                                <p class="font-semibold text-gray-800">{{ r.name }}</p>
-                                <p class="text-xs text-gray-400 font-mono">{{ r.registration_no }}<span v-if="r.member_no"> · {{ r.member_no }}</span></p>
-                            </td>
-                            <td class="px-4 py-3 text-gray-600">{{ r.organization_name || '—' }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ r.event_title || '—' }}</td>
-                            <td class="px-4 py-3">
-                                <div v-if="r.items && r.items.length" class="space-y-0.5">
-                                    <p v-for="(it, i) in r.items" :key="i" class="text-xs text-gray-700">
-                                        {{ it.name }}<span v-if="it.variant_name" class="text-gray-400"> ({{ it.variant_name }})</span>
-                                        <span class="font-semibold">×{{ it.quantity }}</span>
-                                    </p>
-                                </div>
-                                <span v-else class="text-xs text-gray-400">—</span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span v-if="r.is_free" class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">Percuma</span>
-                                <span v-else class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
-                                    {{ r.payment_status === 'successful' || r.payment_status === 'paid' ? 'Berjaya' : 'Menunggu' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold" :class="r.attended ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-gray-200 bg-gray-50 text-gray-500'">
-                                    {{ r.attended ? 'Hadir' : 'Tidak Hadir' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-xs text-gray-500">{{ r.attended_at || '—' }}</td>
-                        </tr>
-                        <tr v-if="registrations.data.length === 0">
-                            <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400">Tiada peserta untuk penapis ini.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="registrations.links && registrations.links.length > 3" class="flex flex-wrap justify-center gap-1 mt-4">
-                <template v-for="(link, i) in registrations.links" :key="i">
-                    <Link
-                        v-if="link.url"
-                        :href="link.url"
-                        v-html="link.label"
-                        preserve-scroll
-                        class="px-3 py-1.5 rounded-lg border text-sm"
-                        :class="link.active ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'"
-                    />
-                    <span
-                        v-else
-                        v-html="link.label"
-                        class="px-3 py-1.5 rounded-lg border text-sm bg-gray-50 text-gray-300 border-gray-100"
-                    />
-                </template>
             </div>
         </div>
     </AppLayout>

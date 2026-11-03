@@ -32,6 +32,7 @@
             <tr>
                 <th>#</th>
                 <th>Nama</th>
+                <th>No. IC</th>
                 <th>No Ahli</th>
                 <th>Organisasi myWAP</th>
                 <th>Event</th>
@@ -49,6 +50,7 @@
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $r['name'] }}</td>
+                    <td>{{ $r['ic_number'] ?? '—' }}</td>
                     <td>{{ $r['member_no'] ?? '—' }}</td>
                     <td>{{ $r['organization_name'] ?? '—' }}</td>
                     <td>{{ $r['event_title'] ?? '—' }}</td>
