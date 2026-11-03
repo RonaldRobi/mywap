@@ -1054,6 +1054,60 @@ class EventRegistrationTest extends TestCase
                 ->where('events.data.0.is_ended', true));
     }
 
+    public function test_event_edit_form_offers_only_draft_and_published_statuses(): void
+    {
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.events.edit', $event->id))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Events/Form')
+                ->has('statuses', 2)
+                ->where('statuses.0.value', 'draft')
+                ->where('statuses.1.value', 'published'));
+    }
+
+    public function test_admin_can_save_venue_and_maps_url_for_physical_event(): void
+    {
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $this->put(route('admin.events.update', $event->id), [
+            'title' => $event->title,
+            'type' => 'physical',
+            'status' => 'published',
+            'category' => 'lain',
+            'location_or_link' => 'Dewan Tun Hussein Onn',
+            'maps_url' => 'https://maps.app.goo.gl/abc123',
+            'start_time' => $event->start_time->format('Y-m-d H:i:s'),
+            'end_time' => $event->end_time->format('Y-m-d H:i:s'),
+        ])->assertSessionHas('success');
+
+        $event->refresh();
+        $this->assertSame('Dewan Tun Hussein Onn', $event->location_or_link);
+        $this->assertSame('https://maps.app.goo.gl/abc123', $event->maps_url);
+    }
+
+    public function test_admin_event_update_rejects_closed_status(): void
+    {
+        $event = $this->makePublishedEvent();
+
+        $this->actingAs($this->admin);
+
+        $this->put(route('admin.events.update', $event->id), [
+            'title' => $event->title,
+            'type' => 'physical',
+            'status' => 'closed',
+            'start_time' => $event->start_time->format('Y-m-d H:i:s'),
+            'end_time' => $event->end_time->format('Y-m-d H:i:s'),
+        ])->assertSessionHasErrors('status');
+
+        $this->assertSame('published', $event->fresh()->status->value);
+    }
+
     public function test_admin_event_hub_forms_include_qr(): void
     {
         $event = $this->makePublishedEvent();

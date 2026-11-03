@@ -49,6 +49,7 @@ class EventController extends Controller
             'category' => $event->category->value,
             'category_label' => $event->category->label(),
             'location_or_link' => $event->location_or_link,
+            'maps_url' => $event->maps_url,
             'start_time' => $event->start_time->toISOString(),
             'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
             'end_time' => $event->end_time->toISOString(),
@@ -194,8 +195,7 @@ class EventController extends Controller
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
             'attendedEvents' => $attendedEvents,
-            'statuses' => collect(EventStatus::cases())
-                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'statuses' => $this->statusOptions(),
             'categories' => collect(EventCategory::cases())
                 ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
@@ -309,8 +309,7 @@ class EventController extends Controller
             'organizations' => $user && $user->hasRole('Superadmin')
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
                 : [],
-            'statuses' => collect(EventStatus::cases())
-                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'statuses' => $this->statusOptions(),
             'categories' => collect(EventCategory::cases())
                 ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
@@ -339,9 +338,10 @@ class EventController extends Controller
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
             // Optional — borang lama (modal Program) tidak hantar field ini.
-            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'status' => ['sometimes', 'required', 'in:draft,published'],
             'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
+            'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -395,9 +395,10 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
-            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'status' => ['sometimes', 'required', 'in:draft,published'],
             'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
+            'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -538,8 +539,7 @@ class EventController extends Controller
             'counts' => $counts,
             'filters' => $request->only(['search', 'status', 'category', 'org']),
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
-            'statuses' => collect(EventStatus::cases())
-                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'statuses' => $this->statusOptions(),
             'categories' => collect(EventCategory::cases())
                 ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
@@ -663,6 +663,22 @@ class EventController extends Controller
             ->with('success', 'Program & acara berjaya dikemas kini.');
     }
 
+    /**
+     * Pilihan status yang boleh dipilih oleh admin. `closed` dikekalkan dalam
+     * enum hanya untuk rekod lama; program baharu hanya Draf atau Diterbitkan
+     * (untuk menamatkan program, admin boleh padam).
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function statusOptions(): array
+    {
+        return collect(EventStatus::cases())
+            ->reject(fn (EventStatus $status) => $status === EventStatus::Closed)
+            ->map(fn (EventStatus $status) => ['value' => $status->value, 'label' => $status->label()])
+            ->values()
+            ->all();
+    }
+
     private function eventForm(Request $request, ?Event $event): Response
     {
         $isSuperadmin = $request->user()->hasRole('Superadmin');
@@ -673,9 +689,14 @@ class EventController extends Controller
                 'title' => $event->title,
                 'description' => $event->description,
                 'type' => $event->type,
-                'status' => $event->status->value,
+                // Status `closed` lama dipaparkan sebagai Draf supaya admin
+                // boleh pilih semula Draf/Diterbitkan tanpa ralat.
+                'status' => $event->status === EventStatus::Closed
+                    ? EventStatus::Draft->value
+                    : $event->status->value,
                 'category' => $event->category->value,
                 'location_or_link' => $event->location_or_link,
+                'maps_url' => $event->maps_url,
                 'start_time' => $event->start_time->format('Y-m-d\TH:i'),
                 'end_time' => $event->end_time->format('Y-m-d\TH:i'),
                 'organization_id' => $event->organization_id,
@@ -684,8 +705,8 @@ class EventController extends Controller
             ] : null,
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
             'isSuperadmin' => $isSuperadmin,
-            'statuses' => collect(EventStatus::cases())
-                ->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
+            'formsCount' => $event ? $event->forms()->count() : 0,
+            'statuses' => $this->statusOptions(),
             'categories' => collect(EventCategory::cases())
                 ->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()])->values(),
         ]);
@@ -703,9 +724,10 @@ class EventController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
-            'status' => ['sometimes', 'required', 'in:draft,published,closed'],
+            'status' => ['sometimes', 'required', 'in:draft,published'],
             'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
+            'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -728,6 +750,7 @@ class EventController extends Controller
             'status' => $data['status'] ?? $event?->status?->value ?? 'published',
             'category' => $data['category'] ?? $event?->category?->value ?? 'lain',
             'location_or_link' => $data['location_or_link'] ?? null,
+            'maps_url' => $data['maps_url'] ?? $event?->maps_url,
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
             'featured_image_path' => $data['featured_image_path'] ?? $event?->featured_image_path,

@@ -37,7 +37,7 @@ class Event extends Model
 
     protected $fillable = [
         'organization_id', 'title', 'slug', 'description', 'type',
-        'location_or_link', 'start_time', 'end_time',
+        'location_or_link', 'maps_url', 'start_time', 'end_time',
         'featured_image_path', 'attendance_token',
         'status', 'category',
     ];

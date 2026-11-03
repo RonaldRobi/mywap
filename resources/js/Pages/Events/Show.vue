@@ -76,7 +76,9 @@ function closeLightbox() { lightboxOpen.value = false; }
 // ─── Google Maps ──────────────────────────────────────────────────────────
 
 const mapsUrl = computed(() => {
-    if (props.event.type !== 'physical' || !props.event.location_or_link) return null;
+    if (props.event.type !== 'physical') return null;
+    if (props.event.maps_url) return props.event.maps_url;
+    if (!props.event.location_or_link) return null;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(props.event.location_or_link)}`;
 });
 
@@ -155,13 +157,15 @@ function applyDurationPreset() {
 }
 
 // Auto-fill masa tamat apabila masa mula diubah dan masa tamat masih kosong.
+const editableStatus = (status) => (status === 'closed' ? 'draft' : (status ?? 'draft'));
+
 const editModalOpen = ref(false);
 const editForm = useForm({
     organization_id: props.event.organization?.id ?? null,
     title: props.event.title,
     description: props.event.description ?? '',
     type: props.event.type,
-    status: props.event.status ?? 'draft',
+    status: editableStatus(props.event.status),
     category: props.event.category ?? 'lain',
     location_or_link: props.event.location_or_link ?? '',
     start_time: toDatetimeLocal(props.event.start_time),
@@ -182,7 +186,7 @@ function openEditModal() {
     editForm.title = props.event.title;
     editForm.description = props.event.description ?? '';
     editForm.type = props.event.type;
-    editForm.status = props.event.status ?? 'draft';
+    editForm.status = editableStatus(props.event.status);
     editForm.category = props.event.category ?? 'lain';
     editForm.location_or_link = props.event.location_or_link ?? '';
     editForm.start_time = toDatetimeLocal(props.event.start_time);
