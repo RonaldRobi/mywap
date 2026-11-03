@@ -32,7 +32,10 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // Minimum 14 hari (20160 minit) supaya .env produksi yang lebih lama
+    // (cth. 120) tidak menyebabkan pengguna terpaksa login semula setiap
+    // beberapa jam. Nilai .env yang lebih panjang tetap dihormati.
+    'lifetime' => max(20160, (int) env('SESSION_LIFETIME', 20160)),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

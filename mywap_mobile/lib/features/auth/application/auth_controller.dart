@@ -101,9 +101,17 @@ class AuthController extends Notifier<AuthState> {
       state = AuthAuthenticated(user);
       _attachPushHandlers();
       ref.read(pushServiceProvider).init();
-    } on ApiException {
-      await storage.delete();
-      state = const AuthUnauthenticated();
+    } on ApiException catch (e) {
+      // Hanya 401 bermaksud token benar-benar tamat/tidak sah. Ralat sementara
+      // (offline, timeout, 5xx) tidak sepatutnya memadam token — jika tidak,
+      // pengguna terpaksa log masuk semula hanya kerana network gagal semasa
+      // app dibuka.
+      if (e.statusCode == 401) {
+        await storage.delete();
+        state = const AuthUnauthenticated();
+      } else {
+        state = AuthUnauthenticated(error: e.message);
+      }
     }
   }
 

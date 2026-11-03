@@ -120,7 +120,7 @@ LOG_LEVEL=error
 
 # Session
 SESSION_ENCRYPT=true
-SESSION_LIFETIME=120
+SESSION_LIFETIME=20160
 
 # Queue worker
 # Start: php artisan queue:work redis --tries=3 --backoff=5
