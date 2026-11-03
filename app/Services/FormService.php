@@ -44,6 +44,7 @@ class FormService
             'description' => $form->description,
             'price' => $form->price,
             'price_tiers' => $form->tiers(),
+            'items' => $form->addonsPayload(),
             'payment_required' => $form->payment_required,
             'terms' => $form->terms,
             'event_id' => $form->event_id,

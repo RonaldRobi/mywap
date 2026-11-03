@@ -613,6 +613,8 @@ class RegistrationImportService
         return [
             'status' => 'Status',
             'ticket_type' => 'Kategori',
+            'addons' => 'Barangan Tambahan',
+            'total_amount' => 'Jumlah Bayaran (RM)',
             'organization' => 'Organisasi myWAP',
             'created_at' => 'Tarikh Daftar',
         ];
@@ -636,10 +638,34 @@ class RegistrationImportService
             'registration_no' => $registration->registration_no,
             'status' => $registration->status?->label(),
             'ticket_type' => $registration->ticket_type,
+            'addons' => $this->addonsSummary($registration),
+            'total_amount' => number_format($registration->totalAmount(), 2, '.', ''),
             'organization' => $registration->organization?->name,
             'created_at' => $registration->created_at?->toDateTimeString(),
             default => null,
         };
+    }
+
+    /**
+     * Human-readable summary of purchased add-ons for exports, e.g.
+     * "Jersi (L) x2, Topi x1". Empty string when none.
+     */
+    private function addonsSummary(Registration $registration): string
+    {
+        if (! $registration->relationLoaded('items')) {
+            $registration->load('items');
+        }
+
+        return $registration->items
+            ->map(function ($item) {
+                $label = $item->name;
+                if ($item->variant_name) {
+                    $label .= ' ('.$item->variant_name.')';
+                }
+
+                return $label.' x'.(int) $item->quantity;
+            })
+            ->implode(', ');
     }
 
     /**

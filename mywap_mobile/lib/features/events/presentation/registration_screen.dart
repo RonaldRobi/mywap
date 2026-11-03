@@ -45,6 +45,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   String _paymentMethod = 'fpx';
   File? _document;
 
+  final Map<int, int> _addonQuantities = {};
+  final Map<int, int?> _addonVariants = {};
+
   bool _submitting = false;
   String? _error;
   EventRegistrationResult? _completed;
@@ -129,6 +132,94 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     return form.price ?? 0;
   }
 
+  int _addonQty(FormAddon addon) {
+    final id = addon.id;
+    if (id == null) return 0;
+    final stored = _addonQuantities[id];
+    if (stored != null) return stored;
+    // Mandatory add-ons default to one so they cannot be skipped.
+    return addon.isRequired ? 1 : 0;
+  }
+
+  int? _addonVariantId(FormAddon addon) {
+    final id = addon.id;
+    if (id == null) return null;
+    final stored = _addonVariants[id];
+    if (stored != null) return stored;
+    if (addon.isRequired && addon.hasVariants && addon.variants.isNotEmpty) {
+      return addon.variants.first.id;
+    }
+    return null;
+  }
+
+  void _toggleAddon(FormAddon addon, bool selected) {
+    final id = addon.id;
+    if (id == null) return;
+    if (addon.isRequired && !selected) return;
+    setState(() {
+      if (!selected) {
+        _addonQuantities[id] = 0;
+        return;
+      }
+      if (addon.hasVariants && _addonVariants[id] == null) {
+        _addonVariants[id] = addon.variants.isNotEmpty ? addon.variants.first.id : null;
+      }
+      if ((_addonQuantities[id] ?? 0) < 1) {
+        _addonQuantities[id] = 1;
+      }
+    });
+  }
+
+  void _setAddonVariant(FormAddon addon, int? variantId) {
+    final id = addon.id;
+    if (id == null) return;
+    setState(() => _addonVariants[id] = variantId);
+  }
+
+  void _changeAddonQty(FormAddon addon, int delta) {
+    final id = addon.id;
+    if (id == null) return;
+    setState(() {
+      if (addon.hasVariants &&
+          _addonVariants[id] == null &&
+          addon.variants.isNotEmpty) {
+        _addonVariants[id] = addon.variants.first.id;
+      }
+      final current = _addonQuantities[id] ?? _addonQty(addon);
+      final min = addon.isRequired ? 1 : 0;
+      _addonQuantities[id] = (current + delta).clamp(min, 100);
+    });
+  }
+
+  double _addonsTotal(FormModel form) {
+    var total = 0.0;
+    for (final addon in form.addons) {
+      final qty = _addonQty(addon);
+      if (qty <= 0) continue;
+      total += addon.priceFor(_addonVariantId(addon)) * qty;
+    }
+    return total;
+  }
+
+  double _baseAmount(FormModel form) =>
+      form.paymentRequired ? _amount(form) : 0;
+
+  double _totalAmount(FormModel form) => _baseAmount(form) + _addonsTotal(form);
+
+  List<Map<String, dynamic>> _selectedAddons(FormModel form) {
+    final rows = <Map<String, dynamic>>[];
+    for (final addon in form.addons) {
+      final qty = _addonQty(addon);
+      if (qty <= 0 || addon.id == null) continue;
+      rows.add({
+        'form_item_id': addon.id,
+        if (addon.hasVariants) 'variant_id': _addonVariantId(addon),
+        'quantity': qty,
+      });
+    }
+    return rows;
+  }
+
   Future<void> _submit(EventRegistrationData data) async {
     final form = data.form;
     if (form == null) return;
@@ -175,6 +266,16 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       return;
     }
 
+    // Every selected variant item must have a variant chosen.
+    for (final addon in form.addons) {
+      if (_addonQty(addon) > 0 &&
+          addon.hasVariants &&
+          _addonVariantId(addon) == null) {
+        setState(() => _error = context.l10n.eventAddonSelectOption);
+        return;
+      }
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
@@ -190,6 +291,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
             ticketType: tier?.label,
             paymentMethod: _paymentMethod,
             document: _document,
+            items: _selectedAddons(form),
           );
       if (!mounted) return;
       ref.invalidate(eventDetailProvider(widget.eventId));
@@ -285,7 +387,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
       );
     }
 
-    final needsPayment = form.paymentRequired && _amount(form) > 0;
+    final needsPayment = _totalAmount(form) > 0;
     final showMethods = needsPayment && data.paymentGateway?.key == 'bayarcash';
     final tier = _selectedTier(form);
     final needsDocument =
@@ -364,15 +466,38 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     selectedLabel: _ticketType,
                     onSelected: (label) => setState(() => _ticketType = label),
                   ),
-                ] else if (needsPayment) ...[
+                ] else if (_baseAmount(form) > 0) ...[
                   const SizedBox(height: Spacing.lg),
                   Text(
-                    context.l10n.eventFee(Formatters.currency(_amount(form))),
+                    context.l10n.eventFee(Formatters.currency(_baseAmount(form))),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                ],
+                if (form.addons.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.lg),
+                  _AddonSelector(
+                    addons: form.addons,
+                    quantityFor: _addonQty,
+                    variantFor: _addonVariantId,
+                    onToggle: _toggleAddon,
+                    onVariantChanged: _setAddonVariant,
+                    onChangeQuantity: _changeAddonQty,
+                  ),
+                  if (_totalAmount(form) > 0) ...[
+                    const SizedBox(height: Spacing.sm),
+                    Text(
+                      context.l10n.eventTotalPayable(
+                        Formatters.currency(_totalAmount(form)),
+                      ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.movementGreen,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ],
                 if (showMethods) ...[
                   const SizedBox(height: Spacing.lg),
@@ -541,6 +666,243 @@ class _TierSelector extends StatelessWidget {
             controlAffinity: ListTileControlAffinity.leading,
           ),
       ],
+    );
+  }
+}
+
+class _AddonSelector extends StatelessWidget {
+  const _AddonSelector({
+    required this.addons,
+    required this.quantityFor,
+    required this.variantFor,
+    required this.onToggle,
+    required this.onVariantChanged,
+    required this.onChangeQuantity,
+  });
+
+  final List<FormAddon> addons;
+  final int Function(FormAddon) quantityFor;
+  final int? Function(FormAddon) variantFor;
+  final void Function(FormAddon, bool) onToggle;
+  final void Function(FormAddon, int?) onVariantChanged;
+  final void Function(FormAddon, int) onChangeQuantity;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.movementOffWhite,
+        borderRadius: AppRadius.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.eventAddonsTitle, style: theme.textTheme.titleMedium),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            context.l10n.eventAddonsHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          for (final addon in addons)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Spacing.sm),
+              child: _AddonTile(
+                addon: addon,
+                quantity: quantityFor(addon),
+                variantId: variantFor(addon),
+                onToggle: (selected) => onToggle(addon, selected),
+                onVariantChanged: (value) => onVariantChanged(addon, value),
+                onChangeQuantity: (delta) => onChangeQuantity(addon, delta),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddonTile extends StatelessWidget {
+  const _AddonTile({
+    required this.addon,
+    required this.quantity,
+    required this.variantId,
+    required this.onToggle,
+    required this.onVariantChanged,
+    required this.onChangeQuantity,
+  });
+
+  final FormAddon addon;
+  final int quantity;
+  final int? variantId;
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<int?> onVariantChanged;
+  final ValueChanged<int> onChangeQuantity;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final selected = quantity > 0;
+    final unitPrice = addon.priceFor(variantId);
+
+    return Container(
+      padding: const EdgeInsets.all(Spacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.sm,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (addon.imageUrl != null && addon.imageUrl!.isNotEmpty) ...[
+            AppImage(
+              addon.imageUrl!,
+              height: 140,
+              width: double.infinity,
+              borderRadius: AppRadius.sm,
+            ),
+            const SizedBox(height: Spacing.sm),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: selected,
+                onChanged:
+                    addon.isRequired
+                        ? null
+                        : (value) => onToggle(value ?? false),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            addon.name ?? '',
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                        if (addon.isRequired) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              context.l10n.eventAddonRequired,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (addon.description != null &&
+                        addon.description!.isNotEmpty)
+                      Text(
+                        addon.description!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Spacing.sm),
+              Text(
+                Formatters.currency(addon.price ?? 0),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppColors.movementGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (selected)
+            Padding(
+              padding: const EdgeInsets.only(left: Spacing.sm, top: Spacing.xs),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (addon.hasVariants) ...[
+                    Text(
+                      context.l10n.eventAddonSelectOption,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    DropdownButton<int>(
+                      isExpanded: true,
+                      value: variantId,
+                      hint: Text(context.l10n.eventAddonSelectOption),
+                      items: [
+                        for (final variant in addon.variants)
+                          DropdownMenuItem<int>(
+                            value: variant.id,
+                            enabled: variant.stock == null || variant.stock! > 0,
+                            child: Text(
+                              '${variant.name ?? ''} — '
+                              '${Formatters.currency(variant.price ?? addon.price ?? 0)}',
+                            ),
+                          ),
+                      ],
+                      onChanged: onVariantChanged,
+                    ),
+                    const SizedBox(height: Spacing.xs),
+                  ],
+                  Row(
+                    children: [
+                      Text(
+                        context.l10n.eventAddonQuantity,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.sm),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onChangeQuantity(-1),
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text('$quantity', style: theme.textTheme.titleMedium),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onChangeQuantity(1),
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${context.l10n.eventAddonTotal}: '
+                        '${Formatters.currency(unitPrice * quantity)}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppColors.movementGreen,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

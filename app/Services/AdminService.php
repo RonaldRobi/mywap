@@ -597,7 +597,7 @@ class AdminService
         }
 
         $registrations = $listQuery
-            ->with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment'])
+            ->with(['user', 'organization', 'form', 'event.organization', 'attendance', 'latestPayment', 'items'])
             ->latest()
             ->paginate(25)
             ->withQueryString()
@@ -612,6 +612,13 @@ class AdminService
                 'organization_name' => $r->organization?->name ?? $r->event?->organization?->name,
                 'event_title' => $r->event?->title,
                 'form_title' => $r->form?->title,
+                'items' => $r->items->map(fn ($item) => [
+                    'name' => $item->name,
+                    'variant_name' => $item->variant_name,
+                    'quantity' => (int) $item->quantity,
+                ])->values()->all(),
+                'total_amount' => $r->totalAmount(),
+                'is_free' => $r->isFreeRegistration(),
                 'payment_status' => $r->latestPayment?->status ?? 'paid',
                 'attended' => $r->attendance !== null,
                 'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
@@ -638,12 +645,18 @@ class AdminService
 
         // Ringkasan per program — asas kad grid di dashboard. Ikut penapis
         // konteks (org / event) supaya kad sepadan dengan pilihan pengguna.
+        // Susunan: program sedang/akan berjalan dahulu (terdekat), kemudian
+        // program lepas yang paling baru.
+        $now = now();
+
         $programEvents = $eventScope()
             ->when($request->filled('org'), fn ($q) => $q->where('organization_id', (int) $request->org))
             ->when($request->filled('event_id'), fn ($q) => $q->where('id', (int) $request->event_id))
             ->whereHas('registrations', fn ($q) => $restrict($q))
             ->with('organization')
-            ->orderByDesc('start_time')
+            ->orderByRaw('CASE WHEN end_time >= ? THEN 0 ELSE 1 END', [$now])
+            ->orderByRaw('CASE WHEN end_time >= ? THEN start_time END ASC', [$now])
+            ->orderByRaw('CASE WHEN end_time < ? THEN start_time END DESC', [$now])
             ->get();
 
         $eventIds = $programEvents->pluck('id')->all();
@@ -668,6 +681,10 @@ class AdminService
                 'status' => $e->status->value,
                 'status_label' => $e->status->label(),
                 'start_formatted' => $e->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'end_time' => $e->end_time?->toISOString(),
+                'is_ended' => $e->end_time !== null && $e->end_time->lt($now),
+                'is_ongoing' => $e->start_time !== null && $e->end_time !== null
+                    && $e->start_time->lte($now) && $e->end_time->gte($now),
                 'location_or_link' => $e->location_or_link,
                 'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
                 'registered_count' => (int) ($registeredByEvent[$e->id] ?? 0),

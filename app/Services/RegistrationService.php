@@ -6,6 +6,8 @@ use App\Enums\RegistrationStatus;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormAnswer;
+use App\Models\FormItem;
+use App\Models\FormItemVariant;
 use App\Models\FormQuestion;
 use App\Models\FormResponse;
 use App\Models\Registration;
@@ -36,7 +38,7 @@ class RegistrationService
      */
     public function memberRegistrations(User $user): LengthAwarePaginator
     {
-        $registrations = Registration::with(['event.organization', 'latestPayment', 'attendance', 'form:id,title'])
+        $registrations = Registration::with(['event.organization', 'latestPayment', 'attendance', 'form:id,title', 'items'])
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->paginate(15);
@@ -64,6 +66,12 @@ class RegistrationService
             'payment_method' => ['nullable', 'in:fpx,duitnow_qr'],
             'ticket_type' => ['nullable', 'string', 'max:255'],
             'document' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:5120'],
+            // Optional add-ons / merchandise. Prices are never trusted from the
+            // client — they are resolved server-side from the database.
+            'items' => ['nullable', 'array', 'max:20'],
+            'items.*.form_item_id' => ['required', 'integer', 'min:1'],
+            'items.*.variant_id' => ['nullable', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
         ];
 
         foreach ($form->questions as $q) {
@@ -152,19 +160,44 @@ class RegistrationService
         }
 
         $ticketType = $data['ticket_type'] ?? null;
-        $amount = $form->hasTiers()
-            ? ($form->priceForTier($ticketType) ?: 0)
-            : (float) $form->price;
+
+        // Base fee is only chargeable when the form requires payment (unchanged
+        // behaviour). Add-ons are always chargeable because they are explicit
+        // purchases, even on an otherwise free event.
+        $baseAmount = $form->payment_required
+            ? ($form->hasTiers() ? (float) ($form->priceForTier($ticketType) ?: 0) : (float) $form->price)
+            : 0.0;
+
         $documentPath = ! empty($data['document'])
             ? $data['document']->store('registration-documents', 'public')
             : null;
 
-        $registration = DB::transaction(function () use ($form, $event, $data, $user, $existing, $name, $email, $phone, $ic, $ticketType, $documentPath) {
+        // A registration that is already paid must never be re-priced or have
+        // its items changed — that would double-charge or desync the receipt.
+        $alreadyPaid = $existing?->isPaid() ?? false;
+
+        $registration = DB::transaction(function () use ($form, $event, $data, $user, $existing, $name, $email, $phone, $ic, $ticketType, $documentPath, $baseAmount, $alreadyPaid) {
+            // Re-submission of an unpaid registration: release previously
+            // reserved stock before reserving the new selection.
+            if ($existing && ! $alreadyPaid) {
+                $this->releaseItems($existing);
+            }
+
+            [$addonsAmount, $lines] = $alreadyPaid
+                ? [(float) ($existing?->addons_amount ?? 0), []]
+                : $this->reserveItems($form, $data['items'] ?? []);
+
+            $status = ($baseAmount + $addonsAmount) > 0
+                ? RegistrationStatus::Pending
+                : RegistrationStatus::Confirmed;
+
             if ($existing) {
                 $attributes = [
                     'form_id' => $form->id,
                     'name' => $name ?: $existing->name,
                     'source' => Registration::SOURCE_FORM,
+                    'base_amount' => $baseAmount,
+                    'addons_amount' => $addonsAmount,
                 ];
 
                 if ($user !== null) {
@@ -195,7 +228,9 @@ class RegistrationService
                 $existing->fill($attributes);
 
                 if ($existing->status === RegistrationStatus::Cancelled) {
-                    $existing->status = RegistrationStatus::Pending;
+                    $existing->status = $status;
+                } elseif (! $alreadyPaid) {
+                    $existing->status = $status;
                 }
 
                 $existing->save();
@@ -214,9 +249,16 @@ class RegistrationService
                     'ic_number' => $ic,
                     'ticket_type' => $ticketType,
                     'document_path' => $documentPath,
-                    'status' => $form->payment_required ? RegistrationStatus::Pending : RegistrationStatus::Confirmed,
+                    'base_amount' => $baseAmount,
+                    'addons_amount' => $addonsAmount,
+                    'status' => $status,
                     'source' => Registration::SOURCE_FORM,
                 ]);
+            }
+
+            // Persist the add-on snapshot (skipped for already-paid records).
+            foreach ($lines as $line) {
+                $registration->items()->create($line);
             }
 
             $response = FormResponse::create([
@@ -243,8 +285,10 @@ class RegistrationService
             return $registration;
         });
 
-        // Borang percuma: terus sahkan + hantar emel.
-        if (! $form->payment_required || ! $amount || $amount <= 0) {
+        $total = $baseAmount + (float) $registration->addons_amount;
+
+        // Percuma (tiada yuran asas & tiada add-on): terus sahkan + hantar emel.
+        if ($total <= 0) {
             $registration->confirmAndNotify();
 
             return [
@@ -262,7 +306,232 @@ class RegistrationService
             ];
         }
 
-        return $this->createPayment($registration, $form, $event, $data['payment_method'] ?? 'fpx', (float) $amount);
+        return $this->createPayment($registration, $form, $event, $data['payment_method'] ?? 'fpx', $total);
+    }
+
+    /**
+     * Normalise the submitted add-on selection. The client may send the same
+     * item/variant more than once; quantities are merged so stock is reserved
+     * and charged exactly once per line.
+     *
+     * @param  array<int, array<string, mixed>>  $selection
+     * @return array<int, array{form_item_id: int, variant_id: int|null, quantity: int}>
+     */
+    protected function normalizeItems(array $selection): array
+    {
+        $merged = [];
+
+        foreach ($selection as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $itemId = (int) ($row['form_item_id'] ?? 0);
+            if ($itemId <= 0) {
+                continue;
+            }
+
+            $variantId = ! empty($row['variant_id']) ? (int) $row['variant_id'] : null;
+            $quantity = max(1, (int) ($row['quantity'] ?? 1));
+            $key = $itemId.':'.($variantId ?? 0);
+
+            if (! isset($merged[$key])) {
+                $merged[$key] = [
+                    'form_item_id' => $itemId,
+                    'variant_id' => $variantId,
+                    'quantity' => 0,
+                ];
+            }
+
+            $merged[$key]['quantity'] += $quantity;
+        }
+
+        foreach ($merged as &$row) {
+            $row['quantity'] = min($row['quantity'], 100);
+        }
+        unset($row);
+
+        // Deterministic order keeps stock row locks consistent across requests.
+        ksort($merged);
+
+        return array_values($merged);
+    }
+
+    /**
+     * Validate, price and reserve stock for the submitted add-ons inside the
+     * current DB transaction. Prices are read from the database only. Throws a
+     * ValidationException on any invalid/out-of-stock line so the whole
+     * registration rolls back.
+     *
+     * @param  array<int, array<string, mixed>>  $selection
+     * @return array{0: float, 1: array<int, array<string, mixed>>}
+     */
+    protected function reserveItems(Form $form, array $selection): array
+    {
+        $lines = $this->normalizeItems($selection);
+
+        // Mandatory add-ons (e.g. a meal fee) are always included, even if an
+        // older client doesn't know about add-ons yet. When a mandatory item
+        // has variants, the participant must still choose one.
+        $requiredItems = FormItem::where('form_id', $form->id)
+            ->where('is_active', true)
+            ->where('is_required', true)
+            ->with(['variants' => fn ($q) => $q->where('is_active', true)])
+            ->get();
+
+        foreach ($requiredItems as $required) {
+            $present = collect($lines)->contains(
+                fn (array $line) => $line['form_item_id'] === $required->id
+            );
+
+            if ($present) {
+                continue;
+            }
+
+            if ($required->variants->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => 'Sila pilih pilihan untuk '.$required->name.'.',
+                ]);
+            }
+
+            $lines[] = [
+                'form_item_id' => $required->id,
+                'variant_id' => null,
+                'quantity' => 1,
+            ];
+        }
+
+        if ($lines === []) {
+            return [0.0, []];
+        }
+
+        // Deterministic order keeps stock row locks consistent across requests.
+        usort($lines, fn (array $a, array $b) => [$a['form_item_id'], $a['variant_id'] ?? 0]
+            <=> [$b['form_item_id'], $b['variant_id'] ?? 0]);
+
+        $itemIds = collect($lines)->pluck('form_item_id')->unique()->values()->all();
+
+        $items = FormItem::where('form_id', $form->id)
+            ->whereIn('id', $itemIds)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        $total = 0.0;
+        $rows = [];
+
+        foreach ($lines as $line) {
+            $item = $items->get($line['form_item_id']);
+
+            if (! $item || ! $item->is_active) {
+                throw ValidationException::withMessages([
+                    'items' => 'Pilihan barangan tidak sah atau tidak lagi tersedia.',
+                ]);
+            }
+
+            $hasVariants = FormItemVariant::where('form_item_id', $item->id)->exists();
+            $variant = null;
+
+            if ($hasVariants) {
+                if (empty($line['variant_id'])) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Sila pilih pilihan (cth. saiz) untuk '.$item->name.'.',
+                    ]);
+                }
+
+                $variant = FormItemVariant::where('id', $line['variant_id'])
+                    ->where('form_item_id', $item->id)
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $variant) {
+                    throw ValidationException::withMessages([
+                        'items' => 'Pilihan untuk '.$item->name.' tidak sah.',
+                    ]);
+                }
+            } elseif (! empty($line['variant_id'])) {
+                throw ValidationException::withMessages([
+                    'items' => 'Pilihan untuk '.$item->name.' tidak sah.',
+                ]);
+            }
+
+            $quantity = (int) $line['quantity'];
+            $unitPrice = $variant && $variant->price !== null
+                ? (float) $variant->price
+                : (float) $item->price;
+
+            // Stock precedence mirrors OrderService: variant stock first, then
+            // item stock — but never fall through to parent stock when variants
+            // exist, otherwise a sold-out size could borrow item-level stock.
+            $stockModel = null;
+            if ($variant && $variant->stock !== null) {
+                $stockModel = $variant;
+            } elseif (! $hasVariants && $item->stock !== null) {
+                $stockModel = $item;
+            }
+
+            if ($stockModel !== null && $stockModel->stock !== null) {
+                $available = (int) $stockModel->stock;
+                $label = $item->name.($variant ? ' - '.$variant->name : '');
+
+                if ($available < $quantity) {
+                    throw ValidationException::withMessages([
+                        'items' => $available < 1
+                            ? $label.' telah kehabisan stok.'
+                            : 'Stok tidak mencukupi untuk '.$label.' (tinggal '.$available.').',
+                    ]);
+                }
+            }
+
+            $lineTotal = $unitPrice * $quantity;
+            $total += $lineTotal;
+
+            $rows[] = [
+                'form_item_id' => $item->id,
+                'form_item_variant_id' => $variant?->id,
+                'name' => $item->name,
+                'variant_name' => $variant?->name,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'line_total' => $lineTotal,
+                '_stock' => $stockModel,
+            ];
+        }
+
+        // Decrement only after every line validated, so a failure part-way
+        // never leaves stock partially reduced.
+        foreach ($rows as $row) {
+            $stockModel = $row['_stock'];
+            if ($stockModel !== null && $stockModel->stock !== null) {
+                $stockModel->decrement('stock', $row['quantity']);
+            }
+        }
+
+        $clean = array_map(function (array $row) {
+            unset($row['_stock']);
+
+            return $row;
+        }, $rows);
+
+        return [$total, $clean];
+    }
+
+    /**
+     * Release reserved stock for an existing registration's items and clear
+     * the lines so a re-submission can reserve the new selection.
+     */
+    protected function releaseItems(Registration $registration): void
+    {
+        foreach ($registration->items()->with(['item', 'variant'])->get() as $line) {
+            $target = $line->variant ?? $line->item;
+
+            if ($target && $target->stock !== null) {
+                $target->increment('stock', (int) $line->quantity);
+            }
+        }
+
+        $registration->items()->delete();
     }
 
     /**
@@ -402,6 +671,17 @@ class RegistrationService
             'status_label' => $r->status->label(),
             'ticket_type' => $r->ticket_type,
             'document_path' => $r->document_path,
+            'base_amount' => (float) $r->base_amount,
+            'addons_amount' => (float) $r->addons_amount,
+            'total_amount' => (float) $r->base_amount + (float) $r->addons_amount,
+            'is_free' => $r->isFreeRegistration(),
+            'items' => $r->items->map(fn ($item) => [
+                'name' => $item->name,
+                'variant_name' => $item->variant_name,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => (float) $item->unit_price,
+                'line_total' => (float) $item->line_total,
+            ])->values()->all(),
             'raw_data' => $r->raw_data ?? [],
             'form_answers' => $r->formResponse?->answers
                 ->mapWithKeys(fn ($answer) => [

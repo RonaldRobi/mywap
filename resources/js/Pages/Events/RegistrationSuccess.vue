@@ -53,7 +53,21 @@ const props = defineProps({
                     </div>
                 </div>
 
-                <div v-if="form?.price" class="text-sm text-gray-500">
+                <div v-if="registration.items?.length" class="text-sm text-gray-600 space-y-1">
+                    <p class="font-semibold text-gray-700">Barang Tambahan</p>
+                    <div v-for="(it, i) in registration.items" :key="i" class="flex justify-between gap-3">
+                        <span>
+                            {{ it.name }}<span v-if="it.variant_name" class="text-gray-400"> ({{ it.variant_name }})</span>
+                            <span class="font-semibold">×{{ it.quantity }}</span>
+                        </span>
+                        <span>RM {{ Number(it.line_total).toFixed(2) }}</span>
+                    </div>
+                </div>
+
+                <div v-if="registration.total_amount > 0" class="text-sm text-gray-500">
+                    Jumlah: RM {{ Number(registration.total_amount).toFixed(2) }}
+                </div>
+                <div v-else-if="form?.price" class="text-sm text-gray-500">
                     Yuran: RM {{ Number(form.price).toFixed(2) }}
                 </div>
 

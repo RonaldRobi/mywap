@@ -5303,6 +5303,48 @@ abstract class AppLocalizations {
   /// **'Please upload the supporting document (e.g. student card).'**
   String get eventUploadSupportDocHint;
 
+  /// No description provided for @eventAddonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional Add-ons'**
+  String get eventAddonsTitle;
+
+  /// No description provided for @eventAddonsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select if you wish to purchase. Registration is still valid without add-ons.'**
+  String get eventAddonsHint;
+
+  /// No description provided for @eventAddonSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Select option'**
+  String get eventAddonSelectOption;
+
+  /// No description provided for @eventAddonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get eventAddonRequired;
+
+  /// No description provided for @eventAddonQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get eventAddonQuantity;
+
+  /// No description provided for @eventAddonTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get eventAddonTotal;
+
+  /// No description provided for @eventTotalPayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Total payable: {amount}'**
+  String eventTotalPayable(String amount);
+
   /// No description provided for @eventChooseFile.
   ///
   /// In en, this message translates to:

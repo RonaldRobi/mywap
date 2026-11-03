@@ -22,15 +22,15 @@ function copyUrl() {
 </script>
 
 <template>
-    <Head :title="'QR - ' + form.title" />
+    <Head :title="'QR Pendaftaran - ' + form.title" />
 
     <AppLayout :back-route="route('admin.forms.index')" back-label="Kembali">
-        <template #header>QR Borang: {{ form.title }}</template>
+        <template #header>QR Pendaftaran: {{ form.title }}</template>
 
         <div class="mx-auto max-w-md px-4 py-6 md:px-6 space-y-5">
             <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm text-center">
-                <p class="text-sm font-bold text-gray-900">Imbas untuk Isi Borang</p>
-                <p class="mt-1 text-xs text-gray-500">Imbas kod QR untuk membuka borang tanpa perlu log masuk. Sesuai untuk dikongsi di media sosial atau dicetak pada poster.</p>
+                <p class="text-sm font-bold text-gray-900">QR Pendaftaran — Untuk Dikongsi</p>
+                <p class="mt-1 text-xs text-gray-500">Imbas untuk membuka borang pendaftaran tanpa log masuk. Kongsi di media sosial atau cetak pada poster. <strong>Ini bukan QR kehadiran.</strong></p>
 
                 <div class="mx-auto mt-6 w-56 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
                     <div class="[&_svg]:block [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full" v-html="qrSvg"></div>

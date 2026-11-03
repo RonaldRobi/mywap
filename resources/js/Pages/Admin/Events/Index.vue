@@ -6,11 +6,23 @@ import SocialShareButtons from '@/Components/SocialShareButtons.vue';
 
 const props = defineProps({
     events: Object, // paginator
+    tab: { type: String, default: 'upcoming' },
+    counts: { type: Object, default: () => ({ upcoming: 0, past: 0 }) },
     filters: Object,
     organizations: Array,
     statuses: Array,
     categories: Array,
 });
+
+function switchTab(tab) {
+    router.get(route('admin.events.index'), {
+        tab,
+        search: props.filters.search || '',
+        status: props.filters.status || '',
+        category: props.filters.category || '',
+        org: props.filters.org || '',
+    }, { preserveState: true, replace: true });
+}
 
 // ─── Kongsi Program (popup platform) ────────────────────────────────────────
 
@@ -36,6 +48,7 @@ const statusColor = {
 
 function applyFilters() {
     router.get(route('admin.events.index'), {
+        tab: props.tab,
         search: document.getElementById('f-search')?.value || '',
         status: document.getElementById('f-status')?.value || '',
         category: document.getElementById('f-category')?.value || '',
@@ -43,10 +56,6 @@ function applyFilters() {
     }, { preserveState: true, replace: true });
 }
 
-function deleteEvent(event) {
-    if (!confirm(`Padam program "${event.title}"?\n\nSemua borang, pendaftaran dan kehadiran program ini juga akan dipadam. Tindakan ini tidak boleh dibatalkan.`)) return;
-    router.delete(route('events.destroy', event.id));
-}
 </script>
 
 <template>
@@ -63,6 +72,28 @@ function deleteEvent(event) {
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Cipta Program
                 </Link>
+            </div>
+
+            <!-- Tabs: Akan Datang / Telah Berlalu -->
+            <div class="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 mb-4">
+                <button
+                    type="button"
+                    @click="switchTab('upcoming')"
+                    class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition"
+                    :class="tab === 'upcoming' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5' : 'text-gray-500 hover:text-gray-700'"
+                >
+                    Akan Datang
+                    <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">{{ counts.upcoming }}</span>
+                </button>
+                <button
+                    type="button"
+                    @click="switchTab('past')"
+                    class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition"
+                    :class="tab === 'past' ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-900/5' : 'text-gray-500 hover:text-gray-700'"
+                >
+                    Telah Berlalu
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-600">{{ counts.past }}</span>
+                </button>
             </div>
 
             <!-- Filters -->
@@ -85,14 +116,21 @@ function deleteEvent(event) {
 
             <!-- Empty -->
             <div v-if="events.data.length === 0" class="rounded-3xl bg-white border border-gray-100 p-12 text-center">
-                <p class="text-gray-400 text-sm">Tiada program &amp; acara. Klik "Cipta Program" untuk mulakan.</p>
+                <p class="text-gray-400 text-sm">
+                    {{ tab === 'past'
+                        ? 'Tiada program yang telah berlalu.'
+                        : 'Tiada program akan datang. Klik "Cipta Program" untuk mulakan.' }}
+                </p>
             </div>
 
             <!-- Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div v-for="e in events.data" :key="e.id" class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                     <div class="relative aspect-[4/5] bg-gray-100 overflow-hidden">
-                        <img :src="e.featured_image_url" :alt="e.title" class="w-full h-full object-cover" />
+                        <img :src="e.featured_image_url" :alt="e.title" class="w-full h-full object-cover" :class="e.is_ended ? 'grayscale' : ''" />
+                        <div v-if="e.is_ended" class="absolute inset-0 flex items-center justify-center bg-gray-900/55">
+                            <span class="rotate-[-8deg] rounded-xl border-2 border-white/70 px-4 py-2 text-sm font-black uppercase tracking-widest text-white">Telah Tamat</span>
+                        </div>
                         <button
                             @click="openShare(e)"
                             title="Kongsi program"
@@ -108,6 +146,9 @@ function deleteEvent(event) {
                             </span>
                             <span class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-[11px] font-bold text-gray-600">
                                 {{ e.category_label }}
+                            </span>
+                            <span v-if="e.is_ended" class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-600">
+                                Telah Tamat
                             </span>
                         </div>
 
@@ -125,28 +166,8 @@ function deleteEvent(event) {
                         </div>
 
                         <div class="mt-auto flex gap-2 pt-2">
-                            <a
-                                v-if="e.form_url"
-                                :href="e.form_url"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-center text-xs font-bold text-white hover:bg-emerald-700"
-                            >
-                                Borang{{ e.forms_count > 1 ? ` (${e.forms_count})` : '' }}
-                            </a>
-                            <span v-else class="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-400 cursor-not-allowed" title="Tiada borang aktif">
-                                Borang
-                            </span>
                             <Link :href="route('admin.events.show', e.id)" class="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-center text-xs font-bold text-white hover:bg-indigo-700">Urus</Link>
                             <Link :href="route('admin.events.edit', e.id)" class="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">Edit</Link>
-                            <Link :href="route('events.show', e.slug)" class="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">Lihat</Link>
-                            <button
-                                @click="deleteEvent(e)"
-                                title="Padam program"
-                                class="rounded-xl border border-red-100 bg-red-50 px-2.5 py-2 text-red-500 hover:bg-red-100 transition"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
                         </div>
                     </div>
                 </div>

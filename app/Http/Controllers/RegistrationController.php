@@ -195,7 +195,7 @@ class RegistrationController extends Controller
 
     public function success(Request $request, Registration $registration): Response
     {
-        $registration->load(['event.organization', 'form', 'latestPayment', 'attendance']);
+        $registration->load(['event.organization', 'form', 'latestPayment', 'attendance', 'items']);
 
         $user = $request->user();
         $allowed = $registration->user_id === $user?->id
@@ -220,6 +220,16 @@ class RegistrationController extends Controller
                 'status' => $registration->status->value,
                 'status_label' => $registration->status->label(),
                 'ticket_type' => $registration->ticket_type,
+                'base_amount' => (float) $registration->base_amount,
+                'addons_amount' => (float) $registration->addons_amount,
+                'total_amount' => $registration->totalAmount(),
+                'items' => $registration->items->map(fn ($item) => [
+                    'name' => $item->name,
+                    'variant_name' => $item->variant_name,
+                    'quantity' => (int) $item->quantity,
+                    'unit_price' => (float) $item->unit_price,
+                    'line_total' => (float) $item->line_total,
+                ])->values()->all(),
                 'payment_status' => $registration->latestPayment?->status ?? 'paid',
                 'attended' => $registration->attendance !== null,
             ],
@@ -262,7 +272,7 @@ class RegistrationController extends Controller
 
         $query = Registration::with([
             'user', 'organization', 'form', 'latestPayment', 'attendance',
-            'formResponse.answers.question',
+            'formResponse.answers.question', 'items',
         ])->where('event_id', $event->id);
 
         if ($request->filled('org')) {
@@ -422,7 +432,7 @@ class RegistrationController extends Controller
 
             fputcsv($file, $definition['headers']);
 
-            Registration::with(['organization', 'formResponse.answers.question'])
+            Registration::with(['organization', 'formResponse.answers.question', 'items'])
                 ->where('event_id', $event->id)
                 ->orderBy('id')
                 ->chunk(500, function ($registrations) use ($file, $definition) {
@@ -491,7 +501,10 @@ class RegistrationController extends Controller
     {
         $amount = $form->hasTiers() ? $form->priceForTier(null) : (float) $form->price;
 
-        if (! $form->payment_required || ! $amount || $amount <= 0) {
+        $basePayable = $form->payment_required && $amount > 0;
+
+        // A free event with paid add-ons can still require a gateway later.
+        if (! $basePayable && ! $form->hasItems()) {
             return null;
         }
 
@@ -514,6 +527,7 @@ class RegistrationController extends Controller
             'description' => $form->description,
             'price' => $form->price,
             'price_tiers' => $form->tiers(),
+            'items' => $form->addonsPayload(),
             'payment_required' => $form->payment_required,
             'terms' => $form->terms,
             'organization_name' => $form->organization?->name,

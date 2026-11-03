@@ -81,6 +81,58 @@ class Form extends Model
     }
 
     /**
+     * Optional add-ons / merchandise purchasable with a registration.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(FormItem::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function activeItems(): HasMany
+    {
+        return $this->hasMany(FormItem::class)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    /**
+     * Serialisable payload for the participant registration UI and the API.
+     * Only active items and active variants are exposed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function addonsPayload(): array
+    {
+        return $this->activeItems()
+            ->with(['variants' => fn ($q) => $q->where('is_active', true)])
+            ->get()
+            ->map(fn (FormItem $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'description' => $item->description,
+                'price' => (float) $item->price,
+                'image_url' => $item->image ? asset('storage/'.$item->image) : null,
+                'stock' => $item->stock,
+                'is_required' => (bool) $item->is_required,
+                'has_variants' => $item->variants->isNotEmpty(),
+                'variants' => $item->variants->map(fn (FormItemVariant $variant) => [
+                    'id' => $variant->id,
+                    'name' => $variant->name,
+                    'price' => $variant->price !== null ? (float) $variant->price : (float) $item->price,
+                    'stock' => $variant->stock,
+                ])->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function hasItems(): bool
+    {
+        return $this->items()->where('is_active', true)->exists();
+    }
+
+    /**
      * Pilihan Negeri → Cawangan untuk soalan jenis "branch".
      * Dijana daripada cawangan aktif organisasi borang (dikumpul ikut negeri).
      */

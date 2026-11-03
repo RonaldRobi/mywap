@@ -219,7 +219,7 @@ function applyFilters() {
                     </button>
                 </div>
             </div>
-            <p class="text-sm text-gray-500 mb-6">{{ event.title }}</p>
+            <p class="text-sm text-gray-500 mb-6">{{ event.title }} · Semua peserta program ini (borang + import CSV)</p>
 
             <div
                 v-if="$page.props.flash?.success"
@@ -294,6 +294,7 @@ function applyFilters() {
                             <th class="px-4 py-3">Organisasi</th>
                             <th class="px-4 py-3">Borang</th>
                             <th class="px-4 py-3">Kategori</th>
+                            <th class="px-4 py-3">Barang</th>
                             <th class="px-4 py-3">Bayaran</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3 text-right">Tindakan</th>
@@ -321,7 +322,18 @@ function applyFilters() {
                                 <span v-else-if="!r.ticket_type" class="text-gray-400">—</span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
+                                <div v-if="r.items && r.items.length" class="space-y-0.5">
+                                    <p v-for="(it, i) in r.items" :key="i" class="text-xs text-gray-700">
+                                        {{ it.name }}<span v-if="it.variant_name" class="text-gray-400"> ({{ it.variant_name }})</span>
+                                        <span class="font-semibold">×{{ it.quantity }}</span>
+                                    </p>
+                                    <p class="text-[11px] font-bold text-emerald-600">RM {{ Number(r.total_amount || 0).toFixed(2) }}</p>
+                                </div>
+                                <span v-else class="text-xs text-gray-400">—</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span v-if="r.is_free" class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">Percuma</span>
+                                <span v-else class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
                                     {{ r.payment_status === 'successful' || r.payment_status === 'paid' ? 'Berjaya' : 'Menunggu' }}
                                 </span>
                             </td>

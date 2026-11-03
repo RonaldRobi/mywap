@@ -160,7 +160,7 @@ class ReceiptService
                 ? InfaqDonation::with(['infaq', 'user'])->find($payment->payable_id)
                 : null,
             Registration::class => $payment->payable_id
-                ? Registration::with(['event', 'user', 'organization'])->find($payment->payable_id)
+                ? Registration::with(['event', 'user', 'organization', 'items'])->find($payment->payable_id)
                 : null,
             default => null,
         };
@@ -405,6 +405,36 @@ class ReceiptService
             }
 
             return $this->withAmountLabels($lines);
+        }
+
+        // Registration: itemise the base fee plus any purchased add-ons.
+        if ($type === 'registration' && $record instanceof Registration && $record->items->isNotEmpty()) {
+            $lines = [];
+
+            $base = (float) $record->base_amount;
+            if ($base > 0) {
+                $lines[] = [
+                    'label' => 'Yuran Pendaftaran'.($record->ticket_type ? ' ('.$record->ticket_type.')' : ''),
+                    'note' => null,
+                    'qty' => null,
+                    'unit_label' => null,
+                    'amount' => $base,
+                ];
+            }
+
+            foreach ($record->items as $item) {
+                $lines[] = [
+                    'label' => $item->name,
+                    'note' => $item->variant_name ?: null,
+                    'qty' => (int) $item->quantity,
+                    'unit_label' => $this->money((float) $item->unit_price),
+                    'amount' => (float) $item->line_total,
+                ];
+            }
+
+            if ($lines !== []) {
+                return $this->withAmountLabels($lines);
+            }
         }
 
         $description = $payment->description;

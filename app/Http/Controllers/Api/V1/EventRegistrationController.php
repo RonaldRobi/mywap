@@ -46,7 +46,8 @@ class EventRegistrationController extends Controller
 
         $amount = $form->hasTiers() ? $form->priceForTier(null) : (float) $form->price;
         $org = $form->organization ?? ($event->organization_id ? $event->organization : null);
-        $paymentGateway = ($form->payment_required && $amount && $amount > 0)
+        $basePayable = $form->payment_required && $amount > 0;
+        $paymentGateway = ($basePayable || $form->hasItems())
             ? $this->gateways->branding($org)
             : null;
 
@@ -127,7 +128,7 @@ class EventRegistrationController extends Controller
 
     protected function serializeRegistration(Registration $registration): array
     {
-        $registration->loadMissing(['event.organization', 'latestPayment', 'attendance', 'form:id,title']);
+        $registration->loadMissing(['event.organization', 'latestPayment', 'attendance', 'form:id,title', 'items']);
 
         return $this->registrations->serialize($registration);
     }

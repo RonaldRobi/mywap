@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\FormItem;
 use App\Models\FormQuestion;
 use App\Models\FormResponse;
 use App\Models\Organization;
@@ -13,6 +14,7 @@ use App\Services\FormService;
 use App\Support\QrPng;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -142,6 +144,22 @@ class FormController extends Controller
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
+            'items' => ['nullable', 'array'],
+            'items.*.id' => ['nullable', 'integer'],
+            'items.*.name' => ['required', 'string', 'max:255'],
+            'items.*.description' => ['nullable', 'string', 'max:2000'],
+            'items.*.price' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'items.*.stock' => ['nullable', 'integer', 'min:0'],
+            'items.*.is_active' => ['boolean'],
+            'items.*.is_required' => ['boolean'],
+            'items.*.image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'items.*.remove_image' => ['boolean'],
+            'items.*.variants' => ['nullable', 'array'],
+            'items.*.variants.*.id' => ['nullable', 'integer'],
+            'items.*.variants.*.name' => ['required', 'string', 'max:255'],
+            'items.*.variants.*.price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'items.*.variants.*.stock' => ['nullable', 'integer', 'min:0'],
+            'items.*.variants.*.is_active' => ['boolean'],
         ]);
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
@@ -193,6 +211,10 @@ class FormController extends Controller
                 ]);
             }
 
+            if (array_key_exists('items', $data)) {
+                $this->syncFormItems($form, $data['items'] ?? []);
+            }
+
             return $form;
         });
 
@@ -214,7 +236,7 @@ class FormController extends Controller
 
         $form->load(['questions' => function ($q) {
             $q->orderBy('sort_order');
-        }, 'organization', 'event']);
+        }, 'organization', 'event', 'items.variants']);
 
         $organizations = $isSuperadmin
             ? Organization::orderBy('min_age')->get(['id', 'name'])
@@ -255,6 +277,23 @@ class FormController extends Controller
                     'placeholder' => $q->placeholder,
                     'help_text' => $q->help_text,
                     'sort_order' => $q->sort_order,
+                ])->values(),
+                'items' => $form->items->map(fn (FormItem $item) => [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'price' => $item->price,
+                    'stock' => $item->stock,
+                    'is_active' => $item->is_active,
+                    'is_required' => (bool) $item->is_required,
+                    'image_url' => $item->image ? asset('storage/'.$item->image) : null,
+                    'variants' => $item->variants->map(fn ($variant) => [
+                        'id' => $variant->id,
+                        'name' => $variant->name,
+                        'price' => $variant->price,
+                        'stock' => $variant->stock,
+                        'is_active' => $variant->is_active,
+                    ])->values(),
                 ])->values(),
             ],
             'organizations' => $organizations,
@@ -299,6 +338,22 @@ class FormController extends Controller
             'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
             'deleted_question_ids' => ['nullable', 'array'],
             'deleted_question_ids.*' => ['integer'],
+            'items' => ['nullable', 'array'],
+            'items.*.id' => ['nullable', 'integer'],
+            'items.*.name' => ['required', 'string', 'max:255'],
+            'items.*.description' => ['nullable', 'string', 'max:2000'],
+            'items.*.price' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'items.*.stock' => ['nullable', 'integer', 'min:0'],
+            'items.*.is_active' => ['boolean'],
+            'items.*.is_required' => ['boolean'],
+            'items.*.image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'items.*.remove_image' => ['boolean'],
+            'items.*.variants' => ['nullable', 'array'],
+            'items.*.variants.*.id' => ['nullable', 'integer'],
+            'items.*.variants.*.name' => ['required', 'string', 'max:255'],
+            'items.*.variants.*.price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'items.*.variants.*.stock' => ['nullable', 'integer', 'min:0'],
+            'items.*.variants.*.is_active' => ['boolean'],
         ]);
 
         $this->assertEventAllowedForOrg($data['event_id'] ?? null, $user, $isSuperadmin);
@@ -385,6 +440,12 @@ class FormController extends Controller
 
             if ($deletedIds !== []) {
                 $form->questions()->whereIn('id', $deletedIds)->delete();
+            }
+
+            // Only touch add-ons when the payload actually includes them, so a
+            // stale/old builder tab cannot wipe an existing configuration.
+            if (array_key_exists('items', $data)) {
+                $this->syncFormItems($form, $data['items'] ?? []);
             }
         });
 
@@ -659,6 +720,103 @@ class FormController extends Controller
             || $event->organizations()->where('organizations.id', $ownOrg)->exists();
 
         abort_unless($belongs, 403);
+    }
+
+    /**
+     * Sync optional add-ons (merchandise) for a form. Existing rows are updated
+     * in place (preserving ids/stock) and rows removed in the UI are deleted.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function syncFormItems(Form $form, array $items): void
+    {
+        $existing = $form->items()->get()->keyBy('id');
+        $kept = [];
+
+        foreach (array_values($items) as $index => $row) {
+            $item = null;
+            $id = (int) ($row['id'] ?? 0);
+
+            $payload = [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'description' => ($row['description'] ?? null) ? trim((string) $row['description']) : null,
+                'price' => (float) ($row['price'] ?? 0),
+                'stock' => isset($row['stock']) && $row['stock'] !== '' ? (int) $row['stock'] : null,
+                'is_active' => (bool) ($row['is_active'] ?? true),
+                'is_required' => (bool) ($row['is_required'] ?? false),
+                'sort_order' => $index,
+            ];
+
+            if ($payload['name'] === '') {
+                continue;
+            }
+
+            // Optional merchandise image. A new upload replaces the old file;
+            // remove_image clears it. Existing items keep their image otherwise.
+            $uploadedImage = $row['image'] ?? null;
+
+            if ($uploadedImage instanceof UploadedFile) {
+                $payload['image'] = $uploadedImage->store('form-items', 'public');
+            } elseif ((bool) ($row['remove_image'] ?? false)) {
+                $payload['image'] = null;
+            }
+
+            if ($id && $existing->has($id)) {
+                $item = $existing->get($id);
+
+                if (array_key_exists('image', $payload) && $item->image) {
+                    Storage::disk('public')->delete($item->image);
+                }
+
+                $item->update($payload);
+            } else {
+                $item = $form->items()->create($payload);
+            }
+
+            $kept[] = $item->id;
+
+            $this->syncItemVariants($item, $row['variants'] ?? []);
+        }
+
+        $form->items()->whereNotIn('id', $kept)->delete();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function syncItemVariants(FormItem $item, array $variants): void
+    {
+        $existing = $item->variants()->get()->keyBy('id');
+        $kept = [];
+
+        foreach (array_values($variants) as $index => $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $payload = [
+                'name' => $name,
+                'price' => isset($row['price']) && $row['price'] !== '' ? (float) $row['price'] : null,
+                'stock' => isset($row['stock']) && $row['stock'] !== '' ? (int) $row['stock'] : null,
+                'is_active' => (bool) ($row['is_active'] ?? true),
+                'sort_order' => $index,
+            ];
+
+            $id = (int) ($row['id'] ?? 0);
+
+            if ($id && $existing->has($id)) {
+                $variant = $existing->get($id);
+                $variant->update($payload);
+            } else {
+                $variant = $item->variants()->create($payload);
+            }
+
+            $kept[] = $variant->id;
+        }
+
+        $item->variants()->whereNotIn('id', $kept)->delete();
     }
 
     /**

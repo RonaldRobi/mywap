@@ -2731,6 +2731,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventUploadSupportDocHint => 'Please upload the supporting document (e.g. student card).';
 
   @override
+  String get eventAddonsTitle => 'Optional Add-ons';
+
+  @override
+  String get eventAddonsHint => 'Select if you wish to purchase. Registration is still valid without add-ons.';
+
+  @override
+  String get eventAddonSelectOption => 'Select option';
+
+  @override
+  String get eventAddonRequired => 'Required';
+
+  @override
+  String get eventAddonQuantity => 'Quantity';
+
+  @override
+  String get eventAddonTotal => 'Total';
+
+  @override
+  String eventTotalPayable(String amount) {
+    return 'Total payable: $amount';
+  }
+
+  @override
   String get eventChooseFile => 'Choose File';
 
   @override

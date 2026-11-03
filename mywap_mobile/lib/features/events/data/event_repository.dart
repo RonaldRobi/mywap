@@ -77,6 +77,7 @@ class EventRepository {
     String? ticketType,
     String paymentMethod = 'fpx',
     File? document,
+    List<Map<String, dynamic>> items = const [],
   }) async {
     final data =
         files.isNotEmpty || document != null
@@ -88,6 +89,7 @@ class EventRepository {
               ticketType: ticketType,
               paymentMethod: paymentMethod,
               document: document,
+              items: items,
             )
             : await _api.post(
               ApiPaths.eventRegistration(eventId),
@@ -97,6 +99,7 @@ class EventRepository {
                 if (ticketType != null && ticketType.isNotEmpty)
                   'ticket_type': ticketType,
                 'payment_method': paymentMethod,
+                if (items.isNotEmpty) 'items': items,
               },
             );
     return EventRegistrationResult.fromJson(_asMap(data));
@@ -110,6 +113,7 @@ class EventRepository {
     required String? ticketType,
     required String paymentMethod,
     required File? document,
+    required List<Map<String, dynamic>> items,
   }) async {
     final fields = <String, dynamic>{
       'form_id': formId.toString(),
@@ -129,6 +133,20 @@ class EventRepository {
         'ticket_type': ticketType,
       'payment_method': paymentMethod,
     };
+
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final itemId = item['form_item_id'];
+      if (itemId != null) {
+        fields['items[$i][form_item_id]'] = itemId.toString();
+      }
+      final variantId = item['variant_id'];
+      if (variantId != null) {
+        fields['items[$i][variant_id]'] = variantId.toString();
+      }
+      fields['items[$i][quantity]'] = (item['quantity'] ?? 1).toString();
+    }
+
     return _api.post(
       ApiPaths.eventRegistration(eventId),
       body: FormData.fromMap(fields),

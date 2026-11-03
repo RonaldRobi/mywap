@@ -1252,6 +1252,20 @@
   "eventFeeCategory": "Fee Category",
   "eventUploadSupportDocTitle": "Upload Supporting Document *",
   "eventUploadSupportDocHint": "Please upload the supporting document (e.g. student card).",
+  "eventAddonsTitle": "Optional Add-ons",
+  "eventAddonsHint": "Select if you wish to purchase. Registration is still valid without add-ons.",
+  "eventAddonSelectOption": "Select option",
+  "eventAddonRequired": "Required",
+  "eventAddonQuantity": "Quantity",
+  "eventAddonTotal": "Total",
+  "eventTotalPayable": "Total payable: {amount}",
+  "@eventTotalPayable": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "eventChooseFile": "Choose File",
   "eventAlreadyRegisteredTitle": "You Are Already Registered",
   "eventBackToProgram": "Back to Program",

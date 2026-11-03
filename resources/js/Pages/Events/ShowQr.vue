@@ -37,7 +37,7 @@ onUnmounted(() => { clearInterval(pollInterval); });
 </script>
 
 <template>
-    <Head :title="`QR Kehadiran – ${event.title}`" />
+    <Head :title="`QR Semak Masuk – ${event.title}`" />
 
     <!-- Full-screen projector-mode layout (no AppLayout wrapper) -->
     <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-8">

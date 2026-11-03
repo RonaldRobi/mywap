@@ -439,16 +439,19 @@ class EventController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $now = now();
 
-        $query = Event::with(['organization', 'organizations', 'activeForms:id,event_id,share_token,is_active'])
-            ->withCount([
-                'registrations',
-                'registrations as attended_count' => fn ($q) => $q->whereHas('attendance'),
-            ])
-            ->orderByDesc('start_time');
+        // Asingkan program yang belum tamat daripada yang telah berlalu supaya
+        // admin tidak terpandang program lama apabila membuka halaman.
+        $tab = $request->input('tab', 'upcoming');
+        if (! in_array($tab, ['upcoming', 'past', 'all'], true)) {
+            $tab = 'upcoming';
+        }
+
+        $base = Event::query();
 
         if (! $isSuperadmin) {
-            $query->where(function ($q) use ($user) {
+            $base->where(function ($q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
                     ->orWhereHas('organizations', fn ($q2) => $q2->where('organizations.id', $user->current_organization_id));
             });
@@ -456,25 +459,49 @@ class EventController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
+            $base->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
                 ->orWhere('location_or_link', 'like', "%{$search}%"));
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $base->where('status', $request->status);
         }
 
         if ($request->filled('category')) {
-            $query->where('category', $request->category);
+            $base->where('category', $request->category);
         }
 
         if ($request->filled('org')) {
-            $query->whereHas('organizations', fn ($q) => $q->where('organizations.id', (int) $request->org));
+            $base->whereHas('organizations', fn ($q) => $q->where('organizations.id', (int) $request->org));
+        }
+
+        $counts = [
+            'upcoming' => (clone $base)->where('end_time', '>=', $now)->count(),
+            'past' => (clone $base)->where('end_time', '<', $now)->count(),
+        ];
+
+        $query = (clone $base)
+            ->with(['organization', 'organizations', 'activeForms:id,event_id,share_token,is_active'])
+            ->withCount([
+                'registrations',
+                'registrations as attended_count' => fn ($q) => $q->whereHas('attendance'),
+            ]);
+
+        if ($tab === 'past') {
+            // Program lepas: yang paling baru dahulu.
+            $query->where('end_time', '<', $now)->orderByDesc('start_time');
+        } elseif ($tab === 'upcoming') {
+            // Program akan datang: yang paling hampir dahulu.
+            $query->where('end_time', '>=', $now)->orderBy('start_time');
+        } else {
+            $query->orderByRaw('CASE WHEN end_time >= ? THEN 0 ELSE 1 END', [$now])
+                ->orderByRaw('CASE WHEN end_time >= ? THEN start_time END ASC', [$now])
+                ->orderByRaw('CASE WHEN end_time < ? THEN start_time END DESC', [$now]);
         }
 
         $dedupe = app(RegistrationDedupeService::class);
 
-        $events = $query->paginate(15)->withQueryString()->through(function (Event $e) use ($dedupe) {
+        $events = $query->paginate(15)->withQueryString()->through(function (Event $e) use ($dedupe, $now) {
             $activeForms = $e->activeForms;
             $uniqueParticipants = $dedupe->summary($e)['unique_identities'];
 
@@ -488,6 +515,8 @@ class EventController extends Controller
                 'category' => $e->category->value,
                 'category_label' => $e->category->label(),
                 'start_formatted' => $e->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'end_time' => $e->end_time?->toISOString(),
+                'is_ended' => $e->end_time !== null && $e->end_time->lt($now),
                 'organization_name' => $e->organization?->name ?? 'Semua Organisasi',
                 'organizations' => $e->organizations->map(fn ($o) => ['id' => $o->id, 'name' => $o->name])->values(),
                 'registrations_count' => $e->registrations_count,
@@ -504,6 +533,8 @@ class EventController extends Controller
 
         return Inertia::render('Admin/Events/Index', [
             'events' => $events,
+            'tab' => $tab,
+            'counts' => $counts,
             'filters' => $request->only(['search', 'status', 'category', 'org']),
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
             'statuses' => collect(EventStatus::cases())

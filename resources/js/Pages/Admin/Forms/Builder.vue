@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, nextTick, onUnmounted } from 'vue';
 
 const props = defineProps({
     form:           Object,
@@ -15,6 +15,68 @@ const props = defineProps({
 const isEditing = !!props.form;
 const showPreview = ref(false);
 const deletedQuestionIds = ref([]);
+const builderRoot = ref(null);
+const highlightedQuestionUid = ref(null);
+let highlightTimer = null;
+
+let uidCounter = 0;
+const nextUid = () => ++uidCounter;
+
+function createQuestion(q = {}) {
+    return {
+        _uid: nextUid(),
+        id: q.id ?? null,
+        label: q.label ?? '',
+        type: q.type ?? 'text',
+        options: q.options ?? [],
+        required: !!q.required,
+        placeholder: q.placeholder ?? '',
+        help_text: q.help_text ?? '',
+    };
+}
+
+function createItem(it = {}) {
+    return {
+        _uid: nextUid(),
+        id: it.id ?? null,
+        name: it.name || '',
+        description: it.description || '',
+        price: it.price ?? '',
+        stock: it.stock ?? '',
+        is_active: it.is_active ?? true,
+        is_required: it.is_required ?? false,
+        image: null,
+        image_url: it.image_url ?? null,
+        remove_image: false,
+        variants: (it.variants || []).map(v => ({
+            _uid: nextUid(),
+            id: v.id ?? null,
+            name: v.name || '',
+            price: v.price ?? '',
+            stock: v.stock ?? '',
+            is_active: v.is_active ?? true,
+        })),
+    };
+}
+
+function prefersReducedMotion() {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+}
+
+function scrollToNewest(selector, focusSelector = null) {
+    const nodes = builderRoot.value?.querySelectorAll(selector);
+    const el = nodes?.length ? nodes[nodes.length - 1] : null;
+    if (!el) return;
+    el.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'center',
+    });
+    if (focusSelector) {
+        el.querySelector(focusSelector)?.focus({ preventScroll: true });
+    }
+}
+
+onUnmounted(() => clearTimeout(highlightTimer));
 
 const typeLabels = {
     text:      'Teks',
@@ -54,15 +116,63 @@ const formData = reactive({
         ? [...props.form.recipient_emails]
         : [''],
     questions: props.form?.questions?.length
-        ? props.form.questions.map(q => ({ id: q.id, label: q.label, type: q.type, options: q.options || [], required: q.required, placeholder: q.placeholder || '', help_text: q.help_text || '' }))
-        : [{ id: null, label: '', type: 'text', options: [], required: false, placeholder: '', help_text: '' }],
+        ? props.form.questions.map(createQuestion)
+        : [createQuestion()],
+    items: props.form?.items?.length
+        ? props.form.items.map(createItem)
+        : [],
 });
 
-function addRecipientEmail() {
-    formData.recipient_emails.push('');
+// Jenis pendaftaran yang terhasil daripada tetapan semasa — supaya admin
+// faham serta-merta sama ada peserta daftar percuma atau perlu bayar.
+const registrationType = computed(() => {
+  const basePaid = !!formData.payment_required;
+  const hasAddons = (formData.items || []).some(it => it.is_active && it.name?.trim());
+  if (hasAddons) return basePaid ? 'Berbayar + Barang Tambahan' : 'Percuma + Barang Tambahan';
+  return basePaid ? 'Berbayar' : 'Percuma';
+});
+
+// Bahagian lanjutan disembunyikan secara lalai supaya admin baharu tidak
+// tenggelam dalam pilihan yang jarang digunakan.
+const showTiers = ref((props.form?.price_tiers?.length ?? 0) > 0);
+const showItems = ref((props.form?.items?.length ?? 0) > 0);
+const showRecipients = ref((props.form?.recipient_emails?.length ?? 0) > 0);
+
+function setRegistrationKind(kind) {
+  formData.payment_required = kind === 'paid';
 }
 
-function addTier() {
+async function addItem() {
+  formData.items.push(createItem());
+  await nextTick();
+  scrollToNewest('[data-item-card]', '[data-item-name]');
+}
+
+function removeItem(index) {
+  formData.items.splice(index, 1);
+}
+
+async function addVariant(item) {
+  item.variants.push({ _uid: nextUid(), id: null, name: '', price: '', stock: '', is_active: true });
+  await nextTick();
+  const card = builderRoot.value?.querySelector(`[data-item-uid="${item._uid}"]`);
+  const rows = card?.querySelectorAll('[data-variant-row]');
+  const row = rows?.length ? rows[rows.length - 1] : null;
+  row?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+  row?.querySelector('input')?.focus({ preventScroll: true });
+}
+
+function removeVariant(item, index) {
+  item.variants.splice(index, 1);
+}
+
+async function addRecipientEmail() {
+    formData.recipient_emails.push('');
+    await nextTick();
+    scrollToNewest('[data-recipient-row]', 'input');
+}
+
+async function addTier() {
     formData.price_tiers.push({
         label: '',
         price: '',
@@ -70,6 +180,8 @@ function addTier() {
         requires_document: false,
         description: '',
     });
+    await nextTick();
+    scrollToNewest('[data-tier-card]', '[data-tier-label]');
 }
 
 function removeTier(index) {
@@ -87,8 +199,23 @@ function removeRecipientEmail(index) {
     }
 }
 
-function addQuestion() {
-    formData.questions.push({ id: null, label: '', type: 'text', options: [], required: false, placeholder: '', help_text: '' });
+async function addQuestion() {
+    const question = createQuestion();
+    formData.questions.push(question);
+    await nextTick();
+
+    const card = builderRoot.value?.querySelector(`[data-question-uid="${question._uid}"]`);
+    if (!card) return;
+
+    card.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'center',
+    });
+    card.querySelector('[data-question-label]')?.focus({ preventScroll: true });
+
+    highlightedQuestionUid.value = question._uid;
+    clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => { highlightedQuestionUid.value = null; }, 1600);
 }
 
 function removeQuestion(index) {
@@ -106,9 +233,13 @@ function onTypeChange(q) {
     }
 }
 
-function addOption(q) {
+async function addOption(q) {
     if (!q.options) q.options = [];
     q.options.push('');
+    await nextTick();
+    const card = builderRoot.value?.querySelector(`[data-question-uid="${q._uid}"]`);
+    const rows = card?.querySelectorAll('[data-option-row]');
+    rows?.[rows.length - 1]?.querySelector('input')?.focus({ preventScroll: true });
 }
 
 function removeOption(q, idx) {
@@ -144,6 +275,28 @@ function save() {
                 requires_document: !!t.requires_document,
                 description: t.description || null,
             })),
+        items: (formData.items || [])
+            .filter(it => it.name?.trim())
+            .map(it => ({
+                id: it.id || null,
+                name: it.name.trim(),
+                description: it.description || null,
+                price: it.price === '' || it.price === null ? 0 : it.price,
+                stock: it.stock === '' || it.stock === null ? null : it.stock,
+                is_active: !!it.is_active,
+                is_required: !!it.is_required,
+                image: it.image || null,
+                remove_image: !!it.remove_image,
+                variants: (it.variants || [])
+                    .filter(v => v.name?.trim())
+                    .map(v => ({
+                        id: v.id || null,
+                        name: v.name.trim(),
+                        price: v.price === '' || v.price === null ? null : v.price,
+                        stock: v.stock === '' || v.stock === null ? null : v.stock,
+                        is_active: !!v.is_active,
+                    })),
+            })),
         recipient_emails: (formData.recipient_emails || []).filter(e => e && e.trim()),
         questions: formData.questions.map((q, i) => ({
             id: q.id,
@@ -156,13 +309,20 @@ function save() {
         })),
     };
 
+    // A nested File (item image) is not detected by Inertia's top-level file
+    // check, so force multipart when any upload is present.
+    const hasUploads = !!formData.header_image
+        || formData.items.some(it => it.image instanceof File);
+
     if (isEditing) {
         // Multipart PUT tidak di-parse PHP — guna POST + method spoofing.
         router.post(route('admin.forms.update', props.form.id), { ...payload, _method: 'PUT' }, {
+            forceFormData: hasUploads,
             onFinish: () => { busy.saving = false; },
         });
     } else {
         router.post(route('admin.forms.store'), payload, {
+            forceFormData: hasUploads,
             onFinish: () => { busy.saving = false; },
         });
     }
@@ -179,7 +339,7 @@ const valid = computed(() => {
     <AppLayout>
         <Head :title="isEditing ? `Edit Borang — ${form.title}` : 'Borang Baru'" />
 
-        <div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <div ref="builderRoot" class="max-w-3xl mx-auto px-4 py-8 space-y-6">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-black text-gray-900">{{ isEditing ? 'Edit Borang' : 'Borang Baru' }}</h1>
@@ -253,76 +413,213 @@ const valid = computed(() => {
                     </div>
                 </div>
 
-                <!-- Bayaran & Terma (untuk borang pendaftaran event) -->
+                <!-- Jenis Pendaftaran -->
                 <div class="pt-2 border-t border-gray-100">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex items-start justify-between gap-3">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Harga Asas (RM)</label>
-                            <input v-model="formData.price" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. 50.00 (kosong = percuma)" />
-                            <p class="text-[11px] text-gray-400">Minimum RM 2.00 (had pembayaran DOKU).</p>
+                            <p class="text-sm font-semibold text-gray-800">Jenis Pendaftaran</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Pilih sama ada peserta daftar percuma atau perlu bayar yuran pendaftaran.</p>
                         </div>
-                        <div class="flex items-end pb-1">
-                            <label class="flex items-center gap-2 text-sm">
-                                <input type="checkbox" v-model="formData.payment_required" class="rounded border-gray-300" /> Wajib bayar
-                            </label>
-                        </div>
+                        <span
+                            class="shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+                            :class="formData.payment_required ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'"
+                        >
+                            {{ registrationType }}
+                        </span>
                     </div>
 
-                    <!-- Harga Tier (cth. Pelajar / Orang Awam) -->
-                    <div v-if="formData.payment_required" class="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-800">Harga Mengikut Kategori (Tier)</p>
-                                <p class="text-xs text-gray-500 mt-0.5">Opsional. Contoh: Pelajar RM20, Orang Awam RM50. Pendaftar pilih kategori sendiri.</p>
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            @click="setRegistrationKind('free')"
+                            class="rounded-xl border px-4 py-3 text-left transition"
+                            :class="!formData.payment_required ? 'border-emerald-400 bg-emerald-50 ring-2 ring-emerald-200' : 'border-gray-200 hover:border-gray-300'"
+                        >
+                            <span class="block text-sm font-bold text-gray-800">Percuma</span>
+                            <span class="mt-0.5 block text-xs text-gray-500">Tiada bayaran asas. Boleh tambah barang berbayar di bawah.</span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="setRegistrationKind('paid')"
+                            class="rounded-xl border px-4 py-3 text-left transition"
+                            :class="formData.payment_required ? 'border-indigo-400 bg-indigo-50 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-300'"
+                        >
+                            <span class="block text-sm font-bold text-gray-800">Berbayar</span>
+                            <span class="mt-0.5 block text-xs text-gray-500">Peserta bayar yuran pendaftaran untuk mendaftar.</span>
+                        </button>
+                    </div>
+
+                    <div v-if="formData.payment_required" class="mt-4 space-y-2">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Harga Asas (RM) *</label>
+                            <input v-model="formData.price" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. 50.00" />
+                            <p class="text-[11px] text-gray-400">Minimum RM 2.00 (had pembayaran DOKU).</p>
+                        </div>
+
+                        <button type="button" @click="showTiers = !showTiers" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+                            {{ showTiers ? '− Sembunyi harga mengikut kategori (tier)' : '+ Guna harga mengikut kategori (tier)' }}
+                        </button>
+
+                        <!-- Harga Tier (cth. Pelajar / Orang Awam) — lanjutan -->
+                        <div v-if="showTiers" class="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-800">Harga Mengikut Kategori (Tier)</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Opsional. Contoh: Pelajar RM20, Orang Awam RM50. Pendaftar pilih kategori sendiri.</p>
+                                </div>
+                                <button @click="addTier" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Tambah Tier</button>
                             </div>
-                            <button @click="addTier" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Tambah Tier</button>
-                        </div>
 
-                        <div v-if="!formData.price_tiers.length" class="mt-3 text-xs text-gray-400">
-                            Tiada tier — gunakan Harga Asas di atas.
-                        </div>
+                            <div v-if="!formData.price_tiers.length" class="mt-3 text-xs text-gray-400">
+                                Tiada tier — gunakan Harga Asas di atas.
+                            </div>
 
-                        <div v-for="(tier, ti) in formData.price_tiers" :key="ti" class="mt-3 rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
-                            <div class="flex items-center gap-2">
-                                <input
-                                    type="radio"
-                                    :checked="tier.is_default"
-                                    @change="setDefaultTier(ti)"
-                                    class="text-indigo-600 border-gray-300"
-                                    title="Jadikan harga lalai"
-                                />
-                                <input
-                                    v-model="tier.label"
-                                    type="text"
-                                    placeholder="cth. Pelajar"
-                                    class="flex-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-0 focus:border-gray-300"
-                                />
-                                <div class="flex items-center gap-1">
-                                    <span class="text-sm text-gray-400">RM</span>
+                            <div v-for="(tier, ti) in formData.price_tiers" :key="ti" data-tier-card class="mt-3 rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
+                                <div class="flex items-center gap-2">
                                     <input
-                                        v-model="tier.price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="0.00"
-                                        class="w-24 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-0 focus:border-gray-300"
+                                        type="radio"
+                                        :checked="tier.is_default"
+                                        @change="setDefaultTier(ti)"
+                                        class="text-indigo-600 border-gray-300"
+                                        title="Jadikan harga lalai"
+                                    />
+                                    <input
+                                        v-model="tier.label"
+                                        type="text"
+                                        data-tier-label
+                                        placeholder="cth. Pelajar"
+                                        class="flex-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300"
+                                    />
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-sm text-gray-400">RM</span>
+                                        <input
+                                            v-model="tier.price"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            class="w-24 rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm focus:ring-0 focus:border-gray-300"
+                                        />
+                                    </div>
+                                    <button @click="removeTier(ti)" class="text-xs text-red-400 hover:text-red-600" title="Buang tier">✕</button>
+                                </div>
+                                <div class="flex flex-wrap gap-x-4 gap-y-2">
+                                    <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                                        <input type="checkbox" v-model="tier.requires_document" class="rounded border-gray-300" />
+                                        Perlu dokumen (cth. kad pelajar)
+                                    </label>
+                                    <input
+                                        v-model="tier.description"
+                                        type="text"
+                                        placeholder="Nota / syarat (cth. bawa kad pelajar)"
+                                        class="flex-1 min-w-40 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs focus:ring-0 focus:border-gray-300"
                                     />
                                 </div>
-                                <button @click="removeTier(ti)" class="text-xs text-red-400 hover:text-red-600" title="Buang tier">✕</button>
-                            </div>
-                            <div class="flex flex-wrap gap-x-4 gap-y-2">
-                                <label class="flex items-center gap-1.5 text-xs text-gray-600">
-                                    <input type="checkbox" v-model="tier.requires_document" class="rounded border-gray-300" />
-                                    Perlu dokumen (cth. kad pelajar)
-                                </label>
-                                <input
-                                    v-model="tier.description"
-                                    type="text"
-                                    placeholder="Nota / syarat (cth. bawa kad pelajar)"
-                                    class="flex-1 min-w-40 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs focus:ring-0 focus:border-gray-300"
-                                />
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Barang Tambahan (Add-ons / Merchandise) — lanjutan -->
+                <div class="pt-2 border-t border-gray-100">
+                    <button type="button" @click="showItems = !showItems" class="flex w-full items-start justify-between gap-3 text-left">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Barang Tambahan (Opsional)</p>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                Jual merchandise seperti jersi, topi atau kit. Peserta boleh pilih (atau tidak) semasa mendaftar.
+                            </p>
+                        </div>
+                        <span class="flex shrink-0 items-center gap-2">
+                            <span v-if="formData.items.length" class="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">{{ formData.items.length }} barang</span>
+                            <svg class="h-4 w-4 text-gray-400 transition-transform" :class="{ 'rotate-180': showItems }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </span>
+                    </button>
+
+                    <div v-show="showItems" class="mt-3">
+                        <div class="flex justify-end">
+                            <button type="button" @click="addItem" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Tambah Barang</button>
+                        </div>
+
+                    <p v-if="!formData.items.length" class="mt-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-400">
+                        Tiada barang tambahan. Pendaftaran hanya menggunakan yuran asas (atau percuma).
+                    </p>
+
+                    <div v-for="(item, ii) in formData.items" :key="item._uid" :data-item-uid="item._uid" data-item-card class="mt-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-400">Barang #{{ ii + 1 }}</span>
+                            <div class="flex items-center gap-3">
+                                <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                                    <input type="checkbox" v-model="item.is_active" class="rounded border-gray-300" /> Aktif
+                                </label>
+                                <label class="flex items-center gap-1.5 text-xs text-gray-600" title="Setiap peserta wajib bayar">
+                                    <input type="checkbox" v-model="item.is_required" class="rounded border-gray-300" /> Wajib
+                                </label>
+                                <button type="button" @click="removeItem(ii)" class="text-xs text-red-400 hover:text-red-600">✕</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-0.5">Nama Barang *</label>
+                                <input v-model="item.name" data-item-name class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300" placeholder="cth. Jersi" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-0.5">Harga (RM)</label>
+                                    <input v-model="item.price" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-0.5">Stok</label>
+                                    <input v-model="item.stock" type="number" min="0" step="1" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="Tanpa had" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-0.5">Penerangan</label>
+                            <input v-model="item.description" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:ring-0" placeholder="cth. Jersi rasmi edisi terhad" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-0.5">Gambar Barang (Opsional)</label>
+                            <input
+                                type="file"
+                                accept="image/jpg,image/jpeg,image/png,image/webp"
+                                class="mt-1 block w-full text-xs text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold"
+                                @change="item.image = $event.target.files?.[0] ?? null; item.remove_image = false"
+                            />
+                            <div v-if="item.image_url && !item.remove_image && !item.image" class="mt-2 flex items-center gap-2">
+                                <img :src="item.image_url" class="h-16 w-16 rounded-lg border border-gray-100 object-cover" alt="Gambar barang" />
+                                <button type="button" @click="item.remove_image = true; item.image = null" class="text-xs text-red-400 hover:text-red-600">Buang gambar</button>
+                            </div>
+                            <p v-else-if="item.remove_image" class="mt-1 text-[11px] text-amber-600">Gambar akan dibuang apabila disimpan.</p>
+                        </div>
+
+                        <div class="rounded-xl border border-indigo-100 bg-white p-3 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-700">Varians (cth. saiz)</p>
+                                    <p class="text-[11px] text-gray-400">Biarkan harga kosong untuk guna harga barang. Stok kosong = tanpa had.</p>
+                                </div>
+                                <button type="button" @click="addVariant(item)" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Varians</button>
+                            </div>
+
+                            <p v-if="!item.variants.length" class="text-[11px] text-gray-400">Tiada varians — peserta beli barang ini secara terus.</p>
+
+                            <div v-for="(variant, vi) in item.variants" :key="variant._uid" data-variant-row class="flex flex-wrap items-center gap-2">
+                                <input v-model="variant.name" class="w-24 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:ring-0" placeholder="Saiz" />
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[11px] text-gray-400">RM</span>
+                                    <input v-model="variant.price" type="number" min="0" step="0.01" class="w-24 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:ring-0" placeholder="ikut harga" />
+                                </div>
+                                <input v-model="variant.stock" type="number" min="0" step="1" class="w-24 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:ring-0" placeholder="stok" />
+                                <label class="flex items-center gap-1 text-[11px] text-gray-600">
+                                    <input type="checkbox" v-model="variant.is_active" class="rounded border-gray-300" /> Aktif
+                                </label>
+                                <button type="button" @click="removeVariant(item, vi)" class="text-xs text-red-400 hover:text-red-600">✕</button>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </div>
 
@@ -340,38 +637,57 @@ const valid = computed(() => {
                     </label>
                 </div>
 
-                <!-- Recipient emails -->
+                <!-- Recipient emails (lanjutan) -->
                 <div class="pt-2 border-t border-gray-100">
-                    <div class="flex items-center justify-between">
+                    <button type="button" @click="showRecipients = !showRecipients" class="flex w-full items-center justify-between gap-3 text-left">
                         <div>
-                            <p class="text-sm font-semibold text-gray-700">Emel Penerima Borang</p>
+                            <p class="text-sm font-semibold text-gray-700">Emel Penerima Borang (Lanjutan)</p>
                             <p class="text-xs text-gray-400 mt-0.5">Hantar borang ke emel ini melalui e-mel. (Opsional)</p>
                         </div>
-                        <button @click="addRecipientEmail" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Emel</button>
-                    </div>
-                    <div class="mt-2 space-y-2">
-                        <div v-for="(email, ei) in formData.recipient_emails" :key="ei" class="flex items-center gap-2">
-                            <input
-                                v-model="formData.recipient_emails[ei]"
-                                type="email"
-                                placeholder="contoh@email.com"
-                                class="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300 placeholder:text-gray-300"
-                            />
-                            <button @click="removeRecipientEmail(ei)" class="text-xs text-red-400 hover:text-red-600">✕</button>
+                        <svg class="h-4 w-4 shrink-0 text-gray-400 transition-transform" :class="{ 'rotate-180': showRecipients }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+
+                    <div v-show="showRecipients" class="mt-2">
+                        <div class="flex justify-end">
+                            <button @click="addRecipientEmail" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Emel</button>
                         </div>
+                        <div class="mt-1 space-y-2">
+                            <div v-for="(email, ei) in formData.recipient_emails" :key="ei" data-recipient-row class="flex items-center gap-2">
+                                <input
+                                    v-model="formData.recipient_emails[ei]"
+                                    type="email"
+                                    placeholder="contoh@email.com"
+                                    class="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300 placeholder:text-gray-300"
+                                />
+                                <button @click="removeRecipientEmail(ei)" class="text-xs text-red-400 hover:text-red-600">✕</button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Anda juga boleh hantar ke semua ahli organisasi dari senarai borang.</p>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2">Anda juga boleh hantar ke semua ahli organisasi dari senarai borang.</p>
                 </div>
             </div>
 
             <!-- Questions -->
             <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl p-6 shadow-sm space-y-4">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide">Soalan</h2>
-                    <button @click="addQuestion" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">+ Tambah Soalan</button>
+                    <button
+                        type="button"
+                        @click="addQuestion"
+                        class="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+                    >
+                        <span aria-hidden="true" class="text-base leading-none">+</span>
+                        Tambah Soalan
+                    </button>
                 </div>
 
-                <div v-for="(q, idx) in formData.questions" :key="idx" class="border border-gray-100 rounded-2xl p-4 bg-gray-50/50 space-y-3">
+                <div
+                    v-for="(q, idx) in formData.questions"
+                    :key="q._uid"
+                    :data-question-uid="q._uid"
+                    class="rounded-2xl border p-4 bg-gray-50/50 space-y-3 transition-shadow duration-300 motion-reduce:transition-none"
+                    :class="highlightedQuestionUid === q._uid ? 'border-indigo-200 ring-2 ring-indigo-200' : 'border-gray-100'"
+                >
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-gray-400">Soalan #{{ idx + 1 }}</span>
                         <div class="flex items-center gap-1">
@@ -384,7 +700,7 @@ const valid = computed(() => {
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-semibold text-gray-600 mb-0.5">Label *</label>
-                            <input v-model="q.label" class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-0" placeholder="Label soalan..." />
+                            <input v-model="q.label" data-question-label class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300" placeholder="Label soalan..." />
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 mb-0.5">Jenis</label>
@@ -412,8 +728,8 @@ const valid = computed(() => {
                     <!-- Options for select/radio/checkbox -->
                     <div v-if="['select', 'radio', 'checkbox'].includes(q.type)" class="space-y-1.5 pl-2 border-l-2 border-indigo-200">
                         <p class="text-xs font-semibold text-gray-500">Pilihan</p>
-                        <div v-for="(opt, oi) in q.options" :key="oi" class="flex items-center gap-2">
-                            <input v-model="q.options[oi]" class="flex-1 rounded-lg border border-gray-200 px-3 py-1 text-xs focus:ring-0" placeholder="Pilihan..." />
+                        <div v-for="(opt, oi) in q.options" :key="oi" data-option-row class="flex items-center gap-2">
+                            <input v-model="q.options[oi]" class="flex-1 rounded-lg border border-gray-200 px-3 py-1 text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-300" placeholder="Pilihan..." />
                             <button @click="removeOption(q, oi)" class="text-xs text-red-400 hover:text-red-600">✕</button>
                         </div>
                         <button @click="addOption(q)" class="text-xs text-indigo-500 hover:text-indigo-600">+ Tambah pilihan</button>
@@ -455,12 +771,37 @@ const valid = computed(() => {
                             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Pendaftaran</p>
                             <h2 class="text-xl font-black text-gray-900">{{ formData.title || '(Tanpa tajuk)' }}</h2>
                             <p v-if="formData.description" class="text-sm text-gray-500 mt-1 whitespace-pre-line">{{ formData.description }}</p>
-                            <p v-if="formData.price" class="mt-2 inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-bold text-emerald-700">
+                            <p v-if="formData.payment_required && formData.price" class="mt-2 inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-bold text-emerald-700">
                                 RM {{ Number(formData.price).toFixed(2) }}
                             </p>
                         </div>
 
                         <hr class="border-gray-100" />
+
+                        <div v-if="formData.items.some(it => it.name?.trim())" class="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-2">
+                            <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">Barang Tambahan (Opsional)</p>
+                            <div
+                                v-for="(item, ii) in formData.items.filter(it => it.name?.trim())"
+                                :key="ii"
+                                class="rounded-xl border border-gray-100 bg-white px-3 py-2"
+                            >
+                                <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="mb-2 h-24 w-full rounded-lg object-cover" />
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-sm font-semibold text-gray-800">
+                                        {{ item.name }}
+                                        <span v-if="item.is_required" class="text-[10px] font-bold text-rose-600">(wajib)</span>
+                                        <span v-if="!item.is_active" class="text-[10px] text-amber-600">(tidak aktif)</span>
+                                    </span>
+                                    <span class="text-sm font-bold text-indigo-600">RM {{ Number(item.price || 0).toFixed(2) }}</span>
+                                </div>
+                                <p v-if="item.description" class="text-[11px] text-gray-400">{{ item.description }}</p>
+                                <div v-if="item.variants.length" class="mt-1 flex flex-wrap gap-1">
+                                    <span v-for="(v, vi) in item.variants" :key="vi" class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] text-gray-600">
+                                        {{ v.name || 'Varians' }}<template v-if="v.price !== '' && v.price !== null"> · RM {{ Number(v.price).toFixed(2) }}</template>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
                         <div v-for="(q, qi) in formData.questions" :key="qi" class="space-y-1.5">
                             <label class="block text-sm font-semibold text-gray-700 whitespace-pre-line">
@@ -528,7 +869,7 @@ const valid = computed(() => {
                         </div>
 
                         <button disabled class="w-full rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white opacity-60">
-                            {{ formData.price ? `Hantar & Bayar RM ${Number(formData.price).toFixed(2)}` : 'Hantar' }}
+                            {{ formData.payment_required && formData.price ? `Hantar & Bayar RM ${Number(formData.price).toFixed(2)}` : 'Hantar' }}
                         </button>
                     </div>
                 </div>

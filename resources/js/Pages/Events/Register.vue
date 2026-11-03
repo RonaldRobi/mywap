@@ -14,7 +14,6 @@ const props = defineProps({
     qrSvg: { type: String, default: null },
 });
 
-const isPaid = computed(() => props.form.payment_required && props.form.price);
 const showQr = ref(false);
 const copied = ref(false);
 
@@ -38,6 +37,87 @@ const needsDocument = computed(() => {
     return !!tier?.requires_document;
 });
 
+// ─── Barang Tambahan (Add-ons) ───────────────────────────────────────────
+const addonItems = computed(() => props.form.items || []);
+const addonSelection = reactive({});
+
+// Mandatory add-ons (e.g. a meal fee) are pre-selected so they cannot be
+// skipped. Optional items start unselected.
+addonItems.value.forEach(item => {
+    if (item.is_required) {
+        addonSelection[item.id] = {
+            variantId: item.has_variants ? (item.variants?.[0]?.id ?? null) : null,
+            quantity: 1,
+        };
+    }
+});
+
+function addonState(item) {
+    if (!addonSelection[item.id]) {
+        addonSelection[item.id] = { variantId: null, quantity: 0 };
+    }
+    return addonSelection[item.id];
+}
+
+function itemQuantity(item) {
+    return addonSelection[item.id]?.quantity ?? 0;
+}
+
+function itemVariantId(item) {
+    return addonSelection[item.id]?.variantId ?? null;
+}
+
+function isItemSelected(item) {
+    return itemQuantity(item) > 0;
+}
+
+function toggleItem(item, checked) {
+    if (item.is_required && !checked) return;
+    const state = addonState(item);
+    if (checked) {
+        if (item.has_variants && state.variantId == null) {
+            state.variantId = item.variants?.[0]?.id ?? null;
+        }
+        state.quantity = Math.max(1, state.quantity);
+    } else {
+        state.quantity = 0;
+    }
+}
+
+function setVariant(item, value) {
+    const state = addonState(item);
+    state.variantId = value === '' ? null : Number(value);
+}
+
+function changeQuantity(item, delta) {
+    const state = addonState(item);
+    if (item.has_variants && state.variantId == null) {
+        state.variantId = item.variants?.[0]?.id ?? null;
+    }
+    const min = item.is_required ? 1 : 0;
+    state.quantity = Math.max(min, Math.min(100, state.quantity + delta));
+}
+
+function itemUnitPrice(item) {
+    if (item.has_variants) {
+        const variant = (item.variants || []).find(v => v.id === itemVariantId(item));
+        return Number(variant?.price ?? item.price ?? 0);
+    }
+    return Number(item.price ?? 0);
+}
+
+function itemLineTotal(item) {
+    return itemUnitPrice(item) * itemQuantity(item);
+}
+
+const addonsTotal = computed(() =>
+    addonItems.value.reduce((sum, item) => sum + itemLineTotal(item), 0),
+);
+
+const baseAmount = computed(() => (props.form.payment_required ? selectedPrice.value : 0));
+const totalAmount = computed(() => baseAmount.value + addonsTotal.value);
+const isPaid = computed(() => totalAmount.value > 0);
+
 const featuredImage = computed(() => props.form.header_image_url || props.event.featured_image_url || null);
 
 // Form Builder ialah single source of truth — hanya answers dihantar,
@@ -46,6 +126,7 @@ const registerForm = useForm({
     answers: {},
     ticket_type: null,
     document: null,
+    items: [],
 });
 
 function onTierChange() {
@@ -93,6 +174,13 @@ initAnswers();
 
 function submit() {
     registerForm.ticket_type = selectedTier.value;
+    registerForm.items = addonItems.value
+        .filter(item => itemQuantity(item) > 0)
+        .map(item => ({
+            form_item_id: item.id,
+            variant_id: item.has_variants ? itemVariantId(item) : null,
+            quantity: itemQuantity(item),
+        }));
     const routeName = props.isGuest ? 'events.register.public.store' : 'events.register.store';
     const params = props.isGuest
         ? { token: props.form.share_token || window.location.pathname.split('/').pop() }
@@ -213,6 +301,58 @@ function submit() {
                     </div>
                 </div>
 
+                <!-- Barang Tambahan (Opsional) -->
+                <div v-if="addonItems.length" class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4 space-y-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">Barang Tambahan (Opsional)</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Pilih jika anda ingin membeli. Pendaftaran tetap sah tanpa barang tambahan.</p>
+                    </div>
+
+                    <div v-for="item in addonItems" :key="item.id" class="rounded-xl border border-gray-100 bg-white p-3 space-y-2">
+                        <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="h-32 w-full rounded-lg object-cover" />
+                        <div class="flex items-start justify-between gap-3">
+                            <label class="flex items-start gap-2.5" :class="item.is_required ? 'cursor-not-allowed' : 'cursor-pointer'">
+                                <input type="checkbox" :checked="isItemSelected(item)" :disabled="item.is_required" @change="toggleItem(item, $event.target.checked)" class="mt-0.5 rounded border-gray-300 text-indigo-600" />
+                                <span>
+                                    <span class="block text-sm font-semibold text-gray-800">
+                                        {{ item.name }}
+                                        <span v-if="item.is_required" class="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-600">Wajib</span>
+                                    </span>
+                                    <span v-if="item.description" class="block text-xs text-gray-400">{{ item.description }}</span>
+                                </span>
+                            </label>
+                            <span class="shrink-0 text-sm font-bold text-indigo-600">RM {{ Number(item.price || 0).toFixed(2) }}</span>
+                        </div>
+
+                        <div v-if="isItemSelected(item)" class="flex flex-wrap items-end gap-3 pl-7">
+                            <div v-if="item.has_variants">
+                                <label class="block text-[11px] font-semibold text-gray-500 mb-0.5">Pilihan</label>
+                                <select :value="itemVariantId(item) ?? ''" @change="setVariant(item, $event.target.value)" class="rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:ring-0">
+                                    <option v-for="v in item.variants" :key="v.id" :value="v.id" :disabled="v.stock !== null && v.stock < 1">
+                                        {{ v.name }} — RM {{ Number(v.price).toFixed(2) }}<template v-if="v.stock !== null"> ({{ v.stock }} tinggal)</template>
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-500 mb-0.5">Kuantiti</label>
+                                <div class="inline-flex items-center rounded-lg border border-gray-200">
+                                    <button type="button" @click="changeQuantity(item, -1)" class="px-3 py-1.5 text-gray-500 hover:bg-gray-50">−</button>
+                                    <span class="min-w-8 text-center text-sm font-semibold">{{ itemQuantity(item) }}</span>
+                                    <button type="button" @click="changeQuantity(item, 1)" class="px-3 py-1.5 text-gray-500 hover:bg-gray-50">+</button>
+                                </div>
+                            </div>
+
+                            <div class="ml-auto text-right">
+                                <p class="text-[11px] text-gray-400">Jumlah</p>
+                                <p class="text-sm font-bold text-gray-800">RM {{ itemLineTotal(item).toFixed(2) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p v-if="registerForm.errors.items" class="text-xs text-red-500">{{ registerForm.errors.items }}</p>
+                </div>
+
                 <!-- Questions -->
                 <div v-for="q in form.questions" :key="q.id" class="space-y-1.5">
                     <label class="block text-sm font-semibold text-gray-700 whitespace-pre-line">
@@ -309,9 +449,17 @@ function submit() {
                             <span class="text-gray-500">Kategori</span>
                             <span class="font-semibold text-gray-800 text-right">{{ selectedTier }}</span>
                         </div>
+                        <div v-if="baseAmount > 0" class="flex justify-between gap-3">
+                            <span class="text-gray-500">Yuran Pendaftaran</span>
+                            <span class="font-semibold text-gray-800 text-right">RM {{ baseAmount.toFixed(2) }}</span>
+                        </div>
+                        <div v-if="addonsTotal > 0" class="flex justify-between gap-3">
+                            <span class="text-gray-500">Barang Tambahan</span>
+                            <span class="font-semibold text-gray-800 text-right">RM {{ addonsTotal.toFixed(2) }}</span>
+                        </div>
                         <div class="flex justify-between gap-3">
                             <span class="text-gray-500">Jumlah Bayaran</span>
-                            <span class="font-bold text-emerald-600">RM {{ selectedPrice.toFixed(2) }}</span>
+                            <span class="font-bold text-emerald-600">RM {{ totalAmount.toFixed(2) }}</span>
                         </div>
                         <div class="flex justify-between gap-3">
                             <span class="text-gray-500">Kaedah Pembayaran</span>
@@ -333,7 +481,7 @@ function submit() {
                     :disabled="registerForm.processing"
                     class="w-full rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50"
                 >
-                    {{ registerForm.processing ? 'Memproses...' : (isPaid ? `Hantar & Bayar RM ${selectedPrice.toFixed(2)}` : 'Hantar') }}
+                    {{ registerForm.processing ? 'Memproses...' : (isPaid ? `Hantar & Bayar RM ${totalAmount.toFixed(2)}` : 'Hantar') }}
                 </button>
 
                 <p class="text-center text-xs text-gray-400">Dikuasakan oleh myWAP</p>

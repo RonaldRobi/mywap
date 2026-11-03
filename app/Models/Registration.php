@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Notification;
@@ -50,6 +51,7 @@ class Registration extends Model
         'event_id', 'form_id', 'user_id', 'organization_id', 'member_no',
         'registration_no', 'name', 'email', 'phone', 'ic_number', 'status', 'source',
         'ticket_type', 'document_path', 'confirmation_sent_at',
+        'base_amount', 'addons_amount',
         'ic_normalized', 'phone_normalized', 'raw_data',
     ];
 
@@ -59,6 +61,8 @@ class Registration extends Model
             'status' => RegistrationStatus::class,
             'confirmation_sent_at' => 'datetime',
             'raw_data' => 'array',
+            'base_amount' => 'decimal:2',
+            'addons_amount' => 'decimal:2',
         ];
     }
 
@@ -289,6 +293,32 @@ class Registration extends Model
     public function payments(): MorphMany
     {
         return $this->morphMany(Payment::class, 'payable');
+    }
+
+    /**
+     * Optional add-on lines purchased with this registration.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(RegistrationItem::class)->orderBy('id');
+    }
+
+    public function totalAmount(): float
+    {
+        return (float) $this->base_amount + (float) $this->addons_amount;
+    }
+
+    /**
+     * True when no money was collected: a free registration with no add-ons
+     * and no payment record. Uses the loaded relation when available.
+     */
+    public function isFreeRegistration(): bool
+    {
+        $payment = $this->relationLoaded('latestPayment')
+            ? $this->latestPayment
+            : $this->latestPayment()->first();
+
+        return $payment === null && $this->totalAmount() <= 0;
     }
 
     public function latestPayment(): HasOne

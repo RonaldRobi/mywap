@@ -517,6 +517,48 @@ class EventRegistrationTest extends TestCase
                 ->where('programs.0.pending_payment_count', 0));
     }
 
+    public function test_attendance_programs_flag_ended_and_ongoing_and_sort_by_date(): void
+    {
+        $past = $this->makePublishedEvent();
+        $past->update([
+            'title' => 'Program Lepas',
+            'start_time' => now()->subDays(2),
+            'end_time' => now()->subDays(2)->addHours(2),
+        ]);
+        $pastForm = $this->makeForm($past);
+
+        $ongoing = $this->makePublishedEvent();
+        $ongoing->update([
+            'title' => 'Program Sedang',
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHour(),
+        ]);
+        $ongoingForm = $this->makeForm($ongoing);
+
+        foreach ([[$past, $pastForm], [$ongoing, $ongoingForm]] as [$event, $form]) {
+            Registration::create([
+                'event_id' => $event->id,
+                'form_id' => $form->id,
+                'organization_id' => $this->org->id,
+                'name' => 'Peserta '.$event->title,
+                'status' => 'confirmed',
+            ]);
+        }
+
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.attendance'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                // Program sedang berjalan didahulukan, program lepas kemudian.
+                ->where('programs.0.title', 'Program Sedang')
+                ->where('programs.0.is_ongoing', true)
+                ->where('programs.0.is_ended', false)
+                ->where('programs.1.title', 'Program Lepas')
+                ->where('programs.1.is_ended', true)
+                ->where('programs.1.is_ongoing', false));
+    }
+
     public function test_admin_can_update_registration_status(): void
     {
         $event = $this->makePublishedEvent();
@@ -933,6 +975,53 @@ class EventRegistrationTest extends TestCase
                 ->has('events.data', 1)
                 ->where('events.data.0.forms_count', 1)
                 ->where('events.data.0.form_url', route('events.register.public', $form->share_token)));
+    }
+
+    public function test_admin_events_index_separates_upcoming_and_past_programs(): void
+    {
+        $far = $this->makePublishedEvent();
+        $far->update([
+            'start_time' => now()->addMonths(3),
+            'end_time' => now()->addMonths(3)->addHours(2),
+        ]);
+
+        $soon = $this->makePublishedEvent();
+        $soon->update([
+            'title' => 'Program Terdekat',
+            'start_time' => now()->addDays(3),
+            'end_time' => now()->addDays(3)->addHours(2),
+        ]);
+
+        $past = $this->makePublishedEvent();
+        $past->update([
+            'title' => 'Program Lepas',
+            'start_time' => now()->subDays(2),
+            'end_time' => now()->subDays(2)->addHours(2),
+        ]);
+
+        $this->actingAs($this->admin);
+
+        // Tab lalai: hanya program akan datang, yang paling hampir dahulu.
+        $this->get(route('admin.events.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Events/Index')
+                ->where('tab', 'upcoming')
+                ->where('counts.upcoming', 2)
+                ->where('counts.past', 1)
+                ->has('events.data', 2)
+                ->where('events.data.0.title', 'Program Terdekat')
+                ->where('events.data.1.title', 'Muktamar Nasional Test')
+                ->where('events.data.0.is_ended', false));
+
+        // Tab lepas: program tamat, paling baru dahulu, ditanda is_ended.
+        $this->get(route('admin.events.index', ['tab' => 'past']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('tab', 'past')
+                ->has('events.data', 1)
+                ->where('events.data.0.title', 'Program Lepas')
+                ->where('events.data.0.is_ended', true));
     }
 
     public function test_admin_event_hub_forms_include_qr(): void

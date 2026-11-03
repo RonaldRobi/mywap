@@ -211,6 +211,12 @@ const statusColor = {
                             <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold" :class="statusColor[p.status] ?? statusColor.draft">
                                 {{ p.status_label }}
                             </span>
+                            <span v-if="p.is_ongoing" class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                Sedang Berjalan
+                            </span>
+                            <span v-else-if="p.is_ended" class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-600">
+                                Telah Berlalu
+                            </span>
                         </div>
                         <span v-if="String(f.event_id) === String(p.id)" class="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Dipilih</span>
                     </div>
@@ -258,9 +264,10 @@ const statusColor = {
                             target="_blank"
                             rel="noopener noreferrer"
                             @click.stop
+                            title="QR Semak Masuk — untuk peserta imbas semasa hadir"
                             class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                         >
-                            QR
+                            QR Masuk
                         </a>
                         <a
                             :href="p.registrations_url"
@@ -298,6 +305,7 @@ const statusColor = {
                             <th class="px-4 py-3">Peserta</th>
                             <th class="px-4 py-3">Organisasi</th>
                             <th class="px-4 py-3">Program</th>
+                            <th class="px-4 py-3">Barang</th>
                             <th class="px-4 py-3">Bayaran</th>
                             <th class="px-4 py-3">Kehadiran</th>
                             <th class="px-4 py-3">Masa</th>
@@ -312,7 +320,17 @@ const statusColor = {
                             <td class="px-4 py-3 text-gray-600">{{ r.organization_name || '—' }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ r.event_title || '—' }}</td>
                             <td class="px-4 py-3">
-                                <span class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
+                                <div v-if="r.items && r.items.length" class="space-y-0.5">
+                                    <p v-for="(it, i) in r.items" :key="i" class="text-xs text-gray-700">
+                                        {{ it.name }}<span v-if="it.variant_name" class="text-gray-400"> ({{ it.variant_name }})</span>
+                                        <span class="font-semibold">×{{ it.quantity }}</span>
+                                    </p>
+                                </div>
+                                <span v-else class="text-xs text-gray-400">—</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span v-if="r.is_free" class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">Percuma</span>
+                                <span v-else class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
                                     {{ r.payment_status === 'successful' || r.payment_status === 'paid' ? 'Berjaya' : 'Menunggu' }}
                                 </span>
                             </td>
@@ -324,7 +342,7 @@ const statusColor = {
                             <td class="px-4 py-3 text-xs text-gray-500">{{ r.attended_at || '—' }}</td>
                         </tr>
                         <tr v-if="registrations.data.length === 0">
-                            <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-400">Tiada peserta untuk penapis ini.</td>
+                            <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400">Tiada peserta untuk penapis ini.</td>
                         </tr>
                     </tbody>
                 </table>

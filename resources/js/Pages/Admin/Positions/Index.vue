@@ -247,7 +247,9 @@ function dismissFlash() {
                                 <label class="mb-1 block text-xs font-semibold text-gray-500">Parent (Hierarki)</label>
                                 <select v-model="addForm.parent_id" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
                                     <option value="">Tiada (Root)</option>
-                                    <option v-for="opt in parentOptions" :key="opt.value" :value="opt.value" v-if="opt.value">{{ opt.label }}</option>
+                                    <template v-for="opt in parentOptions" :key="opt.value">
+                                        <option v-if="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                    </template>
                                 </select>
                             </div>
                             <div>
@@ -316,7 +318,9 @@ function dismissFlash() {
                                                 <label class="mb-1 block text-xs font-semibold text-gray-500">Parent (Hierarki)</label>
                                                 <select v-model="editForm.parent_id" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0">
                                                     <option value="">Tiada (Root)</option>
-                                                    <option v-for="opt in parentOptions" v-if="opt.value && opt.value !== pos.id" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                                    <template v-for="opt in parentOptions" :key="opt.value">
+                                                        <option v-if="opt.value && opt.value !== pos.id" :value="opt.value">{{ opt.label }}</option>
+                                                    </template>
                                                 </select>
                                             </div>
                                             <div>

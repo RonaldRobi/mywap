@@ -31,6 +31,71 @@ class FormQuestion {
   );
 }
 
+/// A selectable variant of an add-on (e.g. a jersey size).
+class FormAddonVariant {
+  const FormAddonVariant({this.id, this.name, this.price, this.stock});
+
+  final int? id;
+  final String? name;
+  final double? price;
+  final int? stock;
+
+  factory FormAddonVariant.fromJson(Map<String, dynamic> json) =>
+      FormAddonVariant(
+        id: json['id'] as int?,
+        name: json['name'] as String?,
+        price: (json['price'] as num?)?.toDouble(),
+        stock: json['stock'] as int?,
+      );
+}
+
+/// An optional add-on / merchandise item purchasable with a registration.
+class FormAddon {
+  const FormAddon({
+    this.id,
+    this.name,
+    this.description,
+    this.price,
+    this.stock,
+    this.imageUrl,
+    this.hasVariants = false,
+    this.isRequired = false,
+    this.variants = const [],
+  });
+
+  final int? id;
+  final String? name;
+  final String? description;
+  final double? price;
+  final int? stock;
+  final String? imageUrl;
+  final bool hasVariants;
+  final bool isRequired;
+  final List<FormAddonVariant> variants;
+
+  factory FormAddon.fromJson(Map<String, dynamic> json) => FormAddon(
+    id: json['id'] as int?,
+    name: json['name'] as String?,
+    description: json['description'] as String?,
+    price: (json['price'] as num?)?.toDouble(),
+    stock: json['stock'] as int?,
+    imageUrl: json['image_url'] as String?,
+    hasVariants: json['has_variants'] as bool? ?? false,
+    isRequired: json['is_required'] as bool? ?? false,
+    variants: _parseAddonVariants(json['variants']),
+  );
+
+  /// Resolve the unit price for a chosen variant, falling back to the item
+  /// price when the variant has no explicit price.
+  double priceFor(int? variantId) {
+    if (!hasVariants) return price ?? 0;
+    for (final variant in variants) {
+      if (variant.id == variantId) return variant.price ?? price ?? 0;
+    }
+    return price ?? 0;
+  }
+}
+
 class FormModel {
   const FormModel({
     this.id,
@@ -38,6 +103,7 @@ class FormModel {
     this.description,
     this.price,
     this.tiers,
+    this.addons = const [],
     this.paymentRequired = false,
     this.terms,
     this.eventId,
@@ -54,6 +120,7 @@ class FormModel {
   final String? description;
   final double? price;
   final List<FormTier>? tiers;
+  final List<FormAddon> addons;
   final bool paymentRequired;
   final String? terms;
   final int? eventId;
@@ -70,6 +137,7 @@ class FormModel {
     description: json['description'] as String?,
     price: (json['price'] as num?)?.toDouble(),
     tiers: _parseTiers(json['price_tiers']),
+    addons: _parseAddons(json['items']),
     paymentRequired: json['payment_required'] as bool? ?? false,
     terms: json['terms'] as String?,
     eventId: json['event_id'] as int?,
@@ -116,6 +184,22 @@ List<FormTier>? _parseTiers(dynamic value) {
   return value
       .whereType<Map<String, dynamic>>()
       .map(FormTier.fromJson)
+      .toList(growable: false);
+}
+
+List<FormAddonVariant> _parseAddonVariants(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map(FormAddonVariant.fromJson)
+      .toList(growable: false);
+}
+
+List<FormAddon> _parseAddons(dynamic value) {
+  if (value is! List) return const [];
+  return value
+      .whereType<Map<String, dynamic>>()
+      .map(FormAddon.fromJson)
       .toList(growable: false);
 }
 

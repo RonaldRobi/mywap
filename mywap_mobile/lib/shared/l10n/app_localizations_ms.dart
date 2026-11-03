@@ -2731,6 +2731,29 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventUploadSupportDocHint => 'Sila muat naik dokumen sokongan (cth. kad pelajar).';
 
   @override
+  String get eventAddonsTitle => 'Barang Tambahan (Opsional)';
+
+  @override
+  String get eventAddonsHint => 'Pilih jika anda ingin membeli. Pendaftaran tetap sah tanpa barang tambahan.';
+
+  @override
+  String get eventAddonSelectOption => 'Pilih pilihan';
+
+  @override
+  String get eventAddonRequired => 'Wajib';
+
+  @override
+  String get eventAddonQuantity => 'Kuantiti';
+
+  @override
+  String get eventAddonTotal => 'Jumlah';
+
+  @override
+  String eventTotalPayable(String amount) {
+    return 'Jumlah bayaran: $amount';
+  }
+
+  @override
   String get eventChooseFile => 'Pilih Fail';
 
   @override
