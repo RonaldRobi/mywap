@@ -94,6 +94,7 @@ class InformationHubAdminController extends Controller
 
         $query = ($trashed ? User::onlyTrashed() : User::query())->with([
             'organization:id,name,color_theme',
+            'organizationPosition',
             'branch:id,name,organization_id',
             'roles',
             'membershipFees',
@@ -185,6 +186,8 @@ class InformationHubAdminController extends Controller
                 'industry' => $u->industry,
                 'expertise' => $u->expertise,
                 'position' => $u->position,
+                'position_id' => $u->position_id,
+                'position_badge' => $u->positionBadgePayload(),
                 'topics' => $u->topics,
                 'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
                 'organization_id' => $u->current_organization_id,
@@ -313,6 +316,19 @@ class InformationHubAdminController extends Controller
 
         $originalMemberNo = $user->getOriginal('member_no');
         $originalBranchId = $user->getOriginal('branch_id');
+
+        if (array_key_exists('position', $validated)) {
+            $positionName = trim((string) $validated['position']);
+
+            if ($positionName === '') {
+                $validated['position'] = null;
+                $validated['position_id'] = null;
+            } else {
+                $validated['position_id'] = OrganizationPosition::where('organization_id', $user->current_organization_id)
+                    ->where('name', $positionName)
+                    ->value('id');
+            }
+        }
 
         if ($isSuperadmin && ! empty($validated['member_no'])) {
             $no = Str::upper(trim($validated['member_no']));
@@ -793,6 +809,8 @@ class InformationHubAdminController extends Controller
         $user->update([
             'current_organization_id' => $targetOrg->id,
             'branch_id' => null,
+            'position' => null,
+            'position_id' => null,
         ]);
 
         UserOrganizationTransitioned::dispatch($user, $fromOrgId, $targetOrg->id);

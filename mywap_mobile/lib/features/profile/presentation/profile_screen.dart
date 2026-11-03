@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/list_card.dart';
+import '../../../shared/widgets/position_badge_chip.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -203,6 +204,13 @@ class _ProfileHeader extends StatelessWidget {
                           color: AppColors.movementSoftGreen,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+                    ],
+                    if (user.position_badge?.isNotEmpty ?? false) ...[
+                      const SizedBox(height: Spacing.sm),
+                      PositionBadgeChip(
+                        badge: user.position_badge!,
+                        dark: true,
                       ),
                     ],
                   ],

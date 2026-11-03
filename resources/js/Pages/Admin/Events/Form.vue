@@ -73,123 +73,165 @@ function submit() {
     <Head :title="isEditing ? `Edit Program & Acara: ${event.title}` : 'Cipta Program & Acara'" />
 
     <AppLayout>
-        <div class="max-w-3xl mx-auto px-4 py-8">
-            <h1 class="text-2xl font-black text-gray-900 mb-6">{{ isEditing ? 'Edit Program & Acara' : 'Cipta Program & Acara' }}</h1>
+        <div class="mx-auto w-full max-w-6xl px-4 py-8">
+            <!-- Header + actions -->
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900">{{ isEditing ? 'Edit Program & Acara' : 'Cipta Program & Acara' }}</h1>
+                    <p class="mt-0.5 text-sm text-gray-500">Isi butiran program, jadual, poster dan organisasi terlibat.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a :href="route('admin.events.index')" class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Batal</a>
+                    <button
+                        @click="submit"
+                        :disabled="form.processing || invalidTimes"
+                        class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                        {{ form.processing ? 'Menyimpan...' : 'Simpan' }}
+                    </button>
+                </div>
+            </div>
 
-            <div v-if="$page.props.flash?.error" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+            <div v-if="$page.props.flash?.error" class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ $page.props.flash.error }}
             </div>
 
-            <div v-if="Object.keys($page.props.errors).length" class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
-                <p class="font-semibold mb-1">Terdapat ralat:</p>
-                <ul class="list-disc list-inside space-y-0.5">
+            <div v-if="Object.keys($page.props.errors).length" class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p class="mb-1 font-semibold">Terdapat ralat:</p>
+                <ul class="list-inside list-disc space-y-0.5">
                     <li v-for="(msg, key) in $page.props.errors" :key="key">{{ msg }}</li>
                 </ul>
             </div>
 
-            <div v-if="form.hasErrors" class="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700 mb-4">
+            <div v-if="form.hasErrors" class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                 Sila semak borang — ada medan yang belum lengkap atau tidak sah.
             </div>
 
-            <div class="rounded-3xl bg-white border border-gray-100 shadow-sm p-6 space-y-5">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Tajuk *</label>
-                    <input v-model="form.title" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="cth. Muktamar & Ijtimak Nasional 2027" />
-                    <p v-if="form.errors.title" class="text-xs text-red-500 mt-1">{{ form.errors.title }}</p>
-                </div>
+            <!-- 2-column workspace -->
+            <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
+                <!-- LEFT: main details -->
+                <div class="space-y-6">
+                    <div class="space-y-5 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Maklumat Program</h2>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Penerangan</label>
-                    <textarea v-model="form.description" rows="4" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="Penerangan program..."></textarea>
-                </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-semibold text-gray-700">Tajuk *</label>
+                            <input v-model="form.title" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-300 focus:ring-0" placeholder="cth. Muktamar & Ijtimak Nasional 2027" />
+                            <p v-if="form.errors.title" class="mt-1 text-xs text-red-500">{{ form.errors.title }}</p>
+                        </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Kategori</label>
-                        <select v-model="form.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                            <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
-                        </select>
+                        <div>
+                            <label class="mb-1 block text-sm font-semibold text-gray-700">Penerangan</label>
+                            <textarea v-model="form.description" rows="5" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-300 focus:ring-0" placeholder="Penerangan program..."></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
-                        <select v-model="form.status" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                            <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Jenis</label>
-                        <select v-model="form.type" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                            <option value="physical">Fizikal</option>
-                            <option value="online">Dalam Talian</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Lokasi / Pautan</label>
-                        <input v-model="form.location_or_link" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300" placeholder="Alamat / URL" />
-                    </div>
-                </div>
+                    <div class="space-y-5 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Jadual &amp; Lokasi</h2>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Mula *</label>
-                        <input v-model="form.start_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
-                        <p v-if="form.errors.start_time" class="text-xs text-red-500 mt-1">{{ form.errors.start_time }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Tamat *</label>
-                        <input v-model="form.end_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
-                        <p v-if="form.errors.end_time" class="text-xs text-red-500 mt-1">{{ form.errors.end_time }}</p>
-                    </div>
-                </div>
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Kategori</label>
+                                <select v-model="form.category" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                                    <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Status</label>
+                                <select v-model="form.status" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                                    <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
+                                </select>
+                            </div>
+                        </div>
 
-                <!-- Owner org (superadmin only) -->
-                <div v-if="isSuperadmin">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Pemilik (Organisasi)</label>
-                    <select v-model="form.organization_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                        <option value="">Semua Organisasi</option>
-                        <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
-                    </select>
-                </div>
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Jenis</label>
+                                <select v-model="form.type" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                                    <option value="physical">Fizikal</option>
+                                    <option value="online">Dalam Talian</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Lokasi / Pautan</label>
+                                <input v-model="form.location_or_link" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-300 focus:ring-0" placeholder="Alamat / URL" />
+                            </div>
+                        </div>
 
-                <!-- Organisasi terlibat -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Organisasi Terlibat</label>
-                    <p class="text-xs text-gray-400 mb-2">Pilih organisasi yang terlibat dalam event ini (ahli mereka boleh melihat & mendaftar).</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <label
-                            v-for="o in organizations"
-                            :key="o.id"
-                            class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition"
-                            :class="form.organization_ids.includes(o.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
-                        >
-                            <input type="checkbox" :checked="form.organization_ids.includes(o.id)" @change="toggleOrg(o.id)" class="rounded border-gray-300 text-indigo-600" />
-                            {{ o.name }}
-                        </label>
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Mula *</label>
+                                <input v-model="form.start_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
+                                <p v-if="form.errors.start_time" class="mt-1 text-xs text-red-500">{{ form.errors.start_time }}</p>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Tamat *</label>
+                                <input v-model="form.end_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
+                                <p v-if="form.errors.end_time" class="mt-1 text-xs text-red-500">{{ form.errors.end_time }}</p>
+                            </div>
+                        </div>
+
+                        <p v-if="invalidTimes" class="text-xs text-red-500">Masa Tamat mesti selepas Masa Mula.</p>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Poster Program</label>
-                    <p class="text-xs text-gray-400 mb-2">Gunakan gambar berformat poster: <strong>1080px (lebar) × 1350px (tinggi)</strong> — nisbah 4:5 — supaya paparan seragam dan tidak dipotong.</p>
-                    <p class="text-xs text-gray-400 mb-2">Poster ini jadi imej preview apabila program dikongsi di WhatsApp, Facebook atau Telegram.</p>
-                    <input type="file" accept="image/jpg,image/jpeg,image/png,image/webp" @change="form.featured_image = $event.target.files?.[0] ?? null" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
-                    <div v-if="isEditing && event.featured_image_url" class="mt-2">
-                        <img :src="event.featured_image_url" class="h-28 rounded-lg object-cover" alt="Featured semasa" />
-                        <p class="text-xs text-gray-400 mt-1">Gambar semasa. Biarkan kosong untuk kekalkan.</p>
+                <!-- RIGHT: organisations + poster -->
+                <div class="space-y-6">
+                    <div class="space-y-4 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Organisasi</h2>
+
+                        <div v-if="isSuperadmin">
+                            <label class="mb-1 block text-sm font-semibold text-gray-700">Pemilik (Organisasi)</label>
+                            <select v-model="form.organization_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                                <option value="">Semua Organisasi</option>
+                                <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-sm font-semibold text-gray-700">Organisasi Terlibat</label>
+                            <p class="mb-2 text-xs text-gray-400">Ahli organisasi yang dipilih boleh melihat &amp; mendaftar.</p>
+                            <div class="grid grid-cols-1 gap-2">
+                                <label
+                                    v-for="o in organizations"
+                                    :key="o.id"
+                                    class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition"
+                                    :class="form.organization_ids.includes(o.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                                >
+                                    <input type="checkbox" :checked="form.organization_ids.includes(o.id)" @change="toggleOrg(o.id)" class="rounded border-gray-300 text-indigo-600" />
+                                    {{ o.name }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Poster Program</h2>
+                        <p class="text-xs text-gray-400">Guna poster <strong>1080 × 1350 px</strong> (nisbah 4:5) supaya paparan seragam dan tidak dipotong. Poster ini juga jadi imej preview apabila dikongsi.</p>
+                        <input
+                            type="file"
+                            accept="image/jpg,image/jpeg,image/png,image/webp"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                            @change="form.featured_image = $event.target.files?.[0] ?? null"
+                        />
+                        <div v-if="isEditing && event.featured_image_url">
+                            <img :src="event.featured_image_url" class="h-40 w-full rounded-xl object-cover" alt="Poster semasa" />
+                            <p class="mt-1 text-xs text-gray-400">Poster semasa. Biarkan kosong untuk kekalkan.</p>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="flex gap-3 pt-2">
-                    <button @click="submit" :disabled="form.processing || invalidTimes" class="flex-1 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition disabled:opacity-50">
-                        {{ form.processing ? 'Menyimpan...' : (isEditing ? 'Kemas Kini Program' : 'Cipta Program') }}
-                    </button>
-                    <a :href="route('admin.events.index')" class="rounded-2xl border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50">Batal</a>
-                </div>
-
-                <p v-if="invalidTimes" class="text-xs text-red-500">Masa Tamat mesti selepas Masa Mula.</p>
+            <!-- Bottom actions -->
+            <div class="mt-6 flex items-center justify-between">
+                <a :href="route('admin.events.index')" class="text-sm text-gray-500 hover:text-gray-700">← Kembali</a>
+                <button
+                    @click="submit"
+                    :disabled="form.processing || invalidTimes"
+                    class="rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+                >
+                    {{ form.processing ? 'Menyimpan...' : (isEditing ? 'Kemas Kini Program' : 'Cipta Program') }}
+                </button>
             </div>
         </div>
     </AppLayout>

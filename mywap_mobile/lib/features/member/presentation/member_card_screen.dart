@@ -11,6 +11,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/position_badge_chip.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/member_card_data.dart';
@@ -248,6 +249,8 @@ class _CardFront extends StatelessWidget {
           name.bottom,
         );
         final memberNo = CardLayout.layoutMemberNo(card?.member_no, org.boxTop);
+        final badge = card?.position_badge;
+        final badgeTop = memberNo.top + memberNo.fontSize * 1.35;
 
         final photoUrl = card?.photo_url;
         final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
@@ -404,6 +407,21 @@ class _CardFront extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                // Badge jawatan (jika ada).
+                if (badge != null && badge.isNotEmpty)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: badgeTop * scale,
+                    child: Center(
+                      child: PositionBadgeChip(
+                        badge: badge,
+                        scale: scale,
+                        maxWidth: 360 * scale,
+                      ),
+                    ),
+                  ),
 
                 // Kod QR (sudut kanan-bawah) — ketik untuk besarkan.
                 Positioned(

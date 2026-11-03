@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EventCategory;
+use App\Enums\EventStatus;
 use App\Jobs\SendBroadcastJob;
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
+use App\Models\Category;
+use App\Models\Event;
 use App\Models\Organization;
+use App\Models\Product;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -252,6 +257,118 @@ class BroadcastDeliveryTest extends TestCase
         $previews = $this->resolveRecipientPreviews($message);
         $this->assertSame($abimMember->name, $previews[$message->id][0]['name'] ?? null);
         $this->assertSame('ABIM', $previews[$message->id][0]['organization_name'] ?? null);
+    }
+
+    public function test_event_destination_is_saved_and_sent_in_notification_payload(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $event = Event::create([
+            'organization_id' => $this->org->id,
+            'title' => 'Program Kepimpinan Muda',
+            'description' => 'Program ujian',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Muktamar->value,
+            'location_or_link' => 'Kuala Lumpur',
+            'start_time' => now()->addMonth(),
+            'end_time' => now()->addMonth()->addHours(3),
+        ]);
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Program Akan Datang',
+                'content' => 'Daftar sebelum tempat penuh.',
+                'action_type' => 'event',
+                'action_id' => $event->id,
+                'action_label' => 'Daftar Program',
+                'target_criteria' => 'organization',
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $this->assertSame('event', $message->action_type);
+        $this->assertSame($event->id, $message->action_id);
+        $this->assertSame('Daftar Program', $message->action_label);
+        $this->assertStringContainsString($event->slug, (string) $message->action_url);
+
+        $notification = $this->memberA->fresh()->notifications()->firstOrFail();
+        $this->assertSame('event', $notification->data['action_type']);
+        $this->assertSame($event->id, $notification->data['action_id']);
+        $this->assertSame('Daftar Program', $notification->data['action_label']);
+    }
+
+    public function test_product_destination_uses_member_product_url(): void
+    {
+        $admin = $this->makeAdmin();
+        $category = Category::create(['name' => 'Pakaian']);
+
+        $product = Product::create([
+            'name' => 'Jersi PKPIM Baharu',
+            'price' => 89,
+            'stock' => 50,
+            'postage_cost' => 8,
+            'category_id' => $category->id,
+            'organisasi_id' => $this->org->id,
+            'status' => true,
+        ]);
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Jersi Baharu',
+                'content' => 'Koleksi terhad kini dibuka.',
+                'action_type' => 'product',
+                'action_id' => $product->id,
+                'action_label' => 'Tempah Jersi',
+                'target_criteria' => 'organization',
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $this->assertSame('product', $message->action_type);
+        $this->assertSame($product->id, $message->action_id);
+        $this->assertStringContainsString('/products/'.$product->id, (string) $message->action_url);
+    }
+
+    public function test_web_notification_read_marks_only_selected_notification(): void
+    {
+        $first = $this->createBroadcast(['in_app']);
+        $second = $this->createBroadcast(['in_app']);
+
+        $this->memberA->notify(new GeneralBroadcastNotification($first));
+        $this->memberA->notify(new GeneralBroadcastNotification($second));
+
+        $notifications = $this->memberA->fresh()->notifications()->latest()->get();
+        $this->assertCount(2, $notifications);
+
+        $target = $notifications->first();
+
+        $this->actingAs($this->memberA, 'web')
+            ->post(route('notifications.read', $target->id))
+            ->assertRedirect();
+
+        $this->assertNotNull($target->fresh()->read_at);
+        $this->assertNull($notifications->last()->fresh()->read_at);
+    }
+
+    private function makeAdmin(): User
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin Siaran',
+            'email' => 'admin-destination@pkpim.test',
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+            'current_organization_id' => $this->org->id,
+        ]);
+        $admin->assignRole('Admin');
+
+        return $admin;
     }
 
     private function resolveRecipientPreviews(BroadcastMessage $message): array

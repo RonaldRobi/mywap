@@ -178,9 +178,12 @@ class PushNotificationService
             return 0;
         }
 
-        // Normalize data values to string (FCM v1 memerlukan string).
+        // Normalize data values to string (FCM v1 memerlukan string). Buang
+        // nilai null: destinasi pilihan (action_*) selalunya null bila siaran
+        // tiada butang, dan FCM menolak data dengan nilai null.
         $data = collect($data)
             ->map(fn ($value) => is_scalar($value) ? (string) $value : $value)
+            ->filter(fn ($value) => $value !== null)
             ->all();
 
         $success = 0;
@@ -244,6 +247,7 @@ class PushNotificationService
             ],
             'data' => collect($data)
                 ->map(fn ($value) => is_scalar($value) ? (string) $value : $value)
+                ->filter(fn ($value) => $value !== null)
                 ->all(),
         ];
 

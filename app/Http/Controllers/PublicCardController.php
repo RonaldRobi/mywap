@@ -22,6 +22,7 @@ class PublicCardController extends Controller
                 'name' => $user->name,
                 'member_no' => $user->member_no,
                 'member_since' => optional($user->created_at)->format('M Y'),
+                'position_badge' => $user->positionBadgePayload(),
                 'photo_url' => $user->profile_photo_path,
                 'organization' => [
                     'name' => $user->organization?->name,

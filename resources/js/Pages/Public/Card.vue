@@ -75,6 +75,10 @@ function initials(name) {
                             {{ initials(card.name) }}
                         </div>
                         <h2 class="mt-4 text-xl font-bold text-white text-center">{{ card.name }}</h2>
+                        <span v-if="card.position_badge" class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/15 border border-white/20 px-2.5 py-1 text-[11px] font-semibold text-white">
+                            <span class="h-3 w-0.5 rounded" :style="{ backgroundColor: card.position_badge.color || '#4fae73' }"></span>
+                            {{ card.position_badge.name }}
+                        </span>
                         <p class="text-[11px] text-white/60 mt-1">Ahli sejak {{ card.member_since || '—' }}</p>
                     </div>
 

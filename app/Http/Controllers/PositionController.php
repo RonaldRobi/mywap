@@ -18,10 +18,10 @@ class PositionController extends Controller
         $orgId = $user->current_organization_id;
 
         $positionCounts = User::where('current_organization_id', $orgId)
-            ->whereNotNull('position')
-            ->selectRaw('position, COUNT(*) as count')
-            ->groupBy('position')
-            ->pluck('count', 'position');
+            ->whereNotNull('position_id')
+            ->selectRaw('position_id, COUNT(*) as count')
+            ->groupBy('position_id')
+            ->pluck('count', 'position_id');
 
         $positions = OrganizationPosition::where('organization_id', $orgId)
             ->orderBy('display_order')
@@ -34,8 +34,9 @@ class PositionController extends Controller
                 'parent_id' => $p->parent_id,
                 'display_order' => $p->display_order,
                 'is_active' => $p->is_active,
+                'show_badge' => $p->show_badge,
                 'color' => $p->color,
-                'member_count' => $positionCounts[$p->name] ?? 0,
+                'member_count' => $positionCounts[$p->id] ?? 0,
             ]);
 
         $categories = OrganizationPosition::where('organization_id', $orgId)
@@ -59,6 +60,7 @@ class PositionController extends Controller
             'parent_id' => ['nullable', 'exists:organization_positions,id'],
             'display_order' => ['nullable', 'integer', 'min:0'],
             'color' => ['nullable', 'string', 'max:7'],
+            'show_badge' => ['nullable', 'boolean'],
         ]);
 
         OrganizationPosition::create([
@@ -69,6 +71,7 @@ class PositionController extends Controller
             'parent_id' => $data['parent_id'] ?? null,
             'display_order' => $data['display_order'] ?? 0,
             'color' => $data['color'] ?? null,
+            'show_badge' => $data['show_badge'] ?? true,
         ]);
 
         return back()->with('success', 'Jawatan berjaya ditambah.');
@@ -87,9 +90,16 @@ class PositionController extends Controller
             'parent_id' => ['nullable', 'exists:organization_positions,id'],
             'display_order' => ['nullable', 'integer', 'min:0'],
             'color' => ['nullable', 'string', 'max:7'],
+            'show_badge' => ['nullable', 'boolean'],
         ]);
 
         $position->update($data);
+
+        if ($position->wasChanged('name')) {
+            User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+                ->where('position_id', $position->id)
+                ->update(['position' => $position->name]);
+        }
 
         return back()->with('success', 'Jawatan berjaya dikemas kini.');
     }
@@ -153,7 +163,7 @@ class PositionController extends Controller
     {
         $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $request->user()->current_organization_id)
-            ->where('position', $position->name)
+            ->where('position_id', $position->id)
             ->select('id', 'name', 'email', 'phone', 'branch_name')
             ->orderBy('name')
             ->get();

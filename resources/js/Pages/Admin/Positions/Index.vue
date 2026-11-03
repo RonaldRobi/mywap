@@ -24,8 +24,8 @@ const confirmDialog = ref(null);
 const confirmAction = ref(null);
 const confirmMessage = ref('');
 
-const addForm = useForm({ name: '', description: '', category: '', parent_id: '', color: '', display_order: 0 });
-const editForm = useForm({ name: '', description: '', category: '', parent_id: '', color: '', display_order: 0 });
+const addForm = useForm({ name: '', description: '', category: '', parent_id: '', color: '', display_order: 0, show_badge: true });
+const editForm = useForm({ name: '', description: '', category: '', parent_id: '', color: '', display_order: 0, show_badge: true });
 
 const rootPositions = computed(() => props.positions.filter(p => !p.parent_id));
 
@@ -127,6 +127,7 @@ function startEdit(pos) {
     editForm.parent_id = pos.parent_id || '';
     editForm.color = pos.color || '';
     editForm.display_order = pos.display_order;
+    editForm.show_badge = pos.show_badge !== false;
 }
 
 function saveEdit(pos) {
@@ -264,6 +265,10 @@ function dismissFlash() {
                                 </div>
                             </div>
                         </div>
+                        <label class="flex items-center gap-2 text-xs font-medium text-gray-600">
+                            <input v-model="addForm.show_badge" type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            Papar sebagai badge pada profil dan kad ahli
+                        </label>
                         <div class="flex justify-end gap-2 pt-1">
                             <button type="button" @click="showAddForm = false" class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50">Batal</button>
                             <button type="submit" :disabled="addForm.processing" class="rounded-lg bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-60">Simpan</button>
@@ -335,6 +340,10 @@ function dismissFlash() {
                                                 </div>
                                             </div>
                                         </div>
+                                        <label class="flex items-center gap-2 text-xs font-medium text-gray-600">
+                                            <input v-model="editForm.show_badge" type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                            Papar sebagai badge pada profil dan kad ahli
+                                        </label>
                                         <div class="flex justify-end gap-2 pt-1">
                                             <button type="button" @click="cancelEdit" class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50">Batal</button>
                                             <button type="submit" :disabled="editForm.processing" class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">Simpan</button>
@@ -351,6 +360,8 @@ function dismissFlash() {
                                     <span class="flex-1 text-sm font-medium" :class="pos.is_active ? 'text-gray-700' : 'text-gray-400 line-through'">{{ pos.name }}</span>
 
                                     <span v-if="pos.category" :class="['rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', getCategoryBadgeClass(pos.category)]">{{ pos.category }}</span>
+
+                                    <span v-if="!pos.show_badge" class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Tanpa Badge</span>
 
                                     <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', pos.member_count > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-400']">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>

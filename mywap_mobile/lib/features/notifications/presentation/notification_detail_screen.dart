@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/l10n/l10n.dart';
@@ -63,7 +64,11 @@ class _NotificationDetailBody extends StatelessWidget {
     final theme = Theme.of(context);
     final title = notificationTitle(notification);
     final body = notificationBody(notification);
-    final actionUri = notificationActionUri(notification);
+    final internalRoute = notificationInternalRoute(notification);
+    final actionUri =
+        internalRoute == null ? notificationActionUri(notification) : null;
+    final actionLabel =
+        notificationActionLabel(notification) ?? context.l10n.notifOpenLink;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -142,14 +147,22 @@ class _NotificationDetailBody extends StatelessWidget {
                   height: 1.6,
                 ),
               ),
-            if (actionUri != null) ...[
+            if (internalRoute != null || actionUri != null) ...[
               const SizedBox(height: Spacing.xl),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => _openAction(context, actionUri),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  label: Text(context.l10n.notifOpenLink),
+                  onPressed:
+                      internalRoute != null
+                          ? () => context.push(internalRoute)
+                          : () => _openAction(context, actionUri!),
+                  icon: Icon(
+                    internalRoute != null
+                        ? Icons.arrow_forward_rounded
+                        : Icons.open_in_new_rounded,
+                    size: 18,
+                  ),
+                  label: Text(actionLabel),
                 ),
               ),
             ],
@@ -162,7 +175,10 @@ class _NotificationDetailBody extends StatelessWidget {
   Future<void> _openAction(BuildContext context, Uri uri) async {
     var opened = false;
     try {
-      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+      if (!opened) {
+        opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (_) {
       opened = false;
     }

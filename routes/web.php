@@ -178,6 +178,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/usrah/groups/{usrahGroup}/assign', [UsrahController::class, 'assignMembers'])->name('admin.usrah.groups.assign');
         Route::get('/admin/broadcasts', [BroadcastController::class, 'index'])->name('admin.broadcasts.index');
         Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
+        Route::get('/admin/broadcasts/targets', [BroadcastController::class, 'targets'])->name('admin.broadcasts.targets');
         Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
         Route::get('/admin/facilities/manage', [FacilityBookingController::class, 'manageFacilities'])->name('admin.facilities.manage');
         Route::post('/admin/facilities', [FacilityBookingController::class, 'storeFacility'])->name('admin.facilities.store');
@@ -507,6 +508,7 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 Route::middleware('auth')->group(function () {
 
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     // Force profile update flow (intentionally outside profile_complete middleware blocking)
     Route::get('/member/complete-profile', [ProfileController::class, 'completeProfile'])->name('member.complete-profile');

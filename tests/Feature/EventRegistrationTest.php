@@ -559,6 +559,36 @@ class EventRegistrationTest extends TestCase
                 ->where('programs.1.is_ongoing', false));
     }
 
+    public function test_qr_live_endpoint_lists_recent_attendees_from_attendance(): void
+    {
+        $event = $this->makePublishedEvent();
+        $this->makeForm($event);
+
+        $registration = Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Siti Aminah',
+            'member_no' => 'PKPIM-9001',
+            'status' => 'confirmed',
+        ]);
+
+        Attendance::create([
+            'registration_id' => $registration->id,
+            'event_id' => $event->id,
+            'attended_at' => now(),
+            'method' => 'member',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $this->getJson(route('events.qr', ['event' => $event->id, 'live' => 1]))
+            ->assertOk()
+            ->assertJsonPath('attended_count', 1)
+            ->assertJsonPath('recent.0.name', 'Siti Aminah')
+            ->assertJsonPath('recent.0.member_no', 'PKPIM-9001')
+            ->assertJsonPath('recent.0.method', 'member');
+    }
+
     public function test_admin_can_update_registration_status(): void
     {
         $event = $this->makePublishedEvent();

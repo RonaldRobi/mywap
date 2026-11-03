@@ -92,6 +92,7 @@ class ProfileController extends Controller
                 'expertise' => $user->expertise,
                 'topics' => $user->topics,
                 'position' => $user->position,
+                'position_badge' => $user->positionBadgePayload(),
                 'branch_name' => $user->branch?->name,
                 'locality' => $user->locality,
                 'address_1' => $user->address_1,

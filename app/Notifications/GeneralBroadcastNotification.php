@@ -54,6 +54,10 @@ class GeneralBroadcastNotification extends Notification
             'title' => $this->broadcastMessage->title,
             'content' => $this->broadcastMessage->content,
             'target_criteria' => $this->broadcastMessage->target_criteria,
+            'action_type' => $this->broadcastMessage->action_type,
+            'action_id' => $this->broadcastMessage->action_id,
+            'action_label' => $this->broadcastMessage->action_label,
+            'action_url' => $this->broadcastMessage->action_url,
             'sent_at' => now()->toDateTimeString(),
         ];
     }
@@ -72,8 +76,17 @@ class GeneralBroadcastNotification extends Notification
                 ]);
         }
 
-        return $message
+        $message
             ->subject($this->broadcastMessage->title)
             ->line($this->broadcastMessage->content);
+
+        if (filled($this->broadcastMessage->action_url)) {
+            $message->action(
+                $this->broadcastMessage->action_label ?: 'Buka Pautan',
+                $this->broadcastMessage->action_url,
+            );
+        }
+
+        return $message;
     }
 }

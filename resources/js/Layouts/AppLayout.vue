@@ -90,14 +90,25 @@ const sidebarOpen      = ref(true);
 const profileMenuOpen  = ref(false);
 const notifMenuOpen    = ref(false);
 const mobileMenuOpen   = ref(false);
+const selectedNotification = ref(null);
+const notificationModalOpen = ref(false);
+
+function onWindowKeydown(event) {
+    if (event.key === 'Escape') {
+        notificationModalOpen.value = false;
+        notifMenuOpen.value = false;
+    }
+}
 
 let drawerHandler;
 onMounted(() => {
     drawerHandler = () => { mobileMenuOpen.value = true; };
     window.addEventListener('open-mobile-drawer', drawerHandler);
+    window.addEventListener('keydown', onWindowKeydown);
 });
 onUnmounted(() => {
     if (drawerHandler) window.removeEventListener('open-mobile-drawer', drawerHandler);
+    window.removeEventListener('keydown', onWindowKeydown);
 });
 const navContainer   = ref(null);
 function scrollToActive() {
@@ -127,8 +138,42 @@ const notifications = computed(() => page.props.notifications ?? { unread_count:
 
 function openNotifications() {
     notifMenuOpen.value = !notifMenuOpen.value;
-    if (notifMenuOpen.value && notifications.value.unread_count > 0) {
-        router.post(route('notifications.read-all'), {}, { preserveScroll: true, preserveState: true });
+}
+
+function openNotification(item) {
+    notifMenuOpen.value = false;
+    selectedNotification.value = item;
+    notificationModalOpen.value = true;
+
+    if (!item.is_read) {
+        router.post(route('notifications.read', item.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }
+}
+
+function closeNotification() {
+    notificationModalOpen.value = false;
+    selectedNotification.value = null;
+}
+
+function markAllNotificationsRead() {
+    if (!notifications.value.unread_count) return;
+
+    router.post(route('notifications.read-all'), {}, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+}
+
+function isExternalUrl(url) {
+    if (!url) return false;
+
+    try {
+        return new URL(url, window.location.origin).origin !== window.location.origin;
+    } catch {
+        return false;
     }
 }
 
@@ -896,33 +941,38 @@ const bottomNavItems = computed(() => {
                                     v-click-outside="() => notifMenuOpen = false"
                                     class="absolute right-0 mt-2 w-80 rounded-2xl border border-white/60 backdrop-blur-md bg-white/90 shadow-lg z-50 overflow-hidden"
                                 >
-                                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
                                         <p class="text-sm font-bold text-gray-800">{{ t('Notifikasi') }}</p>
-                                        <span class="text-xs text-gray-500">{{ notifications.unread_count }} {{ t('belum dibaca') }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-500">{{ notifications.unread_count }} {{ t('belum dibaca') }}</span>
+                                            <button
+                                                v-if="notifications.unread_count > 0"
+                                                type="button"
+                                                @click="markAllNotificationsRead"
+                                                class="text-[11px] font-bold text-[#2F6B32] hover:underline underline-offset-2"
+                                            >
+                                                {{ t('Tanda semua') }}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="max-h-80 overflow-y-auto">
-                                        <div
+                                        <button
                                             v-for="item in notifications.recent"
                                             :key="item.id"
-                                            class="px-4 py-3 border-b border-gray-50"
+                                            type="button"
+                                            @click="openNotification(item)"
+                                            class="block w-full border-b border-gray-50 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2F6B32]"
                                             :class="item.is_read ? 'bg-white' : 'bg-[#EDF5EE]'"
                                         >
-                                            <Link
-                                                v-if="item.action_url"
-                                                :href="item.action_url"
-                                                class="block"
-                                                @click="notifMenuOpen = false"
-                                            >
-                                                <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
-                                                <p class="mt-1 text-xs text-gray-600 line-clamp-2">{{ item.content }}</p>
-                                                <p class="mt-1 text-[11px] text-gray-400">{{ item.created_at }}</p>
-                                            </Link>
-                                            <template v-else>
-                                                <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
-                                                <p class="mt-1 text-xs text-gray-600 line-clamp-2">{{ item.content }}</p>
-                                                <p class="mt-1 text-[11px] text-gray-400">{{ item.created_at }}</p>
-                                            </template>
-                                        </div>
+                                            <span class="flex items-start gap-2">
+                                                <span v-if="!item.is_read" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#2F6B32]"></span>
+                                                <span class="min-w-0">
+                                                    <span class="block text-sm font-semibold text-gray-800">{{ item.title }}</span>
+                                                    <span class="mt-1 block text-xs text-gray-600 line-clamp-2">{{ item.content }}</span>
+                                                    <span class="mt-1 block text-[11px] text-gray-400">{{ item.created_at }}</span>
+                                                </span>
+                                            </span>
+                                        </button>
                                         <div v-if="!notifications.recent.length" class="px-4 py-8 text-center text-sm text-gray-500">
                                             {{ t('Tiada notifikasi.') }}
                                         </div>
@@ -1221,6 +1271,70 @@ const bottomNavItems = computed(() => {
                 </Link>
             </div>
         </nav>
+
+        <!-- Notification Detail Modal -->
+        <transition
+            enter-active-class="transition ease-out duration-150"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition ease-in duration-100"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="notificationModalOpen && selectedNotification"
+                class="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+                @click.self="closeNotification"
+            >
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="notification-modal-title"
+                    class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl sm:rounded-3xl"
+                >
+                    <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">{{ t('Notifikasi') }}</p>
+                        <button
+                            type="button"
+                            @click="closeNotification"
+                            class="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6B32]"
+                            aria-label="Tutup notifikasi"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <div class="overflow-y-auto px-5 py-5">
+                        <p id="notification-modal-title" class="text-lg font-bold leading-snug text-gray-900">{{ selectedNotification.title }}</p>
+                        <p class="mt-1 text-xs text-gray-400">{{ selectedNotification.created_at }}</p>
+                        <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-gray-700">{{ selectedNotification.content }}</p>
+                    </div>
+
+                    <div v-if="selectedNotification.action_url" class="border-t border-gray-100 px-5 py-4">
+                        <a
+                            v-if="isExternalUrl(selectedNotification.action_url)"
+                            :href="selectedNotification.action_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            @click="closeNotification"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2F6B32] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#255628] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6B32] focus-visible:ring-offset-2"
+                        >
+                            {{ selectedNotification.action_label || t('Buka Pautan') }}
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H18m0 0v4.5M18 6l-7.5 7.5M6 6h5M6 18h12" /></svg>
+                        </a>
+                        <Link
+                            v-else
+                            :href="selectedNotification.action_url"
+                            @click="closeNotification"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2F6B32] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#255628] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2F6B32] focus-visible:ring-offset-2"
+                        >
+                            {{ selectedNotification.action_label || t('Buka Pautan') }}
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12h16m0 0l-6-6m6 6l-6 6" /></svg>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </transition>
 
         <AppSplashScreen />
 

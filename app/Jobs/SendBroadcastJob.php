@@ -116,7 +116,14 @@ class SendBroadcastJob implements ShouldQueue
                     $inAppUserIds,
                     $message->title,
                     $message->content,
-                    ['type' => 'broadcast', 'broadcast_message_id' => $message->id]
+                    [
+                        'type' => 'broadcast',
+                        'broadcast_message_id' => $message->id,
+                        'action_type' => $message->action_type,
+                        'action_id' => $message->action_id,
+                        'action_label' => $message->action_label,
+                        'action_url' => $message->action_url,
+                    ]
                 );
 
                 $this->log($message, 'fcm_sent', 'in_app', null, "{$tokenCount} token peranti berjaya dihantar (FCM).");

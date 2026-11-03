@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Announcement;
 use App\Models\Branch;
 use App\Models\BroadcastMessage;
+use App\Models\Event;
 use App\Models\Organization;
+use App\Models\Product;
 use App\Models\UsrahGroup;
 use App\Models\User;
 use App\Services\AdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,6 +38,10 @@ class BroadcastController extends Controller
         $messages = $messages->map(fn (BroadcastMessage $message) => [
                 'id' => $message->id,
                 'title' => $message->title,
+                'action_type' => $message->action_type,
+                'action_id' => $message->action_id,
+                'action_label' => $message->action_label,
+                'action_url' => $message->action_url,
                 'target_criteria' => $message->target_criteria,
                 'target_criteria_label' => match ($message->target_criteria) {
                     'all' => 'Semua Ahli',
@@ -137,6 +144,10 @@ class BroadcastController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
+            'action_type' => ['nullable', 'in:none,event,product,external'],
+            'action_id' => ['nullable', 'integer'],
+            'action_label' => ['nullable', 'string', 'max:60'],
+            'action_url' => ['nullable', 'string', 'max:2048'],
             'target_criteria' => ['required', 'in:all,organization,branch,specific_members'],
             'target_organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
@@ -166,6 +177,8 @@ class BroadcastController extends Controller
             $targetOrgId = null;
         }
 
+        $action = $this->resolveAction($data, $user, $isSuperadmin);
+
         $this->broadcasts->broadcast([
             'organization_id' => $user->current_organization_id,
             'sender_label' => $isSuperadmin && $targetOrgId === null ? BroadcastMessage::PLATFORM_SENDER_LABEL : null,
@@ -173,6 +186,10 @@ class BroadcastController extends Controller
             'branch_id' => $data['branch_id'] ?? null,
             'title' => $data['title'],
             'content' => $data['content'],
+            'action_type' => $action['action_type'],
+            'action_id' => $action['action_id'],
+            'action_label' => $action['action_label'],
+            'action_url' => $action['action_url'],
             'target_criteria' => $data['target_criteria'],
             'recipient_ids' => $data['recipient_ids'] ?? null,
             'notification_channels' => $data['notification_channels'],
@@ -180,6 +197,144 @@ class BroadcastController extends Controller
         ]);
 
         return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
+    }
+
+    /**
+     * Carian destinasi untuk borang siaran (program atau produk).
+     * Admin hanya perlu taip nama; id disimpan di sebalik tabir.
+     */
+    public function targets(Request $request): JsonResponse
+    {
+        $query = trim((string) $request->query('q'));
+        $type = (string) $request->query('type');
+
+        if (mb_strlen($query) < 2 || ! in_array($type, ['event', 'product'], true)) {
+            return response()->json([]);
+        }
+
+        $user = $request->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+        $orgId = (int) $user->current_organization_id;
+
+        if ($type === 'event') {
+            $items = Event::query()
+                ->where('title', 'like', "%{$query}%")
+                ->when(! $isSuperadmin, function ($q) use ($orgId) {
+                    $q->where(function ($inner) use ($orgId) {
+                        $inner->where('organization_id', $orgId)->orWhereNull('organization_id');
+                    });
+                })
+                ->orderByDesc('start_time')
+                ->take(20)
+                ->get(['id', 'title', 'slug', 'start_time', 'organization_id'])
+                ->map(fn (Event $event) => [
+                    'id' => $event->id,
+                    'label' => $event->title,
+                    'meta' => $event->start_time?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                ]);
+
+            return response()->json($items);
+        }
+
+        $items = Product::query()
+            ->where('name', 'like', "%{$query}%")
+            ->when(! $isSuperadmin, function ($q) use ($orgId) {
+                $q->where(function ($inner) use ($orgId) {
+                    $inner->where('organisasi_id', $orgId)->orWhereNull('organisasi_id');
+                });
+            })
+            ->where('status', true)
+            ->orderBy('name')
+            ->take(20)
+            ->get(['id', 'name', 'price', 'stock'])
+            ->map(fn (Product $product) => [
+                'id' => $product->id,
+                'label' => $product->name,
+                'meta' => 'RM '.number_format((float) $product->price, 2).' · Stok '.$product->stock,
+            ]);
+
+        return response()->json($items);
+    }
+
+    /**
+     * Tukar pilihan destinasi borang kepada kolum yang disimpan.
+     * `action_url` diselesaikan di sini supaya emel dan web tidak perlu
+     * membina semula pautan ketika notifikasi dihantar.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{action_type: ?string, action_id: ?int, action_label: ?string, action_url: ?string}
+     */
+    private function resolveAction(array $data, User $user, bool $isSuperadmin): array
+    {
+        $type = (string) ($data['action_type'] ?? 'none');
+
+        if (! in_array($type, ['event', 'product', 'external'], true)) {
+            return ['action_type' => null, 'action_id' => null, 'action_label' => null, 'action_url' => null];
+        }
+
+        $label = trim((string) ($data['action_label'] ?? ''));
+
+        if ($type === 'external') {
+            $url = trim((string) ($data['action_url'] ?? ''));
+            $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+            if (! in_array($scheme, ['http', 'https'], true)) {
+                throw ValidationException::withMessages([
+                    'action_url' => 'Pautan mesti bermula dengan http:// atau https://.',
+                ]);
+            }
+
+            return [
+                'action_type' => 'external',
+                'action_id' => null,
+                'action_label' => $label !== '' ? $label : 'Buka Pautan',
+                'action_url' => $url,
+            ];
+        }
+
+        $id = (int) ($data['action_id'] ?? 0);
+
+        if ($id <= 0) {
+            throw ValidationException::withMessages([
+                'action_id' => 'Sila pilih destinasi daripada carian.',
+            ]);
+        }
+
+        if ($type === 'event') {
+            $event = Event::find($id);
+
+            if ($event === null) {
+                throw ValidationException::withMessages(['action_id' => 'Program tidak dijumpai.']);
+            }
+
+            if (! $isSuperadmin && $event->organization_id !== null && (int) $event->organization_id !== (int) $user->current_organization_id) {
+                abort(403, 'Tiada kebenaran untuk program ini.');
+            }
+
+            return [
+                'action_type' => 'event',
+                'action_id' => $event->id,
+                'action_label' => $label !== '' ? $label : 'Lihat Program',
+                'action_url' => route('events.show', $event->slug),
+            ];
+        }
+
+        $product = Product::find($id);
+
+        if ($product === null) {
+            throw ValidationException::withMessages(['action_id' => 'Produk tidak dijumpai.']);
+        }
+
+        if (! $isSuperadmin && $product->organisasi_id !== null && (int) $product->organisasi_id !== (int) $user->current_organization_id) {
+            abort(403, 'Tiada kebenaran untuk produk ini.');
+        }
+
+        return [
+            'action_type' => 'product',
+            'action_id' => $product->id,
+            'action_label' => $label !== '' ? $label : 'Lihat Produk',
+            'action_url' => route('products.show', $product->id),
+        ];
     }
 
     /**

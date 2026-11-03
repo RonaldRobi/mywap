@@ -339,19 +339,29 @@ const valid = computed(() => {
     <AppLayout>
         <Head :title="isEditing ? `Edit Borang — ${form.title}` : 'Borang Baru'" />
 
-        <div ref="builderRoot" class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <div ref="builderRoot" class="mx-auto w-full max-w-[1500px] px-4 py-8 space-y-6">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <h1 class="text-2xl font-black text-gray-900">{{ isEditing ? 'Edit Borang' : 'Borang Baru' }}</h1>
                     <p class="text-sm text-gray-500 mt-0.5">Bina borang tersuai untuk program atau pendaftaran.</p>
                 </div>
-                <button
-                    @click="showPreview = true"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    Pratonton
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        @click="showPreview = true"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        Pratonton
+                    </button>
+                    <button
+                        @click="save"
+                        :disabled="!valid || busy.saving"
+                        class="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition"
+                        :class="valid ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'"
+                    >
+                        {{ busy.saving ? 'Menyimpan...' : 'Simpan' }}
+                    </button>
+                </div>
             </div>
 
             <!-- Flash error -->
@@ -366,6 +376,9 @@ const valid = computed(() => {
                 </ul>
             </div>
 
+            <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
+            <!-- LEFT: Tetapan Borang -->
+            <div class="space-y-6">
             <!-- Form settings -->
             <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl p-6 shadow-sm space-y-4">
                 <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide">Tetapan Borang</h2>
@@ -666,7 +679,10 @@ const valid = computed(() => {
                     </div>
                 </div>
             </div>
+            </div><!-- /left: tetapan -->
 
+            <!-- RIGHT: Soalan -->
+            <div class="space-y-6">
             <!-- Questions -->
             <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl p-6 shadow-sm space-y-4">
                 <div class="flex items-center justify-between gap-3">
@@ -751,6 +767,8 @@ const valid = computed(() => {
                     <span v-else>{{ isEditing ? 'Simpan Perubahan' : 'Cipta Borang' }}</span>
                 </button>
             </div>
+            </div><!-- /right: soalan -->
+            </div><!-- /grid -->
         </div>
 
         <!-- ─── Pratonton ─────────────────────────────────────────────────── -->

@@ -52,7 +52,6 @@ class ProfileUpdateRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
-            'position' => ['nullable', 'string', 'max:255'],
             'topics' => ['nullable', 'string'],
         ];
     }

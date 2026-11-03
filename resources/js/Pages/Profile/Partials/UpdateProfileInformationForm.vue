@@ -89,7 +89,6 @@ const form = useForm({
     state: user.state ?? '',
     emergency_contact_name: user.emergency_contact_name ?? '',
     emergency_contact_phone: user.emergency_contact_phone ?? '',
-    position: user.position ?? '',
     topics: user.topics ?? '',
 });
 
@@ -332,16 +331,6 @@ function submitProfile() {
                         <InputLabel for="linkedin_url" value="LinkedIn URL" />
                         <TextInput id="linkedin_url" type="url" class="mt-1 block w-full" v-model="form.linkedin_url" />
                         <InputError class="mt-2" :message="form.errors.linkedin_url" />
-                    </div>
-
-                    <div>
-                        <InputLabel for="position" value="Jawatan dalam Organisasi" />
-                        <select id="position" v-model="form.position" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                            <option value="">Pilih jawatan</option>
-                            <option v-for="pos in orgPositions" :key="pos.id" :value="pos.name">{{ pos.name }}</option>
-                        </select>
-                        <p v-if="!orgPositions.length" class="mt-1 text-xs text-gray-400">Tiada jawatan disediakan. Admin boleh tambah di menu Jawatan.</p>
-                        <InputError class="mt-2" :message="form.errors.position" />
                     </div>
 
                     <div class="md:col-span-2">

@@ -27,6 +27,30 @@ const name = computed(() => (props.fontsVersion, layoutName(props.card?.name)));
 const org = computed(() => (props.fontsVersion, layoutOrganization(props.card?.organization?.name, name.value.bottom)));
 const memberNo = computed(() => (props.fontsVersion, layoutMemberNo(props.card?.member_no, org.value.boxTop)));
 
+const badge = computed(() => {
+    const raw = props.card?.position_badge;
+    if (!raw || !raw.name || !String(raw.name).trim()) return null;
+
+    const text = String(raw.name).trim();
+    const fontSize = text.length > 22 ? 14 : 18;
+    const width = Math.min(380, Math.max(130, text.length * fontSize * 0.56 + 36));
+    const height = 30;
+    const top = memberNo.value.baseline + 8;
+    const color = /^#[0-9a-f]{6}$/i.test(raw.color || '') ? raw.color : '#147a3d';
+
+    return {
+        text,
+        fontSize,
+        width,
+        height,
+        top,
+        left: L.name.centerX - width / 2,
+        color,
+        textX: L.name.centerX - width / 2 + 24,
+        textY: top + height / 2 + fontSize * 0.35,
+    };
+});
+
 const qrDataUri = computed(() => {
     if (!props.qrSvg) return null;
     const svg = props.qrSvg.includes('xmlns=')
@@ -133,6 +157,33 @@ const qrInner = computed(() => ({
             :fill="L.memberNo.color"
             letter-spacing="1"
         >{{ memberNo.text }}</text>
+
+        <!-- Badge jawatan (jika ada) -->
+        <g v-if="badge">
+            <rect
+                :x="badge.left" :y="badge.top"
+                :width="badge.width" :height="badge.height"
+                rx="8" ry="8"
+                fill="rgba(255,255,255,0.94)"
+                stroke="#d7e3da"
+                stroke-width="1"
+            />
+            <rect
+                :x="badge.left + 12" :y="badge.top + 8"
+                width="3" :height="badge.height - 16"
+                rx="1.5" ry="1.5"
+                :fill="badge.color"
+            />
+            <text
+                :x="badge.textX"
+                :y="badge.textY"
+                text-anchor="start"
+                :font-family="FONT_FAMILY"
+                :font-size="badge.fontSize"
+                font-weight="700"
+                fill="#00291a"
+            >{{ badge.text }}</text>
+        </g>
 
         <!-- QR (tekan untuk besarkan) -->
         <g class="cursor-pointer" @click.stop="emit('qr-click')">

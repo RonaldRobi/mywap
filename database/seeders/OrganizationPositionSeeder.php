@@ -26,7 +26,10 @@ class OrganizationPositionSeeder extends Seeder
             foreach ($defaults as $i => $name) {
                 OrganizationPosition::firstOrCreate(
                     ['organization_id' => $org->id, 'name' => $name],
-                    ['display_order' => $i]
+                    [
+                        'display_order' => $i,
+                        'show_badge' => $name !== 'Ahli Biasa',
+                    ]
                 );
             }
         }

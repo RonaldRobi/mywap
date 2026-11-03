@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationService
 {
@@ -42,6 +43,7 @@ class NotificationService
 
         if ($notification->read_at === null) {
             $notification->markAsRead();
+            Cache::forget("unread:{$user->id}");
         }
 
         return true;
@@ -53,5 +55,6 @@ class NotificationService
     public function markAllRead(User $user): void
     {
         $user->unreadNotifications->markAsRead();
+        Cache::forget("unread:{$user->id}");
     }
 }

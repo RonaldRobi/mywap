@@ -59,6 +59,33 @@ IconData notificationIconFor(AppNotification notification) {
   return Icons.notifications_outlined;
 }
 
+/// Label butang tindakan daripada payload admin (`data.action_label`).
+String? notificationActionLabel(AppNotification notification) {
+  final raw = (notification.data['action_label'] as String?)?.trim();
+  return (raw == null || raw.isEmpty) ? null : raw;
+}
+
+/// Laluan dalaman untuk destinasi program atau produk. Dipulangkan supaya
+/// app kekal dalam aplikasi dan tidak membuka browser luar.
+String? notificationInternalRoute(AppNotification notification) {
+  return notificationRouteFromData(notification.data);
+}
+
+/// Binakan laluan go_router daripada `action_type` + `action_id`.
+/// Digunakan oleh detail notifikasi dan juga tap push (FCM).
+String? notificationRouteFromData(Map<String, dynamic> data) {
+  final type = (data['action_type'] ?? '').toString();
+  final rawId = data['action_id'];
+  final id = rawId is int ? rawId : int.tryParse('$rawId');
+  if (id == null || id <= 0) return null;
+
+  return switch (type) {
+    'event' => '/events/$id',
+    'product' => '/products/$id',
+    _ => null,
+  };
+}
+
 /// Pautan tindakan pilihan (`data.action_url`) jika sah dan http(s).
 Uri? notificationActionUri(AppNotification notification) {
   final raw = (notification.data['action_url'] as String?)?.trim();

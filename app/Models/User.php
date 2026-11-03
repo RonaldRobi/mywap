@@ -82,6 +82,7 @@ class User extends Authenticatable
         'emergency_contact_name',
         'emergency_contact_phone',
         'position',
+        'position_id',
         'topics',
         'referred_by_user_id',
         'first_login_at',
@@ -133,6 +134,55 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function organizationPosition(): BelongsTo
+    {
+        return $this->belongsTo(OrganizationPosition::class, 'position_id');
+    }
+
+    /**
+     * Jawatan yang layak dipaparkan sebagai badge pada profil dan kad digital.
+     *
+     * Badge hanya keluar jika jawatan aktif, ditanda `show_badge`, dan milik
+     * organisasi semasa ahli. Jawatan biasa seperti "Ahli Biasa" tidak
+     * dipaparkan.
+     */
+    public function badgePosition(): ?OrganizationPosition
+    {
+        if (! $this->position_id) {
+            return null;
+        }
+
+        $position = $this->relationLoaded('organizationPosition')
+            ? $this->organizationPosition
+            : $this->organizationPosition()->first();
+
+        if (! $position || ! $position->is_active || ! $position->show_badge) {
+            return null;
+        }
+
+        if ((int) $position->organization_id !== (int) $this->current_organization_id) {
+            return null;
+        }
+
+        return $position;
+    }
+
+    public function positionBadgePayload(): ?array
+    {
+        $position = $this->badgePosition();
+
+        if (! $position) {
+            return null;
+        }
+
+        return [
+            'id' => $position->id,
+            'name' => $position->name,
+            'category' => $position->category,
+            'color' => $position->color,
+        ];
     }
 
     public function branchChangeRequests(): HasMany

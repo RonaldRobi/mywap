@@ -8,6 +8,8 @@
 // no `@JsonKey` remapping is required. Models are plain immutable classes
 // with manual `fromJson` (no freezed / build_runner).
 
+import '../../../../shared/models/position_badge.dart';
+
 /// Parses a list of maps into typed models.
 List<T> _parseList<T>(
   dynamic value,
@@ -206,6 +208,7 @@ class ProfileUser {
     this.expertise,
     this.topics,
     this.position,
+    this.position_badge,
     this.branch_name,
     this.locality,
     this.linkedin_url,
@@ -242,6 +245,10 @@ class ProfileUser {
       expertise: json['expertise'] as String?,
       topics: json['topics'] as String?,
       position: json['position'] as String?,
+      position_badge: _fromJsonOrNull(
+        json['position_badge'],
+        PositionBadge.fromJson,
+      ),
       branch_name: json['branch_name'] as String?,
       locality: json['locality'] as String?,
       linkedin_url: json['linkedin_url'] as String?,
@@ -281,6 +288,7 @@ class ProfileUser {
   final String? expertise;
   final String? topics;
   final String? position;
+  final PositionBadge? position_badge;
   final String? branch_name;
   final String? locality;
   final String? linkedin_url;

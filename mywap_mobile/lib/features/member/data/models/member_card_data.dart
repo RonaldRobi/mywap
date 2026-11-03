@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../shared/models/position_badge.dart';
+
 /// Payload from `GET /member/card`.
 ///
 /// Envelope: `{ card: {...}, qrPrivate: <svg>, qrPublic: <svg>|null }`.
@@ -34,6 +36,7 @@ class MemberCardInfo {
     this.profession,
     this.industry,
     this.member_no,
+    this.position_badge,
     this.organization,
     this.photo_url,
     this.member_since,
@@ -55,6 +58,11 @@ class MemberCardInfo {
       profession: json['profession'] as String?,
       industry: json['industry'] as String?,
       member_no: json['member_no'] as String?,
+      position_badge: json['position_badge'] is Map<String, dynamic>
+          ? PositionBadge.fromJson(
+            json['position_badge'] as Map<String, dynamic>,
+          )
+          : null,
       organization: org is Map<String, dynamic> ? MemberCardOrg.fromJson(org) : null,
       photo_url: json['photo_url'] as String?,
       member_since: json['member_since'] as String?,
@@ -74,6 +82,7 @@ class MemberCardInfo {
   final String? profession;
   final String? industry;
   final String? member_no;
+  final PositionBadge? position_badge;
   final MemberCardOrg? organization;
   final String? photo_url;
   final String? member_since;

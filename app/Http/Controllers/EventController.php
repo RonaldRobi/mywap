@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Models\AppSetting;
+use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\Form;
@@ -803,12 +804,16 @@ class EventController extends Controller
             ->errorCorrection('H')
             ->generate($attendanceUrl);
 
-        $attendedCount = $event->rsvps()->where('status', 'attended')->count();
+        // Kehadiran sebenar disimpan dalam jadual `attendances` (bukan RSVP),
+        // jadi kiraan & senarai langsung mesti ambil dari situ.
+        $attendedCount = Attendance::where('event_id', $event->id)->count();
 
-        // Fast JSON path: polling fetch in ShowQr.vue sends ?count=1 to avoid
-        // re-rendering the full page just to refresh the live counter.
-        if (request()->boolean('count')) {
-            return response()->json(['attended_count' => $attendedCount]);
+        // Fast JSON path for the projector's live panel.
+        if ($request->boolean('count') || $request->boolean('live')) {
+            return response()->json([
+                'attended_count' => $attendedCount,
+                'recent' => $this->recentAttendees($event),
+            ]);
         }
 
         return Inertia::render('Events/ShowQr', [
@@ -816,7 +821,36 @@ class EventController extends Controller
             'qrSvg' => (string) $qrSvg,
             'attendedCount' => $attendedCount,
             'attendanceUrl' => $attendanceUrl,
+            'recentAttendees' => $this->recentAttendees($event),
         ]);
+    }
+
+    /**
+     * Peserta terkini yang telah selesai semak masuk, untuk panel langsung pada
+     * skrin projektor. Dihantar bersama kiraan dalam endpoint `?live=1`.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function recentAttendees(Event $event, int $limit = 15): array
+    {
+        return Attendance::query()
+            ->where('event_id', $event->id)
+            ->with(['registration:id,name,member_no,registration_no'])
+            ->orderByDesc('attended_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Attendance $attendance) => [
+                'id' => $attendance->id,
+                'name' => $attendance->registration?->name ?? 'Peserta',
+                'member_no' => $attendance->registration?->member_no,
+                'registration_no' => $attendance->registration?->registration_no,
+                'method' => $attendance->method,
+                'attended_at' => $attendance->attended_at?->toISOString(),
+                'attended_at_label' => $attendance->attended_at?->timezone(config('app.timezone'))->format('h:i A'),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

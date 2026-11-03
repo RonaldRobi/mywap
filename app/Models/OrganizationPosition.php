@@ -16,11 +16,13 @@ class OrganizationPosition extends Model
         'parent_id',
         'display_order',
         'is_active',
+        'show_badge',
         'color',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_badge' => 'boolean',
     ];
 
     public function organization(): BelongsTo
@@ -38,6 +40,11 @@ class OrganizationPosition extends Model
         return $this->hasMany(self::class, 'parent_id')->orderBy('display_order');
     }
 
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'position_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -46,7 +53,7 @@ class OrganizationPosition extends Model
     public function memberCount(): int
     {
         return User::where('current_organization_id', $this->organization_id)
-            ->where('position', $this->name)
+            ->where('position_id', $this->id)
             ->count();
     }
 }

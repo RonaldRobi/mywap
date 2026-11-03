@@ -125,6 +125,16 @@ const initials = computed(() =>
                                 {{ profileUser.name }}
                             </h2>
                             <span
+                                v-if="profileUser.position_badge"
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-100 text-gray-700"
+                            >
+                                <span
+                                    class="h-3 w-0.5 rounded"
+                                    :style="{ backgroundColor: profileUser.position_badge.color || '#147a3d' }"
+                                ></span>
+                                {{ profileUser.position_badge.name }}
+                            </span>
+                            <span
                                 v-if="profileUser.organization"
                                 :class="['inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full', theme.badge]"
                             >

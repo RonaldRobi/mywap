@@ -46,6 +46,8 @@ class MemberCoreService
             'locality' => $user->locality,
             'profession' => $user->current_profession,
             'industry' => $user->industry,
+            'position' => $user->position,
+            'position_badge' => $user->positionBadgePayload(),
             'member_no' => $user->member_no,
             'organization' => [
                 'name' => $user->organization?->name,

@@ -1,154 +1,260 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { Head } from '@inertiajs/vue3';
 
-// ─── Props ──────────────────────────────────────────────────────────────────
 const props = defineProps({
     event: Object,
     qrSvg: String,
     attendanceUrl: String,
-    attendedCount: Number,
+    attendedCount: { type: Number, default: 0 },
+    recentAttendees: { type: Array, default: () => [] },
 });
 
-// ─── Live counter polling ────────────────────────────────────────────────────
-// Polls the current attendance count every 10 seconds so the presenter
-// can see arrivals without manually refreshing.
+// ─── Live attendance panel ──────────────────────────────────────────────────
 const liveCount = ref(props.attendedCount ?? 0);
+const recent = ref(props.recentAttendees ?? []);
+const flashIds = ref([]);
 const showPrintOptions = ref(false);
-let pollInterval   = null;
+const isFullscreen = ref(false);
 
-async function fetchCount() {
+let pollInterval = null;
+let flashTimer = null;
+let polling = false;
+
+function initials(name) {
+    return (name || '?')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => word[0]?.toUpperCase() ?? '')
+        .join('');
+}
+
+function methodLabel(method) {
+    return {
+        member: 'Ahli',
+        walkin: 'Walk-in',
+        guest: 'Tetamu',
+        manual: 'Manual',
+    }[method] ?? 'Hadir';
+}
+
+function methodClass(method) {
+    return {
+        member: 'bg-emerald-100 text-emerald-700',
+        walkin: 'bg-amber-100 text-amber-700',
+        guest: 'bg-sky-100 text-sky-700',
+        manual: 'bg-gray-100 text-gray-600',
+    }[method] ?? 'bg-gray-100 text-gray-600';
+}
+
+async function fetchLive() {
+    if (polling) return;
+    polling = true;
+
     try {
         const res = await fetch(
-            route('events.qr', { event: props.event.id }) + '?count=1',
-            { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } }
+            route('events.qr', { event: props.event.id }) + '?live=1',
+            { headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } },
         );
+
         if (res.ok) {
             const data = await res.json();
+
             if (typeof data.attended_count === 'number') {
                 liveCount.value = data.attended_count;
             }
+
+            if (Array.isArray(data.recent)) {
+                const previous = new Set(recent.value.map((row) => row.id));
+                const fresh = data.recent.filter((row) => !previous.has(row.id));
+
+                recent.value = data.recent;
+
+                if (fresh.length) {
+                    flashIds.value = fresh.map((row) => row.id);
+                    clearTimeout(flashTimer);
+                    flashTimer = setTimeout(() => { flashIds.value = []; }, 5000);
+                }
+            }
         }
-    } catch { /* silently ignore network blips */ }
+    } catch {
+        /* silently ignore network blips */
+    } finally {
+        polling = false;
+    }
 }
 
-onMounted (() => { pollInterval = setInterval(fetchCount, 10_000); });
-onUnmounted(() => { clearInterval(pollInterval); });
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.()
+            .then(() => { isFullscreen.value = true; })
+            .catch(() => {});
+    } else {
+        document.exitFullscreen?.();
+        isFullscreen.value = false;
+    }
+}
+
+onMounted(() => {
+    pollInterval = setInterval(fetchLive, 5000);
+});
+
+onUnmounted(() => {
+    clearInterval(pollInterval);
+    clearTimeout(flashTimer);
+});
 </script>
 
 <template>
     <Head :title="`QR Semak Masuk – ${event.title}`" />
 
-    <!-- Full-screen projector-mode layout (no AppLayout wrapper) -->
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-8">
-
-        <!-- Top bar: event info + back button (hidden when printing/presenting) -->
-        <div class="w-full max-w-3xl flex items-center justify-between mb-8 print:hidden">
-            <div>
+    <div class="flex min-h-screen flex-col bg-gradient-to-br from-gray-50 to-gray-100 lg:h-screen lg:overflow-hidden">
+        <!-- Top bar -->
+        <header class="z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200/70 bg-white/75 px-5 py-3 backdrop-blur print:hidden">
+            <div class="min-w-0">
                 <span
-                    class="inline-block text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-2"
-                    :style="{ backgroundColor: event.organization.color_theme + '22', color: event.organization.color_theme }"
+                    class="inline-block rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+                    :style="{ backgroundColor: (event.organization?.color_theme || '#334155') + '22', color: event.organization?.color_theme || '#334155' }"
                 >
-                    {{ event.organization.name }}
+                    {{ event.organization?.name || 'myWAP' }}
                 </span>
-                <h1 class="text-2xl font-extrabold text-gray-800 leading-tight">{{ event.title }}</h1>
-                <p class="text-sm text-gray-400 mt-1">{{ event.start_formatted }}</p>
+                <h1 class="mt-1 truncate text-lg font-black leading-tight text-gray-800 lg:text-xl">{{ event.title }}</h1>
+                <p class="text-xs text-gray-400">{{ event.start_formatted }}</p>
             </div>
 
-            <div class="flex items-center gap-3">
-                <!-- Print QR (A4 options) -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    @click="toggleFullscreen"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" :d="isFullscreen ? 'M9 9V4H4m11 0h5v5m0 11h-5v-5M4 15v5h5' : 'M4 9V4h5m11 0h-5v5m0 11v-5h5M4 15v5h5'" />
+                    </svg>
+                    {{ isFullscreen ? 'Keluar Penuh' : 'Skrin Penuh' }}
+                </button>
+
                 <button
                     type="button"
                     @click="showPrintOptions = true"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#123D2A]
-                           text-sm font-semibold text-white hover:bg-[#2F6B32] transition-colors"
+                    class="inline-flex items-center gap-1.5 rounded-xl bg-[#123D2A] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2F6B32]"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5V5.25A2.25 2.25 0 019 3h6a2.25 2.25 0 012.25 2.25V7.5M6.75 16.5H5.25A2.25 2.25 0 013 14.25v-4.5A2.25 2.25 0 015.25 7.5h13.5A2.25 2.25 0 0121 9.75v4.5a2.25 2.25 0 01-2.25 2.25h-1.5M6.75 12.75h10.5v6.75a1.5 1.5 0 01-1.5 1.5H8.25a1.5 1.5 0 01-1.5-1.5v-6.75z"/>
                     </svg>
                     Cetak QR
                 </button>
 
-                <!-- Download QR (PNG) -->
                 <a
                     :href="route('events.qr.download', { event: event.id })"
                     download
-                    title="PNG latar belakang telus"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200
-                           text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                    Muat Turun PNG
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Muat Turun
                 </a>
 
-                <!-- Print attendance sheet link -->
                 <a
                     :href="route('events.print', { event: event.id })"
                     target="_blank"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200
-                           text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    rel="noopener"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                    </svg>
                     Cetak Senarai
                 </a>
 
-                <!-- Back to events -->
                 <a
                     :href="route('events.index')"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200
-                           text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
                     Kembali
                 </a>
             </div>
-        </div>
+        </header>
 
-        <!-- QR Card -->
-        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 p-10 flex flex-col items-center gap-6 w-full max-w-md">
+        <!-- Two-pane projector layout: QR (left) + live attendance (right) -->
+        <main class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
+            <!-- LEFT: QR -->
+            <section class="flex min-h-0 flex-col items-center justify-center border-b border-gray-200/70 p-6 text-center lg:border-b-0 lg:border-r lg:p-10">
+                <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-600">Pengesahan Kehadiran</p>
+                <h2 class="mt-1 text-2xl font-black text-gray-800 lg:text-3xl">Sila Imbas Untuk Semak Masuk</h2>
 
-            <!-- Heading -->
-            <div class="text-center">
-                <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Pengesahan Kehadiran</p>
-                <h2 class="text-xl font-extrabold text-gray-800">Sila Imbas Untuk Kehadiran</h2>
-            </div>
+                <div
+                    class="mt-5 w-full rounded-3xl border-2 border-gray-100 bg-white p-4 shadow-xl [&_svg]:block [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:w-full"
+                    :style="{ maxWidth: 'min(56vh, 520px)' }"
+                    v-html="qrSvg"
+                ></div>
 
-            <!-- QR Code (server-rendered SVG) -->
-            <div
-                class="p-3 rounded-2xl border-2 border-gray-100 [&_svg]:block [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:w-full [&_svg]:max-w-full"
-                v-html="qrSvg"
-            ></div>
+                <p class="mt-3 text-[11px] font-medium text-gray-500">
+                    Buka kamera telefon → imbas QR → sahkan kehadiran anda.
+                </p>
+                <p class="mt-1 max-w-sm break-all text-[10px] font-mono text-gray-300">{{ attendanceUrl }}</p>
+            </section>
 
-            <!-- Attendance URL (for manual fallback) -->
-            <p class="text-[11px] text-gray-300 font-mono break-all text-center max-w-xs">
-                {{ attendanceUrl }}
-            </p>
+            <!-- RIGHT: live attendance -->
+            <section class="flex min-h-0 flex-col bg-white/60 p-5 lg:p-8">
+                <div class="flex shrink-0 items-end justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">Pendaftaran Masuk</p>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-5xl font-black tabular-nums leading-none text-gray-900 lg:text-6xl">{{ liveCount }}</span>
+                            <span class="text-sm font-semibold text-gray-400">peserta hadir</span>
+                        </div>
+                    </div>
+                    <p class="flex items-center gap-1.5 text-[11px] font-medium text-gray-400">
+                        <span class="relative flex h-2 w-2">
+                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                        </span>
+                        Langsung · setiap 5 saat
+                    </p>
+                </div>
 
-            <!-- Live attended counter -->
-            <div class="flex flex-col items-center gap-0.5 bg-gray-50 rounded-2xl px-8 py-4 w-full">
-                <span class="text-4xl font-black tabular-nums text-gray-800 tracking-tight">
-                    {{ liveCount }}
-                </span>
-                <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Ahli Telah Hadir</span>
-            </div>
+                <div class="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                    <TransitionGroup name="attendee" tag="div" class="space-y-2">
+                        <div
+                            v-for="row in recent"
+                            :key="row.id"
+                            class="flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-colors duration-500"
+                            :class="flashIds.includes(row.id)
+                                ? 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-200'
+                                : 'border-gray-100 bg-white'"
+                        >
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-700">
+                                {{ initials(row.name) }}
+                            </div>
 
-            <!-- Pulse indicator: auto-refreshes every 10s -->
-            <p class="flex items-center gap-1.5 text-[11px] text-gray-300">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Dikemaskini setiap 10 saat
-            </p>
-        </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-bold text-gray-800">{{ row.name }}</p>
+                                <p class="truncate text-[11px] text-gray-400">
+                                    <span v-if="row.member_no">No Ahli: {{ row.member_no }}</span>
+                                    <span v-else-if="row.registration_no">No Daftar: {{ row.registration_no }}</span>
+                                    <span v-else>Peserta</span>
+                                </p>
+                            </div>
 
-        <!-- ── Print options ───────────────────────────────────────────────── -->
+                            <div class="shrink-0 text-right">
+                                <p class="text-xs font-bold text-gray-700">{{ row.attended_at_label || '—' }}</p>
+                                <span class="mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold" :class="methodClass(row.method)">
+                                    {{ methodLabel(row.method) }}
+                                </span>
+                            </div>
+                        </div>
+                    </TransitionGroup>
+
+                    <div v-if="!recent.length" class="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-300">
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-400">Menunggu imbasan pertama…</p>
+                        <p class="text-[11px] text-gray-300">Nama peserta akan muncul di sini selepas mereka mengimbas QR.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ── Print options ─────────────────────────────────────────────── -->
         <div
             v-if="showPrintOptions"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#071525]/55 p-4 backdrop-blur-sm"
@@ -165,7 +271,6 @@ onUnmounted(() => { clearInterval(pollInterval); });
                 </div>
 
                 <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <!-- Option 1 -->
                     <a
                         :href="route('events.qr.print', { event: event.id, layout: 'qr' })"
                         target="_blank"
@@ -177,12 +282,9 @@ onUnmounted(() => { clearInterval(pollInterval); });
                             <div class="w-full [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" v-html="qrSvg"></div>
                         </div>
                         <p class="mt-3 text-sm font-bold text-gray-900">QR Sahaja</p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
-                            QR besar tanpa teks. Sesuai untuk tampal di kaunter atau pintu masuk.
-                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">QR besar tanpa teks. Sesuai untuk tampal di kaunter atau pintu masuk.</p>
                     </a>
 
-                    <!-- Option 2 -->
                     <a
                         :href="route('events.qr.print', { event: event.id, layout: 'poster' })"
                         target="_blank"
@@ -213,19 +315,27 @@ onUnmounted(() => { clearInterval(pollInterval); });
                             </div>
                         </div>
                         <p class="mt-3 text-sm font-bold text-gray-900">Poster 4:5</p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">
-                            1080 × 1350 px. Logo myWAP, logo organisasi, gambar program, butiran dan QR — penuh tanpa terpotong.
-                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-gray-500">1080 × 1350 px. Logo myWAP, logo organisasi, gambar program, butiran dan QR — penuh tanpa terpotong.</p>
                     </a>
                 </div>
 
                 <p class="mt-5 rounded-xl bg-[#F4F6F1] px-4 py-3 text-[11px] leading-relaxed text-gray-600">
-                    Dalam dialog cetak: pilih saiz kertas <strong>4:5</strong> untuk poster (atau <strong>A4</strong>
-                    dengan <strong>Fit to page</strong>), <strong>Margin: None</strong>, dan aktifkan
-                    <strong>Background graphics</strong> supaya warna tema dicetak.
+                    Dalam dialog cetak: pilih saiz kertas <strong>4:5</strong> untuk poster (atau <strong>A4</strong> dengan <strong>Fit to page</strong>), <strong>Margin: None</strong>, dan aktifkan <strong>Background graphics</strong> supaya warna tema dicetak.
                 </p>
             </div>
         </div>
-
     </div>
 </template>
+
+<style scoped>
+.attendee-enter-active {
+    transition: all 0.35s ease;
+}
+.attendee-enter-from {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+.attendee-move {
+    transition: transform 0.35s ease;
+}
+</style>

@@ -27,6 +27,10 @@ onMounted(() => {
 const broadcastForm = useForm({
     title: '',
     content: '',
+    action_type: 'none',
+    action_id: null,
+    action_label: '',
+    action_url: '',
     target_criteria: 'all',
     target_organization_id: props.defaultOrganizationId,
     recipient_ids: [],
@@ -66,10 +70,11 @@ function submitBroadcast() {
     broadcastForm.post(route('admin.broadcasts.store'), {
         preserveScroll: true,
         onSuccess: () => {
-            broadcastForm.reset('title', 'content', 'target_criteria', 'recipient_ids', 'notification_channels', 'email_use_template');
+            broadcastForm.reset('title', 'content', 'action_type', 'action_id', 'action_label', 'action_url', 'target_criteria', 'recipient_ids', 'notification_channels', 'email_use_template');
             selectedMembers.value = [];
             memberSearchQuery.value = '';
             memberResults.value = [];
+            clearTarget();
             broadcastForm.target_organization_id = props.defaultOrganizationId;
             selectedOrgId.value = props.defaultOrganizationId;
             broadcastForm.target_criteria = 'all';
@@ -146,6 +151,92 @@ function onMemberFocus() {
     if (memberResults.value.length > 0 || memberSearchError.value) {
         showMemberDropdown.value = true;
     }
+}
+
+// ─── Notification Destination ────────────────────────────────────────────────
+const targetSearchQuery = ref('');
+const targetResults = ref([]);
+const selectedTarget = ref(null);
+const targetSearchLoading = ref(false);
+const targetSearchError = ref('');
+const showTargetDropdown = ref(false);
+let targetDebounceTimer = null;
+
+const needsTargetSearch = computed(() => ['event', 'product'].includes(broadcastForm.action_type));
+const targetSearchLabel = computed(() => broadcastForm.action_type === 'product' ? 'Cari Produk' : 'Cari Program');
+const targetPlaceholder = computed(() => broadcastForm.action_type === 'product' ? 'Taip nama produk...' : 'Taip nama program...');
+
+function onActionTypeChange() {
+    clearTarget();
+    broadcastForm.action_label = '';
+    broadcastForm.action_url = '';
+}
+
+function clearTarget() {
+    selectedTarget.value = null;
+    targetSearchQuery.value = '';
+    targetResults.value = [];
+    targetSearchError.value = '';
+    showTargetDropdown.value = false;
+    broadcastForm.action_id = null;
+}
+
+function onTargetSearchInput(val) {
+    targetSearchQuery.value = val;
+    targetSearchError.value = '';
+    clearTimeout(targetDebounceTimer);
+
+    if (!needsTargetSearch.value || val.length < 2) {
+        targetResults.value = [];
+        showTargetDropdown.value = false;
+        return;
+    }
+
+    targetDebounceTimer = setTimeout(() => {
+        targetSearchLoading.value = true;
+        axios.get(route('admin.broadcasts.targets'), {
+            params: { q: val, type: broadcastForm.action_type },
+        })
+            .then((res) => {
+                targetResults.value = res.data || [];
+                showTargetDropdown.value = true;
+            })
+            .catch((err) => {
+                targetResults.value = [];
+                targetSearchError.value = err?.response?.status === 429
+                    ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
+                    : 'Ralat carian. Sila cuba lagi.';
+                showTargetDropdown.value = true;
+            })
+            .finally(() => { targetSearchLoading.value = false; });
+    }, 300);
+}
+
+function selectTarget(item) {
+    selectedTarget.value = item;
+    broadcastForm.action_id = item.id;
+    targetSearchQuery.value = '';
+    targetResults.value = [];
+    targetSearchError.value = '';
+    showTargetDropdown.value = false;
+}
+
+function onTargetBlur() {
+    setTimeout(() => { showTargetDropdown.value = false; }, 200);
+}
+
+function onTargetFocus() {
+    if (targetResults.value.length > 0 || targetSearchError.value) {
+        showTargetDropdown.value = true;
+    }
+}
+
+function destinationLabel(item) {
+    if (!item.action_type) return '';
+    if (item.action_label) return item.action_label;
+    if (item.action_type === 'event') return 'Lihat Program';
+    if (item.action_type === 'product') return 'Lihat Produk';
+    return 'Buka Pautan';
 }
 
 // ─── Announcements (Pengumuman System) ───────────────────────────────────────
@@ -453,6 +544,103 @@ onBeforeUnmount(stopPolling);
                             <p v-if="broadcastForm.errors.content" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.content }}</p>
                         </div>
 
+                        <!-- Notification Destination -->
+                        <div class="md:col-span-2 rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                            <div class="flex flex-col gap-1">
+                                <p class="text-xs font-bold uppercase tracking-wide text-gray-500">Destinasi Notifikasi (Pilihan)</p>
+                                <p class="text-xs text-gray-500">
+                                    Pilih apa yang berlaku bila ahli tekan notifikasi. Biarkan "Tiada butang" jika ia sekadar mesej makluman.
+                                </p>
+                            </div>
+
+                            <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div>
+                                    <label class="mb-1.5 block text-xs font-bold text-gray-600">Tindakan Bila Ditekan</label>
+                                    <select
+                                        v-model="broadcastForm.action_type"
+                                        @change="onActionTypeChange"
+                                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-gray-900 focus:ring-gray-900 transition-all"
+                                    >
+                                        <option value="none">Tiada butang</option>
+                                        <option value="event">Buka halaman program</option>
+                                        <option value="product">Buka halaman produk</option>
+                                        <option value="external">Buka pautan luar</option>
+                                    </select>
+                                </div>
+
+                                <div v-if="broadcastForm.action_type !== 'none'">
+                                    <label class="mb-1.5 block text-xs font-bold text-gray-600">Label Butang</label>
+                                    <input
+                                        v-model="broadcastForm.action_label"
+                                        type="text"
+                                        maxlength="60"
+                                        placeholder="cth. Daftar Program, Tempah Jersi"
+                                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-gray-900 focus:ring-gray-900 transition-all"
+                                    >
+                                    <p class="mt-1 text-[11px] text-gray-400">Teks ini dipaparkan pada butang notifikasi.</p>
+                                    <p v-if="broadcastForm.errors.action_label" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.action_label }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Program / Product search -->
+                            <div v-if="needsTargetSearch" class="mt-3">
+                                <label class="mb-1.5 block text-xs font-bold text-gray-600">{{ targetSearchLabel }}</label>
+                                <div class="relative">
+                                    <input
+                                        v-model="targetSearchQuery"
+                                        @input="onTargetSearchInput($event.target.value)"
+                                        @blur="onTargetBlur"
+                                        @focus="onTargetFocus"
+                                        type="text"
+                                        :placeholder="targetPlaceholder"
+                                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-gray-900 focus:ring-gray-900 transition-all"
+                                    >
+                                    <div v-if="targetSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <svg class="h-4 w-4 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    </div>
+
+                                    <ul v-if="showTargetDropdown" class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white py-1 shadow-lg max-h-56 overflow-y-auto">
+                                        <li
+                                            v-for="item in targetResults"
+                                            :key="item.id"
+                                            @mousedown.prevent="selectTarget(item)"
+                                            class="cursor-pointer px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <span class="block font-medium truncate">{{ item.label }}</span>
+                                            <span v-if="item.meta" class="block text-[11px] text-gray-400">{{ item.meta }}</span>
+                                        </li>
+                                        <li v-if="targetSearchError" class="px-4 py-3 text-sm text-red-600 text-center">{{ targetSearchError }}</li>
+                                        <li v-else-if="!targetSearchLoading && targetResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
+                                    </ul>
+                                </div>
+
+                                <div v-if="selectedTarget" class="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+                                    <span class="truncate">{{ selectedTarget.label }}</span>
+                                    <button @click="clearTarget" type="button" class="shrink-0 text-emerald-500 hover:text-red-600 transition-colors" aria-label="Buang destinasi">
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+
+                                <p v-if="broadcastForm.errors.action_id" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.action_id }}</p>
+                            </div>
+
+                            <!-- External URL -->
+                            <div v-if="broadcastForm.action_type === 'external'" class="mt-3">
+                                <label class="mb-1.5 block text-xs font-bold text-gray-600">URL Pautan Luar</label>
+                                <input
+                                    v-model="broadcastForm.action_url"
+                                    type="url"
+                                    placeholder="https://contoh.com/halaman"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold focus:border-gray-900 focus:ring-gray-900 transition-all"
+                                >
+                                <p class="mt-1 text-[11px] text-gray-400">Mesti bermula dengan http:// atau https://.</p>
+                                <p v-if="broadcastForm.errors.action_url" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.action_url }}</p>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kumpulan Sasar</label>
                             <select v-model="broadcastForm.target_criteria" @change="onTargetCriteriaChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
@@ -630,6 +818,11 @@ onBeforeUnmount(stopPolling);
                                                 <span class="font-medium">{{ channelLabel(ch) }}</span>
                                                 <span v-if="idx < item.notification_channels.length - 1" class="mx-0.5">+</span>
                                             </span>
+                                        </p>
+                                        <p v-if="item.action_type" class="mt-0.5 text-[11px] text-gray-400">
+                                            Butang: <span class="font-semibold text-gray-600">{{ destinationLabel(item) }}</span>
+                                            <span v-if="item.action_url" class="text-gray-300">·</span>
+                                            <span v-if="item.action_url" class="truncate">{{ item.action_url }}</span>
                                         </p>
                                         <p v-if="item.total_recipients !== null && item.total_recipients !== undefined" class="mt-1 text-[11px] font-semibold text-gray-400">
                                             {{ item.total_recipients }} penerima

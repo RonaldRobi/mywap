@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,6 +12,7 @@ import 'core/router/app_router.dart';
 import 'core/utils/formatters.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/notifications/application/notification_providers.dart';
+import 'features/notifications/presentation/notification_format.dart';
 import 'shared/l10n/l10n.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -29,13 +31,27 @@ class _MyWapAppState extends ConsumerState<MyWapApp> {
     super.initState();
     _linkSub = startDeepLinkListener(ref);
 
-    // Tekan push notification (termasuk banner foreground) membuka senarai
+    // Tekan push notification: pergi terus ke destinasi (program/produk) jika
+    // payload ada `action_type` + `action_id`; jika tidak, buka senarai
     // notifikasi. Pending-deep-link mengendalikan cold start selepas auth
     // restore selesai.
-    ref.read(pushServiceProvider).onMessageTap = (_) {
-      ref.invalidate(notificationsControllerProvider);
-      ref.read(pendingDeepLinkProvider.notifier).state = '/notifications';
-    };
+    ref.read(pushServiceProvider).onMessageTap = _openNotificationFromPush;
+  }
+
+  void _openNotificationFromPush(String payload) {
+    ref.invalidate(notificationsControllerProvider);
+
+    var path = '/notifications';
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        path = notificationRouteFromData(decoded) ?? path;
+      }
+    } catch (_) {
+      // Payload lama atau bukan JSON: kekal ke senarai notifikasi.
+    }
+
+    ref.read(pendingDeepLinkProvider.notifier).state = path;
   }
 
   @override

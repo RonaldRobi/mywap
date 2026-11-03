@@ -107,6 +107,8 @@ class ProcessAgeTransitions extends Command
 
                         // 2. Update the user's active organization.
                         $user->current_organization_id = $correctOrg->id;
+                        $user->position = null;
+                        $user->position_id = null;
                         $user->save();
 
                         // 2. Sync the Spatie role to reflect the new tier.
