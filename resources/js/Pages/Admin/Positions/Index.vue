@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import axios from 'axios';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import InputError from '@/Components/InputError.vue';
 
@@ -199,6 +200,96 @@ const flashVisible = ref(true);
 function dismissFlash() {
     flashVisible.value = false;
 }
+
+const memberModal = ref(null);
+const modalMembers = ref([]);
+const modalAvailable = ref([]);
+const modalSearch = ref('');
+const modalLoading = ref(false);
+const availableLoading = ref(false);
+const assignProcessing = ref(false);
+let searchTimer = null;
+
+async function openMembers(pos) {
+    memberModal.value = pos;
+    modalSearch.value = '';
+    modalAvailable.value = [];
+    await Promise.all([loadModalMembers(pos), searchAvailable(pos)]);
+}
+
+async function loadModalMembers(pos) {
+    modalLoading.value = true;
+    try {
+        const res = await axios.get(route('positions.members', pos.id));
+        modalMembers.value = res.data.members ?? [];
+    } catch {
+        modalMembers.value = [];
+    } finally {
+        modalLoading.value = false;
+    }
+}
+
+async function searchAvailable(pos) {
+    if (!pos) return;
+    availableLoading.value = true;
+    try {
+        const res = await axios.get(route('positions.members.available', pos.id), {
+            params: { search: modalSearch.value },
+        });
+        modalAvailable.value = res.data.members ?? [];
+    } catch {
+        modalAvailable.value = [];
+    } finally {
+        availableLoading.value = false;
+    }
+}
+
+function onSearchInput(pos) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => searchAvailable(pos), 250);
+}
+
+function closeMembers() {
+    memberModal.value = null;
+}
+
+function assignMember(pos, member) {
+    if (assignProcessing.value) return;
+    assignProcessing.value = true;
+    router.post(route('positions.members.assign', pos.id), { user_id: member.id }, {
+        preserveScroll: true,
+        onSuccess: async () => {
+            modalSearch.value = '';
+            modalAvailable.value = [];
+            await loadModalMembers(pos);
+        },
+        onFinish: () => { assignProcessing.value = false; },
+    });
+}
+
+function unassignMember(pos, member) {
+    if (assignProcessing.value) return;
+    assignProcessing.value = true;
+    router.delete(route('positions.members.destroy', [pos.id, member.id]), {
+        preserveScroll: true,
+        onSuccess: () => loadModalMembers(pos),
+        onFinish: () => { assignProcessing.value = false; },
+    });
+}
+
+function handleModalKeydown(event) {
+    if (event.key === 'Escape') closeMembers();
+}
+
+watch(memberModal, (open) => {
+    if (open) {
+        window.addEventListener('keydown', handleModalKeydown);
+    } else {
+        window.removeEventListener('keydown', handleModalKeydown);
+    }
+});
+
+onBeforeUnmount(() => window.removeEventListener('keydown', handleModalKeydown));
 </script>
 
 <template>
@@ -210,12 +301,16 @@ function dismissFlash() {
                 <span>{{ $page.props.flash.success }}</span>
                 <button @click="dismissFlash" class="ml-3 shrink-0 text-emerald-400 hover:text-emerald-600">&times;</button>
             </div>
+            <div v-if="$page.props.flash?.error && flashVisible" class="mb-4 flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm">
+                <span>{{ $page.props.flash.error }}</span>
+                <button @click="dismissFlash" class="ml-3 shrink-0 text-red-400 hover:text-red-600">&times;</button>
+            </div>
 
             <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 class="text-sm font-bold uppercase tracking-wide text-gray-500">Senarai Jawatan</h3>
-                        <p class="mt-1 text-xs text-gray-400">Jawatan ini akan dipaparkan dalam borang profil ahli.</p>
+                        <p class="mt-1 text-xs text-gray-400">Tetapkan ahli kepada jawatan dan paparkan badge pada profil serta kad digital.</p>
                     </div>
                     <button @click="showAddForm = !showAddForm" class="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -363,10 +458,16 @@ function dismissFlash() {
 
                                     <span v-if="!pos.show_badge" class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Tanpa Badge</span>
 
-                                    <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold', pos.member_count > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-400']">
+                                    <button
+                                        type="button"
+                                        @click="openMembers(pos)"
+                                        :title="`Urus ahli jawatan ${pos.name}`"
+                                        :aria-label="`Urus ahli jawatan ${pos.name}`"
+                                        :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold hover:ring-2 hover:ring-amber-200', pos.member_count > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-400']"
+                                    >
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                                         {{ pos.member_count }}
-                                    </span>
+                                    </button>
 
                                     <span v-if="!pos.is_active" class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Tidak Aktif</span>
 
@@ -403,10 +504,16 @@ function dismissFlash() {
 
                                         <span v-if="child.category" :class="['rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide', getCategoryBadgeClass(child.category)]">{{ child.category }}</span>
 
-                                        <span :class="['inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold', child.member_count > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-400']">
+                                        <button
+                                            type="button"
+                                            @click="openMembers(child)"
+                                            :title="`Urus ahli jawatan ${child.name}`"
+                                            :aria-label="`Urus ahli jawatan ${child.name}`"
+                                            :class="['inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold hover:ring-2 hover:ring-amber-200', child.member_count > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-50 text-gray-400']"
+                                        >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                                             {{ child.member_count }}
-                                        </span>
+                                        </button>
 
                                         <div class="flex items-center gap-0.5">
                                             <button @click="moveUp(child)" title="Naik" class="rounded p-0.5 text-gray-400 hover:bg-gray-200/60 hover:text-gray-600">
@@ -449,4 +556,83 @@ function dismissFlash() {
     </AppLayout>
 
     <ConfirmDialog ref="confirmDialog" :message="confirmMessage" variant="danger" confirm-text="Ya, Padam" cancel-text="Batal" @confirm="confirmAction?.()" />
+
+    <Teleport to="body">
+        <div
+            v-if="memberModal"
+            class="fixed inset-0 z-[95] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+            @click.self="closeMembers"
+        >
+            <div class="flex max-h-[88vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl">
+                <div class="flex items-start justify-between gap-3 border-b border-gray-100 px-5 py-4">
+                    <div>
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Ahli Jawatan</p>
+                        <h3 class="text-base font-bold text-gray-900">{{ memberModal.name }}</h3>
+                        <p class="mt-0.5 text-xs text-gray-500">Tambah atau keluarkan ahli daripada jawatan ini.</p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="closeMembers"
+                        aria-label="Tutup"
+                        class="rounded-lg p-1.5 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    >&times;</button>
+                </div>
+
+                <div class="space-y-4 overflow-y-auto px-5 py-4">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500">Ahli semasa ({{ modalMembers.length }})</p>
+
+                        <p v-if="modalLoading" class="py-3 text-center text-xs text-gray-400">Memuatkan senarai ahli...</p>
+                        <p v-else-if="!modalMembers.length" class="py-3 text-center text-xs text-gray-400">Belum ada ahli untuk jawatan ini.</p>
+                        <div v-else class="mt-2 divide-y divide-gray-100">
+                            <div v-for="m in modalMembers" :key="m.id" class="flex items-center gap-3 py-2">
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-medium text-gray-800">{{ m.name }}</p>
+                                    <p class="truncate text-xs text-gray-400">{{ m.member_no || m.email || '-' }}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="unassignMember(memberModal, m)"
+                                    :disabled="assignProcessing"
+                                    class="shrink-0 rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                >Keluarkan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                        <p class="text-xs font-semibold text-gray-500">Tambah ahli</p>
+                        <input
+                            v-model="modalSearch"
+                            @input="onSearchInput(memberModal)"
+                            type="search"
+                            placeholder="Cari nama, no. ahli atau emel"
+                            class="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-0"
+                        >
+                        <p class="mt-1 text-[11px] text-gray-400">Ahli yang sudah memegang jawatan lain akan dipindahkan ke jawatan ini.</p>
+
+                        <p v-if="availableLoading" class="py-2 text-center text-xs text-gray-400">Mencari ahli...</p>
+                        <p v-else-if="!modalAvailable.length" class="py-2 text-center text-xs text-gray-400">{{ modalSearch ? 'Tiada ahli sepadan.' : 'Tiada ahli lain untuk ditambah.' }}</p>
+                        <div v-else class="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                            <div v-for="m in modalAvailable" :key="m.id" class="flex items-center gap-3 rounded-lg bg-white px-3 py-2">
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-medium text-gray-800">{{ m.name }}</p>
+                                    <p class="truncate text-xs text-gray-400">
+                                        {{ m.member_no || m.email || '-' }}
+                                        <span v-if="m.position">- {{ m.position }}</span>
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="assignMember(memberModal, m)"
+                                    :disabled="assignProcessing"
+                                    class="shrink-0 rounded-lg bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                                >Tambah</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>

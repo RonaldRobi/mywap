@@ -161,13 +161,87 @@ class PositionController extends Controller
 
     public function members(Request $request, OrganizationPosition $position): JsonResponse
     {
+        $this->ensureSameOrganization($request, $position);
+
         $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $request->user()->current_organization_id)
             ->where('position_id', $position->id)
-            ->select('id', 'name', 'email', 'phone', 'branch_name')
+            ->select('id', 'name', 'member_no', 'email', 'phone', 'branch_name')
             ->orderBy('name')
             ->get();
 
         return response()->json(['position' => $position->name, 'members' => $members]);
+    }
+
+    public function availableMembers(Request $request, OrganizationPosition $position): JsonResponse
+    {
+        $this->ensureSameOrganization($request, $position);
+
+        $search = trim((string) $request->query('search'));
+
+        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            ->where('current_organization_id', $position->organization_id)
+            ->where(function ($query) use ($position) {
+                $query->whereNull('position_id')
+                    ->orWhere('position_id', '!=', $position->id);
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('member_no', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('name')
+            ->limit(25)
+            ->get(['id', 'name', 'member_no', 'email', 'position', 'position_id']);
+
+        return response()->json(['members' => $members]);
+    }
+
+    public function assignMember(Request $request, OrganizationPosition $position): RedirectResponse
+    {
+        $this->ensureSameOrganization($request, $position);
+
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            ->findOrFail($data['user_id']);
+
+        if ((int) $user->current_organization_id !== (int) $position->organization_id) {
+            return back()->with('error', 'Ahli ini bukan dalam organisasi jawatan tersebut.');
+        }
+
+        $user->update([
+            'position_id' => $position->id,
+            'position' => $position->name,
+        ]);
+
+        return back()->with('success', "{$user->name} ditetapkan sebagai {$position->name}.");
+    }
+
+    public function unassignMember(Request $request, OrganizationPosition $position, User $user): RedirectResponse
+    {
+        $this->ensureSameOrganization($request, $position);
+
+        if ((int) $user->position_id !== (int) $position->id) {
+            return back()->with('error', 'Ahli ini tidak memegang jawatan tersebut.');
+        }
+
+        $user->update([
+            'position_id' => null,
+            'position' => null,
+        ]);
+
+        return back()->with('success', "{$user->name} dikeluarkan daripada jawatan {$position->name}.");
+    }
+
+    private function ensureSameOrganization(Request $request, OrganizationPosition $position): void
+    {
+        if ((int) $position->organization_id !== (int) $request->user()->current_organization_id) {
+            abort(403);
+        }
     }
 }

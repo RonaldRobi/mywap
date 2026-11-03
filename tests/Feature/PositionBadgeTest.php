@@ -135,6 +135,81 @@ class PositionBadgeTest extends TestCase
             ->assertJsonPath('data.card.position_badge.color', '#abcdef');
     }
 
+    public function test_admin_can_assign_and_unassign_member_from_positions_page(): void
+    {
+        $position = OrganizationPosition::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Presiden',
+            'show_badge' => true,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('positions.members.assign', $position), [
+                'user_id' => $this->member->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame($position->id, $this->member->fresh()->position_id);
+        $this->assertSame('Presiden', $this->member->fresh()->position);
+
+        $this->actingAs($this->admin)
+            ->delete(route('positions.members.destroy', [$position, $this->member]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertNull($this->member->fresh()->position_id);
+        $this->assertNull($this->member->fresh()->position);
+    }
+
+    public function test_position_member_search_excludes_members_already_assigned(): void
+    {
+        $position = OrganizationPosition::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Bendahari',
+            'show_badge' => true,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $this->getJson(route('positions.members.available', $position))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $this->member->id]);
+
+        $this->member->update(['position_id' => $position->id, 'position' => 'Bendahari']);
+
+        $this->getJson(route('positions.members.available', $position))
+            ->assertOk()
+            ->assertJsonMissing(['id' => $this->member->id]);
+    }
+
+    public function test_admin_cannot_assign_member_from_another_organization(): void
+    {
+        $otherOrg = Organization::factory()->create(['name' => 'ABIM', 'slug' => 'abim']);
+        $outsider = User::factory()->create([
+            'current_organization_id' => $otherOrg->id,
+            'profile_completed_at' => now(),
+        ]);
+
+        $position = OrganizationPosition::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Setiausaha',
+            'show_badge' => true,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post(route('positions.members.assign', $position), [
+                'user_id' => $outsider->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertNull($outsider->fresh()->position_id);
+    }
+
     public function test_member_cannot_self_assign_position(): void
     {
         OrganizationPosition::create([

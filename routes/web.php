@@ -388,6 +388,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('positions/{position}/toggle', [PositionController::class, 'toggleActive'])->name('positions.toggle');
         Route::delete('positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
         Route::get('positions/{position}/members', [PositionController::class, 'members'])->name('positions.members');
+        Route::get('positions/{position}/available-members', [PositionController::class, 'availableMembers'])->name('positions.members.available');
+        Route::post('positions/{position}/members', [PositionController::class, 'assignMember'])->name('positions.members.assign');
+        Route::delete('positions/{position}/members/{user}', [PositionController::class, 'unassignMember'])->name('positions.members.destroy');
 
         // Finance Dashboard
         Route::get('/admin/finance', [AdminFinanceController::class, 'index'])->name('admin.finance.index');
