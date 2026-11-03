@@ -68,6 +68,11 @@ class EventController extends Controller
             ])->values(),
             'rsvp_count' => $event->rsvps->whereIn('status', ['going', 'attended'])->count(),
             'my_rsvp' => $myRsvp ? $myRsvp->status : null,
+            'registration_open' => $event->registrationIsOpen(),
+            'registration_closes_at' => $event->registrationClosesAt()?->toIso8601String(),
+            'attendance_open' => $event->attendanceWindowIsOpen(),
+            'attendance_opens_at' => $event->attendanceOpensAt()?->toIso8601String(),
+            'attendance_closes_at' => $event->attendanceClosesAt()?->toIso8601String(),
         ];
     }
 
@@ -609,6 +614,11 @@ class EventController extends Controller
                 'registrations_count' => $registrationSummary['total_rows'],
                 'unique_participants_count' => $registrationSummary['unique_identities'],
                 'attended_count' => $attendedCount,
+                'registration_open' => $event->registrationIsOpen(),
+                'registration_closes_at' => $event->registrationClosesAt()?->toIso8601String(),
+                'attendance_open' => $event->attendanceWindowIsOpen(),
+                'attendance_opens_at' => $event->attendanceOpensAt()?->toIso8601String(),
+                'attendance_closes_at' => $event->attendanceClosesAt()?->toIso8601String(),
             ],
             'forms' => $forms,
             'buildFormUrl' => route('admin.forms.create', [
@@ -618,7 +628,7 @@ class EventController extends Controller
             'registrationsUrl' => route('admin.events.registrations', $event->id),
             'attendanceUrl' => route('admin.attendance.show', $event->id),
             'editUrl' => route('admin.events.edit', $event->id),
-            'qrUrl' => route('events.qr', $event->id),
+            'qrUrl' => $this->attendanceQrExpired($event) ? null : route('events.qr', $event->id),
         ]);
     }
 
@@ -819,6 +829,7 @@ class EventController extends Controller
     public function showQr(Request $request, Event $event): Response|JsonResponse
     {
         $this->authorizeEventAdmin($request, $event);
+        $this->abortIfAttendanceQrExpired($event);
 
         // QR paparan langsung ditandatangan dan tamat bersama tetingkap kehadiran
         // (waktu tamat program + 24 jam). Poster bercetak kekal guna token statik
@@ -887,6 +898,7 @@ class EventController extends Controller
     public function downloadQr(Request $request, Event $event): \Symfony\Component\HttpFoundation\Response
     {
         $this->authorizeEventAdmin($request, $event);
+        $this->abortIfAttendanceQrExpired($event);
 
         // Transparent by default so designers can drop the PNG onto any
         // artwork. Add ?white=1 for a white-backed copy.
@@ -917,6 +929,7 @@ class EventController extends Controller
     public function printQr(Request $request, Event $event): View
     {
         $this->authorizeEventAdmin($request, $event);
+        $this->abortIfAttendanceQrExpired($event);
 
         $layout = (string) $request->query('layout', 'poster');
         abort_unless(in_array($layout, ['qr', 'poster'], true), 404);
@@ -961,6 +974,24 @@ class EventController extends Controller
             $user->hasRole('Superadmin') || $this->adminOwnsEvent($user, $event),
             403
         );
+    }
+
+    /**
+     * Program yang sudah tamat melebihi 24 jam tidak lagi membenarkan QR
+     * kehadiran dijana/dimuat turun/dicetak.
+     */
+    private function attendanceQrExpired(Event $event): bool
+    {
+        $closesAt = $event->attendanceClosesAt();
+
+        return $closesAt !== null && now()->gt($closesAt);
+    }
+
+    private function abortIfAttendanceQrExpired(Event $event): void
+    {
+        if ($this->attendanceQrExpired($event)) {
+            abort(403, 'QR kehadiran telah tamat tempoh untuk program ini.');
+        }
     }
 
     /**

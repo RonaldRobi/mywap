@@ -1,7 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import axios from 'axios';
+import { computed, reactive } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -9,292 +8,254 @@ const props = defineProps({
     registrations: Object, // paginator
     organizations: Array,
     filters: Object,
-    exportIncomplete: Boolean,
-    extraColumns: Array,
-    importedCount: Number,
+    stats: Object,
+    items_to_prepare: { type: Array, default: () => [] },
 });
 
-// ─── Import Google Form (CSV/XLSX) ──────────────────────────────────────────
-const importFields = [
-    { key: 'name', label: 'Nama', required: true },
-    { key: 'ic_number', label: 'No. IC' },
-    { key: 'phone', label: 'No. Telefon' },
-    { key: 'email', label: 'Emel' },
-    { key: 'member_no', label: 'No. Ahli' },
-];
+const f = reactive({
+    search: props.filters?.search || '',
+    status: props.filters?.status || '',
+    payment: props.filters?.payment || '',
+    org: props.filters?.org || '',
+    has_items: ['1', 'true', true].includes(props.filters?.has_items),
+    sort: props.filters?.sort || '',
+});
 
-const showImport = ref(false);
-const importFile = ref(null);
-const importPreview = ref(null);
-const importMapping = ref({ name: null, ic_number: null, phone: null, email: null, member_no: null });
-const previewing = ref(false);
-const importing = ref(false);
-const importError = ref('');
-const importResult = ref(null);
-
-const canCommit = computed(
-    () => importPreview.value !== null && importMapping.value.name !== null && !importing.value,
-);
-
-function openImport() {
-    importFile.value = null;
-    importPreview.value = null;
-    importMapping.value = { name: null, ic_number: null, phone: null, email: null, member_no: null };
-    importError.value = '';
-    importResult.value = null;
-    showImport.value = true;
-}
-
-function closeImport() {
-    if (importing.value) return;
-    showImport.value = false;
-}
-
-function onFileChange(event) {
-    importFile.value = event.target.files?.[0] ?? null;
-    importPreview.value = null;
-    importResult.value = null;
-    importError.value = '';
-}
-
-function errorMessage(error) {
-    return error?.response?.data?.errors?.file?.[0]
-        ?? error?.response?.data?.errors?.mapping?.[0]
-        ?? error?.response?.data?.message
-        ?? 'Ralat memproses fail. Sila cuba lagi.';
-}
-
-async function previewImport() {
-    if (!importFile.value) {
-        importError.value = 'Sila pilih fail CSV/XLSX dahulu.';
-        return;
-    }
-
-    previewing.value = true;
-    importError.value = '';
-    importResult.value = null;
-
-    const form = new FormData();
-    form.append('file', importFile.value);
-
-    try {
-        const { data } = await axios.post(
-            route('admin.events.registrations.import.preview', props.event.id),
-            form,
-        );
-        importPreview.value = data;
-        importMapping.value = { ...data.mapping };
-    } catch (error) {
-        importError.value = errorMessage(error);
-    } finally {
-        previewing.value = false;
-    }
-}
-
-async function commitImport() {
-    if (!importFile.value || !importPreview.value) return;
-
-    if (importMapping.value.name === null) {
-        importError.value = 'Lajur Nama wajib dipilih.';
-        return;
-    }
-
-    importing.value = true;
-    importError.value = '';
-
-    const form = new FormData();
-    form.append('file', importFile.value);
-    Object.entries(importMapping.value).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-            form.append(`mapping[${key}]`, value);
-        }
+function apply(extra = {}) {
+    const data = { ...f, ...extra };
+    if (!data.has_items) delete data.has_items;
+    Object.keys(data).forEach((k) => {
+        if (data[k] === '' || data[k] === null || data[k] === undefined || data[k] === false) delete data[k];
     });
-
-    try {
-        const { data } = await axios.post(
-            route('admin.events.registrations.import', props.event.id),
-            form,
-        );
-        importResult.value = data.summary;
-        router.reload({ only: ['registrations'] });
-    } catch (error) {
-        importError.value = errorMessage(error);
-    } finally {
-        importing.value = false;
-    }
-}
-
-
-const showClear = ref(false);
-const clearing = ref(false);
-
-function closeClear() {
-    if (clearing.value) return;
-    showClear.value = false;
-}
-
-function clearImported() {
-    if (clearing.value) return;
-
-    clearing.value = true;
-
-    router.delete(route('admin.events.registrations.clear-imported', props.event.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showClear.value = false;
-        },
-        onFinish: () => {
-            clearing.value = false;
-        },
+    router.get(route('admin.events.registrations', props.event.id), data, {
+        preserveState: true,
+        replace: true,
     });
 }
 
-const rawColumnsOpen = ref(false);
-const rawColumnsRegistration = ref(null);
-
-function openRawColumns(registration) {
-    rawColumnsRegistration.value = registration;
-    rawColumnsOpen.value = true;
+function reset() {
+    f.search = '';
+    f.status = '';
+    f.payment = '';
+    f.org = '';
+    f.has_items = false;
+    f.sort = '';
+    apply({ search: '', status: '', payment: '', org: '', has_items: '', sort: '' });
 }
 
-function closeRawColumns() {
-    rawColumnsOpen.value = false;
-    rawColumnsRegistration.value = null;
+const hasFilters = computed(() => !!(f.search || f.status || f.payment || f.org || f.has_items || f.sort));
+
+function updateStatus(registration, status) {
+    const verb = status === 'cancelled' ? 'Batalkan' : 'Pulihkan';
+    if (!confirm(`${verb} pendaftaran ${registration.name} (${registration.registration_no})?`)) return;
+
+    router.patch(
+        route('admin.events.registrations.update', registration.id),
+        { status },
+        { preserveScroll: true },
+    );
 }
 
-const statusForm = useForm({ status: '' });
+function markPaid(registration) {
+    if (!confirm(`Tandakan bayaran ${registration.name} (${registration.registration_no}) sebagai BERJAYA?`)) return;
 
-function updateStatus(reg, status) {
-    if (!confirm(`Tukar status pendaftaran ${reg.registration_no} kepada "${status}"?`)) return;
-    statusForm.status = status;
-    statusForm.patch(route('admin.events.registrations.update', reg.id));
+    router.post(
+        route('admin.events.registrations.mark-paid', registration.id),
+        {},
+        { preserveScroll: true },
+    );
 }
 
-function applyFilters() {
-    router.get(route('admin.events.registrations', props.event.id), {
-        org: document.getElementById('f-org')?.value || '',
-        status: document.getElementById('f-status')?.value || '',
-        search: document.getElementById('f-search')?.value || '',
-    }, { preserveState: true, replace: true });
-}
+const dateFmt = (value) => {
+    if (!value) return '—';
+    return new Date(value).toLocaleString('ms-MY', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+};
+
+const statusBadge = {
+    confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    pending: 'border-amber-200 bg-amber-50 text-amber-700',
+    cancelled: 'border-rose-200 bg-rose-50 text-rose-600',
+    walkin: 'border-sky-200 bg-sky-50 text-sky-700',
+};
+
+const paymentBadge = {
+    free: { label: 'Percuma', class: 'border-gray-200 bg-gray-50 text-gray-600' },
+    paid: { label: 'Dibayar', class: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    unpaid: { label: 'Menunggu Bayaran', class: 'border-amber-200 bg-amber-50 text-amber-700' },
+};
+
+const payment = (r) => paymentBadge[r.payment_state] ?? paymentBadge.free;
 </script>
 
 <template>
     <Head :title="`Pendaftaran: ${event.title}`" />
 
     <AppLayout>
-        <div class="max-w-6xl mx-auto px-4 py-8">
-            <div class="flex items-center justify-between gap-3 mb-1">
-                <h1 class="text-2xl font-black text-gray-900">Pendaftaran</h1>
-                <div class="flex items-center gap-2">
-                    <button
-                        v-if="importedCount > 0"
-                        type="button"
-                        @click="showClear = true"
-                        class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 shadow-sm hover:bg-red-100"
-                    >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0l1 12a1 1 0 001 1h8a1 1 0 001-1l1-12" />
-                        </svg>
-                        Kosongkan Import ({{ importedCount }})
-                    </button>
-                    <a
-                        :href="route('admin.events.registrations.export', props.event.id)"
-                        class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
-                    >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V8m0 0l-4 4m4-4l4 4M4 4h16" />
-                        </svg>
-                        Export CSV
+        <div class="mx-auto max-w-6xl px-4 py-8">
+            <div class="mb-1 flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <a :href="route('admin.events.show', event.id)" class="text-xs font-semibold text-gray-500 hover:text-gray-800">
+                        &larr; Kembali ke program
                     </a>
-                    <button
-                        type="button"
-                        @click="openImport"
-                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-700"
-                    >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
-                        </svg>
-                        Import CSV
-                    </button>
+                    <h1 class="mt-1 text-2xl font-black text-gray-900">Pendaftaran</h1>
+                    <p class="text-sm text-gray-500">{{ event.title }}</p>
                 </div>
+                <a
+                    :href="route('admin.events.registrations.export', event.id)"
+                    class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                    Export CSV
+                </a>
             </div>
-            <p class="text-sm text-gray-500 mb-6">{{ event.title }} · Semua peserta program ini (borang + import CSV)</p>
+
+            <div
+                class="mt-3 rounded-2xl border px-4 py-3 text-xs font-medium"
+                :class="event.registration_open
+                    ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                    : 'border-amber-200 bg-amber-50 text-amber-800'"
+            >
+                <p>
+                    <template v-if="event.registration_open">
+                        Pendaftaran dibuka sehingga {{ dateFmt(event.registration_closes_at) }}.
+                    </template>
+                    <template v-else>
+                        Pendaftaran telah ditutup pada {{ dateFmt(event.registration_closes_at) }}.
+                    </template>
+                </p>
+                <p class="mt-0.5 text-[11px] opacity-80">
+                    QR kehadiran hanya boleh diimbas {{ dateFmt(event.attendance_opens_at) }} hingga {{ dateFmt(event.attendance_closes_at) }} (24 jam sebelum hingga 24 jam selepas program).
+                </p>
+            </div>
 
             <div
                 v-if="$page.props.flash?.success"
-                class="mb-6 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
+                class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"
             >
                 {{ $page.props.flash.success }}
             </div>
             <div
                 v-if="$page.props.flash?.error"
-                class="mb-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                class="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
             >
                 {{ $page.props.flash.error }}
             </div>
 
-            <div
-                v-if="exportIncomplete"
-                class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
-            >
-                <p class="font-bold">Lajur tambahan belum disimpan untuk rekod ini.</p>
-                <p class="mt-1 text-xs">
-                    Rekod ini diimport sebelum ciri simpan semua lajur diaktifkan. Import semula fail
-                    CSV/XLSX asal dari Google Form — import terbaru akan menggantikan senarai import lama —
-                    kemudian export akan mengandungi semua lajur asal.
-                </p>
+            <div class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <button
                     type="button"
-                    @click="openImport"
-                    class="mt-3 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                    class="rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm hover:border-gray-300"
+                    @click="reset"
                 >
-                    Import semula fail asal
+                    <p class="text-2xl font-black text-gray-900">{{ stats.total }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Jumlah</p>
+                </button>
+                <button
+                    type="button"
+                    class="rounded-2xl border p-4 text-center shadow-sm"
+                    :class="f.status === 'confirmed' ? 'border-emerald-500 bg-emerald-50' : 'border-emerald-100 bg-emerald-50'"
+                    @click="f.status = f.status === 'confirmed' ? '' : 'confirmed'; apply()"
+                >
+                    <p class="text-2xl font-black text-emerald-600">{{ stats.confirmed }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">Diterima</p>
+                </button>
+                <button
+                    type="button"
+                    class="rounded-2xl border p-4 text-center shadow-sm"
+                    :class="f.status === 'pending' ? 'border-amber-500 bg-amber-50' : 'border-amber-100 bg-amber-50'"
+                    @click="f.status = f.status === 'pending' ? '' : 'pending'; apply()"
+                >
+                    <p class="text-2xl font-black text-amber-600">{{ stats.pending }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">Menunggu Bayaran</p>
+                </button>
+                <button
+                    type="button"
+                    class="rounded-2xl border p-4 text-center shadow-sm"
+                    :class="f.has_items ? 'border-sky-500 bg-sky-50' : 'border-sky-100 bg-sky-50'"
+                    @click="f.has_items = !f.has_items; apply()"
+                >
+                    <p class="text-2xl font-black text-sky-600">{{ stats.with_items }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-sky-500">Ada Item</p>
                 </button>
             </div>
 
-            <!-- Filters -->
-            <div class="rounded-3xl bg-white border border-gray-100 p-4 shadow-sm mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <input id="f-search" :value="filters.search || ''" placeholder="Cari nama / no reg..." class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
-                <select id="f-status" :value="filters.status || ''" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                    <option value="">Semua Status</option>
-                    <option value="confirmed">Disahkan</option>
-                    <option value="pending">Menunggu</option>
-                    <option value="cancelled">Dibatalkan</option>
-                </select>
-                <select id="f-org" :value="filters.org || ''" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
-                    <option value="">Semua Organisasi</option>
-                    <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
-                </select>
-                <button @click="applyFilters" class="rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold">Tapis</button>
+            <div class="mt-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    <input
+                        v-model="f.search"
+                        type="search"
+                        placeholder="Cari nama / No. IC / no daftar"
+                        class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
+                        @keyup.enter="apply()"
+                    />
+                    <select v-model="f.status" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                        <option value="">Semua status</option>
+                        <option value="confirmed">Diterima</option>
+                        <option value="pending">Menunggu Bayaran</option>
+                        <option value="cancelled">Dibatalkan</option>
+                    </select>
+                    <select v-model="f.payment" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                        <option value="">Semua bayaran</option>
+                        <option value="free">Percuma</option>
+                        <option value="paid">Dibayar</option>
+                        <option value="unpaid">Belum Dibayar</option>
+                    </select>
+                    <select v-if="organizations.length" v-model="f.org" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                        <option value="">Semua organisasi</option>
+                        <option v-for="o in organizations" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+                    </select>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <select v-model="f.sort" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                        <option value="">Terbaru dahulu</option>
+                        <option value="name">Nama (A-Z)</option>
+                        <option value="items">Item dahulu</option>
+                    </select>
+                    <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700">
+                        <input v-model="f.has_items" type="checkbox" class="rounded border-gray-300" />
+                        Ada item sahaja
+                    </label>
+                    <button type="button" @click="apply()" class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                        Tapis
+                    </button>
+                    <button
+                        v-if="hasFilters"
+                        type="button"
+                        @click="reset"
+                        class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                    >
+                        Reset
+                    </button>
+                </div>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-3 gap-3 mb-6">
-                <div class="rounded-3xl bg-white border border-gray-100 p-4 text-center">
-                    <p class="text-2xl font-black text-gray-900">{{ registrations.total }}</p>
-                    <p class="text-xs text-gray-400 font-semibold uppercase">Jumlah</p>
-                </div>
-                <div class="rounded-3xl bg-emerald-50 border border-emerald-100 p-4 text-center">
-                    <p class="text-2xl font-black text-emerald-600">{{ registrations.data.filter(r => r.status === 'confirmed').length }}</p>
-                    <p class="text-xs text-emerald-500 font-semibold uppercase">Disahkan</p>
-                </div>
-                <div class="rounded-3xl bg-amber-50 border border-amber-100 p-4 text-center">
-                    <p class="text-2xl font-black text-amber-600">{{ registrations.data.filter(r => r.status === 'pending').length }}</p>
-                    <p class="text-xs text-amber-500 font-semibold uppercase">Menunggu</p>
-                </div>
+            <div v-if="items_to_prepare.length" class="mt-4 rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                <h2 class="text-sm font-bold text-sky-900">Senarai sediaan item</h2>
+                <p class="mt-0.5 text-xs text-sky-700">Jumlah item yang telah dibayar (tidak termasuk pendaftaran dibatalkan).</p>
+                <ul class="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    <li
+                        v-for="(item, i) in items_to_prepare"
+                        :key="i"
+                        class="flex items-center justify-between rounded-lg bg-white px-3 py-1.5 text-sm"
+                    >
+                        <span class="text-gray-700">{{ item.name }}<span v-if="item.variant_name" class="text-gray-400"> ({{ item.variant_name }})</span></span>
+                        <span class="font-black text-sky-700">&times;{{ item.quantity }}</span>
+                    </li>
+                </ul>
             </div>
 
-            <!-- List -->
-            <div class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+            <div class="mt-6 overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <table class="w-full min-w-[820px] text-sm">
+                    <thead class="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-400">
                         <tr>
                             <th class="px-4 py-3">Peserta</th>
                             <th class="px-4 py-3">Organisasi</th>
-                            <th class="px-4 py-3">Borang</th>
-                            <th class="px-4 py-3">Kategori</th>
-                            <th class="px-4 py-3">Barang</th>
+                            <th class="px-4 py-3">Item</th>
                             <th class="px-4 py-3">Bayaran</th>
                             <th class="px-4 py-3">Status</th>
                             <th class="px-4 py-3 text-right">Tindakan</th>
@@ -304,317 +265,94 @@ function applyFilters() {
                         <tr v-for="r in registrations.data" :key="r.id">
                             <td class="px-4 py-3">
                                 <p class="font-semibold text-gray-800">{{ r.name }}</p>
-                                <p class="text-xs text-gray-400 font-mono">{{ r.registration_no }}<span v-if="r.member_no"> · {{ r.member_no }}</span></p>
+                                <p class="font-mono text-xs text-gray-400">
+                                    {{ r.registration_no }}<span v-if="r.member_no"> &middot; {{ r.member_no }}</span>
+                                </p>
+                                <p v-if="r.ic_number" class="text-xs text-gray-400">IC: {{ r.ic_number }}</p>
                                 <p v-if="r.phone" class="text-xs text-gray-400">{{ r.phone }}</p>
-                            </td>
-                            <td class="px-4 py-3 text-gray-600">{{ r.organization_name || '—' }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ r.form_title || '—' }}</td>
-                            <td class="px-4 py-3">
-                                <span v-if="r.ticket_type" class="inline-flex rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{{ r.ticket_type }}</span>
+                                <span v-if="r.ticket_type" class="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600">{{ r.ticket_type }}</span>
                                 <a
                                     v-if="r.document_path"
                                     :href="`/storage/${r.document_path}`"
                                     target="_blank"
-                                    class="block mt-1 text-xs text-indigo-600 hover:text-indigo-700 underline"
+                                    rel="noopener"
+                                    class="mt-1 block text-xs text-indigo-600 underline hover:text-indigo-700"
                                 >
-                                    📎 Lihat dokumen
+                                    Lihat dokumen
                                 </a>
-                                <span v-else-if="!r.ticket_type" class="text-gray-400">—</span>
                             </td>
+                            <td class="px-4 py-3 text-gray-600">{{ r.organization_name || '—' }}</td>
                             <td class="px-4 py-3">
                                 <div v-if="r.items && r.items.length" class="space-y-0.5">
                                     <p v-for="(it, i) in r.items" :key="i" class="text-xs text-gray-700">
                                         {{ it.name }}<span v-if="it.variant_name" class="text-gray-400"> ({{ it.variant_name }})</span>
-                                        <span class="font-semibold">×{{ it.quantity }}</span>
+                                        <span class="font-semibold">&times;{{ it.quantity }}</span>
                                     </p>
-                                    <p class="text-[11px] font-bold text-emerald-600">RM {{ Number(r.total_amount || 0).toFixed(2) }}</p>
+                                    <p class="text-[11px] font-bold text-gray-500">RM {{ Number(r.addons_amount || 0).toFixed(2) }}</p>
+                                    <span v-if="Number(r.addons_amount || 0) > 0" class="inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">Item berbayar</span>
                                 </div>
                                 <span v-else class="text-xs text-gray-400">—</span>
                             </td>
                             <td class="px-4 py-3">
-                                <span v-if="r.is_free" class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">Percuma</span>
-                                <span v-else class="text-xs font-bold" :class="r.payment_status === 'successful' || r.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'">
-                                    {{ r.payment_status === 'successful' || r.payment_status === 'paid' ? 'Berjaya' : 'Menunggu' }}
+                                <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold" :class="payment(r).class">
+                                    {{ payment(r).label }}<span v-if="r.payment_is_manual" class="ml-1 font-black">*manual</span>
                                 </span>
+                                <p v-if="Number(r.total_amount || 0) > 0" class="mt-1 text-[11px] text-gray-400">RM {{ Number(r.total_amount).toFixed(2) }}</p>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="text-xs font-bold" :class="{ 'text-emerald-600': r.status === 'confirmed', 'text-amber-600': r.status === 'pending', 'text-red-500': r.status === 'cancelled' }">
+                                <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold" :class="statusBadge[r.status] ?? statusBadge.pending">
                                     {{ r.status_label }}
                                 </span>
+                                <p v-if="r.attended" class="mt-1 text-[10px] font-semibold text-emerald-600">Hadir</p>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="inline-flex flex-col items-end gap-1.5">
                                     <button
-                                        v-if="extraColumns.length"
+                                        v-if="r.payment_state === 'unpaid' && r.status !== 'cancelled'"
                                         type="button"
-                                        @click="openRawColumns(r)"
-                                        class="rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50"
+                                        class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
+                                        @click="markPaid(r)"
                                     >
-                                        Lajur ({{ extraColumns.length }})
+                                        Tanda Dibayar
                                     </button>
-                                    <select
-                                        :value="r.status"
-                                        @change="updateStatus(r, $event.target.value)"
-                                        class="rounded-xl border border-gray-200 px-2 py-1.5 text-xs focus:ring-0"
+                                    <button
+                                        v-if="r.status !== 'cancelled'"
+                                        type="button"
+                                        class="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                                        @click="updateStatus(r, 'cancelled')"
                                     >
-                                        <option value="confirmed">Disahkan</option>
-                                        <option value="pending">Menunggu</option>
-                                        <option value="cancelled">Dibatalkan</option>
-                                    </select>
+                                        Batal
+                                    </button>
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+                                        @click="updateStatus(r, 'confirmed')"
+                                    >
+                                        Pulihkan
+                                    </button>
                                 </div>
                             </td>
+                        </tr>
+                        <tr v-if="registrations.data.length === 0">
+                            <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-400">Tiada peserta untuk penapis ini.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <!-- ── Import Google Form ─────────────────────────────────────────── -->
-        <div
-            v-if="showImport"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
-            @click.self="closeImport"
-        >
-            <div class="my-8 w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
-                <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-6">
-                    <div>
-                        <h2 class="text-lg font-black text-gray-900">Import Data Google Form</h2>
-                        <p class="mt-1 text-xs text-gray-500">
-                            Muat naik CSV/XLSX terkini. Senarai import lama akan diganti dengan fail ini.
-                            Peserta yang mendaftar melalui myWAP, walk-in, atau ada kehadiran/bayaran
-                            akan dikekalkan.
-                        </p>
-                    </div>
-                    <button type="button" @click="closeImport" class="text-gray-400 hover:text-gray-600">✕</button>
-                </div>
-
-                <div class="space-y-5 p-6">
-                    <div>
-                        <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
-                            Fail CSV / XLSX
-                        </label>
-                        <input
-                            type="file"
-                            accept=".csv,.txt,.xlsx,.xls"
-                            @change="onFileChange"
-                            class="block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-bold"
-                        />
-                        <p class="mt-1 text-[11px] text-gray-400">
-                            Dalam Google Form: Responses → ... → Download responses (.csv).
-                            Pastikan kolum No. IC diformat sebagai Teks supaya angka 0 di depan tidak hilang.
-                        </p>
-                    </div>
-
-                    <p v-if="importError" class="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-600">
-                        {{ importError }}
-                    </p>
-
-                    <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            @click="previewImport"
-                            :disabled="!importFile || previewing"
-                            class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                        >
-                            {{ previewing ? 'Menyemak...' : 'Pratonton & Padan Lajur' }}
-                        </button>
-                        <span v-if="importPreview" class="text-xs text-gray-500">
-                            {{ importPreview.total_rows }} baris ·
-                            {{ importPreview.stats?.unique_identities ?? '—' }} peserta unik
-                            <template v-if="importPreview.stats?.duplicate_rows">
-                                · {{ importPreview.stats.duplicate_rows }} pendua
-                            </template>
-                        </span>
-                    </div>
-
-                    <div
-                        v-if="importPreview?.warnings?.length"
-                        class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-1"
-                    >
-                        <p v-for="(warning, index) in importPreview.warnings" :key="index">
-                            • {{ warning }}
-                        </p>
-                    </div>
-
-                    <template v-if="importPreview">
-                        <div>
-                            <h3 class="mb-2 text-sm font-bold text-gray-800">Padanan Lajur</h3>
-                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div v-for="field in importFields" :key="field.key">
-                                    <label class="mb-1 block text-xs font-semibold text-gray-600">
-                                        {{ field.label }}<span v-if="field.required" class="text-red-500"> *</span>
-                                    </label>
-                                    <select
-                                        v-model="importMapping[field.key]"
-                                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
-                                    >
-                                        <option :value="null">— Tidak digunakan —</option>
-                                        <option v-for="(header, index) in importPreview.headers" :key="index" :value="index">
-                                            {{ header || `Lajur ${index + 1}` }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 class="mb-2 text-sm font-bold text-gray-800">Contoh Data</h3>
-                            <div class="overflow-x-auto rounded-xl border border-gray-100">
-                                <table class="w-full text-xs">
-                                    <thead class="bg-gray-50 text-left text-[10px] uppercase tracking-wide text-gray-400">
-                                        <tr>
-                                            <th v-for="(header, index) in importPreview.headers" :key="index" class="whitespace-nowrap px-3 py-2">
-                                                {{ header || `Lajur ${index + 1}` }}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-50">
-                                        <tr v-for="(row, rowIndex) in importPreview.sample" :key="rowIndex">
-                                            <td v-for="(header, index) in importPreview.headers" :key="index" class="whitespace-nowrap px-3 py-2 text-gray-600">
-                                                {{ row[index] ?? '' }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </template>
-
-                    <div v-if="importResult" class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
-                        <p class="font-bold">Import selesai</p>
-                        <p class="mt-1">
-                            {{ importResult.created }} baharu · {{ importResult.updated }} dikemas kini ·
-                            {{ importResult.removed }} import lama dibuang · {{ importResult.skipped }} dilewati
-                        </p>
-                        <ul v-if="importResult.errors?.length" class="mt-2 max-h-32 list-disc space-y-1 overflow-y-auto pl-5 text-xs text-amber-700">
-                            <li v-for="(error, index) in importResult.errors" :key="index">{{ error }}</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 border-t border-gray-100 p-4">
-                    <button type="button" @click="closeImport" class="rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
-                        {{ importResult ? 'Tutup' : 'Batal' }}
-                    </button>
-                    <button
-                        v-if="!importResult"
-                        type="button"
-                        @click="commitImport"
-                        :disabled="!canCommit"
-                        class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                        {{ importing ? 'Mengimport...' : 'Import Sekarang' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Kosongkan data import ─────────────────────────────────────── -->
-        <div
-            v-if="showClear"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            @click.self="closeClear"
-        >
-            <div class="w-full max-w-md rounded-3xl bg-white shadow-2xl">
-                <div class="border-b border-gray-100 p-6">
-                    <h2 class="text-lg font-black text-gray-900">Kosongkan Data Import</h2>
-                    <p class="mt-1 text-xs text-gray-500">{{ event.title }}</p>
-                </div>
-
-                <div class="space-y-3 p-6 text-sm text-gray-600">
-                    <p>
-                        Semua <span class="font-bold text-gray-900">{{ importedCount }}</span> rekod
-                        peserta yang berasal dari import CSV/Google Form untuk program ini akan
-                        dipadam <span class="font-bold text-red-600">terus</span> dari pangkalan data.
-                    </p>
-                    <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        Rekod pendaftaran melalui borang myWAP dan walk-in tidak terjejas. Tindakan
-                        ini tidak boleh dibatalkan.
-                    </p>
-                </div>
-
-                <div class="flex items-center justify-end gap-2 border-t border-gray-100 p-4">
-                    <button
-                        type="button"
-                        @click="closeClear"
-                        :disabled="clearing"
-                        class="rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        type="button"
-                        @click="clearImported"
-                        :disabled="clearing"
-                        class="rounded-xl bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
-                    >
-                        {{ clearing ? 'Memadam...' : 'Padam ' + importedCount + ' Rekod' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ── Semua lajur Google Form ───────────────────────────────────── -->
-        <div
-            v-if="rawColumnsOpen && rawColumnsRegistration"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
-            @click.self="closeRawColumns"
-        >
-            <div class="my-8 w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
-                <div class="flex items-start justify-between gap-4 border-b border-gray-100 p-6">
-                    <div>
-                        <h2 class="text-lg font-black text-gray-900">Lajur Google Form</h2>
-                        <p class="mt-1 text-xs text-gray-500">
-                            {{ rawColumnsRegistration.name }} · {{ rawColumnsRegistration.registration_no }}
-                        </p>
-                    </div>
-                    <button type="button" @click="closeRawColumns" class="text-gray-400 hover:text-gray-600">✕</button>
-                </div>
-
-                <div class="max-h-[65vh] overflow-y-auto p-6">
-                    <div class="mb-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                        <p><span class="text-gray-400">No. IC:</span> {{ rawColumnsRegistration.ic_number || '—' }}</p>
-                        <p><span class="text-gray-400">Telefon:</span> {{ rawColumnsRegistration.phone || '—' }}</p>
-                        <p><span class="text-gray-400">Emel:</span> {{ rawColumnsRegistration.email || '—' }}</p>
-                        <p><span class="text-gray-400">No. Ahli:</span> {{ rawColumnsRegistration.member_no || '—' }}</p>
-                    </div>
-
-                    <div class="overflow-hidden rounded-xl border border-gray-100">
-                        <table class="w-full text-xs">
-                            <thead class="bg-gray-50 text-left text-[10px] uppercase tracking-wide text-gray-400">
-                                <tr>
-                                    <th class="w-1/3 px-3 py-2">Lajur</th>
-                                    <th class="px-3 py-2">Nilai</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                <tr v-for="column in extraColumns" :key="column">
-                                    <td class="px-3 py-2 align-top font-semibold text-gray-600">{{ column }}</td>
-                                    <td class="whitespace-pre-wrap px-3 py-2 text-gray-700">
-                                        {{ rawColumnsRegistration.raw_data?.[column] ?? '—' }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div
-                        v-if="Object.keys(rawColumnsRegistration.form_answers || {}).length"
-                        class="mt-6"
-                    >
-                        <h3 class="mb-2 text-sm font-bold text-gray-800">Jawapan Borang myWAP</h3>
-                        <div class="overflow-hidden rounded-xl border border-gray-100">
-                            <table class="w-full text-xs">
-                                <tbody class="divide-y divide-gray-50">
-                                    <tr v-for="(value, label) in rawColumnsRegistration.form_answers" :key="label">
-                                        <td class="w-1/3 px-3 py-2 align-top font-semibold text-gray-600">{{ label }}</td>
-                                        <td class="whitespace-pre-wrap px-3 py-2 text-gray-700">{{ value || '—' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            <div v-if="registrations.links && registrations.links.length > 3" class="mt-4 flex flex-wrap justify-center gap-1">
+                <template v-for="(link, i) in registrations.links" :key="i">
+                    <Link
+                        v-if="link.url"
+                        :href="link.url"
+                        v-html="link.label"
+                        preserve-scroll
+                        class="rounded-lg border px-3 py-1.5 text-sm"
+                        :class="link.active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'"
+                    />
+                    <span v-else v-html="link.label" class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-1.5 text-sm text-gray-300" />
+                </template>
             </div>
         </div>
     </AppLayout>

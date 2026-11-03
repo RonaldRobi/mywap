@@ -141,11 +141,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/events/{event}/edit', [EventController::class, 'edit'])->name('admin.events.edit');
         Route::put('/admin/events/{event}', [EventController::class, 'updateAdmin'])->name('admin.events.update');
         Route::get('/admin/events/{event}/registrations', [RegistrationController::class, 'adminIndex'])->name('admin.events.registrations');
-        Route::post('/admin/events/{event}/registrations/import/preview', [RegistrationController::class, 'importPreview'])->name('admin.events.registrations.import.preview');
-        Route::post('/admin/events/{event}/registrations/import', [RegistrationController::class, 'importStore'])->name('admin.events.registrations.import');
-        Route::delete('/admin/events/{event}/registrations/imported', [RegistrationController::class, 'clearImported'])->name('admin.events.registrations.clear-imported');
         Route::get('/admin/events/{event}/registrations/export', [RegistrationController::class, 'exportRegistrations'])->name('admin.events.registrations.export');
         Route::patch('/admin/events/registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('admin.events.registrations.update');
+        Route::post('/admin/events/registrations/{registration}/mark-paid', [RegistrationController::class, 'markPaid'])->name('admin.events.registrations.mark-paid');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');

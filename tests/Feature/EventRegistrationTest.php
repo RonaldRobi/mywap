@@ -663,8 +663,8 @@ class EventRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'seminar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
 
         $this->actingAs($this->otherAdmin);
@@ -712,8 +712,8 @@ class EventRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$org->id]);
 
@@ -764,8 +764,8 @@ class EventRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'seminar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
 
         $this->actingAs($this->otherAdmin);
@@ -807,8 +807,8 @@ class EventRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$org->id]);
 
@@ -914,8 +914,8 @@ class EventRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$org->id]);
 

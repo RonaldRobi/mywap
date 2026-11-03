@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RegistrationStatus;
+use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Registration;
-use App\Models\RegistrationImport;
+use App\Models\RegistrationItem;
 use App\Models\User;
 use App\Services\PaymentGatewayManager;
-use App\Services\RegistrationImportService;
 use App\Services\RegistrationPaymentService;
 use App\Services\RegistrationService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +36,6 @@ class RegistrationController extends Controller
     public function __construct(
         protected PaymentGatewayManager $gateways,
         protected RegistrationService $registrations,
-        protected RegistrationImportService $registrationImports,
     ) {}
 
     // ─── MEMBER: Daftar Event ─────────────────────────────────────────────────
@@ -53,7 +52,7 @@ class RegistrationController extends Controller
         abort_unless($form->is_active, 404, 'Borang pendaftaran ini tidak aktif.');
 
         abort_unless($event->isPublished(), 404, 'Event belum diterbitkan.');
-        abort_if($event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
+        $this->abortUnlessRegistrationOpen($event);
 
         $existing = Registration::where('event_id', $event->id)
             ->where('user_id', $user->id)
@@ -95,7 +94,7 @@ class RegistrationController extends Controller
         abort_unless($form->event_id === $event->id, 404, 'Borang tidak tergolong dalam event ini.');
         abort_unless($form->is_active, 404);
 
-        abort_if($event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
+        $this->abortUnlessRegistrationOpen($event);
 
         $data = $request->validate($this->registrations->validationRules($form));
 
@@ -119,7 +118,7 @@ class RegistrationController extends Controller
         abort_unless($form->event_id, 404, 'Borang ini bukan borang pendaftaran event.');
         abort_unless($form->event, 404, 'Event tidak dijumpai.');
         abort_unless($form->event->isPublished(), 404, 'Event belum diterbitkan.');
-        abort_if($form->event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
+        $this->abortUnlessRegistrationOpen($form->event);
 
         // Alat kongsi hanya untuk admin/superadmin — orang awam tidak nampak.
         $user = request()->user();
@@ -163,7 +162,7 @@ class RegistrationController extends Controller
 
         abort_unless($form->event_id, 404);
         abort_unless($form->event, 404, 'Event tidak dijumpai.');
-        abort_if($form->event->isClosed(), 403, 'Pendaftaran untuk event ini telah ditutup.');
+        $this->abortUnlessRegistrationOpen($form->event);
 
         $data = $request->validate($this->registrations->validationRules($form));
 
@@ -268,14 +267,22 @@ class RegistrationController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
 
-        if (! $isSuperadmin && ! $this->adminOwnsEvent($user, $event)) {
-            abort(403);
+        $this->authorizeEventAdmin($request, $event);
+
+        $isEventOwner = $isSuperadmin || $this->isEventOwner($user, $event);
+
+        $base = Registration::query()->where('event_id', $event->id);
+
+        // Pemilik/co-organiser nampak semua peserta event; admin org lain yang
+        // hanya ada pendaftaran sendiri nampak peserta organisasinya sahaja.
+        if (! $isEventOwner) {
+            $base->where('organization_id', (int) $user->current_organization_id);
         }
 
-        $query = Registration::with([
+        $query = (clone $base)->with([
             'user', 'organization', 'form', 'latestPayment', 'attendance',
             'formResponse.answers.question', 'items',
-        ])->where('event_id', $event->id);
+        ]);
 
         if ($request->filled('org')) {
             $query->where('organization_id', (int) $request->org);
@@ -297,151 +304,147 @@ class RegistrationController extends Controller
             });
         }
 
-        $registrations = $query->orderByDesc('created_at')
-            ->paginate(25)
+        // Penapis bayaran: percuma / dibayar / belum dibayar.
+        if ($request->filled('payment')) {
+            match ($request->payment) {
+                'free' => $query->whereRaw('(base_amount + addons_amount) <= 0'),
+                'paid' => $query->whereHas('latestPayment', fn ($q) => $q->where('status', 'successful')),
+                'unpaid' => $query
+                    ->whereRaw('(base_amount + addons_amount) > 0')
+                    ->whereDoesntHave('latestPayment', fn ($q) => $q->where('status', 'successful')),
+                default => null,
+            };
+        }
+
+        // Hanya peserta yang memesan item (untuk sediaan).
+        if ($request->boolean('has_items')) {
+            $query->whereHas('items');
+        }
+
+        match ($request->query('sort')) {
+            'items' => $query->orderByDesc('addons_amount')->orderByDesc('created_at'),
+            'name' => $query->orderBy('name'),
+            default => $query->orderByDesc('created_at'),
+        };
+
+        $registrations = $query->paginate(25)
             ->withQueryString()
             ->through(fn (Registration $r) => $this->serialize($r));
 
-        // Imports created before raw_data existed cannot be exported with their
-        // extra Google Form columns until the original file is re-imported.
-        $stats = Registration::where('event_id', $event->id)
-            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN raw_data IS NULL THEN 1 ELSE 0 END) as missing')
-            ->first();
+        $stats = [
+            'total' => (clone $base)->count(),
+            'confirmed' => (clone $base)->where('status', RegistrationStatus::Confirmed->value)->count(),
+            'pending' => (clone $base)->where('status', RegistrationStatus::Pending->value)->count(),
+            'cancelled' => (clone $base)->where('status', RegistrationStatus::Cancelled->value)->count(),
+            'with_items' => (clone $base)->whereHas('items')->count(),
+        ];
 
-        $hasImports = RegistrationImport::where('event_id', $event->id)->exists();
-        $exportIncomplete = $hasImports
-            && (int) ($stats->total ?? 0) > 0
-            && (int) ($stats->missing ?? 0) === (int) ($stats->total ?? 0);
+        // Senarai sediaan: hanya item yang telah dibayar, dikumpulkan mengikut
+        // nama + variant, supaya admin boleh sediakan barangan dengan tepat.
+        $itemsToPrepare = RegistrationItem::query()
+            ->whereHas('registration', function (Builder $q) use ($event, $user, $isEventOwner) {
+                $q->where('event_id', $event->id)
+                    ->where('status', '!=', RegistrationStatus::Cancelled->value)
+                    ->whereHas('latestPayment', fn (Builder $p) => $p->where('status', 'successful'));
+
+                if (! $isEventOwner) {
+                    $q->where('organization_id', (int) $user->current_organization_id);
+                }
+            })
+            ->selectRaw('name, variant_name, SUM(quantity) as quantity')
+            ->groupBy('name', 'variant_name')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($row) => [
+                'name' => $row->name,
+                'variant_name' => $row->variant_name,
+                'quantity' => (int) $row->quantity,
+            ])
+            ->values();
 
         return Inertia::render('Admin/Events/Registrations', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
                 'slug' => $event->slug,
+                'registration_open' => $event->registrationIsOpen(),
+                'registration_closes_at' => $event->registrationClosesAt()?->toIso8601String(),
+                'attendance_open' => $event->attendanceWindowIsOpen(),
+                'attendance_opens_at' => $event->attendanceOpensAt()?->toIso8601String(),
+                'attendance_closes_at' => $event->attendanceClosesAt()?->toIso8601String(),
             ],
             'registrations' => $registrations,
             'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
-            'filters' => $request->only(['org', 'status', 'search']),
-            'exportIncomplete' => $exportIncomplete,
-            'extraColumns' => $this->registrationImports->rawColumns($event),
-            'importedCount' => Registration::where('event_id', $event->id)
-                ->where('source', Registration::SOURCE_IMPORT)
-                ->count(),
+            'filters' => $request->only(['org', 'status', 'search', 'payment', 'has_items', 'sort']),
+            'stats' => $stats,
+            'items_to_prepare' => $itemsToPrepare,
         ]);
     }
 
     /**
-     * Preview a Google Form export (CSV/XLSX): headers, sample rows and
-     * auto-detected column mapping. Nothing is written to the database.
-     */
-    public function importPreview(Request $request, Event $event): JsonResponse
-    {
-        $this->authorizeEventAdmin($request, $event);
-
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
-        ]);
-
-        return response()->json(
-            $this->registrationImports->preview($request->file('file')),
-        );
-    }
-
-    /**
-     * Commit an import. Existing registrations are updated in place; new rows
-     * are created. Re-uploading the same/updated export never duplicates rows
-     * or deletes participants missing from the latest file.
-     */
-    public function importStore(Request $request, Event $event): JsonResponse
-    {
-        $this->authorizeEventAdmin($request, $event);
-
-        $data = $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
-            'mapping' => ['required', 'array'],
-            'mapping.name' => ['required', 'integer', 'min:0'],
-            'mapping.ic_number' => ['nullable', 'integer', 'min:0'],
-            'mapping.phone' => ['nullable', 'integer', 'min:0'],
-            'mapping.email' => ['nullable', 'integer', 'min:0'],
-            'mapping.member_no' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $result = $this->registrationImports->import(
-            $event,
-            $request->file('file'),
-            $data['mapping'],
-            $request->user(),
-        );
-
-        return response()->json([
-            'message' => "Import selesai: {$result['created']} baharu, {$result['updated']} dikemas kini, {$result['removed']} import lama dibuang, {$result['skipped']} dilewati.",
-            'summary' => $result,
-        ]);
-    }
-
-    /**
-     * Padam terus semua rekod yang berasal dari import CSV/Google Form untuk
-     * event ini, termasuk log import. Pendaftaran melalui borang myWAP dan
-     * walk-in tidak terjejas.
-     */
-    public function clearImported(Request $request, Event $event): RedirectResponse
-    {
-        $this->authorizeEventAdmin($request, $event);
-
-        $deleted = DB::transaction(function () use ($event) {
-            $ids = Registration::query()
-                ->where('event_id', $event->id)
-                ->where('source', Registration::SOURCE_IMPORT)
-                ->pluck('id');
-
-            if ($ids->isEmpty()) {
-                return 0;
-            }
-
-            Payment::query()
-                ->where('payable_type', Registration::class)
-                ->whereIn('payable_id', $ids)
-                ->delete();
-
-            Registration::query()->whereKey($ids)->delete();
-
-            RegistrationImport::query()->where('event_id', $event->id)->delete();
-
-            return $ids->count();
-        });
-
-        if ($deleted === 0) {
-            return back()->with('error', 'Tiada rekod import untuk dipadam.');
-        }
-
-        return back()->with('success', "{$deleted} rekod import telah dipadam.");
-    }
-
-    /**
-     * Export registrations using the same columns as the original Google Form
-     * import, plus system columns. The output can be imported back as-is.
+     * Export senarai pendaftaran sebagai CSV bersih (peserta, item, bayaran,
+     * status dan kehadiran).
      */
     public function exportRegistrations(Request $request, Event $event): StreamedResponse
     {
-        $this->authorizeEventAdmin($request, $event);
+        $user = $this->authorizeEventAdmin($request, $event);
+        $isEventOwner = $user->hasRole('Superadmin') || $this->isEventOwner($user, $event);
 
-        $definition = $this->registrationImports->exportDefinition($event);
         $filename = 'pendaftaran-'.Str::slug($event->title).'-'.now()->format('Ymd-His').'.csv';
 
-        return response()->streamDownload(function () use ($event, $definition) {
+        return response()->streamDownload(function () use ($event, $user, $isEventOwner) {
             $file = fopen('php://output', 'w');
             fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($file, $definition['headers']);
+            fputcsv($file, [
+                'No. Daftar', 'Nama', 'No. IC', 'No. Ahli', 'Telefon', 'Emel',
+                'Organisasi', 'Borang', 'Kategori', 'Item', 'Jumlah (RM)',
+                'Bayaran', 'Status', 'Kehadiran', 'Masa Hadir',
+            ]);
 
-            Registration::with(['organization', 'formResponse.answers.question', 'items'])
+            $query = Registration::with(['organization', 'form', 'items', 'latestPayment', 'attendance'])
                 ->where('event_id', $event->id)
-                ->orderBy('id')
-                ->chunk(500, function ($registrations) use ($file, $definition) {
-                    foreach ($registrations as $registration) {
-                        fputcsv($file, $this->registrationImports->exportRow($registration, $definition));
-                    }
-                });
+                ->orderBy('id');
+
+            if (! $isEventOwner) {
+                $query->where('organization_id', (int) $user->current_organization_id);
+            }
+
+            $query->chunk(500, function ($registrations) use ($file) {
+                foreach ($registrations as $registration) {
+                    $items = $registration->items
+                        ->map(fn ($item) => trim(
+                            $item->name
+                            .($item->variant_name ? ' ('.$item->variant_name.')' : '')
+                            .' x'.$item->quantity
+                        ))
+                        ->implode('; ');
+
+                    $payment = $registration->isFreeRegistration()
+                        ? 'Percuma'
+                        : ($registration->latestPayment?->status === 'successful'
+                            ? 'Dibayar'.($registration->latestPayment?->uploaded_by !== null ? ' (manual)' : '')
+                            : 'Menunggu Bayaran');
+
+                    fputcsv($file, [
+                        $registration->registration_no,
+                        $registration->name,
+                        $registration->ic_number,
+                        $registration->member_no,
+                        $registration->phone,
+                        $registration->email,
+                        $registration->organization?->name,
+                        $registration->form?->title,
+                        $registration->ticket_type,
+                        $items !== '' ? $items : null,
+                        number_format($registration->totalAmount(), 2, '.', ''),
+                        $payment,
+                        $registration->status->label(),
+                        $registration->attendance ? 'Hadir' : 'Tidak Hadir',
+                        $registration->attendance?->attended_at?->toDateTimeString(),
+                    ]);
+                }
+            });
 
             fclose($file);
         }, $filename, [
@@ -449,48 +452,166 @@ class RegistrationController extends Controller
         ]);
     }
 
+    /**
+     * Batal atau pulihkan pendaftaran. Status lain (Diterima / Menunggu
+     * Bayaran) ditentukan automatik oleh aliran bayaran.
+     */
     public function updateStatus(Request $request, Registration $registration): RedirectResponse
     {
         $user = $request->user();
-        $isSuperadmin = $user->hasRole('Superadmin');
-
-        $allowed = $isSuperadmin
-            || $registration->organization_id === (int) $user->current_organization_id
-            || $this->adminOwnsEvent($user, $registration->event);
-
-        abort_unless($allowed, 403);
+        $this->authorizeRegistrationAdmin($user, $registration);
 
         $data = $request->validate([
-            'status' => ['required', 'in:pending,confirmed,cancelled'],
+            'status' => ['required', 'in:cancelled,confirmed'],
         ]);
 
-        $registration->update(['status' => $data['status']]);
+        if ($data['status'] === 'cancelled') {
+            $registration->update(['status' => RegistrationStatus::Cancelled]);
 
-        return back()->with('success', 'Status pendaftaran dikemas kini.');
-    }
-
-    protected function authorizeEventAdmin(Request $request, Event $event): void
-    {
-        $user = $request->user();
-
-        if (! $user->hasRole('Superadmin') && ! $this->adminOwnsEvent($user, $event)) {
-            abort(403);
+            return back()->with('success', 'Pendaftaran dibatalkan.');
         }
+
+        $restored = $registration->isPaid() || $registration->totalAmount() <= 0
+            ? RegistrationStatus::Confirmed
+            : RegistrationStatus::Pending;
+
+        $registration->update(['status' => $restored]);
+
+        return back()->with('success', 'Pendaftaran dipulihkan.');
     }
 
     /**
-     * Admin organisasi layak jika event milik org sendiri ATAU organisasinya
-     * tersenarai dalam pivot "organisasi terlibat".
+     * Tandakan bayaran sebagai berjaya secara manual (contoh: isu gateway atau
+     * bayaran tunai di kaunter). Status pendaftaran menjadi Diterima.
      */
-    protected function adminOwnsEvent($user, Event $event): bool
+    public function markPaid(Request $request, Registration $registration): RedirectResponse
     {
-        $ownOrg = (int) $user->current_organization_id;
+        $user = $request->user();
+        $this->authorizeRegistrationAdmin($user, $registration);
 
-        if ((int) $event->organization_id === $ownOrg) {
-            return true;
+        if ($registration->status === RegistrationStatus::Cancelled) {
+            return back()->with('error', 'Pendaftaran dibatalkan. Pulihkan dahulu sebelum tandakan bayaran.');
         }
 
-        return $event->organizations()->where('organizations.id', $ownOrg)->exists();
+        if ($registration->isPaid()) {
+            return back()->with('success', 'Pendaftaran ini sudah dibayar.');
+        }
+
+        $amount = $registration->totalAmount();
+
+        DB::transaction(function () use ($registration, $user, $amount) {
+            if ($amount > 0) {
+                $payment = $registration->latestPayment;
+
+                if ($payment !== null) {
+                    $payment->update([
+                        'status' => 'successful',
+                        'amount' => (float) $payment->amount > 0 ? $payment->amount : $amount,
+                        'description' => 'Bayaran manual disahkan oleh admin',
+                        'uploaded_by' => $user->id,
+                        'gateway' => $payment->gateway ?: 'manual',
+                    ]);
+                } else {
+                    Payment::create([
+                        'user_id' => $registration->user_id,
+                        'payable_type' => Registration::class,
+                        'payable_id' => $registration->id,
+                        'amount' => $amount,
+                        'status' => 'successful',
+                        'description' => 'Bayaran manual disahkan oleh admin',
+                        'uploaded_by' => $user->id,
+                        'gateway' => 'manual',
+                        'organization_id' => $registration->organization_id ?? $user->current_organization_id,
+                    ]);
+                }
+            }
+
+            $registration->update(['status' => RegistrationStatus::Confirmed]);
+
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'organization_id' => $user->current_organization_id,
+                'target_type' => Registration::class,
+                'target_id' => $registration->id,
+                'action' => 'registration_manual_paid',
+                'description' => "Bayaran manual disahkan untuk {$registration->name} ({$registration->registration_no}).",
+                'old_values' => ['status' => 'pending'],
+                'new_values' => ['status' => 'confirmed', 'amount' => $amount],
+            ]);
+        });
+
+        return back()->with('success', 'Bayaran ditanda berjaya. Status kini Diterima.');
+    }
+
+    /**
+     * Pendaftaran dibuka awal (selepas diterbitkan) dan ditutup 24 jam selepas
+     * program tamat.
+     */
+    protected function abortUnlessRegistrationOpen(Event $event): void
+    {
+        if ($event->registrationIsOpen()) {
+            return;
+        }
+
+        $closesAt = $event->registrationClosesAt();
+
+        $message = $closesAt !== null
+            ? 'Pendaftaran untuk program ini telah ditutup pada '.$closesAt->locale('ms')->isoFormat('D MMM YYYY, h:mm A').'.'
+            : 'Pendaftaran untuk program ini telah ditutup.';
+
+        abort(403, $message);
+    }
+
+    protected function authorizeEventAdmin(Request $request, Event $event): User
+    {
+        $user = $request->user();
+
+        if ($user->hasRole('Superadmin')) {
+            return $user;
+        }
+
+        $orgId = (int) $user->current_organization_id;
+
+        $accessible = (int) $event->organization_id === $orgId
+            || $event->organizations()->where('organizations.id', $orgId)->exists()
+            || $event->registrations()->where('organization_id', $orgId)->exists();
+
+        abort_unless($accessible, 403);
+
+        return $user;
+    }
+
+    /**
+     * Superadmin dan pemilik/co-organiser event boleh urus semua peserta event
+     * tersebut; admin org lain hanya boleh urus pendaftaran organisasinya.
+     */
+    protected function authorizeRegistrationAdmin(User $user, Registration $registration): void
+    {
+        if ($user->hasRole('Superadmin')) {
+            return;
+        }
+
+        $event = $registration->event;
+
+        if ($event !== null && $this->isEventOwner($user, $event)) {
+            return;
+        }
+
+        abort_unless(
+            (int) $registration->organization_id === (int) $user->current_organization_id,
+            403
+        );
+    }
+
+    /**
+     * Adakah pengguna pemilik atau co-organiser event?
+     */
+    protected function isEventOwner(User $user, Event $event): bool
+    {
+        $orgId = (int) $user->current_organization_id;
+
+        return (int) $event->organization_id === $orgId
+            || $event->organizations()->where('organizations.id', $orgId)->exists();
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────

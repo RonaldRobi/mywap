@@ -1199,6 +1199,22 @@
   "scanCancelButton": "Cancel",
   "scanLoginButton": "Log In",
   "scanAttendanceVerifiedTitle": "Attendance Verified",
+  "scanAttendanceClosedTitle": "Attendance not open",
+  "@scanAttendanceClosedTitle": {
+    "description": "Shown when attendance QR is outside its time window."
+  },
+  "scanAttendanceClosedBody": "The attendance QR is only valid from {start} until {end} (24 hours before to 24 hours after the programme).",
+  "@scanAttendanceClosedBody": {
+    "description": "Attendance QR window.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "scanFailedTitle": "Scan Failed",
   "scanDoneButton": "Done",
   "scanTryAgainButton": "Try Again",
@@ -1221,6 +1237,40 @@
   "eventAlreadyRegistered": "You are already registered",
   "eventRegistrationNo": "Registration No.: {number}",
   "eventStatus": "Status: {status}",
+  "eventRegistrationClosed": "Registration is closed",
+  "@eventRegistrationClosed": {
+    "description": "Shown when registration is closed."
+  },
+  "eventRegistrationClosedAt": "Closed on {date}",
+  "@eventRegistrationClosedAt": {
+    "description": "Registration close date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAttendanceWindowOpen": "Attendance QR is open until {end}",
+  "@eventAttendanceWindowOpen": {
+    "description": "Attendance window is currently open.",
+    "placeholders": {
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "eventAttendanceWindowClosed": "Attendance QR opens {start} until {end}",
+  "@eventAttendanceWindowClosed": {
+    "description": "Attendance window is not open yet.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "eventViewMyRegistrations": "View My Registrations",
   "eventCancelAttendance": "Cancel Attendance",
   "eventWillAttend": "I Will Attend",
@@ -1253,7 +1303,7 @@
   "eventUploadSupportDocTitle": "Upload Supporting Document *",
   "eventUploadSupportDocHint": "Please upload the supporting document (e.g. student card).",
   "eventAddonsTitle": "Additional Options",
-  "eventAddonsHint": "Complete your registration with additional programme options. Choose what applies — your registration is valid without them.",
+  "eventAddonsHint": "Complete your registration with additional programme options. Choose what applies.",
   "eventAddonsTitleRequired": "Required & Optional Add-ons",
   "eventAddonsHintRequired": "Complete your registration. Options marked “Required” must be included; the rest are your choice.",
   "eventAddonSelectOption": "Select option",

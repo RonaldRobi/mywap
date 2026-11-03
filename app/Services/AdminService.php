@@ -620,6 +620,7 @@ class AdminService
                 $canOpenQr = $isSuperadmin
                     || (int) $e->organization_id === (int) $user->current_organization_id
                     || $e->organizations->contains(fn ($org) => (int) $org->id === (int) $user->current_organization_id);
+                $qrExpired = $e->attendanceClosesAt() !== null && now()->gt($e->attendanceClosesAt());
 
                 return [
                     'id' => $e->id,
@@ -642,7 +643,7 @@ class AdminService
                     'pending_payment_count' => (int) ($pendingByEvent[$e->id] ?? 0),
                     'attendance_url' => route('admin.attendance.show', $e->id),
                     'registrations_url' => route('admin.events.registrations', $e->id),
-                    'qr_url' => $canOpenQr ? route('events.qr', $e->id) : null,
+                    'qr_url' => ($canOpenQr && ! $qrExpired) ? route('events.qr', $e->id) : null,
                 ];
             })
             ->values();
@@ -791,9 +792,10 @@ class AdminService
             ])
             ->values();
 
-        $canOpenQr = $user->hasRole('Superadmin')
+        $canOpenQr = ($user->hasRole('Superadmin')
             || (int) $event->organization_id === (int) $user->current_organization_id
-            || $event->organizations()->where('organizations.id', $user->current_organization_id)->exists();
+            || $event->organizations()->where('organizations.id', $user->current_organization_id)->exists())
+            && ! ($event->attendanceClosesAt() !== null && now()->gt($event->attendanceClosesAt()));
 
         return [
             'event' => [

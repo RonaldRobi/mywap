@@ -4985,6 +4985,18 @@ abstract class AppLocalizations {
   /// **'Attendance Verified'**
   String get scanAttendanceVerifiedTitle;
 
+  /// Shown when attendance QR is outside its time window.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance not open'**
+  String get scanAttendanceClosedTitle;
+
+  /// Attendance QR window.
+  ///
+  /// In en, this message translates to:
+  /// **'The attendance QR is only valid from {start} until {end} (24 hours before to 24 hours after the programme).'**
+  String scanAttendanceClosedBody(String start, String end);
+
   /// No description provided for @scanFailedTitle.
   ///
   /// In en, this message translates to:
@@ -5116,6 +5128,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status: {status}'**
   String eventStatus(String status);
+
+  /// Shown when registration is closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration is closed'**
+  String get eventRegistrationClosed;
+
+  /// Registration close date.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed on {date}'**
+  String eventRegistrationClosedAt(String date);
+
+  /// Attendance window is currently open.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance QR is open until {end}'**
+  String eventAttendanceWindowOpen(String end);
+
+  /// Attendance window is not open yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance QR opens {start} until {end}'**
+  String eventAttendanceWindowClosed(String start, String end);
 
   /// No description provided for @eventViewMyRegistrations.
   ///
@@ -5312,7 +5348,7 @@ abstract class AppLocalizations {
   /// No description provided for @eventAddonsHint.
   ///
   /// In en, this message translates to:
-  /// **'Complete your registration with additional programme options. Choose what applies — your registration is valid without them.'**
+  /// **'Complete your registration with additional programme options. Choose what applies.'**
   String get eventAddonsHint;
 
   /// No description provided for @eventAddonsTitleRequired.

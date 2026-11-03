@@ -193,6 +193,14 @@ class _DetailContent extends StatelessWidget {
     final description = event?.description;
     final myRsvp = event?.my_rsvp;
     final isGoing = myRsvp == 'going';
+    final registrationOpen = event?.registration_open ?? false;
+    final attendanceOpen = event?.attendance_open ?? false;
+    final registrationClosesAt =
+        DateTime.tryParse(event?.registration_closes_at ?? '')?.toLocal();
+    final attendanceOpensAt =
+        DateTime.tryParse(event?.attendance_opens_at ?? '')?.toLocal();
+    final attendanceClosesAt =
+        DateTime.tryParse(event?.attendance_closes_at ?? '')?.toLocal();
 
     return RefreshIndicator(
       onRefresh: onRefresh,
@@ -273,18 +281,49 @@ class _DetailContent extends StatelessWidget {
                 const SizedBox(height: Spacing.xl),
                 if (registrationForms.isNotEmpty) ...[
                   if (myRegistration == null) ...[
-                    FilledButton.icon(
-                      onPressed: onRegister,
-                      icon: const Icon(Icons.assignment_outlined),
-                      label: Text(context.l10n.eventRegisterAsParticipant),
-                    ),
-                    const SizedBox(height: Spacing.sm),
-                    Text(
-                      context.l10n.eventRegisterHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                    if (registrationOpen) ...[
+                      FilledButton.icon(
+                        onPressed: onRegister,
+                        icon: const Icon(Icons.assignment_outlined),
+                        label: Text(context.l10n.eventRegisterAsParticipant),
                       ),
-                    ),
+                      const SizedBox(height: Spacing.sm),
+                      Text(
+                        context.l10n.eventRegisterHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ] else ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(Spacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.eventRegistrationClosed,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: AppColors.warning,
+                              ),
+                            ),
+                            if (registrationClosesAt != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                context.l10n.eventRegistrationClosedAt(
+                                  Formatters.datetime(registrationClosesAt),
+                                ),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ] else ...[
                     Container(
                       width: double.infinity,
@@ -359,6 +398,53 @@ class _DetailContent extends StatelessWidget {
                     context.l10n.eventRsvpHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+                if (attendanceOpensAt != null || attendanceClosesAt != null) ...[
+                  const SizedBox(height: Spacing.lg),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(Spacing.md),
+                    decoration: BoxDecoration(
+                      color:
+                          (attendanceOpen
+                                  ? AppColors.success
+                                  : AppColors.warning)
+                              .withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.qr_code_2_outlined,
+                          size: 18,
+                          color:
+                              attendanceOpen
+                                  ? AppColors.success
+                                  : AppColors.warning,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            attendanceOpen
+                                ? context.l10n.eventAttendanceWindowOpen(
+                                  Formatters.datetime(attendanceClosesAt),
+                                )
+                                : context.l10n.eventAttendanceWindowClosed(
+                                  Formatters.datetime(attendanceOpensAt),
+                                  Formatters.datetime(attendanceClosesAt),
+                                ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color:
+                                  attendanceOpen
+                                      ? AppColors.success
+                                      : AppColors.warning,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

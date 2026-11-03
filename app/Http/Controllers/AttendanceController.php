@@ -7,7 +7,6 @@ use App\Models\Form;
 use App\Models\FormResponse;
 use App\Models\Registration;
 use App\Services\AdminService;
-use App\Services\RegistrationImportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -30,7 +29,6 @@ class AttendanceController extends Controller
 {
     public function __construct(
         private readonly AdminService $admin,
-        private readonly RegistrationImportService $registrationImports,
     ) {}
 
     /**
@@ -403,10 +401,11 @@ class AttendanceController extends Controller
 
     protected function attendanceWindowClosed(Event $event): Response
     {
+        $opensAt = $event->attendanceOpensAt();
         $closesAt = $event->attendanceClosesAt();
 
-        $message = $closesAt !== null && now()->lt($event->start_time ?? now())
-            ? 'Kehadiran belum dibuka. QR hanya sah bermula waktu program.'
+        $message = $opensAt !== null && now()->lt($opensAt)
+            ? 'Kehadiran belum dibuka. QR kehadiran hanya sah bermula '.$opensAt->locale('ms')->isoFormat('D MMM YYYY, h:mm A').' (24 jam sebelum program).'
             : 'QR kehadiran telah tamat tempoh. '.($closesAt ? 'Tempoh ditutup pada '.$closesAt->locale('ms')->isoFormat('D MMM YYYY, h:mm A').' (24 jam selepas program tamat).' : '');
 
         return Inertia::render('Events/AttendanceError', [
@@ -425,7 +424,7 @@ class AttendanceController extends Controller
      */
     protected function registrationAction(Event $event, bool $member): ?array
     {
-        if (! $event->isPublished() || $event->isClosed()) {
+        if (! $event->registrationIsOpen()) {
             return null;
         }
 
@@ -523,7 +522,6 @@ class AttendanceController extends Controller
 
         $rows = $registrations->map(function (Registration $registration) use ($formColumns) {
             $answers = $this->formResponseFor($registration)?->answers?->keyBy('form_question_id') ?? collect();
-            $rawData = $registration->raw_data ?? [];
 
             return [
                 'name' => $registration->name,
@@ -536,13 +534,7 @@ class AttendanceController extends Controller
                 'attended' => $registration->attendance !== null,
                 'attended_at' => $registration->attendance?->attended_at?->toDateTimeString(),
                 'form_values' => collect($formColumns)
-                    ->map(function (array $column) use ($answers, $rawData) {
-                        $value = $answers->get($column['id'])?->value;
-
-                        return $value !== null && $value !== ''
-                            ? $value
-                            : $this->registrationImports->matchRawValue($rawData, $column['label']);
-                    })
+                    ->map(fn (array $column) => $answers->get($column['id'])?->value ?? '')
                     ->all(),
             ];
         })->all();

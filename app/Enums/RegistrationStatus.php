@@ -18,8 +18,8 @@ enum RegistrationStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Pending => 'Menunggu',
-            self::Confirmed => 'Disahkan',
+            self::Pending => 'Menunggu Bayaran',
+            self::Confirmed => 'Diterima',
             self::Cancelled => 'Dibatalkan',
             self::WalkIn => 'Walk-in',
         };

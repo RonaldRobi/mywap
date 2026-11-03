@@ -15,8 +15,11 @@ class AdminOrganizationAccessTest extends TestCase
     use RefreshDatabase;
 
     private Organization $org;
+
     private Organization $other;
+
     private User $admin;
+
     private User $otherAdmin;
 
     protected function setUp(): void
@@ -65,6 +68,12 @@ class AdminOrganizationAccessTest extends TestCase
         $event = $this->makeEvent($this->org);
         Registration::create([
             'event_id' => $event->id,
+            'organization_id' => $this->org->id,
+            'name' => 'Peserta Sendiri',
+            'status' => 'confirmed',
+        ]);
+        Registration::create([
+            'event_id' => $event->id,
             'organization_id' => $this->other->id,
             'name' => 'Peserta Lain',
             'status' => 'confirmed',
@@ -73,7 +82,8 @@ class AdminOrganizationAccessTest extends TestCase
         $this->actingAs($this->admin);
         $this->get(route('admin.events.registrations', $event->id))
             ->assertOk()
-            ->assertInertia(fn ($p) => $p->component('Admin/Events/Registrations')->has('registrations.data', 1));
+            ->assertInertia(fn ($p) => $p->component('Admin/Events/Registrations')
+                ->has('registrations.data', 2));
     }
 
     public function test_org_admin_alias_can_manage_own_event(): void
@@ -91,8 +101,14 @@ class AdminOrganizationAccessTest extends TestCase
         $event = $this->makeEvent($this->other, [$this->other->id, $this->org->id]);
         Registration::create([
             'event_id' => $event->id,
-            'organization_id' => $this->other->id,
+            'organization_id' => $this->org->id,
             'name' => 'Peserta Bersama',
+            'status' => 'confirmed',
+        ]);
+        Registration::create([
+            'event_id' => $event->id,
+            'organization_id' => $this->other->id,
+            'name' => 'Peserta Org Lain',
             'status' => 'confirmed',
         ]);
 
@@ -103,7 +119,7 @@ class AdminOrganizationAccessTest extends TestCase
             ->assertInertia(fn ($p) => $p->component('Admin/Events/Attendance')->has('programs', 1));
         $this->get(route('admin.events.registrations', $event->id))
             ->assertOk()
-            ->assertInertia(fn ($p) => $p->has('registrations.data', 1));
+            ->assertInertia(fn ($p) => $p->has('registrations.data', 2));
     }
 
     public function test_org_admin_cannot_manage_other_org_event(): void

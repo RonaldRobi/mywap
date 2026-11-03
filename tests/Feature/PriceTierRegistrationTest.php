@@ -59,8 +59,8 @@ class PriceTierRegistrationTest extends TestCase
             'status' => EventStatus::Published->value,
             'category' => EventCategory::Muktamar->value,
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(3),
         ]);
 
         $form = Form::create([
@@ -108,8 +108,8 @@ class PriceTierRegistrationTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(3),
         ]);
 
         $this->actingAs($this->admin);

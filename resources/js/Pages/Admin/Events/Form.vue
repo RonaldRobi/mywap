@@ -233,6 +233,11 @@ function submit() {
                         </div>
 
                         <p v-if="invalidTimes" class="text-xs text-red-500">Masa Tamat mesti selepas Masa Mula.</p>
+
+                        <p class="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+                            Pendaftaran dibuka sebaik program diterbitkan dan ditutup <strong>24 jam selepas</strong> program tamat.
+                            QR kehadiran pula hanya boleh diimbas <strong>24 jam sebelum</strong> program bermula hingga <strong>24 jam selepas</strong> tamat.
+                        </p>
                     </div>
                 </div>
 

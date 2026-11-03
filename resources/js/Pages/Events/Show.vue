@@ -474,7 +474,15 @@ function copyPromoLink() {
             <!-- ─── Pendaftaran (Registration) ─────────────────────────────── -->
             <div v-if="registrationForms.length" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 md:p-6">
                 <h2 class="text-lg font-black text-gray-900 mb-1">Pendaftaran</h2>
-                <p class="text-sm text-gray-500 mb-4">Daftar sebagai peserta event ini.</p>
+                <p class="text-sm text-gray-500 mb-2">Daftar sebagai peserta event ini.</p>
+                <p class="text-xs mb-4" :class="event.registration_open ? 'text-emerald-600' : 'text-amber-700'">
+                    <template v-if="event.registration_open">
+                        Pendaftaran dibuka sehingga {{ event.registration_closes_at ? new Date(event.registration_closes_at).toLocaleString('ms-MY') : 'tarikh tutup' }}.
+                    </template>
+                    <template v-else>
+                        Pendaftaran telah ditutup.
+                    </template>
+                </p>
 
                 <div v-if="myRegistration" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 mb-4">
                     <p class="text-sm text-emerald-800">
@@ -493,12 +501,18 @@ function copyPromoLink() {
                         </div>
                         <div class="flex gap-2 shrink-0">
                             <a
+                                v-if="event.registration_open && !myRegistration"
                                 :href="isLoggedIn ? f.register_url : f.public_url"
-                                :disabled="!!myRegistration"
-                                class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 transition"
                             >
                                 {{ isLoggedIn ? 'Daftar' : 'Daftar Program' }}
                             </a>
+                            <span
+                                v-else-if="!myRegistration"
+                                class="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-gray-500"
+                            >
+                                Pendaftaran ditutup
+                            </span>
                         </div>
                     </div>
                 </div>

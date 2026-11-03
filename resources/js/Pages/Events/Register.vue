@@ -305,13 +305,19 @@ function submit() {
                 <!-- Barang Tambahan (Opsional) -->
                 <div v-if="addonItems.length" class="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4 space-y-3">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">
-                            {{ hasRequiredAddon ? 'Tambahan Wajib & Pilihan' : 'Pilihan Tambahan' }}
-                        </p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-xs font-bold uppercase tracking-widest text-indigo-500">Tambahan Program</p>
+                            <span
+                                class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                                :class="hasRequiredAddon ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'"
+                            >
+                                {{ hasRequiredAddon ? 'Ada Wajib' : 'Pilihan' }}
+                            </span>
+                        </div>
                         <p class="text-[11px] text-gray-500 mt-0.5">
                             {{ hasRequiredAddon
                                 ? 'Lengkapi pendaftaran anda. Pilihan bertanda “Wajib” perlu disertakan; yang lain mengikut pilihan anda.'
-                                : 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan — pendaftaran tetap sah tanpanya.' }}
+                                : 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan.' }}
                         </p>
                     </div>
 

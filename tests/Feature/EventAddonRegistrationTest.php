@@ -7,6 +7,7 @@ use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormItem;
+use App\Models\FormItemVariant;
 use App\Models\FormQuestion;
 use App\Models\Organization;
 use App\Models\Payment;
@@ -71,8 +72,8 @@ class EventAddonRegistrationTest extends TestCase
             'status' => EventStatus::Published->value,
             'category' => EventCategory::Lain->value,
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(3),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(3),
         ]);
     }
 
@@ -100,7 +101,7 @@ class EventAddonRegistrationTest extends TestCase
     }
 
     /**
-     * @return array{0: FormItem, 1: array<string, \App\Models\FormItemVariant>}
+     * @return array{0: FormItem, 1: array<string, FormItemVariant>}
      */
     private function makeJerseyItem(Form $form): array
     {

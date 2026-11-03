@@ -2562,6 +2562,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanAttendanceVerifiedTitle => 'Attendance Verified';
 
   @override
+  String get scanAttendanceClosedTitle => 'Attendance not open';
+
+  @override
+  String scanAttendanceClosedBody(String start, String end) {
+    return 'The attendance QR is only valid from $start until $end (24 hours before to 24 hours after the programme).';
+  }
+
+  @override
   String get scanFailedTitle => 'Scan Failed';
 
   @override
@@ -2633,6 +2641,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String eventStatus(String status) {
     return 'Status: $status';
+  }
+
+  @override
+  String get eventRegistrationClosed => 'Registration is closed';
+
+  @override
+  String eventRegistrationClosedAt(String date) {
+    return 'Closed on $date';
+  }
+
+  @override
+  String eventAttendanceWindowOpen(String end) {
+    return 'Attendance QR is open until $end';
+  }
+
+  @override
+  String eventAttendanceWindowClosed(String start, String end) {
+    return 'Attendance QR opens $start until $end';
   }
 
   @override
@@ -2734,7 +2760,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventAddonsTitle => 'Additional Options';
 
   @override
-  String get eventAddonsHint => 'Complete your registration with additional programme options. Choose what applies — your registration is valid without them.';
+  String get eventAddonsHint => 'Complete your registration with additional programme options. Choose what applies.';
 
   @override
   String get eventAddonsTitleRequired => 'Required & Optional Add-ons';

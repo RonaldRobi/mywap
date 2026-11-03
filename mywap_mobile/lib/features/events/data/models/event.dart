@@ -27,6 +27,11 @@ sealed class Event with _$Event {
     List<Organization>? organizations,
     int? rsvp_count,
     String? my_rsvp,
+    bool? registration_open,
+    String? registration_closes_at,
+    bool? attendance_open,
+    String? attendance_opens_at,
+    String? attendance_closes_at,
   }) = _Event;
 
   factory Event.fromJson(Map<String, dynamic> json) => _$EventFromJson(json);

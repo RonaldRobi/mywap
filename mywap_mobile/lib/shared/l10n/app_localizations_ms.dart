@@ -2562,6 +2562,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scanAttendanceVerifiedTitle => 'Kehadiran Disahkan';
 
   @override
+  String get scanAttendanceClosedTitle => 'Kehadiran belum dibuka';
+
+  @override
+  String scanAttendanceClosedBody(String start, String end) {
+    return 'QR kehadiran hanya sah dari $start hingga $end (24 jam sebelum hingga 24 jam selepas program).';
+  }
+
+  @override
   String get scanFailedTitle => 'Imbasan Gagal';
 
   @override
@@ -2633,6 +2641,24 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String eventStatus(String status) {
     return 'Status: $status';
+  }
+
+  @override
+  String get eventRegistrationClosed => 'Pendaftaran telah ditutup';
+
+  @override
+  String eventRegistrationClosedAt(String date) {
+    return 'Ditutup pada $date';
+  }
+
+  @override
+  String eventAttendanceWindowOpen(String end) {
+    return 'QR kehadiran dibuka sehingga $end';
+  }
+
+  @override
+  String eventAttendanceWindowClosed(String start, String end) {
+    return 'QR kehadiran dibuka $start hingga $end';
   }
 
   @override
@@ -2731,10 +2757,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventUploadSupportDocHint => 'Sila muat naik dokumen sokongan (cth. kad pelajar).';
 
   @override
-  String get eventAddonsTitle => 'Pilihan Tambahan';
+  String get eventAddonsTitle => 'Tambahan Program';
 
   @override
-  String get eventAddonsHint => 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan — pendaftaran tetap sah tanpanya.';
+  String get eventAddonsHint => 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan.';
 
   @override
   String get eventAddonsTitleRequired => 'Tambahan Wajib & Pilihan';

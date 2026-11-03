@@ -65,3 +65,15 @@ Schedule::command('backup:database')
     ->withoutOverlapping(180)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/backup.log'));
+
+/**
+ * Expire unpaid registrations
+ *
+ * Setiap jam: batalkan pendaftaran berbayar yang masih "Menunggu Bayaran"
+ * melebihi 24 jam dan lepaskan stok item yang ditempah semula.
+ */
+Schedule::command('registrations:expire-unpaid')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/registrations-expiry.log'));

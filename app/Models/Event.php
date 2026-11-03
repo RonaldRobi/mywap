@@ -180,11 +180,18 @@ class Event extends Model
     // ─ Attendance window ─────────────────────────────────────────────────────
 
     /**
-     * QR kehadiran hanya sah dalam tetingkap ini: dari waktu mula program
-     * hingga 24 jam selepas waktu tamat. Selepas itu token tidak lagi boleh
-     * merekod kehadiran.
+     * QR kehadiran hanya sah dalam tetingkap ini: 24 jam sebelum program
+     * bermula hingga 24 jam selepas program tamat. Sebelum itu tidak boleh
+     * scan (elak kehadiran awal), selepas itu token tamat.
      */
+    public const ATTENDANCE_OPEN_HOURS = 24;
+
     public const ATTENDANCE_GRACE_HOURS = 24;
+
+    public function attendanceOpensAt(): ?Carbon
+    {
+        return $this->start_time?->copy()->subHours(self::ATTENDANCE_OPEN_HOURS);
+    }
 
     public function attendanceClosesAt(): ?Carbon
     {
@@ -197,7 +204,9 @@ class Event extends Model
     {
         $at = $at ?? now();
 
-        if ($this->start_time === null || $at->lt($this->start_time)) {
+        $opensAt = $this->attendanceOpensAt();
+
+        if ($opensAt === null || $at->lt($opensAt)) {
             return false;
         }
 
@@ -256,5 +265,35 @@ class Event extends Model
         }
 
         return hash_equals($this->attendanceSignature($expires), (string) $signature);
+    }
+
+    // ─ Registration window ───────────────────────────────────────────────────
+
+    /**
+     * Pendaftaran dibuka sebaik sahaja program diterbitkan (boleh daftar awal)
+     * dan ditutup 24 jam selepas program tamat.
+     */
+    public const REGISTRATION_CLOSE_HOURS = 24;
+
+    public function registrationClosesAt(): ?Carbon
+    {
+        return $this->end_time?->copy()->addHours(self::REGISTRATION_CLOSE_HOURS);
+    }
+
+    /**
+     * Pendaftaran diterima selagi event diterbitkan, tidak ditutup secara
+     * manual, dan belum melepasi 24 jam selepas tamat.
+     */
+    public function registrationIsOpen(?Carbon $at = null): bool
+    {
+        $at = $at ?? now();
+
+        if ($this->status !== EventStatus::Published) {
+            return false;
+        }
+
+        $closesAt = $this->registrationClosesAt();
+
+        return $closesAt !== null && $at->lte($closesAt);
     }
 }

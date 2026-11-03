@@ -145,8 +145,8 @@ class OrgAdminFormTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$this->orgA->id]);
 
@@ -175,8 +175,8 @@ class OrgAdminFormTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $form = Form::create(['event_id' => $event->id, 'organization_id' => $this->orgA->id, 'title' => 'Borang Cawangan', 'is_active' => true, 'allow_public' => true]);
         FormQuestion::create(['form_id' => $form->id, 'label' => 'Negeri Organisasi', 'type' => 'branch', 'required' => true, 'sort_order' => 0]);
@@ -203,8 +203,8 @@ class OrgAdminFormTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $form = Form::create(['event_id' => $event->id, 'organization_id' => $this->orgA->id, 'title' => 'Borang Cawangan 2', 'is_active' => true, 'allow_public' => true]);
         $q = FormQuestion::create(['form_id' => $form->id, 'label' => 'Negeri Organisasi', 'type' => 'branch', 'required' => true, 'sort_order' => 0]);
@@ -228,8 +228,8 @@ class OrgAdminFormTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $form = Form::create(['event_id' => $event->id, 'organization_id' => $this->orgA->id, 'title' => 'Borang Event', 'is_active' => true, 'allow_public' => true]);
 
@@ -250,8 +250,8 @@ class OrgAdminFormTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         // Form tiada org — patut fallback ke org event.
         $form = Form::create(['event_id' => $event->id, 'organization_id' => null, 'title' => 'Borang No Org', 'is_active' => true, 'allow_public' => true]);

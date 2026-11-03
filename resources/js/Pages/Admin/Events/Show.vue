@@ -11,7 +11,7 @@ const props = defineProps({
     registrationsUrl: String,
     attendanceUrl: String,
     editUrl: String,
-    qrUrl: String,
+    qrUrl: { type: String, default: null },
 });
 
 const isPublished = () => props.event?.status === 'published';
@@ -23,6 +23,17 @@ const statusColor = {
     published: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     closed: 'bg-red-50 text-red-600 border-red-200',
 };
+
+function windowDate(value) {
+    if (!value) return '—';
+    return new Date(value).toLocaleString('ms-MY', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+}
 
 // ─── Salin pautan pendaftaran (bila hanya ada satu borang) ────────────────
 const registrationCopied = ref(false);
@@ -145,6 +156,18 @@ function eventShareUrl() {
                 </a>
             </div>
 
+            <!-- ─── Tetingkap pendaftaran & kehadiran ────────────────────── -->
+            <div class="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3.5 text-sm text-sky-800">
+                <p class="font-bold">Pendaftaran dibuka sebaik program diterbitkan, ditutup 24 jam selepas program tamat</p>
+                <p class="mt-0.5 text-xs text-sky-700">
+                    {{ event.registration_open ? 'Pendaftaran sedang dibuka' : 'Pendaftaran telah ditutup' }}
+                    <template v-if="event.registration_closes_at"> &middot; sehingga {{ windowDate(event.registration_closes_at) }}</template>
+                </p>
+                <p class="mt-1 text-xs text-sky-700">
+                    QR kehadiran: {{ windowDate(event.attendance_opens_at) }} hingga {{ windowDate(event.attendance_closes_at) }} (24 jam sebelum hingga 24 jam selepas program).
+                </p>
+            </div>
+
             <!-- ─── Langkah seterusnya (checklist) ───────────────────────── -->
             <div class="rounded-3xl bg-white border border-gray-100 shadow-sm p-6">
                 <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500 mb-4">Langkah Seterusnya</h2>
@@ -214,17 +237,21 @@ function eventShareUrl() {
                         <p class="mt-1 text-sm font-bold text-gray-800">Untuk admin kongsikan</p>
                         <p class="mt-0.5 text-xs text-gray-500">Peserta imbas/klik untuk <strong>mendaftar</strong>. Kongsi di WhatsApp/Facebook atau cetak pada poster.</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            <a v-if="hasForms" :href="registrationQrUrl" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Muat Turun QR Pendaftaran</a>
-                            <button
-                                v-if="hasForms"
-                                type="button"
-                                @click="primaryForm ? openShare(primaryForm) : null"
-                                :disabled="!primaryForm"
-                                class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Kongsi Borang
-                            </button>
-                            <span v-if="!hasForms" class="text-xs text-gray-400">Cipta borang dahulu untuk jana QR ini.</span>
+                            <template v-if="hasForms && event.registration_open">
+                                <a :href="registrationQrUrl" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">Muat Turun QR Pendaftaran</a>
+                                <button
+                                    type="button"
+                                    @click="primaryForm ? openShare(primaryForm) : null"
+                                    :disabled="!primaryForm"
+                                    class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Kongsi Borang
+                                </button>
+                            </template>
+                            <span v-else-if="hasForms" class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-amber-700">
+                                Pendaftaran telah ditutup. QR pendaftaran tidak lagi tersedia.
+                            </span>
+                            <span v-else class="text-xs text-gray-400">Cipta borang dahulu untuk jana QR ini.</span>
                         </div>
                     </div>
 
@@ -234,9 +261,14 @@ function eventShareUrl() {
                         <p class="mt-1 text-sm font-bold text-gray-800">Untuk peserta imbas semasa hadir</p>
                         <p class="mt-0.5 text-xs text-gray-500">Panjangkan di kaunter/projektor. Peserta imbas untuk <strong>merekod kehadiran</strong> pada hari acara.</p>
                         <div class="mt-3 flex flex-wrap gap-2">
-                            <a :href="qrUrl" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">Buka QR Semak Masuk</a>
-                            <a :href="route('events.qr.download', event.id)" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">Muat Turun</a>
-                            <a :href="route('events.qr.print', event.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">Cetak</a>
+                            <template v-if="qrUrl">
+                                <a :href="qrUrl" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">Buka QR Semak Masuk</a>
+                                <a :href="route('events.qr.download', event.id)" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">Muat Turun</a>
+                                <a :href="route('events.qr.print', event.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">Cetak</a>
+                            </template>
+                            <p v-else class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-amber-700">
+                                QR kehadiran telah tamat tempoh (24 jam selepas program tamat).
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -38,7 +38,7 @@ class FormController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $query = Form::query()
-            ->with(['organization:id,name', 'event:id,title'])
+            ->with(['organization:id,name', 'event:id,title,status,start_time,end_time'])
             ->withCount('responses')
             ->orderByDesc('updated_at');
 
@@ -66,6 +66,8 @@ class FormController extends Controller
             'recipient_count' => count($f->recipient_emails ?? []),
             'organization_name' => $f->organization?->name,
             'event_title' => $f->event?->title,
+            'event_id' => $f->event_id,
+            'registration_open' => $f->event?->registrationIsOpen(),
             'public_url' => $f->event_id
                 ? route('events.register.public', $f->share_token)
                 : $f->public_url,
@@ -473,7 +475,7 @@ class FormController extends Controller
     {
         $this->assertCanManageForm($form);
 
-        $form->load('questions');
+        $form->load(['questions', 'event']);
 
         $responses = $form->responses()
             ->with('answers.question')
@@ -496,6 +498,8 @@ class FormController extends Controller
             'form' => [
                 'id' => $form->id,
                 'title' => $form->title,
+                'event_id' => $form->event_id,
+                'registration_open' => $form->event?->registrationIsOpen(),
                 'questions' => $form->questions,
             ],
             'responses' => $responses,
@@ -621,6 +625,7 @@ class FormController extends Controller
             || $form->organization_id === (int) $user->current_organization_id,
             403
         );
+        $this->abortIfRegistrationClosed($form);
 
         $publicUrl = $form->public_url;
 
@@ -648,6 +653,7 @@ class FormController extends Controller
             || $form->organization_id === (int) $user->current_organization_id,
             403
         );
+        $this->abortIfRegistrationClosed($form);
 
         $publicUrl = $form->public_url;
 
@@ -696,6 +702,19 @@ class FormController extends Controller
         $user = request()->user();
         if (! $user->hasRole('Superadmin') && $form->organization_id !== (int) $user->current_organization_id) {
             abort(403);
+        }
+    }
+
+    /**
+     * QR borang pendaftaran tidak lagi dijana apabila pendaftaran program
+     * sudah ditutup (program lepas).
+     */
+    private function abortIfRegistrationClosed(Form $form): void
+    {
+        $event = $form->event;
+
+        if ($event !== null && ! $event->registrationIsOpen()) {
+            abort(403, 'Pendaftaran untuk program ini telah ditutup. QR pendaftaran tidak lagi tersedia.');
         }
     }
 

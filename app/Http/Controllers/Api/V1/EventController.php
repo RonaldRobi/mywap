@@ -66,9 +66,9 @@ class EventController extends Controller
         }
 
         if (! $event->attendanceWindowIsOpen()) {
-            $closesAt = $event->attendanceClosesAt();
-            $message = $closesAt !== null && now()->lt($event->start_time ?? now())
-                ? 'Kehadiran belum dibuka. QR hanya sah bermula waktu program.'
+            $opensAt = $event->attendanceOpensAt();
+            $message = $opensAt !== null && now()->lt($opensAt)
+                ? 'Kehadiran belum dibuka. QR kehadiran hanya sah bermula 24 jam sebelum program.'
                 : 'QR kehadiran telah tamat tempoh. Kehadiran hanya boleh direkodkan sehingga 24 jam selepas program tamat.';
 
             return ApiResponse::error($message, status: 403);

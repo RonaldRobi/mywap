@@ -42,8 +42,8 @@ class GuestPayTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $event->organizations()->sync([$org->id]);
         $form = Form::create([
@@ -94,8 +94,8 @@ class GuestPayTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $form = Form::create([
             'event_id' => $event->id,
@@ -137,8 +137,8 @@ class GuestPayTest extends TestCase
             'status' => 'published',
             'category' => 'muktamar',
             'location_or_link' => 'KL',
-            'start_time' => now()->addMonth(),
-            'end_time' => now()->addMonth()->addHours(2),
+            'start_time' => now()->subHour(),
+            'end_time' => now()->addHours(2),
         ]);
         $form = Form::create(['event_id' => $event->id, 'organization_id' => $org->id, 'title' => 'Borang Berbayar', 'payment_required' => true, 'price' => 10.00, 'is_active' => true, 'allow_public' => true]);
 

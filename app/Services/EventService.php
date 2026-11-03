@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Registration;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -57,6 +58,11 @@ class EventService
             ])->values(),
             'rsvp_count' => $event->rsvps->whereIn('status', ['going', 'attended'])->count(),
             'my_rsvp' => $myRsvp ? $myRsvp->status : null,
+            'registration_open' => $event->registrationIsOpen(),
+            'registration_closes_at' => $event->registrationClosesAt()?->toIso8601String(),
+            'attendance_open' => $event->attendanceWindowIsOpen(),
+            'attendance_opens_at' => $event->attendanceOpensAt()?->toIso8601String(),
+            'attendance_closes_at' => $event->attendanceClosesAt()?->toIso8601String(),
         ];
     }
 
@@ -74,7 +80,7 @@ class EventService
         $query = Event::with([
             'organization',
             'organizations',
-            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class),
+            'rsvps.user' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class),
         ]);
 
         if ($tab === 'past') {
@@ -131,7 +137,7 @@ class EventService
      */
     public function showDetail(Event $event, ?User $user = null): array
     {
-        $event->loadMissing(['organization', 'organizations', 'rsvps.user' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)]);
+        $event->loadMissing(['organization', 'organizations', 'rsvps.user' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class)]);
 
         $eventArr = $this->serialize($event, $user?->id);
 

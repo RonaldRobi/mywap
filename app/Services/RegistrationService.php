@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\RegistrationStatus;
+use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormAnswer;
@@ -27,6 +28,12 @@ use Illuminate\Validation\ValidationException;
  */
 class RegistrationService
 {
+    /**
+     * Tempoh pegangan pendaftaran berbayar yang belum dibayar sebelum
+     * dibatalkan automatik dan stok item dilepaskan.
+     */
+    public const UNPAID_EXPIRY_HOURS = 24;
+
     public function __construct(
         private readonly RegistrationPaymentService $payments,
         private readonly PaymentGatewayManager $gateways,
@@ -535,6 +542,48 @@ class RegistrationService
     }
 
     /**
+     * Batalkan pendaftaran berbayar yang masih "Menunggu Bayaran" melebihi
+     * tempoh pegangan, dan lepaskan stok item yang ditempah.
+     *
+     * Rekod dikekalkan (status Dibatalkan) untuk audit; item dipadam kerana
+     * tempahan tidak lagi sah.
+     */
+    public function expireUnpaidRegistrations(int $hours = self::UNPAID_EXPIRY_HOURS): int
+    {
+        $cutoff = now()->subHours(max(1, $hours));
+        $expired = 0;
+
+        Registration::query()
+            ->where('status', RegistrationStatus::Pending)
+            ->where('created_at', '<=', $cutoff)
+            ->whereRaw('(base_amount + addons_amount) > 0')
+            ->whereDoesntHave('latestPayment', fn ($q) => $q->where('status', 'successful'))
+            ->chunkById(100, function ($registrations) use (&$expired) {
+                foreach ($registrations as $registration) {
+                    DB::transaction(function () use ($registration) {
+                        $this->releaseItems($registration);
+                        $registration->update(['status' => RegistrationStatus::Cancelled]);
+
+                        ActivityLog::create([
+                            'user_id' => null,
+                            'organization_id' => $registration->organization_id,
+                            'target_type' => Registration::class,
+                            'target_id' => $registration->id,
+                            'action' => 'registration_expired',
+                            'description' => "Pendaftaran {$registration->registration_no} dibatalkan automatik kerana bayaran tidak diterima dalam tempoh ditetapkan.",
+                            'old_values' => ['status' => 'pending'],
+                            'new_values' => ['status' => 'cancelled'],
+                        ]);
+                    });
+
+                    $expired++;
+                }
+            });
+
+        return $expired;
+    }
+
+    /**
      * Cipta Payment dan pulangkan URL gateway (atau sahkan dalam mod dummy).
      */
     protected function createPayment(Registration $registration, Form $form, Event $event, string $paymentMethod, float $amount): array
@@ -691,6 +740,10 @@ class RegistrationService
             'organization_name' => $r->organization?->name,
             'form_title' => $r->form?->title,
             'payment_status' => $r->latestPayment?->status ?? 'paid',
+            'payment_state' => $r->isFreeRegistration()
+                ? 'free'
+                : ($r->latestPayment?->status === 'successful' ? 'paid' : 'unpaid'),
+            'payment_is_manual' => $r->latestPayment?->uploaded_by !== null,
             'attended' => $r->attendance !== null,
             'attended_at' => $r->attendance?->attended_at?->toDateTimeString(),
             'created_at' => $r->created_at?->toDateTimeString(),

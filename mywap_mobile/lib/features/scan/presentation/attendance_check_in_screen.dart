@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/application/auth_controller.dart';
@@ -49,7 +50,63 @@ class _AttendanceCheckInScreenState
       await _promptLogin();
       return;
     }
+    await _checkWindowThenSubmit();
+  }
+
+  /// Semak tetingkap kehadiran sebelum menghantar check-in supaya pengguna
+  /// tidak nampak seolah-olah kehadiran sah di luar tempoh yang dibenarkan.
+  Future<void> _checkWindowThenSubmit() async {
+    try {
+      final detail = await ref
+          .read(eventRepositoryProvider)
+          .detail(widget.eventId);
+      final event = detail.event;
+
+      if (event != null && event.attendance_open == false) {
+        if (!mounted) return;
+        final opensAt =
+            DateTime.tryParse(event.attendance_opens_at ?? '')?.toLocal();
+        final closesAt =
+            DateTime.tryParse(event.attendance_closes_at ?? '')?.toLocal();
+        await _showWindowClosed(opensAt, closesAt);
+        return;
+      }
+    } catch (_) {
+      // Jika butiran gagal dimuatkan, biar backend yang tentukan.
+    }
+
     await _submit();
+  }
+
+  Future<void> _showWindowClosed(DateTime? opensAt, DateTime? closesAt) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: const Icon(
+              Icons.schedule,
+              color: AppColors.warning,
+              size: 40,
+            ),
+            title: Text(context.l10n.scanAttendanceClosedTitle),
+            content: Text(
+              context.l10n.scanAttendanceClosedBody(
+                Formatters.datetime(opensAt),
+                Formatters.datetime(closesAt),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  if (mounted) context.go('/home');
+                },
+                child: Text(context.l10n.scanCloseButton),
+              ),
+            ],
+          ),
+    );
   }
 
   Future<void> _promptLogin() async {

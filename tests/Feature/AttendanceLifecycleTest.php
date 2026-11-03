@@ -89,8 +89,8 @@ class AttendanceLifecycleTest extends TestCase
     public function test_scan_is_rejected_before_event_starts(): void
     {
         $event = $this->event([
-            'start_time' => now()->addHour(),
-            'end_time' => now()->addHours(3),
+            'start_time' => now()->addHours(25),
+            'end_time' => now()->addHours(27),
         ]);
 
         $this->actingAs($this->member)
@@ -153,6 +153,18 @@ class AttendanceLifecycleTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Events/AttendanceSuccess'));
 
         $this->assertSame(1, Attendance::where('event_id', $event->id)->count());
+    }
+
+    public function test_qr_generation_is_blocked_after_event_window(): void
+    {
+        $event = $this->event([
+            'start_time' => now()->subHours(50),
+            'end_time' => now()->subHours(48),
+        ]);
+
+        $this->actingAs($this->admin)->get(route('events.qr', $event->id))->assertStatus(403);
+        $this->actingAs($this->admin)->get(route('events.qr.download', $event->id))->assertStatus(403);
+        $this->actingAs($this->admin)->get(route('events.qr.print', $event->id))->assertStatus(403);
     }
 
     // ─── Integrasi profil ─────────────────────────────────────────────────────
