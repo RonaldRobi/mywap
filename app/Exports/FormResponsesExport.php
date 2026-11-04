@@ -8,12 +8,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\StringValueBinder;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSize, WithStyles
+class FormResponsesExport extends StringValueBinder implements FromCollection, WithHeadings, ShouldAutoSize, WithStyles, WithCustomValueBinder
 {
     /** @var array<int, string> */
     protected array $headings = [];
@@ -38,7 +40,7 @@ class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSiz
             ->groupBy(fn ($q) => trim((string) $q->label));
 
         $responses = $this->form->responses()
-            ->with(['answers.question', 'user'])
+            ->with(['answers.question', 'user', 'registration'])
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
             ->get();
@@ -94,8 +96,9 @@ class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSiz
                 });
 
                 $val = $answer?->value;
+                $isIcField = (bool) preg_match('/(kad\s*pengenalan|mykad|nric|\bic\b|\bkp\b|pengenalan)/i', $label);
 
-                // Fallback kepada maklumat responden jika medan soalan ini ialah Nama/Emel/Telefon
+                // Fallback kepada maklumat responden jika medan soalan ini ialah Nama/Emel/Telefon/IC
                 // tetapi jawapan dalam FormAnswer kosong (cth: pendaftaran awal / import).
                 if ($val === null || $val === '') {
                     $isNotGuardian = ! preg_match('/waris|penjaga|majikan|bapa|ibu|pasangan/i', $label);
@@ -106,7 +109,15 @@ class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSiz
                         $val = $r->respondent_email;
                     } elseif (preg_match('/\b(telefon|phone|tel|hp|bimbit)\b/i', $label) && ! empty($r->respondent_phone)) {
                         $val = $r->respondent_phone;
+                    } elseif ($isIcField) {
+                        $val = $r->registration?->ic_number ?: $r->user?->ic_number;
                     }
+                }
+
+                // Standardkan No. Kad Pengenalan kepada format XXXXXX-XX-XXXX
+                // bagi mengelakkan penukaran automatik kepada format saintifik (cth: 9.70218E+11) dalam Excel/CSV.
+                if ($val !== null && $val !== '' && ($isIcField || static::isLikelyIc($val))) {
+                    $val = static::formatIc($val);
                 }
 
                 // Jika fail muat naik, sediakan URL penuh
@@ -119,6 +130,40 @@ class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSiz
 
             return $row;
         });
+    }
+
+    /**
+     * Standardkan nombor kad pengenalan 12-digit kepada format XXXXXX-XX-XXXX.
+     */
+    public static function formatIc(mixed $value): string
+    {
+        $str = trim((string) $value);
+        if ($str === '') {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $str);
+        if (strlen($digits) === 12) {
+            return substr($digits, 0, 6).'-'.substr($digits, 6, 2).'-'.substr($digits, 8, 4);
+        }
+
+        return $str;
+    }
+
+    /**
+     * Semak sama ada nilai kelihatan seperti nombor MyKad 12-digit
+     * (bermula dengan tarikh lahir sah YYMMDD).
+     */
+    public static function isLikelyIc(mixed $value): bool
+    {
+        $str = trim((string) $value);
+        if ($str === '') {
+            return false;
+        }
+
+        $digits = preg_replace('/\D+/', '', $str);
+
+        return (bool) preg_match('/^\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{6}$/', $digits);
     }
 
     public function collection(): Collection
@@ -144,4 +189,3 @@ class FormResponsesExport implements FromCollection, WithHeadings, ShouldAutoSiz
         ];
     }
 }
-

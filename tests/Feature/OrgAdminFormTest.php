@@ -452,4 +452,44 @@ class OrgAdminFormTest extends TestCase
         $this->assertContains('Responden Baru', $values);
         $this->assertContains('Responden Lama', $values);
     }
+
+    public function test_export_standardizes_ic_number_format_without_scientific_notation(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang Keahlian',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $qIc = FormQuestion::create(['form_id' => $form->id, 'label' => 'No. Kad Pengenalan', 'type' => 'text', 'sort_order' => 0]);
+
+        // Responden 1 masukkan IC tanpa sengkang (biasanya menjadi 9.70218E+11 dalam Excel jika tidak distandardkan)
+        $r1 = FormResponse::create(['form_id' => $form->id, 'submitted_at' => now()->subHour()]);
+        FormAnswer::create(['form_response_id' => $r1->id, 'form_question_id' => $qIc->id, 'value' => '970218105432']);
+
+        // Responden 2 masukkan IC dengan sengkang
+        $r2 = FormResponse::create(['form_id' => $form->id, 'submitted_at' => now()]);
+        FormAnswer::create(['form_response_id' => $r2->id, 'form_question_id' => $qIc->id, 'value' => '970218-10-5432']);
+
+        $res = $this->actingAs($this->adminA)
+            ->get(route('admin.forms.export', $form->id));
+
+        $res->assertOk();
+        $clean = preg_replace('/^\xEF\xBB\xBF/', '', $res->streamedContent());
+        $lines = array_filter(explode("\n", trim($clean)));
+
+        $row1 = str_getcsv($lines[1]);
+        $row2 = str_getcsv($lines[2]);
+
+        // Kedua-dua baris mestilah distandardkan kepada format XXXXXX-XX-XXXX
+        $this->assertSame('970218-10-5432', $row1[1]);
+        $this->assertSame('970218-10-5432', $row2[1]);
+        $this->assertStringNotContainsString('E+', $clean);
+
+        // Uji juga untuk muat turun Excel (.xlsx)
+        $resExcel = $this->actingAs($this->adminA)
+            ->get(route('admin.forms.export', ['form' => $form->id, 'format' => 'xlsx']));
+        $resExcel->assertOk();
+    }
 }
