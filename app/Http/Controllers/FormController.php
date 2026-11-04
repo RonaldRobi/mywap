@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\FormResponsesExport;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormItem;
@@ -21,7 +22,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormController extends Controller
@@ -482,17 +485,37 @@ class FormController extends Controller
             ->orderByDesc('submitted_at')
             ->orderByDesc('created_at')
             ->paginate(25)
-            ->through(fn (FormResponse $r) => [
-                'id' => $r->id,
-                'respondent_name' => $r->respondent_name,
-                'respondent_email' => $r->respondent_email,
-                'respondent_phone' => $r->respondent_phone,
-                'submitted_at' => $r->submitted_at?->toDateTimeString(),
-                'answers' => $r->answers->map(fn ($a) => [
-                    'question_label' => $a->question?->label,
-                    'value' => $a->value,
-                ])->values(),
-            ]);
+            ->through(function (FormResponse $r) {
+                $name = $r->respondent_name;
+                $email = $r->respondent_email;
+                $phone = $r->respondent_phone;
+
+                // Fallback jika maklumat responden kosong tetapi dijawab dalam soalan borang
+                if (! $name) {
+                    $nameAnswer = $r->answers->first(fn ($a) => preg_match('/\b(nama|name)\b/i', (string) $a->question?->label) && ! preg_match('/waris|penjaga|majikan|bapa|ibu|pasangan/i', (string) $a->question?->label));
+                    $name = $nameAnswer?->value;
+                }
+                if (! $email) {
+                    $emailAnswer = $r->answers->first(fn ($a) => preg_match('/\b(emel|email)\b/i', (string) $a->question?->label));
+                    $email = $emailAnswer?->value;
+                }
+                if (! $phone) {
+                    $phoneAnswer = $r->answers->first(fn ($a) => preg_match('/\b(telefon|phone|tel|hp|bimbit)\b/i', (string) $a->question?->label));
+                    $phone = $phoneAnswer?->value;
+                }
+
+                return [
+                    'id' => $r->id,
+                    'respondent_name' => $name,
+                    'respondent_email' => $email,
+                    'respondent_phone' => $phone,
+                    'submitted_at' => $r->submitted_at?->toDateTimeString(),
+                    'answers' => $r->answers->map(fn ($a) => [
+                        'question_label' => $a->question?->label,
+                        'value' => $a->value,
+                    ])->values(),
+                ];
+            });
 
         return Inertia::render('Admin/Forms/Responses', [
             'form' => [
@@ -506,47 +529,37 @@ class FormController extends Controller
         ]);
     }
 
-    public function exportResponses(Form $form): StreamedResponse
+    public function exportResponses(Request $request, Form $form): StreamedResponse|BinaryFileResponse
     {
         $this->assertCanManageForm($form);
-        $form->load('questions');
 
-        $responses = $form->responses()
-            ->with('answers.question')
-            ->orderByDesc('submitted_at')
-            ->get();
+        $format = strtolower((string) $request->input('format', 'csv'));
+        $isExcel = in_array($format, ['xlsx', 'excel', 'xls'], true);
 
-        $filename = 'respons-'.Str::slug($form->title).'-'.now()->format('Y-m-d_His').'.csv';
+        $export = new FormResponsesExport($form);
+        $slug = Str::slug($form->title) ?: 'borang-'.$form->id;
+        $timestamp = now()->format('Y-m-d_His');
+
+        if ($isExcel) {
+            $filename = "respons-{$slug}-{$timestamp}.xlsx";
+
+            return Excel::download($export, $filename);
+        }
+
+        $filename = "respons-{$slug}-{$timestamp}.csv";
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $questions = $form->questions;
-
-        return response()->streamDownload(function () use ($responses, $questions) {
+        return response()->streamDownload(function () use ($export) {
             $file = fopen('php://output', 'w');
             fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            $header = ['#', 'Nama', 'Emel', 'Telefon', 'Tarikh'];
-            foreach ($questions as $q) {
-                $header[] = $q->label;
-            }
-            fputcsv($file, $header);
+            fputcsv($file, $export->headings());
 
-            foreach ($responses as $r) {
-                $row = [
-                    $r->id,
-                    $r->respondent_name ?? '—',
-                    $r->respondent_email ?? '—',
-                    $r->respondent_phone ?? '—',
-                    $r->submitted_at?->toDateTimeString() ?? '—',
-                ];
-                foreach ($questions as $q) {
-                    $answer = $r->answers->firstWhere('form_question_id', $q->id);
-                    $row[] = $answer?->value ?? '—';
-                }
+            foreach ($export->collection() as $row) {
                 fputcsv($file, $row);
             }
 

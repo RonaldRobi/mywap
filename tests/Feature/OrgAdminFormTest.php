@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\FormAnswer;
 use App\Models\FormQuestion;
+use App\Models\FormResponse;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\User;
@@ -340,5 +342,114 @@ class OrgAdminFormTest extends TestCase
         $question->refresh();
         $this->assertSame($longLabel, $question->label);
         $this->assertSame($longHelp, $question->help_text);
+    }
+
+    public function test_export_csv_only_contains_timestamp_and_form_field_columns_without_duplicate_respondent_columns(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang Pendaftaran Kursus',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        $qNama = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama Penuh', 'type' => 'text', 'sort_order' => 0]);
+        $qTel = FormQuestion::create(['form_id' => $form->id, 'label' => 'No Telefon', 'type' => 'phone', 'sort_order' => 1]);
+        $qEmail = FormQuestion::create(['form_id' => $form->id, 'label' => 'Emel', 'type' => 'email', 'sort_order' => 2]);
+        $qAlamat = FormQuestion::create(['form_id' => $form->id, 'label' => 'Alamat Rumah', 'type' => 'textarea', 'sort_order' => 3]);
+
+        $response = FormResponse::create([
+            'form_id' => $form->id,
+            'respondent_name' => 'Ahmad Albab',
+            'respondent_email' => 'ahmad@example.com',
+            'respondent_phone' => '0123456789',
+            'submitted_at' => now(),
+        ]);
+
+        FormAnswer::create(['form_response_id' => $response->id, 'form_question_id' => $qNama->id, 'value' => 'Ahmad Albab']);
+        FormAnswer::create(['form_response_id' => $response->id, 'form_question_id' => $qTel->id, 'value' => '0123456789']);
+        FormAnswer::create(['form_response_id' => $response->id, 'form_question_id' => $qEmail->id, 'value' => 'ahmad@example.com']);
+        FormAnswer::create(['form_response_id' => $response->id, 'form_question_id' => $qAlamat->id, 'value' => 'Kuala Lumpur']);
+
+        $res = $this->actingAs($this->adminA)
+            ->get(route('admin.forms.export', $form->id));
+
+        $res->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $res->headers->get('Content-Type'));
+
+        $content = $res->streamedContent();
+
+        // Remove UTF-8 BOM if present
+        $clean = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+        $lines = array_filter(explode("\n", trim($clean)));
+
+        $this->assertGreaterThanOrEqual(2, count($lines));
+
+        $header = str_getcsv($lines[0]);
+        // Seharusnya seperti Google Form: Timestamp, diikuti medan borang yang ada
+        $this->assertSame(['Timestamp', 'Nama Penuh', 'No Telefon', 'Emel', 'Alamat Rumah'], $header);
+
+        $row1 = str_getcsv($lines[1]);
+        $this->assertCount(5, $row1);
+        $this->assertSame('Ahmad Albab', $row1[1]);
+        $this->assertSame('0123456789', $row1[2]);
+        $this->assertSame('ahmad@example.com', $row1[3]);
+        $this->assertSame('Kuala Lumpur', $row1[4]);
+    }
+
+    public function test_export_excel_returns_xlsx_download(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang Seminar',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama', 'type' => 'text', 'sort_order' => 0]);
+
+        $res = $this->actingAs($this->adminA)
+            ->get(route('admin.forms.export', ['form' => $form->id, 'format' => 'xlsx']));
+
+        $res->assertOk();
+        $this->assertStringContainsString('.xlsx', (string) $res->headers->get('Content-Disposition'));
+    }
+
+    public function test_export_deduplicates_duplicate_question_labels_in_database(): void
+    {
+        $form = Form::create([
+            'organization_id' => $this->orgA->id,
+            'title' => 'Borang Bertindih',
+            'is_active' => true,
+            'allow_public' => true,
+        ]);
+
+        // Dua soalan dengan label yang sama dalam pangkalan data
+        $qOld = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama Penuh', 'type' => 'text', 'sort_order' => 0]);
+        $qNew = FormQuestion::create(['form_id' => $form->id, 'label' => 'Nama Penuh', 'type' => 'text', 'sort_order' => 1]);
+
+        $r1 = FormResponse::create(['form_id' => $form->id, 'submitted_at' => now()->subDay()]);
+        FormAnswer::create(['form_response_id' => $r1->id, 'form_question_id' => $qOld->id, 'value' => 'Responden Lama']);
+
+        $r2 = FormResponse::create(['form_id' => $form->id, 'submitted_at' => now()]);
+        FormAnswer::create(['form_response_id' => $r2->id, 'form_question_id' => $qNew->id, 'value' => 'Responden Baru']);
+
+        $res = $this->actingAs($this->adminA)
+            ->get(route('admin.forms.export', $form->id));
+
+        $res->assertOk();
+        $clean = preg_replace('/^\xEF\xBB\xBF/', '', $res->streamedContent());
+        $lines = array_filter(explode("\n", trim($clean)));
+
+        $header = str_getcsv($lines[0]);
+        // Kolum "Nama Penuh" cuma muncul sekali sahaja
+        $this->assertSame(['Timestamp', 'Nama Penuh'], $header);
+
+        $row1 = str_getcsv($lines[1]);
+        $row2 = str_getcsv($lines[2]);
+
+        $values = [$row1[1], $row2[1]];
+        $this->assertContains('Responden Baru', $values);
+        $this->assertContains('Responden Lama', $values);
     }
 }
