@@ -48,6 +48,7 @@ class OtpEmail extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject($subject)
+            ->mailer('transactional')
             ->view('emails.otp', [
                 'subject' => $subject,
                 'body' => $body,

@@ -7,6 +7,7 @@ use App\Listeners\LogTransitionAndNotify;
 use App\Models\AppSetting;
 use App\Models\EmailTemplate;
 use App\Models\Poll;
+use App\Support\MailConfig;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -95,6 +96,7 @@ class AppServiceProvider extends ServiceProvider
 
             return (new MailMessage)
                 ->subject($subject)
+                ->mailer('transactional')
                 ->view('emails.password-reset', [
                     'subject' => $subject,
                     'body' => $body,
@@ -130,62 +132,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            $setting = AppSetting::singleton();
-            $mailer = $setting->mail_mailer ?: 'log';
-            $mailConfig = [];
-
-            if ($mailer === 'resend' && $key = $setting->resend_api_key) {
-                $mailConfig = [
-                    'mail.default' => 'resend',
-                    'mail.mailers.resend.key' => $key,
-                    'services.resend.key' => $key,
-                    'resend.api_key' => $key,
-                ];
-
-                $this->configureSmtpMailer($mailConfig, $setting);
-
-                // Prefer failover (Resend → SMTP) when a backup SMTP is configured,
-                // so essential mail still goes out when the Resend daily quota runs out.
-                if ($setting->mail_smtp_host) {
-                    $mailConfig['mail.default'] = 'failover';
-                }
-            } elseif ($mailer === 'smtp') {
-                $mailConfig = ['mail.default' => 'smtp'];
-
-                $this->configureSmtpMailer($mailConfig, $setting);
-            } elseif ($mailer === 'log') {
-                $mailConfig = ['mail.default' => 'log'];
-            }
-
-            if ($fromAddress = $setting->mail_from_address) {
-                $mailConfig['mail.from.address'] = $fromAddress;
-                $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
-            }
-
-            config($mailConfig);
+            config(MailConfig::build(AppSetting::singleton()));
         } catch (\Throwable) {
             // Silent fail — settings table may not be ready during early boot
-        }
-    }
-
-    private function configureSmtpMailer(array &$mailConfig, AppSetting $setting): void
-    {
-        $host = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
-        $mailConfig['mail.mailers.smtp.host'] = $host;
-        $mailConfig['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
-        $mailConfig['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
-        $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
-
-        // Local mail server (Postfix/Dovecot on the same VPS) uses a self-signed
-        // cert; disable peer verification so STARTTLS succeeds.
-        if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            $mailConfig['mail.mailers.smtp.verify_peer'] = false;
-            $mailConfig['mail.mailers.smtp.scheme'] = null;
-        }
-
-        $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
-        if ($encryption && $encryption !== 'null') {
-            $mailConfig['mail.mailers.smtp.encryption'] = $encryption;
         }
     }
 }

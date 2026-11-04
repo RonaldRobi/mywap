@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Support\MailConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -97,7 +98,7 @@ class SuperadminSystemSettingController extends Controller
             $setting->update($updateData);
         }
 
-        config($this->buildMailConfig($setting));
+        config(MailConfig::build($setting));
 
         return back()->with('success', 'Tetapan emel berjaya disimpan.');
     }
@@ -147,68 +148,9 @@ class SuperadminSystemSettingController extends Controller
         $setting->update($updateData);
 
         // Rebuild runtime mail config so the next email uses the new driver.
-        config($this->buildMailConfig($setting));
+        config(MailConfig::build($setting));
 
         return back()->with('success', 'Tetapan mailer berjaya disimpan.');
-    }
-
-    /**
-     * Bina konfigurasi mail runtime daripada app_settings.
-     *
-     * Apabila mailer utama ialah "resend" DAN SMTP backup diisi, guna failover
-     * (Resend dahulu → SMTP sekiranya Resend gagal / kuota habis) supaya emel
-     * penting tetap keluar.
-     */
-    private function buildMailConfig(AppSetting $setting): array
-    {
-        $mailer = $setting->mail_mailer ?: 'log';
-        $mailConfig = [];
-
-        if ($mailer === 'resend' && $setting->resend_api_key) {
-            $mailConfig = [
-                'mail.default' => 'resend',
-                'mail.mailers.resend.key' => $setting->resend_api_key,
-                'services.resend.key' => $setting->resend_api_key,
-                'resend.api_key' => $setting->resend_api_key,
-            ];
-        }
-
-        if (in_array($mailer, ['resend', 'smtp'], true)) {
-            $host = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
-            $mailConfig['mail.mailers.smtp.host'] = $host;
-            $mailConfig['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
-            $mailConfig['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
-            $mailConfig['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
-
-            // Local mail server uses a self-signed cert — disable peer
-            // verification so STARTTLS succeeds on 127.0.0.1.
-            if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-                $mailConfig['mail.mailers.smtp.verify_peer'] = false;
-                $mailConfig['mail.mailers.smtp.scheme'] = null;
-            }
-
-            $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
-            if ($encryption && $encryption !== 'null') {
-                $mailConfig['mail.mailers.smtp.encryption'] = $encryption;
-            }
-
-            if ($mailer === 'resend' && $setting->mail_smtp_host) {
-                $mailConfig['mail.default'] = 'failover';
-            }
-        }
-
-        if ($mailer === 'smtp') {
-            $mailConfig['mail.default'] = 'smtp';
-        } elseif ($mailer === 'log') {
-            $mailConfig['mail.default'] = 'log';
-        }
-
-        if ($setting->mail_from_address) {
-            $mailConfig['mail.from.address'] = $setting->mail_from_address;
-            $mailConfig['mail.from.name'] = $setting->mail_from_name ?: config('app.name');
-        }
-
-        return $mailConfig;
     }
 
     /**

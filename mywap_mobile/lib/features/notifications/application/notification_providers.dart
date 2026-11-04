@@ -62,6 +62,7 @@ class NotificationsController extends Notifier<NotificationsState> {
       );
     } on ApiException catch (e) {
       state = NotificationsState(
+        notifications: state.notifications,
         isLoading: false,
         isMarking: state.isMarking,
         error: e.message,
@@ -71,6 +72,14 @@ class NotificationsController extends Notifier<NotificationsState> {
 
   Future<void> retry() async {
     state = state.copyWith(isLoading: true, error: null);
+    await _load();
+  }
+
+  /// Muat semula senarai tanpa mengosongkan data sedia ada. Dipanggil bila
+  /// skrin notifikasi dibuka atau app kembali dari latar supaya siaran baharu
+  /// muncul tanpa perlu tarik-untuk-refresh.
+  Future<void> refresh() async {
+    if (state.isLoading) return;
     await _load();
   }
 

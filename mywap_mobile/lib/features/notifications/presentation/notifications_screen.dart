@@ -13,11 +13,42 @@ import '../application/notification_providers.dart';
 import '../data/models/app_notification.dart';
 import 'notification_format.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Provider dimuat awal oleh loceng notifikasi, jadi muat semula bila
+    // skrin dibuka supaya siaran terbaharu tidak tertinggal.
+    if (!ref.read(notificationsControllerProvider).isLoading) {
+      ref.read(notificationsControllerProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(notificationsControllerProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen<NotificationsState>(notificationsControllerProvider, (
       prev,
       next,

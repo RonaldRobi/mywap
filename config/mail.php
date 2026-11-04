@@ -79,6 +79,15 @@ return [
             'transport' => 'array',
         ],
 
+        'transactional' => [
+            'transport' => 'failover',
+            'mailers' => [
+                'resend',
+                'smtp',
+            ],
+            'retry_after' => 60,
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [
