@@ -20,6 +20,8 @@ const f = reactive({
 
 const selected = ref([]);
 
+const notAttendedLabel = computed(() => (props.event?.is_ended ? 'Tidak Hadir' : 'Belum Hadir'));
+
 const allVisibleSelected = computed(() => {
     const rows = props.registrations?.data ?? [];
     return rows.length > 0 && selected.value.length === rows.length;
@@ -32,7 +34,7 @@ function toggleAll() {
 
 const tabs = computed(() => [
     { key: 'hadir', label: 'Hadir', count: props.stats.total_attended, class: 'emerald' },
-    { key: 'tidak_hadir', label: 'Tidak Hadir', count: props.stats.total_not_attended, class: 'amber' },
+    { key: 'tidak_hadir', label: notAttendedLabel.value, count: props.stats.total_not_attended, class: 'amber' },
     { key: 'all', label: 'Semua', count: props.stats.total_registered, class: 'gray' },
 ]);
 
@@ -77,6 +79,14 @@ function toggle(registration) {
 
 function bulk(present) {
     if (!selected.value.length) return;
+
+    if (present && !window.confirm(
+        'Tandakan peserta terpilih sebagai hadir?\n\n'
+        + 'Gunakan ini hanya untuk pembetulan. Jangan tanda semua peserta hadir sebelum program bermula — '
+        + 'kehadiran sepatutnya direkod melalui imbasan QR/pautan pada hari program supaya rekod kekal tepat.',
+    )) {
+        return;
+    }
 
     router.post(
         route('admin.attendance.bulk', props.event.id),
@@ -144,6 +154,42 @@ const closesAtLabel = computed(() => {
     });
 });
 
+const opensAtLabel = computed(() => {
+    if (!props.event.attendance_opens_at) return null;
+    return new Date(props.event.attendance_opens_at).toLocaleString('ms-MY', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+});
+
+const qrWindowStatus = computed(() => {
+    if (!props.event.attendance_opens_at && !props.event.attendance_closes_at) return null;
+
+    if (props.event.attendance_window_open) {
+        return {
+            label: closesAtLabel.value ? `QR boleh diimbas sehingga ${closesAtLabel.value}` : 'QR boleh diimbas sekarang',
+            class: 'text-emerald-600',
+        };
+    }
+
+    const opensAt = props.event.attendance_opens_at ? new Date(props.event.attendance_opens_at) : null;
+    if (opensAt && opensAt.getTime() > Date.now()) {
+        const range = [opensAtLabel.value, closesAtLabel.value].filter(Boolean).join(' hingga ');
+        return {
+            label: `QR belum dibuka — boleh diimbas ${range}`,
+            class: 'text-sky-600',
+        };
+    }
+
+    return {
+        label: closesAtLabel.value ? `QR telah tamat tempoh (${closesAtLabel.value})` : 'QR telah tamat tempoh',
+        class: 'text-rose-500',
+    };
+});
+
 const methodLabel = {
     member: 'Imbas QR (ahli)',
     walkin: 'Walk-in',
@@ -184,13 +230,17 @@ function auditMeta(action) {
                         {{ event.start_formatted }}<span v-if="event.location_or_link"> &middot; {{ event.location_or_link }}</span>
                     </p>
                     <p class="text-xs text-gray-400">{{ event.organization_name }}</p>
-                    <p v-if="closesAtLabel" class="mt-1 text-[11px] font-medium" :class="event.attendance_window_open ? 'text-emerald-600' : 'text-rose-500'">
-                        {{ event.attendance_window_open
-                            ? `QR boleh diimbas sehingga ${closesAtLabel}`
-                            : `QR telah tamat tempoh (${closesAtLabel})` }}
+                    <p v-if="qrWindowStatus" class="mt-1 text-[11px] font-medium" :class="qrWindowStatus.class">
+                        {{ qrWindowStatus.label }}
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    <a
+                        :href="event.registrations_url"
+                        class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                        Senarai Peserta
+                    </a>
                     <button
                         type="button"
                         @click="openAdd"
@@ -222,6 +272,21 @@ function auditMeta(action) {
                 </div>
             </div>
 
+            <div class="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                Kehadiran dikemas kini secara automatik apabila peserta mengesahkan kehadiran melalui QR atau pautan pada
+                hari program. Peserta yang telah mendaftar tetapi belum check-in akan dipaparkan sebagai
+                <strong>{{ notAttendedLabel }}</strong>.
+            </div>
+
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p class="font-semibold">Elakkan menanda semua peserta hadir secara pukal sebelum program bermula.</p>
+                <p class="mt-1">
+                    Kehadiran sepatutnya direkod apabila peserta mengesahkan melalui QR atau pautan pada hari program. Tanda
+                    manual hanya untuk pembetulan. Menanda hadir lebih awal boleh menjadikan rekod tidak tepat dan menyukarkan
+                    semakan pada hari acara.
+                </p>
+            </div>
+
             <div
                 v-if="$page.props.flash?.success"
                 class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700"
@@ -247,7 +312,7 @@ function auditMeta(action) {
                 </div>
                 <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-center shadow-sm">
                     <p class="text-2xl font-black text-amber-600">{{ stats.total_not_attended }}</p>
-                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">Tidak Hadir</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">{{ notAttendedLabel }}</p>
                 </div>
             </div>
 
@@ -384,7 +449,7 @@ function auditMeta(action) {
                                     class="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold"
                                     :class="r.attended ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-gray-50 text-gray-500'"
                                 >
-                                    {{ r.attended ? 'Hadir' : 'Tidak Hadir' }}
+                                    {{ r.attended ? 'Hadir' : notAttendedLabel }}
                                 </span>
                                 <p v-if="r.method" class="mt-1 text-[10px] text-gray-400">{{ methodLabel[r.method] ?? r.method }}</p>
                             </td>

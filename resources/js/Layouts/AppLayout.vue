@@ -339,7 +339,7 @@ const navItems = computed(() => [
                 </svg>`,
     }] : []),
     ...(isAdmin.value || isSuperadmin.value ? [{
-        label:  'Kehadiran',
+        label:  'Peserta & Kehadiran',
         href:   route('admin.attendance'),
         active: route().current('admin.attendance*'),
         colorClass: 'text-[#123D2A]',

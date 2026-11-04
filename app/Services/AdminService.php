@@ -809,7 +809,10 @@ class AdminService
                 'location_or_link' => $event->location_or_link,
                 'organization_name' => $event->organization?->name ?? 'Semua Organisasi',
                 'attendance_closes_at' => $event->attendanceClosesAt()?->toISOString(),
+                'attendance_opens_at' => $event->attendanceOpensAt()?->toISOString(),
                 'attendance_window_open' => $event->attendanceWindowIsOpen(),
+                'is_ended' => $event->end_time !== null && $event->end_time->lt(now()),
+                'registrations_url' => route('admin.events.registrations', $event->id),
             ],
             'stats' => [
                 'total_registered' => $totalRegistered,

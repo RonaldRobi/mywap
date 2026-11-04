@@ -67,14 +67,14 @@ const statusColor = {
 </script>
 
 <template>
-    <Head title="Kehadiran Program" />
+    <Head title="Peserta & Kehadiran" />
 
     <AppLayout>
         <div class="mx-auto max-w-7xl px-4 py-8">
             <div class="mb-6">
-                <h1 class="text-2xl font-black text-gray-900 mb-1">Kehadiran Program</h1>
+                <h1 class="text-2xl font-black text-gray-900 mb-1">Peserta &amp; Kehadiran</h1>
                 <p class="text-sm text-gray-500">
-                    Pilih program untuk melihat statistik, menyemak peserta dan membetulkan kehadiran.
+                    Pilih program untuk melihat senarai peserta yang mendaftar dan status kehadiran.
                 </p>
             </div>
 
@@ -194,7 +194,7 @@ const statusColor = {
                         </div>
                         <div class="rounded-xl bg-amber-50 py-2">
                             <p class="text-lg font-black text-amber-600">{{ p.not_attended_count }}</p>
-                            <p class="text-[10px] font-semibold uppercase text-amber-500">Tidak Hadir</p>
+                            <p class="text-[10px] font-semibold uppercase text-amber-500">{{ p.is_ended ? 'Tidak Hadir' : 'Belum Hadir' }}</p>
                         </div>
                     </div>
 
@@ -208,23 +208,31 @@ const statusColor = {
                         </div>
                     </div>
 
-                    <div class="mt-auto flex gap-2 pt-1">
+                    <div class="mt-auto flex flex-col gap-2 pt-1">
                         <a
-                            :href="p.attendance_url"
-                            class="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-xs font-bold text-white hover:bg-gray-800"
+                            :href="p.registrations_url"
+                            class="rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-bold text-gray-700 hover:bg-gray-50"
                         >
-                            Lihat Peserta
+                            Senarai Peserta ({{ p.registered_count }})
                         </a>
-                        <a
-                            v-if="p.qr_url"
-                            :href="p.qr_url"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                            title="Buka QR semak masuk program"
-                        >
-                            QR
-                        </a>
+                        <div class="flex gap-2">
+                            <a
+                                :href="p.attendance_url"
+                                class="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-center text-xs font-bold text-white hover:bg-gray-800"
+                            >
+                                Urus Kehadiran
+                            </a>
+                            <a
+                                v-if="p.qr_url"
+                                :href="p.qr_url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                title="Buka QR semak masuk program"
+                            >
+                                QR
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
