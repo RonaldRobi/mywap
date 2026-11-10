@@ -22,7 +22,7 @@ class OrganizationInfoController extends Controller
     public function show(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
-        $currentOrganization = $user->organization;
+        $currentOrganization = $user?->organization;
 
         $organizations = Organization::query()
             ->withCount(['members', 'chartMembers'])
@@ -69,7 +69,7 @@ class OrganizationInfoController extends Controller
                 'is_current' => $currentOrganization?->id === $item->id,
             ])->values(),
             'chartMembers' => $chartMembers,
-            'canManage' => $isOwnOrganization && $user->isAdminPanelUser(),
+            'canManage' => $isOwnOrganization && ($user?->isAdminPanelUser() ?? false),
             'isOwnOrganization' => $isOwnOrganization,
         ]);
     }
@@ -198,6 +198,8 @@ class OrganizationInfoController extends Controller
             'color_theme' => $organization->color_theme,
             'min_age' => $organization->min_age,
             'max_age' => $organization->max_age,
+            'email' => $organization->email,
+            'phone' => $organization->phone,
             'website_url' => $organization->website_url,
             'facebook_url' => $organization->facebook_url,
             'instagram_url' => $organization->instagram_url,

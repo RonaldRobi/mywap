@@ -18,6 +18,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    states: {
+        type: Array,
+        default: () => [],
+    },
     orgPositions: {
         type: Array,
         default: () => [],
@@ -335,9 +339,11 @@ const scopedBranches = computed(() => {
     return props.branches.filter(b => String(b.organization_id) === String(organizationIdFilter.value));
 });
 
-// Senarai negeri unik daripada cawangan dalam skop.
+// Senarai negeri: gunakan senarai penuh dari backend (14 negeri + WP) supaya
+// semua negeri muncul walaupun tiada cawangan aktif di negeri itu, dan gabung
+// dengan negeri yang ada pada cawangan dalam skop.
 const availableStates = computed(() => {
-    const states = new Set();
+    const states = new Set(props.states?.length ? props.states : []);
     scopedBranches.value.forEach(b => {
         if (b.state) states.add(b.state);
     });

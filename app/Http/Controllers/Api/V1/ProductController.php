@@ -15,15 +15,16 @@ class ProductController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return ApiResponse::paginated($this->products->list($request, $request->user()));
+        return ApiResponse::paginated($this->products->list($request, auth('sanctum')->user()));
     }
 
     public function show(Request $request, Product $product): JsonResponse
     {
-        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        $user = auth('sanctum')->user();
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
         abort_if(! $product->status && ! $isAdmin, 404);
 
-        return ApiResponse::success($this->products->showDetail($product, $request->user()));
+        return ApiResponse::success($this->products->showDetail($product, $user));
     }
 
     public function categories(): JsonResponse

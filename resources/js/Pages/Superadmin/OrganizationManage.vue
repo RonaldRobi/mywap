@@ -81,6 +81,8 @@ const editForms = Object.fromEntries(
         useForm({
             name: organization.name,
             description: organization.description ?? '',
+            email: organization.email ?? '',
+            phone: organization.phone ?? '',
             color_theme: organization.color_theme,
             min_age: organization.min_age,
             max_age: organization.max_age,
@@ -103,6 +105,11 @@ const editForms = Object.fromEntries(
             twitter_url: organization.twitter_url ?? '',
             youtube_url: organization.youtube_url ?? '',
             tiktok_url: organization.tiktok_url ?? '',
+            membership_letter_enabled: !!organization.membership_letter_enabled,
+            membership_letter_subject: organization.membership_letter_subject ?? '',
+            membership_letter_body: organization.membership_letter_body ?? '',
+            membership_letter_signatory_name: organization.membership_letter_signatory_name ?? '',
+            membership_letter_signatory_position: organization.membership_letter_signatory_position ?? '',
         }),
     ])
 );
@@ -113,6 +120,26 @@ const logoForms = Object.fromEntries(
         useForm({ organization_logo: null }),
     ])
 );
+
+const letterheadForms = Object.fromEntries(
+    props.organizations.map((organization) => [
+        organization.id,
+        useForm({ membership_letter_letterhead: null }),
+    ])
+);
+
+function updateLetterhead(organization) {
+    letterheadForms[organization.id].post(route('superadmin.organizations.letterhead.update', organization.id), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => letterheadForms[organization.id].reset('membership_letter_letterhead'),
+    });
+}
+
+function removeLetterhead(organization) {
+    if (!confirm(`Buang letterhead surat ${organization.name}?`)) return;
+    useForm({}).delete(route('superadmin.organizations.letterhead.destroy', organization.id), { preserveScroll: true });
+}
 
 // ─── Carta Organisasi ─────────────────────────────────────────────────────
 const chartAddForms = Object.fromEntries(
@@ -359,6 +386,43 @@ function updateOrganizationLogo(organization) {
                         </form>
                     </div>
 
+                    <!-- Letterhead surat pengesahan keahlian (per organisasi) -->
+                    <div class="mt-4 flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                        <div class="w-24 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                            <img v-if="organization.membership_letter_letterhead_path" :src="organization.membership_letter_letterhead_path" :alt="'Letterhead ' + organization.name" class="h-auto w-full object-contain">
+                            <div v-else class="flex h-16 items-center justify-center p-1 text-center text-[9px] font-semibold text-gray-400">Tiada letterhead</div>
+                        </div>
+                        <form class="flex-1 space-y-2" @submit.prevent="updateLetterhead(organization)">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-xs font-bold text-gray-700">Letterhead Surat Keahlian</p>
+                                <span
+                                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    :class="organization.membership_letter_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'"
+                                >
+                                    {{ organization.membership_letter_enabled ? 'Aktif' : 'Mati' }}
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-gray-500">
+                                Imej kop surat muncul di bahagian atas PDF. Jika tiada, logo organisasi digunakan.
+                                Cadangan: lebar 1200 px, tinggi sehingga 400 px, JPG/PNG/WEBP, maks 4MB.
+                            </p>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                aria-label="Muat naik letterhead surat keahlian"
+                                @change="letterheadForms[organization.id].membership_letter_letterhead = $event.target.files[0]"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-gray-700"
+                            >
+                            <div class="flex gap-2">
+                                <button type="submit" :disabled="letterheadForms[organization.id].processing || !letterheadForms[organization.id].membership_letter_letterhead" class="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 disabled:opacity-60">
+                                    {{ letterheadForms[organization.id].processing ? 'Memuat naik...' : 'Simpan Letterhead' }}
+                                </button>
+                                <button v-if="organization.membership_letter_letterhead_path" type="button" @click="removeLetterhead(organization)" class="rounded-xl px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">Buang</button>
+                            </div>
+                            <p v-if="letterheadForms[organization.id].errors.membership_letter_letterhead" class="text-xs text-red-500">{{ letterheadForms[organization.id].errors.membership_letter_letterhead }}</p>
+                        </form>
+                    </div>
+
                     <form class="mt-5 space-y-3" @submit.prevent="updateOrganization(organization)">
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-gray-500">Nama Organisasi</label>
@@ -375,6 +439,19 @@ function updateOrganizationLogo(organization) {
                                 placeholder="Penerangan ringkas tentang organisasi — dipaparkan pada page Info."
                             ></textarea>
                             <p v-if="editForms[organization.id].errors.description" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.description }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-gray-500">Emel Hubungan</label>
+                                <input v-model="editForms[organization.id].email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="info@organisasi.com">
+                                <p v-if="editForms[organization.id].errors.email" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.email }}</p>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-gray-500">No. Telefon</label>
+                                <input v-model="editForms[organization.id].phone" type="tel" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="03-1234 5678 / 0123456789">
+                                <p v-if="editForms[organization.id].errors.phone" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.phone }}</p>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -530,6 +607,60 @@ function updateOrganizationLogo(organization) {
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">TikTok</label>
                                         <input v-model="editForms[organization.id].tiktok_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="https://tiktok.com/@...">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details class="rounded-xl border border-gray-200">
+                            <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900">Surat Pengesahan Keahlian</summary>
+                            <div class="space-y-3 border-t border-gray-100 p-3">
+                                <label class="flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                                    <input v-model="editForms[organization.id].membership_letter_enabled" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-0">
+                                    <span>
+                                        <span class="block text-xs font-semibold text-gray-700">Hantar surat automatik</span>
+                                        <span class="block text-[11px] text-gray-500">Surat PDF dihantar melalui emel selepas keahlian diaktifkan. Lalai: mati.</span>
+                                    </span>
+                                </label>
+
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Subjek Emel</label>
+                                    <input v-model="editForms[organization.id].membership_letter_subject" type="text" maxlength="255" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" :placeholder="'Surat Pengesahan Keahlian - ' + organization.name">
+                                    <p class="mt-1 text-[11px] text-gray-500">Kosongkan untuk guna subjek lalai.</p>
+                                    <p v-if="editForms[organization.id].errors.membership_letter_subject" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.membership_letter_subject }}</p>
+                                </div>
+
+                                <div>
+                                    <label class="mb-1 block text-xs font-semibold text-gray-500">Badan Surat</label>
+                                    <textarea
+                                        v-model="editForms[organization.id].membership_letter_body"
+                                        rows="8"
+                                        class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:border-gray-500 focus:ring-0"
+                                        placeholder="Kosongkan untuk guna badan surat lalai. Anda boleh masukkan template rasmi organisasi di sini."
+                                    ></textarea>
+                                    <p class="mt-1 text-[11px] leading-relaxed text-gray-500">
+                                        Placeholder: <code class="rounded bg-gray-100 px-1" v-pre>{{name}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{member_no}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{ic_number}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{organization}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{branch}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{state}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{joined_at}}</code>,
+                                        <code class="rounded bg-gray-100 px-1" v-pre>{{date}}</code>
+                                    </p>
+                                    <p v-if="editForms[organization.id].errors.membership_letter_body" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.membership_letter_body }}</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Nama Penandatangan</label>
+                                        <input v-model="editForms[organization.id].membership_letter_signatory_name" type="text" maxlength="120" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="cth. Ahmad bin Ali">
+                                        <p v-if="editForms[organization.id].errors.membership_letter_signatory_name" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.membership_letter_signatory_name }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Jawatan Penandatangan</label>
+                                        <input v-model="editForms[organization.id].membership_letter_signatory_position" type="text" maxlength="120" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="cth. Setiausaha">
+                                        <p v-if="editForms[organization.id].errors.membership_letter_signatory_position" class="mt-1 text-xs text-red-500">{{ editForms[organization.id].errors.membership_letter_signatory_position }}</p>
                                     </div>
                                 </div>
                             </div>

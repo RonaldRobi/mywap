@@ -13,6 +13,7 @@ use App\Notifications\NewMemberAlert;
 use App\Notifications\RegistrationActivated;
 use App\Notifications\RegistrationReceived;
 use App\Services\FeeService;
+use App\Services\MembershipLetterService;
 use App\Support\MemberRegistration;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -191,7 +192,7 @@ class RegisteredUserController extends Controller
     /**
      * Process the dummy registration payment.
      */
-    public function processPayment(Request $request, FeeService $feeService): RedirectResponse
+    public function processPayment(Request $request, FeeService $feeService, MembershipLetterService $letters): RedirectResponse
     {
         $userId = session('pending_registration_user_id');
 
@@ -238,6 +239,11 @@ class RegisteredUserController extends Controller
                 Notification::route('mail', $adminEmail)
                     ->notify(new NewMemberAlert($user));
             }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $letters->sendIfEligible($user);
         } catch (\Throwable) {
         }
 

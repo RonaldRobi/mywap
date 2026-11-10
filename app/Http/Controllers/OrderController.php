@@ -162,6 +162,8 @@ class OrderController extends Controller
             return back()->withErrors(['error' => $e->getMessage()]);
         }
 
+        $this->orders->notifyOrderPlaced($order);
+
         return redirect()->to($order->publicUrl())->with('success', 'Pesanan berjaya dibuat!');
     }
 }

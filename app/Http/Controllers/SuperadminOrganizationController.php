@@ -34,6 +34,8 @@ class SuperadminOrganizationController extends Controller
                 'description' => $organization->description,
                 'min_age' => $organization->min_age,
                 'max_age' => $organization->max_age,
+                'email' => $organization->email,
+                'phone' => $organization->phone,
                 'logo_path' => $hasLogoColumn ? $this->normalizeStorageUrl($organization->logo_path) : null,
                 'card_front_path' => $hasCardColumn ? $organization->card_front_path : null,
                 'sort_order' => $hasSortOrderColumn ? $organization->sort_order : null,
@@ -65,6 +67,12 @@ class SuperadminOrganizationController extends Controller
                 'twitter_url' => $organization->twitter_url,
                 'youtube_url' => $organization->youtube_url,
                 'tiktok_url' => $organization->tiktok_url,
+                'membership_letter_enabled' => (bool) $organization->membership_letter_enabled,
+                'membership_letter_subject' => $organization->membership_letter_subject,
+                'membership_letter_body' => $organization->membership_letter_body,
+                'membership_letter_letterhead_path' => $organization->membership_letter_letterhead_path,
+                'membership_letter_signatory_name' => $organization->membership_letter_signatory_name,
+                'membership_letter_signatory_position' => $organization->membership_letter_signatory_position,
             ])
             ->values();
 
@@ -91,6 +99,8 @@ class SuperadminOrganizationController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:40'],
             'color_theme' => ['nullable', 'string', 'max:20'],
             'min_age' => ['required', 'integer', 'min:0', 'max:120'],
             'max_age' => ['nullable', 'integer', 'min:0', 'max:120', 'gte:min_age'],
@@ -113,11 +123,18 @@ class SuperadminOrganizationController extends Controller
             'twitter_url' => ['nullable', 'string', 'max:500', 'url'],
             'youtube_url' => ['nullable', 'string', 'max:500', 'url'],
             'tiktok_url' => ['nullable', 'string', 'max:500', 'url'],
+            'membership_letter_enabled' => ['nullable', 'boolean'],
+            'membership_letter_subject' => ['nullable', 'string', 'max:255'],
+            'membership_letter_body' => ['nullable', 'string', 'max:20000'],
+            'membership_letter_signatory_name' => ['nullable', 'string', 'max:120'],
+            'membership_letter_signatory_position' => ['nullable', 'string', 'max:120'],
         ]);
 
         $payload = [
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
             'color_theme' => $data['color_theme'] ?? null,
             'min_age' => (int) $data['min_age'],
             'max_age' => ($data['max_age'] ?? null) !== null ? (int) $data['max_age'] : null,
@@ -139,6 +156,11 @@ class SuperadminOrganizationController extends Controller
             'twitter_url' => $data['twitter_url'] ?? null,
             'youtube_url' => $data['youtube_url'] ?? null,
             'tiktok_url' => $data['tiktok_url'] ?? null,
+            'membership_letter_enabled' => (bool) ($data['membership_letter_enabled'] ?? false),
+            'membership_letter_subject' => $data['membership_letter_subject'] ?? null,
+            'membership_letter_body' => $data['membership_letter_body'] ?? null,
+            'membership_letter_signatory_name' => $data['membership_letter_signatory_name'] ?? null,
+            'membership_letter_signatory_position' => $data['membership_letter_signatory_position'] ?? null,
         ];
 
         if ($hasSortOrderColumn) {
@@ -259,6 +281,30 @@ class SuperadminOrganizationController extends Controller
         $setting->update(['member_card_front_path' => null]);
 
         return back()->with('success', 'Design depan kad lalai telah dibuang.');
+    }
+
+    public function updateLetterhead(Request $request, Organization $organization): RedirectResponse
+    {
+        $data = $request->validate([
+            'membership_letter_letterhead' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+        ]);
+
+        $this->deletePublicFile($organization->membership_letter_letterhead_path);
+
+        $storedPath = $data['membership_letter_letterhead']->store('membership-letters/letterheads', 'public');
+        $organization->update([
+            'membership_letter_letterhead_path' => '/storage/'.ltrim($storedPath, '/'),
+        ]);
+
+        return back()->with('success', "Letterhead surat {$organization->name} berjaya dikemas kini.");
+    }
+
+    public function destroyLetterhead(Organization $organization): RedirectResponse
+    {
+        $this->deletePublicFile($organization->membership_letter_letterhead_path);
+        $organization->update(['membership_letter_letterhead_path' => null]);
+
+        return back()->with('success', "Letterhead surat {$organization->name} telah dibuang.");
     }
 
     private function deletePublicFile(?string $url): void

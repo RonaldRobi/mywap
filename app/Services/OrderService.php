@@ -9,9 +9,12 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariationOption;
 use App\Models\User;
+use App\Notifications\OrderPlacedEmail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 /**
@@ -61,6 +64,7 @@ class OrderService
             'products.*.variation_snapshot' => 'nullable|string',
             'shipping_name' => [$isMember ? 'nullable' : 'required', 'string', 'max:255'],
             'shipping_phone' => [$isMember ? 'nullable' : 'required', 'string', 'max:20'],
+            'shipping_email' => ['nullable', 'email', 'max:255'],
             'shipping_address' => 'nullable|string',
             'shipping_postcode' => 'nullable|string|max:10',
         ];
@@ -83,6 +87,8 @@ class OrderService
             'shipping_address' => $order->shipping_address,
             'shipping_postcode' => $order->shipping_postcode,
             'shipping_phone' => $order->shipping_phone,
+            'customer_email' => $order->customer_email,
+            'receipt_url' => $order->publicUrl(),
             'courier' => $order->courier,
             'created_at' => $order->created_at,
             'updated_at' => $order->updated_at,
@@ -285,6 +291,7 @@ class OrderService
                 'shipping_address' => $data['shipping_address'] ?? null,
                 'shipping_postcode' => $data['shipping_postcode'] ?? null,
                 'shipping_phone' => $shippingPhone,
+                'customer_email' => $data['shipping_email'] ?? $user?->email,
             ]);
 
             $now = now();
@@ -305,22 +312,31 @@ class OrderService
     }
 
     /**
-     * Checkout API (ahli berdaftar) — order + harga ahli, dan jika organisasi
-     * penjual ada gateway aktif, cipta Payment + URL redirect untuk dibayar.
+     * Checkout API — ahli berdaftar mendapat harga ahli; tetamu (user null)
+     * dibenarkan juga. Jika organisasi penjual ada gateway aktif, cipta Payment
+     * + URL redirect untuk dibayar (dalam app).
      *
      * @return array{status: string, order: Order, payment_url?: string}
      */
-    public function checkout(array $data, User $user): array
+    public function checkout(array $data, ?User $user = null): array
     {
-        $order = $this->createOrder($data, $user, true);
+        $order = $this->createOrder($data, $user, $user !== null);
+
+        $this->notifyOrderPlaced($order);
 
         $org = Organization::find($order->organisasi_id);
         if ($org && $this->gateways->isLive($org)) {
-            $result = $this->initiatePayment($order, $user);
+            $result = $user
+                ? $this->initiatePayment($order, $user)
+                : $this->initiateGuestPayment($order, $data);
 
-            $order->loadMissing('items.product', 'items.variationOption.variation');
+            if ($result['status'] === 'error') {
+                throw new \Exception($result['message'] ?? 'Pembayaran gagal diproses.');
+            }
 
             if ($result['status'] === 'redirect') {
+                $order->loadMissing('items.product', 'items.variationOption.variation');
+
                 return ['status' => 'redirect', 'payment_url' => $result['payment_url'], 'order' => $order];
             }
         }
@@ -328,6 +344,76 @@ class OrderService
         $order->loadMissing('items.product', 'items.variationOption.variation');
 
         return ['status' => 'success', 'order' => $order];
+    }
+
+    /**
+     * Hantar resit / pengesahan pesanan ke emel pelanggan (jika ada).
+     * Kegagalan emel tidak boleh menggagalkan checkout.
+     */
+    public function notifyOrderPlaced(Order $order): void
+    {
+        $email = $order->customer_email;
+
+        if (! $email) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $email)->notify(new OrderPlacedEmail($order));
+        } catch (\Throwable $e) {
+            Log::warning('OrderService: gagal menghantar emel pesanan.', [
+                'order_id' => $order->id,
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Pembayaran tetamu: Payment tanpa user; guna nama/emel/telefon penghantaran
+     * untuk gateway. Emel diperlukan oleh gateway, jadi tetamu wajib isi.
+     *
+     * @return array{status: string, payment_url?: string, message?: string}
+     */
+    protected function initiateGuestPayment(Order $order, array $data): array
+    {
+        $org = Organization::find($order->organisasi_id);
+        $email = trim((string) ($data['shipping_email'] ?? ''));
+
+        if (! $org || $email === '') {
+            return ['status' => 'error', 'message' => 'Sila masukkan emel untuk pembayaran pesanan.'];
+        }
+
+        $grandTotal = (float) $order->total + (float) $order->postage_cost;
+
+        $payment = Payment::create([
+            'user_id' => null,
+            'payable_type' => 'order',
+            'payable_id' => $order->id,
+            'amount' => $grandTotal,
+            'status' => 'pending',
+            'reference' => 'ORD-'.strtoupper(Str::random(8)),
+            'description' => "Pesanan #{$order->id}",
+            'gateway' => $this->gateways->gatewayFor($org),
+            'organization_id' => $org->id,
+        ]);
+
+        $url = $this->gateways->createPaymentRedirect(
+            $org,
+            $payment,
+            (string) ($data['shipping_name'] ?? 'Tetamu'),
+            $email,
+            $data['shipping_phone'] ?? null,
+            "Pesanan #{$order->id}",
+        );
+
+        if ($url) {
+            return ['status' => 'redirect', 'payment_url' => $url];
+        }
+
+        $payment->update(['status' => 'failed']);
+
+        return ['status' => 'error', 'message' => 'Pembayaran gagal diproses. Sila cuba lagi.'];
     }
 
     /**

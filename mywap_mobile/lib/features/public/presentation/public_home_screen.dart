@@ -68,16 +68,7 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
     final async = ref.watch(publicHomeProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const _HomeLogo(),
-        actions: [
-          TextButton(
-            onPressed: () => context.go('/login'),
-            child: Text(context.l10n.login),
-          ),
-          const SizedBox(width: Spacing.sm),
-        ],
-      ),
+      appBar: AppBar(title: const _HomeLogo()),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -93,6 +84,7 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
                     padding: const EdgeInsets.only(bottom: Spacing.xxl),
                     children: [
                       _TopCarousel(banners: data.banners),
+                      const _GuestAccessCard(),
                       _ArticlesSection(items: data.articles),
                       _VideosSection(items: data.videos),
                       _LibrarySection(items: data.library),
@@ -879,6 +871,130 @@ class _Thumb extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+    );
+  }
+}
+
+/// Pintu masuk tetamu: satu tindakan utama (log masuk) dan dua tindakan
+/// sekunder yang berbeza warna supaya ahli baharu dan ahli sedia ada tidak
+/// tersalah pilih.
+class _GuestAccessCard extends StatelessWidget {
+  const _GuestAccessCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.all(Spacing.lg),
+      padding: const EdgeInsets.all(Spacing.xl),
+      decoration: BoxDecoration(
+        color: AppColors.softGreenSurface,
+        borderRadius: AppRadius.hero,
+        border: Border.all(color: AppColors.paleGreen),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.l10n.homeGuestTitle,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            context.l10n.homeGuestBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: Spacing.lg),
+          SizedBox(
+            height: AppSizes.buttonHeight,
+            child: FilledButton(
+              onPressed: () => context.go('/login'),
+              child: Text(context.l10n.login),
+            ),
+          ),
+          const SizedBox(height: Spacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () => context.push('/first-login'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accent,
+                      side: const BorderSide(
+                        color: AppColors.accent,
+                        width: 1.5,
+                      ),
+                      minimumSize: const Size(0, 46),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.sm,
+                      ),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.md,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(context.l10n.homeActivateMember),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () => context.push('/register'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.movementNavy,
+                      side: const BorderSide(
+                        color: AppColors.movementNavy,
+                        width: 1.5,
+                      ),
+                      minimumSize: const Size(0, 46),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.sm,
+                      ),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.md,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(context.l10n.homeRegisterShort),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.xs),
+          TextButton.icon(
+            onPressed: () => context.push('/faq'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.movementDarkGreen,
+              minimumSize: const Size(0, AppSizes.tapTarget),
+            ),
+            icon: const Icon(Icons.help_outline, size: AppSizes.iconSm),
+            label: Text(context.l10n.faqTitle),
+          ),
+        ],
+      ),
     );
   }
 }

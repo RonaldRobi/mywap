@@ -86,6 +86,7 @@ class User extends Authenticatable
         'topics',
         'referred_by_user_id',
         'first_login_at',
+        'membership_letter_sent_at',
     ];
 
     protected $hidden = [
@@ -101,6 +102,7 @@ class User extends Authenticatable
             'dob' => 'date',
             'profile_completed_at' => 'datetime',
             'first_login_at' => 'datetime',
+            'membership_letter_sent_at' => 'datetime',
             'is_public_in_directory' => 'boolean',
             'key_in_date' => 'date',
         ];

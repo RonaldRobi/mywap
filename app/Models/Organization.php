@@ -36,6 +36,14 @@ class Organization extends Model
         'min_age',
         'max_age',
         'fee_amount',
+        'email',
+        'phone',
+        'membership_letter_enabled',
+        'membership_letter_subject',
+        'membership_letter_body',
+        'membership_letter_letterhead_path',
+        'membership_letter_signatory_name',
+        'membership_letter_signatory_position',
         'bayarcash_api_token',
         'bayarcash_portal_key',
         'bayarcash_secret_key',
@@ -60,6 +68,7 @@ class Organization extends Model
     {
         return [
             'fee_amount' => 'decimal:2',
+            'membership_letter_enabled' => 'boolean',
             // DOKU credentials are sensitive: encrypt at rest. BayarCash keys
             // stay as-is to avoid breaking existing plaintext-stored values.
             'doku_api_key' => 'encrypted',
@@ -213,6 +222,11 @@ class Organization extends Model
     }
 
     public function getCardFrontPathAttribute($value): ?string
+    {
+        return $this->normalizeStoragePath($value);
+    }
+
+    public function getMembershipLetterLetterheadPathAttribute($value): ?string
     {
         return $this->normalizeStoragePath($value);
     }

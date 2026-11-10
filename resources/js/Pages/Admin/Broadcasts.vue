@@ -41,6 +41,10 @@ const broadcastForm = useForm({
 const selectedOrgId = ref(props.defaultOrganizationId);
 
 function onTargetCriteriaChange() {
+    if (broadcastForm.target_criteria === 'supporters') {
+        // Pendukung hanya boleh menerima emel.
+        broadcastForm.notification_channels = ['email'];
+    }
     if (broadcastForm.target_criteria === 'organization') {
         broadcastForm.target_organization_id = selectedOrgId.value;
     } else {
@@ -667,8 +671,13 @@ onBeforeUnmount(stopPolling);
                                 <option value="all">Semua Ahli</option>
                                 <option value="organization">Ahli Organisasi (Wadah, Abim & PKpim) Sahaja</option>
                                 <option value="specific_members">Individu Tertentu (Cari Ahli)</option>
+                                <option value="supporters">Pendukung (Emel Bukan Ahli)</option>
                             </select>
                             <p v-if="broadcastForm.errors.target_criteria" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.target_criteria }}</p>
+                            <p v-if="broadcastForm.target_criteria === 'supporters'" class="mt-1 text-xs text-emerald-700">
+                                Siaran kepada Pendukung dihantar melalui emel sahaja.
+                                <a :href="route('admin.supporters.index')" class="font-semibold underline">Urus Pendukung</a>
+                            </p>
                         </div>
 
                         <div v-if="broadcastForm.target_criteria === 'organization' && isSuperadmin">

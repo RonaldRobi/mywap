@@ -87,8 +87,9 @@ Route::get('/resit/{payment}', [ResitController::class, 'show'])
     ->middleware(['signed', 'throttle:30,1']);
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');
-Route::get('/terma-syarat', fn () => inertia('TermsConditions'))->name('terms');
+Route::get('/term-syarat', fn () => inertia('TermsConditions'))->name('terms');
 Route::get('/keselamatan-kanak-kanak', fn () => inertia('ChildSafety'))->name('child.safety');
+Route::get('/faq', fn () => inertia('Faq'))->name('faq');
 
 Route::post('/__deploy/{token}', DeployController::class);
 Route::post('/__backup/{token}', BackupController::class)->middleware('throttle:6,60');
@@ -182,6 +183,11 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
         Route::get('/admin/broadcasts/targets', [BroadcastController::class, 'targets'])->name('admin.broadcasts.targets');
         Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
+        // Pendukung (emel bukan ahli) untuk hebahan
+        Route::get('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'index'])->name('admin.supporters.index');
+        Route::post('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'store'])->name('admin.supporters.store');
+        Route::post('/admin/supporters/import', [\App\Http\Controllers\SupporterController::class, 'import'])->name('admin.supporters.import');
+        Route::delete('/admin/supporters/{supporter}', [\App\Http\Controllers\SupporterController::class, 'destroy'])->name('admin.supporters.destroy');
         Route::get('/admin/facilities/manage', [FacilityBookingController::class, 'manageFacilities'])->name('admin.facilities.manage');
         Route::post('/admin/facilities', [FacilityBookingController::class, 'storeFacility'])->name('admin.facilities.store');
         Route::put('/admin/facilities/{facility}', [FacilityBookingController::class, 'updateFacility'])->name('admin.facilities.update');
@@ -286,6 +292,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/superadmin/organizations/card-front-default', [SuperadminOrganizationController::class, 'destroyCardFrontDefault'])->name('superadmin.organizations.card-front-default.destroy');
         Route::post('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'updateCardFront'])->name('superadmin.organizations.card-front.update');
         Route::delete('/superadmin/organizations/{organization}/card-front', [SuperadminOrganizationController::class, 'destroyCardFront'])->name('superadmin.organizations.card-front.destroy');
+        Route::post('/superadmin/organizations/{organization}/letterhead', [SuperadminOrganizationController::class, 'updateLetterhead'])->name('superadmin.organizations.letterhead.update');
+        Route::delete('/superadmin/organizations/{organization}/letterhead', [SuperadminOrganizationController::class, 'destroyLetterhead'])->name('superadmin.organizations.letterhead.destroy');
         Route::post('/superadmin/organizations/{organization}/chart', [SuperadminOrganizationController::class, 'storeChartMember'])->name('superadmin.organizations.chart.store');
         Route::put('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'updateChartMember'])->name('superadmin.organizations.chart.update');
         Route::delete('/superadmin/organizations/{organization}/chart/{member}', [SuperadminOrganizationController::class, 'destroyChartMember'])->name('superadmin.organizations.chart.destroy');
@@ -504,6 +512,8 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 Route::group(['middleware' => ['throttle:60,1']], function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event:slug}', [EventController::class, 'show'])->name('events.show');
+    // Info organisasi boleh dilihat oleh semua (termasuk tetamu).
+    Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');
     Route::get('/events/{event}/share-qr/download', [EventController::class, 'downloadShareQr'])
         ->name('events.share-qr.download');
 });
@@ -535,9 +545,6 @@ Route::middleware('auth')->group(function () {
     // Registration Event — daftar oleh ahli
     Route::get('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'create'])->name('events.register');
     Route::post('/events/{event:slug}/daftar/{form}', [RegistrationController::class, 'store'])->name('events.register.store');
-
-    // ─── Info Organisasi (Maklumat + Carta Organisasi) ──────────────────────
-    Route::get('/info-organisasi', [OrganizationInfoController::class, 'show'])->name('org.info');
 
     // ─── Admin / Staff Only ──────────────────────────────────────────────────
     Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {

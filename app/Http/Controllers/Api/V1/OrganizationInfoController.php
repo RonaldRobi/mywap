@@ -85,6 +85,8 @@ class OrganizationInfoController extends Controller
             'color_theme' => $organization->color_theme,
             'min_age' => $organization->min_age,
             'max_age' => $organization->max_age,
+            'email' => $organization->email,
+            'phone' => $organization->phone,
             'website_url' => $organization->website_url,
             'facebook_url' => $organization->facebook_url,
             'instagram_url' => $organization->instagram_url,

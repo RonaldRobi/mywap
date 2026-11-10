@@ -64,12 +64,40 @@ class EcommerceApiTest extends TestCase
         ], $attrs));
     }
 
-    public function test_unauthenticated_requests_are_rejected(): void
+    public function test_public_catalogue_is_guest_accessible_but_order_lists_stay_protected(): void
     {
-        $this->getJson('/api/v1/products')->assertStatus(401);
-        $this->getJson('/api/v1/categories')->assertStatus(401);
+        // Katalog + checkout dibuka kepada tetamu.
+        $this->getJson('/api/v1/products')->assertOk();
+        $this->getJson('/api/v1/categories')->assertOk();
+        // Senarai pesanan sendiri masih perlukan log masuk.
         $this->getJson('/api/v1/orders')->assertStatus(401);
-        $this->postJson('/api/v1/orders', [])->assertStatus(401);
+        // Checkout tetamu tanpa medan wajib gagal pada validasi, bukan 401.
+        $this->postJson('/api/v1/orders', [])->assertStatus(422);
+    }
+
+    public function test_guest_can_checkout_without_login(): void
+    {
+        $product = $this->product(['name' => 'Songkok Tetamu', 'stock' => 5]);
+
+        $response = $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Tetamu Awam',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'tetamu@example.test',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.order.user_id', null)
+            ->assertJsonPath('data.order.shipping_name', 'Tetamu Awam')
+            ->assertJsonPath('data.order.customer_email', 'tetamu@example.test')
+            ->assertJsonStructure(['data' => ['order' => ['receipt_url']]]);
+
+        $this->assertDatabaseHas('orders', [
+            'shipping_name' => 'Tetamu Awam',
+            'user_id' => null,
+            'customer_email' => 'tetamu@example.test',
+        ]);
     }
 
     public function test_member_can_list_products_with_pagination_envelope(): void

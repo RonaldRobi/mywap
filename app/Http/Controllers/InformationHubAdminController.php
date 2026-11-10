@@ -111,7 +111,12 @@ class InformationHubAdminController extends Controller
         if ($branchIdFilter) {
             $query->where('branch_id', $branchIdFilter);
         } elseif ($stateFilter) {
-            $query->whereHas('branch', fn ($q) => $q->where('state', $stateFilter));
+            // Padankan sama ada melalui cawangan atau negeri ahli sendiri, supaya
+            // ahli tanpa cawangan tetapi ada negeri tetap muncul dalam filter.
+            $query->where(function ($q) use ($stateFilter) {
+                $q->whereHas('branch', fn ($branchQuery) => $branchQuery->where('state', $stateFilter))
+                    ->orWhere('state', $stateFilter);
+            });
         }
 
         if ($search) {
@@ -256,6 +261,7 @@ class InformationHubAdminController extends Controller
                 ]]),
             'members' => $members,
             'branches' => $branches,
+            'states' => \App\Support\MalaysiaStates::all(),
             'orgPositions' => $positions,
             'stats' => $stats,
             'orgStats' => $orgStats,

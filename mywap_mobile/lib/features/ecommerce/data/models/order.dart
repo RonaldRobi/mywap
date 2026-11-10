@@ -97,6 +97,8 @@ class Order {
     this.shippingAddress,
     this.shippingPostcode,
     this.shippingPhone,
+    this.customerEmail,
+    this.receiptUrl,
     this.courier,
     this.createdAt,
     this.updatedAt,
@@ -115,6 +117,8 @@ class Order {
   final String? shippingAddress;
   final String? shippingPostcode;
   final String? shippingPhone;
+  final String? customerEmail;
+  final String? receiptUrl;
   final String? courier;
   final String? createdAt;
   final String? updatedAt;
@@ -137,6 +141,8 @@ class Order {
         shippingAddress: json['shipping_address'] as String?,
         shippingPostcode: json['shipping_postcode'] as String?,
         shippingPhone: json['shipping_phone'] as String?,
+        customerEmail: json['customer_email'] as String?,
+        receiptUrl: json['receipt_url'] as String?,
         courier: json['courier'] as String?,
         createdAt: json['created_at'] as String?,
         updatedAt: json['updated_at'] as String?,

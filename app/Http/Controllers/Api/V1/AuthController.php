@@ -15,6 +15,7 @@ use App\Notifications\NewMemberAlert;
 use App\Notifications\RegistrationActivated;
 use App\Notifications\RegistrationReceived;
 use App\Services\FeeService;
+use App\Services\MembershipLetterService;
 use App\Services\OtpService;
 use App\Support\ApiResponse;
 use App\Support\MemberRegistration;
@@ -109,7 +110,7 @@ class AuthController extends Controller
      *
      * @throws ValidationException
      */
-    public function register(Request $request, FeeService $feeService): JsonResponse
+    public function register(Request $request, FeeService $feeService, MembershipLetterService $letters): JsonResponse
     {
         $normalizedIcNumber = MemberRegistration::normalizeIc($request->input('ic_number'));
         $request->merge([
@@ -237,6 +238,11 @@ class AuthController extends Controller
             if ($adminEmail) {
                 Notification::route('mail', $adminEmail)->notify(new NewMemberAlert($user));
             }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $letters->sendIfEligible($user);
         } catch (\Throwable) {
         }
 

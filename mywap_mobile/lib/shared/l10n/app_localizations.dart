@@ -62,7 +62,8 @@ import 'app_localizations_ms.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('ms')
+    Locale('ms'),
   ];
 
   /// No description provided for @appTitle.
@@ -5608,9 +5611,130 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sold out'**
   String get ecomOptionSoldOut;
+
+  /// No description provided for @homeGuestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to myWAP'**
+  String get homeGuestTitle;
+
+  /// No description provided for @homeGuestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in to access your member card, fees, programs and usrah. Existing members who have never logged in can activate their account first.'**
+  String get homeGuestBody;
+
+  /// No description provided for @homeActivateMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate Membership'**
+  String get homeActivateMember;
+
+  /// No description provided for @homeRegisterShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get homeRegisterShort;
+
+  /// No description provided for @faqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get faqTitle;
+
+  /// No description provided for @faqIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Short answers about accounts, membership and myWAP services.'**
+  String get faqIntro;
+
+  /// No description provided for @faqQ1.
+  ///
+  /// In en, this message translates to:
+  /// **'What is myWAP?'**
+  String get faqQ1;
+
+  /// No description provided for @faqA1.
+  ///
+  /// In en, this message translates to:
+  /// **'myWAP is the official platform for PKPIM, ABIM and WADAH members to access member cards, fee status, programs, usrah, infaq campaigns and organization information.'**
+  String get faqA1;
+
+  /// No description provided for @faqQ2.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I register as a new member?'**
+  String get faqQ2;
+
+  /// No description provided for @faqA2.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Register on the home page and fill in your name, email, identification number, phone number and date of birth. After registration succeeds, log in for the first time with your identification number to set a password.'**
+  String get faqA2;
+
+  /// No description provided for @faqQ3.
+  ///
+  /// In en, this message translates to:
+  /// **'I am an existing member but have never logged in. What should I do?'**
+  String get faqQ3;
+
+  /// No description provided for @faqA3.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Activate Membership, enter your identification number and follow the steps to receive an OTP code at your registered email. Enter the 6-digit code and set a new password. If no email is registered, the system will ask you to add one.'**
+  String get faqA3;
+
+  /// No description provided for @faqQ4.
+  ///
+  /// In en, this message translates to:
+  /// **'I forgot my password or member number. What should I do?'**
+  String get faqQ4;
+
+  /// No description provided for @faqA4.
+  ///
+  /// In en, this message translates to:
+  /// **'On the login screen, tap Forgot Password to reset your password, or Forgot Member No. to recover your membership number.'**
+  String get faqA4;
+
+  /// No description provided for @faqQ5.
+  ///
+  /// In en, this message translates to:
+  /// **'Can I use myWAP without logging in?'**
+  String get faqQ5;
+
+  /// No description provided for @faqA5.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes. As a guest, you can view news, articles, videos, programs, infaq campaigns and organization information. The member card, fee status, program registration and usrah require login.'**
+  String get faqA5;
+
+  /// No description provided for @faqQ6.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I pay fees and contribute through infaq?'**
+  String get faqQ6;
+
+  /// No description provided for @faqA6.
+  ///
+  /// In en, this message translates to:
+  /// **'After logging in, open Menu and choose Fees & Payments to view your status and make a fee payment. For infaq, open a campaign and tap Donate Now. The campaign page opens in your browser so you can contribute there.'**
+  String get faqA6;
+
+  /// No description provided for @faqQ7.
+  ///
+  /// In en, this message translates to:
+  /// **'Why does the app ask for notification permission?'**
+  String get faqQ7;
+
+  /// No description provided for @faqA7.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications keep you informed about programs, announcements and important reminders. You can change this permission in your device settings at any time.'**
+  String get faqA7;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -5619,25 +5743,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'ms'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'ms'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'ms': return AppLocalizationsMs();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'ms':
+      return AppLocalizationsMs();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

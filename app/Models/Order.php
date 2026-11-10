@@ -38,6 +38,7 @@ class Order extends Model
         'shipping_postcode',
         'shipping_phone',
         'shipping_name',
+        'customer_email',
         'courier',
     ];
 

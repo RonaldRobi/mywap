@@ -61,6 +61,28 @@ const socialLinks = computed(() => {
     ].filter((s) => s.href);
 });
 
+const contactLinks = computed(() => {
+    const o = props.organization;
+    const links = [];
+    if (o.email) {
+        links.push({ key: 'email', label: 'Emel', href: `mailto:${o.email}`, external: false });
+    }
+    if (o.phone) {
+        const raw = String(o.phone);
+        const tel = raw.replace(/[^\d+]/g, '');
+        const wa = raw.replace(/[^\d]/g, '').replace(/^0/, '60');
+        links.push({ key: 'call', label: 'Panggil', href: `tel:${tel}`, external: false });
+        links.push({ key: 'whatsapp', label: 'WhatsApp', href: `https://wa.me/${wa}`, external: true });
+    }
+    return links;
+});
+
+const contactIconMap = {
+    email: 'M4 4h16v16H4V4zm0 0l8 6 8-6',
+    call: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z',
+    whatsapp: 'M21 11.5a8.5 8.5 0 01-12.6 7.4L3 21l2.2-5.2A8.5 8.5 0 1121 11.5zM8.5 9.5c0 3 2.5 5.5 5.5 5.5',
+};
+
 function normalizeSocialUrl(url) {
     if (!url) return url;
     return /^https?:\/\//i.test(url) ? url : `https://${url}`;
@@ -379,9 +401,26 @@ function confirmDelete() {
                         </p>
                     </div>
 
-                    <div v-if="socialLinks.length" class="mt-6 border-t border-gray-100 pt-5">
+                    <div v-if="contactLinks.length || socialLinks.length" class="mt-6 border-t border-gray-100 pt-5">
                         <h3 class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Hubungi & Media Sosial</h3>
-                        <div class="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        <div v-if="contactLinks.length" class="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                            <a
+                                v-for="link in contactLinks"
+                                :key="link.key"
+                                :href="link.href"
+                                :target="link.external ? '_blank' : undefined"
+                                :rel="link.external ? 'noopener noreferrer' : undefined"
+                                class="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3.5 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-200 hover:bg-white hover:text-gray-900"
+                            >
+                                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-gray-500 shadow-sm">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                                        <path stroke-linecap="round" stroke-linejoin="round" :d="contactIconMap[link.key]" />
+                                    </svg>
+                                </span>
+                                <span class="truncate">{{ link.label }}</span>
+                            </a>
+                        </div>
+                        <div v-if="socialLinks.length" class="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                             <a
                                 v-for="link in socialLinks"
                                 :key="link.key"

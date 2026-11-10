@@ -252,13 +252,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuLogoutConfirmTitle => 'Log Out';
 
   @override
-  String get menuLogoutConfirmMessage => 'Are you sure you want to log out of myWAP?';
+  String get menuLogoutConfirmMessage =>
+      'Are you sure you want to log out of myWAP?';
 
   @override
   String get loginFailed => 'Login failed. Please try again.';
 
   @override
-  String get biometricAuthFailed => 'Biometric verification failed. Please log in manually.';
+  String get biometricAuthFailed =>
+      'Biometric verification failed. Please log in manually.';
 
   @override
   String get loginWelcomeTitle => 'Welcome back';
@@ -273,7 +275,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginIdentifierHint => 'Example: name@email.com or 900101...';
 
   @override
-  String get loginIdentifierRequired => 'Please enter your email or identification number.';
+  String get loginIdentifierRequired =>
+      'Please enter your email or identification number.';
 
   @override
   String get passwordLabel => 'Password';
@@ -315,7 +318,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get officialPlatform => 'OFFICIAL ECOSYSTEM PLATFORM';
 
   @override
-  String get movementPlatformTagline => 'Digital Platform for the Movement Ecosystem';
+  String get movementPlatformTagline =>
+      'Digital Platform for the Movement Ecosystem';
 
   @override
   String get enableFaceIdTitle => 'Enable Face ID?';
@@ -324,7 +328,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enableFingerprintTitle => 'Enable Fingerprint?';
 
   @override
-  String get biometricPromptBody => 'Log in faster next time using your device biometrics.';
+  String get biometricPromptBody =>
+      'Log in faster next time using your device biometrics.';
 
   @override
   String get later => 'Later';
@@ -336,7 +341,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerTitle => 'Register New Member';
 
   @override
-  String get registerSubtitle => 'Fill in the details below to join the myWAP ecosystem.';
+  String get registerSubtitle =>
+      'Fill in the details below to join the myWAP ecosystem.';
 
   @override
   String get alreadyHaveAccount => 'Already have an account?';
@@ -374,10 +380,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icHint => 'Example: 900101011234';
 
   @override
-  String get icRequired => 'Please enter your Identification Number or Passport No.';
+  String get icRequired =>
+      'Please enter your Identification Number or Passport No.';
 
   @override
-  String get icInvalid => 'Invalid IC No. Enter a 12-digit Identification Number (e.g. 900101011234) or Passport No.';
+  String get icInvalid =>
+      'Invalid IC No. Enter a 12-digit Identification Number (e.g. 900101011234) or Passport No.';
 
   @override
   String get phoneOptionalLabel => 'Phone Number (Optional)';
@@ -389,10 +397,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneInvalid => 'Invalid phone number. Example: 0123456789';
 
   @override
-  String get dobRequiredForIc => 'Please select your date of birth because the IC No. is incomplete or not a Malaysian IC format.';
+  String get dobRequiredForIc =>
+      'Please select your date of birth because the IC No. is incomplete or not a Malaysian IC format.';
 
   @override
-  String get dobLabelRequired => 'Date of Birth (Required if IC No. is not 12 digits)';
+  String get dobLabelRequired =>
+      'Date of Birth (Required if IC No. is not 12 digits)';
 
   @override
   String get selectDob => 'Select date of birth';
@@ -401,7 +411,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerSuccessTitle => 'Registration Successful!';
 
   @override
-  String get registerSuccessSubtitle => 'Your account has been activated. Please log in for the first time using your IC No. to set a password.';
+  String get registerSuccessSubtitle =>
+      'Your account has been activated. Please log in for the first time using your IC No. to set a password.';
 
   @override
   String get yourMemberNo => 'YOUR MEMBER NO.';
@@ -430,10 +441,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotMemberNoTitle => 'Forgot Member No.';
 
   @override
-  String get forgotMemberNoVerifySubtitle => 'Verify your date of birth to display your Member No.';
+  String get forgotMemberNoVerifySubtitle =>
+      'Verify your date of birth to display your Member No.';
 
   @override
-  String get forgotMemberNoEnterIcSubtitle => 'Enter your Identification Number to find your Member No.';
+  String get forgotMemberNoEnterIcSubtitle =>
+      'Enter your Identification Number to find your Member No.';
 
   @override
   String get rememberMemberNo => 'Remember your Member No.?';
@@ -460,7 +473,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPasswordTitle => 'Forgot Password';
 
   @override
-  String get forgotPasswordSubtitle => 'Enter your Identification Number. We will send a reset link to your registered email.';
+  String get forgotPasswordSubtitle =>
+      'Enter your Identification Number. We will send a reset link to your registered email.';
 
   @override
   String get rememberPassword => 'Remember your password?';
@@ -478,13 +492,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstLoginTitle => 'First Time Login';
 
   @override
-  String get firstLoginVerifySubtitle => 'Enter the 6-digit code sent to your email and set a new password.';
+  String get firstLoginVerifySubtitle =>
+      'Enter the 6-digit code sent to your email and set a new password.';
 
   @override
-  String get firstLoginNoEmailSubtitle => 'We could not find a registered email. Please enter your email to receive an OTP code.';
+  String get firstLoginNoEmailSubtitle =>
+      'We could not find a registered email. Please enter your email to receive an OTP code.';
 
   @override
-  String get firstLoginEnterIcSubtitle => 'Enter your Identification Number to receive an OTP code by email.';
+  String get firstLoginEnterIcSubtitle =>
+      'Enter your Identification Number to receive an OTP code by email.';
 
   @override
   String get alreadyLoggedIn => 'Logged in before?';
@@ -532,19 +549,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSlide1Title => 'Welcome to myWAP';
 
   @override
-  String get onboardingSlide1Body => 'One app for membership, programs and movement services.';
+  String get onboardingSlide1Body =>
+      'One app for membership, programs and movement services.';
 
   @override
   String get onboardingSlide2Title => 'Everything in One Place';
 
   @override
-  String get onboardingSlide2Body => 'Follow events, manage membership and discover your organisation’s facilities.';
+  String get onboardingSlide2Body =>
+      'Follow events, manage membership and discover your organisation’s facilities.';
 
   @override
   String get onboardingSlide3Title => 'Ready to Get Started';
 
   @override
-  String get onboardingSlide3Body => 'Explore news, articles and programs without an account — or register as a member for full access.';
+  String get onboardingSlide3Body =>
+      'Explore news, articles and programs without an account — or register as a member for full access.';
 
   @override
   String get onboardingNext => 'Next';
@@ -559,7 +579,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicWelcomeTitle => 'Welcome to myWAP';
 
   @override
-  String get publicWelcomeBody => 'Log in for full member access, or continue exploring content as a guest.';
+  String get publicWelcomeBody =>
+      'Log in for full member access, or continue exploring content as a guest.';
 
   @override
   String get close => 'Close';
@@ -568,7 +589,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadContentError => 'Failed to load content. Please try again.';
 
   @override
-  String get publicHeroSubtitle => 'Community news, articles, programs and infaq campaigns — open to everyone.';
+  String get publicHeroSubtitle =>
+      'Community news, articles, programs and infaq campaigns — open to everyone.';
 
   @override
   String get viewAll => 'View All';
@@ -592,7 +614,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noLibrary => 'No library materials at the moment.';
 
   @override
-  String get libraryMemberPrompt => 'Log in as a member to read in the Digital Library.';
+  String get libraryMemberPrompt =>
+      'Log in as a member to read in the Digital Library.';
 
   @override
   String get newsTitle => 'Latest News';
@@ -616,7 +639,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get becomeMemberTitle => 'Become a myWAP Member';
 
   @override
-  String get becomeMemberBody => 'Register for access to your member card, fee status, programs, usrah and more.';
+  String get becomeMemberBody =>
+      'Register for access to your member card, fee status, programs, usrah and more.';
 
   @override
   String get adminFallback => 'Admin';
@@ -628,7 +652,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginPromptTitle => 'Login Required';
 
   @override
-  String get loginPromptBody => 'This feature is available to members. Please log in or register an account to continue.';
+  String get loginPromptBody =>
+      'This feature is available to members. Please log in or register an account to continue.';
 
   @override
   String get guestBannerMessage => 'Log in for full member access.';
@@ -717,7 +742,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileIncomplete => 'Your profile is incomplete';
 
   @override
-  String get completeProfilePrompt => 'Complete your information for the best experience.';
+  String get completeProfilePrompt =>
+      'Complete your information for the best experience.';
 
   @override
   String get complete => 'Complete';
@@ -752,13 +778,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orgFallback => 'organisation';
 
   @override
-  String get biometricEnableFailed => 'Failed to enable. Make sure Face ID / fingerprint is set up on your device.';
+  String get biometricEnableFailed =>
+      'Failed to enable. Make sure Face ID / fingerprint is set up on your device.';
 
   @override
-  String get biometricDisableFailed => 'Failed to disable biometric login. Please try again.';
+  String get biometricDisableFailed =>
+      'Failed to disable biometric login. Please try again.';
 
   @override
-  String get biometricUnlockSubtitle => 'Unlock your account with device biometrics.';
+  String get biometricUnlockSubtitle =>
+      'Unlock your account with device biometrics.';
 
   @override
   String get changePassword => 'Change Password';
@@ -785,7 +814,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccount => 'Delete Account';
 
   @override
-  String get deleteAccountWarning => 'Your account will be permanently deleted. This action cannot be undone. Enter your password to confirm.';
+  String get deleteAccountWarning =>
+      'Your account will be permanently deleted. This action cannot be undone. Enter your password to confirm.';
 
   @override
   String get accountDeleted => 'Your account has been deleted.';
@@ -865,7 +895,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get branchRequestSent => 'Branch change request has been sent for admin approval.';
+  String get branchRequestSent =>
+      'Branch change request has been sent for admin approval.';
 
   @override
   String fieldRequired(String field) {
@@ -888,7 +919,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changeBranchTitle => 'Change Branch';
 
   @override
-  String get changeBranchNote => 'This request must be approved by an admin before your branch changes.';
+  String get changeBranchNote =>
+      'This request must be approved by an admin before your branch changes.';
 
   @override
   String get currentBranch => 'Current branch';
@@ -910,10 +942,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noOtherBranches => 'No other branches are available for your organisation.';
+  String get noOtherBranches =>
+      'No other branches are available for your organisation.';
 
   @override
-  String get branchRequestNote => 'The request will be sent to an admin for approval. Your branch changes only after approval.';
+  String get branchRequestNote =>
+      'The request will be sent to an admin for approval. Your branch changes only after approval.';
 
   @override
   String get sendRequest => 'Send Request';
@@ -922,7 +956,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completeProfileTitle => 'Complete Profile';
 
   @override
-  String get completeProfilePrompt2 => 'Complete the following information to activate your profile.';
+  String get completeProfilePrompt2 =>
+      'Complete the following information to activate your profile.';
 
   @override
   String get requiredInfoSection => 'Required Information';
@@ -1003,7 +1038,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maritalWidowed => 'Widowed';
 
   @override
-  String get checkMarkedFields => 'Please review the information marked in red.';
+  String get checkMarkedFields =>
+      'Please review the information marked in red.';
 
   @override
   String get genderLabel => 'Gender';
@@ -1226,7 +1262,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ecomOrderPaidSuccess => 'Order placed and paid successfully.';
 
   @override
-  String get ecomOrderCreatedAwaitPayment => 'Order placed. Please complete your payment.';
+  String get ecomOrderCreatedAwaitPayment =>
+      'Order placed. Please complete your payment.';
 
   @override
   String get ecomOrderCreatedSuccess => 'Order placed successfully!';
@@ -1283,7 +1320,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get ecomParcelShippedHint => 'Parcel has been shipped — tap to Track & Receive';
+  String get ecomParcelShippedHint =>
+      'Parcel has been shipped — tap to Track & Receive';
 
   @override
   String get ecomOrderReceived => 'Order receipt confirmed. Thank you!';
@@ -1292,7 +1330,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ecomPaymentSuccess => 'Payment successful. Thank you!';
 
   @override
-  String get ecomPaymentIncomplete => 'Payment not completed. Please try again.';
+  String get ecomPaymentIncomplete =>
+      'Payment not completed. Please try again.';
 
   @override
   String get ecomOrderDetailTitle => 'Order Details';
@@ -1416,7 +1455,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get facIntroTitle => 'Services & Facilities';
 
   @override
-  String get facIntroSubtitle => 'Book available service spaces and facilities.';
+  String get facIntroSubtitle =>
+      'Book available service spaces and facilities.';
 
   @override
   String facAdminRemarks(String remarks) {
@@ -1435,13 +1475,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get facErrorCompleteDateTime => 'Please complete the date, start time and duration.';
+  String get facErrorCompleteDateTime =>
+      'Please complete the date, start time and duration.';
 
   @override
-  String get facErrorSlotPast => 'The selected slot has passed. Please choose another time.';
+  String get facErrorSlotPast =>
+      'The selected slot has passed. Please choose another time.';
 
   @override
-  String get facErrorContactRequired => 'Please complete the contact information.';
+  String get facErrorContactRequired =>
+      'Please complete the contact information.';
 
   @override
   String get facBookingSubmitted => 'Booking submitted successfully.';
@@ -1452,7 +1495,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get facBookingInstructions => 'Simple steps: choose a day, start time and duration. Overlapping slots will be rejected.';
+  String get facBookingInstructions =>
+      'Simple steps: choose a day, start time and duration. Overlapping slots will be rejected.';
 
   @override
   String get facSelectDay => 'Select Day';
@@ -1464,7 +1508,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get facBookingDuration => 'Booking Duration';
 
   @override
-  String get facSelectStartFirst => 'Select a start time first to see available durations.';
+  String get facSelectStartFirst =>
+      'Select a start time first to see available durations.';
 
   @override
   String get facContactName => 'Contact Name';
@@ -1507,7 +1552,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get facMemberRateNote => 'Member rate. Payment is confirmed on site.';
 
   @override
-  String get facStandardRateNote => 'Standard rate. Payment is confirmed on site.';
+  String get facStandardRateNote =>
+      'Standard rate. Payment is confirmed on site.';
 
   @override
   String get facStatusApproved => 'Approved';
@@ -1530,7 +1576,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get facBookingConfirmationNote => 'You will be notified once the booking is confirmed. Payment is made when you arrive at the location.';
+  String get facBookingConfirmationNote =>
+      'You will be notified once the booking is confirmed. Payment is made when you arrive at the location.';
 
   @override
   String get facDone => 'Done';
@@ -1637,7 +1684,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get infaqCampaignsTitle => 'Infaq Campaigns';
 
   @override
-  String get infaqIntroSubtitle => 'Join us in contributing and helping those in need.';
+  String get infaqIntroSubtitle =>
+      'Join us in contributing and helping those in need.';
 
   @override
   String get infaqActiveCampaigns => 'ACTIVE CAMPAIGNS';
@@ -1704,7 +1752,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referralReferredMembers => 'Referred Members';
 
   @override
-  String get referralNoReferredMembers => 'No members have been invited using your link yet.';
+  String get referralNoReferredMembers =>
+      'No members have been invited using your link yet.';
 
   @override
   String get directorySearchHint => 'Search members, industries, expertise...';
@@ -1804,7 +1853,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get newsLoginToComment => 'Log in as a member to read and write comments.';
+  String get newsLoginToComment =>
+      'Log in as a member to read and write comments.';
 
   @override
   String get newsCommentHint => 'Write a comment...';
@@ -1842,7 +1892,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryRead => 'Read';
 
   @override
-  String get libraryOpenFailed => 'Unable to open the book. Check your internet connection and try again.';
+  String get libraryOpenFailed =>
+      'Unable to open the book. Check your internet connection and try again.';
 
   @override
   String get libraryBookFallback => 'Book';
@@ -1874,7 +1925,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manualNoManuals => 'No manuals at the moment.';
 
   @override
-  String get manualIntro => 'The guides below are shown according to your account role.';
+  String get manualIntro =>
+      'The guides below are shown according to your account role.';
 
   @override
   String get manualFallback => 'Manual';
@@ -1885,7 +1937,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get manualOpenFailed => 'Unable to open the manual. Check your internet connection and try again.';
+  String get manualOpenFailed =>
+      'Unable to open the manual. Check your internet connection and try again.';
 
   @override
   String get manualPreviousPage => 'Previous page';
@@ -1962,7 +2015,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orgCardQrHint => 'Scan the QR code for membership verification.';
 
   @override
-  String get orgCardBackMissing => 'The back-of-card design has not been uploaded yet.';
+  String get orgCardBackMissing =>
+      'The back-of-card design has not been uploaded yet.';
 
   @override
   String get notifMarkAllRead => 'Mark All as Read';
@@ -2016,7 +2070,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifTypeNotification => 'Notification';
 
   @override
-  String get notifNoAdditionalContent => 'No additional content for this notification.';
+  String get notifNoAdditionalContent =>
+      'No additional content for this notification.';
 
   @override
   String get notifOpenLink => 'Open Link';
@@ -2031,7 +2086,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatTitle => 'Chat';
 
   @override
-  String get chatEmpty => 'No messages yet. Send a message to ask the AI assistant.';
+  String get chatEmpty =>
+      'No messages yet. Send a message to ask the AI assistant.';
 
   @override
   String get chatTyping => 'Typing...';
@@ -2095,10 +2151,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get finPaymentDate => 'Payment Date';
 
   @override
-  String get finFeeDueMessage => 'Please settle your membership fee to keep your membership active.';
+  String get finFeeDueMessage =>
+      'Please settle your membership fee to keep your membership active.';
 
   @override
-  String get finFeePaidMessage => 'Your membership fee is PAID. Thank you for your support.';
+  String get finFeePaidMessage =>
+      'Your membership fee is PAID. Thank you for your support.';
 
   @override
   String get finStatusActive => 'ACTIVE';
@@ -2131,7 +2189,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get finPaymentSuccessThanks => 'Fee payment successful. Thank you!';
 
   @override
-  String get finPaymentPendingGateway => 'Payment is not verified yet. Please check again after completing it at the gateway.';
+  String get finPaymentPendingGateway =>
+      'Payment is not verified yet. Please check again after completing it at the gateway.';
 
   @override
   String get finFeePaidSuccess => 'Membership fee paid successfully.';
@@ -2149,7 +2208,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get finReceiptUnavailable => 'Receipt is not available.';
 
   @override
-  String get finReceiptOpenFailed => 'Failed to open the receipt. Please try again.';
+  String get finReceiptOpenFailed =>
+      'Failed to open the receipt. Please try again.';
 
   @override
   String get finReceiptDownloadFailed => 'Failed to download the receipt.';
@@ -2265,7 +2325,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminWebOnlyTitle => 'Web Version Features';
 
   @override
-  String get adminWebOnlyMessage => 'For more complete features, please log in on the PC/laptop/web version.';
+  String get adminWebOnlyMessage =>
+      'For more complete features, please log in on the PC/laptop/web version.';
 
   @override
   String get adminOkButton => 'OK';
@@ -2470,13 +2531,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminScanButton => 'Scan';
 
   @override
-  String get adminPointCameraToMemberQr => 'Point the camera at the member\'s QR code.';
+  String get adminPointCameraToMemberQr =>
+      'Point the camera at the member\'s QR code.';
 
   @override
   String get adminEnterManuallyButton => 'Enter Manually';
 
   @override
-  String get adminCameraPermissionNeeded => 'Camera permission is required to scan QR codes.';
+  String get adminCameraPermissionNeeded =>
+      'Camera permission is required to scan QR codes.';
 
   @override
   String get adminCameraUnavailable => 'Camera cannot be accessed.';
@@ -2533,7 +2596,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminSendBroadcast => 'Send Broadcast';
 
   @override
-  String get scanInvalidQr => 'This QR code is not a myWAP program attendance code.';
+  String get scanInvalidQr =>
+      'This QR code is not a myWAP program attendance code.';
 
   @override
   String scanCheckInSuccess(String eventTitle) {
@@ -2550,7 +2614,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanLoginRequiredTitle => 'Login Required';
 
   @override
-  String get scanLoginRequiredBody => 'Program attendance code detected. Please log in or register as a member to record your attendance.';
+  String get scanLoginRequiredBody =>
+      'Program attendance code detected. Please log in or register as a member to record your attendance.';
 
   @override
   String get scanCancelButton => 'Cancel';
@@ -2582,7 +2647,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanQrTitle => 'Scan Attendance QR';
 
   @override
-  String get scanPointCameraHint => 'Point the camera at the QR code on the program poster/screen to check in.';
+  String get scanPointCameraHint =>
+      'Point the camera at the QR code on the program poster/screen to check in.';
 
   @override
   String get scanCloseButton => 'Close';
@@ -2591,13 +2657,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanProgramAttendanceTitle => 'Program Attendance';
 
   @override
-  String get eventRsvpLoginPrompt => 'Log in as a member to RSVP for this program.';
+  String get eventRsvpLoginPrompt =>
+      'Log in as a member to RSVP for this program.';
 
   @override
   String get eventRsvpUpdated => 'RSVP updated successfully.';
 
   @override
-  String get eventRegisterLoginPrompt => 'Log in as a member to register for this program.';
+  String get eventRegisterLoginPrompt =>
+      'Log in as a member to register for this program.';
 
   @override
   String get eventRegisterProgram => 'Register for Program';
@@ -2628,7 +2696,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventRegisterAsParticipant => 'Register as Participant';
 
   @override
-  String get eventRegisterHint => 'Get a registration number and a place (a fee applies if paid).';
+  String get eventRegisterHint =>
+      'Get a registration number and a place (a fee applies if paid).';
 
   @override
   String get eventAlreadyRegistered => 'You are already registered';
@@ -2671,7 +2740,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventWillAttend => 'I Will Attend';
 
   @override
-  String get eventRsvpHint => 'Attendance only — no registration form required.';
+  String get eventRsvpHint =>
+      'Attendance only — no registration form required.';
 
   @override
   String get eventsTitle => 'Programs & Events';
@@ -2719,7 +2789,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventRegistrationSuccess => 'Registration successful.';
 
   @override
-  String get eventRegistrationPaymentPending => 'Registration submitted. Please complete payment.';
+  String get eventRegistrationPaymentPending =>
+      'Registration submitted. Please complete payment.';
 
   @override
   String get eventFormNotFound => 'Form not found.';
@@ -2754,19 +2825,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventUploadSupportDocTitle => 'Upload Supporting Document *';
 
   @override
-  String get eventUploadSupportDocHint => 'Please upload the supporting document (e.g. student card).';
+  String get eventUploadSupportDocHint =>
+      'Please upload the supporting document (e.g. student card).';
 
   @override
   String get eventAddonsTitle => 'Additional Options';
 
   @override
-  String get eventAddonsHint => 'Complete your registration with additional programme options. Choose what applies.';
+  String get eventAddonsHint =>
+      'Complete your registration with additional programme options. Choose what applies.';
 
   @override
   String get eventAddonsTitleRequired => 'Required & Optional Add-ons';
 
   @override
-  String get eventAddonsHintRequired => 'Complete your registration. Options marked “Required” must be included; the rest are your choice.';
+  String get eventAddonsHintRequired =>
+      'Complete your registration. Options marked “Required” must be included; the rest are your choice.';
 
   @override
   String get eventAddonSelectOption => 'Select option';
@@ -2795,7 +2869,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventBackToProgram => 'Back to Program';
 
   @override
-  String get eventRegistrationReceived => 'Your registration has been received.';
+  String get eventRegistrationReceived =>
+      'Your registration has been received.';
 
   @override
   String get eventRegistrationSuccessfulTitle => 'Registration Successful';
@@ -2810,7 +2885,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pageNotFoundBody => 'This page was not found';
 
   @override
-  String get pageNotFoundHint => 'Please try again, or return to the home page.';
+  String get pageNotFoundHint =>
+      'Please try again, or return to the home page.';
 
   @override
   String get goToHome => 'Go to Home';
@@ -2852,16 +2928,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatNoAnswer => 'No answer.';
 
   @override
-  String get chatNotConfigured => 'The AI chatbot is not configured yet. Please contact the admin.';
+  String get chatNotConfigured =>
+      'The AI chatbot is not configured yet. Please contact the admin.';
 
   @override
   String get biometricLoginReason => 'Verify your identity to log in';
 
   @override
-  String get biometricEnableReason => 'Verify Face ID / fingerprint to enable quick login';
+  String get biometricEnableReason =>
+      'Verify Face ID / fingerprint to enable quick login';
 
   @override
-  String get biometricLoginMyWapReason => 'Verify Face ID / fingerprint to log in to myWAP';
+  String get biometricLoginMyWapReason =>
+      'Verify Face ID / fingerprint to log in to myWAP';
 
   @override
   String get pushChannelName => 'myWAP Notifications';
@@ -2898,4 +2977,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ecomOptionSoldOut => 'Sold out';
+
+  @override
+  String get homeGuestTitle => 'Welcome to myWAP';
+
+  @override
+  String get homeGuestBody =>
+      'Log in to access your member card, fees, programs and usrah. Existing members who have never logged in can activate their account first.';
+
+  @override
+  String get homeActivateMember => 'Activate Membership';
+
+  @override
+  String get homeRegisterShort => 'Register';
+
+  @override
+  String get faqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get faqIntro =>
+      'Short answers about accounts, membership and myWAP services.';
+
+  @override
+  String get faqQ1 => 'What is myWAP?';
+
+  @override
+  String get faqA1 =>
+      'myWAP is the official platform for PKPIM, ABIM and WADAH members to access member cards, fee status, programs, usrah, infaq campaigns and organization information.';
+
+  @override
+  String get faqQ2 => 'How do I register as a new member?';
+
+  @override
+  String get faqA2 =>
+      'Tap Register on the home page and fill in your name, email, identification number, phone number and date of birth. After registration succeeds, log in for the first time with your identification number to set a password.';
+
+  @override
+  String get faqQ3 =>
+      'I am an existing member but have never logged in. What should I do?';
+
+  @override
+  String get faqA3 =>
+      'Tap Activate Membership, enter your identification number and follow the steps to receive an OTP code at your registered email. Enter the 6-digit code and set a new password. If no email is registered, the system will ask you to add one.';
+
+  @override
+  String get faqQ4 =>
+      'I forgot my password or member number. What should I do?';
+
+  @override
+  String get faqA4 =>
+      'On the login screen, tap Forgot Password to reset your password, or Forgot Member No. to recover your membership number.';
+
+  @override
+  String get faqQ5 => 'Can I use myWAP without logging in?';
+
+  @override
+  String get faqA5 =>
+      'Yes. As a guest, you can view news, articles, videos, programs, infaq campaigns and organization information. The member card, fee status, program registration and usrah require login.';
+
+  @override
+  String get faqQ6 => 'How do I pay fees and contribute through infaq?';
+
+  @override
+  String get faqA6 =>
+      'After logging in, open Menu and choose Fees & Payments to view your status and make a fee payment. For infaq, open a campaign and tap Donate Now. The campaign page opens in your browser so you can contribute there.';
+
+  @override
+  String get faqQ7 => 'Why does the app ask for notification permission?';
+
+  @override
+  String get faqA7 =>
+      'Notifications keep you informed about programs, announcements and important reminders. You can change this permission in your device settings at any time.';
 }

@@ -32,6 +32,7 @@ class OrderRepository {
     required List<Map<String, dynamic>> products,
     String? shippingName,
     String? shippingPhone,
+    String? shippingEmail,
     String? shippingAddress,
     String? shippingPostcode,
   }) async {
@@ -43,6 +44,8 @@ class OrderRepository {
           'shipping_name': shippingName.trim(),
         if (shippingPhone != null && shippingPhone.trim().isNotEmpty)
           'shipping_phone': shippingPhone.trim(),
+        if (shippingEmail != null && shippingEmail.trim().isNotEmpty)
+          'shipping_email': shippingEmail.trim(),
         if (shippingAddress != null && shippingAddress.trim().isNotEmpty)
           'shipping_address': shippingAddress.trim(),
         if (shippingPostcode != null && shippingPostcode.trim().isNotEmpty)

@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ExportCsvButton from '@/Components/ExportCsvButton.vue';
@@ -18,23 +18,12 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    campaigns: {
-        type: Array,
-        default: () => [],
-    },
 });
 
 const isManagementView = computed(() => props.organization?.slug === 'management');
 const chartMax = computed(() => {
     const values = (props.overview?.program_chart ?? []).map((item) => Number(item.value ?? 0));
     return Math.max(1, ...values);
-});
-
-const createCampaignForm = useForm({
-    title: '',
-    description: '',
-    target_amount: '',
-    status: 'active',
 });
 
 function formatCurrency(value) {
@@ -89,12 +78,6 @@ function activityTone(type = '') {
     return 'border-indigo-100 bg-indigo-50/70';
 }
 
-function submitCampaign() {
-    createCampaignForm.post(route('admin.campaigns.store'), {
-        preserveScroll: true,
-        onSuccess: () => createCampaignForm.reset(),
-    });
-}
 </script>
 
 <template>
@@ -168,16 +151,12 @@ function submitCampaign() {
                         <Link :href="managementLinks.broadcasts_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Hantar Siaran') }}
                         </Link>
+                        <Link :href="managementLinks.supporters_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                            {{ t('Urus Pendukung') }}
+                        </Link>
                         <Link :href="managementLinks.directory_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Lihat Direktori') }}
                         </Link>
-                        <button
-                            v-if="!isManagementView"
-                            @click="document.getElementById('create-campaign')?.scrollIntoView({ behavior: 'smooth' })"
-                            class="block w-full rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                        >
-                            {{ t('Cipta Program') }}
-                        </button>
                     </div>
                 </section>
 
@@ -265,7 +244,45 @@ function submitCampaign() {
                     </div>
                 </section>
 
-                <section class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5 md:col-span-3 lg:col-span-2">
+                <!-- Per-org member breakdown: state + branch (Superadmin only) -->
+                <section v-if="isManagementView && overview.org_member_stats?.length" class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5 md:col-span-3 lg:col-span-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">{{ t('Ahli Mengikut Organisasi, Negeri & Cawangan') }}</p>
+                    <div class="mt-3 space-y-3">
+                        <details v-for="org in overview.org_member_stats" :key="org.id" class="rounded-2xl border p-3" :style="{ borderColor: (org.color_theme ?? '#6b7280') + '40', backgroundColor: (org.color_theme ?? '#6b7280') + '06' }" open>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-bold text-gray-900">{{ org.name }}</p>
+                                    <p class="text-[11px] text-gray-500">{{ org.member_count }} {{ t('ahli') }} · {{ org.state_count }} {{ t('negeri') }} · {{ org.branch_count }} {{ t('cawangan') }}</p>
+                                </div>
+                                <span class="text-2xl font-black" :style="{ color: org.color_theme ?? '#6b7280' }">{{ org.member_count }}</span>
+                            </summary>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('Mengikut Negeri') }}</p>
+                                    <div class="mt-2 space-y-1">
+                                        <div v-for="s in org.states" :key="s.state" class="flex justify-between rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs">
+                                            <span class="truncate text-gray-600">{{ t(s.state) }}</span>
+                                            <span class="font-bold text-gray-900">{{ s.count }}</span>
+                                        </div>
+                                        <p v-if="!org.states.length" class="text-xs text-gray-400">{{ t('Tiada data negeri.') }}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('Mengikut Cawangan') }}</p>
+                                    <div class="mt-2 space-y-1">
+                                        <div v-for="b in org.branches" :key="b.id" class="flex justify-between rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs">
+                                            <span class="truncate text-gray-600">{{ b.name }}</span>
+                                            <span class="font-bold text-gray-900">{{ b.count }}</span>
+                                        </div>
+                                        <p v-if="!org.branches.length" class="text-xs text-gray-400">{{ t('Tiada cawangan.') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <section v-if="!isManagementView" class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5 md:col-span-3 lg:col-span-2">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">{{ t('Jumlah Ahli Mengikut Negeri') }}</p>
                         <div class="flex items-center gap-2">
@@ -326,47 +343,6 @@ function submitCampaign() {
                         </div>
                         <ExportCsvButton :href="route('admin.members.export')" />
                     </div>
-                </section>
-
-                <section v-if="!isManagementView" id="create-campaign" class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5 md:col-span-3 lg:col-span-4">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">{{ t('Cipta Kempen') }}</p>
-                    <form class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" @submit.prevent="submitCampaign">
-                        <div class="md:col-span-1">
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">{{ t('Tajuk') }}</label>
-                            <input v-model="createCampaignForm.title" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" required>
-                            <p v-if="createCampaignForm.errors.title" class="mt-1 text-xs text-red-500">{{ createCampaignForm.errors.title }}</p>
-                        </div>
-
-                        <div class="md:col-span-1">
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">{{ t('Jumlah Sasaran') }}</label>
-                            <input v-model="createCampaignForm.target_amount" type="number" min="1" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" required>
-                            <p v-if="createCampaignForm.errors.target_amount" class="mt-1 text-xs text-red-500">{{ createCampaignForm.errors.target_amount }}</p>
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">{{ t('Penerangan') }}</label>
-                            <textarea v-model="createCampaignForm.description" rows="3" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0"></textarea>
-                        </div>
-
-                        <div class="md:col-span-1">
-                            <label class="mb-1 block text-xs font-semibold text-gray-500">{{ t('Status') }}</label>
-                            <select v-model="createCampaignForm.status" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
-                                <option value="draft">{{ t('Draf') }}</option>
-                                <option value="active">{{ t('Aktif') }}</option>
-                                <option value="closed">{{ t('Tutup') }}</option>
-                            </select>
-                        </div>
-
-                        <div class="md:col-span-1 flex items-end">
-                            <button
-                                type="submit"
-                                :disabled="createCampaignForm.processing"
-                                class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                            >
-                                {{ createCampaignForm.processing ? t('Menyimpan...') : t('Simpan Kempen') }}
-                            </button>
-                        </div>
-                    </form>
                 </section>
 
             </div>

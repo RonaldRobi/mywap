@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\MemberCoreService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\MembershipLetterService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,54 +17,21 @@ class MemberCardController extends Controller
     }
 
     /**
-     * Download a membership confirmation letter (PDF) for the authenticated member.
+     * Muat turun surat pengesahan keahlian (PDF) untuk ahli yang log masuk.
      */
-    public function letterPdf(Request $request)
+    public function letterPdf(Request $request, MembershipLetterService $letters)
     {
-        $user = $request->user()->load('organization', 'branch');
+        $user = $request->user();
 
-        $pdf = Pdf::loadView('exports.member-letter', [
-            'member' => [
-                'name' => $user->name,
-                'member_no' => $user->member_no,
-                'ic_number' => $user->ic_number,
-                'organization' => $user->organization?->name,
-                'branch' => $user->branch?->name ?? $user->branch_name,
-                'state' => $user->state,
-                'joined_at' => optional($user->created_at)->format('d/m/Y'),
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'issued_at' => now()->format('d/m/Y'),
-            ],
-        ]);
-
-        return $pdf->download('surat-pengesahan-keahlian-'.($user->member_no ?? $user->id).'.pdf');
+        return $letters->pdf($user)->download($letters->filename($user));
     }
 
     /**
-     * Muat turun surat pengesahan keahlian melalui URL yang ditandatangani
-     * (digunakan mobile/API supaya boleh dibuka dalam pelayar tanpa header
-     * Authorization). Pengesahan dibuat oleh middleware `signed`.
+     * Surat melalui URL ditandatangani supaya mobile boleh buka dalam pelayar
+     * tanpa header Authorization.
      */
-    public function letterPdfSigned(User $user): \Symfony\Component\HttpFoundation\Response
+    public function letterPdfSigned(User $user, MembershipLetterService $letters): \Symfony\Component\HttpFoundation\Response
     {
-        $user->load('organization', 'branch');
-
-        $pdf = Pdf::loadView('exports.member-letter', [
-            'member' => [
-                'name' => $user->name,
-                'member_no' => $user->member_no,
-                'ic_number' => $user->ic_number,
-                'organization' => $user->organization?->name,
-                'branch' => $user->branch?->name ?? $user->branch_name,
-                'state' => $user->state,
-                'joined_at' => optional($user->created_at)->format('d/m/Y'),
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'issued_at' => now()->format('d/m/Y'),
-            ],
-        ]);
-
-        return $pdf->download('surat-pengesahan-keahlian-'.($user->member_no ?? $user->id).'.pdf');
+        return $letters->pdf($user)->download($letters->filename($user));
     }
 }

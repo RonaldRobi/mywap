@@ -48,6 +48,7 @@ class BroadcastController extends Controller
                     'organization' => 'Ahli Organisasi',
                     'branch' => 'Ahli Cawangan',
                     'specific_members' => 'Individu Tertentu',
+                    'supporters' => 'Pendukung (Bukan Ahli)',
                     default => $message->target_criteria,
                 },
                 'sender_name' => $message->sender_label ?? $message->organization?->name,
@@ -148,7 +149,7 @@ class BroadcastController extends Controller
             'action_id' => ['nullable', 'integer'],
             'action_label' => ['nullable', 'string', 'max:60'],
             'action_url' => ['nullable', 'string', 'max:2048'],
-            'target_criteria' => ['required', 'in:all,organization,branch,specific_members'],
+            'target_criteria' => ['required', 'in:all,organization,branch,specific_members,supporters'],
             'target_organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'recipient_ids' => ['nullable', 'array'],
@@ -175,6 +176,12 @@ class BroadcastController extends Controller
                 return back()->withErrors(['recipient_ids' => 'Sila pilih sekurang-kurangnya seorang ahli.']);
             }
             $targetOrgId = null;
+        } elseif ($data['target_criteria'] === 'supporters') {
+            // Pendukung cuma ada emel; siaran wajib melalui saluran emel.
+            $targetOrgId = $isSuperadmin
+                ? ($data['target_organization_id'] ?? null)
+                : $user->current_organization_id;
+            $data['notification_channels'] = ['email'];
         }
 
         $action = $this->resolveAction($data, $user, $isSuperadmin);

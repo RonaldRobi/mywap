@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
@@ -11,6 +12,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/loading_overlay.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/cart_notifier.dart';
 import '../application/order_providers.dart';
 import '../application/product_providers.dart';
@@ -26,15 +28,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _postcodeController = TextEditingController();
   bool _submitting = false;
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    // Pra-isi maklumat ahli jika sudah log masuk; tetamu isi sendiri.
+    final user = ref.read(currentUserProvider);
+    if (user != null) {
+      _nameController.text = user.name ?? '';
+      _phoneController.text = user.phone ?? '';
+      _emailController.text = user.email ?? '';
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _addressController.dispose();
     _postcodeController.dispose();
     super.dispose();
@@ -116,10 +132,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             products: _productsPayload,
             shippingName: _nameController.text,
             shippingPhone: _phoneController.text,
+            shippingEmail: _emailController.text,
             shippingAddress: _addressController.text,
             shippingPostcode: _postcodeController.text,
           );
       if (!mounted) return;
+
+      final isGuest = ref.read(currentUserProvider) == null;
 
       ref.read(cartProvider.notifier).clear();
       ref.invalidate(ordersProvider);
@@ -129,6 +148,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.invalidate(productDetailProvider);
 
       final paymentUrl = result.paymentUrl;
+      final receiptUrl = result.order?.receiptUrl;
+      final l10n = context.l10n;
+      final receiptAction =
+          (isGuest && receiptUrl != null && receiptUrl.isNotEmpty)
+              ? SnackBarAction(
+                label: 'Lihat Resit',
+                onPressed: () => launchUrl(
+                  Uri.parse(receiptUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+              )
+              : null;
+
       if (paymentUrl != null && paymentUrl.isNotEmpty) {
         final paid = await Navigator.of(context).push<bool>(
           MaterialPageRoute(
@@ -136,7 +168,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
         if (!mounted) return;
-        final l10n = context.l10n;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -144,14 +175,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ? l10n.ecomOrderPaidSuccess
                   : l10n.ecomOrderCreatedAwaitPayment,
             ),
+            action: receiptAction,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.ecomOrderCreatedSuccess)),
+          SnackBar(
+            content: Text(l10n.ecomOrderCreatedSuccess),
+            action: receiptAction,
+          ),
         );
       }
-      context.go('/orders');
+      context.go(isGuest ? '/home' : '/orders');
     } on ApiException catch (e) {
       if (!mounted) return;
       // A 422 here usually means stock changed while the buyer was checking
@@ -241,6 +276,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             (value == null || value.trim().isEmpty)
                                 ? l10n.ecomPhoneRequired
                                 : null,
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: l10n.emailLabel,
+                      hintText: l10n.emailHint,
+                      prefixIcon: const Icon(Icons.mail_outline),
+                    ),
+                    validator: (value) {
+                      final email = (value ?? '').trim();
+                      if (email.isEmpty) return l10n.emailRequired;
+                      if (!RegExp(
+                        r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                      ).hasMatch(email)) {
+                        return l10n.emailInvalid;
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(

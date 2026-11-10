@@ -98,6 +98,7 @@ class _FakeOrderRepository implements OrderRepository {
     required List<Map<String, dynamic>> products,
     String? shippingName,
     String? shippingPhone,
+    String? shippingEmail,
     String? shippingAddress,
     String? shippingPostcode,
   }) async {
@@ -576,6 +577,10 @@ void main() {
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',
     );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Emel'),
+      'tetamu@emel.com',
+    );
     await tester.tap(find.text('Hantar Pesanan'));
     await tester.pumpAndSettle();
 
@@ -619,6 +624,10 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Emel'),
+      'tetamu@emel.com',
     );
     await tester.tap(find.text('Hantar Pesanan'));
     await tester.pumpAndSettle();
@@ -679,6 +688,10 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Emel'),
+      'tetamu@emel.com',
     );
     await tester.tap(find.text('Hantar Pesanan'));
     await tester.pumpAndSettle();

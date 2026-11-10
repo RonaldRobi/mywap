@@ -707,15 +707,31 @@ class _InfoTile extends StatelessWidget {
 List<(IconData, String, String?)> _socialLinks(
   BuildContext context,
   OrganizationDetail org,
-) =>
-    [
-      (Icons.public, context.l10n.orgWebsite, org.website_url),
-      (Icons.facebook, 'Facebook', org.facebook_url),
-      (Icons.alternate_email, 'X (Twitter)', org.twitter_url),
-      (Icons.camera_alt_outlined, 'Instagram', org.instagram_url),
-      (Icons.play_circle_outline, 'YouTube', org.youtube_url),
-      (Icons.music_note, 'TikTok', org.tiktok_url),
-    ].where((e) => e.$3 != null && e.$3!.isNotEmpty).toList();
+) {
+  final phone = org.phone?.trim() ?? '';
+  final tel = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+  final wa = phone.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0'), '60');
+
+  return [
+    (
+      Icons.mail_outline,
+      'Emel',
+      (org.email?.isNotEmpty ?? false) ? 'mailto:${org.email}' : null,
+    ),
+    (Icons.call_outlined, 'Panggil', tel.isNotEmpty ? 'tel:$tel' : null),
+    (
+      Icons.chat_bubble_outline,
+      'WhatsApp',
+      wa.isNotEmpty ? 'https://wa.me/$wa' : null,
+    ),
+    (Icons.public, context.l10n.orgWebsite, org.website_url),
+    (Icons.facebook, 'Facebook', org.facebook_url),
+    (Icons.alternate_email, 'X (Twitter)', org.twitter_url),
+    (Icons.camera_alt_outlined, 'Instagram', org.instagram_url),
+    (Icons.play_circle_outline, 'YouTube', org.youtube_url),
+    (Icons.music_note, 'TikTok', org.tiktok_url),
+  ].where((e) => e.$3 != null && e.$3!.isNotEmpty).toList();
+}
 
 class _SocialLinks extends StatelessWidget {
   const _SocialLinks({required this.org, required this.accent});

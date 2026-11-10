@@ -52,6 +52,8 @@ class OrganizationDetail {
     this.chart_member_count,
     this.is_current = false,
     this.is_selected = false,
+    this.email,
+    this.phone,
     this.website_url,
     this.facebook_url,
     this.instagram_url,
@@ -74,6 +76,8 @@ class OrganizationDetail {
         chart_member_count: parseIntValue(json['chart_member_count']),
         is_current: json['is_current'] == true,
         is_selected: json['is_selected'] == true,
+        email: json['email'] as String?,
+        phone: json['phone'] as String?,
         website_url: json['website_url'] as String?,
         facebook_url: json['facebook_url'] as String?,
         instagram_url: json['instagram_url'] as String?,
@@ -94,6 +98,8 @@ class OrganizationDetail {
   final int? chart_member_count;
   final bool is_current;
   final bool is_selected;
+  final String? email;
+  final String? phone;
   final String? website_url;
   final String? facebook_url;
   final String? instagram_url;

@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
+use App\Models\Branch;
 use App\Models\Campaign;
 use App\Models\Event;
 use App\Models\EventRsvp;
@@ -63,7 +64,12 @@ class AdminService
         $activeMembers = (clone $users)->whereNotNull('profile_completed_at')->count();
 
         $events = Event::query()
-            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $orgId));
+            ->when(! $isSuperadmin, fn ($q) => $q->where(function ($scope) use ($orgId) {
+                // Sama seperti senarai program admin: milik organisasi ATAU
+                // program bersama (pivot organizations).
+                $scope->where('organization_id', $orgId)
+                    ->orWhereHas('organizations', fn ($pivot) => $pivot->where('organizations.id', $orgId));
+            }));
 
         $totalEvents = (clone $events)->count();
         $upcomingEvents = (clone $events)->where('start_time', '>=', now())->count();
@@ -159,17 +165,41 @@ class AdminService
         $inactiveMembers = $totalMembers - $activeMemberCount;
 
         $orgMemberCounts = [];
+        $orgMemberStats = [];
         if ($isSuperadmin) {
             $orgs = Organization::query()
                 ->where('slug', '!=', 'management')
                 ->orderBy('min_age')
                 ->get(['id', 'name', 'slug', 'color_theme']);
+            $orgIds = $orgs->pluck('id');
 
             $counts = User::withoutGlobalScope(OrganizationScope::class)
-                ->whereIn('current_organization_id', $orgs->pluck('id'))
+                ->whereIn('current_organization_id', $orgIds)
                 ->selectRaw('current_organization_id, COUNT(*) as total')
                 ->groupBy('current_organization_id')
                 ->pluck('total', 'current_organization_id');
+
+            $stateRows = User::withoutGlobalScope(OrganizationScope::class)
+                ->whereIn('current_organization_id', $orgIds)
+                ->selectRaw("current_organization_id, COALESCE(NULLIF(state, ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
+                ->groupBy('current_organization_id', 'state')
+                ->orderBy('state')
+                ->get();
+
+            $branchRows = User::withoutGlobalScope(OrganizationScope::class)
+                ->whereIn('current_organization_id', $orgIds)
+                ->whereNotNull('branch_id')
+                ->selectRaw('current_organization_id, branch_id, COUNT(*) as total')
+                ->groupBy('current_organization_id', 'branch_id')
+                ->get();
+
+            $branchesById = Branch::query()
+                ->whereIn('id', $branchRows->pluck('branch_id'))
+                ->get(['id', 'name', 'state'])
+                ->keyBy('id');
+
+            $statesByOrg = $stateRows->groupBy('current_organization_id');
+            $branchesByOrg = $branchRows->groupBy('current_organization_id');
 
             $orgMemberCounts = $orgs
                 ->map(fn ($org) => [
@@ -179,6 +209,42 @@ class AdminService
                     'color_theme' => $org->color_theme,
                     'member_count' => (int) ($counts[$org->id] ?? 0),
                 ])
+                ->values()
+                ->toArray();
+
+            $orgMemberStats = $orgs
+                ->map(function ($org) use ($statesByOrg, $branchesByOrg, $branchesById, $counts) {
+                    $states = collect($statesByOrg[$org->id] ?? [])
+                        ->map(fn ($row) => ['state' => $row->state, 'count' => (int) $row->total])
+                        ->sortBy('state')
+                        ->values();
+
+                    $branches = collect($branchesByOrg[$org->id] ?? [])
+                        ->map(function ($row) use ($branchesById) {
+                            $branch = $branchesById[$row->branch_id] ?? null;
+
+                            return [
+                                'id' => (int) $row->branch_id,
+                                'name' => $branch?->name,
+                                'state' => $branch?->state,
+                                'count' => (int) $row->total,
+                            ];
+                        })
+                        ->sortBy('name')
+                        ->values();
+
+                    return [
+                        'id' => $org->id,
+                        'name' => $org->name,
+                        'slug' => $org->slug,
+                        'color_theme' => $org->color_theme,
+                        'member_count' => (int) ($counts[$org->id] ?? 0),
+                        'state_count' => $states->count(),
+                        'branch_count' => $branches->count(),
+                        'states' => $states->all(),
+                        'branches' => $branches->all(),
+                    ];
+                })
                 ->values()
                 ->toArray();
         }
@@ -287,7 +353,7 @@ class AdminService
             'overview' => [
                 'total_members' => $totalMembers,
                 'fees_collected_month' => (float) $feesCollectedThisMonth,
-                'total_programs' => (int) ($eventsCount + $activeCampaigns->count() + $infaqCount),
+                'total_programs' => (int) $eventsCount,
                 'program_chart' => $programChart,
                 'new_members_30d' => $newMembersLast30Days,
                 'new_members_trend_percent' => $newMembersTrendPercent,
@@ -298,6 +364,7 @@ class AdminService
                 'active_members' => $activeMemberCount,
                 'inactive_members' => $inactiveMembers,
                 'org_member_counts' => $orgMemberCounts,
+                'org_member_stats' => $orgMemberStats,
                 'alerts' => $alerts->values(),
                 'recent_activities' => $recentActivities,
             ],
@@ -312,6 +379,7 @@ class AdminService
                 'fees_members_url' => route('admin.fees.members'),
                 'usrah_manage_url' => route('admin.usrah.index'),
                 'broadcasts_url' => route('admin.broadcasts.index'),
+                'supporters_url' => route('admin.supporters.index'),
                 'directory_url' => route('directory.index'),
             ],
             'campaigns' => $activeCampaigns,

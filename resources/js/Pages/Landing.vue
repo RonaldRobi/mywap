@@ -301,13 +301,16 @@ const fiVerify = async () => {
 
 const resetLinkSending = ref(false);
 
-// First-time prompt modal (session-only)
-const showFirstTimePrompt = ref(!sessionStorage.getItem('first_prompt_closed'));
+// Modal panduan dipaparkan hanya bila pengguna memintanya, bukan secara automatik.
+const showFirstTimePrompt = ref(false);
 
 const showIcNotFoundModal = ref(false);
 
+const openFirstTimePrompt = () => {
+    showFirstTimePrompt.value = true;
+};
+
 const promptGoFirstTime = () => {
-    sessionStorage.setItem('first_prompt_closed', '1');
     showFirstTimePrompt.value = false;
     resetFlow();
     flow.value = 'first-time';
@@ -315,7 +318,6 @@ const promptGoFirstTime = () => {
 
 const closeFirstTimePrompt = () => {
     showFirstTimePrompt.value = false;
-    sessionStorage.setItem('first_prompt_closed', '1');
 };
 
 const sendResetLink = () => {
@@ -429,30 +431,35 @@ const sendResetLink = () => {
 
                             <!-- Belum ada akaun? -->
                             <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                                <p class="text-center text-sm font-semibold text-slate-900">Belum ada akaun?</p>
+                                <p class="text-center text-sm font-semibold text-slate-900">Belum ada akaun atau belum pernah log masuk?</p>
 
-                                <Link
-                                    :href="route('register')"
-                                    class="mt-3 block w-full rounded-3xl bg-[#123D2A] px-4 py-3 text-center text-base font-semibold text-[#F4F6F1] transition hover:bg-[#071525]"
-                                >
-                                    Daftar Jadi Ahli Baru
-                                </Link>
+                                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <Link
+                                        :href="route('register')"
+                                        class="block rounded-2xl bg-[#123D2A] px-4 py-2.5 text-center text-sm font-semibold text-[#F4F6F1] transition hover:bg-[#071525]"
+                                    >
+                                        Daftar Ahli Baru
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        class="rounded-2xl border border-[#9A4A07] px-4 py-2.5 text-center text-sm font-semibold text-[#9A4A07] transition hover:bg-[#FCF3E8]"
+                                        @click="resetFlow(); flow = 'first-time'"
+                                    >
+                                        Aktifkan Akaun Ahli
+                                    </button>
+                                </div>
+
                                 <p class="mt-2 text-center text-xs text-slate-500">
-                                    Untuk anda yang belum pernah menjadi ahli PKPIM, ABIM atau WADAH.
+                                    Baru jadi ahli? Daftar. Sudah ahli tapi belum pernah log masuk? Aktifkan.
                                 </p>
-
-                                <div class="my-3 border-t border-slate-200"></div>
 
                                 <button
                                     type="button"
-                                    class="block w-full rounded-3xl border border-[#2F6B32] px-4 py-3 text-center text-base font-semibold text-[#2F6B32] transition hover:bg-[#F4F6F1]"
-                                    @click="resetFlow(); flow = 'first-time'"
+                                    class="mt-2 w-full text-center text-xs font-semibold text-slate-500 transition hover:text-slate-700"
+                                    @click="openFirstTimePrompt"
                                 >
-                                    Aktifkan Akaun Ahli Sedia Ada
+                                    Tidak pasti pilihan anda?
                                 </button>
-                                <p class="mt-2 text-center text-xs text-slate-500">
-                                    Untuk ahli berdaftar yang belum pernah log masuk ke myWAP.
-                                </p>
                             </div>
 
                             <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-slate-200 pt-3 text-center text-sm text-slate-500">
@@ -463,6 +470,8 @@ const sendResetLink = () => {
                                 <Link :href="route('member.facilities.index')" class="font-semibold text-[#2F6B32] hover:text-[#123D2A]">Perkhidmatan/Fasiliti</Link>
                                 <span class="text-slate-300">|</span>
                                 <Link :href="route('articles.index')" class="font-semibold text-slate-600 hover:text-slate-500">Artikel</Link>
+                                <span class="text-slate-300">|</span>
+                                <Link :href="route('faq')" class="font-semibold text-slate-600 hover:text-slate-500">Soalan Lazim</Link>
                             </div>
                         </div>
 

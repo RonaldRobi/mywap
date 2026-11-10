@@ -4,12 +4,15 @@ namespace App\Jobs;
 
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
+use App\Models\Supporter;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
+use App\Notifications\SupporterBroadcastNotification;
 use App\Services\PushNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 class SendBroadcastJob implements ShouldQueue
@@ -54,6 +57,24 @@ class SendBroadcastJob implements ShouldQueue
         $this->log($message, 'processing', null, null, 'Siaran mula diproses.');
 
         try {
+            // Pendukung (bukan ahli): emel sahaja, tidak melalui rekod User.
+            if ($message->target_criteria === 'supporters') {
+                if (! $wantEmail) {
+                    $message->update([
+                        'status' => BroadcastMessage::STATUS_FAILED,
+                        'error_message' => 'Pendukung hanya boleh menerima siaran melalui emel.',
+                        'finished_at' => now(),
+                    ]);
+                    $this->log($message, 'failed', null, null, 'Pendukung hanya boleh menerima siaran melalui emel.');
+
+                    return;
+                }
+
+                $this->sendToSupporters($message);
+
+                return;
+            }
+
             $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
 
             if ($message->target_criteria === 'all' && $message->target_organization_id) {
@@ -171,9 +192,64 @@ class SendBroadcastJob implements ShouldQueue
         }
     }
 
-    private function log(BroadcastMessage $message, string $event, ?string $channel, ?int $userId, ?string $text): void
+    private function sendToSupporters(BroadcastMessage $message): void
     {
-        try {
+        $query = Supporter::query()
+            ->where('is_active', true)
+            ->when($message->target_organization_id, fn ($q) => $q->where('organization_id', $message->target_organization_id));
+
+        $target = 0;
+        $success = 0;
+        $failed = 0;
+        $skipped = 0;
+
+        $query->orderBy('id')->chunk(200, function ($supporters) use ($message, &$target, &$success, &$failed, &$skipped) {
+            foreach ($supporters as $supporter) {
+                if (! filled($supporter->email)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $target++;
+
+                try {
+                    Notification::route('mail', $supporter->email)
+                        ->notify(new SupporterBroadcastNotification($message));
+                    $success++;
+                } catch (Throwable $e) {
+                    $failed++;
+                    $this->log($message, 'delivery_failed', 'email', null, $e->getMessage());
+                    Log::warning('SendBroadcastJob: emel Pendukung gagal.', [
+                        'broadcast_message_id' => $message->id,
+                        'email' => $supporter->email,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+
+        $status = match (true) {
+            $target > 0 && $success === 0 && $failed > 0 => BroadcastMessage::STATUS_FAILED,
+            $failed > 0 => BroadcastMessage::STATUS_PARTIAL,
+            default => BroadcastMessage::STATUS_COMPLETED,
+        };
+
+        $message->update([
+            'status' => $status,
+            'recipient_count' => $target,
+            'success_count' => $success,
+            'failed_count' => $failed,
+            'finished_at' => now(),
+            'sent_at' => $status === BroadcastMessage::STATUS_FAILED ? null : now(),
+            'error_message' => $failed > 0 ? "{$failed} emel Pendukung gagal dihantar." : null,
+        ]);
+
+        $this->log($message, $status, null, null, "Pendukung selesai: {$success} berjaya, {$failed} gagal, {$skipped} dilangkau.");
+    }
+
+    private function log(BroadcastMessage $message, string $event, ?string $channel, ?int $userId, ?string $text): void
+    {        try {
             BroadcastLog::create([
                 'broadcast_message_id' => $message->id,
                 'event' => $event,

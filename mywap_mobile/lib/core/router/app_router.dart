@@ -25,6 +25,7 @@ import '../../features/member/presentation/routes.dart';
 import '../../features/manual/presentation/routes.dart';
 import '../../features/menu/presentation/menu_screen.dart';
 import '../../features/menu/presentation/routes.dart';
+import '../../features/public/presentation/faq_screen.dart';
 import '../../features/public/presentation/public_home_screen.dart';
 import '../../features/public/presentation/public_shell.dart';
 import '../../features/financial/presentation/financial_overview_screen.dart';
@@ -61,6 +62,7 @@ bool _isProfileCompletionExempt(String location) {
 bool _isPublicLocation(String location) {
   const exact = {
     '/home',
+    '/faq',
     '/language',
     '/settings',
     '/articles',
@@ -70,6 +72,11 @@ bool _isPublicLocation(String location) {
     '/events',
     '/organization/info',
     '/scan',
+    // Katalog e-dagang boleh dilihat tetamu; checkout juga dibenarkan tanpa
+    // log masuk (guest checkout).
+    '/products',
+    '/cart',
+    '/checkout',
     // Hab menu ialah tab kelima pada kedua-dua shell. Ia merender set pautan
     // khusus tetamu apabila tiada sesi, jadi ia mesti kekal awam — jika tidak,
     // tetamu yang menekan tab Menu akan dilempar semula ke /home.
@@ -77,6 +84,7 @@ bool _isPublicLocation(String location) {
   };
   if (exact.contains(location)) return true;
   if (RegExp(r'^/(articles|news)/\d+$').hasMatch(location)) return true;
+  if (RegExp(r'^/products/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/events/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/events/\d+/attend/[^/]+$').hasMatch(location)) return true;
   if (location.startsWith('/infaq/')) return true;
@@ -175,6 +183,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state, child) => AdaptiveShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const PublicHomeScreen()),
+          GoRoute(path: '/faq', builder: (_, __) => const FaqScreen()),
           GoRoute(
             path: '/dashboard',
             builder: (_, __) => const MemberDashboardScreen(),

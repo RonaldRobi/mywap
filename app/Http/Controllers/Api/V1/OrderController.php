@@ -29,10 +29,14 @@ class OrderController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate(OrderService::checkoutRules($request->user()));
+        // Route awam: tetamu (user null) dibenarkan; ahli yang membawa token
+        // Bearer dikenali melalui guard sanctum untuk harga ahli.
+        $user = auth('sanctum')->user();
+
+        $validated = $request->validate(OrderService::checkoutRules($user));
 
         try {
-            $result = $this->orders->checkout($validated, $request->user());
+            $result = $this->orders->checkout($validated, $user);
         } catch (\Exception $e) {
             return ApiResponse::error($e->getMessage(), [], 422);
         }
