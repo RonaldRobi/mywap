@@ -1,5 +1,7 @@
 default_platform(:ios)
 
+PACKAGE_NAME = "com.mywap.mywap_mobile"
+
 def env_path(name, default)
   File.expand_path(ENV.fetch(name, default), __dir__)
 end
@@ -22,6 +24,39 @@ platform :ios do
       skip_waiting_for_build_processing: true
     )
   end
+
+  desc "Cetak build number terakhir TestFlight (untuk bump build yang selamat)"
+  lane :latest_build do
+    api_key_path = env_path("ASC_KEY_JSON", "asc_key.json")
+    UI.user_error!("Fail API key tiada: #{api_key_path}") unless File.exist?(api_key_path)
+
+    build = latest_testflight_build_number(api_key_path: api_key_path)
+    puts "LATEST_IOS_BUILD=#{build.to_i}"
+  end
+
+  desc "Hantar build ke App Store dan submit untuk review"
+  lane :submit_review do
+    api_key_path = env_path("ASC_KEY_JSON", "asc_key.json")
+    ipa = File.expand_path(
+      ENV.fetch("IPA_PATH", "../build/ios/ipa/myWAP.ipa"),
+      __dir__
+    )
+
+    UI.user_error!("Fail API key tiada: #{api_key_path}") unless File.exist?(api_key_path)
+    UI.user_error!("IPA tiada: #{ipa}") unless File.exist?(ipa)
+
+    # Hantar build + submit untuk review. automatic_release: false bermaksud
+    # selepas lulus review, awak tekan "Release" sendiri di App Store Connect.
+    deliver(
+      ipa: ipa,
+      api_key_path: api_key_path,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      skip_metadata: true,
+      skip_screenshots: true
+    )
+  end
 end
 
 platform :android do
@@ -39,12 +74,54 @@ platform :android do
     supply(
       aab: aab,
       json_key: json_key,
-      package_name: "com.mywap.mywap_mobile",
+      package_name: PACKAGE_NAME,
       track: ENV.fetch("PLAY_TRACK", "internal"),
       release_status: "completed",
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
+    )
+  end
+
+  desc "Cetak versionCode tertinggi merentas semua track Play (untuk bump selamat)"
+  lane :latest_version_code do
+    json_key = env_path("PLAY_JSON_KEY", "play_service_account.json")
+    UI.user_error!("Fail service account tiada: #{json_key}") unless File.exist?(json_key)
+
+    max_code = 0
+
+    %w[internal alpha beta production].each do |track|
+      begin
+        codes = google_play_track_version_codes(
+          json_key: json_key,
+          package_name: PACKAGE_NAME,
+          track: track
+        )
+        max_code = [max_code, *(codes || [])].max
+      rescue => e
+        UI.message("Track #{track} tidak dapat dibaca: #{e.message}")
+      end
+    end
+
+    puts "LATEST_ANDROID_CODE=#{max_code.to_i}"
+  end
+
+  desc "Promote build internal terkini ke production"
+  lane :promote_production do
+    json_key = env_path("PLAY_JSON_KEY", "play_service_account.json")
+    UI.user_error!("Fail service account tiada: #{json_key}") unless File.exist?(json_key)
+
+    supply(
+      json_key: json_key,
+      package_name: PACKAGE_NAME,
+      track: ENV.fetch("PLAY_PROMOTE_FROM", "internal"),
+      track_promote_to: "production",
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
     )
   end
 end

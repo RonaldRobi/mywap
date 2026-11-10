@@ -252,15 +252,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get menuLogoutConfirmTitle => 'Log Keluar';
 
   @override
-  String get menuLogoutConfirmMessage =>
-      'Anda pasti mahu log keluar dari myWAP?';
+  String get menuLogoutConfirmMessage => 'Anda pasti mahu log keluar dari myWAP?';
 
   @override
   String get loginFailed => 'Log masuk gagal. Sila cuba lagi.';
 
   @override
-  String get biometricAuthFailed =>
-      'Pengesahan biometrik gagal. Sila log masuk manual.';
+  String get biometricAuthFailed => 'Pengesahan biometrik gagal. Sila log masuk manual.';
 
   @override
   String get loginWelcomeTitle => 'Selamat kembali';
@@ -275,8 +273,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get loginIdentifierHint => 'Contoh: nama@emel.com atau 900101...';
 
   @override
-  String get loginIdentifierRequired =>
-      'Sila masukkan emel atau nombor kad pengenalan.';
+  String get loginIdentifierRequired => 'Sila masukkan emel atau nombor kad pengenalan.';
 
   @override
   String get passwordLabel => 'Kata Laluan';
@@ -327,8 +324,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get enableFingerprintTitle => 'Aktifkan Cap Jari?';
 
   @override
-  String get biometricPromptBody =>
-      'Log masuk lebih pantas pada masa akan datang menggunakan biometrik peranti anda.';
+  String get biometricPromptBody => 'Log masuk lebih pantas pada masa akan datang menggunakan biometrik peranti anda.';
 
   @override
   String get later => 'Nanti';
@@ -340,8 +336,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get registerTitle => 'Daftar Ahli Baharu';
 
   @override
-  String get registerSubtitle =>
-      'Isi maklumat di bawah untuk menyertai ekosistem myWAP.';
+  String get registerSubtitle => 'Isi maklumat di bawah untuk menyertai ekosistem myWAP.';
 
   @override
   String get alreadyHaveAccount => 'Sudah ada akaun?';
@@ -379,12 +374,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get icHint => 'Contoh: 900101011234';
 
   @override
-  String get icRequired =>
-      'Sila masukkan No. Kad Pengenalan atau No. Passport.';
+  String get icRequired => 'Sila masukkan No. Kad Pengenalan atau No. Passport.';
 
   @override
-  String get icInvalid =>
-      'No. IC tidak sah. Masukkan 12 digit No. Kad Pengenalan (cth: 900101011234) atau No. Passport.';
+  String get icInvalid => 'No. IC tidak sah. Masukkan 12 digit No. Kad Pengenalan (cth: 900101011234) atau No. Passport.';
 
   @override
   String get phoneOptionalLabel => 'No. Telefon (Pilihan)';
@@ -396,12 +389,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get phoneInvalid => 'No. telefon tidak sah. Contoh: 0123456789';
 
   @override
-  String get dobRequiredForIc =>
-      'Sila pilih tarikh lahir kerana No. IC tidak lengkap atau bukan format IC Malaysia.';
+  String get dobRequiredForIc => 'Sila pilih tarikh lahir kerana No. IC tidak lengkap atau bukan format IC Malaysia.';
 
   @override
-  String get dobLabelRequired =>
-      'Tarikh Lahir (Diperlukan jika No. IC bukan 12 digit)';
+  String get dobLabelRequired => 'Tarikh Lahir (Diperlukan jika No. IC bukan 12 digit)';
 
   @override
   String get selectDob => 'Pilih tarikh lahir';
@@ -410,8 +401,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get registerSuccessTitle => 'Pendaftaran Berjaya!';
 
   @override
-  String get registerSuccessSubtitle =>
-      'Akaun anda telah diaktifkan. Sila log masuk kali pertama menggunakan No. IC anda untuk menetapkan kata laluan.';
+  String get registerSuccessSubtitle => 'Akaun anda telah diaktifkan. Sila log masuk kali pertama menggunakan No. IC anda untuk menetapkan kata laluan.';
 
   @override
   String get yourMemberNo => 'NO. AHLI ANDA';
@@ -426,8 +416,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get memberNoFoundTitle => 'No. Ahli Ditemui';
 
   @override
-  String get memberNoFoundSubtitle =>
-      'Berikut adalah No. Ahli anda yang berdaftar dengan sistem.';
+  String get memberNoFoundSubtitle => 'Berikut adalah No. Ahli anda yang berdaftar dengan sistem.';
 
   @override
   String get memberNoLabel => 'No Ahli';
@@ -441,12 +430,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get forgotMemberNoTitle => 'Lupa No. Ahli';
 
   @override
-  String get forgotMemberNoVerifySubtitle =>
-      'Sahkan tarikh lahir anda untuk memaparkan No. Ahli.';
+  String get forgotMemberNoVerifySubtitle => 'Sahkan tarikh lahir anda untuk memaparkan No. Ahli.';
 
   @override
-  String get forgotMemberNoEnterIcSubtitle =>
-      'Masukkan No. Kad Pengenalan untuk mencari No. Ahli anda.';
+  String get forgotMemberNoEnterIcSubtitle => 'Masukkan No. Kad Pengenalan untuk mencari No. Ahli anda.';
 
   @override
   String get rememberMemberNo => 'Ingat No. Ahli?';
@@ -473,8 +460,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get forgotPasswordTitle => 'Lupa Kata Laluan';
 
   @override
-  String get forgotPasswordSubtitle =>
-      'Masukkan No. Kad Pengenalan anda. Kami akan hantar pautan reset ke emel berdaftar.';
+  String get forgotPasswordSubtitle => 'Masukkan No. Kad Pengenalan anda. Kami akan hantar pautan reset ke emel berdaftar.';
 
   @override
   String get rememberPassword => 'Ingat kata laluan?';
@@ -492,16 +478,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get firstLoginTitle => 'Log Masuk Kali Pertama';
 
   @override
-  String get firstLoginVerifySubtitle =>
-      'Masukkan kod 6-digit yang dihantar ke emel anda dan tetapkan kata laluan baharu.';
+  String get firstLoginVerifySubtitle => 'Masukkan kod 6-digit yang dihantar ke emel anda dan tetapkan kata laluan baharu.';
 
   @override
-  String get firstLoginNoEmailSubtitle =>
-      'Kami tidak jumpa emel berdaftar. Sila masukkan emel anda untuk terima kod OTP.';
+  String get firstLoginNoEmailSubtitle => 'Kami tidak jumpa emel berdaftar. Sila masukkan emel anda untuk terima kod OTP.';
 
   @override
-  String get firstLoginEnterIcSubtitle =>
-      'Masukkan No. Kad Pengenalan anda untuk menerima kod OTP melalui emel.';
+  String get firstLoginEnterIcSubtitle => 'Masukkan No. Kad Pengenalan anda untuk menerima kod OTP melalui emel.';
 
   @override
   String get alreadyLoggedIn => 'Sudah pernah log masuk?';
@@ -549,22 +532,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get onboardingSlide1Title => 'Selamat Datang ke myWAP';
 
   @override
-  String get onboardingSlide1Body =>
-      'Satu aplikasi untuk keahlian, program dan khidmat gerakan.';
+  String get onboardingSlide1Body => 'Satu aplikasi untuk keahlian, program dan khidmat gerakan.';
 
   @override
   String get onboardingSlide2Title => 'Semua Dalam Satu Tempat';
 
   @override
-  String get onboardingSlide2Body =>
-      'Ikuti acara, urus keahlian dan temui kemudahan organisasi anda.';
+  String get onboardingSlide2Body => 'Ikuti acara, urus keahlian dan temui kemudahan organisasi anda.';
 
   @override
   String get onboardingSlide3Title => 'Bersedia Untuk Bermula';
 
   @override
-  String get onboardingSlide3Body =>
-      'Terokai berita, artikel dan program tanpa akaun — atau daftar sebagai ahli untuk akses penuh.';
+  String get onboardingSlide3Body => 'Terokai berita, artikel dan program tanpa akaun — atau daftar sebagai ahli untuk akses penuh.';
 
   @override
   String get onboardingNext => 'Seterusnya';
@@ -579,8 +559,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get publicWelcomeTitle => 'Selamat Datang ke myWAP';
 
   @override
-  String get publicWelcomeBody =>
-      'Log masuk untuk akses penuh sebagai ahli, atau terus terokai kandungan sebagai tetamu.';
+  String get publicWelcomeBody => 'Log masuk untuk akses penuh sebagai ahli, atau terus terokai kandungan sebagai tetamu.';
 
   @override
   String get close => 'Tutup';
@@ -589,8 +568,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get loadContentError => 'Ralat memuatkan kandungan. Sila cuba lagi.';
 
   @override
-  String get publicHeroSubtitle =>
-      'Berita, artikel, program dan kempen infaq komuniti — terbuka untuk semua.';
+  String get publicHeroSubtitle => 'Berita, artikel, program dan kempen infaq komuniti — terbuka untuk semua.';
 
   @override
   String get viewAll => 'Lihat Semua';
@@ -614,8 +592,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get noLibrary => 'Tiada bahan pustaka buat masa ini.';
 
   @override
-  String get libraryMemberPrompt =>
-      'Log masuk sebagai ahli untuk membaca di Pustaka Digital.';
+  String get libraryMemberPrompt => 'Log masuk sebagai ahli untuk membaca di Pustaka Digital.';
 
   @override
   String get newsTitle => 'Info Terkini';
@@ -639,8 +616,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get becomeMemberTitle => 'Jadi Ahli myWAP';
 
   @override
-  String get becomeMemberBody =>
-      'Daftar untuk akses kad ahli, status yuran, program, usrah dan banyak lagi.';
+  String get becomeMemberBody => 'Daftar untuk akses kad ahli, status yuran, program, usrah dan banyak lagi.';
 
   @override
   String get adminFallback => 'Admin';
@@ -652,8 +628,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get loginPromptTitle => 'Log Masuk Diperlukan';
 
   @override
-  String get loginPromptBody =>
-      'Ciri ini tersedia untuk ahli. Sila log masuk atau daftar akaun untuk meneruskan.';
+  String get loginPromptBody => 'Ciri ini tersedia untuk ahli. Sila log masuk atau daftar akaun untuk meneruskan.';
 
   @override
   String get guestBannerMessage => 'Log masuk untuk akses penuh sebagai ahli.';
@@ -742,8 +717,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileIncomplete => 'Profil anda belum lengkap';
 
   @override
-  String get completeProfilePrompt =>
-      'Lengkapkan maklumat anda untuk pengalaman terbaik.';
+  String get completeProfilePrompt => 'Lengkapkan maklumat anda untuk pengalaman terbaik.';
 
   @override
   String get complete => 'Lengkapkan';
@@ -778,16 +752,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get orgFallback => 'organisasi';
 
   @override
-  String get biometricEnableFailed =>
-      'Gagal mendayakan. Pastikan Face ID / cap jari telah didaftarkan pada peranti anda.';
+  String get biometricEnableFailed => 'Gagal mendayakan. Pastikan Face ID / cap jari telah didaftarkan pada peranti anda.';
 
   @override
-  String get biometricDisableFailed =>
-      'Gagal melumpuhkan log masuk biometrik. Sila cuba lagi.';
+  String get biometricDisableFailed => 'Gagal melumpuhkan log masuk biometrik. Sila cuba lagi.';
 
   @override
-  String get biometricUnlockSubtitle =>
-      'Buka kunci akaun anda dengan biometrik peranti.';
+  String get biometricUnlockSubtitle => 'Buka kunci akaun anda dengan biometrik peranti.';
 
   @override
   String get changePassword => 'Tukar Kata Laluan';
@@ -814,8 +785,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get deleteAccount => 'Padam Akaun';
 
   @override
-  String get deleteAccountWarning =>
-      'Akaun anda akan dipadam secara kekal. Tindakan ini tidak boleh dibatalkan. Masukkan kata laluan untuk mengesahkan.';
+  String get deleteAccountWarning => 'Akaun anda akan dipadam secara kekal. Tindakan ini tidak boleh dibatalkan. Masukkan kata laluan untuk mengesahkan.';
 
   @override
   String get accountDeleted => 'Akaun anda telah dipadam.';
@@ -854,8 +824,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get showInPublicDirectory => 'Papar dalam Direktori Awam';
 
   @override
-  String get allowOthersViewProfile =>
-      'Benarkan orang lain melihat profil anda';
+  String get allowOthersViewProfile => 'Benarkan orang lain melihat profil anda';
 
   @override
   String get addressSection => 'Alamat';
@@ -896,8 +865,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get branchRequestSent =>
-      'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.';
+  String get branchRequestSent => 'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.';
 
   @override
   String fieldRequired(String field) {
@@ -920,8 +888,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get changeBranchTitle => 'Tukar Cawangan';
 
   @override
-  String get changeBranchNote =>
-      'Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.';
+  String get changeBranchNote => 'Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.';
 
   @override
   String get currentBranch => 'Cawangan sekarang';
@@ -943,12 +910,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get noOtherBranches =>
-      'Tiada cawangan lain tersedia untuk organisasi anda.';
+  String get noOtherBranches => 'Tiada cawangan lain tersedia untuk organisasi anda.';
 
   @override
-  String get branchRequestNote =>
-      'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.';
+  String get branchRequestNote => 'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.';
 
   @override
   String get sendRequest => 'Hantar Permohonan';
@@ -957,8 +922,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get completeProfileTitle => 'Lengkapkan Profil';
 
   @override
-  String get completeProfilePrompt2 =>
-      'Lengkapkan maklumat berikut untuk mengaktifkan profil anda.';
+  String get completeProfilePrompt2 => 'Lengkapkan maklumat berikut untuk mengaktifkan profil anda.';
 
   @override
   String get requiredInfoSection => 'Maklumat Wajib';
@@ -985,8 +949,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get passwordUpdated => 'Kata laluan anda telah dikemas kini.';
 
   @override
-  String get changePasswordSubtitle2 =>
-      'Kemas kini kata laluan akaun myWAP anda.';
+  String get changePasswordSubtitle2 => 'Kemas kini kata laluan akaun myWAP anda.';
 
   @override
   String get currentPasswordLabel => 'Kata Laluan Semasa *';
@@ -1040,8 +1003,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get maritalWidowed => 'Duda / Janda';
 
   @override
-  String get checkMarkedFields =>
-      'Sila semak semula maklumat yang bertanda merah.';
+  String get checkMarkedFields => 'Sila semak semula maklumat yang bertanda merah.';
 
   @override
   String get genderLabel => 'Jantina';
@@ -1264,8 +1226,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ecomOrderPaidSuccess => 'Pesanan berjaya dibuat dan dibayar.';
 
   @override
-  String get ecomOrderCreatedAwaitPayment =>
-      'Pesanan dibuat. Sila selesaikan pembayaran anda.';
+  String get ecomOrderCreatedAwaitPayment => 'Pesanan dibuat. Sila selesaikan pembayaran anda.';
 
   @override
   String get ecomOrderCreatedSuccess => 'Pesanan berjaya dibuat!';
@@ -1322,8 +1283,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get ecomParcelShippedHint =>
-      'Parcel telah dihantar — sentuh untuk Track & Terima';
+  String get ecomParcelShippedHint => 'Parcel telah dihantar — sentuh untuk Track & Terima';
 
   @override
   String get ecomOrderReceived => 'Pesanan disahkan diterima. Terima kasih!';
@@ -1332,8 +1292,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ecomPaymentSuccess => 'Pembayaran berjaya. Terima kasih!';
 
   @override
-  String get ecomPaymentIncomplete =>
-      'Pembayaran belum selesai. Sila cuba lagi.';
+  String get ecomPaymentIncomplete => 'Pembayaran belum selesai. Sila cuba lagi.';
 
   @override
   String get ecomOrderDetailTitle => 'Butiran Pesanan';
@@ -1457,8 +1416,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get facIntroTitle => 'Perkhidmatan & Fasiliti';
 
   @override
-  String get facIntroSubtitle =>
-      'Tempah ruang perkhidmatan dan fasiliti yang tersedia.';
+  String get facIntroSubtitle => 'Tempah ruang perkhidmatan dan fasiliti yang tersedia.';
 
   @override
   String facAdminRemarks(String remarks) {
@@ -1477,12 +1435,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get facErrorCompleteDateTime =>
-      'Sila lengkapkan tarikh, masa mula dan tempoh.';
+  String get facErrorCompleteDateTime => 'Sila lengkapkan tarikh, masa mula dan tempoh.';
 
   @override
-  String get facErrorSlotPast =>
-      'Slot yang dipilih telah berlalu. Sila pilih masa lain.';
+  String get facErrorSlotPast => 'Slot yang dipilih telah berlalu. Sila pilih masa lain.';
 
   @override
   String get facErrorContactRequired => 'Sila lengkapkan maklumat hubungi.';
@@ -1496,8 +1452,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get facBookingInstructions =>
-      'Langkah mudah: pilih hari, masa mula dan tempoh. Slot bertindih dengan tempahan lain akan ditolak.';
+  String get facBookingInstructions => 'Langkah mudah: pilih hari, masa mula dan tempoh. Slot bertindih dengan tempahan lain akan ditolak.';
 
   @override
   String get facSelectDay => 'Pilih Hari';
@@ -1509,8 +1464,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get facBookingDuration => 'Tempoh Tempahan';
 
   @override
-  String get facSelectStartFirst =>
-      'Pilih masa mula dahulu untuk melihat tempoh yang tersedia.';
+  String get facSelectStartFirst => 'Pilih masa mula dahulu untuk melihat tempoh yang tersedia.';
 
   @override
   String get facContactName => 'Nama Hubungi';
@@ -1576,8 +1530,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get facBookingConfirmationNote =>
-      'Anda akan menerima notifikasi sebaik tempahan disahkan. Bayaran dibuat apabila tiba di lokasi.';
+  String get facBookingConfirmationNote => 'Anda akan menerima notifikasi sebaik tempahan disahkan. Bayaran dibuat apabila tiba di lokasi.';
 
   @override
   String get facDone => 'Selesai';
@@ -1684,8 +1637,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get infaqCampaignsTitle => 'Kempen Infaq';
 
   @override
-  String get infaqIntroSubtitle =>
-      'Sertai kami dalam menyumbang dan membantu mereka yang memerlukan.';
+  String get infaqIntroSubtitle => 'Sertai kami dalam menyumbang dan membantu mereka yang memerlukan.';
 
   @override
   String get infaqActiveCampaigns => 'KEMPEN AKTIF';
@@ -1700,8 +1652,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get infaqDonationLinkInvalid => 'Pautan sumbangan tidak sah.';
 
   @override
-  String get infaqDonationLinkOpenFailed =>
-      'Tidak dapat membuka pautan sumbangan.';
+  String get infaqDonationLinkOpenFailed => 'Tidak dapat membuka pautan sumbangan.';
 
   @override
   String get infaqDetailTitle => 'Butiran Infaq';
@@ -1753,8 +1704,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get referralReferredMembers => 'Ahli Dijemput';
 
   @override
-  String get referralNoReferredMembers =>
-      'Belum ada ahli yang dijemput menggunakan pautan anda.';
+  String get referralNoReferredMembers => 'Belum ada ahli yang dijemput menggunakan pautan anda.';
 
   @override
   String get directorySearchHint => 'Cari ahli, industri, kepakaran...';
@@ -1854,8 +1804,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get newsLoginToComment =>
-      'Log masuk sebagai ahli untuk membaca dan menulis komen.';
+  String get newsLoginToComment => 'Log masuk sebagai ahli untuk membaca dan menulis komen.';
 
   @override
   String get newsCommentHint => 'Tulis komen...';
@@ -1893,8 +1842,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryRead => 'Baca';
 
   @override
-  String get libraryOpenFailed =>
-      'Buku tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
+  String get libraryOpenFailed => 'Buku tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
 
   @override
   String get libraryBookFallback => 'Buku';
@@ -1926,8 +1874,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get manualNoManuals => 'Tiada manual buat masa ini.';
 
   @override
-  String get manualIntro =>
-      'Panduan di bawah dipaparkan mengikut peranan akaun anda.';
+  String get manualIntro => 'Panduan di bawah dipaparkan mengikut peranan akaun anda.';
 
   @override
   String get manualFallback => 'Manual';
@@ -1938,8 +1885,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get manualOpenFailed =>
-      'Manual tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
+  String get manualOpenFailed => 'Manual tidak dapat dibuka. Semak sambungan internet dan cuba lagi.';
 
   @override
   String get manualPreviousPage => 'Muka surat sebelumnya';
@@ -2070,8 +2016,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get notifTypeNotification => 'Notifikasi';
 
   @override
-  String get notifNoAdditionalContent =>
-      'Tiada kandungan tambahan untuk notifikasi ini.';
+  String get notifNoAdditionalContent => 'Tiada kandungan tambahan untuk notifikasi ini.';
 
   @override
   String get notifOpenLink => 'Buka Pautan';
@@ -2086,8 +2031,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get chatTitle => 'Chat';
 
   @override
-  String get chatEmpty =>
-      'Tiada mesej lagi. Hantar mesej untuk bertanya kepada pembantu AI.';
+  String get chatEmpty => 'Tiada mesej lagi. Hantar mesej untuk bertanya kepada pembantu AI.';
 
   @override
   String get chatTyping => 'Menaip...';
@@ -2151,12 +2095,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get finPaymentDate => 'Tarikh Dibayar';
 
   @override
-  String get finFeeDueMessage =>
-      'Sila jelaskan yuran keahlian anda untuk mengekalkan status ahli yang aktif.';
+  String get finFeeDueMessage => 'Sila jelaskan yuran keahlian anda untuk mengekalkan status ahli yang aktif.';
 
   @override
-  String get finFeePaidMessage =>
-      'Yuran keahlian anda adalah LUNAS. Terima kasih atas sokongan anda.';
+  String get finFeePaidMessage => 'Yuran keahlian anda adalah LUNAS. Terima kasih atas sokongan anda.';
 
   @override
   String get finStatusActive => 'AKTIF';
@@ -2186,12 +2128,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get finPayment => 'Bayaran';
 
   @override
-  String get finPaymentSuccessThanks =>
-      'Pembayaran yuran berjaya. Terima kasih!';
+  String get finPaymentSuccessThanks => 'Pembayaran yuran berjaya. Terima kasih!';
 
   @override
-  String get finPaymentPendingGateway =>
-      'Pembayaran belum disahkan. Sila semak semula selepas selesai di gateway.';
+  String get finPaymentPendingGateway => 'Pembayaran belum disahkan. Sila semak semula selepas selesai di gateway.';
 
   @override
   String get finFeePaidSuccess => 'Yuran keahlian berjaya dibayar.';
@@ -2325,8 +2265,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminWebOnlyTitle => 'Fungsi Versi Web';
 
   @override
-  String get adminWebOnlyMessage =>
-      'Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.';
+  String get adminWebOnlyMessage => 'Untuk fungsi lebih lengkap, sila log masuk di versi PC/laptop/web.';
 
   @override
   String get adminOkButton => 'OK';
@@ -2476,8 +2415,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminAttendanceTitle => 'Kehadiran';
 
   @override
-  String get adminNoUpcomingEventsToManage =>
-      'Tiada acara akan datang untuk diuruskan.';
+  String get adminNoUpcomingEventsToManage => 'Tiada acara akan datang untuk diuruskan.';
 
   @override
   String get adminAttendanceRecorded => 'Kehadiran direkodkan.';
@@ -2538,8 +2476,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminEnterManuallyButton => 'Masukkan Secara Manual';
 
   @override
-  String get adminCameraPermissionNeeded =>
-      'Kebenaran kamera diperlukan untuk mengimbas QR.';
+  String get adminCameraPermissionNeeded => 'Kebenaran kamera diperlukan untuk mengimbas QR.';
 
   @override
   String get adminCameraUnavailable => 'Kamera tidak dapat diakses.';
@@ -2607,15 +2544,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scanThisProgram => 'program ini';
 
   @override
-  String get scanUnexpectedErrorRetry =>
-      'Ralat tidak dijangka. Sila cuba lagi.';
+  String get scanUnexpectedErrorRetry => 'Ralat tidak dijangka. Sila cuba lagi.';
 
   @override
   String get scanLoginRequiredTitle => 'Log Masuk Diperlukan';
 
   @override
-  String get scanLoginRequiredBody =>
-      'Kod kehadiran program dikesan. Sila log masuk atau daftar sebagai ahli untuk merekodkan kehadiran anda.';
+  String get scanLoginRequiredBody => 'Kod kehadiran program dikesan. Sila log masuk atau daftar sebagai ahli untuk merekodkan kehadiran anda.';
 
   @override
   String get scanCancelButton => 'Batal';
@@ -2647,8 +2582,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scanQrTitle => 'Imbas QR Kehadiran';
 
   @override
-  String get scanPointCameraHint =>
-      'Halakan kamera ke kod QR pada poster/skrin program untuk daftar hadir.';
+  String get scanPointCameraHint => 'Halakan kamera ke kod QR pada poster/skrin program untuk daftar hadir.';
 
   @override
   String get scanCloseButton => 'Tutup';
@@ -2657,15 +2591,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scanProgramAttendanceTitle => 'Kehadiran Program';
 
   @override
-  String get eventRsvpLoginPrompt =>
-      'Log masuk sebagai ahli untuk RSVP kehadiran program.';
+  String get eventRsvpLoginPrompt => 'Log masuk sebagai ahli untuk RSVP kehadiran program.';
 
   @override
   String get eventRsvpUpdated => 'RSVP berjaya dikemas kini.';
 
   @override
-  String get eventRegisterLoginPrompt =>
-      'Log masuk sebagai ahli untuk mendaftar program ini.';
+  String get eventRegisterLoginPrompt => 'Log masuk sebagai ahli untuk mendaftar program ini.';
 
   @override
   String get eventRegisterProgram => 'Daftar Program';
@@ -2696,8 +2628,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventRegisterAsParticipant => 'Daftar sebagai Peserta';
 
   @override
-  String get eventRegisterHint =>
-      'Dapat no. pendaftaran dan tempat (yuran dikenakan jika berbayar).';
+  String get eventRegisterHint => 'Dapat no. pendaftaran dan tempat (yuran dikenakan jika berbayar).';
 
   @override
   String get eventAlreadyRegistered => 'Anda sudah mendaftar';
@@ -2740,8 +2671,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventWillAttend => 'Saya Akan Hadir';
 
   @override
-  String get eventRsvpHint =>
-      'Maklum kehadiran sahaja — tiada borang pendaftaran diperlukan.';
+  String get eventRsvpHint => 'Maklum kehadiran sahaja — tiada borang pendaftaran diperlukan.';
 
   @override
   String get eventsTitle => 'Program & Acara';
@@ -2762,8 +2692,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventsEmpty => 'Tiada program dijadualkan';
 
   @override
-  String get eventsEmptyBody =>
-      'Program baharu akan muncul di sini apabila dijadualkan.';
+  String get eventsEmptyBody => 'Program baharu akan muncul di sini apabila dijadualkan.';
 
   @override
   String get myRegistrationsTitle => 'Pendaftaran Saya';
@@ -2781,8 +2710,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get attended => 'Hadir';
 
   @override
-  String get eventCompleteRequired =>
-      'Sila lengkapkan semua ruangan yang wajib.';
+  String get eventCompleteRequired => 'Sila lengkapkan semua ruangan yang wajib.';
 
   @override
   String get eventUploadSupportDoc => 'Sila muat naik dokumen sokongan.';
@@ -2791,8 +2719,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventRegistrationSuccess => 'Pendaftaran berjaya.';
 
   @override
-  String get eventRegistrationPaymentPending =>
-      'Pendaftaran dihantar. Sila lengkapkan pembayaran.';
+  String get eventRegistrationPaymentPending => 'Pendaftaran dihantar. Sila lengkapkan pembayaran.';
 
   @override
   String get eventFormNotFound => 'Borang tidak ditemui.';
@@ -2827,22 +2754,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventUploadSupportDocTitle => 'Muat Naik Dokumen Sokongan *';
 
   @override
-  String get eventUploadSupportDocHint =>
-      'Sila muat naik dokumen sokongan (cth. kad pelajar).';
+  String get eventUploadSupportDocHint => 'Sila muat naik dokumen sokongan (cth. kad pelajar).';
 
   @override
   String get eventAddonsTitle => 'Tambahan Program';
 
   @override
-  String get eventAddonsHint =>
-      'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan.';
+  String get eventAddonsHint => 'Lengkapkan pendaftaran anda dengan pilihan tambahan program. Pilih yang berkenaan.';
 
   @override
   String get eventAddonsTitleRequired => 'Tambahan Wajib & Pilihan';
 
   @override
-  String get eventAddonsHintRequired =>
-      'Lengkapi pendaftaran anda. Pilihan bertanda “Wajib” perlu disertakan; yang lain mengikut pilihan anda.';
+  String get eventAddonsHintRequired => 'Lengkapi pendaftaran anda. Pilihan bertanda “Wajib” perlu disertakan; yang lain mengikut pilihan anda.';
 
   @override
   String get eventAddonSelectOption => 'Pilih pilihan';
@@ -2886,8 +2810,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get pageNotFoundBody => 'Halaman ini tidak dijumpai';
 
   @override
-  String get pageNotFoundHint =>
-      'Sila cuba semula, atau kembali ke laman utama.';
+  String get pageNotFoundHint => 'Sila cuba semula, atau kembali ke laman utama.';
 
   @override
   String get goToHome => 'Ke Laman Utama';
@@ -2917,8 +2840,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get errorValidation => 'Sila semak semula maklumat anda.';
 
   @override
-  String get errorTooMany =>
-      'Terlalu banyak percubaan. Sila cuba lagi kemudian.';
+  String get errorTooMany => 'Terlalu banyak percubaan. Sila cuba lagi kemudian.';
 
   @override
   String get errorUnknown => 'Ralat tidak dijangka. Sila cuba lagi.';
@@ -2930,19 +2852,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get chatNoAnswer => 'Tiada jawapan.';
 
   @override
-  String get chatNotConfigured =>
-      'AI chatbot belum dikonfigurasi. Sila hubungi admin.';
+  String get chatNotConfigured => 'AI chatbot belum dikonfigurasi. Sila hubungi admin.';
 
   @override
   String get biometricLoginReason => 'Sahkan identiti anda untuk log masuk';
 
   @override
-  String get biometricEnableReason =>
-      'Sahkan Face ID / cap jari untuk mendayakan log masuk pantas';
+  String get biometricEnableReason => 'Sahkan Face ID / cap jari untuk mendayakan log masuk pantas';
 
   @override
-  String get biometricLoginMyWapReason =>
-      'Sahkan Face ID / cap jari untuk log masuk ke myWAP';
+  String get biometricLoginMyWapReason => 'Sahkan Face ID / cap jari untuk log masuk ke myWAP';
 
   @override
   String get pushChannelName => 'Notifikasi myWAP';
@@ -2984,8 +2903,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get homeGuestTitle => 'Selamat datang ke myWAP';
 
   @override
-  String get homeGuestBody =>
-      'Log masuk untuk akses kad ahli, yuran, program dan usrah. Ahli sedia ada yang belum pernah log masuk boleh aktifkan akaun dahulu.';
+  String get homeGuestBody => 'Log masuk untuk akses kad ahli, yuran, program dan usrah. Ahli sedia ada yang belum pernah log masuk boleh aktifkan akaun dahulu.';
 
   @override
   String get homeActivateMember => 'Aktifkan Ahli';
@@ -2997,58 +2915,47 @@ class AppLocalizationsMs extends AppLocalizations {
   String get faqTitle => 'Soalan Lazim';
 
   @override
-  String get faqIntro =>
-      'Jawapan ringkas tentang akaun, keahlian dan perkhidmatan myWAP.';
+  String get faqIntro => 'Jawapan ringkas tentang akaun, keahlian dan perkhidmatan myWAP.';
 
   @override
   String get faqQ1 => 'Apa itu myWAP?';
 
   @override
-  String get faqA1 =>
-      'myWAP ialah platform rasmi ahli PKPIM, ABIM dan WADAH untuk kad ahli, status yuran, program, usrah, kempen infaq dan maklumat organisasi.';
+  String get faqA1 => 'myWAP ialah platform rasmi ahli PKPIM, ABIM dan WADAH untuk kad ahli, status yuran, program, usrah, kempen infaq dan maklumat organisasi.';
 
   @override
   String get faqQ2 => 'Bagaimana saya mendaftar sebagai ahli baharu?';
 
   @override
-  String get faqA2 =>
-      'Tekan Daftar pada halaman utama, isi nama, emel, nombor kad pengenalan, nombor telefon dan tarikh lahir. Selepas pendaftaran berjaya, log masuk kali pertama menggunakan nombor kad pengenalan untuk menetapkan kata laluan.';
+  String get faqA2 => 'Tekan Daftar pada halaman utama, isi nama, emel, nombor kad pengenalan, nombor telefon dan tarikh lahir. Selepas pendaftaran berjaya, log masuk kali pertama menggunakan nombor kad pengenalan untuk menetapkan kata laluan.';
 
   @override
-  String get faqQ3 =>
-      'Saya ahli sedia ada tetapi belum pernah log masuk. Apa perlu saya buat?';
+  String get faqQ3 => 'Saya ahli sedia ada tetapi belum pernah log masuk. Apa perlu saya buat?';
 
   @override
-  String get faqA3 =>
-      'Tekan Aktifkan Ahli, masukkan nombor kad pengenalan anda dan ikut langkah untuk menerima kod OTP melalui emel berdaftar. Masukkan kod 6 digit itu dan tetapkan kata laluan baharu. Jika tiada emel berdaftar, sistem akan meminta anda menambah emel.';
+  String get faqA3 => 'Tekan Aktifkan Ahli, masukkan nombor kad pengenalan anda dan ikut langkah untuk menerima kod OTP melalui emel berdaftar. Masukkan kod 6 digit itu dan tetapkan kata laluan baharu. Jika tiada emel berdaftar, sistem akan meminta anda menambah emel.';
 
   @override
-  String get faqQ4 =>
-      'Saya terlupa kata laluan atau nombor ahli. Apa perlu saya buat?';
+  String get faqQ4 => 'Saya terlupa kata laluan atau nombor ahli. Apa perlu saya buat?';
 
   @override
-  String get faqA4 =>
-      'Pada skrin log masuk, tekan Lupa Kata Laluan untuk tetapkan semula kata laluan, atau Lupa No. Ahli untuk mendapatkan semula nombor keahlian anda.';
+  String get faqA4 => 'Pada skrin log masuk, tekan Lupa Kata Laluan untuk tetapkan semula kata laluan, atau Lupa No. Ahli untuk mendapatkan semula nombor keahlian anda.';
 
   @override
   String get faqQ5 => 'Bolehkah saya menggunakan myWAP tanpa log masuk?';
 
   @override
-  String get faqA5 =>
-      'Boleh. Sebagai tetamu, anda boleh melihat berita, artikel, video, program, kempen infaq dan maklumat organisasi. Kad ahli, status yuran, pendaftaran program dan usrah memerlukan log masuk.';
+  String get faqA5 => 'Boleh. Sebagai tetamu, anda boleh melihat berita, artikel, video, program, kempen infaq dan maklumat organisasi. Kad ahli, status yuran, pendaftaran program dan usrah memerlukan log masuk.';
 
   @override
-  String get faqQ6 =>
-      'Bagaimana saya membayar yuran dan menyumbang melalui infaq?';
+  String get faqQ6 => 'Bagaimana saya membayar yuran dan menyumbang melalui infaq?';
 
   @override
-  String get faqA6 =>
-      'Selepas log masuk, buka Menu dan pilih Yuran & Bayaran untuk melihat status dan membuat bayaran yuran. Untuk infaq, buka kempen dan tekan Sumbang Sekarang. Laman kempen akan dibuka dalam pelayar supaya anda boleh menyumbang di sana.';
+  String get faqA6 => 'Selepas log masuk, buka Menu dan pilih Yuran & Bayaran untuk melihat status dan membuat bayaran yuran. Untuk infaq, buka kempen dan tekan Sumbang Sekarang. Laman kempen akan dibuka dalam pelayar supaya anda boleh menyumbang di sana.';
 
   @override
   String get faqQ7 => 'Mengapa aplikasi meminta kebenaran notifikasi?';
 
   @override
-  String get faqA7 =>
-      'Notifikasi digunakan untuk memaklumkan anda tentang program, pengumuman dan peringatan penting. Anda boleh menukar kebenaran ini dalam tetapan peranti pada bila-bila masa.';
+  String get faqA7 => 'Notifikasi digunakan untuk memaklumkan anda tentang program, pengumuman dan peringatan penting. Anda boleh menukar kebenaran ini dalam tetapan peranti pada bila-bila masa.';
 }
