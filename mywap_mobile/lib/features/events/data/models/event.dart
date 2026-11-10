@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, invalid_annotation_target
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:mywap_mobile/core/utils/json_parsing.dart';
 import 'package:mywap_mobile/features/auth/data/models/organization.dart';
 
 part 'event.freezed.dart';
@@ -65,6 +66,7 @@ class RegistrationForm {
   final int? id;
   final String? title;
   final String? description;
+  @JsonKey(fromJson: parseDoubleValue)
   final double? price;
   @JsonKey(name: 'payment_required')
   final bool paymentRequired;

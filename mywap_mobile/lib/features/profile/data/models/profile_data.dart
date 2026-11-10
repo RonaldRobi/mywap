@@ -8,6 +8,7 @@
 // no `@JsonKey` remapping is required. Models are plain immutable classes
 // with manual `fromJson` (no freezed / build_runner).
 
+import '../../../../core/utils/json_parsing.dart';
 import '../../../../shared/models/position_badge.dart';
 
 /// Parses a list of maps into typed models.
@@ -46,7 +47,7 @@ class ProfileOrganization {
 
   factory ProfileOrganization.fromJson(Map<String, dynamic> json) {
     return ProfileOrganization(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       name: json['name'] as String?,
       slug: json['slug'] as String?,
       color_theme: json['color_theme'] as String?,
@@ -71,7 +72,7 @@ class ProfileFeeStatus {
   factory ProfileFeeStatus.fromJson(Map<String, dynamic> json) {
     return ProfileFeeStatus(
       status: json['status'] as String?,
-      amount_due: (json['amount_due'] as num?)?.toDouble(),
+      amount_due: parseDoubleValue(json['amount_due']),
       last_paid_at: json['last_paid_at'] as String?,
       last_reference: json['last_reference'] as String?,
     );
@@ -98,7 +99,7 @@ class ProfileHistoryEntry {
 
   factory ProfileHistoryEntry.fromJson(Map<String, dynamic> json) {
     return ProfileHistoryEntry(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       from_organization: _fromJsonOrNull(
         json['from_organization'],
         ProfileOrganization.fromJson,
@@ -146,7 +147,7 @@ class ProfileProgramEvent {
 
   factory ProfileProgramEvent.fromJson(Map<String, dynamic> json) {
     return ProfileProgramEvent(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       title: json['title'] as String?,
       start_formatted: json['start_formatted'] as String?,
       location_or_link: json['location_or_link'] as String?,
@@ -175,7 +176,7 @@ class ProfileAttendedProgram {
 
   factory ProfileAttendedProgram.fromJson(Map<String, dynamic> json) {
     return ProfileAttendedProgram(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       event: _fromJsonOrNull(json['event'], ProfileProgramEvent.fromJson),
       attended_at: json['attended_at'] as String?,
       attended_at_human: json['attended_at_human'] as String?,
@@ -226,7 +227,7 @@ class ProfileUser {
 
   factory ProfileUser.fromJson(Map<String, dynamic> json) {
     return ProfileUser(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       member_no: json['member_no'] as String?,
       name: json['name'] as String?,
       email: json['email'] as String?,
@@ -236,7 +237,7 @@ class ProfileUser {
           ? (json['roles'] as List).whereType<String>().toList(growable: false)
           : null,
       dob: json['dob'] as String?,
-      age: json['age'] as int?,
+      age: parseIntValue(json['age']),
       gender: json['gender'] as String?,
       marital_status: json['marital_status'] as String?,
       education_level: json['education_level'] as String?,
@@ -349,7 +350,7 @@ class CompleteMeta {
       parsedDob: json['parsedDob'] as String?,
       parsedGender: json['parsedGender'] as String?,
       branches: _parseList(json['branches'], ProfileBranch.fromJson),
-      currentBranchId: json['currentBranchId'] as int?,
+      currentBranchId: parseIntValue(json['currentBranchId']),
     );
   }
 
@@ -372,7 +373,7 @@ class ProfileBranch {
 
   factory ProfileBranch.fromJson(Map<String, dynamic> json) {
     return ProfileBranch(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       name: json['name'] as String?,
       state: json['state'] as String?,
     );
@@ -408,8 +409,11 @@ class EditMeta {
   factory EditMeta.fromJson(Map<String, dynamic> json) {
     return EditMeta(
       branches: _parseList(json['branches'], ProfileBranch.fromJson),
-      canEditIcNumber: json['canEditIcNumber'] as bool?,
-      currentBranchId: json['currentBranchId'] as int?,
+      canEditIcNumber:
+          json['canEditIcNumber'] == null
+              ? null
+              : parseBoolValue(json['canEditIcNumber']),
+      currentBranchId: parseIntValue(json['currentBranchId']),
       currentBranchName: json['currentBranchName'] as String?,
       organizationName: json['organizationName'] as String?,
       pendingBranchRequest: _fromJsonOrNull(

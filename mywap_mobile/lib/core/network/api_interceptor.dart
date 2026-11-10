@@ -54,11 +54,14 @@ ApiException mapApiError(DioException error) {
   }
 
   final body = response?.data;
+  // Utamakan mesej field spesifik (daripada `errors`) berbanding mesej generik
+  // Laravel ("The given data was invalid."), supaya pengguna nampak punca
+  // sebenar (cth. "Emel ini sudah didaftarkan.", "Akaun ini belum aktif.").
   final message = switch (body) {
-    Map<String, dynamic> data when data['message'] is String =>
-      data['message'] as String,
     Map<String, dynamic> data when data['errors'] is Map =>
       _firstValidationError(data),
+    Map<String, dynamic> data when data['message'] is String =>
+      data['message'] as String,
     _ => null,
   };
 

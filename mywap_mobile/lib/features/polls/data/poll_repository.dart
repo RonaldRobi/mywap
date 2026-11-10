@@ -1,5 +1,6 @@
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parsing.dart';
 import 'models/poll.dart';
 
 class PollRepository {
@@ -28,7 +29,7 @@ class PollRepository {
         ],
       },
     );
-    return (_asMap(data)['response_id'] as num?)?.toInt() ?? 0;
+    return parseIntValue(_asMap(data)['response_id']) ?? 0;
   }
 
   Future<PollResults> results(int id) async {

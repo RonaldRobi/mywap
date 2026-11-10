@@ -42,7 +42,7 @@ class FormService
             'id' => $form->id,
             'title' => $form->title,
             'description' => $form->description,
-            'price' => $form->price,
+            'price' => $form->price === null ? null : (float) $form->price,
             'price_tiers' => $form->tiers(),
             'items' => $form->addonsPayload(),
             'payment_required' => $form->payment_required,

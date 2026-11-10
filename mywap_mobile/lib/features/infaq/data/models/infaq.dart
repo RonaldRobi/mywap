@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 /// List item for the infaq campaign list (GET /infaq) and related items on the
 /// detail payload. Keys mirror `InfaqService::index()` / `showDetail()`.
 class Infaq {
@@ -36,21 +38,21 @@ class Infaq {
   final int? daysRunning;
 
   factory Infaq.fromJson(Map<String, dynamic> json) => Infaq(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         slug: json['slug'] as String?,
         type: json['type'] as String?,
-        targetAmount: (json['target_amount'] as num?)?.toDouble(),
-        collectedAmount: (json['collected_amount'] as num?)?.toDouble(),
-        progressPercent: (json['progress_percent'] as num?)?.toDouble(),
+        targetAmount: parseDoubleValue(json['target_amount']),
+        collectedAmount: parseDoubleValue(json['collected_amount']),
+        progressPercent: parseDoubleValue(json['progress_percent']),
         imagePath: json['image_path'] as String?,
         publicUrl: json['public_url'] as String?,
-        isExternal: (json['is_external'] as bool?) ?? false,
+        isExternal: parseBoolValue(json['is_external']),
         externalUrl: json['external_url'] as String?,
-        organizationId: json['organization_id'] as int?,
+        organizationId: parseIntValue(json['organization_id']),
         organizationName: json['organization_name'] as String?,
         organizationSlug: json['organization_slug'] as String?,
-        daysRunning: json['days_running'] as int?,
+        daysRunning: parseIntValue(json['days_running']),
       );
 }
 
@@ -105,24 +107,24 @@ class InfaqInfo {
   final String? day;
 
   factory InfaqInfo.fromJson(Map<String, dynamic> json) => InfaqInfo(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         slug: json['slug'] as String?,
         title: json['title'] as String?,
         description: json['description'] as String?,
         imagePath: json['image_path'] as String?,
         type: json['type'] as String?,
-        allowRecurring: (json['allow_recurring'] as bool?) ?? false,
-        targetAmount: (json['target_amount'] as num?)?.toDouble(),
-        collectedAmount: (json['collected_amount'] as num?)?.toDouble(),
-        progressPercent: (json['progress_percent'] as num?)?.toDouble(),
-        isExternal: (json['is_external'] as bool?) ?? false,
+        allowRecurring: parseBoolValue(json['allow_recurring']),
+        targetAmount: parseDoubleValue(json['target_amount']),
+        collectedAmount: parseDoubleValue(json['collected_amount']),
+        progressPercent: parseDoubleValue(json['progress_percent']),
+        isExternal: parseBoolValue(json['is_external']),
         externalUrl: json['external_url'] as String?,
         organizationName: json['organization_name'] as String?,
         organizationSlug: json['organization_slug'] as String?,
         organizationLogo: json['organization_logo'] as String?,
         organizationColor: json['organization_color'] as String?,
-        totalDonors: json['total_donors'] as int?,
-        daysRunning: json['days_running'] as int?,
+        totalDonors: parseIntValue(json['total_donors']),
+        daysRunning: parseIntValue(json['days_running']),
         publicUrl: json['public_url'] as String?,
         year: json['year']?.toString(),
         month: json['month']?.toString(),
@@ -175,8 +177,8 @@ class RecentDonation {
   final String? prayerMessage;
 
   factory RecentDonation.fromJson(Map<String, dynamic> json) => RecentDonation(
-        id: json['id'] as int?,
-        amount: (json['amount'] as num?)?.toDouble(),
+        id: parseIntValue(json['id']),
+        amount: parseDoubleValue(json['amount']),
         createdAt: json['created_at'] as String?,
         donorName: json['donor_name'] as String?,
         prayerMessage: json['prayer_message'] as String?,
@@ -221,13 +223,13 @@ class InfaqDonation {
         ? infaqJson
         : (infaqJson is Map ? infaqJson.cast<String, dynamic>() : const <String, dynamic>{});
     return InfaqDonation(
-      id: json['id'] as int?,
+      id: parseIntValue(json['id']),
       reference: json['reference'] as String?,
-      amount: (json['amount'] as num?)?.toDouble(),
+      amount: parseDoubleValue(json['amount']),
       status: json['status'] as String?,
       donorName: json['donor_name'] as String?,
-      isAnonymous: (json['is_anonymous'] as bool?) ?? false,
-      isRecurring: (json['is_recurring'] as bool?) ?? false,
+      isAnonymous: parseBoolValue(json['is_anonymous']),
+      isRecurring: parseBoolValue(json['is_recurring']),
       frequency: json['frequency'] as String?,
       prayerMessage: json['prayer_message'] as String?,
       createdAt: json['created_at'] as String?,
@@ -247,7 +249,7 @@ class InfaqOrganization {
   final String? slug;
 
   factory InfaqOrganization.fromJson(Map<String, dynamic> json) => InfaqOrganization(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         slug: json['slug'] as String?,
       );
@@ -268,7 +270,7 @@ class InfaqListData {
   factory InfaqListData.fromJson(Map<String, dynamic> json) => InfaqListData(
         infaqs: _parseList(json['infaqs'], Infaq.fromJson),
         organizations: _parseList(json['organizations'], InfaqOrganization.fromJson),
-        hasGlobal: (json['hasGlobal'] as bool?) ?? false,
+        hasGlobal: parseBoolValue(json['hasGlobal']),
       );
 }
 

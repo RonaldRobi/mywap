@@ -74,7 +74,11 @@ if [ "$DO_BUILD" = 1 ]; then
   fi
   if [ "$DO_ANDROID" = 1 ]; then
     echo "→ Build Android AAB…"
-    (cd "$MOBILE" && flutter build appbundle --release --dart-define=API_BASE_URL="$API_BASE_URL")
+    # Kod generated (*.g.dart / *.freezed.dart) di-ignore oleh git, jadi ia
+    # mesti dijana semula sebelum build.
+    (cd "$MOBILE" && flutter pub get \
+      && dart run build_runner build --delete-conflicting-outputs \
+      && flutter build appbundle --release --dart-define=API_BASE_URL="$API_BASE_URL")
   fi
 fi
 

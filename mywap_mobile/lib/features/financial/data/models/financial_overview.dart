@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 class FinancialOverviewData {
   const FinancialOverviewData({
     this.campaigns = const [],
@@ -39,7 +41,7 @@ class FeeStatusSummary {
 
   factory FeeStatusSummary.fromJson(Map<String, dynamic> json) => FeeStatusSummary(
         status: json['status'] as String?,
-        amount_due: (json['amount_due'] as num?)?.toDouble(),
+        amount_due: parseDoubleValue(json['amount_due']),
         last_paid_at: json['last_paid_at'] as String?,
       );
 
@@ -61,12 +63,12 @@ class FinancialCampaign {
   });
 
   factory FinancialCampaign.fromJson(Map<String, dynamic> json) => FinancialCampaign(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         slug: json['slug'] as String?,
-        target_amount: (json['target_amount'] as num?)?.toDouble(),
-        current_amount: (json['current_amount'] as num?)?.toDouble(),
-        progress_percent: (json['progress_percent'] as num?)?.toInt(),
+        target_amount: parseDoubleValue(json['target_amount']),
+        current_amount: parseDoubleValue(json['current_amount']),
+        progress_percent: parseIntValue(json['progress_percent']),
       );
 
   final int? id;
@@ -92,9 +94,9 @@ class PaymentHistoryItem {
 
   factory PaymentHistoryItem.fromJson(Map<String, dynamic> json) =>
       PaymentHistoryItem(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         payable_type: json['payable_type'] as String?,
-        amount: (json['amount'] as num?)?.toDouble(),
+        amount: parseDoubleValue(json['amount']),
         status: json['status'] as String?,
         created_at: json['created_at'] as String?,
         reference: json['reference'] as String?,

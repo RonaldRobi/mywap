@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 /// Payload from `GET /organization/info`.
 class OrganizationInfoData {
   const OrganizationInfoData({
@@ -60,16 +62,16 @@ class OrganizationDetail {
 
   factory OrganizationDetail.fromJson(Map<String, dynamic> json) =>
       OrganizationDetail(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         slug: json['slug'] as String?,
         description: json['description'] as String?,
         logo_path: json['logo_path'] as String?,
         color_theme: json['color_theme'] as String?,
-        min_age: (json['min_age'] as num?)?.toInt(),
-        max_age: (json['max_age'] as num?)?.toInt(),
-        member_count: (json['member_count'] as num?)?.toInt(),
-        chart_member_count: (json['chart_member_count'] as num?)?.toInt(),
+        min_age: parseIntValue(json['min_age']),
+        max_age: parseIntValue(json['max_age']),
+        member_count: parseIntValue(json['member_count']),
+        chart_member_count: parseIntValue(json['chart_member_count']),
         is_current: json['is_current'] == true,
         is_selected: json['is_selected'] == true,
         website_url: json['website_url'] as String?,
@@ -116,12 +118,12 @@ class OrgChartMember {
   });
 
   factory OrgChartMember.fromJson(Map<String, dynamic> json) => OrgChartMember(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         position: json['position'] as String?,
         email: json['email'] as String?,
         image_path: json['image_path'] as String?,
-        display_order: (json['display_order'] as num?)?.toInt(),
+        display_order: parseIntValue(json['display_order']),
       );
 
   final int? id;

@@ -65,7 +65,7 @@ class AuthController extends Controller
             }
 
             throw ValidationException::withMessages([
-                $field => trans('auth.failed'),
+                $field => 'Emel/No. IC atau kata laluan tidak tepat. Sila cuba lagi, atau gunakan pautan "Lupa Kata Laluan".',
             ]);
         }
 
@@ -284,6 +284,7 @@ class AuthController extends Controller
         $roles = $user->getRoleNames();
         $isAdmin = $user->hasRole(['Superadmin', 'Admin', 'Admin Cawangan']);
         $isMember = $user->hasRole('Member');
+        $hasRealEmail = ! is_null($user->email) && ! $user->emailIsPlaceholder();
 
         $hasRequestedOtp = OtpCode::where('user_id', $user->id)
             ->where('purpose', 'login')
@@ -292,8 +293,8 @@ class AuthController extends Controller
         return ApiResponse::success([
             'is_first_login' => is_null($user->first_login_at),
             'has_requested_otp' => $hasRequestedOtp,
-            'has_email' => ! is_null($user->email),
-            'masked_email' => $user->email ? $this->maskEmail($user->email) : null,
+            'has_email' => $hasRealEmail,
+            'masked_email' => $hasRealEmail ? $this->maskEmail($user->email) : null,
             'roles' => $roles,
             'is_admin' => $isAdmin,
             'is_member' => $isMember,
@@ -366,8 +367,11 @@ class AuthController extends Controller
             return ApiResponse::error('No IC/Passport tidak ditemui dalam sistem.', status: 404);
         }
 
-        if (! $user->email) {
-            return ApiResponse::error('Akaun ini tiada emel berdaftar. Sila hubungi admin.', status: 422);
+        if (! $user->email || $user->emailIsPlaceholder()) {
+            return ApiResponse::error(
+                'Akaun ini tiada emel sebenar berdaftar. Sila gunakan "Log Masuk Kali Pertama" untuk menetapkan emel, atau hubungi admin.',
+                status: 422
+            );
         }
 
         $status = Password::sendResetLink(['email' => $user->email]);
@@ -427,7 +431,7 @@ class AuthController extends Controller
             return $error;
         }
 
-        if (! $user->email) {
+        if (! $user->email || $user->emailIsPlaceholder()) {
             return ApiResponse::error('Akaun ini tiada emel berdaftar.', status: 422);
         }
 
@@ -562,17 +566,9 @@ class AuthController extends Controller
             )];
         }
 
-        $hasPreviousOtp = OtpCode::where('user_id', $user->id)
-            ->where('purpose', 'login')
-            ->exists();
-
-        if ($hasPreviousOtp) {
-            return [null, ApiResponse::error(
-                "Anda telah pun menghantar permintaan log masuk kali pertama. Sila gunakan pautan 'Lupa Kata Laluan' jika terlupa kata laluan.",
-                status: 422
-            )];
-        }
-
+        // Benarkan hantar semula OTP. OtpService::generate() membatalkan kod
+        // lama, jadi percubaan semula adalah selamat dan tidak mengunci ahli
+        // yang OTP pertamanya tamat tempoh / tidak sampai.
         return [$user, null];
     }
 

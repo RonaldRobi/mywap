@@ -46,7 +46,6 @@ const otpError = ref('');
 const otpSent = ref(false);
 const memberHasEmail = ref(false);
 const memberMaskedEmail = ref('');
-const memberHasRequestedOtp = ref(false);
 
 const biometricAlert = ref('');
 
@@ -175,15 +174,9 @@ const checkMember = async () => {
         otpForm.ic_number = form.ic_number;
 
         if (payload.is_first_login) {
-            memberHasRequestedOtp.value = payload.has_requested_otp;
             memberHasEmail.value = payload.has_email;
             memberMaskedEmail.value = payload.masked_email;
-
-            if (payload.has_requested_otp) {
-                step.value = 'member-otp-blocked';
-            } else {
-                step.value = 'member-otp-send';
-            }
+            step.value = 'member-otp-send';
         } else {
             step.value = 'member-password';
         }

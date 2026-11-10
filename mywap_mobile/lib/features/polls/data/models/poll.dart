@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 class PollSummary {
   const PollSummary({
     this.id,
@@ -26,17 +28,17 @@ class PollSummary {
   final int? myResponseId;
 
   factory PollSummary.fromJson(Map<String, dynamic> json) => PollSummary(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         description: json['description'] as String?,
         type: json['type'] as String?,
         endsAt: json['ends_at'] as String?,
         endsAtFormatted: json['ends_at_formatted'] as String?,
-        showResults: json['show_results'] as bool? ?? false,
-        isExpired: json['is_expired'] as bool? ?? false,
-        responseCount: json['response_count'] as int? ?? 0,
-        hasResponded: json['has_responded'] as bool? ?? false,
-        myResponseId: json['my_response_id'] as int?,
+        showResults: parseBoolValue(json['show_results']),
+        isExpired: parseBoolValue(json['is_expired']),
+        responseCount: parseIntValue(json['response_count']) ?? 0,
+        hasResponded: parseBoolValue(json['has_responded']),
+        myResponseId: parseIntValue(json['my_response_id']),
       );
 }
 
@@ -62,7 +64,7 @@ class PollOption {
   final String? optionText;
 
   factory PollOption.fromJson(Map<String, dynamic> json) => PollOption(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         optionText: json['option_text'] as String?,
       );
 }
@@ -79,7 +81,7 @@ class PollQuestion {
       type == 'multiple_choice' || type == 'multiple' || type == 'checkbox';
 
   factory PollQuestion.fromJson(Map<String, dynamic> json) => PollQuestion(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         questionText: json['question_text'] as String?,
         type: json['type'] as String?,
         options: _parse(json['options'], PollOption.fromJson),
@@ -110,14 +112,14 @@ class Poll {
   final List<PollQuestion> questions;
 
   factory Poll.fromJson(Map<String, dynamic> json) => Poll(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         description: json['description'] as String?,
         type: json['type'] as String?,
         endsAt: json['ends_at'] as String?,
         endsAtFormatted: json['ends_at_formatted'] as String?,
-        showResults: json['show_results'] as bool? ?? false,
-        isExpired: json['is_expired'] as bool? ?? false,
+        showResults: parseBoolValue(json['show_results']),
+        isExpired: parseBoolValue(json['is_expired']),
         questions: _parse(json['questions'], PollQuestion.fromJson),
       );
 }
@@ -139,11 +141,11 @@ class PollResultOption {
 
   factory PollResultOption.fromJson(Map<String, dynamic> json) =>
       PollResultOption(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         optionText: json['option_text'] as String?,
-        count: json['count'] as int? ?? 0,
-        percentage: (json['percentage'] as num?)?.toDouble() ?? 0,
-        widthPct: (json['width_pct'] as num?)?.toDouble() ?? 0,
+        count: parseIntValue(json['count']) ?? 0,
+        percentage: parseDoubleValue(json['percentage']) ?? 0,
+        widthPct: parseDoubleValue(json['width_pct']) ?? 0,
       );
 }
 
@@ -164,11 +166,11 @@ class PollResultQuestion {
 
   factory PollResultQuestion.fromJson(Map<String, dynamic> json) =>
       PollResultQuestion(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         questionText: json['question_text'] as String?,
         type: json['type'] as String?,
         options: _parse(json['options'], PollResultOption.fromJson),
-        totalAnswers: json['total_answers'] as int? ?? 0,
+        totalAnswers: parseIntValue(json['total_answers']) ?? 0,
       );
 }
 
@@ -190,7 +192,7 @@ class PollResults {
             ? Poll.fromJson(json['poll'] as Map<String, dynamic>)
             : null,
         questions: _parse(json['questions'], PollResultQuestion.fromJson),
-        totalResponses: json['total_responses'] as int? ?? 0,
+        totalResponses: parseIntValue(json['total_responses']) ?? 0,
         myAnswers: _parseIntList(json['my_answers']),
       );
 }

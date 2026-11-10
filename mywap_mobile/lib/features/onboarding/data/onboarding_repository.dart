@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parsing.dart';
 import '../../../shared/l10n/l10n.dart';
 
 class OnboardingSlideData {
@@ -24,7 +25,7 @@ class OnboardingSlideData {
   factory OnboardingSlideData.fromJson(
     Map<String, dynamic> json,
   ) => OnboardingSlideData(
-    order: (json['order'] as num?)?.toInt() ?? 0,
+    order: parseIntValue(json['order']) ?? 0,
     title: json['title'] as String? ?? '',
     body: json['body'] as String? ?? '',
     buttonLabel: json['button_label'] as String? ?? '',
@@ -34,11 +35,11 @@ class OnboardingSlideData {
     textColor: json['text_color'] as String? ?? '#FFFFFF',
     overlayStartColor: json['overlay_start_color'] as String? ?? '#12241C',
     overlayEndColor: json['overlay_end_color'] as String? ?? '#12241C',
-    overlayStartOpacity: (json['overlay_start_opacity'] as num?)?.toInt() ?? 0,
-    overlayEndOpacity: (json['overlay_end_opacity'] as num?)?.toInt() ?? 90,
+    overlayStartOpacity: parseIntValue(json['overlay_start_opacity']) ?? 0,
+    overlayEndOpacity: parseIntValue(json['overlay_end_opacity']) ?? 90,
     overlayStartPosition:
-        (json['overlay_start_position'] as num?)?.toInt() ?? 0,
-    overlayEndPosition: (json['overlay_end_position'] as num?)?.toInt() ?? 100,
+        parseIntValue(json['overlay_start_position']) ?? 0,
+    overlayEndPosition: parseIntValue(json['overlay_end_position']) ?? 100,
     mediaUrl: json['media_url'] as String?,
     mediaType: json['media_type'] as String?,
   );

@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 /// Payload from `GET /member/fee-status`.
 ///
 /// Envelope: `{ status: { status, amount_due, last_paid_at, last_reference },
@@ -20,10 +22,10 @@ class FeeStatus {
         statusMap is Map<String, dynamic> ? statusMap : const <String, dynamic>{};
     return FeeStatus(
       status: inner['status'] as String?,
-      amount_due: (inner['amount_due'] as num?)?.toDouble(),
+      amount_due: parseDoubleValue(inner['amount_due']),
       last_paid_at: inner['last_paid_at'] as String?,
       last_reference: inner['last_reference'] as String?,
-      fee_amount: (json['fee_amount'] as num?)?.toDouble(),
+      fee_amount: parseDoubleValue(json['fee_amount']),
     );
   }
 

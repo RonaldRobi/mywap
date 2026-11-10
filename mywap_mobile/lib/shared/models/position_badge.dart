@@ -1,3 +1,5 @@
+import '../../core/utils/json_parsing.dart';
+
 /// Jawatan ahli yang dipaparkan sebagai badge pada profil dan kad digital.
 ///
 /// Hanya jawatan aktif dengan `show_badge` dihantar oleh backend, jadi model
@@ -7,7 +9,7 @@ class PositionBadge {
 
   factory PositionBadge.fromJson(Map<String, dynamic> json) {
     return PositionBadge(
-      id: (json['id'] as num?)?.toInt(),
+      id: parseIntValue(json['id']),
       name: json['name'] as String?,
       category: json['category'] as String?,
       color: json['color'] as String?,

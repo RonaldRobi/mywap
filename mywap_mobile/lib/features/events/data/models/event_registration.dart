@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 /// Member event registration from `GET /member/registrations`.
 class EventRegistration {
   const EventRegistration({
@@ -28,7 +30,7 @@ class EventRegistration {
 
   factory EventRegistration.fromJson(Map<String, dynamic> json) =>
       EventRegistration(
-        id: (json['id'] as num?)?.toInt() ?? 0,
+        id: parseIntValue(json['id']) ?? 0,
         registrationNo: json['registration_no'] as String?,
         name: json['name'] as String?,
         status: json['status'] as String?,
@@ -61,7 +63,7 @@ class RegistrationEvent {
 
   factory RegistrationEvent.fromJson(Map<String, dynamic> json) =>
       RegistrationEvent(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         slug: json['slug'] as String?,
         startFormatted: json['start_formatted'] as String?,

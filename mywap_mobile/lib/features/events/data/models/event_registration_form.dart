@@ -1,3 +1,4 @@
+import '../../../../core/utils/json_parsing.dart';
 import '../../../forms/data/models/form_model.dart';
 import 'event.dart';
 
@@ -62,7 +63,7 @@ class EventRegistrationEvent {
 
   factory EventRegistrationEvent.fromJson(Map<String, dynamic> json) =>
       EventRegistrationEvent(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         slug: json['slug'] as String?,
         startFormatted: json['start_formatted'] as String?,

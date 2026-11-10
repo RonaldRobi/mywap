@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 /// An announcement item from `GET /member/announcements`.
 class Announcement {
   const Announcement({
@@ -21,18 +23,19 @@ class Announcement {
   factory Announcement.fromJson(Map<String, dynamic> json) {
     final rawImages = json['images'];
     return Announcement(
-      id: (json['id'] as num?)?.toInt(),
+      id: parseIntValue(json['id']),
       title: json['title'] as String?,
       content: json['content'] as String?,
-      is_pinned: json['is_pinned'] as bool?,
+      is_pinned:
+          json['is_pinned'] == null ? null : parseBoolValue(json['is_pinned']),
       published_at: json['published_at'] as String?,
       published_human: json['published_human'] as String?,
       cover_image_url: json['cover_image_url'] as String?,
       author_name: json['author_name'] as String?,
-      likes_count: (json['likes_count'] as num?)?.toInt(),
-      reads_count: (json['reads_count'] as num?)?.toInt(),
+      likes_count: parseIntValue(json['likes_count']),
+      reads_count: parseIntValue(json['reads_count']),
       user_reaction: json['user_reaction'] as String?,
-      is_read: json['is_read'] as bool?,
+      is_read: json['is_read'] == null ? null : parseBoolValue(json['is_read']),
       images: rawImages is List
           ? rawImages
               .whereType<Map<String, dynamic>>()
@@ -85,7 +88,7 @@ class AnnouncementImage {
 
   factory AnnouncementImage.fromJson(Map<String, dynamic> json) =>
       AnnouncementImage(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         url: json['url'] as String?,
         caption: json['caption'] as String?,
       );

@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 /// A public directory member. Keys match `DirectoryService::serializeDirectoryUser`.
 class DirectoryUser {
   const DirectoryUser({
@@ -22,7 +24,7 @@ class DirectoryUser {
     final org = json['organization'];
     final orgMap = org is Map<String, dynamic> ? org : const <String, dynamic>{};
     return DirectoryUser(
-      id: (json['id'] as num?)?.toInt(),
+      id: parseIntValue(json['id']),
       name: json['name'] as String?,
       industry: json['industry'] as String?,
       expertise: json['expertise'] as String?,

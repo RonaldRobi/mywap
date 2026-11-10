@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 /// A library item from `GET /member/library`.
 class LibraryItem {
   const LibraryItem({
@@ -12,7 +14,7 @@ class LibraryItem {
   });
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) => LibraryItem(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         description: json['description'] as String?,
         file_path: json['file_path'] as String?,

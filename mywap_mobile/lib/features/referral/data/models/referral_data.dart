@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 class ReferralData {
   const ReferralData({
     this.referral_link,
@@ -39,9 +41,9 @@ class ReferralStats {
   const ReferralStats({this.total = 0, this.active = 0, this.pending = 0});
 
   factory ReferralStats.fromJson(Map<String, dynamic> json) => ReferralStats(
-        total: (json['total'] as num?)?.toInt() ?? 0,
-        active: (json['active'] as num?)?.toInt() ?? 0,
-        pending: (json['pending'] as num?)?.toInt() ?? 0,
+        total: parseIntValue(json['total']) ?? 0,
+        active: parseIntValue(json['active']) ?? 0,
+        pending: parseIntValue(json['pending']) ?? 0,
       );
 
   final int total;
@@ -60,7 +62,7 @@ class ReferredMember {
   });
 
   factory ReferredMember.fromJson(Map<String, dynamic> json) => ReferredMember(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         member_no: json['member_no'] as String?,
         registered_at: json['registered_at'] as String?,

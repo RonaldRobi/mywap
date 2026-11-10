@@ -1,5 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
+
 /// A user manual from `GET /manuals`.
 ///
 /// The backend filters by the caller's role, so a member only ever receives
@@ -15,7 +17,7 @@ class Manual {
   });
 
   factory Manual.fromJson(Map<String, dynamic> json) => Manual(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         description: json['description'] as String?,
         audience: json['audience'] as String?,

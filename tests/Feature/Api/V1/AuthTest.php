@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
@@ -142,5 +143,56 @@ class AuthTest extends TestCase
             ->assertOk();
 
         $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_email_is_placeholder_only_when_local_part_matches_ic(): void
+    {
+        $this->assertFalse($this->user->emailIsPlaceholder());
+
+        $legacy = User::factory()->create([
+            'email' => strtolower('B7654321').'@mywap.my',
+            'ic_number' => 'B7654321',
+        ]);
+
+        $this->assertTrue($legacy->fresh()->emailIsPlaceholder());
+    }
+
+    public function test_send_otp_rejects_placeholder_email_so_member_can_update_it(): void
+    {
+        Queue::fake();
+
+        $legacy = User::factory()->create([
+            'email' => strtolower('B7654321').'@mywap.my',
+            'ic_number' => 'B7654321',
+            'current_organization_id' => $this->org->id,
+            'first_login_at' => null,
+        ]);
+
+        $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'B7654321'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Akaun ini tiada emel berdaftar.');
+
+        $this->postJson('/api/v1/auth/update-and-send-otp', [
+            'ic_number' => 'B7654321',
+            'email' => 'legacy@real-mail.test',
+        ])->assertOk();
+    }
+
+    public function test_send_otp_can_be_resent(): void
+    {
+        Queue::fake();
+
+        $member = User::factory()->create([
+            'email' => 'member@real-mail.test',
+            'ic_number' => 'C1111222',
+            'current_organization_id' => $this->org->id,
+            'first_login_at' => null,
+        ]);
+
+        $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
+            ->assertOk();
+
+        $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
+            ->assertOk();
     }
 }

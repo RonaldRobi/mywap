@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import '../../../../core/utils/json_parsing.dart';
 import '../../../../shared/models/position_badge.dart';
 
 /// Payload from `GET /member/card`.
@@ -49,7 +50,7 @@ class MemberCardInfo {
   factory MemberCardInfo.fromJson(Map<String, dynamic> json) {
     final org = json['organization'];
     return MemberCardInfo(
-      id: (json['id'] as num?)?.toInt(),
+      id: parseIntValue(json['id']),
       name: json['name'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,

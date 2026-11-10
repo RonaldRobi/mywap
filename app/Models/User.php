@@ -336,6 +336,28 @@ class User extends Authenticatable
     }
 
     /**
+     * Emel placeholder yang dijana semasa import ahli lama (cth.
+     * "900101011234@mywap.my") bukan peti emel sebenar. OTP / pautan reset yang
+     * dihantar ke alamat ini tidak akan sampai kepada ahli, jadi ia perlu
+     * dilayan sebagai "tiada emel" supaya ahli diminta memasukkan emel sebenar.
+     *
+     * Pengesanan: bahagian tempatan (sebelum @) sama dengan no. IC ahli (tanpa
+     * pedulikan huruf besar/kecil), dan domain ialah @mywap.my.
+     */
+    public function emailIsPlaceholder(): bool
+    {
+        $email = $this->email;
+
+        if (! $email || ! $this->ic_number || ! str_ends_with(strtolower($email), '@mywap.my')) {
+            return false;
+        }
+
+        $local = explode('@', $email, 2)[0] ?? '';
+
+        return strtoupper(trim($local)) === strtoupper(trim($this->ic_number));
+    }
+
+    /**
      * Parse DOB from Malaysian IC number (YYMMDD-PB-XXXX).
      * Returns YYYY-MM-DD string or null.
      */

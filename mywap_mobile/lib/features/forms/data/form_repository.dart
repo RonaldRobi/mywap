@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parsing.dart';
 import 'models/form_model.dart';
 
 class FormSubmitResult {
@@ -14,8 +15,8 @@ class FormSubmitResult {
 
   factory FormSubmitResult.fromJson(Map<String, dynamic> json) =>
       FormSubmitResult(
-        success: json['success'] as bool? ?? false,
-        responseId: (json['response_id'] as num?)?.toInt(),
+        success: parseBoolValue(json['success']),
+        responseId: parseIntValue(json['response_id']),
       );
 }
 

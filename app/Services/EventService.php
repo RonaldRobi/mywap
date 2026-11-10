@@ -176,7 +176,7 @@ class EventService
                 'id' => $f->id,
                 'title' => $f->title,
                 'description' => $f->description,
-                'price' => $f->price,
+                'price' => $f->price === null ? null : (float) $f->price,
                 'payment_required' => $f->payment_required,
                 'register_url' => route('events.register', ['event' => $event->slug, 'form' => $f->id]),
                 'public_url' => route('events.register.public', $f->share_token),

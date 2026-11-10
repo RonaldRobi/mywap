@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 class UsrahMember {
   const UsrahMember({this.id, this.name, this.role});
 
@@ -6,7 +8,7 @@ class UsrahMember {
   final String? role;
 
   factory UsrahMember.fromJson(Map<String, dynamic> json) => UsrahMember(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         role: json['role'] as String? ?? 'member',
       );
@@ -32,12 +34,12 @@ class UsrahGroup {
   final List<UsrahMember> members;
 
   factory UsrahGroup.fromJson(Map<String, dynamic> json) => UsrahGroup(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
         description: json['description'] as String?,
         meetingDay: json['meeting_day'] as String?,
         meetingTime: json['meeting_time'] as String?,
-        isLeader: json['is_leader'] as bool? ?? false,
+        isLeader: parseBoolValue(json['is_leader']),
         members: _parseMembers(json['members']),
       );
 }

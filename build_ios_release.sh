@@ -38,6 +38,12 @@ echo "→ flutter pub get..."
 cd "$FLUTTER_DIR"
 flutter pub get
 
+# Kod generated (*.g.dart / *.freezed.dart) di-ignore oleh git, jadi ia mesti
+# dijana semula di sini. Jika tidak, build boleh guna kod generated yang lapuk
+# dan pembetulan dalam fail sumber tidak masuk ke dalam app.
+echo "→ build_runner (jana semula kod generated)..."
+dart run build_runner build --delete-conflicting-outputs
+
 echo "→ pod install..."
 cd "$IOS_DIR"
 pod install

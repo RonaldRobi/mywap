@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parsing.dart';
 
 /// Konfigurasi loading screen (GIF + gradient) untuk apps Flutter.
 class LoadingScreenConfig {
@@ -18,12 +19,12 @@ class LoadingScreenConfig {
 
   factory LoadingScreenConfig.fromJson(Map<String, dynamic> json) =>
       LoadingScreenConfig(
-        enabled: json['enabled'] as bool? ?? true,
+        enabled: parseBoolValue(json['enabled'], fallback: true),
         gifUrl: json['gif_url'] as String?,
         logoUrl: json['logo_url'] as String?,
         backgroundStart: json['background_start'] as String? ?? '#12241C',
         backgroundEnd: json['background_end'] as String? ?? '#147A3D',
-        durationMs: (json['duration_ms'] as num?)?.toInt() ?? 2500,
+        durationMs: parseIntValue(json['duration_ms']) ?? 2500,
       );
 
   final bool enabled;

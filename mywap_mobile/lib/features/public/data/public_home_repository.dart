@@ -1,5 +1,6 @@
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parsing.dart';
 
 /// Banner dashboard yang dimuat naik oleh admin (untuk carousel Beranda).
 class PublicBanner {
@@ -11,7 +12,7 @@ class PublicBanner {
   final String? linkUrl;
 
   factory PublicBanner.fromJson(Map<String, dynamic> json) => PublicBanner(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     imagePath: json['image_path'] as String?,
     linkUrl: json['link_url'] as String?,
@@ -36,7 +37,7 @@ class PublicArticle {
   final String? publishedAt;
 
   factory PublicArticle.fromJson(Map<String, dynamic> json) => PublicArticle(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     excerpt: json['excerpt'] as String?,
     coverImagePath: json['cover_image_path'] as String?,
@@ -63,7 +64,7 @@ class PublicNews {
   final String? publishedAt;
 
   factory PublicNews.fromJson(Map<String, dynamic> json) => PublicNews(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     excerpt: json['excerpt'] as String?,
     coverImagePath: json['cover_image_path'] as String?,
@@ -81,7 +82,7 @@ class PublicVideo {
   final String? thumbnailUrl;
 
   factory PublicVideo.fromJson(Map<String, dynamic> json) => PublicVideo(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     youtubeId: json['youtube_id'] as String?,
     thumbnailUrl: json['thumbnail_url'] as String?,
@@ -108,7 +109,7 @@ class PublicLibraryItem {
 
   factory PublicLibraryItem.fromJson(Map<String, dynamic> json) =>
       PublicLibraryItem(
-        id: (json['id'] as num?)?.toInt(),
+        id: parseIntValue(json['id']),
         title: json['title'] as String?,
         category: json['category'] as String?,
         filePath: json['file_path'] as String?,
@@ -134,7 +135,7 @@ class PublicEvent {
   final String? organizationName;
 
   factory PublicEvent.fromJson(Map<String, dynamic> json) => PublicEvent(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     locationOrLink: json['location_or_link'] as String?,
     startFormatted: json['start_formatted'] as String?,
@@ -165,13 +166,13 @@ class PublicInfaq {
   final String? organizationName;
 
   factory PublicInfaq.fromJson(Map<String, dynamic> json) => PublicInfaq(
-    id: (json['id'] as num?)?.toInt(),
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     slug: json['slug'] as String?,
     imagePath: json['image_path'] as String?,
-    targetAmount: (json['target_amount'] as num?)?.toDouble(),
-    collectedAmount: (json['collected_amount'] as num?)?.toDouble(),
-    progressPercent: (json['progress_percent'] as num?)?.toDouble(),
+    targetAmount: parseDoubleValue(json['target_amount']),
+    collectedAmount: parseDoubleValue(json['collected_amount']),
+    progressPercent: parseDoubleValue(json['progress_percent']),
     organizationName: json['organization_name'] as String?,
   );
 }

@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parsing.dart';
+
 class FormQuestion {
   const FormQuestion({
     this.id,
@@ -21,11 +23,11 @@ class FormQuestion {
   bool get isMultipleChoice => type == 'checkbox';
 
   factory FormQuestion.fromJson(Map<String, dynamic> json) => FormQuestion(
-    id: json['id'] as int?,
+    id: parseIntValue(json['id']),
     label: json['label'] as String?,
     type: json['type'] as String?,
     options: _parseStrings(json['options']),
-    required: json['required'] as bool? ?? false,
+    required: parseBoolValue(json['required']),
     placeholder: json['placeholder'] as String?,
     helpText: json['help_text'] as String?,
   );
@@ -42,10 +44,10 @@ class FormAddonVariant {
 
   factory FormAddonVariant.fromJson(Map<String, dynamic> json) =>
       FormAddonVariant(
-        id: json['id'] as int?,
+        id: parseIntValue(json['id']),
         name: json['name'] as String?,
-        price: (json['price'] as num?)?.toDouble(),
-        stock: json['stock'] as int?,
+        price: parseDoubleValue(json['price']),
+        stock: parseIntValue(json['stock']),
       );
 }
 
@@ -74,14 +76,14 @@ class FormAddon {
   final List<FormAddonVariant> variants;
 
   factory FormAddon.fromJson(Map<String, dynamic> json) => FormAddon(
-    id: json['id'] as int?,
+    id: parseIntValue(json['id']),
     name: json['name'] as String?,
     description: json['description'] as String?,
-    price: (json['price'] as num?)?.toDouble(),
-    stock: json['stock'] as int?,
+    price: parseDoubleValue(json['price']),
+    stock: parseIntValue(json['stock']),
     imageUrl: json['image_url'] as String?,
-    hasVariants: json['has_variants'] as bool? ?? false,
-    isRequired: json['is_required'] as bool? ?? false,
+    hasVariants: parseBoolValue(json['has_variants']),
+    isRequired: parseBoolValue(json['is_required']),
     variants: _parseAddonVariants(json['variants']),
   );
 
@@ -132,15 +134,15 @@ class FormModel {
   final String? redirectTo;
 
   factory FormModel.fromJson(Map<String, dynamic> json) => FormModel(
-    id: json['id'] as int?,
+    id: parseIntValue(json['id']),
     title: json['title'] as String?,
     description: json['description'] as String?,
-    price: (json['price'] as num?)?.toDouble(),
+    price: parseDoubleValue(json['price']),
     tiers: _parseTiers(json['price_tiers']),
     addons: _parseAddons(json['items']),
-    paymentRequired: json['payment_required'] as bool? ?? false,
+    paymentRequired: parseBoolValue(json['payment_required']),
     terms: json['terms'] as String?,
-    eventId: json['event_id'] as int?,
+    eventId: parseIntValue(json['event_id']),
     shareToken: json['share_token'] as String?,
     organizationName: json['organization_name'] as String?,
     branchOptions: _parseStrings(json['branch_options']),
@@ -167,9 +169,9 @@ class FormTier {
 
   factory FormTier.fromJson(Map<String, dynamic> json) => FormTier(
     label: json['label'] as String?,
-    price: (json['price'] as num?)?.toDouble(),
-    isDefault: json['is_default'] as bool? ?? false,
-    requiresDocument: json['requires_document'] as bool? ?? false,
+    price: parseDoubleValue(json['price']),
+    isDefault: parseBoolValue(json['is_default']),
+    requiresDocument: parseBoolValue(json['requires_document']),
     description: json['description'] as String?,
   );
 }

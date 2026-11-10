@@ -1,4 +1,5 @@
 import '../../../../core/constants/app_env.dart';
+import '../../../../core/utils/json_parsing.dart';
 
 /// Plain immutable model for a bookable facility (§ FLUTTER_PLAN facilities).
 class Facility {
@@ -33,19 +34,20 @@ class Facility {
   final bool? isActive;
 
   factory Facility.fromJson(Map<String, dynamic> json) => Facility(
-    id: json['id'] as int?,
-    organizationId: json['organization_id'] as int?,
+    id: parseIntValue(json['id']),
+    organizationId: parseIntValue(json['organization_id']),
     organizationName: json['organization_name'] as String?,
     name: json['name'] as String?,
     description: json['description'] as String?,
     location: json['location'] as String?,
     type: json['type'] as String?,
-    pricePerUnit: (json['price_per_unit'] as num?)?.toDouble(),
-    memberPricePerUnit: (json['member_price_per_unit'] as num?)?.toDouble(),
-    capacity: json['capacity'] as int?,
+    pricePerUnit: parseDoubleValue(json['price_per_unit']),
+    memberPricePerUnit: parseDoubleValue(json['member_price_per_unit']),
+    capacity: parseIntValue(json['capacity']),
     imagePath: json['image_path'] as String?,
     media: _parseMedia(json['media']),
-    isActive: json['is_active'] as bool?,
+    isActive:
+        json['is_active'] == null ? null : parseBoolValue(json['is_active']),
   );
 
   /// Primary display image URL (media first, else image_path).
@@ -91,7 +93,7 @@ class FacilityMedia {
   final String? caption;
 
   factory FacilityMedia.fromJson(Map<String, dynamic> json) => FacilityMedia(
-    id: json['id'] as int?,
+    id: parseIntValue(json['id']),
     path: json['path'] as String?,
     caption: json['caption'] as String?,
   );
@@ -124,13 +126,13 @@ class FacilityBooking {
 
   factory FacilityBooking.fromJson(Map<String, dynamic> json) =>
       FacilityBooking(
-        id: json['id'] as int?,
-        facilityId: json['facility_id'] as int?,
+        id: parseIntValue(json['id']),
+        facilityId: parseIntValue(json['facility_id']),
         facilityName: json['facility_name'] as String?,
         organizationName: json['organization_name'] as String?,
         startDatetime: json['start_datetime'] as String?,
         endDatetime: json['end_datetime'] as String?,
-        totalPrice: (json['total_price'] as num?)?.toDouble(),
+        totalPrice: parseDoubleValue(json['total_price']),
         bookingStatus: json['booking_status'] as String?,
         paymentStatus: json['payment_status'] as String?,
         adminRemarks: json['admin_remarks'] as String?,
@@ -155,7 +157,7 @@ class FacilityListData {
           json['myBookings'],
           FacilityBooking.fromJson,
         ),
-        isMember: json['isMember'] as bool? ?? false,
+        isMember: parseBoolValue(json['isMember']),
       );
 }
 
@@ -186,7 +188,7 @@ class FacilityDetailData {
           json['myBookings'],
           FacilityBooking.fromJson,
         ),
-        isMember: json['isMember'] as bool? ?? false,
+        isMember: parseBoolValue(json['isMember']),
       );
 }
 
@@ -202,7 +204,7 @@ class BookingResult {
         json['booking'] is Map<String, dynamic>
             ? FacilityBooking.fromJson(json['booking'] as Map<String, dynamic>)
             : null,
-    totalPrice: (json['total_price'] as num?)?.toDouble(),
+    totalPrice: parseDoubleValue(json['total_price']),
     bookingStatus: json['booking_status'] as String?,
   );
 }

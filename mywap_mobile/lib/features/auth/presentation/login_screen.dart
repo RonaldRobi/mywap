@@ -25,6 +25,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   String? _error;
   bool _bioSubmitting = false;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -35,26 +36,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
+    final identifier = _identifierController.text.trim();
+
+    // Kenal pasti akaun dahulu: ahli lama yang belum pernah log masuk perlu
+    // melalui aliran OTP "Log Masuk Kali Pertama", bukan dilempar ralat
+    // "kata laluan salah". Jika semakan gagal (cth. offline/404), teruskan
+    // log masuk biasa di bawah.
+    try {
+      final info =
+          await ref.read(authRepositoryProvider).checkMember(identifier);
+      if (!mounted) return;
+      if (info['is_first_login'] == true) {
+        setState(() => _busy = false);
+        await context.push(
+          '/first-login?ic=${Uri.encodeQueryComponent(identifier)}',
+        );
+        return;
+      }
+    } catch (_) {
+      // Abaikan dan cuba log masuk biasa.
+    }
+
+    if (!mounted) return;
     final ok = await ref
         .read(authControllerProvider.notifier)
         .login(
-          email: _identifierController.text,
-          icNumber: _identifierController.text,
+          email: identifier,
+          icNumber: identifier,
           password: _passwordController.text,
         );
-    if (!ok && mounted) {
+    if (!mounted) return;
+    if (!ok) {
       final auth = ref.read(authControllerProvider);
-      setState(
-        () =>
-            _error =
-                auth is AuthUnauthenticated && auth.error != null
-                    ? auth.error!
-                    : context.l10n.loginFailed,
-      );
+      setState(() {
+        _busy = false;
+        _error =
+            auth is AuthUnauthenticated && auth.error != null
+                ? auth.error!
+                : context.l10n.loginFailed;
+      });
       return;
     }
-    if (mounted) await BiometricPrompt.offerEnable(context, ref);
+    setState(() => _busy = false);
+    await BiometricPrompt.offerEnable(context, ref);
   }
 
   Future<void> _loginWithBiometrics() async {
@@ -83,7 +111,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ref.watch(mobileAuthConfigurationProvider).valueOrNull?.login ??
         fallback;
     final accent = _parseColor(branding.accent);
-    final isSubmitting = ref.watch(authControllerProvider) is AuthLoading;
+    final isSubmitting =
+        _busy || ref.watch(authControllerProvider) is AuthLoading;
 
     return Scaffold(
       body: AuthCanvasBackground(
