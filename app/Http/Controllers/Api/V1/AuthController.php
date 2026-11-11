@@ -164,8 +164,14 @@ class AuthController extends Controller
             &$user, $prefix, $padding, $request, $normalizedIcNumber, $dob, $gender,
             $organization, $branchId, $referrer
         ) {
+            // PostgreSQL tidak membenarkan FOR UPDATE pada query aggregate
+            // (`max(...)`), jadi kunci baris organisasi sebagai ganti untuk
+            // menyirikan penjanaan no. ahli antara pendaftaran serentak.
+            if ($organization) {
+                Organization::whereKey($organization->getKey())->lockForUpdate()->first();
+            }
+
             $max = User::where('member_no', 'like', $prefix.'%')
-                ->lockForUpdate()
                 ->max('member_no_sequence');
             $next = ($max ?? 0) + 1;
             $memberNo = $prefix.str_pad($next, $padding, '0', STR_PAD_LEFT);
