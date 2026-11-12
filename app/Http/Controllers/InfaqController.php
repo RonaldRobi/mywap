@@ -27,9 +27,13 @@ class InfaqController extends Controller
 
     // ─── Superadmin: list all infaq ─────────────────────────────────────────
 
-    public function manage(): Response
+    public function manage(Request $request): Response
     {
+        $user = $request->user();
+        $isSuperadmin = $user->isSuperadmin();
+
         $items = Infaq::query()
+            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->with('organization:id,name,slug')
             ->withCount('donations')
             ->orderBy('display_order')
@@ -81,6 +85,11 @@ class InfaqController extends Controller
 
         $isExternal = filled($data['external_url'] ?? null);
 
+        $user = $request->user();
+        $organizationId = $user->isSuperadmin()
+            ? ($data['organization_id'] ?? null)
+            : $user->current_organization_id;
+
         $imagePath = null;
         if ($request->hasFile('infaq_image')) {
             $storedPath = $request->file('infaq_image')->store('infaq', 'public');
@@ -88,7 +97,7 @@ class InfaqController extends Controller
         }
 
         Infaq::create([
-            'organization_id' => $data['organization_id'] ?? null,
+            'organization_id' => $organizationId,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -109,6 +118,12 @@ class InfaqController extends Controller
 
     public function update(Request $request, Infaq $infaq): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(
+            ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
+            403
+        );
+
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
@@ -139,7 +154,9 @@ class InfaqController extends Controller
         }
 
         $infaq->update([
-            'organization_id' => $data['organization_id'] ?? null,
+            'organization_id' => $user->isSuperadmin()
+                ? ($data['organization_id'] ?? null)
+                : $user->current_organization_id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -156,8 +173,14 @@ class InfaqController extends Controller
 
     // ─── Superadmin: delete ──────────────────────────────────────────────────
 
-    public function destroy(Infaq $infaq): RedirectResponse
+    public function destroy(Request $request, Infaq $infaq): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(
+            ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
+            403
+        );
+
         if ($infaq->image_path) {
             $oldRel = ltrim(str_replace('/storage/', '', parse_url($infaq->image_path, PHP_URL_PATH) ?? ''), '/');
             if ($oldRel && Storage::disk('public')->exists($oldRel)) {
@@ -172,8 +195,10 @@ class InfaqController extends Controller
 
     // ─── Superadmin: seed demo data ──────────────────────────────────────────
 
-    public function seedDemo(): RedirectResponse
+    public function seedDemo(Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->isSuperadmin(), 403);
+
         $seeds = [
             [
                 'title' => 'Infaq Masjid Al-Iman',
@@ -343,8 +368,14 @@ SVG;
         return response($png, 200, ['Content-Type' => 'image/png']);
     }
 
-    public function donors(Infaq $infaq): Response
+    public function donors(Request $request, Infaq $infaq): Response
     {
+        $user = $request->user();
+        abort_if(
+            ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
+            403
+        );
+
         $donations = InfaqDonation::query()
             ->where('infaq_id', $infaq->id)
             ->with('user:id,name,email')

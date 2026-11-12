@@ -709,7 +709,7 @@ function submitEdit() {
 const showImportModal = ref(false);
 const importForm = useForm({
     excel_file: null,
-    organization_id: '',
+    organization_id: props.isSuperadmin ? '' : (props.defaultOrganizationId ?? ''),
 });
 const excelFileInput = ref(null);
 
@@ -968,7 +968,7 @@ async function finishImport() {
                         </transition>
                     </div>
                     <button
-                        v-if="isSuperadmin && !trashed"
+                        v-if="!trashed"
                         @click="triggerExcelImport"
                         :disabled="importForm.processing"
                         class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-all hover:-translate-y-0.5 disabled:opacity-50"
@@ -979,7 +979,7 @@ async function finishImport() {
                     <input type="file" ref="excelFileInput" class="hidden" accept=".xlsx,.xls,.csv" @change="handleExcelUpload">
 
                     <button
-                        v-if="isSuperadmin && !trashed"
+                        v-if="!trashed"
                         @click="showMemberForm = !showMemberForm"
                         class="inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-gray-800 transition-all hover:-translate-y-0.5"
                     >
@@ -999,7 +999,7 @@ async function finishImport() {
                 leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                 leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-                <section v-if="showMemberForm && isSuperadmin" class="relative rounded-3xl border border-gray-100 bg-white p-6 shadow-xl shadow-gray-200/40">
+                <section v-if="showMemberForm" class="relative rounded-3xl border border-gray-100 bg-white p-6 shadow-xl shadow-gray-200/40">
                     <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitMember">
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Nama Penuh</label>
@@ -1025,7 +1025,7 @@ async function finishImport() {
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Tarikh Lahir</label>
                             <input v-model="memberForm.dob" type="date" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all" required>
                             <p v-if="memberForm.errors.dob" class="mt-1 text-xs text-red-600">{{ memberForm.errors.dob }}</p>
-                            <p v-if="inferredOrganization" class="mt-1.5 text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                            <p v-if="inferredOrganization && isSuperadmin" class="mt-1.5 text-xs font-semibold text-emerald-600 flex items-center gap-1">
                                 <svg class="w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 Disusun ke: {{ inferredOrganization.name }}
                             </p>
@@ -1317,10 +1317,10 @@ async function finishImport() {
                                         <button @click="viewProfile(member)" class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
                                             Profil
                                         </button>
-                                        <button v-if="isSuperadmin" @click="restoreMember(member)" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                                        <button @click="restoreMember(member)" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
                                             Pulihkan
                                         </button>
-                                        <button v-if="isSuperadmin" @click="openDeleteModal(member, 'force')" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors">
+                                        <button @click="openDeleteModal(member, 'force')" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors">
                                             Padam Kekal
                                         </button>
                                     </div>
@@ -1341,11 +1341,11 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 Lihat Kad Ahli
                                             </a>
-                                            <button v-if="isSuperadmin" @click="openIcModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                            <button @click="openIcModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                                                 Update IC
                                             </button>
-                                            <button v-if="isSuperadmin" @click="resetPassword(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                            <button @click="resetPassword(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                                                 Reset Kata Laluan
                                             </button>
@@ -1357,7 +1357,7 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
                                             </button>
-                                            <button v-if="isSuperadmin" @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
+                                            <button @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 Padam Ahli
                                             </button>
@@ -1955,8 +1955,8 @@ async function finishImport() {
                                         <input v-model="editForm.email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0" required>
                                     </div>
                                     <div>
-                                        <label class="mb-1 block text-xs font-semibold text-gray-500">No Ahli <span v-if="!isSuperadmin" class="text-gray-300">(readonly)</span></label>
-                                        <input v-model="editForm.member_no" :readonly="!isSuperadmin" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0 disabled:bg-gray-50 disabled:text-gray-400">
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">No Ahli</label>
+                                        <input v-model="editForm.member_no" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0 disabled:bg-gray-50 disabled:text-gray-400">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">No IC</label>
@@ -2072,7 +2072,7 @@ async function finishImport() {
                                 </div>
                             </div>
 
-                            <div v-if="isSuperadmin" class="p-4 rounded-2xl border border-teal-100 bg-teal-50/50">
+                            <div class="p-4 rounded-2xl border border-teal-100 bg-teal-50/50">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input v-model="editForm.is_branch_admin" type="checkbox" class="rounded border-teal-300 text-teal-600 focus:ring-teal-500" />
                                     <div>

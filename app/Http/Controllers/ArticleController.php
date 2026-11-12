@@ -29,9 +29,12 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function adminIndex()
+    public function adminIndex(Request $request)
     {
+        $user = $request->user();
+
         $articles = Article::with(['author', 'organization', 'categories', 'tags'])
+            ->when(! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->latest('created_at')
             ->paginate(15);
 
@@ -41,22 +44,27 @@ class ArticleController extends Controller
         ]);
     }
 
-    public function adminCreate()
+    public function adminCreate(Request $request)
     {
+        $user = $request->user();
+
         return Inertia::render('Admin/Articles/Create', [
-            'organizations' => Organization::all(),
+            'organizations' => $this->manageableOrganizations($user),
             'categories' => ArticleCategory::orderBy('name')->get(),
             'tags' => ArticleTag::orderBy('name')->get(),
         ]);
     }
 
-    public function adminEdit(Article $article)
+    public function adminEdit(Request $request, Article $article)
     {
+        $user = $request->user();
+        $this->authorizeArticleAccess($user, $article->organization_id);
+
         $article->load(['author', 'organization', 'categories', 'tags', 'media', 'meta']);
 
         return Inertia::render('Admin/Articles/Edit', [
             'article' => $article,
-            'organizations' => Organization::all(),
+            'organizations' => $this->manageableOrganizations($user),
             'categories' => ArticleCategory::orderBy('name')->get(),
             'tags' => ArticleTag::orderBy('name')->get(),
         ]);
@@ -145,6 +153,11 @@ class ArticleController extends Controller
         }
         unset($validated['cover_image']);
 
+        $user = $request->user();
+        $validated['organization_id'] = $user->isSuperadmin()
+            ? ($validated['organization_id'] ?? null)
+            : $user->current_organization_id;
+
         $validated['author_id'] = auth()->id();
         $validated['slug'] = Str::slug($validated['title']).'-'.uniqid();
         $validated['is_published'] = filter_var($request->input('is_published', false), FILTER_VALIDATE_BOOLEAN);
@@ -188,6 +201,9 @@ class ArticleController extends Controller
 
     public function update(Request $request, Article $article)
     {
+        $user = $request->user();
+        $this->authorizeArticleAccess($user, $article->organization_id);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'organization_id' => 'nullable|exists:organizations,id',
@@ -228,6 +244,10 @@ class ArticleController extends Controller
         $galleryFiles = $request->file('gallery', []);
         unset($validated['gallery']);
 
+        $validated['organization_id'] = $user->isSuperadmin()
+            ? ($validated['organization_id'] ?? null)
+            : $user->current_organization_id;
+
         $article->update($validated);
 
         if (isset($categoryIds)) {
@@ -250,8 +270,10 @@ class ArticleController extends Controller
         return back()->with('success', 'Artikel berjaya dikemaskini.');
     }
 
-    public function destroy(Article $article)
+    public function destroy(Request $request, Article $article)
     {
+        $this->authorizeArticleAccess($request->user(), $article->organization_id);
+
         if ($article->cover_image_path) {
             Storage::disk('public')->delete(str_replace('/storage/', '', $article->cover_image_path));
         }
@@ -266,12 +288,35 @@ class ArticleController extends Controller
             ->with('success', 'Artikel berjaya dipadam.');
     }
 
-    public function deleteMedia(ArticleMedia $media)
+    public function deleteMedia(Request $request, ArticleMedia $media)
     {
+        $media->loadMissing('article');
+        $this->authorizeArticleAccess($request->user(), $media->article?->organization_id);
+
         Storage::disk('public')->delete(str_replace('/storage/', '', $media->path));
         $media->delete();
 
         return back()->with('success', 'Gambar berjaya dipadam.');
+    }
+
+    /**
+     * Organisation admins may only touch articles that belong to their own
+     * organisation. Global articles (organization_id null) are Superadmin-only.
+     */
+    private function authorizeArticleAccess($user, ?int $organizationId): void
+    {
+        if ($user->isSuperadmin()) {
+            return;
+        }
+
+        abort_if((int) $organizationId !== (int) $user->current_organization_id, 403);
+    }
+
+    private function manageableOrganizations($user)
+    {
+        return $user->isSuperadmin()
+            ? Organization::orderBy('name')->get()
+            : Organization::where('id', $user->current_organization_id)->get();
     }
 
     private function syncTags($tagNames)

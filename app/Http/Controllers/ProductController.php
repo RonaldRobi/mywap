@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Services\ProductService;
@@ -20,7 +19,7 @@ class ProductController extends Controller
 
         return Inertia::render('Ecommerce/Products/Index', [
             'products' => $this->products->list($request, $request->user(), $isMall),
-            'categories' => $this->products->categoryOptions(),
+            'categories' => $this->products->categoryOptions($request->user()),
             'filters' => $request->only(['search', 'category_id', 'sort', 'status']),
             'isMall' => $isMall,
         ]);
@@ -31,7 +30,7 @@ class ProductController extends Controller
         $this->authorize('create', Product::class);
 
         return Inertia::render('Ecommerce/Products/Create', [
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => $this->products->categoryOptions($request->user()),
             ...$this->organizationProps($request),
         ]);
     }
@@ -88,7 +87,7 @@ class ProductController extends Controller
 
         return Inertia::render('Ecommerce/Products/Edit', [
             'product' => $product,
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => $this->products->categoryOptions($request->user()),
             ...$this->organizationProps($request),
         ]);
     }

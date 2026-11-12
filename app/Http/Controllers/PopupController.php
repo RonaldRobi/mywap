@@ -91,6 +91,8 @@ class PopupController extends Controller
 
     public function update(Request $request, Popup $popup): RedirectResponse
     {
+        $this->authorizePopupAccess($request->user(), $popup);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
@@ -138,8 +140,10 @@ class PopupController extends Controller
         return back()->with('success', 'Popup berjaya dikemas kini.');
     }
 
-    public function destroy(Popup $popup): RedirectResponse
+    public function destroy(Request $request, Popup $popup): RedirectResponse
     {
+        $this->authorizePopupAccess($request->user(), $popup);
+
         if ($popup->image_path) {
             $oldPath = ltrim(str_replace('/storage/', '', parse_url($popup->image_path, PHP_URL_PATH) ?? ''), '/');
             if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
@@ -150,5 +154,18 @@ class PopupController extends Controller
         $popup->delete();
 
         return back()->with('success', 'Popup berjaya dipadam.');
+    }
+
+    /**
+     * An organisation admin may only edit/delete popups that belong to their
+     * own organisation. Superadmin may manage every popup.
+     */
+    private function authorizePopupAccess($user, Popup $popup): void
+    {
+        if ($user->isSuperadmin()) {
+            return;
+        }
+
+        abort_if((int) $popup->organization_id !== (int) $user->current_organization_id, 403);
     }
 }

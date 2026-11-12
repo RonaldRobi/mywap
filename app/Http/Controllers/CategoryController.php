@@ -11,10 +11,11 @@ class CategoryController extends Controller
 {
     public function __construct(private readonly ProductService $products) {}
 
-    public function index()
+    public function index(Request $request)
     {
         return Inertia::render('Ecommerce/Categories/Index', [
-            'categories' => $this->products->categories(),
+            'categories' => $this->products->categories($request->user()),
+            'isSuperadmin' => $request->user()->isSuperadmin(),
         ]);
     }
 
@@ -32,7 +33,15 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
-        Category::create($request->only('name', 'description'));
+
+        $user = $request->user();
+
+        Category::create([
+            ...$request->only('name', 'description'),
+            // Superadmin creates shared/global categories; org admins create
+            // categories that belong to their own organisation.
+            'organization_id' => $user->isSuperadmin() ? null : $user->current_organization_id,
+        ]);
 
         return redirect()->route('categories.index')->with('success', 'Kategori berjaya ditambah!');
     }

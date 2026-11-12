@@ -12,7 +12,18 @@ class DonorController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Donor::query()->orderByDesc('last_donated_at');
+        $user = $request->user();
+        $isSuperadmin = $user->isSuperadmin();
+        $orgId = (int) $user->current_organization_id;
+
+        // Donors are a platform-wide aggregate, so an organisation admin may
+        // only see donors who actually donated to their own organisation.
+        $base = Donor::query();
+        if (! $isSuperadmin) {
+            $base->whereHas('donations.infaq', fn ($q) => $q->where('organization_id', $orgId));
+        }
+
+        $query = (clone $base)->orderByDesc('last_donated_at');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -32,23 +43,46 @@ class DonorController extends Controller
             };
         }
 
+        if (! $isSuperadmin) {
+            $scopedConfirmed = fn ($q) => $q->where('status', 'confirmed')
+                ->whereHas('infaq', fn ($q2) => $q2->where('organization_id', $orgId));
+            $query->withSum(['donations as scoped_total' => $scopedConfirmed], 'amount')
+                ->withCount(['donations as scoped_count' => $scopedConfirmed]);
+        }
+
         $donors = $query->paginate(25)->withQueryString()->through(fn (Donor $d) => [
             'id' => $d->id,
             'name' => $d->name,
             'email' => $d->email,
             'phone' => $d->phone,
-            'total_donated' => (float) $d->total_donated,
-            'donation_count' => $d->donation_count,
+            'total_donated' => $isSuperadmin ? (float) $d->total_donated : (float) ($d->scoped_total ?? 0),
+            'donation_count' => $isSuperadmin ? $d->donation_count : (int) ($d->scoped_count ?? 0),
             'last_donated_at' => $d->last_donated_at?->toDateTimeString(),
             'user_id' => $d->user_id,
         ]);
 
-        $summary = [
-            'total_donors' => Donor::count(),
-            'total_amount' => Donor::sum('total_donated'),
-            'total_donations' => Donor::sum('donation_count'),
-            'avg_per_donor' => Donor::avg('total_donated') ?? 0,
-        ];
+        if ($isSuperadmin) {
+            $summary = [
+                'total_donors' => Donor::count(),
+                'total_amount' => Donor::sum('total_donated'),
+                'total_donations' => Donor::sum('donation_count'),
+                'avg_per_donor' => Donor::avg('total_donated') ?? 0,
+            ];
+        } else {
+            $confirmed = InfaqDonation::query()
+                ->where('status', 'confirmed')
+                ->whereHas('infaq', fn ($q) => $q->where('organization_id', $orgId));
+
+            $totalDonors = (clone $base)->count();
+            $totalAmount = (float) (clone $confirmed)->sum('amount');
+
+            $summary = [
+                'total_donors' => $totalDonors,
+                'total_amount' => $totalAmount,
+                'total_donations' => (clone $confirmed)->count(),
+                'avg_per_donor' => $totalDonors > 0 ? $totalAmount / $totalDonors : 0,
+            ];
+        }
 
         return Inertia::render('Admin/Donors/Index', [
             'donors' => $donors,
@@ -57,12 +91,26 @@ class DonorController extends Controller
         ]);
     }
 
-    public function show(Donor $donor): Response
+    public function show(Request $request, Donor $donor): Response
     {
+        $user = $request->user();
+        $isSuperadmin = $user->isSuperadmin();
+        $orgId = (int) $user->current_organization_id;
+
         $donor->load('user');
 
-        $donations = InfaqDonation::with('infaq:id,title,slug,year,month,day')
-            ->where('donor_id', $donor->id)
+        $donationQuery = InfaqDonation::with('infaq:id,title,slug,year,month,day')
+            ->where('donor_id', $donor->id);
+
+        if (! $isSuperadmin) {
+            $donationQuery->whereHas('infaq', fn ($q) => $q->where('organization_id', $orgId));
+
+            // An org admin must not open a donor who has no donation history
+            // with their organisation.
+            abort_if(! (clone $donationQuery)->exists(), 403);
+        }
+
+        $donations = $donationQuery
             ->orderByDesc('created_at')
             ->get()
             ->map(fn (InfaqDonation $d) => [
@@ -85,9 +133,11 @@ class DonorController extends Controller
                 ]) : null,
             ]);
 
+        $confirmed = $donations->where('status', 'confirmed');
+
         $stats = [
-            'confirmed_count' => $donations->where('status', 'confirmed')->count(),
-            'confirmed_amount' => $donations->where('status', 'confirmed')->sum('amount'),
+            'confirmed_count' => $confirmed->count(),
+            'confirmed_amount' => $confirmed->sum('amount'),
             'pending_count' => $donations->where('status', 'pending')->count(),
             'recurring_count' => $donations->where('is_recurring', true)->count(),
         ];
@@ -98,8 +148,8 @@ class DonorController extends Controller
                 'name' => $donor->name,
                 'email' => $donor->email,
                 'phone' => $donor->phone,
-                'total_donated' => (float) $donor->total_donated,
-                'donation_count' => $donor->donation_count,
+                'total_donated' => $isSuperadmin ? (float) $donor->total_donated : (float) $confirmed->sum('amount'),
+                'donation_count' => $isSuperadmin ? $donor->donation_count : $confirmed->count(),
                 'last_donated_at' => $donor->last_donated_at?->toDateTimeString(),
                 'user_name' => $donor->user?->name,
                 'user_email' => $donor->user?->email,

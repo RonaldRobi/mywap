@@ -296,7 +296,7 @@ class InformationHubAdminController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'ic_number' => ['nullable', 'string', 'max:32', Rule::unique('users', 'ic_number')->ignore($user->id)],
-            'member_no' => $isSuperadmin ? ['nullable', 'string', 'max:12', Rule::unique('users', 'member_no')->ignore($user->id)] : ['prohibited'],
+            'member_no' => ['nullable', 'string', 'max:12', Rule::unique('users', 'member_no')->ignore($user->id)],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
@@ -336,7 +336,7 @@ class InformationHubAdminController extends Controller
             }
         }
 
-        if ($isSuperadmin && ! empty($validated['member_no'])) {
+        if (! empty($validated['member_no'])) {
             $no = Str::upper(trim($validated['member_no']));
             $validated['member_no'] = $no;
             $seq = (int) preg_replace('/^[A-Z]+/', '', $no);
@@ -348,7 +348,7 @@ class InformationHubAdminController extends Controller
         $user->update($validated);
 
         $desc = 'Profil ahli dikemas kini.';
-        if ($isSuperadmin && ! empty($validated['member_no']) && $validated['member_no'] !== $originalMemberNo) {
+        if (! empty($validated['member_no']) && $validated['member_no'] !== $originalMemberNo) {
             $desc = "No Ahli ditukar dari {$originalMemberNo} ke {$validated['member_no']}.";
         }
 

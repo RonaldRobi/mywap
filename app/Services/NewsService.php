@@ -253,8 +253,10 @@ class NewsService
             return true;
         }
 
-        return is_null($post->organization_id)
-            || (int) $post->organization_id === (int) $user->current_organization_id;
+        // Global posts (organization_id null) belong to the platform and are
+        // Superadmin-only. Org admins may only manage their own org's posts.
+        return ! is_null($post->organization_id)
+            && (int) $post->organization_id === (int) $user->current_organization_id;
     }
 
     /**

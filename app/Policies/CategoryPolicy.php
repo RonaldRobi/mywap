@@ -24,11 +24,22 @@ class CategoryPolicy
 
     public function update(User $user, Category $category)
     {
-        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        if ($user->hasRole('Superadmin')) {
+            return true;
+        }
+
+        if (! $user->hasRole(['Admin', 'org-admin'])) {
+            return false;
+        }
+
+        // Global categories (organization_id null) are managed by Superadmin
+        // only; an org admin may only touch their own organisation's categories.
+        return $category->organization_id !== null
+            && (int) $category->organization_id === (int) $user->current_organization_id;
     }
 
     public function delete(User $user, Category $category)
     {
-        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        return $this->update($user, $category);
     }
 }

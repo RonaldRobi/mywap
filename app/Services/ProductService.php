@@ -162,10 +162,19 @@ class ProductService
 
     /**
      * Senarai kategori berpaginate (halaman admin + API).
+     *
+     * Bila `$user` diberi dan bukan Superadmin, hanya kategori global
+     * (organization_id null) + kategori organisasi sendiri dipaparkan.
      */
-    public function categories(): LengthAwarePaginator
+    public function categories(?User $user = null): LengthAwarePaginator
     {
-        return Category::orderBy('name')
+        return Category::query()
+            ->when($user && ! $user->isSuperadmin(), fn ($q) => $q->where(function ($inner) use ($user) {
+                $inner->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            }))
+            ->with('organization:id,name')
+            ->orderBy('name')
             ->paginate(20)
             ->withQueryString()
             ->through(fn (Category $category) => $this->serializeCategory($category));
@@ -174,9 +183,16 @@ class ProductService
     /**
      * Pilihan kategori untuk penapis produk (tidak berpaginate).
      */
-    public function categoryOptions()
+    public function categoryOptions(?User $user = null)
     {
-        return Category::orderBy('name')->get();
+        return Category::query()
+            ->when($user && ! $user->isSuperadmin(), fn ($q) => $q->where(function ($inner) use ($user) {
+                $inner->whereNull('organization_id')
+                    ->orWhere('organization_id', $user->current_organization_id);
+            }))
+            ->with('organization:id,name')
+            ->orderBy('name')
+            ->get();
     }
 
     public function serializeCategory(Category $category): array
@@ -185,6 +201,8 @@ class ProductService
             'id' => $category->id,
             'name' => $category->name,
             'description' => $category->description,
+            'organization_id' => $category->organization_id,
+            'organization_name' => $category->organization?->name,
             'created_at' => $category->created_at,
             'updated_at' => $category->updated_at,
         ];

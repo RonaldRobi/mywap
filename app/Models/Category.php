@@ -12,7 +12,13 @@ class Category extends Model
     protected $fillable = [
         'name',
         'description',
+        'organization_id',
     ];
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     public function products()
     {

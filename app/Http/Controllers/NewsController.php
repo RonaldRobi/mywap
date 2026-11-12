@@ -239,7 +239,7 @@ class NewsController extends Controller
 
     public function storeCategory(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole('Superadmin'), 403);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:news_categories,name'],
@@ -259,7 +259,7 @@ class NewsController extends Controller
 
     public function destroyCategory(Request $request, NewsCategory $category): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole('Superadmin'), 403);
 
         $category->delete();
 
@@ -283,12 +283,12 @@ class NewsController extends Controller
             return $submittedOrganizationId ?: null;
         }
 
-        if (is_null($submittedOrganizationId)) {
-            return null;
+        // Organisation admins may only publish for their own organisation and
+        // may not create platform-wide (global) posts.
+        if (! is_null($submittedOrganizationId)) {
+            abort_if((int) $submittedOrganizationId !== (int) $user->current_organization_id, 403);
         }
 
-        abort_if((int) $submittedOrganizationId !== (int) $user->current_organization_id, 403);
-
-        return (int) $submittedOrganizationId;
+        return (int) $user->current_organization_id;
     }
 }

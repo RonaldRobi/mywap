@@ -7,9 +7,17 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    isSuperadmin: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const page = usePage();
+
+// Org admins only see their own org's categories plus shared/global ones.
+// Global categories (organization_id null) are managed by Superadmin.
+const canManage = (category) => props.isSuperadmin || category.organization_id != null;
 </script>
 
 <template>
@@ -45,12 +53,16 @@ const page = usePage();
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="c in categories.data" :key="c.id" class="hover:bg-gray-50/60">
-                                <td class="px-4 py-3 font-semibold text-gray-900">{{ c.name }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-900">
+                                    {{ c.name }}
+                                    <span v-if="!c.organization_id" class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Global</span>
+                                </td>
                                 <td class="px-4 py-3 text-gray-600">{{ c.description || '—' }}</td>
                                 <td class="px-4 py-3 text-right">
-                                    <Link :href="route('categories.edit', c.id)" class="rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                                    <Link v-if="canManage(c)" :href="route('categories.edit', c.id)" class="rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
                                         Edit
                                     </Link>
+                                    <span v-else class="text-[11px] font-medium text-gray-400">Urus oleh Superadmin</span>
                                 </td>
                             </tr>
                             <tr v-if="!categories.data?.length">
