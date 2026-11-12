@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -187,17 +187,60 @@ const scanIdentifier = ref('');
 const scanInputEl = ref(null);
 const scanBusy = ref(false);
 const scanResult = ref(null);
+const recentScans = ref([]);
+
+let burstStartAt = 0;
+let burstChars = 0;
+let lastInputAt = 0;
+let autoSubmitTimer = null;
+let reloadTimer = null;
 
 function focusScan() {
     nextTick(() => scanInputEl.value?.focus());
 }
 
+function scheduleReload() {
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+        router.reload({
+            only: ['registrations', 'stats', 'audit_trail'],
+            onFinish: focusScan,
+        });
+    }, 900);
+}
+
+function onScanInput(event) {
+    const now = performance.now();
+
+    if (now - lastInputAt > 400) {
+        burstStartAt = now;
+        burstChars = 0;
+    }
+    lastInputAt = now;
+    burstChars += 1;
+
+    clearTimeout(autoSubmitTimer);
+
+    // Scanner USB menaip sepantas kilat. Jika kesan rentetan pantas, hantar
+    // sendiri selepas jeda singkat walaupun scanner tidak menghantar Enter.
+    const inserted = typeof event?.data === 'string' ? event.data.length : 0;
+    const averageGap = burstChars > 1 ? (now - burstStartAt) / burstChars : Infinity;
+    const looksMachine = (burstChars >= 5 && averageGap <= 120) || inserted > 1;
+
+    if (looksMachine) {
+        autoSubmitTimer = setTimeout(submitScan, 150);
+    }
+}
+
 async function submitScan() {
+    clearTimeout(autoSubmitTimer);
+
     const identifier = scanIdentifier.value.trim();
     if (!identifier || scanBusy.value) return;
 
     scanBusy.value = true;
     scanResult.value = null;
+    const scannedAt = new Date();
 
     try {
         const { data } = await axios.post(
@@ -205,32 +248,59 @@ async function submitScan() {
             { identifier },
         );
 
-        scanResult.value = {
-            ok: true,
-            name: data.registration?.name ?? '',
-            memberNo: data.registration?.member_no ?? '',
-        };
+        const name = data.registration?.name ?? '';
+        const memberNo = data.registration?.member_no ?? '';
+
+        scanResult.value = { ok: true, name, memberNo };
+        recentScans.value = [
+            { name, memberNo, at: scannedAt, ok: true },
+            ...recentScans.value,
+        ].slice(0, 8);
         scanIdentifier.value = '';
-        router.reload({
-            only: ['registrations', 'stats', 'audit_trail'],
-            onFinish: focusScan,
-        });
+        scheduleReload();
     } catch (error) {
         const payload = error?.response?.data ?? {};
         scanResult.value = {
             ok: false,
+            name: '',
+            memberNo: '',
             message: payload.message
                 || payload.errors?.identifier?.[0]
                 || 'Imbasan tidak dikenali. Cuba lagi.',
         };
+        recentScans.value = [
+            { name: '', memberNo: identifier, at: scannedAt, ok: false },
+            ...recentScans.value,
+        ].slice(0, 8);
         scanIdentifier.value = '';
-        focusScan();
     } finally {
         scanBusy.value = false;
+        focusScan();
     }
 }
 
-onMounted(focusScan);
+function scanTime(date) {
+    return date.toLocaleTimeString('ms-MY', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    });
+}
+
+function handleWindowFocus() {
+    focusScan();
+}
+
+onMounted(() => {
+    focusScan();
+    window.addEventListener('focus', handleWindowFocus);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('focus', handleWindowFocus);
+    clearTimeout(autoSubmitTimer);
+    clearTimeout(reloadTimer);
+});
 
 const exportQuery = computed(() => {
     const params = new URLSearchParams({ event_id: props.event.id });
@@ -428,6 +498,7 @@ function auditMeta(action) {
                             placeholder="Scan QR kad ahli, atau taip No. ahli / No. IC / telefon"
                             class="w-full rounded-xl border border-gray-200 px-3 py-2 font-mono text-sm focus:ring-0"
                             :disabled="scanBusy"
+                            @input="onScanInput"
                             @keyup.enter="submitScan"
                         />
                     </div>
@@ -441,7 +512,7 @@ function auditMeta(action) {
                     </button>
                 </div>
                 <p class="mt-2 text-[11px] text-gray-400">
-                    Sesuai untuk USB scanner di pintu masuk. Setiap imbasan terus merekod kehadiran dan menyegarkan senarai di bawah.
+                    Tak perlu tekan butang. Scan kad pada USB scanner, kehadiran direkod sendiri dan nama terus muncul di bawah.
                 </p>
                 <div
                     v-if="scanResult"
@@ -456,6 +527,26 @@ function auditMeta(action) {
                         Hadir direkod: {{ scanResult.name }}<span v-if="scanResult.memberNo"> &middot; {{ scanResult.memberNo }}</span>
                     </template>
                     <template v-else>{{ scanResult.message }}</template>
+                </div>
+                <div v-if="recentScans.length" class="mt-3 overflow-hidden rounded-xl border border-gray-100">
+                    <p class="border-b border-gray-50 bg-gray-50 px-3 py-1.5 text-[11px] font-semibold text-gray-500">
+                        Imbasan terkini
+                    </p>
+                    <ul class="divide-y divide-gray-50">
+                        <li
+                            v-for="(scan, i) in recentScans"
+                            :key="i"
+                            class="flex items-center justify-between gap-3 px-3 py-2"
+                        >
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold" :class="scan.ok ? 'text-gray-800' : 'text-rose-600'">
+                                    {{ scan.ok ? (scan.name || 'Ahli') : 'Tidak dikenali' }}
+                                </p>
+                                <p class="truncate font-mono text-[11px] text-gray-400">{{ scan.memberNo || '-' }}</p>
+                            </div>
+                            <span class="shrink-0 text-[11px] text-gray-400">{{ scanTime(scan.at) }}</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
