@@ -105,7 +105,7 @@ class ProductService
         }
 
         if ($isBranchAdmin) {
-            $query->where('branch_id', $user->managedBranchId());
+            $query->whereIn('branch_id', $user->managedBranchIds());
         }
 
         if ($request->filled('search')) {

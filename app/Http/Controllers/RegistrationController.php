@@ -575,7 +575,7 @@ class RegistrationController extends Controller
         }
 
         if ($user->isBranchAdmin()) {
-            abort_unless((int) $event->branch_id === (int) $user->managedBranchId(), 403);
+            abort_unless($user->canManageBranch($event->branch_id), 403);
 
             return $user;
         }
@@ -619,7 +619,7 @@ class RegistrationController extends Controller
     protected function isEventOwner(User $user, Event $event): bool
     {
         if ($user->isBranchAdmin()) {
-            return (int) $event->branch_id === (int) $user->managedBranchId();
+            return $user->canManageBranch($event->branch_id);
         }
 
         $orgId = (int) $user->current_organization_id;

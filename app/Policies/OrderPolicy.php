@@ -19,7 +19,7 @@ class OrderPolicy
         }
         if ($user->isBranchAdmin()) {
             return $order->items()
-                ->whereHas('product', fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+                ->whereHas('product', fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
                 ->exists();
         }
         if ($user->hasRole(['Admin', 'org-admin']) && $order->organisasi_id == $user->current_organization_id) {
@@ -47,7 +47,7 @@ class OrderPolicy
         if ($user->isBranchAdmin()) {
             $total = $order->items()->count();
             $own = $order->items()
-                ->whereHas('product', fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+                ->whereHas('product', fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
                 ->count();
 
             return $total > 0 && $total === $own;

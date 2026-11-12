@@ -16,6 +16,7 @@ class EnsureBranchAdminAccess
      * @var list<string>
      */
     private const ALLOWED_ROUTES = [
+        'branches.index',
         'admin.dashboard',
         'admin.events.',
         'admin.attendance',
@@ -53,7 +54,7 @@ class EnsureBranchAdminAccess
             return $next($request);
         }
 
-        if (! $user->managedBranchId()) {
+        if ($user->managedBranchIds() === []) {
             return redirect()->route('branch-admin.unassigned');
         }
 

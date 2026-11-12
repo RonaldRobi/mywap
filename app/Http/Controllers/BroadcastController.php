@@ -28,11 +28,11 @@ class BroadcastController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
-        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
+        $branchIds = $isBranchAdmin ? $user->managedBranchIds() : [];
 
         $messages = BroadcastMessage::query()
             ->with(['organization:id,name', 'targetOrganization:id,name'])
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->latest()
             ->take(20)
             ->get();
@@ -85,7 +85,7 @@ class BroadcastController extends Controller
                 'reads as reads_count',
             ])
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->latest('published_at')
             ->latest('id')
             ->take(50)
@@ -116,7 +116,7 @@ class BroadcastController extends Controller
                 : collect([['id' => $user->organization?->id, 'name' => $user->organization?->name]]);
 
         $usrahGroups = UsrahGroup::query()
-            ->when($user->isBranchAdmin(), fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+            ->when($user->isBranchAdmin(), fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
@@ -124,7 +124,7 @@ class BroadcastController extends Controller
         $branches = Branch::query()
             ->where('is_active', true)
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
-            ->when($branchId, fn ($q) => $q->where('id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereKey($branchIds))
             ->select('id', 'name', 'organization_id')
             ->orderBy('name')
             ->get();
@@ -157,7 +157,6 @@ class BroadcastController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
-        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -186,7 +185,7 @@ class BroadcastController extends Controller
             }
 
             $data['target_criteria'] = 'branch';
-            $data['branch_id'] = $branchId;
+            $data['branch_id'] = $user->resolveManagedBranchId($data['branch_id'] ?? null);
             $data['recipient_ids'] = null;
             $targetOrgId = $user->current_organization_id;
         } elseif ($data['target_criteria'] === 'all') {
@@ -272,7 +271,7 @@ class BroadcastController extends Controller
                 // LOWER() supaya carian tidak sensitif huruf besar/kecil pada
                 // PostgreSQL (LIKE biasa adalah case-sensitive di sana).
                 ->when($hasQuery, fn ($q) => $q->whereRaw('LOWER(title) LIKE ?', [$needle]))
-                ->when($isBranchAdmin, fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+                ->when($isBranchAdmin, fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
                 ->when(! $isSuperadmin && ! $isBranchAdmin, function ($q) use ($orgId) {
                     $q->where(function ($inner) use ($orgId) {
                         $inner->where('organization_id', $orgId)
@@ -367,7 +366,7 @@ class BroadcastController extends Controller
                 throw ValidationException::withMessages(['action_id' => 'Program tidak dijumpai.']);
             }
 
-            if ($user->isBranchAdmin() && (int) $event->branch_id !== (int) $user->managedBranchId()) {
+            if ($user->isBranchAdmin() && ! $user->canManageBranch($event->branch_id)) {
                 abort(403, 'Tiada kebenaran untuk program ini.');
             }
 
@@ -413,7 +412,7 @@ class BroadcastController extends Controller
     {
         $user = request()->user();
 
-        if ($user?->isBranchAdmin() && (int) $broadcast->branch_id !== (int) $user->managedBranchId()) {
+        if ($user?->isBranchAdmin() && ! $user->canManageBranch($broadcast->branch_id)) {
             abort(403);
         }
 

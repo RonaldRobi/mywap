@@ -29,17 +29,24 @@ class MemberSearchController extends Controller
         $isBranchAdmin = $actingUser?->isBranchAdmin() ?? false;
         $orgId = $request->query('organization_id');
         $branchId = $request->query('branch_id');
+        $branchIds = [];
 
         if ($actingUser && ! $isSuperadmin) {
             $orgId = $actingUser->current_organization_id;
         }
 
         if ($isBranchAdmin) {
-            $branchId = $actingUser->managedBranchId();
+            $managedIds = $actingUser->managedBranchIds();
 
-            if (! $branchId) {
+            if ($managedIds === []) {
                 return response()->json([]);
             }
+
+            $branchIds = $branchId && in_array((int) $branchId, $managedIds, true)
+                ? [(int) $branchId]
+                : $managedIds;
+        } elseif ($branchId) {
+            $branchIds = [(int) $branchId];
         }
 
         // Tetamu awam (halaman pendaftaran) tidak boleh mengecam maklumat
@@ -59,7 +66,7 @@ class MemberSearchController extends Controller
         $members = User::query()
             ->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->when($orgId, fn ($query) => $query->where('current_organization_id', (int) $orgId))
-            ->when($branchId, fn ($query) => $query->where('branch_id', (int) $branchId))
+            ->when($branchIds !== [], fn ($query) => $query->whereIn('branch_id', $branchIds))
             ->when(! $orgId && $actingUser && ! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $actingUser->current_organization_id));
 
         MemberSearch::apply($members, $q, $columns);

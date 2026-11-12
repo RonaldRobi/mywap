@@ -31,11 +31,11 @@ class InfaqController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->isSuperadmin();
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $items = Infaq::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->with('organization:id,name,slug')
             ->withCount('donations')
             ->orderBy('display_order')
@@ -103,7 +103,9 @@ class InfaqController extends Controller
 
         Infaq::create([
             'organization_id' => $organizationId,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
+            'branch_id' => $user->isBranchAdmin()
+                ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+                : null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -130,7 +132,7 @@ class InfaqController extends Controller
             403
         );
 
-        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($infaq->branch_id)) {
             abort(403);
         }
 
@@ -167,7 +169,11 @@ class InfaqController extends Controller
             'organization_id' => $user->isSuperadmin()
                 ? ($data['organization_id'] ?? null)
                 : $user->current_organization_id,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : $infaq->branch_id,
+            'branch_id' => $user->isBranchAdmin()
+                ? ($user->canManageBranch($infaq->branch_id)
+                    ? (int) $infaq->branch_id
+                    : $user->managedBranchId())
+                : $infaq->branch_id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -192,7 +198,7 @@ class InfaqController extends Controller
             403
         );
 
-        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($infaq->branch_id)) {
             abort(403);
         }
 
@@ -391,7 +397,7 @@ SVG;
             403
         );
 
-        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($infaq->branch_id)) {
             abort(403);
         }
 

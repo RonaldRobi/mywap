@@ -92,6 +92,7 @@ class HandleInertiaRequests extends Middleware
                     'is_public_in_directory' => (bool) $user->is_public_in_directory,
                     'roles' => $user->getRoleNames(),
                     'managed_branch_id' => $user->managedBranchId(),
+                    'managed_branch_ids' => $user->managedBranchIds(),
                     'organization' => $isSuperadmin
                         ? [
                             'id' => null,

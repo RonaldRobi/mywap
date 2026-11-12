@@ -15,6 +15,10 @@ const props = defineProps({
     },
     isBranchAdmin: Boolean,
     managedBranchId: Number,
+    managedBranchIds: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const page = usePage();
@@ -172,6 +176,55 @@ let adminSearchTimer = null;
 const managerForm = useForm({ name: '', email: '', password: '', password_confirmation: '' });
 const passwordForm = useForm({ password: '', password_confirmation: '' });
 const secretaryForm = useForm({ user_id: null });
+const branchScopeForm = useForm({ branch_ids: [] });
+
+const existingSearchQuery = ref('');
+const existingSearchResults = ref([]);
+const existingSearchLoading = ref(false);
+const existingSearchError = ref('');
+const selectedManagedBranchIds = ref([]);
+let existingSearchTimer = null;
+
+const organizationBranches = computed(() => {
+    if (!managingAdminsBranch.value) return [];
+
+    const org = props.organizations.find(
+        (item) => item.id === managingAdminsBranch.value.organization_id
+    );
+
+    return (org?.branches ?? [])
+        .slice()
+        .sort((a, b) => (a.state || '').localeCompare(b.state || '') || a.name.localeCompare(b.name));
+});
+
+function isBranchOccupied(branch) {
+    const manager = managingAdminsBranch.value?.manager;
+    if (!manager) return false;
+
+    return branch.id !== managingAdminsBranch.value.id
+        && (branch.admins?.length ?? 0) > 0
+        && !branch.admins.some((admin) => admin.id === manager.id);
+}
+
+function toggleManagedBranch(branch) {
+    if (branch.id === managingAdminsBranch.value?.id || isBranchOccupied(branch)) return;
+
+    if (selectedManagedBranchIds.value.includes(branch.id)) {
+        selectedManagedBranchIds.value = selectedManagedBranchIds.value.filter((id) => id !== branch.id);
+    } else {
+        selectedManagedBranchIds.value.push(branch.id);
+    }
+}
+
+function saveBranchScope() {
+    if (!managingAdminsBranch.value) return;
+
+    branchScopeForm.branch_ids = [...selectedManagedBranchIds.value];
+    branchScopeForm.put(route('branches.admin-account.branches', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => refreshBranchRefs(),
+    });
+}
 
 const secretaries = computed(() => managingAdminsBranch.value?.secretaries ?? []);
 const secretaryLimitReached = computed(() =>
@@ -187,6 +240,15 @@ watch(adminSearchQuery, (val) => {
     adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
 });
 
+watch(existingSearchQuery, (val) => {
+    clearTimeout(existingSearchTimer);
+    if (!val || val.length < 2) {
+        existingSearchResults.value = [];
+        return;
+    }
+    existingSearchTimer = setTimeout(() => searchExistingAccounts(val), 300);
+});
+
 function findBranch(id) {
     for (const org of page.props.organizations ?? []) {
         const branch = org.branches.find((item) => item.id === id);
@@ -198,7 +260,10 @@ function findBranch(id) {
 function refreshBranchRefs() {
     if (managingAdminsBranch.value) {
         const fresh = findBranch(managingAdminsBranch.value.id);
-        if (fresh) managingAdminsBranch.value = fresh;
+        if (fresh) {
+            managingAdminsBranch.value = fresh;
+            selectedManagedBranchIds.value = [...(fresh.manager?.managed_branch_ids ?? [])];
+        }
     }
 
     if (editingBranch.value) {
@@ -211,8 +276,13 @@ function openAdminManage(branch) {
     managingAdminsBranch.value = branch;
     adminSearchQuery.value = '';
     adminSearchResults.value = [];
+    existingSearchQuery.value = '';
+    existingSearchResults.value = [];
+    existingSearchError.value = '';
+    selectedManagedBranchIds.value = [...(branch.manager?.managed_branch_ids ?? [])];
     managerForm.reset();
     passwordForm.reset();
+    branchScopeForm.reset();
 }
 
 function searchBranchMembers(val) {
@@ -253,12 +323,43 @@ function createManagerAccount() {
     });
 }
 
+function searchExistingAccounts(val) {
+    if (!managingAdminsBranch.value) return;
+    existingSearchLoading.value = true;
+    existingSearchError.value = '';
+    axios.get('/api/members/search', {
+        params: {
+            q: val,
+            organization_id: managingAdminsBranch.value.organization_id,
+        },
+    })
+        .then((res) => {
+            const existingIds = new Set([
+                managingAdminsBranch.value?.manager?.id,
+                ...secretaries.value.map((a) => a.id),
+            ]);
+            existingSearchResults.value = (res.data || []).filter((m) => !existingIds.has(m.id));
+        })
+        .catch((err) => {
+            console.error('Existing account search failed:', err);
+            existingSearchResults.value = [];
+            existingSearchError.value = 'Carian gagal. Cuba lagi.';
+        })
+        .finally(() => {
+            existingSearchLoading.value = false;
+        });
+}
+
 function assignExistingAdmin(account) {
     if (!managingAdminsBranch.value) return;
 
     useForm({ user_id: account.id }).post(route('branches.admin-account.assign', managingAdminsBranch.value.id), {
         preserveScroll: true,
-        onSuccess: () => refreshBranchRefs(),
+        onSuccess: () => {
+            existingSearchQuery.value = '';
+            existingSearchResults.value = [];
+            refreshBranchRefs();
+        },
     });
 }
 
@@ -498,6 +599,7 @@ const malaysianStates = [
                                 <Link :href="route('admin.hub.manage', { branch_id: branch.id })" class="text-xs text-gray-400 font-medium hover:text-indigo-600 transition-colors">{{ branch.member_count }} ahli</Link>
                                 <div class="flex items-center gap-1.5">
                                     <button
+                                        v-if="!isBranchAdmin"
                                         @click="openAdminManage(branch)"
                                         class="text-xs font-semibold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-xl transition-colors"
                                     >
@@ -764,6 +866,42 @@ const malaysianStates = [
                                         </button>
                                     </div>
                                 </form>
+
+                                <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-indigo-700">Cawangan diurus</p>
+                                    <p class="mt-1 text-xs text-indigo-700">Tandakan cawangan lain yang boleh diurus oleh akaun ini. Satu akaun boleh mengurus beberapa cawangan dalam organisasi yang sama.</p>
+                                    <div class="mt-3 space-y-1.5">
+                                        <label
+                                            v-for="branch in organizationBranches"
+                                            :key="branch.id"
+                                            class="flex items-center gap-2.5 rounded-lg bg-white px-3 py-2"
+                                            :class="isBranchOccupied(branch) ? 'opacity-70' : 'cursor-pointer'"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                :checked="branch.id === managingAdminsBranch.id || selectedManagedBranchIds.includes(branch.id)"
+                                                :disabled="branch.id === managingAdminsBranch.id || isBranchOccupied(branch)"
+                                                @change="toggleManagedBranch(branch)"
+                                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed"
+                                            />
+                                            <span class="min-w-0">
+                                                <span class="block truncate text-sm font-medium text-gray-800">{{ branch.name }}</span>
+                                                <span v-if="branch.state" class="block text-xs text-gray-400">{{ branch.state }}</span>
+                                            </span>
+                                            <span v-if="branch.id === managingAdminsBranch.id" class="ml-auto shrink-0 text-[10px] font-semibold text-indigo-600">Cawangan ini</span>
+                                            <span v-else-if="isBranchOccupied(branch)" class="ml-auto shrink-0 text-[10px] font-semibold text-amber-600">Ada admin lain</span>
+                                        </label>
+                                    </div>
+                                    <p v-if="branchScopeForm.errors.branch_ids" class="mt-2 text-xs text-red-500">{{ branchScopeForm.errors.branch_ids }}</p>
+                                    <button
+                                        type="button"
+                                        @click="saveBranchScope"
+                                        :disabled="branchScopeForm.processing"
+                                        class="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+                                    >
+                                        {{ branchScopeForm.processing ? 'Menyimpan...' : 'Simpan Skop Cawangan' }}
+                                    </button>
+                                </div>
                             </div>
 
                             <div v-else class="space-y-4">
@@ -778,6 +916,45 @@ const malaysianStates = [
                                             </div>
                                             <button type="button" @click="assignExistingAdmin(account)" class="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">Guna akaun ini</button>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Guna akaun ahli sedia ada</p>
+                                    <p class="mt-1 text-xs text-emerald-700">Cari nama, no. IC atau emel ahli dalam organisasi ini, kemudian lantik sebagai admin cawangan.</p>
+                                    <div class="relative mt-2">
+                                        <input
+                                            v-model="existingSearchQuery"
+                                            type="text"
+                                            placeholder="Cari akaun sedia ada..."
+                                            class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-colors"
+                                        />
+                                        <div v-if="existingSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <svg class="w-4 h-4 animate-spin text-emerald-500" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                        </div>
+                                        <ul
+                                            v-if="existingSearchResults.length > 0"
+                                            class="absolute z-50 mt-1 w-full rounded-lg border border-emerald-200 bg-white shadow-lg max-h-48 overflow-y-auto"
+                                        >
+                                            <li v-for="member in existingSearchResults" :key="member.id">
+                                                <button
+                                                    type="button"
+                                                    @click="assignExistingAdmin(member)"
+                                                    class="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-emerald-50 transition-colors"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span class="block truncate text-sm font-semibold text-gray-800">{{ member.name }}</span>
+                                                        <span class="block truncate text-xs text-gray-400">{{ member.email || member.member_no }}</span>
+                                                    </span>
+                                                    <span class="shrink-0 text-xs font-semibold text-emerald-700">Guna</span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                        <p v-else-if="existingSearchQuery.length >= 2 && !existingSearchLoading && !existingSearchError" class="mt-1 text-xs text-gray-500">Tiada akaun ditemui.</p>
+                                        <p v-if="existingSearchError" class="mt-1 text-xs text-red-500">{{ existingSearchError }}</p>
                                     </div>
                                 </div>
 

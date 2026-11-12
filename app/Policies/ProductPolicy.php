@@ -30,7 +30,7 @@ class ProductPolicy
 
         if ($user->isBranchAdmin()) {
             return $product->branch_id !== null
-                && (int) $product->branch_id === (int) $user->managedBranchId();
+                && $user->canManageBranch($product->branch_id);
         }
 
         if (! $user->hasRole(['Admin', 'org-admin'])) {

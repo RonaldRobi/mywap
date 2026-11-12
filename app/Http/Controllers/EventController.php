@@ -242,7 +242,7 @@ class EventController extends Controller
 
         if ($event->isBranchOnly() && ! $user?->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
             $allowed = $user && (
-                ($user->isBranchAdmin() && (int) $user->managedBranchId() === (int) $event->branch_id)
+                ($user->isBranchAdmin() && $user->canManageBranch($event->branch_id))
                 || (int) $user->branch_id === (int) $event->branch_id
             );
 
@@ -497,7 +497,7 @@ class EventController extends Controller
         $base = Event::query();
 
         if ($user->isBranchAdmin()) {
-            $base->where('branch_id', $user->managedBranchId());
+            $base->whereIn('branch_id', $user->managedBranchIds());
         } elseif (! $isSuperadmin) {            $base->where(function ($q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
                     ->orWhereHas('organizations', fn ($q2) => $q2->where('organizations.id', $user->current_organization_id));
@@ -735,7 +735,11 @@ class EventController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
-        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
+        $branchId = $isBranchAdmin
+            ? ($event && $user->canManageBranch($event->branch_id)
+                ? (int) $event->branch_id
+                : $user->managedBranchId())
+            : null;
 
         return Inertia::render('Admin/Events/Form', [
             'event' => $event ? [
@@ -765,6 +769,9 @@ class EventController extends Controller
             'isSuperadmin' => $isSuperadmin,
             'isBranchAdmin' => $isBranchAdmin,
             'branch' => $branchId ? \App\Models\Branch::find($branchId, ['id', 'name', 'state']) : null,
+            'managedBranches' => $isBranchAdmin
+                ? \App\Models\Branch::whereKey($user->managedBranchIds())->orderBy('name')->get(['id', 'name', 'state'])
+                : [],
             'visibilities' => collect(EventVisibility::cases())
                 ->map(fn ($v) => ['value' => $v->value, 'label' => $v->label()])->values(),
             'formsCount' => $event ? $event->forms()->count() : 0,
@@ -782,7 +789,6 @@ class EventController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
-        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -825,7 +831,9 @@ class EventController extends Controller
 
         if ($isBranchAdmin) {
             $fields['organization_id'] = (int) $user->current_organization_id;
-            $fields['branch_id'] = $branchId;
+            $fields['branch_id'] = $event && $user->canManageBranch($event->branch_id)
+                ? (int) $event->branch_id
+                : $user->resolveManagedBranchId($request->integer('branch_id') ?: null);
             $fields['visibility'] = $data['visibility'] ?? $event?->visibility?->value ?? EventVisibility::BranchOnly->value;
         } elseif ($isSuperadmin) {
             $fields['organization_id'] = ($data['organization_id'] ?? null) ?: null;
@@ -843,7 +851,7 @@ class EventController extends Controller
     private function adminOwnsEvent($user, Event $event): bool
     {
         if ($user->isBranchAdmin()) {
-            return (int) $event->branch_id === (int) $user->managedBranchId();
+            return $user->canManageBranch($event->branch_id);
         }
 
         $ownOrg = (int) $user->current_organization_id;

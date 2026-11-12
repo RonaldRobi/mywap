@@ -758,6 +758,128 @@ class BranchAdminTest extends TestCase
         $this->assertSame($this->abim->id, (int) $form->organization_id);
     }
 
+    public function test_org_admin_can_attach_existing_member_as_branch_admin(): void
+    {
+        $this->assertFalse($this->memberJohor->hasRole('Admin Cawangan'));
+
+        $this->actingAs($this->orgAdmin)
+            ->post(route('branches.admin-account.assign', $this->johor), ['user_id' => $this->memberJohor->id])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertTrue($this->memberJohor->fresh()->hasRole('Admin Cawangan'));
+        $this->assertDatabaseHas('branch_admins', [
+            'branch_id' => $this->johor->id,
+            'user_id' => $this->memberJohor->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+        $this->assertSame($this->johor->id, (int) $this->memberJohor->fresh()->branch_id);
+    }
+
+    public function test_existing_admin_account_can_be_assigned_to_additional_branches(): void
+    {
+        $batuBerendam = Branch::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Batu Berendam',
+            'state' => 'Melaka',
+            'is_active' => true,
+        ]);
+        $telokMas = Branch::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Telok Mas',
+            'state' => 'Melaka',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->orgAdmin)
+            ->put(route('branches.admin-account.branches', $this->perak), [
+                'branch_ids' => [$batuBerendam->id, $telokMas->id],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertEqualsCanonicalizing(
+            [$this->perak->id, $batuBerendam->id, $telokMas->id],
+            $this->branchAdmin->fresh()->managedBranchIds()
+        );
+        $this->assertDatabaseHas('branch_admins', [
+            'branch_id' => $batuBerendam->id,
+            'user_id' => $this->branchAdmin->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+        $this->assertDatabaseHas('branch_admins', [
+            'branch_id' => $telokMas->id,
+            'user_id' => $this->branchAdmin->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+    }
+
+    public function test_branch_admin_with_multiple_branches_sees_members_and_events_from_all(): void
+    {
+        $batuBerendam = Branch::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Batu Berendam',
+            'state' => 'Melaka',
+            'is_active' => true,
+        ]);
+        BranchAdmin::create([
+            'branch_id' => $batuBerendam->id,
+            'user_id' => $this->branchAdmin->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+
+        $memberBatu = $this->member('Ahli Batu Berendam', $this->abim, $batuBerendam, '900101015599');
+        $this->branchEvent($batuBerendam, 'Program Batu Berendam');
+
+        $this->assertTrue($this->branchAdmin->fresh()->canManageBranch($this->perak->id));
+        $this->assertTrue($this->branchAdmin->fresh()->canManageBranch($batuBerendam->id));
+        $this->assertFalse($this->branchAdmin->fresh()->canManageBranch($this->johor->id));
+
+        $membersResponse = $this->actingAs($this->branchAdmin)->get(route('admin.fees.members'));
+        $membersResponse->assertOk();
+        $names = collect($membersResponse->viewData('page')['props']['members']['data'])->pluck('name');
+        $this->assertTrue($names->contains('Ahli Perak'));
+        $this->assertTrue($names->contains($memberBatu->name));
+
+        $eventsResponse = $this->actingAs($this->branchAdmin)->get(route('admin.events.index'));
+        $eventsResponse->assertOk();
+        $titles = collect($eventsResponse->viewData('page')['props']['events']['data'])->pluck('title');
+        $this->assertTrue($titles->contains('Program Batu Berendam'));
+    }
+
+    public function test_sync_admin_branches_skips_branch_owned_by_another_admin(): void
+    {
+        $occupied = Branch::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Telok Mas',
+            'state' => 'Melaka',
+            'is_active' => true,
+        ]);
+        $otherAdmin = $this->member('Admin Telok Mas', $this->abim, $occupied, '900101015598');
+        $otherAdmin->assignRole('Admin Cawangan');
+        BranchAdmin::create([
+            'branch_id' => $occupied->id,
+            'user_id' => $otherAdmin->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+
+        $this->actingAs($this->orgAdmin)
+            ->put(route('branches.admin-account.branches', $this->perak), [
+                'branch_ids' => [$occupied->id],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('branch_admins', [
+            'branch_id' => $occupied->id,
+            'user_id' => $this->branchAdmin->id,
+        ]);
+        $this->assertEqualsCanonicalizing(
+            [$this->perak->id],
+            $this->branchAdmin->fresh()->managedBranchIds()
+        );
+    }
+
     public function test_branch_admin_can_access_content_management_pages(): void
     {
         $this->actingAs($this->branchAdmin)->get(route('admin.articles.index'))->assertOk();

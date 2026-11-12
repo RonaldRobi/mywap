@@ -67,7 +67,7 @@ class AdminService
     {
         $scope = $user->hasRole('Superadmin')
             ? 'superadmin'
-            : ($user->isBranchAdmin() ? 'branch-'.$user->managedBranchId() : 'admin');
+            : ($user->isBranchAdmin() ? 'branch-'.implode('-', $user->managedBranchIds()) : 'admin');
         $key = 'admin.dashboard.'.$user->current_organization_id.'.'.$scope;
 
         return Cache::remember($key, 300, fn () => $this->buildDashboard($user));
@@ -173,18 +173,18 @@ class AdminService
 
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
-        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
+        $branchIds = $isBranchAdmin ? $user->managedBranchIds() : [];
         $orgId = $user->current_organization_id;
 
         $users = User::withoutGlobalScope(OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId));
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds));
 
         $totalMembers = (clone $users)->count();
         $activeMembers = (clone $users)->whereNotNull('profile_completed_at')->count();
 
         $events = Event::query()
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->when(! $isSuperadmin, fn ($q) => $q->where(function ($scope) use ($orgId) {
                 // Sama seperti senarai program admin: milik organisasi ATAU
                 // program bersama (pivot organizations).
@@ -197,20 +197,20 @@ class AdminService
 
         $payments = Payment::query()
             ->where('status', 'successful')
-            ->when(! $isSuperadmin, function ($q) use ($orgId, $branchId) {
+            ->when(! $isSuperadmin, function ($q) use ($orgId, $branchIds) {
                 $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(OrganizationScope::class)
                     ->where('current_organization_id', $orgId)
-                    ->when($branchId, fn ($userQuery) => $userQuery->where('branch_id', $branchId)));
+                    ->when($branchIds !== [], fn ($userQuery) => $userQuery->whereIn('branch_id', $branchIds)));
             });
 
         $totalRevenue = (float) (clone $payments)->sum('amount');
 
         $pendingPayments = Payment::query()
             ->where('status', 'pending')
-            ->when(! $isSuperadmin, function ($q) use ($orgId, $branchId) {
+            ->when(! $isSuperadmin, function ($q) use ($orgId, $branchIds) {
                 $q->whereHas('user', fn ($inner) => $inner->withoutGlobalScope(OrganizationScope::class)
                     ->where('current_organization_id', $orgId)
-                    ->when($branchId, fn ($userQuery) => $userQuery->where('branch_id', $branchId)));
+                    ->when($branchIds !== [], fn ($userQuery) => $userQuery->whereIn('branch_id', $branchIds)));
             })
             ->count();
 
@@ -219,11 +219,11 @@ class AdminService
             ->where('payable_type', 'membership_fee')
             ->where('created_at', '>=', now()->startOfMonth())
             ->where('created_at', '<=', now()->endOfMonth())
-            ->when(! $isSuperadmin, function ($query) use ($user, $branchId) {
-                $query->whereHas('user', function ($innerQuery) use ($user, $branchId) {
+            ->when(! $isSuperadmin, function ($query) use ($user, $branchIds) {
+                $query->whereHas('user', function ($innerQuery) use ($user, $branchIds) {
                     $innerQuery->withoutGlobalScope(OrganizationScope::class)
                         ->where('current_organization_id', $user->current_organization_id)
-                        ->when($branchId, fn ($q) => $q->where('branch_id', $branchId));
+                        ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds));
                 });
             })
             ->sum('amount');
@@ -274,7 +274,7 @@ class AdminService
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id));
             })
-            ->when($branchId, fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId)))
+            ->when($branchIds !== [], fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->whereIn('branch_id', $branchIds)))
             ->count();
 
         $membersByState = $this->stateBreakdown(clone $users, $orgId);
@@ -373,7 +373,7 @@ class AdminService
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
                 ->count()
-            : $this->fees->getDueCount($user->current_organization_id, $year, $branchId);
+            : $this->fees->getDueCount($user->current_organization_id, $year);
 
         $alerts = collect();
 
@@ -437,7 +437,7 @@ class AdminService
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id));
             })
-            ->when($branchId, fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId)))
+            ->when($branchIds !== [], fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->whereIn('branch_id', $branchIds)))
             ->latest('created_at')
             ->take(4)
             ->get(['id', 'booking_status', 'created_at']);
@@ -541,14 +541,14 @@ class AdminService
     public function members(Request $request, User $user): LengthAwarePaginator
     {
         $isSuperadmin = $user->hasRole('Superadmin');
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
         $search = $request->input('search');
         $status = $request->input('status');
 
         $query = User::withoutGlobalScope(OrganizationScope::class)
             ->with(['organization:id,name', 'branch:id,name'])
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->when($search, fn ($q) => MemberSearch::apply($q, $search))
             ->when($status === 'active', fn ($q) => $q->whereNotNull('profile_completed_at'))
             ->when($status === 'pending', fn ($q) => $q->whereNull('profile_completed_at'))
@@ -583,7 +583,7 @@ class AdminService
     public function fees(Request $request, User $user): array
     {
         $isSuperadmin = $user->hasRole('Superadmin');
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
         $orgId = $user->current_organization_id;
 
         $year = (int) $request->input('year', now()->year);
@@ -592,7 +592,7 @@ class AdminService
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)])
             ->with('organization:id,name,slug')
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $orgId))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->when($isSuperadmin && $request->filled('organization_id'), fn ($q) => $q->where('current_organization_id', (int) $request->organization_id))
             ->orderBy('name');
 
@@ -644,7 +644,7 @@ class AdminService
             ? $this->fees->getAdminStats((int) $request->organization_id, $year, null)
             : ($isSuperadmin
                 ? $this->fees->getAdminStats(null, $year, null)
-                : $this->fees->getAdminStats($orgId, $year, $branchId));
+                : $this->fees->getAdminStats($orgId, $year, $branchIds));
 
         $monthExpr = match (DB::connection()->getDriverName()) {
             'pgsql' => 'EXTRACT(MONTH FROM created_at)',
@@ -656,10 +656,10 @@ class AdminService
             ->selectRaw("{$monthExpr} as month, SUM(amount) as total")
             ->where('status', 'successful')
             ->whereYear('created_at', $year)
-            ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request, $branchId) {
+            ->when(! $isSuperadmin || $request->filled('organization_id'), function ($q) use ($orgId, $isSuperadmin, $request, $branchIds) {
                 $q->whereHas('user', fn ($uq) => $uq->withoutGlobalScope(OrganizationScope::class)
                     ->where('current_organization_id', $isSuperadmin ? (int) $request->organization_id : $orgId)
-                    ->when($branchId, fn ($userQuery) => $userQuery->where('branch_id', $branchId)));
+                    ->when($branchIds !== [], fn ($userQuery) => $userQuery->whereIn('branch_id', $branchIds)));
             })
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -682,7 +682,7 @@ class AdminService
         if ($orgIds) {
             $counts = User::withoutGlobalScope(OrganizationScope::class)
                 ->whereIn('current_organization_id', array_keys($orgIds))
-                ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->selectRaw('current_organization_id, COUNT(*) as total')
                 ->groupBy('current_organization_id')
@@ -722,12 +722,12 @@ class AdminService
     public function attendanceIndex(Request $request, User $user): array
     {
         $isSuperadmin = $user->hasRole('Superadmin');
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         // Sekatan skop: admin biasa hanya nampak pendaftaran organisasinya.
-        $restrict = function (Builder $query) use ($user, $isSuperadmin, $branchId): Builder {
-            if ($branchId) {
-                $query->whereHas('event', fn ($q) => $q->where('branch_id', $branchId));
+        $restrict = function (Builder $query) use ($user, $isSuperadmin, $branchIds): Builder {
+            if ($branchIds !== []) {
+                $query->whereHas('event', fn ($q) => $q->whereIn('branch_id', $branchIds));
             } elseif (! $isSuperadmin) {
                 $orgId = (int) $user->current_organization_id;
                 $query->where(function (Builder $q) use ($orgId) {
@@ -742,11 +742,11 @@ class AdminService
 
         // Skop senarai program: event milik org ATAU event yang mempunyai
         // pendaftaran daripada org (cth program global yang disertai ahli org).
-        $eventScope = function () use ($user, $isSuperadmin, $branchId): Builder {
+        $eventScope = function () use ($user, $isSuperadmin, $branchIds): Builder {
             $query = Event::query();
 
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
+            if ($branchIds !== []) {
+                $query->whereIn('branch_id', $branchIds);
             } elseif (! $isSuperadmin) {
                 $orgId = (int) $user->current_organization_id;
                 $query->where(function (Builder $q) use ($orgId) {
@@ -910,7 +910,7 @@ class AdminService
         // Kekalkan skop org yang sama seperti senarai program: admin biasa hanya
         // nampak pendaftaran organisasinya (kecuali event milik/bersama org).
         if ($user->isBranchAdmin()) {
-            $base->whereHas('event', fn ($q) => $q->where('branch_id', $user->managedBranchId()));
+            $base->whereHas('event', fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()));
         } elseif (! $user->hasRole('Superadmin')) {
             $orgId = (int) $user->current_organization_id;
             $base->where(function (Builder $q) use ($orgId) {
@@ -1213,9 +1213,7 @@ class AdminService
             : null;
 
         if ($actor->isBranchAdmin()) {
-            $branchId = $actor->managedBranchId();
-
-            if (! $matchedUser || (int) $matchedUser->branch_id !== (int) $branchId) {
+            if (! $matchedUser || ! $actor->canManageBranch($matchedUser->branch_id)) {
                 throw ValidationException::withMessages([
                     'ic_number' => 'Peserta mesti ahli cawangan ini.',
                 ]);
@@ -1274,7 +1272,7 @@ class AdminService
 
         if ($user->isBranchAdmin()) {
             abort_unless(
-                (int) $event->branch_id === (int) $user->managedBranchId(),
+                $user->canManageBranch($event->branch_id),
                 403,
                 'Tiada kebenaran.'
             );
@@ -1775,7 +1773,7 @@ class AdminService
     private function usrahTarget(User $user): array
     {
         $memberIds = UsrahGroup::query()
-            ->when($user->isBranchAdmin(), fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+            ->when($user->isBranchAdmin(), fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
             ->with('members')
             ->get()
             ->flatMap(fn (UsrahGroup $group) => $group->members->pluck('id'))

@@ -170,10 +170,10 @@ class ExportController extends Controller
         $query->where('current_organization_id', $admin->current_organization_id);
 
         if ($admin->isBranchAdmin()) {
-            $branchId = $admin->managedBranchId();
-            abort_if(! $branchId, 403, 'Akaun admin cawangan ini tiada cawangan.');
+            $branchIds = $admin->managedBranchIds();
+            abort_if($branchIds === [], 403, 'Akaun admin cawangan ini tiada cawangan.');
 
-            return $query->where('branch_id', $branchId);
+            return $query->whereIn('branch_id', $branchIds);
         }
 
         if ($branchId) {
@@ -194,8 +194,12 @@ class ExportController extends Controller
     {
         $admin = $request->user();
 
-        if ($admin->isBranchAdmin() && $admin->managedBranchId()) {
-            return 'cawangan-'.$admin->managedBranchId().'-';
+        if ($admin->isBranchAdmin() && $admin->managedBranchIds() !== []) {
+            $ids = $admin->managedBranchIds();
+
+            return count($ids) === 1
+                ? 'cawangan-'.$ids[0].'-'
+                : 'cawangan-'.count($ids).'cawangan-';
         }
 
         $branchId = (int) $request->input('branch_id');

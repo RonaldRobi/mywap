@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -15,9 +15,6 @@ const props = defineProps({
     events: Array,
     attendance_rate: Number,
 });
-
-const page = usePage();
-const isBranchAdmin = computed(() => page.props.auth.user?.roles?.includes('Admin Cawangan'));
 
 const selectedYear = ref(props.year);
 const selectedBranchId = ref(props.branch?.id);
@@ -60,7 +57,7 @@ const eventSummary = computed(() => props.summary.slice(8));
 
                 <div class="flex flex-wrap items-center gap-2">
                     <select
-                        v-if="!isBranchAdmin"
+                        v-if="branches.length > 1"
                         v-model.number="selectedBranchId"
                         class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 focus:border-indigo-400 focus:ring-0"
                     >

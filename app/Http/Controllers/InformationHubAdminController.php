@@ -37,12 +37,12 @@ class InformationHubAdminController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $libraryItems = LibraryItem::query()
             ->with('organization:id,name,slug')
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->latest()
             ->take(100)
             ->get()
@@ -82,6 +82,7 @@ class InformationHubAdminController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
         $managedBranchId = $isBranchAdmin ? $user->managedBranchId() : null;
+        $managedBranchIds = $isBranchAdmin ? $user->managedBranchIds() : [];
 
         $search = $request->input('search');
         $organizationIdFilter = $request->input('organization_id');
@@ -117,7 +118,13 @@ class InformationHubAdminController extends Controller
         }
 
         if ($isBranchAdmin) {
-            $query->where('branch_id', $managedBranchId);
+            $requestedBranchId = $branchIdFilter ? (int) $branchIdFilter : null;
+
+            if ($requestedBranchId && in_array($requestedBranchId, $managedBranchIds, true)) {
+                $query->where('branch_id', $requestedBranchId);
+            } else {
+                $query->whereIn('branch_id', $managedBranchIds);
+            }
         } elseif ($branchIdFilter) {
             $query->where('branch_id', $branchIdFilter);
         } elseif ($stateFilter) {
@@ -180,7 +187,7 @@ class InformationHubAdminController extends Controller
                 ->orderBy('state')->orderBy('name')
                 ->get(['id', 'name', 'state', 'organization_id'])
             : Branch::where('organization_id', $user->current_organization_id)
-                ->when($isBranchAdmin, fn ($q) => $q->where('id', $managedBranchId))
+                ->when($isBranchAdmin, fn ($q) => $q->whereKey($managedBranchIds))
                 ->where('is_active', true)
                 ->orderBy('state')->orderBy('name')
                 ->get(['id', 'name', 'state', 'organization_id']);
@@ -249,7 +256,7 @@ class InformationHubAdminController extends Controller
 
         $userQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
-            ->when($isBranchAdmin, fn ($q) => $q->where('branch_id', $managedBranchId));
+            ->when($isBranchAdmin, fn ($q) => $q->whereIn('branch_id', $managedBranchIds));
         $stats = [
             'total' => (clone $userQuery)->count(),
             'aktif' => (clone $userQuery)->where('is_active', true)->count(),
@@ -274,6 +281,7 @@ class InformationHubAdminController extends Controller
             'isSuperadmin' => $isSuperadmin,
             'isBranchAdmin' => $isBranchAdmin,
             'managedBranchId' => $managedBranchId,
+            'managedBranchIds' => $managedBranchIds,
             'defaultOrganizationId' => $user->current_organization_id,
             'organizations' => $isSuperadmin
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug', 'min_age', 'max_age'])
@@ -379,7 +387,7 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
-        if ($authUser->isBranchAdmin() && (int) $user->branch_id !== (int) $authUser->managedBranchId()) {
+        if ($authUser->isBranchAdmin() && ! $authUser->canManageBranch($user->branch_id)) {
             abort(403);
         }
 
@@ -518,15 +526,14 @@ class InformationHubAdminController extends Controller
         }
 
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchId = $user->isBranchAdmin()
+            ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+            : null;
 
         if (($data['target_criteria'] ?? 'all') === 'specific_usrah' && ! empty($data['usrah_group_id']) && $branchId) {
-            $belongs = \App\Models\UsrahGroup::query()
-                ->whereKey($data['usrah_group_id'])
-                ->where('branch_id', $branchId)
-                ->exists();
+            $usrahGroup = \App\Models\UsrahGroup::query()->find($data['usrah_group_id']);
 
-            abort_unless($belongs, 403);
+            abort_unless($usrahGroup && $user->canManageBranch($usrahGroup->branch_id), 403);
         }
 
         $coverPath = $request->hasFile('cover_image')
@@ -693,7 +700,9 @@ class InformationHubAdminController extends Controller
 
         LibraryItem::create([
             'organization_id' => $organizationId,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
+            'branch_id' => $user->isBranchAdmin()
+                ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+                : null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category' => $data['category'] ?? 'Umum',
@@ -1067,7 +1076,7 @@ class InformationHubAdminController extends Controller
         abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
-        if ($authUser->isBranchAdmin() && (int) $user->branch_id !== (int) $authUser->managedBranchId()) {
+        if ($authUser->isBranchAdmin() && ! $authUser->canManageBranch($user->branch_id)) {
             abort(403);
         }
 
@@ -1236,7 +1245,7 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
-        if ($user->isBranchAdmin() && (int) $targetUser->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($targetUser->branch_id)) {
             abort(403);
         }
 
@@ -1279,7 +1288,7 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
-        if ($user->isBranchAdmin() && (int) $targetUser->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($targetUser->branch_id)) {
             abort(403);
         }
 
@@ -1462,7 +1471,7 @@ class InformationHubAdminController extends Controller
 
         abort_if((int) $user->current_organization_id !== (int) $item->organization_id, 403);
 
-        if ($user->isBranchAdmin() && (int) $item->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($item->branch_id)) {
             abort(403);
         }
     }
@@ -1475,7 +1484,7 @@ class InformationHubAdminController extends Controller
 
         abort_if((int) $user->current_organization_id !== (int) $announcement->organization_id, 403);
 
-        if ($user->isBranchAdmin() && (int) $announcement->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($announcement->branch_id)) {
             abort(403);
         }
     }

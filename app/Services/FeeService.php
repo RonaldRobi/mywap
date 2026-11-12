@@ -155,14 +155,16 @@ class FeeService
         );
     }
 
-    public function getDueCount(int $organizationId, ?int $year = null, ?int $branchId = null): int
+    public function getDueCount(int $organizationId, ?int $year = null, int|array|null $branchId = null): int
     {
         $year ??= now()->year;
+        $branchIds = $this->normalizeBranchIds($branchId);
+        $branchKey = $branchIds === [] ? 'all' : implode('-', $branchIds);
 
-        return Cache::remember("due_count:{$organizationId}:{$branchId}:{$year}", 60, function () use ($organizationId, $branchId, $year) {
+        return Cache::remember("due_count:{$organizationId}:{$branchKey}:{$year}", 60, function () use ($organizationId, $branchIds, $year) {
             return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $organizationId)
-                ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+                ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
                 ->count();
@@ -210,15 +212,18 @@ class FeeService
             })->all();
     }
 
-    public function getAdminStats(?int $organizationId, int $year, ?int $branchId = null): array
+    public function getAdminStats(?int $organizationId, int $year, int|array|null $branchId = null): array
     {
-        return Cache::remember("fee_stats:{$organizationId}:{$branchId}:{$year}", 60, function () use ($organizationId, $branchId, $year) {
+        $branchIds = $this->normalizeBranchIds($branchId);
+        $branchKey = $branchIds === [] ? 'all' : implode('-', $branchIds);
+
+        return Cache::remember("fee_stats:{$organizationId}:{$branchKey}:{$year}", 60, function () use ($organizationId, $branchIds, $year) {
             $baseQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
             if ($organizationId) {
                 $baseQuery->where('current_organization_id', $organizationId);
             }
-            if ($branchId) {
-                $baseQuery->where('branch_id', $branchId);
+            if ($branchIds !== []) {
+                $baseQuery->whereIn('branch_id', $branchIds);
             }
 
             $stats = (clone $baseQuery)->selectRaw("
@@ -255,8 +260,8 @@ class FeeService
                 $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $organizationId));
             }
 
-            if ($branchId) {
-                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('branch_id', $branchId));
+            if ($branchIds !== []) {
+                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->whereIn('branch_id', $branchIds));
             }
 
             $collectedAmount = $collectedQuery->sum('amount');
@@ -298,5 +303,24 @@ class FeeService
             });
 
         return $count;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function normalizeBranchIds(int|array|null $branchId): array
+    {
+        if ($branchId === null) {
+            return [];
+        }
+
+        $ids = is_array($branchId) ? $branchId : [$branchId];
+
+        return collect($ids)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

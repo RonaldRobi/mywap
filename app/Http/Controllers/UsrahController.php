@@ -18,10 +18,10 @@ class UsrahController extends Controller
     public function adminIndex(Request $request): Response
     {
         $user = $request->user();
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $groups = UsrahGroup::query()
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
             ->latest()
             ->get()
@@ -42,7 +42,7 @@ class UsrahController extends Controller
 
         $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $user->current_organization_id)
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
@@ -67,7 +67,9 @@ class UsrahController extends Controller
 
         UsrahGroup::create([
             'organization_id' => $user->current_organization_id,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
+            'branch_id' => $user->isBranchAdmin()
+                ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+                : null,
             ...$data,
         ]);
 
@@ -116,7 +118,7 @@ class UsrahController extends Controller
             $requestedIds = collect($data['members'])->pluck('user_id')->map(fn ($id) => (int) $id)->all();
             $allowedIds = User::withoutGlobalScopes()
                 ->whereIn('id', $requestedIds)
-                ->where('branch_id', $user->managedBranchId())
+                ->whereIn('branch_id', $user->managedBranchIds())
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->all();

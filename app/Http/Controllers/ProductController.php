@@ -52,7 +52,9 @@ class ProductController extends Controller
 
         $data = $this->productPayload($request, $validated);
         $data['organisasi_id'] = $this->resolveOrganisationId($request);
-        $data['branch_id'] = $request->user()->isBranchAdmin() ? $request->user()->managedBranchId() : null;
+        $data['branch_id'] = $request->user()->isBranchAdmin()
+            ? $request->user()->resolveManagedBranchId($request->integer('branch_id') ?: null)
+            : null;
         $data['images'] = $this->storeExtraImages($request);
 
         if ($request->hasFile('image')) {
@@ -74,7 +76,7 @@ class ProductController extends Controller
 
         if (! $product->status
             && $request->user()?->isBranchAdmin()
-            && (int) $product->branch_id !== (int) $request->user()->managedBranchId()) {
+            && ! $request->user()->canManageBranch($product->branch_id)) {
             abort(404);
         }
 
@@ -121,7 +123,9 @@ class ProductController extends Controller
         }
 
         if ($request->user()->isBranchAdmin()) {
-            $data['branch_id'] = $request->user()->managedBranchId();
+            $data['branch_id'] = $request->user()->canManageBranch($product->branch_id)
+                ? $product->branch_id
+                : $request->user()->resolveManagedBranchId($request->integer('branch_id') ?: null);
         }
 
         if ($request->hasFile('image')) {

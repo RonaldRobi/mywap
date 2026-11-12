@@ -29,10 +29,11 @@ class BranchController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
         $managedBranchId = $isBranchAdmin ? $user->managedBranchId() : null;
+        $managedBranchIds = $isBranchAdmin ? $user->managedBranchIds() : [];
 
         $organizations = Organization::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('id', $user->current_organization_id))
-            ->with(['branches' => fn ($q) => $q->withCount('members')->with(['admins', 'secretaries'])->when($isBranchAdmin, fn ($query) => $query->whereKey($managedBranchId))->orderBy('state')])
+            ->with(['branches' => fn ($q) => $q->withCount('members')->with(['admins', 'secretaries'])->when($isBranchAdmin, fn ($query) => $query->whereKey($managedBranchIds))->orderBy('state')])
             ->orderBy('sort_order')
             ->orderBy('min_age')
             ->get()
@@ -59,11 +60,13 @@ class BranchController extends Controller
                         'email' => $admin->email,
                         'member_no' => $admin->member_no,
                         'last_login_at' => $admin->first_login_at?->toISOString(),
+                        'managed_branch_ids' => $admin->managedBranchIds(),
                     ])->values(),
                     'manager' => $b->admins->first() ? [
                         'id' => $b->admins->first()->id,
                         'name' => $b->admins->first()->name,
                         'email' => $b->admins->first()->email,
+                        'managed_branch_ids' => $b->admins->first()->managedBranchIds(),
                     ] : null,
                     'secretaries' => $b->secretaries->map(fn ($secretary) => [
                         'id' => $secretary->id,
@@ -79,7 +82,8 @@ class BranchController extends Controller
             'organizations' => $organizations,
             'isBranchAdmin' => $isBranchAdmin,
             'managedBranchId' => $managedBranchId,
-            'unassignedAdmins' => User::query()
+            'managedBranchIds' => $managedBranchIds,
+            'unassignedAdmins' => $isBranchAdmin ? [] : User::query()
                 ->role('Admin Cawangan')
                 ->whereDoesntHave('branchAdminAssignments', fn ($q) => $q->where('role', BranchAdmin::ROLE_MANAGER))
                 ->orderBy('name')
@@ -309,21 +313,28 @@ class BranchController extends Controller
 
             $target = User::withoutGlobalScopes()->findOrFail($data['user_id']);
 
-            if (! $target->hasRole('Admin Cawangan')) {
-                return ['error' => 'Akaun tersebut bukan Admin Cawangan.'];
-            }
-
-            if ($target->branchAdminAssignments()->where('role', BranchAdmin::ROLE_MANAGER)->exists()) {
-                return ['error' => 'Akaun tersebut sudah ditugaskan ke cawangan lain.'];
+            if ($target->trashed() || ! $target->is_active) {
+                return ['error' => 'Akaun tersebut tidak aktif.'];
             }
 
             if ($target->current_organization_id && (int) $target->current_organization_id !== (int) $branch->organization_id) {
                 return ['error' => 'Akaun tersebut milik organisasi lain.'];
             }
 
+            if ($target->branchAdminAssignments()
+                ->where('branch_id', $branch->id)
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->exists()) {
+                return ['error' => 'Akaun tersebut sudah menjadi admin cawangan ini.'];
+            }
+
+            if (! $target->hasRole('Admin Cawangan')) {
+                $target->assignRole('Admin Cawangan');
+            }
+
             $target->forceFill([
                 'current_organization_id' => $branch->organization_id,
-                'branch_id' => $branch->id,
+                'branch_id' => $target->branch_id ?? $branch->id,
                 'is_active' => true,
                 'email_verified_at' => $target->email_verified_at ?? now(),
                 'profile_completed_at' => $target->profile_completed_at ?? now(),
@@ -353,6 +364,100 @@ class BranchController extends Controller
         }
 
         return back()->with('success', $result['success']);
+    }
+
+    /**
+     * Tetapkan cawangan tambahan yang diurus oleh admin cawangan ini.
+     *
+     * Satu akaun boleh mengurus beberapa cawangan dalam organisasi yang sama.
+     * Cawangan yang sudah mempunyai admin lain tidak akan diambil alih.
+     */
+    public function syncAdminBranches(Request $request, Branch $branch): RedirectResponse
+    {
+        $this->authorizeBranchManagement($branch);
+
+        $data = $request->validate([
+            'branch_ids' => ['array'],
+            'branch_ids.*' => ['integer', 'exists:branches,id'],
+        ]);
+
+        $manager = BranchAdmin::query()
+            ->where('branch_id', $branch->id)
+            ->where('role', BranchAdmin::ROLE_MANAGER)
+            ->with('user')
+            ->first();
+
+        if (! $manager?->user) {
+            return back()->with('error', 'Cawangan ini belum mempunyai akaun admin.');
+        }
+
+        $requested = collect($data['branch_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->push((int) $branch->id)
+            ->unique()
+            ->values();
+
+        $branches = Branch::query()
+            ->whereIn('id', $requested)
+            ->where('organization_id', $branch->organization_id)
+            ->get()
+            ->keyBy('id');
+
+        if ($branches->count() !== $requested->count()) {
+            return back()->with('error', 'Ada cawangan yang tidak sah untuk organisasi ini.');
+        }
+
+        $skipped = [];
+        $assigned = [];
+
+        DB::transaction(function () use ($branches, $branch, $manager, &$skipped, &$assigned) {
+            foreach ($branches as $target) {
+                $existing = BranchAdmin::query()
+                    ->where('branch_id', $target->id)
+                    ->where('role', BranchAdmin::ROLE_MANAGER)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing && (int) $existing->user_id !== (int) $manager->user_id) {
+                    $skipped[] = $target->name;
+
+                    continue;
+                }
+
+                BranchAdmin::updateOrCreate(
+                    ['branch_id' => $target->id, 'user_id' => $manager->user_id],
+                    ['role' => BranchAdmin::ROLE_MANAGER, 'created_by' => Auth::id()]
+                );
+
+                $assigned[] = $target->name;
+            }
+
+            BranchAdmin::query()
+                ->where('user_id', $manager->user_id)
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->where('branch_id', '!=', $branch->id)
+                ->whereNotIn('branch_id', $branches->keys())
+                ->delete();
+        });
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'organization_id' => $branch->organization_id,
+            'target_type' => User::class,
+            'target_id' => $manager->user_id,
+            'action' => 'branch_admin_branches_synced',
+            'description' => 'Skop cawangan admin dikemas kini: '.implode(', ', $assigned).'.',
+        ]);
+
+        if ($skipped !== []) {
+            return back()->with(
+                'success',
+                'Skop cawangan dikemas kini. Cawangan berikut sudah mempunyai admin lain: '.implode(', ', $skipped).'.'
+            );
+        }
+
+        return back()->with('success', 'Skop cawangan admin berjaya dikemas kini.');
     }
 
     /**
@@ -539,7 +644,7 @@ class BranchController extends Controller
         }
 
         if ($user->isBranchAdmin()) {
-            abort_if((int) $user->managedBranchId() !== (int) $branch->id, 403);
+            abort_unless($user->canManageBranch($branch->id), 403);
 
             return;
         }

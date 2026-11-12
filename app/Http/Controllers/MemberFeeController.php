@@ -534,7 +534,7 @@ class MemberFeeController extends Controller
         return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)->with('payment'), 'organization'])
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
-            ->when($user->isBranchAdmin(), fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+            ->when($user->isBranchAdmin(), fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))
             ->orderBy('name');
     }
 
@@ -641,7 +641,7 @@ class MemberFeeController extends Controller
             abort(403);
         }
 
-        if ($admin->isBranchAdmin() && (int) $target->branch_id !== (int) $admin->managedBranchId()) {
+        if ($admin->isBranchAdmin() && ! $admin->canManageBranch($target->branch_id)) {
             abort(403);
         }
     }

@@ -434,10 +434,14 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
     });
 
-    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
+    Route::middleware(['role:Admin|Superadmin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
         Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+    });
+
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
         Route::post('branches/{branch}/admin-account', [BranchController::class, 'storeAdminAccount'])->name('branches.admin-account.store');
         Route::post('branches/{branch}/admin-account/assign', [BranchController::class, 'assignAdminAccount'])->name('branches.admin-account.assign');
+        Route::put('branches/{branch}/admin-account/branches', [BranchController::class, 'syncAdminBranches'])->name('branches.admin-account.branches');
         Route::put('branches/{branch}/admin-account/password', [BranchController::class, 'updateAdminPassword'])->name('branches.admin-account.password');
         Route::delete('branches/{branch}/admin-account', [BranchController::class, 'destroyAdminAccount'])->name('branches.admin-account.destroy');
         Route::post('branches/{branch}/secretaries', [BranchController::class, 'storeSecretary'])->name('branches.secretaries.store');

@@ -492,7 +492,7 @@ class AttendanceController extends Controller
         ]);
 
         if ($user->isBranchAdmin()) {
-            $query->whereHas('event', fn (Builder $q) => $q->where('branch_id', $user->managedBranchId()));
+            $query->whereHas('event', fn (Builder $q) => $q->whereIn('branch_id', $user->managedBranchIds()));
         } elseif (! $isSuperadmin) {
             $query->where(function (Builder $q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)

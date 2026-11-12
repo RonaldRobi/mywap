@@ -127,7 +127,7 @@ class ProgramReportController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
 
-        abort_if($isBranchAdmin && ! $user->managedBranchId(), 403, 'Akaun admin cawangan belum ditugaskan.');
+        abort_if($isBranchAdmin && $user->managedBranchIds() === [], 403, 'Akaun admin cawangan belum ditugaskan.');
 
         $years = $this->availableYears($user);
         $year = $this->resolveYear($request);
@@ -159,7 +159,8 @@ class ProgramReportController extends Controller
 
         $branchId = null;
         if ($isBranchAdmin) {
-            $branchId = $user->managedBranchId();
+            $branchId = $user->resolveManagedBranchId($request->integer('branch_id') ?: null);
+            $scoped->where('branch_id', $branchId);
         } elseif ($request->filled('branch_id')) {
             $candidate = (int) $request->input('branch_id');
 
@@ -299,7 +300,7 @@ class ProgramReportController extends Controller
             ->where('end_time', '<', now());
 
         if ($user->isBranchAdmin()) {
-            $query->where('branch_id', $user->managedBranchId());
+            $query->whereIn('branch_id', $user->managedBranchIds());
         } elseif (! $user->hasRole('Superadmin')) {
             $query->where(function (Builder $query) use ($user) {
                 $query->where('organization_id', $user->current_organization_id)
@@ -336,7 +337,7 @@ class ProgramReportController extends Controller
         $query = Branch::query()->where('is_active', true);
 
         if ($user->isBranchAdmin()) {
-            $query->whereKey($user->managedBranchId());
+            $query->whereKey($user->managedBranchIds());
         } elseif (! $user->hasRole('Superadmin')) {
             $query->where('organization_id', $user->current_organization_id);
         }

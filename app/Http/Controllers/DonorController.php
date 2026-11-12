@@ -15,14 +15,14 @@ class DonorController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->isSuperadmin();
         $orgId = (int) $user->current_organization_id;
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         // Donors are a platform-wide aggregate, so an organisation admin may
         // only see donors who actually donated to their own organisation.
         $base = Donor::query();
         if (! $isSuperadmin) {
             $base->whereHas('donations.infaq', fn ($q) => $q->where('organization_id', $orgId)
-                ->when($branchId, fn ($infaqQuery) => $infaqQuery->where('branch_id', $branchId)));
+                ->when($branchIds !== [], fn ($infaqQuery) => $infaqQuery->whereIn('branch_id', $branchIds)));
         }
 
         $query = (clone $base)->orderByDesc('last_donated_at');
@@ -48,7 +48,7 @@ class DonorController extends Controller
         if (! $isSuperadmin) {
             $scopedConfirmed = fn ($q) => $q->where('status', 'confirmed')
                 ->whereHas('infaq', fn ($q2) => $q2->where('organization_id', $orgId)
-                    ->when($branchId, fn ($infaqQuery) => $infaqQuery->where('branch_id', $branchId)));
+                    ->when($branchIds !== [], fn ($infaqQuery) => $infaqQuery->whereIn('branch_id', $branchIds)));
             $query->withSum(['donations as scoped_total' => $scopedConfirmed], 'amount')
                 ->withCount(['donations as scoped_count' => $scopedConfirmed]);
         }
@@ -75,7 +75,7 @@ class DonorController extends Controller
             $confirmed = InfaqDonation::query()
                 ->where('status', 'confirmed')
                 ->whereHas('infaq', fn ($q) => $q->where('organization_id', $orgId)
-                    ->when($branchId, fn ($infaqQuery) => $infaqQuery->where('branch_id', $branchId)));
+                    ->when($branchIds !== [], fn ($infaqQuery) => $infaqQuery->whereIn('branch_id', $branchIds)));
 
             $totalDonors = (clone $base)->count();
             $totalAmount = (float) (clone $confirmed)->sum('amount');
@@ -100,7 +100,7 @@ class DonorController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->isSuperadmin();
         $orgId = (int) $user->current_organization_id;
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $donor->load('user');
 
@@ -109,7 +109,7 @@ class DonorController extends Controller
 
         if (! $isSuperadmin) {
             $donationQuery->whereHas('infaq', fn ($q) => $q->where('organization_id', $orgId)
-                ->when($branchId, fn ($infaqQuery) => $infaqQuery->where('branch_id', $branchId)));
+                ->when($branchIds !== [], fn ($infaqQuery) => $infaqQuery->whereIn('branch_id', $branchIds)));
 
             // An org admin must not open a donor who has no donation history
             // with their organisation.

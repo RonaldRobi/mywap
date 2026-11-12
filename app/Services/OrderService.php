@@ -139,7 +139,7 @@ class OrderService
 
         if ($user->isBranchAdmin()) {
             $query = Order::query()
-                ->whereHas('items.product', fn ($q) => $q->where('branch_id', $user->managedBranchId()));
+                ->whereHas('items.product', fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()));
         } else {
             $query = $isAdmin
                 ? Order::query()

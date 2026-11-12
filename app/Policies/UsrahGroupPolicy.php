@@ -19,7 +19,7 @@ class UsrahGroupPolicy
         }
 
         if ($user->isBranchAdmin()) {
-            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+            return $user->canManageBranch($usrahGroup->branch_id);
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id;
@@ -37,7 +37,7 @@ class UsrahGroupPolicy
         }
 
         if ($user->isBranchAdmin()) {
-            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+            return $user->canManageBranch($usrahGroup->branch_id);
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
@@ -51,7 +51,7 @@ class UsrahGroupPolicy
         }
 
         if ($user->isBranchAdmin()) {
-            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+            return $user->canManageBranch($usrahGroup->branch_id);
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
@@ -65,7 +65,7 @@ class UsrahGroupPolicy
         }
 
         if ($user->isBranchAdmin()) {
-            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+            return $user->canManageBranch($usrahGroup->branch_id);
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id

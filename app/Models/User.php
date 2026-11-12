@@ -412,21 +412,65 @@ class User extends Authenticatable
     }
 
     /**
-     * Cawangan yang diuruskan oleh admin cawangan.
+     * Semua cawangan yang diuruskan oleh admin cawangan.
+     *
+     * Satu akaun boleh memegang lebih daripada satu cawangan (contoh admin
+     * ABIM Melaka mengurus cawangan Batu Berendam dan Telok Mas). Jika tiada
+     * rekod `branch_admins`, cawangan utama pengguna (`branch_id`) digunakan
+     * sebagai fallback supaya akaun lama tetap berfungsi.
+     *
+     * @return array<int, int>
+     */
+    public function managedBranchIds(): array
+    {
+        if (! $this->hasRole('Admin Cawangan')) {
+            return [];
+        }
+
+        $ids = $this->relationLoaded('branchAdminAssignments')
+            ? $this->branchAdminAssignments
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->pluck('branch_id')
+            : $this->branchAdminAssignments()
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->pluck('branch_id');
+
+        $ids = $ids
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty() && $this->branch_id) {
+            $ids = collect([(int) $this->branch_id]);
+        }
+
+        return $ids->all();
+    }
+
+    /**
+     * Cawangan utama admin cawangan (untuk nilai lalai borang).
      */
     public function managedBranchId(): ?int
     {
-        if (! $this->hasRole('Admin Cawangan')) {
+        return $this->managedBranchIds()[0] ?? null;
+    }
+
+    /**
+     * Pilih cawangan yang diminta jika ia dalam skop admin, jika tidak
+     * gunakan cawangan utama.
+     */
+    public function resolveManagedBranchId(?int $requested): ?int
+    {
+        $ids = $this->managedBranchIds();
+
+        if ($ids === []) {
             return null;
         }
 
-        $assignment = $this->relationLoaded('branchAdminAssignments')
-            ? $this->branchAdminAssignments->firstWhere('role', BranchAdmin::ROLE_MANAGER)
-            : $this->branchAdminAssignments()
-                ->where('role', BranchAdmin::ROLE_MANAGER)
-                ->first();
-
-        return $assignment?->branch_id ?? $this->branch_id;
+        return $requested !== null && in_array((int) $requested, $ids, true)
+            ? (int) $requested
+            : $ids[0];
     }
 
     /**
@@ -448,7 +492,7 @@ class User extends Authenticatable
         }
 
         if ($this->isBranchAdmin()) {
-            return (int) $this->managedBranchId() === (int) $branchId;
+            return in_array((int) $branchId, $this->managedBranchIds(), true);
         }
 
         return $this->isOrgAdmin()

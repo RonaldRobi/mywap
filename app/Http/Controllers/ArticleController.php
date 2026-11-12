@@ -20,11 +20,11 @@ class ArticleController extends Controller
     public function manage(Request $request)
     {
         $user = $request->user();
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $articles = Article::with(['author', 'organization'])
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-            ->when(! $branchId && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
+            ->when($branchIds === [] && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->latest('published_at')
             ->paginate(10);
 
@@ -37,11 +37,11 @@ class ArticleController extends Controller
     public function adminIndex(Request $request)
     {
         $user = $request->user();
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $articles = Article::with(['author', 'organization', 'categories', 'tags'])
-            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-            ->when(! $branchId && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
+            ->when($branchIds === [] && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->latest('created_at')
             ->paginate(15);
 
@@ -164,7 +164,9 @@ class ArticleController extends Controller
         $validated['organization_id'] = $user->isSuperadmin()
             ? ($validated['organization_id'] ?? null)
             : $user->current_organization_id;
-        $validated['branch_id'] = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $validated['branch_id'] = $user->isBranchAdmin()
+            ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+            : null;
 
         $validated['author_id'] = auth()->id();
         $validated['slug'] = Str::slug($validated['title']).'-'.uniqid();
@@ -257,7 +259,7 @@ class ArticleController extends Controller
             : $user->current_organization_id;
 
         if ($user->isBranchAdmin()) {
-            $validated['branch_id'] = $user->managedBranchId();
+            $validated['branch_id'] = $article->branch_id;
         }
 
         $article->update($validated);
@@ -326,7 +328,7 @@ class ArticleController extends Controller
             abort(403);
         }
 
-        if ($user->isBranchAdmin() && (int) $article->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($article->branch_id)) {
             abort(403);
         }
     }

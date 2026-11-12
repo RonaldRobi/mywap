@@ -18,14 +18,14 @@ class VideoController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
-        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+        $branchIds = $user->isBranchAdmin() ? $user->managedBranchIds() : [];
 
         $videos = Video::query()
             ->with('organization:id,name')
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->where('organization_id', $user->current_organization_id);
             })
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when($branchIds !== [], fn ($query) => $query->whereIn('branch_id', $branchIds))
             ->latest()
             ->get()
             ->map(fn (Video $video) => [
@@ -69,7 +69,9 @@ class VideoController extends Controller
 
         Video::create([
             'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
+            'branch_id' => $user->isBranchAdmin()
+                ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
+                : null,
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
@@ -88,7 +90,7 @@ class VideoController extends Controller
             abort(403);
         }
 
-        if ($user->isBranchAdmin() && (int) $video->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($video->branch_id)) {
             abort(403);
         }
 
@@ -107,7 +109,9 @@ class VideoController extends Controller
 
         $video->update([
             'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
-            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : $video->branch_id,
+            'branch_id' => $user->isBranchAdmin()
+                ? ($user->canManageBranch($video->branch_id) ? (int) $video->branch_id : $user->managedBranchId())
+                : $video->branch_id,
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
@@ -126,7 +130,7 @@ class VideoController extends Controller
             abort(403);
         }
 
-        if ($user->isBranchAdmin() && (int) $video->branch_id !== (int) $user->managedBranchId()) {
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($video->branch_id)) {
             abort(403);
         }
 

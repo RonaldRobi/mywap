@@ -64,7 +64,7 @@ class BranchReportController extends Controller
         $year = $year >= 2000 && $year <= now()->year + 1 ? $year : now()->year;
 
         $branches = Branch::query()
-            ->when(! $isSuperadmin && $isBranchAdmin, fn ($q) => $q->whereKey($user->managedBranchId()))
+            ->when(! $isSuperadmin && $isBranchAdmin, fn ($q) => $q->whereKey($user->managedBranchIds()))
             ->when(! $isSuperadmin && ! $isBranchAdmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->where('is_active', true)
             ->orderBy('state')
@@ -74,7 +74,7 @@ class BranchReportController extends Controller
         abort_if($branches->isEmpty(), 403, 'Tiada cawangan untuk laporan.');
 
         $branchId = $isBranchAdmin
-            ? $user->managedBranchId()
+            ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)
             : (int) $request->input('branch_id', $branches->first()->id);
 
         $branch = $branches->firstWhere('id', $branchId);
