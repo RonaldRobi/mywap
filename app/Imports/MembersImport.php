@@ -62,8 +62,8 @@ class MembersImport implements ToCollection, WithHeadingRow, WithLimit, WithStar
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
-            $name = trim((string) ($row['nama'] ?? ''));
-            $ic = Str::upper(preg_replace('/\s+/', '', trim((string) ($row['ic'] ?? ''))));
+            $name = (string) User::formatName($row['nama'] ?? '');
+            $ic = (string) User::normalizeIc($row['ic'] ?? '');
 
             if (empty($name) && empty($ic)) {
                 continue;

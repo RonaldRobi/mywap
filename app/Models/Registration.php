@@ -214,6 +214,12 @@ class Registration extends Model
             return null;
         }
 
+        // Kad ahli mencetak URL /kad/{memberNo}. Terima mana-mana host supaya
+        // kad fizikal kekal sah walaupun domain bertukar.
+        if ($memberNo = static::extractMemberNo($identifier)) {
+            $identifier = $memberNo;
+        }
+
         $query = static::query()->where('event_id', $eventId);
 
         if ($match = (clone $query)->where('registration_no', $identifier)->latest()->first()) {
@@ -256,6 +262,21 @@ class Registration extends Model
                 ->orWhere('phone', $identifier))
             ->latest()
             ->first();
+    }
+
+    /**
+     * Ambil No. ahli daripada URL kad ahli (/kad/{memberNo}).
+     * Host diabaikan supaya kad bercetak dengan domain lama tetap sah.
+     */
+    public static function extractMemberNo(string $identifier): ?string
+    {
+        if (preg_match('~/kad/([^/?#]+)~i', $identifier, $matches) !== 1) {
+            return null;
+        }
+
+        $memberNo = rawurldecode($matches[1]);
+
+        return $memberNo !== '' ? $memberNo : null;
     }
 
     // ─── Relationships ─────────────────────────────────────────────────────────

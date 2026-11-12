@@ -2,14 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
+use App\Models\Organization;
 use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
+    private const WADAH_STATE_ORDER = [
+        'Johor',
+        'Kedah',
+        'Kelantan',
+        'Melaka',
+        'Negeri Sembilan',
+        'Pahang',
+        'Perak',
+        'Perlis',
+        'Pulau Pinang',
+        'Sabah',
+        'Sarawak',
+        'Selangor',
+        'Terengganu',
+        'Wilayah Persekutuan',
+        'Tidak Dinyatakan',
+    ];
+
     /**
      * Report of total membership overall and broken down by state (CSV).
      */
@@ -23,12 +44,11 @@ class ExportController extends Controller
 
         $total = (clone $query)->count();
 
-        $states = (clone $query)
-            ->selectRaw("COALESCE(NULLIF(state, ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
-            ->groupBy('state')
-            ->orderByDesc('total')
-            ->orderBy('state')
-            ->get();
+        $orgId = $admin->hasRole('Superadmin')
+            ? ((int) $request->input('organization_id') ?: null)
+            : (int) $admin->current_organization_id;
+
+        $states = $this->stateReportRows(clone $query, $orgId);
 
         $fileName = 'laporan-keahlian-'.$this->scopeSuffix($request).now()->format('Ymd-His').'.csv';
 
@@ -149,10 +169,11 @@ class ExportController extends Controller
 
         $query->where('current_organization_id', $admin->current_organization_id);
 
-        if ($admin->hasRole('Admin Cawangan')) {
-            abort_if(! $admin->branch_id, 403, 'Akaun admin cawangan ini tiada cawangan.');
+        if ($admin->isBranchAdmin()) {
+            $branchId = $admin->managedBranchId();
+            abort_if(! $branchId, 403, 'Akaun admin cawangan ini tiada cawangan.');
 
-            return $query->where('branch_id', $admin->branch_id);
+            return $query->where('branch_id', $branchId);
         }
 
         if ($branchId) {
@@ -173,8 +194,8 @@ class ExportController extends Controller
     {
         $admin = $request->user();
 
-        if ($admin->hasRole('Admin Cawangan') && $admin->branch_id) {
-            return 'cawangan-'.$admin->branch_id.'-';
+        if ($admin->isBranchAdmin() && $admin->managedBranchId()) {
+            return 'cawangan-'.$admin->managedBranchId().'-';
         }
 
         $branchId = (int) $request->input('branch_id');
@@ -188,6 +209,96 @@ class ExportController extends Controller
         }
 
         return '';
+    }
+
+    private function stateReportRows(Builder $query, ?int $orgId): \Illuminate\Support\Collection
+    {
+        if ($orgId && Organization::whereKey($orgId)->value('slug') === 'wadah') {
+            return $this->wadahStateRows($query, $orgId);
+        }
+
+        return $this->genericStateRows($query);
+    }
+
+    private function wadahStateRows(Builder $query, int $orgId): \Illuminate\Support\Collection
+    {
+        $branchCounts = (clone $query)
+            ->selectRaw('branch_id, COUNT(*) as total')
+            ->groupBy('branch_id')
+            ->pluck('total', 'branch_id');
+
+        $labels = Branch::query()
+            ->where('organization_id', $orgId)
+            ->pluck('name', 'id')
+            ->map(fn ($name) => $this->canonicalStateLabel((string) $name))
+            ->all();
+
+        $counts = array_fill_keys(self::WADAH_STATE_ORDER, 0);
+
+        foreach ($branchCounts as $branchId => $total) {
+            $label = $branchId ? ($labels[$branchId] ?? 'Tidak Dinyatakan') : 'Tidak Dinyatakan';
+            if (! array_key_exists($label, $counts)) {
+                $counts[$label] = 0;
+            }
+            $counts[$label] += (int) $total;
+        }
+
+        return collect(self::WADAH_STATE_ORDER)
+            ->map(fn ($state) => (object) ['state' => $state, 'total' => $counts[$state] ?? 0]);
+    }
+
+    private function genericStateRows(Builder $query): \Illuminate\Support\Collection
+    {
+        $rows = (clone $query)
+            ->selectRaw("COALESCE(NULLIF(TRIM(state), ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")
+            ->get();
+
+        $counts = [];
+
+        foreach ($rows as $row) {
+            $label = $this->canonicalStateLabel((string) $row->state);
+            $counts[$label] = ($counts[$label] ?? 0) + (int) $row->total;
+        }
+
+        return collect($counts)
+            ->map(fn ($count, $state) => (object) ['state' => $state, 'total' => $count])
+            ->sort(function ($a, $b) {
+                return $b->total <=> $a->total ?: strcmp($a->state, $b->state);
+            })
+            ->values();
+    }
+
+    private function canonicalStateLabel(string $value): string
+    {
+        $key = (string) preg_replace('/[^A-Z]/', '', strtoupper(trim($value)));
+
+        $labels = [
+            'JOHOR' => 'Johor',
+            'KEDAH' => 'Kedah',
+            'KELANTAN' => 'Kelantan',
+            'MELAKA' => 'Melaka',
+            'NEGERISEMBILAN' => 'Negeri Sembilan',
+            'PAHANG' => 'Pahang',
+            'PERAK' => 'Perak',
+            'PERLIS' => 'Perlis',
+            'PULAUPINANG' => 'Pulau Pinang',
+            'PENANG' => 'Pulau Pinang',
+            'SABAH' => 'Sabah',
+            'SARAWAK' => 'Sarawak',
+            'SELANGOR' => 'Selangor',
+            'TERENGGANU' => 'Terengganu',
+            'WILAYAHPERSEKUTUAN' => 'Wilayah Persekutuan',
+            'WILAYAHPERSEKUTAN' => 'Wilayah Persekutuan',
+            'PUSAT' => 'Tidak Dinyatakan',
+            'TIADANEGERI' => 'Tidak Dinyatakan',
+            'TIDAKDINYATAKAN' => 'Tidak Dinyatakan',
+        ];
+
+        if ($key === '') {
+            return 'Tidak Dinyatakan';
+        }
+
+        return $labels[$key] ?? Str::title(strtolower(trim($value)));
     }
 
     private function simpleColumns(): array

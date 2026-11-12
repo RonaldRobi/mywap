@@ -28,6 +28,10 @@ class InformationHubController extends Controller
                 'reactions' => fn ($q) => $q->where('user_id', $user->id),
                 'reads' => fn ($q) => $q->where('user_id', $user->id),
             ])
+            ->when($user->branch_id, fn ($q) => $q->where(function ($inner) use ($user) {
+                $inner->whereNull('branch_id')->orWhere('branch_id', $user->branch_id);
+            }))
+            ->when(! $user->branch_id, fn ($q) => $q->whereNull('branch_id'))
             ->where(function ($query) {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
@@ -108,7 +112,13 @@ class InformationHubController extends Controller
 
     public function library(Request $request): Response
     {
+        $user = $request->user();
+
         $libraryItems = LibraryItem::query()
+            ->when($user?->branch_id, fn ($q) => $q->where(function ($inner) use ($user) {
+                $inner->whereNull('branch_id')->orWhere('branch_id', $user->branch_id);
+            }))
+            ->when(! $user?->branch_id, fn ($q) => $q->whereNull('branch_id'))
             ->latest('id')
             ->limit(200)
             ->get()

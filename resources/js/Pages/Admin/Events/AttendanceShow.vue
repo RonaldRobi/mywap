@@ -1,6 +1,7 @@
 <script setup>
-import { computed, nextTick, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -103,6 +104,49 @@ function bulk(present) {
 const showAddModal = ref(false);
 const addModalEl = ref(null);
 
+const memberSearchQuery = ref('');
+const memberSearchResults = ref([]);
+const memberSearchLoading = ref(false);
+const memberSearchOpen = ref(false);
+let memberSearchTimer = null;
+
+function onMemberSearchInput(value) {
+    clearTimeout(memberSearchTimer);
+    memberSearchQuery.value = value;
+
+    if (value.trim().length < 2) {
+        memberSearchResults.value = [];
+        memberSearchOpen.value = false;
+        return;
+    }
+
+    memberSearchLoading.value = true;
+    memberSearchTimer = setTimeout(() => {
+        axios.get('/api/members/search', { params: { q: value } })
+            .then((res) => {
+                memberSearchResults.value = res.data || [];
+                memberSearchOpen.value = memberSearchResults.value.length > 0;
+            })
+            .catch(() => {
+                memberSearchResults.value = [];
+                memberSearchOpen.value = false;
+            })
+            .finally(() => {
+                memberSearchLoading.value = false;
+            });
+    }, 300);
+}
+
+function pickMember(member) {
+    addForm.name = member.name ?? '';
+    addForm.ic_number = member.ic_number ?? '';
+    addForm.phone = member.phone ?? '';
+    addForm.email = member.email ?? '';
+    addForm.member_no = member.member_no ?? '';
+    memberSearchQuery.value = member.name ?? '';
+    memberSearchOpen.value = false;
+}
+
 const addForm = useForm({
     name: '',
     ic_number: '',
@@ -115,6 +159,9 @@ const addForm = useForm({
 function openAdd() {
     addForm.reset();
     addForm.clearErrors();
+    memberSearchQuery.value = '';
+    memberSearchResults.value = [];
+    memberSearchOpen.value = false;
     showAddModal.value = true;
     nextTick(() => addModalEl.value?.focus());
 }
@@ -135,6 +182,55 @@ function submitAdd() {
         },
     });
 }
+
+const scanIdentifier = ref('');
+const scanInputEl = ref(null);
+const scanBusy = ref(false);
+const scanResult = ref(null);
+
+function focusScan() {
+    nextTick(() => scanInputEl.value?.focus());
+}
+
+async function submitScan() {
+    const identifier = scanIdentifier.value.trim();
+    if (!identifier || scanBusy.value) return;
+
+    scanBusy.value = true;
+    scanResult.value = null;
+
+    try {
+        const { data } = await axios.post(
+            route('admin.attendance.scan', props.event.id),
+            { identifier },
+        );
+
+        scanResult.value = {
+            ok: true,
+            name: data.registration?.name ?? '',
+            memberNo: data.registration?.member_no ?? '',
+        };
+        scanIdentifier.value = '';
+        router.reload({
+            only: ['registrations', 'stats', 'audit_trail'],
+            onFinish: focusScan,
+        });
+    } catch (error) {
+        const payload = error?.response?.data ?? {};
+        scanResult.value = {
+            ok: false,
+            message: payload.message
+                || payload.errors?.identifier?.[0]
+                || 'Imbasan tidak dikenali. Cuba lagi.',
+        };
+        scanIdentifier.value = '';
+        focusScan();
+    } finally {
+        scanBusy.value = false;
+    }
+}
+
+onMounted(focusScan);
 
 const exportQuery = computed(() => {
     const params = new URLSearchParams({ event_id: props.event.id });
@@ -313,6 +409,53 @@ function auditMeta(action) {
                 <div class="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-center shadow-sm">
                     <p class="text-2xl font-black text-amber-600">{{ stats.total_not_attended }}</p>
                     <p class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-amber-500">{{ notAttendedLabel }}</p>
+                </div>
+            </div>
+
+            <div class="mb-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div class="flex-1">
+                        <label for="attendance-scan" class="mb-1 block text-xs font-bold text-gray-700">
+                            Imbas kad ahli
+                        </label>
+                        <input
+                            id="attendance-scan"
+                            ref="scanInputEl"
+                            v-model="scanIdentifier"
+                            type="text"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="Scan QR kad ahli, atau taip No. ahli / No. IC / telefon"
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 font-mono text-sm focus:ring-0"
+                            :disabled="scanBusy"
+                            @keyup.enter="submitScan"
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        @click="submitScan"
+                        :disabled="scanBusy || !scanIdentifier.trim()"
+                        class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                    >
+                        {{ scanBusy ? 'Merekod...' : 'Rekod Kehadiran' }}
+                    </button>
+                </div>
+                <p class="mt-2 text-[11px] text-gray-400">
+                    Sesuai untuk USB scanner di pintu masuk. Setiap imbasan terus merekod kehadiran dan menyegarkan senarai di bawah.
+                </p>
+                <div
+                    v-if="scanResult"
+                    role="status"
+                    aria-live="polite"
+                    class="mt-3 rounded-xl border px-3 py-2 text-sm font-semibold"
+                    :class="scanResult.ok
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : 'border-rose-200 bg-rose-50 text-rose-700'"
+                >
+                    <template v-if="scanResult.ok">
+                        Hadir direkod: {{ scanResult.name }}<span v-if="scanResult.memberNo"> &middot; {{ scanResult.memberNo }}</span>
+                    </template>
+                    <template v-else>{{ scanResult.message }}</template>
                 </div>
             </div>
 
@@ -540,6 +683,34 @@ function auditMeta(action) {
                 </div>
 
                 <form class="space-y-3" @submit.prevent="submitAdd">
+                    <div class="relative">
+                        <label for="add-member-search" class="mb-1 block text-xs font-bold text-gray-700">Cari ahli cawangan</label>
+                        <input
+                            id="add-member-search"
+                            :value="memberSearchQuery"
+                            type="text"
+                            placeholder="Taip nama, no ahli atau emel..."
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0"
+                            autocomplete="off"
+                            @input="onMemberSearchInput($event.target.value)"
+                            @focus="memberSearchOpen = memberSearchResults.length > 0"
+                        />
+                        <div v-if="memberSearchLoading" class="absolute right-3 top-8 text-xs text-gray-400">Mencari...</div>
+                        <div v-if="memberSearchOpen && memberSearchResults.length" class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                            <button
+                                v-for="member in memberSearchResults"
+                                :key="member.id"
+                                type="button"
+                                class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                @click="pickMember(member)"
+                            >
+                                <span class="font-semibold text-gray-800">{{ member.name }}</span>
+                                <span class="text-xs text-gray-400">{{ member.member_no }}</span>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400">Pilih ahli untuk isi butiran secara automatik, atau isi manual di bawah.</p>
+                    </div>
+
                     <div>
                         <label for="add-name" class="mb-1 block text-xs font-bold text-gray-700">Nama penuh</label>
                         <input

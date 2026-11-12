@@ -9,12 +9,15 @@ const props = defineProps({
     usrahGroups: { type: Array, default: () => [] },
     announcements: { type: Array, default: () => [] },
     organizations: { type: Array, default: () => [] },
+    supporterCounts: { type: Object, default: () => ({}) },
     defaultOrganizationId: Number,
     isSuperadmin: Boolean,
+    isBranchAdmin: Boolean,
 });
 
 const page = usePage();
 const activeTab = ref('broadcast');
+const initialOrganizationId = props.defaultOrganizationId ?? props.organizations[0]?.id ?? null;
 
 onMounted(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,21 +34,41 @@ const broadcastForm = useForm({
     action_id: null,
     action_label: '',
     action_url: '',
-    target_criteria: 'all',
-    target_organization_id: props.defaultOrganizationId,
+    target_criteria: props.isBranchAdmin ? 'branch' : 'all',
+    target_organization_id: initialOrganizationId,
     recipient_ids: [],
     notification_channels: ['in_app'],
     email_use_template: false,
 });
 
-const selectedOrgId = ref(props.defaultOrganizationId);
+const selectedOrgId = ref(initialOrganizationId);
+
+function applySelectedOrganization() {
+    if (['organization', 'supporters'].includes(broadcastForm.target_criteria)) {
+        broadcastForm.target_organization_id = selectedOrgId.value;
+    }
+}
+
+function supporterCountFor(orgId) {
+    return props.supporterCounts?.[orgId] ?? 0;
+}
+
+const selectedTargetOrgName = computed(() => orgNameById(selectedOrgId.value));
+const selectedOrgDisplay = computed(() => {
+    const name = props.organizations[0]?.name ?? '';
+    const count = broadcastForm.target_criteria === 'supporters'
+        ? ` (${supporterCountFor(selectedOrgId.value)} emel)`
+        : '';
+
+    return `${name}${count}`;
+});
 
 function onTargetCriteriaChange() {
     if (broadcastForm.target_criteria === 'supporters') {
         // Pendukung hanya boleh menerima emel.
         broadcastForm.notification_channels = ['email'];
     }
-    if (broadcastForm.target_criteria === 'organization') {
+    if (['organization', 'supporters'].includes(broadcastForm.target_criteria)) {
         broadcastForm.target_organization_id = selectedOrgId.value;
     } else {
         broadcastForm.target_organization_id = null;
@@ -60,6 +83,10 @@ function onTargetCriteriaChange() {
 }
 
 function toggleChannel(channel) {
+    if (broadcastForm.target_criteria === 'supporters' && channel !== 'email') {
+        return;
+    }
+
     const idx = broadcastForm.notification_channels.indexOf(channel);
     if (idx > -1) {
         if (broadcastForm.notification_channels.length > 1) {
@@ -79,8 +106,8 @@ function submitBroadcast() {
             memberSearchQuery.value = '';
             memberResults.value = [];
             clearTarget();
-            broadcastForm.target_organization_id = props.defaultOrganizationId;
-            selectedOrgId.value = props.defaultOrganizationId;
+            broadcastForm.target_organization_id = initialOrganizationId;
+            selectedOrgId.value = initialOrganizationId;
             broadcastForm.target_criteria = 'all';
         },
     });
@@ -667,7 +694,11 @@ onBeforeUnmount(stopPolling);
 
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kumpulan Sasar</label>
-                            <select v-model="broadcastForm.target_criteria" @change="onTargetCriteriaChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                            <div v-if="isBranchAdmin" class="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+                                <p class="text-sm font-semibold text-indigo-800">Ahli cawangan anda</p>
+                                <p class="mt-0.5 text-xs text-indigo-600">Siaran hanya dihantar kepada ahli cawangan ini.</p>
+                            </div>
+                            <select v-else v-model="broadcastForm.target_criteria" @change="onTargetCriteriaChange" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
                                 <option value="all">Semua Ahli</option>
                                 <option value="organization">Ahli Organisasi (Wadah, Abim & PKpim) Sahaja</option>
                                 <option value="specific_members">Individu Tertentu (Cari Ahli)</option>
@@ -675,21 +706,33 @@ onBeforeUnmount(stopPolling);
                             </select>
                             <p v-if="broadcastForm.errors.target_criteria" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.target_criteria }}</p>
                             <p v-if="broadcastForm.target_criteria === 'supporters'" class="mt-1 text-xs text-emerald-700">
-                                Siaran kepada Pendukung dihantar melalui emel sahaja.
+                                Siaran kepada Pendukung {{ selectedTargetOrgName || 'organisasi anda' }} dihantar melalui emel sahaja.
                                 <a :href="route('admin.supporters.index')" class="font-semibold underline">Urus Pendukung</a>
                             </p>
+                            <p v-if="broadcastForm.errors.target_organization_id" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.target_organization_id }}</p>
                         </div>
 
-                        <div v-if="broadcastForm.target_criteria === 'organization' && isSuperadmin">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Pilih Organisasi</label>
-                            <select v-model="selectedOrgId" @change="broadcastForm.target_organization_id = selectedOrgId" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
-                                <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
+                        <div v-if="['organization', 'supporters'].includes(broadcastForm.target_criteria) && isSuperadmin">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                                {{ broadcastForm.target_criteria === 'supporters' ? 'Pilih Organisasi Pendukung' : 'Pilih Organisasi' }}
+                            </label>
+                            <select v-model="selectedOrgId" @change="applySelectedOrganization" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold">
+                                <option v-for="org in organizations" :key="org.id" :value="org.id">
+                                    {{ org.name }}<template v-if="broadcastForm.target_criteria === 'supporters'"> ({{ supporterCountFor(org.id) }} emel)</template>
+                                </option>
                             </select>
                         </div>
 
-                        <div v-if="broadcastForm.target_criteria === 'organization' && !isSuperadmin" class="md:col-span-1">
-                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Organisasi</label>
-                            <input type="text" :value="organizations[0]?.name ?? ''" disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 font-semibold cursor-not-allowed">
+                        <div v-if="['organization', 'supporters'].includes(broadcastForm.target_criteria) && !isSuperadmin" class="md:col-span-1">
+                            <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                                {{ broadcastForm.target_criteria === 'supporters' ? 'Organisasi Pendukung' : 'Organisasi' }}
+                            </label>
+                            <input
+                                type="text"
+                                :value="selectedOrgDisplay"
+                                disabled
+                                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 font-semibold cursor-not-allowed"
+                            >
                         </div>
 
                         <!-- Multi-Member Search for specific_members -->
@@ -757,10 +800,11 @@ onBeforeUnmount(stopPolling);
                         <div class="md:col-span-2 mt-3">
                             <label class="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Saluran Penghantaran</label>
                             <div class="flex flex-wrap items-center gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2" :class="broadcastForm.target_criteria === 'supporters' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'">
                                     <input
                                         type="checkbox"
                                         :checked="broadcastForm.notification_channels.includes('in_app')"
+                                        :disabled="broadcastForm.target_criteria === 'supporters'"
                                         @change="toggleChannel('in_app')"
                                         class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                                     >
@@ -827,11 +871,14 @@ onBeforeUnmount(stopPolling);
                                         <p class="mt-0.5 text-xs text-gray-500 font-medium tracking-wide">
                                             <span class="font-bold text-gray-700">Dari: {{ item.sender_name || '—' }}</span> &bull;
                                             <span class="capitalize">{{ item.target_criteria_label }}</span>
-                                            <template v-if="item.target_criteria === 'organization' && item.target_organization_name">
+                                            <template v-if="['organization', 'supporters'].includes(item.target_criteria) && item.target_organization_name">
                                                 &rarr; <span class="font-semibold text-gray-600">{{ item.target_organization_name }}</span>
                                             </template>
                                             <template v-if="item.target_criteria === 'specific_members' && item.recipient_count">
                                                 ({{ item.recipient_count }} ahli)
+                                            </template>
+                                            <template v-if="item.target_criteria === 'supporters' && item.total_recipients">
+                                                ({{ item.total_recipients }} emel)
                                             </template>
                                         </p>
                                         <div v-if="item.target_criteria === 'specific_members' && (item.recipients_preview?.length || item.recipients_more > 0)" class="mt-1.5 flex flex-wrap gap-1.5">

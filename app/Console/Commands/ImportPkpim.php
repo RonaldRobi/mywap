@@ -91,7 +91,7 @@ class ImportPkpim extends Command
             $branchId = $r['branchName'] ? ($branchMap[$r['branchName']] ?? null) : null;
 
             $record = [
-                'name' => $r['name'],
+                'name' => User::formatName($r['name']),
                 'member_no' => $memberNo,
                 'member_no_sequence' => $seq,
                 'password' => $defaultPw,
@@ -102,7 +102,7 @@ class ImportPkpim extends Command
                 'branch_id' => $branchId,
                 'notes' => $r['notes'],
                 'current_organization_id' => $pkpim->id,
-                'ic_number' => $r['ic'],
+                'ic_number' => User::normalizeIc($r['ic']),
             ];
 
             $exists = isset($existingIcs[$r['ic']]);

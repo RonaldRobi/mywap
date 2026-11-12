@@ -12,6 +12,7 @@ class CartItem {
     this.variationLabel,
     this.quantity = 1,
     this.stock,
+    this.postageCost,
   });
 
   final String key;
@@ -29,6 +30,10 @@ class CartItem {
   /// Null means stock is either unknown or not tracked.
   final int? stock;
 
+  /// Product-level postage. The order is charged the highest postage across
+  /// its lines once, never postage multiplied by quantity.
+  final double? postageCost;
+
   double get lineTotal => unitPrice * quantity;
 
   bool get isOutOfStock => stock != null && stock! <= 0;
@@ -36,16 +41,17 @@ class CartItem {
   bool get isAtStockLimit => stock != null && quantity >= stock!;
 
   CartItem copyWith({int? quantity, int? stock}) => CartItem(
-        key: key,
-        productId: productId,
-        name: name,
-        image: image,
-        unitPrice: unitPrice,
-        variationOptionId: variationOptionId,
-        variationLabel: variationLabel,
-        quantity: quantity ?? this.quantity,
-        stock: stock ?? this.stock,
-      );
+    key: key,
+    productId: productId,
+    name: name,
+    image: image,
+    unitPrice: unitPrice,
+    variationOptionId: variationOptionId,
+    variationLabel: variationLabel,
+    quantity: quantity ?? this.quantity,
+    stock: stock ?? this.stock,
+    postageCost: postageCost,
+  );
 }
 
 class CartState {
@@ -56,6 +62,19 @@ class CartState {
   double get subtotal => items.fold(0, (sum, item) => sum + item.lineTotal);
   int get totalCount => items.fold(0, (sum, item) => sum + item.quantity);
   bool get isEmpty => items.isEmpty;
+
+  /// One postage charge per transaction: the highest product postage in the
+  /// cart. Quantity never multiplies it.
+  double get postage {
+    var highest = 0.0;
+    for (final item in items) {
+      final cost = item.postageCost ?? 0;
+      if (cost > highest) highest = cost;
+    }
+    return highest;
+  }
+
+  double get grandTotal => subtotal + postage;
 
   CartState copyWith({List<CartItem>? items}) =>
       CartState(items: items ?? this.items);
@@ -104,13 +123,15 @@ class CartNotifier extends Notifier<CartState> {
       return;
     }
     state = CartState(
-      items: state.items.map((i) {
-        if (i.key != key) return i;
-        final max = i.stock;
-        return i.copyWith(
-          quantity: max == null ? quantity : quantity.clamp(1, max).toInt(),
-        );
-      }).toList(growable: false),
+      items: state.items
+          .map((i) {
+            if (i.key != key) return i;
+            final max = i.stock;
+            return i.copyWith(
+              quantity: max == null ? quantity : quantity.clamp(1, max).toInt(),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -119,24 +140,27 @@ class CartNotifier extends Notifier<CartState> {
   /// clamps the quantity so the buyer sees exactly what can be fulfilled.
   void updateStock(String key, int? stock) {
     state = CartState(
-      items: state.items.map((i) {
-        if (i.key != key) return i;
-        var quantity = i.quantity;
-        if (stock != null && stock > 0 && quantity > stock) {
-          quantity = stock;
-        }
-        return CartItem(
-          key: i.key,
-          productId: i.productId,
-          name: i.name,
-          image: i.image,
-          unitPrice: i.unitPrice,
-          variationOptionId: i.variationOptionId,
-          variationLabel: i.variationLabel,
-          quantity: quantity,
-          stock: stock,
-        );
-      }).toList(growable: false),
+      items: state.items
+          .map((i) {
+            if (i.key != key) return i;
+            var quantity = i.quantity;
+            if (stock != null && stock > 0 && quantity > stock) {
+              quantity = stock;
+            }
+            return CartItem(
+              key: i.key,
+              productId: i.productId,
+              name: i.name,
+              image: i.image,
+              unitPrice: i.unitPrice,
+              variationOptionId: i.variationOptionId,
+              variationLabel: i.variationLabel,
+              quantity: quantity,
+              stock: stock,
+              postageCost: i.postageCost,
+            );
+          })
+          .toList(growable: false),
     );
   }
 

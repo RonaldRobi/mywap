@@ -18,8 +18,10 @@ class UsrahController extends Controller
     public function adminIndex(Request $request): Response
     {
         $user = $request->user();
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $groups = UsrahGroup::query()
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
             ->latest()
             ->get()
@@ -40,6 +42,7 @@ class UsrahController extends Controller
 
         $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $user->current_organization_id)
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
@@ -64,6 +67,7 @@ class UsrahController extends Controller
 
         UsrahGroup::create([
             'organization_id' => $user->current_organization_id,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
             ...$data,
         ]);
 
@@ -105,6 +109,22 @@ class UsrahController extends Controller
             'members.*.user_id' => ['required', 'integer', 'exists:users,id'],
             'members.*.role' => ['nullable', 'string', 'in:leader,sub_leader,member'],
         ]);
+
+        $user = $request->user();
+
+        if ($user->isBranchAdmin()) {
+            $requestedIds = collect($data['members'])->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+            $allowedIds = User::withoutGlobalScopes()
+                ->whereIn('id', $requestedIds)
+                ->where('branch_id', $user->managedBranchId())
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            if (array_diff($requestedIds, $allowedIds) !== []) {
+                abort(422, 'Hanya ahli cawangan sendiri boleh ditambah ke kumpulan usrah ini.');
+            }
+        }
 
         $syncPayload = [];
 

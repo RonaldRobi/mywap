@@ -207,9 +207,15 @@ class ProfileController extends Controller
 
         if (array_key_exists('ic_number', $validated)) {
             if ($canEditIcNumber) {
-                $validated['ic_number'] = trim((string) $validated['ic_number']) === ''
-                    ? null
-                    : Str::upper(preg_replace('/\s+/', '', trim((string) $validated['ic_number'])) ?? '');
+                $normalizedIc = User::normalizeIc($validated['ic_number']);
+                if ($normalizedIc !== null
+                    && $normalizedIc !== User::normalizeIc($request->user()->ic_number)
+                    && User::icExistsInOrganization($normalizedIc, $request->user()->current_organization_id, $request->user()->id)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
+                    ]);
+                }
+                $validated['ic_number'] = $normalizedIc;
             } else {
                 unset($validated['ic_number']);
             }

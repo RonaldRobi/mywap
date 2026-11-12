@@ -26,29 +26,63 @@ class RegistrationActivated extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $template = EmailTemplate::forKey('registration_activated');
+        $organization = $notifiable->organization;
+        $organizationName = $organization?->name ?? 'myWAP';
+        $loginUrl = $this->loginLink ?: route('login');
 
         $data = [
             'name' => $notifiable->name,
-            'member_no' => $notifiable->member_no ?? '—',
-            'organization' => $notifiable->organization?->name ?? '—',
-            'login_link' => $this->loginLink ?: route('login'),
+            'member_no' => $notifiable->member_no ?? '-',
+            'organization' => $organizationName,
+            'branch' => $notifiable->branch?->name ?? 'Tidak Berkenaan',
+            'email' => $notifiable->email ?? '-',
+            'login_link' => $loginUrl,
         ];
 
-        $subject = $template?->renderSubject($data) ?? 'Akaun Anda Telah Diaktifkan - myWAP';
-        $body = $template?->renderBody($data) ?? 'Akaun anda telah diaktifkan.';
+        $subject = $template?->renderSubject($data)
+            ?? "Selamat datang ke {$organizationName} - myWAP";
+
+        $body = $template?->renderBody($data)
+            ?? "Assalamualaikum {$data['name']},\n\n"
+                ."Selamat datang ke {$organizationName}! Pendaftaran anda sebagai ahli telah berjaya. "
+                .'Akaun myWAP anda kini aktif dan sedia digunakan.';
 
         $settings = AppSetting::singleton();
-        $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
-        $logoUrl = $template?->headerImageUrl() ?? url($logoPath);
 
         return (new MailMessage)
+            ->mailer('transactional')
             ->subject($subject)
             ->view('emails.registration-activated', [
                 'subject' => $subject,
                 'body' => $body,
                 'name' => $data['name'],
-                'logoUrl' => $logoUrl,
+                'memberNo' => $data['member_no'],
+                'email' => $data['email'],
+                'organizationName' => $organizationName,
+                'organizationColor' => $organization?->color_theme ?? '#2F6B32',
+                'organizationLogoUrl' => $this->logoUrl($organization?->logo_path),
+                'appLogoUrl' => $this->logoUrl(
+                    $settings->system_logo_path ?? '/images/logomywaphorizontal.png'
+                ),
+                'loginUrl' => $loginUrl,
                 'appName' => config('app.name'),
             ]);
+    }
+
+    private function logoUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (! str_starts_with($path, '/')) {
+            $path = '/storage/'.ltrim($path, '/');
+        }
+
+        return url($path);
     }
 }

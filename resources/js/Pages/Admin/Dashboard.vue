@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ExportCsvButton from '@/Components/ExportCsvButton.vue';
 import { t, locale } from '@/i18n';
@@ -18,7 +18,52 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    registrationShare: {
+        type: Object,
+        required: true,
+    },
+    isBranchAdmin: Boolean,
 });
+
+const shareCopied = ref(false);
+
+function copyShareLink() {
+    if (!navigator.clipboard?.writeText) return;
+
+    navigator.clipboard.writeText(props.registrationShare.share_url).then(() => {
+        shareCopied.value = true;
+        setTimeout(() => (shareCopied.value = false), 2000);
+    });
+}
+
+function shareRegistration() {
+    const share = props.registrationShare;
+    const payload = {
+        title: share.title,
+        text: share.description,
+        url: share.share_url,
+    };
+
+    if (navigator.share) {
+        navigator.share(payload).catch(() => {});
+        return;
+    }
+
+    window.open(
+        `https://wa.me/?text=${encodeURIComponent(`${share.message}`)}`,
+        '_blank',
+        'noopener',
+    );
+}
+
+function shareRegistrationWhatsApp() {
+    const share = props.registrationShare;
+    window.open(
+        `https://wa.me/?text=${encodeURIComponent(share.message)}`,
+        '_blank',
+        'noopener',
+    );
+}
 
 const isManagementView = computed(() => props.organization?.slug === 'management');
 const chartMax = computed(() => {
@@ -121,6 +166,50 @@ function activityTone(type = '') {
                     </div>
                 </section>
 
+                <section class="rounded-3xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-5 md:col-span-3 lg:col-span-4">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-start gap-4">
+                            <div class="w-24 shrink-0 rounded-2xl border border-gray-100 bg-white p-2 shadow-sm [&_svg]:mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:w-full" v-html="registrationShare.qr_svg"></div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-600">{{ t('Jemput Ahli Baharu') }}</p>
+                                <h3 class="mt-1 text-lg font-black text-gray-900 sm:text-xl">{{ t('Kongsi pautan pendaftaran') }}</h3>
+                                <p class="mt-1 max-w-2xl text-sm text-gray-600">{{ t('Pendaftaran percuma untuk semua organisasi. Kongsi pautan atau QR ini untuk tambah ahli baharu.') }}</p>
+                                <p class="mt-1 text-xs text-gray-500">{{ t('Organisasi ahli ditentukan secara automatik mengikut tahun lahir.') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 lg:justify-end">
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800"
+                                @click="copyShareLink"
+                            >
+                                {{ shareCopied ? t('Pautan disalin') : t('Salin pautan') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                                @click="shareRegistration"
+                            >
+                                {{ t('Kongsi') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                                @click="shareRegistrationWhatsApp"
+                            >
+                                WhatsApp
+                            </button>
+                            <Link
+                                v-if="!isBranchAdmin"
+                                :href="route('admin.jemput-ahli')"
+                                class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                            >
+                                {{ t('Buka halaman jemputan') }}
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm backdrop-blur-sm sm:p-5">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">{{ t('Pengurusan Ahli') }}</p>
                     <div class="mt-3 space-y-2">
@@ -145,16 +234,16 @@ function activityTone(type = '') {
                         <Link :href="managementLinks.information_hub_manage_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Urus Pusat Maklumat') }}
                         </Link>
-                        <Link :href="managementLinks.usrah_manage_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link v-if="managementLinks.usrah_manage_url" :href="managementLinks.usrah_manage_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Urus Usrah') }}
                         </Link>
-                        <Link :href="managementLinks.broadcasts_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link v-if="managementLinks.broadcasts_url" :href="managementLinks.broadcasts_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Hantar Siaran') }}
                         </Link>
-                        <Link :href="managementLinks.supporters_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link v-if="managementLinks.supporters_url" :href="managementLinks.supporters_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Urus Pendukung') }}
                         </Link>
-                        <Link :href="managementLinks.directory_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                        <Link v-if="managementLinks.directory_url" :href="managementLinks.directory_url" class="block rounded-xl border border-gray-200 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50">
                             {{ t('Lihat Direktori') }}
                         </Link>
                     </div>

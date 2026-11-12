@@ -9,9 +9,9 @@ import '../../../shared/theme/app_theme.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_scaffold.dart';
 
-/// Skrin daftar ahli baharu — sepadan dengan web `/register` (RegisteredUserController).
-/// Pembayaran pendaftaran (dummy) diproses terus oleh backend selepas daftar
-/// berjaya, jadi akaun terus aktif dan ahli hanya perlu log masuk kali pertama.
+/// Skrin daftar ahli baharu, sepadan dengan web `/register`
+/// (RegisteredUserController). Pendaftaran percuma, akaun terus aktif dan
+/// emel selamat datang dihantar oleh backend selepas daftar berjaya.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key, this.referralCode});
 
@@ -143,7 +143,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return AuthScaffold(
       title: context.l10n.registerTitle,
-      subtitle: context.l10n.registerSubtitle,
+      subtitle:
+          '${context.l10n.registerSubtitle}\n${context.l10n.registerFreeNote}',
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,

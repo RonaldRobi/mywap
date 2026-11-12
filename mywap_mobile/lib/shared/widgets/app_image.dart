@@ -36,6 +36,24 @@ class AppImage extends StatelessWidget {
 
     final resolvedUrl = AppEnv.resolveUrl(urlValue);
 
+    // Nyahkod pada saiz paparan (bukan resolusi imej asal) untuk jimat
+    // memori bitmap. Bila saiz tak ditetapkan, hadkan pada lebar skrin.
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final hasFiniteWidth = width != null && width!.isFinite && width! > 0;
+    final hasFiniteHeight = height != null && height!.isFinite && height! > 0;
+    int? memCacheWidth;
+    int? memCacheHeight;
+    if (hasFiniteWidth) {
+      memCacheWidth = (width! * dpr).round();
+    } else if (hasFiniteHeight) {
+      memCacheHeight = (height! * dpr).round();
+    } else {
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      if (screenWidth.isFinite && screenWidth > 0) {
+        memCacheWidth = (screenWidth * dpr).round().clamp(1, 2048);
+      }
+    }
+
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
       child: CachedNetworkImage(
@@ -43,6 +61,8 @@ class AppImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        memCacheWidth: memCacheWidth,
+        memCacheHeight: memCacheHeight,
         placeholder: (_, __) => SkeletonBox(width: width, height: height),
         errorWidget: (_, __, ___) => _placeholder(width, height),
       ),

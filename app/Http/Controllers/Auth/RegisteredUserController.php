@@ -7,12 +7,9 @@ use App\Models\AppSetting;
 use App\Models\Branch;
 use App\Models\BranchTransitionHistory;
 use App\Models\Organization;
-use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\NewMemberAlert;
 use App\Notifications\RegistrationActivated;
-use App\Notifications\RegistrationReceived;
-use App\Services\FeeService;
 use App\Services\MembershipLetterService;
 use App\Support\MemberRegistration;
 use Illuminate\Auth\Events\Registered;
@@ -39,7 +36,7 @@ class RegisteredUserController extends Controller
 
         $organizations = Organization::query()
             ->orderBy('min_age')
-            ->get(['id', 'name', 'slug', 'min_age', 'max_age', 'fee_amount', 'color_theme', 'logo_path']);
+            ->get(['id', 'name', 'slug', 'min_age', 'max_age', 'color_theme', 'logo_path']);
 
         $branches = Branch::query()
             ->with('organization')
@@ -62,7 +59,7 @@ class RegisteredUserController extends Controller
     /**
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, MembershipLetterService $letters): RedirectResponse
     {
         $normalizedIcNumber = MemberRegistration::normalizeIc($request->input('ic_number'));
         $request->merge([
@@ -88,6 +85,12 @@ class RegisteredUserController extends Controller
 
         $organization = $dob ? Organization::forAge($dob->age) : null;
         $organization ??= Organization::query()->orderBy('min_age')->first();
+
+        if ($organization && User::icExistsInOrganization($normalizedIcNumber, (int) $organization->id)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ic_number' => 'No. Kad Pengenalan ini sudah didaftarkan dalam organisasi ini.',
+            ]);
+        }
 
         $branchId = $request->branch_id;
         if ($branchId && $organization) {
@@ -144,90 +147,6 @@ class RegisteredUserController extends Controller
 
         if ($user->email) {
             try {
-                $user->notify(new RegistrationReceived($user));
-            } catch (\Throwable) {
-            }
-        }
-
-        session(['pending_registration_user_id' => $user->id]);
-
-        return redirect()->route('register.payment');
-    }
-
-    /**
-     * Show the registration payment page.
-     */
-    public function payment(): Response|RedirectResponse
-    {
-        $userId = session('pending_registration_user_id');
-
-        if (! $userId) {
-            return redirect()->route('register');
-        }
-
-        $user = User::with(['organization', 'branch'])->find($userId);
-
-        if (! $user) {
-            session()->forget('pending_registration_user_id');
-
-            return redirect()->route('register');
-        }
-
-        return Inertia::render('Auth/RegisterPayment', [
-            'registration' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'ic_number' => $user->ic_number,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'organization' => $user->organization?->name,
-                'organization_color' => $user->organization?->color_theme,
-                'branch' => $user->branch?->name ?? 'Tidak Berkenaan',
-                'member_no' => $user->member_no,
-                'fee_amount' => (float) ($user->organization?->fee_amount ?? 50.00),
-            ],
-        ]);
-    }
-
-    /**
-     * Process the dummy registration payment.
-     */
-    public function processPayment(Request $request, FeeService $feeService, MembershipLetterService $letters): RedirectResponse
-    {
-        $userId = session('pending_registration_user_id');
-
-        if (! $userId) {
-            return redirect()->route('register');
-        }
-
-        $user = User::with(['organization', 'branch'])->find($userId);
-
-        if (! $user) {
-            session()->forget('pending_registration_user_id');
-
-            return redirect()->route('register');
-        }
-
-        $year = now()->year;
-        $feeAmount = (float) ($user->organization?->fee_amount ?? 50.00);
-
-        $payment = Payment::create([
-            'user_id' => $user->id,
-            'payable_type' => 'membership_fee',
-            'payable_id' => null,
-            'amount' => $feeAmount,
-            'status' => 'successful',
-            'reference' => 'DUMMY-'.strtoupper(Str::random(8)),
-            'description' => "Yuran Pendaftaran {$user->organization?->name} {$year}",
-        ]);
-
-        $feeService->markAsPaid($user, $year, $feeAmount, $payment->id);
-
-        session()->forget('pending_registration_user_id');
-
-        // Send emails
-        if ($user->email) {
-            try {
                 $user->notify(new RegistrationActivated($user, route('login')));
             } catch (\Throwable) {
             }
@@ -247,6 +166,9 @@ class RegisteredUserController extends Controller
         } catch (\Throwable) {
         }
 
-        return redirect()->route('login')->with('status', "Pendaftaran berjaya! No Ahli anda: {$user->member_no}. Sila log masuk kali pertama menggunakan No IC anda.");
+        return redirect()->route('login')->with(
+            'status',
+            "Pendaftaran berjaya! No Ahli anda: {$user->member_no}. Semak emel anda untuk panduan log masuk kali pertama."
+        );
     }
 }

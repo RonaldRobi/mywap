@@ -112,6 +112,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _submit() async {
+    if (ref.read(currentUserProvider)?.isStaff ?? false) {
+      setState(() => _error = context.l10n.ecomAdminCannotBuy);
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) return;
@@ -154,10 +158,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           (isGuest && receiptUrl != null && receiptUrl.isNotEmpty)
               ? SnackBarAction(
                 label: 'Lihat Resit',
-                onPressed: () => launchUrl(
-                  Uri.parse(receiptUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
+                onPressed:
+                    () => launchUrl(
+                      Uri.parse(receiptUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
               )
               : null;
 
@@ -213,6 +218,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
+    final isStaff = ref.watch(currentUserProvider)?.isStaff ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -221,7 +227,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
       body: Stack(
         children: [
-          cart.isEmpty ? const _EmptyCheckout() : _buildCheckoutForm(cart),
+          cart.isEmpty
+              ? const _EmptyCheckout()
+              : _buildCheckoutForm(cart, isStaff),
           if (_submitting)
             LoadingOverlay(message: context.l10n.ecomProcessingOrder),
         ],
@@ -229,12 +237,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildCheckoutForm(CartState cart) {
+  Widget _buildCheckoutForm(CartState cart, bool isStaff) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
       children: [
+        if (isStaff) ...[
+          Container(
+            padding: const EdgeInsets.all(Spacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.accentTint,
+              borderRadius: AppRadius.md,
+              border: Border.all(color: AppColors.divider),
+            ),
+            child: Text(
+              l10n.ecomAdminCannotBuy,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+          ),
+          const SizedBox(height: Spacing.md),
+        ],
         Card(
           child: Padding(
             padding: const EdgeInsets.all(Spacing.lg),
@@ -332,17 +359,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const SizedBox(height: Spacing.sm),
                 for (final item in cart.items) _SummaryRow(item: item),
                 const Divider(height: Spacing.xl),
-                Row(
-                  children: [
-                    Text(l10n.ecomTotal, style: theme.textTheme.titleMedium),
-                    const Spacer(),
-                    Text(
-                      Formatters.currency(cart.subtotal),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                _AmountRow(label: l10n.ecomSubtotal, amount: cart.subtotal),
+                const SizedBox(height: Spacing.xs),
+                _AmountRow(label: l10n.ecomPostage, amount: cart.postage),
+                Padding(
+                  padding: const EdgeInsets.only(top: Spacing.xs),
+                  child: Text(
+                    l10n.ecomPostageOnceNote,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textTertiary,
                     ),
-                  ],
+                  ),
+                ),
+                const Divider(height: Spacing.lg),
+                _AmountRow(
+                  label: l10n.ecomTotal,
+                  amount: cart.grandTotal,
+                  emphasized: true,
                 ),
               ],
             ),
@@ -358,11 +391,51 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ],
         const SizedBox(height: Spacing.lg),
         FilledButton.icon(
-          onPressed: _submitting ? null : _submit,
+          onPressed: _submitting || isStaff ? null : _submit,
           icon: const Icon(Icons.receipt_long_outlined),
           label: Text(l10n.ecomSubmitOrder),
         ),
         const SizedBox(height: Spacing.xl),
+      ],
+    );
+  }
+}
+
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({
+    required this.label,
+    required this.amount,
+    this.emphasized = false,
+  });
+
+  final String label;
+  final double amount;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Text(
+          label,
+          style:
+              emphasized
+                  ? theme.textTheme.titleMedium
+                  : theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+        ),
+        const Spacer(),
+        Text(
+          Formatters.currency(amount),
+          style:
+              emphasized
+                  ? theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  )
+                  : theme.textTheme.bodyMedium,
+        ),
       ],
     );
   }

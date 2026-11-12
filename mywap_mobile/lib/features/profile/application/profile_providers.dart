@@ -10,7 +10,7 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
 
 /// Full profile (`GET /profile`). Invalidate after any edit so the screen
 /// re-fetches the latest values.
-final profileProvider = FutureProvider<ProfileData>((ref) async {
+final profileProvider = FutureProvider.autoDispose<ProfileData>((ref) async {
   return ref.watch(profileRepositoryProvider).fetchProfile();
 });
 

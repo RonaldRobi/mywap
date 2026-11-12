@@ -5,6 +5,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
     isSuperadmin: Boolean,
+    isBranchAdmin: Boolean,
+    managedBranchId: Number,
     defaultOrganizationId: Number,
     organizations: {
         type: Array,
@@ -28,7 +30,7 @@ const props = defineProps({
     },
     stats: {
         type: Object,
-        default: () => ({ total: 0, paid: 0, due: 0, life_member: 0, trashed: 0 }),
+        default: () => ({ total: 0, paid: 0, due: 0, life_member: 0, trashed: 0, sudah_guna_app: 0, belum_guna_app: 0 }),
     },
     orgStats: {
         type: Array,
@@ -36,7 +38,7 @@ const props = defineProps({
     },
     filters: {
         type: Object,
-        default: () => ({ search: '', organization_id: '', role: '', state: '', sort: 'newest', trashed: false }),
+        default: () => ({ search: '', organization_id: '', role: '', state: '', sort: 'newest', trashed: false, app_usage: '' }),
     },
 });
 
@@ -320,6 +322,7 @@ const searchQuery = ref(props.filters?.search ?? '');
 const organizationIdFilter = ref(props.filters?.organization_id ?? '');
 const roleFilter = ref(props.filters?.role ?? '');
 const activeFilter = ref(props.filters?.active ?? '');
+const appUsageFilter = ref(props.filters?.app_usage ?? '');
 const stateFilter = ref(props.filters?.state ?? '');
 const branchIdFilter = ref(props.filters?.branch_id ?? '');
 const feeStatusFilter = ref(props.filters?.fee_status ?? '');
@@ -376,6 +379,7 @@ function buildFilterParams() {
         organization_id: organizationIdFilter.value || '',
         role: roleFilter.value || '',
         active: activeFilter.value || '',
+        app_usage: appUsageFilter.value || '',
         state: stateFilter.value || '',
         branch_id: branchIdFilter.value || '',
         fee_status: feeStatusFilter.value || '',
@@ -400,7 +404,7 @@ function requestNow() {
     setTimeout(() => { suppressNextWatch = false; }, 0);
 }
 
-watch([searchQuery, organizationIdFilter, roleFilter, activeFilter, stateFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
+watch([searchQuery, organizationIdFilter, roleFilter, activeFilter, appUsageFilter, stateFilter, branchIdFilter, feeStatusFilter, sortBy], () => {
     if (suppressNextWatch) return;
     clearTimeout(filterDebounce);
     filterDebounce = setTimeout(requestNow, 300);
@@ -426,6 +430,7 @@ const hasActiveFilters = computed(() =>
         organizationIdFilter.value ||
         roleFilter.value ||
         activeFilter.value ||
+        appUsageFilter.value ||
         stateFilter.value ||
         branchIdFilter.value ||
         feeStatusFilter.value ||
@@ -447,12 +452,18 @@ const feeStatusFilterLabels = {
     exempted: 'Yuran: Dikecualikan',
 };
 
+const appUsageFilterLabels = {
+    used: 'App: Sudah guna',
+    never: 'App: Belum guna',
+};
+
 const activeFilterChips = computed(() => {
     const chips = [];
     const org = props.organizations.find(o => String(o.id) === String(organizationIdFilter.value));
     if (org) chips.push({ key: 'organization_id', label: org.name });
     if (roleFilter.value) chips.push({ key: 'role', label: roleFilterLabels[roleFilter.value] ?? `Peranan: ${roleFilter.value}` });
     if (activeFilter.value) chips.push({ key: 'active', label: activeFilter.value === 'active' ? 'Status: Aktif' : 'Status: Nyahaktif' });
+    if (appUsageFilter.value) chips.push({ key: 'app_usage', label: appUsageFilterLabels[appUsageFilter.value] ?? `App: ${appUsageFilter.value}` });
     if (stateFilter.value) chips.push({ key: 'state', label: `Negeri: ${stateFilter.value}` });
     const branch = props.branches.find(b => String(b.id) === String(branchIdFilter.value));
     if (branch) chips.push({ key: 'branch_id', label: branchLabel(branch) });
@@ -469,6 +480,7 @@ function removeFilterChip(key) {
         case 'organization_id': organizationIdFilter.value = ''; break;
         case 'role': roleFilter.value = ''; break;
         case 'active': activeFilter.value = ''; break;
+        case 'app_usage': appUsageFilter.value = ''; break;
         case 'state': stateFilter.value = ''; break;
         case 'branch_id': branchIdFilter.value = ''; break;
         case 'fee_status': feeStatusFilter.value = ''; break;
@@ -495,6 +507,7 @@ function resetFilters() {
     organizationIdFilter.value = '';
     roleFilter.value = '';
     activeFilter.value = '';
+    appUsageFilter.value = '';
     stateFilter.value = '';
     branchIdFilter.value = '';
     feeStatusFilter.value = '';
@@ -655,7 +668,6 @@ const editForm = useForm({
     emergency_contact_name: '',
     emergency_contact_phone: '',
     is_public_in_directory: true,
-    is_branch_admin: false,
 });
 
 function startEdit() {
@@ -686,7 +698,6 @@ function startEdit() {
     editForm.emergency_contact_name = m.emergency_contact_name ?? '';
     editForm.emergency_contact_phone = m.emergency_contact_phone ?? '';
     editForm.is_public_in_directory = m.is_public_in_directory ?? true;
-    editForm.is_branch_admin = m.has_role_admin_cawangan ?? false;
     editing.value = true;
 }
 
@@ -866,7 +877,7 @@ async function finishImport() {
             </div>
 
             <!-- Stats Bar -->
-            <div class="grid grid-cols-3 gap-3 md:gap-4">
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
                 <div class="rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm">
                     <p class="text-2xl font-black text-gray-900">{{ stats.total }}</p>
                     <p class="text-xs font-semibold text-gray-500 mt-0.5">Jumlah Ahli</p>
@@ -879,6 +890,14 @@ async function finishImport() {
                     <p class="text-2xl font-black text-gray-500">{{ stats.tidak_aktif }}</p>
                     <p class="text-xs font-semibold text-gray-400 mt-0.5">Tidak Aktif</p>
                 </div>
+                <div class="rounded-2xl border border-teal-100 bg-teal-50 p-4 text-center shadow-sm">
+                    <p class="text-2xl font-black text-teal-700">{{ stats.sudah_guna_app ?? 0 }}</p>
+                    <p class="text-xs font-semibold text-teal-600 mt-0.5">Sudah Guna App</p>
+                </div>
+                <div class="col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center shadow-sm md:col-span-1">
+                    <p class="text-2xl font-black text-amber-700">{{ stats.belum_guna_app ?? 0 }}</p>
+                    <p class="text-xs font-semibold text-amber-700 mt-0.5">Belum Guna App</p>
+                </div>
             </div>
 
             <!-- Page Header -->
@@ -889,6 +908,7 @@ async function finishImport() {
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <button
+                        v-if="!isBranchAdmin"
                         type="button"
                         @click="toggleTrashed"
                         class="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5"
@@ -968,7 +988,7 @@ async function finishImport() {
                         </transition>
                     </div>
                     <button
-                        v-if="!trashed"
+                        v-if="!trashed && !isBranchAdmin"
                         @click="triggerExcelImport"
                         :disabled="importForm.processing"
                         class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-indigo-700 transition-all hover:-translate-y-0.5 disabled:opacity-50"
@@ -979,7 +999,7 @@ async function finishImport() {
                     <input type="file" ref="excelFileInput" class="hidden" accept=".xlsx,.xls,.csv" @change="handleExcelUpload">
 
                     <button
-                        v-if="!trashed"
+                        v-if="!trashed && !isBranchAdmin"
                         @click="showMemberForm = !showMemberForm"
                         class="inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-gray-800 transition-all hover:-translate-y-0.5"
                     >
@@ -999,7 +1019,7 @@ async function finishImport() {
                 leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                 leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-                <section v-if="showMemberForm" class="relative rounded-3xl border border-gray-100 bg-white p-6 shadow-xl shadow-gray-200/40">
+                <section v-if="showMemberForm && !isBranchAdmin" class="relative rounded-3xl border border-gray-100 bg-white p-6 shadow-xl shadow-gray-200/40">
                     <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitMember">
                         <div>
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Nama Penuh</label>
@@ -1134,6 +1154,20 @@ async function finishImport() {
                         </div>
 
                         <div>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Penggunaan App</label>
+                            <div class="relative">
+                                <select v-model="appUsageFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
+                                    <option value="">Semua Pengguna</option>
+                                    <option value="used">Sudah guna app</option>
+                                    <option value="never">Belum guna app</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
                             <label class="block text-[11px] font-semibold text-gray-500 mb-1">Negeri</label>
                             <div class="relative">
                                 <select v-model="stateFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
@@ -1233,6 +1267,23 @@ async function finishImport() {
 
             <!-- Members Table -->
             <div class="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+                <div v-if="!trashed" class="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-gray-100 bg-gray-50/40 px-4 py-2.5">
+                    <span class="text-[11px] font-semibold text-gray-500">Status app:</span>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] text-gray-600">
+                        <span class="relative inline-flex shrink-0">
+                            <svg class="h-3.5 w-3.5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
+                            <svg class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                        </span>
+                        Sudah guna app
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] text-gray-600">
+                        <span class="relative inline-flex shrink-0">
+                            <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
+                            <svg class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </span>
+                        Belum guna app
+                    </span>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-gray-600">
                         <thead class="bg-gray-50/70 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
@@ -1243,14 +1294,13 @@ async function finishImport() {
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">No Ahli</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Ahli</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Organisasi &amp; Yuran</th>
-                                <th scope="col" class="px-4 py-3 font-bold text-xs">Peranan</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs">Didaftar</th>
                                 <th scope="col" class="px-4 py-3 font-bold text-xs text-right">Tindakan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 bg-white">
                             <tr v-if="members.data.length === 0">
-                                <td :colspan="trashed ? 6 : 7" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
+                                <td :colspan="trashed ? 5 : 6" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
                             </tr>
                             <tr v-for="member in members.data" :key="member.id" class="hover:bg-gray-50/50 transition-colors" :class="{ 'bg-red-50/40': selectedIds.includes(member.id) }">
                                 <td v-if="!trashed" class="px-3 py-3">
@@ -1266,7 +1316,15 @@ async function finishImport() {
                                             {{ (member.name ?? '?').charAt(0).toUpperCase() }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="text-sm font-bold text-gray-900 truncate">{{ member.name }} <span v-if="trashed" class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ml-1">Dipadam {{ member.deleted_at }}</span><span v-else-if="!member.is_active" class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 ml-1">Nyahaktif</span></div>
+                                            <div class="flex flex-wrap items-center gap-1.5 text-sm font-bold text-gray-900">
+                                                <span v-if="!trashed" class="relative inline-flex shrink-0" :title="member.has_used_app ? 'Sudah guna app' : 'Belum guna app'">
+                                                    <svg class="h-3.5 w-3.5" :class="member.has_used_app ? 'text-teal-600' : 'text-amber-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
+                                                    <svg v-if="member.has_used_app" class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                    <svg v-else class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-white text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                    <span class="sr-only">{{ member.has_used_app ? 'Sudah guna app' : 'Belum guna app' }}</span>
+                                                </span>
+                                                <span class="truncate">{{ member.name }}</span><span v-if="member.membership_status === 'deceased' || member.position_badge?.name === 'Meninggal Dunia'" class="inline-flex items-center rounded-full bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold text-white">Meninggal Dunia</span><span v-if="trashed" class="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Dipadam {{ member.deleted_at }}</span><span v-else-if="!member.is_active" class="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">Nyahaktif</span>
+                                            </div>
                                             <div class="text-xs text-gray-400 truncate">{{ member.email }}</div>
                                             <div class="flex items-center gap-2 text-[11px] text-gray-400">
                                                 <span>IC: {{ member.ic_number || '-' }}</span>
@@ -1287,27 +1345,6 @@ async function finishImport() {
                                         <span v-if="member.has_role_admin_cawangan" class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">Admin Cawangan</span>
                                         <span class="text-[11px] text-gray-400">{{ member.branch_name }}</span>
                                     </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span v-if="trashed" class="inline-flex items-center rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">{{ member.role }}</span>
-                                    <select 
-                                        v-else
-                                        :value="member.role" 
-                                        @change="updateRole(member.id, $event.target.value)"
-                                        :disabled="updatingUserId === member.id || member.role === 'Superadmin'"
-                                        class="h-7 py-0 pl-2 pr-7 rounded-lg text-xs font-bold border-gray-200 focus:border-gray-900 focus:ring-0 transition-colors cursor-pointer disabled:opacity-50"
-                                        :class="{
-                                            'bg-emerald-50 text-emerald-700 border-emerald-200': member.role === 'Admin',
-                                            'bg-blue-50 text-blue-700 border-blue-200': member.role === 'Member',
-                                            'bg-yellow-50 text-yellow-700 border-yellow-200': member.role === 'Superadmin',
-                                            'bg-teal-50 text-teal-700 border-teal-200': member.role === 'Admin Cawangan',
-                                        }"
-                                    >
-                                        <option value="Member">Ahli</option>
-                                        <option value="Admin">Admin</option>
-                                        <option v-if="!isSuperadmin" value="Admin Cawangan">Admin Cawangan</option>
-                                        <option v-if="member.role === 'Superadmin'" value="Superadmin" disabled>Superadmin</option>
-                                    </select>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="text-xs text-gray-500">{{ member.created_at || '—' }}</span>
@@ -1341,7 +1378,7 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                                 Lihat Kad Ahli
                                             </a>
-                                            <button @click="openIcModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                            <button v-if="!isBranchAdmin" @click="openIcModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                                                 Update IC
                                             </button>
@@ -1353,11 +1390,11 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                                                 Pindah Organisasi
                                             </button>
-                                            <button @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
+                                            <button v-if="!isBranchAdmin" @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                 {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
                                             </button>
-                                            <button @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
+                                            <button v-if="!isBranchAdmin" @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 Padam Ahli
                                             </button>
@@ -1786,6 +1823,11 @@ async function finishImport() {
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Asal No</p><p class="text-sm font-semibold text-gray-600">{{ selectedMember.original_member_no || '—' }}</p><p v-if="selectedMember.original_member_no && selectedMember.original_member_no !== selectedMember.member_no" class="text-[10px] text-gray-400">Nombor pertama semasa mendaftar</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">No IC</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.ic_number || '—' }}</p></div>
+                                        <div>
+                                            <p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Penggunaan App</p>
+                                            <p v-if="selectedMember.has_used_app" class="text-sm font-semibold text-teal-700">Sudah guna app <span class="font-normal text-gray-400">({{ selectedMember.first_login_at }})</span></p>
+                                            <span v-else class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Belum guna app</span>
+                                        </div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Jantina</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.gender || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Tarikh Lahir</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.dob || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Status Perkahwinan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.marital_status || '—' }}</p></div>
@@ -2012,7 +2054,7 @@ async function finishImport() {
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Industri</label>
                                         <input v-model="editForm.industry" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0">
                                     </div>
-                                    <div>
+                                    <div v-if="!isBranchAdmin">
                                         <label class="mb-1 block text-xs font-semibold text-gray-500">Cawangan</label>
                                         <select v-model="editForm.branch_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0">
                                             <option value="">Pilih</option>
@@ -2070,16 +2112,6 @@ async function finishImport() {
                                         <input v-model="editForm.emergency_contact_phone" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0" placeholder="0123456789">
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="p-4 rounded-2xl border border-teal-100 bg-teal-50/50">
-                                <label class="flex items-center gap-3 cursor-pointer">
-                                    <input v-model="editForm.is_branch_admin" type="checkbox" class="rounded border-teal-300 text-teal-600 focus:ring-teal-500" />
-                                    <div>
-                                        <p class="text-sm font-semibold text-teal-800">Lantik sebagai Admin Cawangan</p>
-                                        <p class="text-xs text-teal-600 mt-0.5">Ahli akan menjadi admin untuk cawangan yang dipilih di atas.</p>
-                                    </div>
-                                </label>
                             </div>
 
                             <div v-if="editForm.errors" class="space-y-1">

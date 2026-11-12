@@ -75,7 +75,7 @@ class InformationHubMemberManageTest extends TestCase
 
         $names = $this->searchNames('Ahmad Firdaus bin Ali');
 
-        $this->assertSame(["Ahmad\u{00A0}Firdaus  bin Ali"], $names);
+        $this->assertSame(['Ahmad Firdaus Bin Ali'], $names);
     }
 
     public function test_full_name_search_matches_when_extra_word_is_typed(): void
@@ -134,6 +134,46 @@ class InformationHubMemberManageTest extends TestCase
 
         $this->assertContains('Ahli Mati', $names);
         $this->assertNotContains('Ahli Aktif', $names);
+    }
+
+    // ─── Penggunaan app ──────────────────────────────────────────────────────
+
+    public function test_app_usage_filter_shows_only_members_who_have_used_app(): void
+    {
+        $this->makeMember(['name' => 'Ahli Guna App', 'first_login_at' => now()]);
+        $this->makeMember(['name' => 'Ahli Belum Guna']);
+
+        $response = $this->actingAs($this->admin)
+            ->get('/admin/information-hub/manage?app_usage=used');
+
+        $response->assertOk();
+        $props = $response->viewData('page')['props'] ?? [];
+        $members = collect($props['members']['data'] ?? []);
+
+        $this->assertContains('Ahli Guna App', $members->pluck('name')->all());
+        $this->assertNotContains('Ahli Belum Guna', $members->pluck('name')->all());
+        $row = $members->firstWhere('name', 'Ahli Guna App');
+        $this->assertTrue($row['has_used_app']);
+        $this->assertNotNull($row['first_login_at']);
+    }
+
+    public function test_app_usage_filter_shows_only_members_who_have_never_used_app(): void
+    {
+        $this->makeMember(['name' => 'Ahli Guna App', 'first_login_at' => now()]);
+        $this->makeMember(['name' => 'Ahli Belum Guna']);
+
+        $response = $this->actingAs($this->admin)
+            ->get('/admin/information-hub/manage?app_usage=never');
+
+        $response->assertOk();
+        $props = $response->viewData('page')['props'] ?? [];
+        $members = collect($props['members']['data'] ?? []);
+
+        $this->assertContains('Ahli Belum Guna', $members->pluck('name')->all());
+        $this->assertNotContains('Ahli Guna App', $members->pluck('name')->all());
+        $row = $members->firstWhere('name', 'Ahli Belum Guna');
+        $this->assertFalse($row['has_used_app']);
+        $this->assertNull($row['first_login_at']);
     }
 
     // ─── Padam ahli ──────────────────────────────────────────────────────────

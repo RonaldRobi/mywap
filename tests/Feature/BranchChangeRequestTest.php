@@ -72,20 +72,20 @@ class BranchChangeRequestTest extends TestCase
         return $this->actingAs($actor)->post(route('branch-change-requests.approve', $this->request));
     }
 
-    public function test_source_branch_admin_can_approve(): void
+    public function test_source_branch_admin_cannot_approve(): void
     {
-        $this->approve($this->branchAdmin($this->selangor))->assertRedirect();
+        $this->approve($this->branchAdmin($this->selangor))->assertForbidden();
 
-        $this->assertSame('approved', $this->request->fresh()->status);
-        $this->assertSame($this->johor->id, $this->member->fresh()->branch_id);
+        $this->assertSame('pending', $this->request->fresh()->status);
+        $this->assertSame($this->selangor->id, $this->member->fresh()->branch_id);
     }
 
-    public function test_destination_branch_admin_can_approve(): void
+    public function test_destination_branch_admin_cannot_approve(): void
     {
-        $this->approve($this->branchAdmin($this->johor))->assertRedirect();
+        $this->approve($this->branchAdmin($this->johor))->assertForbidden();
 
-        $this->assertSame('approved', $this->request->fresh()->status);
-        $this->assertSame($this->johor->id, $this->member->fresh()->branch_id);
+        $this->assertSame('pending', $this->request->fresh()->status);
+        $this->assertSame($this->selangor->id, $this->member->fresh()->branch_id);
     }
 
     public function test_unrelated_branch_admin_cannot_approve(): void

@@ -10,7 +10,6 @@ import '../../onboarding/data/onboarding_repository.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_canvas_background.dart';
 import 'widgets/biometric_prompt.dart';
-import '../../../shared/theme/app_text_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +26,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _bioSubmitting = false;
   bool _busy = false;
 
+  static const TextStyle _inputTextStyle = TextStyle(
+    fontSize: 16,
+    color: AppColors.textPrimary,
+  );
+
+  TextStyle _fieldLabelStyle(BuildContext context) =>
+      Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ) ??
+      const TextStyle(color: AppColors.textPrimary);
+
   @override
   void dispose() {
     _identifierController.dispose();
@@ -35,6 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    if (_busy) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _error = null;
@@ -149,41 +161,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _BrandMark(branding: branding, accent: accent),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: Spacing.xxl),
                           Text(
                             branding.title,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineMedium?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                ),
                           ),
                           const SizedBox(height: Spacing.sm),
                           Text(
                             branding.subtitle,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
                           ),
-                          const SizedBox(height: Spacing.xxl),
+                          const SizedBox(height: Spacing.xl),
                           if (_error != null) ...[
                             _ErrorBanner(message: _error!),
                             const SizedBox(height: Spacing.lg),
                           ],
                           Text(
                             context.l10n.loginIdentifierLabel,
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(color: AppColors.textPrimary),
+                            style: _fieldLabelStyle(context),
                           ),
                           const SizedBox(height: Spacing.sm),
                           TextFormField(
                             controller: _identifierController,
                             textInputAction: TextInputAction.next,
                             autofillHints: const [AutofillHints.username],
+                            style: _inputTextStyle,
                             decoration: _inputDecoration(
                               context.l10n.loginIdentifierHint,
                               Icons.person_outline,
@@ -196,10 +207,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         : null,
                           ),
                           const SizedBox(height: Spacing.lg),
-                          Text(
-                            context.l10n.passwordLabel,
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(color: AppColors.textPrimary),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                context.l10n.passwordLabel,
+                                style: _fieldLabelStyle(context),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/forgot-password'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: accent,
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(44, 36),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  textStyle: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                child: Text(context.l10n.forgotPassword),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: Spacing.sm),
                           TextFormField(
@@ -207,6 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _submit(),
+                            style: _inputTextStyle,
                             decoration: _inputDecoration(
                               context.l10n.passwordHint,
                               Icons.lock_outline,
@@ -222,6 +255,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   _obscurePassword
                                       ? Icons.visibility_outlined
                                       : Icons.visibility_off_outlined,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             ),
@@ -231,26 +265,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ? context.l10n.passwordRequired
                                         : null,
                           ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () => context.push('/forgot-password'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: accent,
-                              ),
-                              child: Text(context.l10n.forgotPassword),
-                            ),
-                          ),
-                          const SizedBox(height: Spacing.sm),
+                          const SizedBox(height: Spacing.xl),
                           SizedBox(
-                            height: 54,
+                            height: AppSizes.buttonHeight,
                             child: FilledButton(
                               onPressed: isSubmitting ? null : _submit,
                               style: FilledButton.styleFrom(
                                 backgroundColor: accent,
                                 foregroundColor: AppColors.white,
                                 shape: const RoundedRectangleBorder(
-                                  borderRadius: AppRadius.xl,
+                                  borderRadius: AppRadius.lg,
                                 ),
                               ),
                               child:
@@ -292,9 +316,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 : _loginWithBiometrics,
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: accent,
-                                          side: BorderSide(color: accent),
+                                          side: const BorderSide(
+                                            color: AppColors.inputBorder,
+                                          ),
                                           shape: const RoundedRectangleBorder(
-                                            borderRadius: AppRadius.xl,
+                                            borderRadius: AppRadius.lg,
                                           ),
                                         ),
                                         icon:
@@ -330,45 +356,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               );
                             },
                           ),
+                          const SizedBox(height: Spacing.xl),
+                          const Divider(color: AppColors.divider, height: 1),
                           const SizedBox(height: Spacing.lg),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(context.l10n.firstLoginPrompt),
-                              TextButton(
-                                onPressed: () => context.push('/first-login'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: accent,
-                                ),
-                                child: Text(context.l10n.clickHere),
-                              ),
-                            ],
-                          ),
-                          Center(
-                            child: TextButton(
-                              onPressed: () => context.push('/forgot-id'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.textSecondary,
-                              ),
-                              child: Text(context.l10n.forgotMemberNo),
-                            ),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(context.l10n.noAccount),
-                              TextButton(
-                                onPressed: () => context.push('/register'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: accent,
-                                ),
-                                child: Text(context.l10n.registerNow),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: Spacing.sm),
                           SizedBox(
-                            height: 48,
+                            height: 52,
                             child: OutlinedButton.icon(
                               onPressed: () => context.go('/home'),
                               style: OutlinedButton.styleFrom(
@@ -377,7 +369,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: AppColors.divider,
                                 ),
                                 shape: const RoundedRectangleBorder(
-                                  borderRadius: AppRadius.xl,
+                                  borderRadius: AppRadius.lg,
                                 ),
                               ),
                               icon: const Icon(
@@ -388,28 +380,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: Spacing.xl),
-                          Text(
-                            context.l10n.officialPlatform,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(
-                              color: accent,
-                              fontSize: AppTextTheme.minSize,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                context.l10n.noAccount,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                              ),
+                              TextButton(
+                                onPressed: () => context.push('/register'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: accent,
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(44, 36),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(context.l10n.registerNow),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: Spacing.xs),
-                          const Text(
-                            'PKPIM · ABIM · WADAH',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.movementDarkGreen,
-                              fontSize: AppTextTheme.minSize,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
-                            ),
+                          const SizedBox(height: Spacing.sm),
+                          _FooterLink(
+                            label: context.l10n.firstLoginPrompt,
+                            onPressed: () => context.push('/first-login'),
+                          ),
+                          _FooterLink(
+                            label: context.l10n.forgotMemberNo,
+                            onPressed: () => context.push('/forgot-id'),
                           ),
                         ],
                       ),
@@ -429,36 +430,43 @@ class _BrandMark extends StatelessWidget {
   const _BrandMark({required this.branding, required this.accent});
   final MobileLoginBranding branding;
   final Color accent;
+
+  static const double _logoSize = 56;
+  static const BorderRadius _logoRadius = BorderRadius.all(Radius.circular(4));
+
   @override
   Widget build(BuildContext context) => Row(
     children: [
       Container(
-        width: 68,
-        height: 68,
+        width: _logoSize,
+        height: _logoSize,
         decoration: BoxDecoration(
-          color: AppColors.white.withValues(alpha: .82),
-          borderRadius: AppRadius.lg,
+          color: AppColors.white,
+          borderRadius: _logoRadius,
           boxShadow: const [
             BoxShadow(
               color: AppColors.glassTint,
-              blurRadius: 16,
-              offset: Offset(0, 6),
+              blurRadius: 12,
+              offset: Offset(0, 4),
             ),
           ],
         ),
         child:
             branding.logoUrl?.isNotEmpty == true
                 ? ClipRRect(
-                  borderRadius: AppRadius.lg,
+                  borderRadius: _logoRadius,
                   child: Image.network(
                     branding.logoUrl!,
                     fit: BoxFit.contain,
+                    cacheWidth:
+                        (_logoSize * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
                     errorBuilder: (_, __, ___) => _fallback(),
                   ),
                 )
                 : _fallback(),
       ),
-      const SizedBox(width: Spacing.md),
+      const SizedBox(width: Spacing.lg),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,13 +476,16 @@ class _BrandMark extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: AppColors.movementDarkGreen,
                 fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
-              context.l10n.movementPlatformTagline,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              'WADAH | ABIM | PKPIM',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: AppColors.textSecondary,
-                fontSize: AppTextTheme.minSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
               ),
             ),
           ],
@@ -483,33 +494,57 @@ class _BrandMark extends StatelessWidget {
     ],
   );
   Widget _fallback() =>
-      Icon(Icons.volunteer_activism_outlined, color: accent, size: 34);
+      Icon(Icons.volunteer_activism_outlined, color: accent, size: 30);
 }
 
 InputDecoration _inputDecoration(String hint, IconData icon, Color accent) =>
     InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-      prefixIcon: Icon(icon, color: accent),
+      hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 15),
+      prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 22),
       filled: true,
       fillColor: AppColors.white,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Spacing.lg,
-        vertical: Spacing.lg,
+        vertical: 18,
       ),
       border: OutlineInputBorder(
         borderRadius: AppRadius.md,
-        borderSide: const BorderSide(color: AppColors.divider),
+        borderSide: const BorderSide(color: AppColors.inputBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: AppRadius.md,
-        borderSide: const BorderSide(color: AppColors.divider),
+        borderSide: const BorderSide(color: AppColors.inputBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: AppRadius.md,
-        borderSide: BorderSide(color: accent, width: 2),
+        borderSide: BorderSide(color: accent, width: 1.8),
       ),
     );
+
+class _FooterLink extends StatelessWidget {
+  const _FooterLink({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.textSecondary,
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(44, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      child: Text(label),
+    ),
+  );
+}
 
 class _ErrorBanner extends StatelessWidget {
   const _ErrorBanner({required this.message});

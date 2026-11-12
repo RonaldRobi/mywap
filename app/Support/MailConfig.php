@@ -20,15 +20,21 @@ class MailConfig
 
         self::configureSmtp($config, $setting);
 
-        $config['mail.default'] = match ($setting->mail_mailer) {
-            'resend' => $hasResend ? 'resend' : 'log',
-            'log' => 'log',
-            default => 'smtp',
-        };
+        $isLog = $setting->mail_mailer === 'log';
 
-        if ($setting->mail_mailer === 'log') {
+        // Resend hanya untuk emel akaun (OTP, reset kata laluan, pendaftaran).
+        // Semua emel lain — siaran, promosi, pesanan, borang — guna SMTP.
+        $config['mail.default'] = $isLog ? 'log' : 'smtp';
+
+        // Siaran (blast) emel mesti guna SMTP sendiri, bukan Resend. Kuota
+        // Resend dikhaskan untuk OTP dan tetapan semula kata laluan.
+        $config['mail.mailers.bulk'] = $isLog
+            ? ['transport' => 'log']
+            : $config['mail.mailers.smtp'];
+
+        if ($isLog) {
             $config['mail.mailers.transactional'] = ['transport' => 'log'];
-        } elseif ($hasResend) {
+        } elseif ($hasResend && $setting->mail_mailer === 'resend') {
             $config['mail.mailers.transactional'] = [
                 'transport' => 'failover',
                 'mailers' => $hasSmtp ? ['resend', 'smtp'] : ['resend'],
@@ -48,22 +54,32 @@ class MailConfig
 
     private static function configureSmtp(array &$config, AppSetting $setting): void
     {
-        $host = $setting->mail_smtp_host ?: config('mail.mailers.smtp.host');
-        $config['mail.mailers.smtp.host'] = $host;
-        $config['mail.mailers.smtp.port'] = $setting->mail_smtp_port ?: config('mail.mailers.smtp.port');
-        $config['mail.mailers.smtp.username'] = $setting->mail_smtp_username ?: config('mail.mailers.smtp.username');
-        $config['mail.mailers.smtp.password'] = $setting->mail_smtp_password ?: config('mail.mailers.smtp.password');
+        $host = $setting->mail_smtp_host ?: env('MAIL_HOST', '127.0.0.1');
+
+        $smtp = [
+            'transport' => 'smtp',
+            'scheme' => env('MAIL_SCHEME'),
+            'url' => env('MAIL_URL'),
+            'host' => $host,
+            'port' => $setting->mail_smtp_port ?: env('MAIL_PORT', 2525),
+            'username' => $setting->mail_smtp_username ?: env('MAIL_USERNAME'),
+            'password' => $setting->mail_smtp_password ?: env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ];
 
         // Local mail server (Postfix/Dovecot on the same VPS) uses a self-signed
         // cert; disable peer verification so STARTTLS succeeds.
         if (in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            $config['mail.mailers.smtp.verify_peer'] = false;
-            $config['mail.mailers.smtp.scheme'] = null;
+            $smtp['verify_peer'] = false;
+            $smtp['scheme'] = null;
         }
 
-        $encryption = $setting->mail_smtp_encryption ?: config('mail.mailers.smtp.encryption');
+        $encryption = $setting->mail_smtp_encryption ?: env('MAIL_ENCRYPTION');
         if ($encryption && $encryption !== 'null') {
-            $config['mail.mailers.smtp.encryption'] = $encryption;
+            $smtp['encryption'] = $encryption;
         }
+
+        $config['mail.mailers.smtp'] = $smtp;
     }
 }

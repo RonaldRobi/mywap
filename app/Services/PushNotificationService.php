@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DeviceToken;
 use App\Models\User;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -83,11 +84,22 @@ class PushNotificationService
             return 0;
         }
 
-        $tokens = DeviceToken::whereIn('user_id', $ids->all())
-            ->pluck('token')
-            ->all();
+        // Simpan pemetaan token => user_id supaya badge unread boleh dikira
+        // per pengguna tanpa query token tambahan.
+        $tokenUserIds = DeviceToken::whereIn('user_id', $ids->all())
+            ->pluck('user_id', 'token');
 
-        return $this->sendToTokens($tokens, $title, $body, $data);
+        if ($tokenUserIds->isEmpty()) {
+            return 0;
+        }
+
+        return $this->dispatch(
+            $tokenUserIds->keys()->all(),
+            $title,
+            $body,
+            $data,
+            $this->badgeCounts($tokenUserIds),
+        );
     }
 
     public function sendToUser(User $user, string $title, string $body, array $data = []): int
@@ -109,11 +121,67 @@ class PushNotificationService
     }
 
     /**
+     * Hantar push kepada senarai token secara langsung (jarang digunakan;
+     * `sendToUsers` lebih biasa). Badge unread dikira melalui pemetaan
+     * token => user_id.
+     */
+    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): int
+    {
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $tokenUserIds = DeviceToken::whereIn('token', $tokens)->pluck('user_id', 'token');
+
+        return $this->dispatch(
+            $tokens,
+            $title,
+            $body,
+            $data,
+            $this->badgeCounts($tokenUserIds),
+        );
+    }
+
+    /**
+     * Kira bilangan notifikasi belum dibaca untuk setiap token peranti. Badge
+     * ikon app (iOS `aps.badge`, Android `notification_count`) guna nilai ini.
+     * Satu query agregat sahaja, bukan per token.
+     *
+     * @param  \Illuminate\Support\Collection<string, int>  $tokenUserIds  token => user_id
+     * @return array<string, int>  token => unread count
+     */
+    private function badgeCounts($tokenUserIds): array
+    {
+        if ($tokenUserIds->isEmpty()) {
+            return [];
+        }
+
+        $userIds = $tokenUserIds->unique()->values()->all();
+
+        $unread = DB::table('notifications')
+            ->where('notifiable_type', (new User)->getMorphClass())
+            ->whereIn('notifiable_id', $userIds)
+            ->whereNull('read_at')
+            ->groupBy('notifiable_id')
+            ->select('notifiable_id', DB::raw('count(*) as unread'))
+            ->pluck('unread', 'notifiable_id');
+
+        $badges = [];
+        foreach ($tokenUserIds as $token => $userId) {
+            $badges[$token] = (int) ($unread[$userId] ?? 0);
+        }
+
+        return $badges;
+    }
+
+    /**
      * Hantar push sebenar. Pilih FCM v1 (service account) dahulu, jatuh
      * kepada legacy HTTP API sebagai fallback. No-op bila kedua-dua kosong.
      * Pulangkan bilangan token yang BERJAYA diterima FCM (bukan bilangan cubaan).
+     *
+     * @param  array<string, int>  $badgeByToken  token => unread count
      */
-    public function sendToTokens(array $tokens, string $title, string $body, array $data = []): int
+    private function dispatch(array $tokens, string $title, string $body, array $data, array $badgeByToken): int
     {
         if (empty($tokens)) {
             return 0;
@@ -130,7 +198,7 @@ class PushNotificationService
         }
 
         if ($serviceAccountPath !== '' && is_file($serviceAccountPath)) {
-            return $this->sendViaHttpV1($tokens, $title, $body, $data, $serviceAccountPath);
+            return $this->sendViaHttpV1($tokens, $title, $body, $data, $serviceAccountPath, $badgeByToken);
         }
 
         if ($serverKey !== '') {
@@ -162,7 +230,7 @@ class PushNotificationService
      * Hantar melalui FCM HTTP v1 (satu mesej setiap token). Service account
      * membekalkan OAuth2 token yang sah untuk menghantar push.
      */
-    private function sendViaHttpV1(array $tokens, string $title, string $body, array $data, string $serviceAccountPath): int
+    private function sendViaHttpV1(array $tokens, string $title, string $body, array $data, string $serviceAccountPath, array $badgeByToken = []): int
     {
         $projectId = $this->serviceAccountProjectId($serviceAccountPath);
         if ($projectId === '') {
@@ -189,16 +257,32 @@ class PushNotificationService
         $success = 0;
 
         foreach ($tokens as $token) {
-            $payload = [
-                'message' => [
-                    'token' => $token,
-                    'notification' => [
-                        'title' => $title,
-                        'body' => $body,
-                    ],
-                    'data' => $data,
+            $message = [
+                'token' => $token,
+                'notification' => [
+                    'title' => $title,
+                    'body' => $body,
                 ],
+                'data' => $data,
             ];
+
+            // Badge nombor pada ikon app. iOS guna `aps.badge` (nombor mutlak
+            // belum dibaca); Android guna `notification_count` yang dipaparkan
+            // oleh launcher yang menyokong. Hanya dihantar bila > 0 supaya
+            // push tidak memadam badge sedia ada secara tersilap.
+            $badge = (int) ($badgeByToken[$token] ?? 0);
+            if ($badge > 0) {
+                $message['apns'] = [
+                    'payload' => [
+                        'aps' => ['badge' => $badge],
+                    ],
+                ];
+                $message['android'] = [
+                    'notification' => ['notification_count' => $badge],
+                ];
+            }
+
+            $payload = ['message' => $message];
 
             try {
                 $response = Http::withToken($accessToken)

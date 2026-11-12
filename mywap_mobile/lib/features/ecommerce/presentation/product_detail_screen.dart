@@ -12,6 +12,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
@@ -34,7 +35,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   ProductVariationOption? _selectedOption(ProductVariation variation) {
     if (variation.options.isEmpty) return null;
-    final selectedId = variation.id == null ? null : _selectedOptions[variation.id];
+    final selectedId =
+        variation.id == null ? null : _selectedOptions[variation.id];
     if (selectedId != null) {
       for (final option in variation.options) {
         if (option.id == selectedId) return option;
@@ -85,9 +87,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       if (variation.options.isEmpty) continue;
       final stock = _selectedOption(variation)?.stock;
       if (stock == null) continue;
-      available = available == null
-          ? stock
-          : (stock < available ? stock : available);
+      available =
+          available == null ? stock : (stock < available ? stock : available);
     }
     return available ?? product.stock;
   }
@@ -118,6 +119,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   void _addToCart({required bool buyNow}) {
     final product = _detail?.product;
     if (product == null) return;
+
+    if (ref.read(currentUserProvider)?.isStaff ?? false) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(context.l10n.ecomAdminCannotBuy)),
+        );
+      return;
+    }
 
     if (!_canBuy(product)) {
       ScaffoldMessenger.of(context)
@@ -185,12 +195,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       variationLabel: labels.isEmpty ? null : labels.join(' / '),
       quantity: _clampedQuantity(product),
       stock: _availableStock(product),
+      postageCost: product.postageCost,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(productDetailProvider(widget.productId));
+    final isStaff = ref.watch(currentUserProvider)?.isStaff ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -204,6 +216,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           if (product != null) _ensureSelections(product);
           return _DetailContent(
             detail: detail,
+            isStaff: isStaff,
             selectedOptions: _selectedOptions,
             availableStock: product == null ? null : _availableStock(product),
             onOptionSelected:
@@ -232,37 +245,42 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   () => ref.invalidate(productDetailProvider(widget.productId)),
             ),
       ),
-      bottomNavigationBar: detailAsync.when(
-        data: (detail) {
-          final product = detail.product;
-          if (product == null) return null;
-          final max = _availableStock(product);
-          final quantity = _clampedQuantity(product);
-          final soldOut = _isSoldOut(product);
-          return _BottomBar(
-            quantity: quantity,
-            canDecrease: quantity > 1,
-            canIncrease: !soldOut && (max == null || quantity < max),
-            canBuy: _canBuy(product),
-            soldOut: soldOut,
-            onDecrease:
-                () => setState(() {
-                  final current = _clampedQuantity(product);
-                  if (current > 1) _quantity = current - 1;
-                }),
-            onIncrease:
-                () => setState(() {
-                  final current = _clampedQuantity(product);
-                  final limit = _availableStock(product);
-                  if (limit == null || current < limit) _quantity = current + 1;
-                }),
-            onAddToCart: () => _addToCart(buyNow: false),
-            onBuyNow: () => _addToCart(buyNow: true),
-          );
-        },
-        loading: () => null,
-        error: (_, __) => null,
-      ),
+      bottomNavigationBar:
+          isStaff
+              ? null
+              : detailAsync.when(
+                data: (detail) {
+                  final product = detail.product;
+                  if (product == null) return null;
+                  final max = _availableStock(product);
+                  final quantity = _clampedQuantity(product);
+                  final soldOut = _isSoldOut(product);
+                  return _BottomBar(
+                    quantity: quantity,
+                    canDecrease: quantity > 1,
+                    canIncrease: !soldOut && (max == null || quantity < max),
+                    canBuy: _canBuy(product),
+                    soldOut: soldOut,
+                    onDecrease:
+                        () => setState(() {
+                          final current = _clampedQuantity(product);
+                          if (current > 1) _quantity = current - 1;
+                        }),
+                    onIncrease:
+                        () => setState(() {
+                          final current = _clampedQuantity(product);
+                          final limit = _availableStock(product);
+                          if (limit == null || current < limit) {
+                            _quantity = current + 1;
+                          }
+                        }),
+                    onAddToCart: () => _addToCart(buyNow: false),
+                    onBuyNow: () => _addToCart(buyNow: true),
+                  );
+                },
+                loading: () => null,
+                error: (_, __) => null,
+              ),
     );
   }
 }
@@ -270,6 +288,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 class _DetailContent extends StatelessWidget {
   const _DetailContent({
     required this.detail,
+    required this.isStaff,
     required this.selectedOptions,
     required this.availableStock,
     required this.onOptionSelected,
@@ -277,6 +296,7 @@ class _DetailContent extends StatelessWidget {
   });
 
   final ProductDetail detail;
+  final bool isStaff;
   final Map<int, int> selectedOptions;
   final int? availableStock;
   final void Function(int variationId, int optionId) onOptionSelected;
@@ -384,6 +404,38 @@ class _DetailContent extends StatelessWidget {
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (isStaff) ...[
+                  const SizedBox(height: Spacing.lg),
+                  Container(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentTint,
+                      borderRadius: AppRadius.md,
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.warning,
+                          size: 20,
+                        ),
+                        const SizedBox(width: Spacing.sm),
+                        Expanded(
+                          child: Text(
+                            l10n.ecomAdminCannotBuy,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.warning,
+                              fontWeight: FontWeight.w600,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

@@ -9,4 +9,4 @@ Route::get('/infaq/{infaq:slug}', [InfaqController::class, 'show']);
 
 // ─── Infaq (public — tetamu boleh derma; ahli dijejaki melalui akaun) ─────
 Route::post('/infaq/{infaq:slug}/donate', [InfaqController::class, 'donate'])
-    ->middleware('throttle:10,1');
+    ->middleware('throttle:10,1,api-infaq-donate');

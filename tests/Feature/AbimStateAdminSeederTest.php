@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Models\BranchAdmin;
 use App\Models\Organization;
 use App\Models\User;
 use Database\Seeders\AbimStateAdminSeeder;
@@ -49,8 +50,14 @@ class AbimStateAdminSeederTest extends TestCase
 
             $this->assertNotNull($user, "Missing admin for {$state}");
             $this->assertSame($this->abim->id, (int) $user->current_organization_id);
-            $this->assertTrue($user->hasRole('Admin'), "{$email} is not an Admin");
+            $this->assertTrue($user->hasRole('Admin Cawangan'), "{$email} is not an Admin Cawangan");
+            $this->assertFalse($user->hasRole('Admin'), "{$email} should not be an org Admin");
             $this->assertNotNull($user->branch_id, "{$email} has no branch");
+            $this->assertDatabaseHas('branch_admins', [
+                'branch_id' => $user->branch_id,
+                'user_id' => $user->id,
+                'role' => BranchAdmin::ROLE_MANAGER,
+            ]);
             $this->assertTrue(Hash::check(AbimStateAdminSeeder::PASSWORD, $user->password));
         }
     }

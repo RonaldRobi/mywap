@@ -205,6 +205,7 @@ class _OnboardingLogo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logo = ref.watch(appLogoProvider);
     if (logo == null || logo.isEmpty) return const SizedBox.shrink();
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return Container(
       width: 46,
       height: 46,
@@ -223,6 +224,7 @@ class _OnboardingLogo extends ConsumerWidget {
       child: Image.network(
         logo,
         fit: BoxFit.contain,
+        cacheWidth: (46 * dpr).round(),
         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),
     );
@@ -331,6 +333,12 @@ class _Media extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) return const SizedBox.expand();
     if (type == 'video') return _VideoMedia(url: url!);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cacheWidth =
+        (screenWidth.isFinite && screenWidth > 0)
+            ? (screenWidth * dpr).round().clamp(1, 2048)
+            : null;
     return ClipRRect(
       borderRadius: BorderRadius.zero,
       child: Image.network(
@@ -338,6 +346,7 @@ class _Media extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
+        cacheWidth: cacheWidth,
         errorBuilder:
             (_, __, ___) => const Icon(
               Icons.broken_image_outlined,

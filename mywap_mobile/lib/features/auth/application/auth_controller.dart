@@ -8,6 +8,7 @@ import '../../../core/constants/prefs_keys.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/providers.dart';
 import '../../../shared/l10n/l10n.dart';
+import '../../../core/push/app_badge_service.dart';
 import '../../../core/push/push_providers.dart';
 import '../../notifications/application/notification_providers.dart';
 import '../data/auth_repository.dart';
@@ -237,6 +238,9 @@ class AuthController extends Notifier<AuthState> {
     } catch (_) {
       // Kegagalan menyimpan status tidak sepatutnya menghalang log keluar.
     }
+    // Buang badge ikon selepas log keluar supaya peranti ini tidak memaparkan
+    // kiraan notifikasi akaun lama.
+    await AppBadgeService.clear();
     state = const AuthUnauthenticated();
   }
 

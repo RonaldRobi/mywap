@@ -17,9 +17,14 @@ class ArticleController extends Controller
 {
     public function __construct(private readonly ArticleService $articles) {}
 
-    public function manage()
+    public function manage(Request $request)
     {
+        $user = $request->user();
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+
         $articles = Article::with(['author', 'organization'])
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when(! $branchId && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->latest('published_at')
             ->paginate(10);
 
@@ -32,9 +37,11 @@ class ArticleController extends Controller
     public function adminIndex(Request $request)
     {
         $user = $request->user();
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $articles = Article::with(['author', 'organization', 'categories', 'tags'])
-            ->when(! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when(! $branchId && ! $user->isSuperadmin(), fn ($q) => $q->where('organization_id', $user->current_organization_id))
             ->latest('created_at')
             ->paginate(15);
 
@@ -58,7 +65,7 @@ class ArticleController extends Controller
     public function adminEdit(Request $request, Article $article)
     {
         $user = $request->user();
-        $this->authorizeArticleAccess($user, $article->organization_id);
+        $this->authorizeArticleAccess($user, $article);
 
         $article->load(['author', 'organization', 'categories', 'tags', 'media', 'meta']);
 
@@ -157,6 +164,7 @@ class ArticleController extends Controller
         $validated['organization_id'] = $user->isSuperadmin()
             ? ($validated['organization_id'] ?? null)
             : $user->current_organization_id;
+        $validated['branch_id'] = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $validated['author_id'] = auth()->id();
         $validated['slug'] = Str::slug($validated['title']).'-'.uniqid();
@@ -202,7 +210,7 @@ class ArticleController extends Controller
     public function update(Request $request, Article $article)
     {
         $user = $request->user();
-        $this->authorizeArticleAccess($user, $article->organization_id);
+        $this->authorizeArticleAccess($user, $article);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -248,6 +256,10 @@ class ArticleController extends Controller
             ? ($validated['organization_id'] ?? null)
             : $user->current_organization_id;
 
+        if ($user->isBranchAdmin()) {
+            $validated['branch_id'] = $user->managedBranchId();
+        }
+
         $article->update($validated);
 
         if (isset($categoryIds)) {
@@ -272,7 +284,7 @@ class ArticleController extends Controller
 
     public function destroy(Request $request, Article $article)
     {
-        $this->authorizeArticleAccess($request->user(), $article->organization_id);
+        $this->authorizeArticleAccess($request->user(), $article);
 
         if ($article->cover_image_path) {
             Storage::disk('public')->delete(str_replace('/storage/', '', $article->cover_image_path));
@@ -291,7 +303,8 @@ class ArticleController extends Controller
     public function deleteMedia(Request $request, ArticleMedia $media)
     {
         $media->loadMissing('article');
-        $this->authorizeArticleAccess($request->user(), $media->article?->organization_id);
+        abort_if(! $media->article, 404);
+        $this->authorizeArticleAccess($request->user(), $media->article);
 
         Storage::disk('public')->delete(str_replace('/storage/', '', $media->path));
         $media->delete();
@@ -303,13 +316,19 @@ class ArticleController extends Controller
      * Organisation admins may only touch articles that belong to their own
      * organisation. Global articles (organization_id null) are Superadmin-only.
      */
-    private function authorizeArticleAccess($user, ?int $organizationId): void
+    private function authorizeArticleAccess($user, Article $article): void
     {
         if ($user->isSuperadmin()) {
             return;
         }
 
-        abort_if((int) $organizationId !== (int) $user->current_organization_id, 403);
+        if ((int) $article->organization_id !== (int) $user->current_organization_id) {
+            abort(403);
+        }
+
+        if ($user->isBranchAdmin() && (int) $article->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
     }
 
     private function manageableOrganizations($user)

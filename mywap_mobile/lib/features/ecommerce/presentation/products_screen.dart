@@ -14,6 +14,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
 import '../data/models/product.dart';
@@ -357,6 +358,7 @@ class _ProductCard extends ConsumerWidget {
   void _buy(BuildContext context, WidgetRef ref) {
     final id = product.id;
     if (id == null || product.isOutOfStock) return;
+    if (ref.read(currentUserProvider)?.isStaff ?? false) return;
 
     // Products with variations need an option chosen first → open the detail
     // page where the buyer picks before adding to cart.
@@ -377,6 +379,7 @@ class _ProductCard extends ConsumerWidget {
             unitPrice: product.effectivePrice,
             quantity: 1,
             stock: product.stock,
+            postageCost: product.postageCost,
           ),
         );
     if (!added) return;
@@ -388,6 +391,7 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isStaff = ref.watch(currentUserProvider)?.isStaff ?? false;
     final showMemberPrice = product.isMember && product.priceForMember != null;
     final price =
         showMemberPrice ? product.priceForMember! : (product.price ?? 0);
@@ -597,27 +601,40 @@ class _ProductCard extends ConsumerWidget {
                     SizedBox(
                       width: double.infinity,
                       height: 34,
-                      child: FilledButton(
-                        onPressed:
-                            product.id == null || product.isOutOfStock
-                                ? null
-                                : () => _buy(context, ref),
-                        style: FilledButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          backgroundColor: AppColors.movementGreen,
-                          foregroundColor: AppColors.white,
-                          disabledBackgroundColor: AppColors.surfaceMuted,
-                          disabledForegroundColor: AppColors.textTertiary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: AppTextTheme.minSize,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        child: Text(_actionLabel(context, product)),
-                      ),
+                      child:
+                          isStaff
+                              ? Center(
+                                child: Text(
+                                  context.l10n.ecomAdminAccount,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textTertiary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              )
+                              : FilledButton(
+                                onPressed:
+                                    product.id == null || product.isOutOfStock
+                                        ? null
+                                        : () => _buy(context, ref),
+                                style: FilledButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  backgroundColor: AppColors.movementGreen,
+                                  foregroundColor: AppColors.white,
+                                  disabledBackgroundColor:
+                                      AppColors.surfaceMuted,
+                                  disabledForegroundColor:
+                                      AppColors.textTertiary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: AppTextTheme.minSize,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                child: Text(_actionLabel(context, product)),
+                              ),
                     ),
                   ],
                 ),

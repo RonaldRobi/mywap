@@ -9,7 +9,7 @@ class UsrahGroupPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
     }
 
     public function view(User $user, UsrahGroup $usrahGroup): bool
@@ -18,18 +18,26 @@ class UsrahGroupPolicy
             return true;
         }
 
+        if ($user->isBranchAdmin()) {
+            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+        }
+
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
     }
 
     public function update(User $user, UsrahGroup $usrahGroup): bool
     {
         if ($user->hasRole('Superadmin')) {
             return true;
+        }
+
+        if ($user->isBranchAdmin()) {
+            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
@@ -42,6 +50,10 @@ class UsrahGroupPolicy
             return true;
         }
 
+        if ($user->isBranchAdmin()) {
+            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
+        }
+
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id
             && $user->hasRole(['Admin', 'org-admin']);
     }
@@ -50,6 +62,10 @@ class UsrahGroupPolicy
     {
         if ($user->hasRole('Superadmin')) {
             return true;
+        }
+
+        if ($user->isBranchAdmin()) {
+            return (int) $user->managedBranchId() === (int) $usrahGroup->branch_id;
         }
 
         return (int) $user->current_organization_id === (int) $usrahGroup->organization_id

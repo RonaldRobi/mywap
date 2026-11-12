@@ -9,12 +9,9 @@ use App\Models\Branch;
 use App\Models\BranchTransitionHistory;
 use App\Models\OtpCode;
 use App\Models\Organization;
-use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\NewMemberAlert;
 use App\Notifications\RegistrationActivated;
-use App\Notifications\RegistrationReceived;
-use App\Services\FeeService;
 use App\Services\MembershipLetterService;
 use App\Services\OtpService;
 use App\Support\ApiResponse;
@@ -105,12 +102,12 @@ class AuthController extends Controller
 
     /**
      * Daftar ahli baharu — logic sama dengan RegisteredUserController::store,
-     * tapi tanpa sesi/Inertia. Pembayaran pendaftaran (dummy) terus diproses
-     * sekali gus supaya mobile tidak perlu susulan panggilan berasingan.
+     * tapi tanpa sesi/Inertia. Pendaftaran percuma untuk semua organisasi, jadi
+     * akaun terus aktif dan emel selamat datang dihantar serta-merta.
      *
      * @throws ValidationException
      */
-    public function register(Request $request, FeeService $feeService, MembershipLetterService $letters): JsonResponse
+    public function register(Request $request, MembershipLetterService $letters): JsonResponse
     {
         $normalizedIcNumber = MemberRegistration::normalizeIc($request->input('ic_number'));
         $request->merge([
@@ -141,6 +138,12 @@ class AuthController extends Controller
 
         $organization = $dob ? Organization::forAge($dob->age) : null;
         $organization ??= Organization::query()->orderBy('min_age')->first();
+
+        if ($organization && User::icExistsInOrganization($normalizedIcNumber, (int) $organization->id)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ic_number' => 'No. Kad Pengenalan ini sudah didaftarkan dalam organisasi ini.',
+            ]);
+        }
 
         $branchId = $request->branch_id;
         if ($branchId && $organization) {
@@ -211,29 +214,6 @@ class AuthController extends Controller
 
         if ($user->email) {
             try {
-                $user->notify(new RegistrationReceived($user));
-            } catch (\Throwable) {
-            }
-        }
-
-        // Proses pembayaran pendaftaran (dummy) terus supaya akaun aktif serta-merta.
-        $year = now()->year;
-        $feeAmount = (float) ($organization?->fee_amount ?? 50.00);
-
-        $payment = Payment::create([
-            'user_id' => $user->id,
-            'payable_type' => 'membership_fee',
-            'payable_id' => null,
-            'amount' => $feeAmount,
-            'status' => 'successful',
-            'reference' => 'DUMMY-'.strtoupper(Str::random(8)),
-            'description' => "Yuran Pendaftaran {$organization?->name} {$year}",
-        ]);
-
-        $feeService->markAsPaid($user, $year, $feeAmount, $payment->id);
-
-        if ($user->email) {
-            try {
                 $user->notify(new RegistrationActivated($user, route('login')));
             } catch (\Throwable) {
             }
@@ -254,7 +234,7 @@ class AuthController extends Controller
 
         return ApiResponse::success([
             'member_no' => $user->member_no,
-            'message' => "Pendaftaran berjaya! No Ahli anda: {$user->member_no}. Sila log masuk kali pertama menggunakan No IC anda.",
+            'message' => "Pendaftaran berjaya! No Ahli anda: {$user->member_no}. Semak emel anda untuk panduan log masuk kali pertama.",
         ], status: 201);
     }
 
@@ -369,9 +349,7 @@ class AuthController extends Controller
     {
         $request->validate(['ic_number' => ['required', 'string', 'max:32']]);
 
-        $normalizedIcNumber = Str::upper(
-            preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
-        );
+        $normalizedIcNumber = (string) User::normalizeIc($request->input('ic_number'));
 
         $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('ic_number', $normalizedIcNumber)->first();
 
@@ -600,12 +578,10 @@ class AuthController extends Controller
 
         $seconds = RateLimiter::availableIn($key);
         $field = $request->filled('email') ? 'email' : 'ic_number';
+        $minutes = max(1, (int) ceil($seconds / 60));
 
         throw ValidationException::withMessages([
-            $field => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            $field => "Terlalu banyak percubaan log masuk. Sila tunggu {$minutes} minit sebelum cuba lagi.",
         ]);
     }
 
@@ -635,7 +611,7 @@ class AuthController extends Controller
 
     private function lookupUser(string $identifier): ?User
     {
-        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $normalizedId = User::normalizeLoginId($identifier);
         $email = Str::lower(trim($identifier));
 
         return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
@@ -678,7 +654,7 @@ class AuthController extends Controller
         }
 
         $identifier = (string) $request->input('ic_number');
-        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $normalizedId = User::normalizeLoginId($identifier);
         $email = Str::lower(trim($identifier));
 
         return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)

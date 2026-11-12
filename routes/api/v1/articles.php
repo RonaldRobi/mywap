@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\V1\ArticleController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Articles (public — boleh dibaca tanpa log masuk) ─────────────────────
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware('throttle:60,1,api-articles')->group(function () {
     Route::get('/articles', [ArticleController::class, 'index']);
     Route::get('/articles/{article}', [ArticleController::class, 'show']);
 });

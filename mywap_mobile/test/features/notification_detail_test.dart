@@ -17,7 +17,10 @@ class _FakeNotificationRepository implements NotificationRepository {
   final List<String> readIds = [];
 
   @override
-  Future<List<AppNotification>> list() async => List.of(_items);
+  Future<NotificationsPage> list() async => NotificationsPage(
+        notifications: List.of(_items),
+        unreadCount: _items.where((n) => !n.isRead).length,
+      );
 
   @override
   Future<void> read(String id) async {

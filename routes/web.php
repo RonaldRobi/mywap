@@ -11,6 +11,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BayarCashController;
 use App\Http\Controllers\BranchChangeRequestController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\BranchReportController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingSlideController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProgramReportController;
 use App\Http\Controllers\OrganizationInfoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PollController;
@@ -47,9 +49,11 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicCardController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\RegistrationShareController;
 use App\Http\Controllers\ResitController;
 use App\Http\Controllers\SenangPayController;
 use App\Http\Controllers\SharePreviewController;
+use App\Http\Controllers\SuperadminAuditLogController;
 use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
 use App\Http\Controllers\UsrahController;
@@ -66,25 +70,27 @@ Route::get('/.well-known/apple-app-site-association', [DeepLinkController::class
 Route::get('/.well-known/assetlinks.json', [DeepLinkController::class, 'android'])
     ->name('deeplink.android');
 
-Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup')->middleware('throttle:30,1');
-Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info')->middleware('throttle:30,1');
-Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1');
-Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1');
-Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1');
-Route::get('/share/borang/{form}', [SharePreviewController::class, 'form'])->name('share.form')->middleware('throttle:30,1');
-Route::get('/share/produk/{product}', [SharePreviewController::class, 'product'])->name('share.product')->middleware('throttle:30,1');
-Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1');
+Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup')->middleware('throttle:30,1,web-postcode');
+Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info')->middleware('throttle:30,1,web-share-info');
+Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1,web-share-article');
+Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1,web-share-infaq');
+Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1,web-share-event');
+Route::get('/share/borang/{form}', [SharePreviewController::class, 'form'])->name('share.form')->middleware('throttle:30,1,web-share-form');
+Route::get('/share/produk/{product}', [SharePreviewController::class, 'product'])->name('share.product')->middleware('throttle:30,1,web-share-product');
+Route::get('/share/daftar', [SharePreviewController::class, 'register'])->name('share.register')->middleware('throttle:60,1,web-share-register');
+Route::get('/share/daftar/imej.png', [SharePreviewController::class, 'registerImage'])->name('share.register.image')->middleware('throttle:60,1,web-share-register-image');
+Route::get('/kad/{memberNo}', [PublicCardController::class, 'show'])->name('public.card')->middleware('throttle:60,1,web-card');
 // Surat pengesahan keahlian — URL ditandatangani supaya mobile boleh buka
 // dalam pelayar tanpa sesi/Authorization. Mesti di daftar sebelum wildcard.
 Route::get('/kad/surat/{user}', [MemberCardController::class, 'letterPdfSigned'])
     ->name('member.card.letter.signed')
-    ->middleware(['signed', 'throttle:30,1']);
+    ->middleware(['signed', 'throttle:30,1,web-card-letter']);
 
 // Resit pembayaran (generik) — URL ditandatangani supaya ahli boleh muat
 // turun resit PDF dalam pelayar tanpa sesi. Template ikut branding org.
 Route::get('/resit/{payment}', [ResitController::class, 'show'])
     ->name('receipt.show')
-    ->middleware(['signed', 'throttle:30,1']);
+    ->middleware(['signed', 'throttle:30,1,web-receipt']);
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');
 Route::get('/term-syarat', fn () => inertia('TermsConditions'))->name('terms');
@@ -92,19 +98,19 @@ Route::get('/keselamatan-kanak-kanak', fn () => inertia('ChildSafety'))->name('c
 Route::get('/faq', fn () => inertia('Faq'))->name('faq');
 
 Route::post('/__deploy/{token}', DeployController::class);
-Route::post('/__backup/{token}', BackupController::class)->middleware('throttle:6,60');
+Route::post('/__backup/{token}', BackupController::class)->middleware('throttle:6,60,web-backup');
 
-Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1');
-Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1');
-Route::post('/artikel/{article:slug}/react', [ArticleController::class, 'react'])->name('articles.react')->middleware('throttle:30,1');
-Route::post('/artikel/{article:slug}/comments', [ArticleController::class, 'storeComment'])->name('articles.comments.store')->middleware('throttle:10,1');
+Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index')->middleware('throttle:60,1,web-articles');
+Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1,web-article');
+Route::post('/artikel/{article:slug}/react', [ArticleController::class, 'react'])->name('articles.react')->middleware('throttle:30,1,web-article-react');
+Route::post('/artikel/{article:slug}/comments', [ArticleController::class, 'storeComment'])->name('articles.comments.store')->middleware('throttle:10,1,web-article-comments');
 
-Route::get('/sumbangan', [InfaqController::class, 'index'])->name('infaq.index')->middleware('throttle:60,1');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::class, 'show'])->name('infaq.show')->middleware('throttle:60,1');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donateForm'])->name('infaq.donate.form')->middleware('throttle:60,1');
-Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate')->middleware('throttle:10,1');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success')->middleware('throttle:60,1');
-Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr')->middleware('throttle:60,1');
+Route::get('/sumbangan', [InfaqController::class, 'index'])->name('infaq.index')->middleware('throttle:60,1,web-infaq');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::class, 'show'])->name('infaq.show')->middleware('throttle:60,1,web-infaq-show');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donateForm'])->name('infaq.donate.form')->middleware('throttle:60,1,web-infaq-donate-form');
+Route::post('/sumbangan/{year}/{month}/{day}/{infaq:slug}/donate', [InfaqController::class, 'donate'])->name('infaq.donate')->middleware('throttle:10,1,web-infaq-donate');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/success', [InfaqController::class, 'success'])->name('infaq.success')->middleware('throttle:60,1,web-infaq-success');
+Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}/qr', [InfaqController::class, 'qrCode'])->name('infaq.qr')->middleware('throttle:60,1,web-infaq-qr');
 
 Route::post('/bayarcash/callback', [BayarCashController::class, 'callback'])->name('bayarcash.callback');
 Route::post('/bayarcash/direct-debit/callback', [BayarCashController::class, 'directDebitCallback'])->name('bayarcash.direct-debit.callback');
@@ -127,11 +133,16 @@ Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show
 Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
 
-    Route::middleware('role:Superadmin|Admin|org-admin')->group(function () {
+    Route::get('/admin-unassigned', fn () => \Inertia\Inertia::render('Admin/BranchAdminUnassigned'))
+        ->middleware('role:Admin Cawangan')
+        ->name('branch-admin.unassigned');
+
+    Route::middleware(['role:Superadmin|Admin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
         Route::get('/admin/attendance', [AttendanceController::class, 'adminIndex'])->name('admin.attendance');
         Route::get('/admin/attendance/export/excel', [AttendanceController::class, 'exportExcel'])->name('admin.attendance.export.excel');
         Route::get('/admin/attendance/export/pdf', [AttendanceController::class, 'exportPdf'])->name('admin.attendance.export.pdf');
         Route::get('/admin/attendance/{event}', [AttendanceController::class, 'adminShow'])->name('admin.attendance.show');
+        Route::post('/admin/attendance/{event}/scan', [AttendanceController::class, 'scanMember'])->name('admin.attendance.scan');
         Route::post('/admin/attendance/{event}/registrations/{registration}/attendance', [AttendanceController::class, 'toggleAttendance'])->name('admin.attendance.toggle');
         Route::post('/admin/attendance/{event}/bulk', [AttendanceController::class, 'bulkAttendance'])->name('admin.attendance.bulk');
         Route::post('/admin/attendance/{event}/participants', [AttendanceController::class, 'addParticipant'])->name('admin.attendance.participants.store');
@@ -146,6 +157,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/admin/events/registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('admin.events.registrations.update');
         Route::post('/admin/events/registrations/{registration}/mark-paid', [RegistrationController::class, 'markPaid'])->name('admin.events.registrations.mark-paid');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
+        Route::get('/admin/admins', [InformationHubAdminController::class, 'adminManagement'])->name('admin.admins.index');
+        Route::get('/admin/jemput-ahli', [RegistrationShareController::class, 'show'])->name('admin.jemput-ahli');
+        Route::get('/admin/jemput-ahli/qr.png', [RegistrationShareController::class, 'downloadQr'])->name('admin.jemput-ahli.qr');
+        Route::get('/admin/jemput-ahli/poster.png', [RegistrationShareController::class, 'downloadPoster'])->name('admin.jemput-ahli.poster');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');
         Route::get('/admin/information-hub/manage', [InformationHubAdminController::class, 'index'])->name('admin.hub.manage');
@@ -167,6 +182,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('/admin/information-hub/announcements/{announcement}', [InformationHubAdminController::class, 'updateAnnouncement'])->name('admin.hub.announcements.update');
         Route::patch('/admin/information-hub/announcements/{announcement}/pin', [InformationHubAdminController::class, 'togglePinned'])->name('admin.hub.announcements.pin');
         Route::delete('/admin/information-hub/announcements/{announcement}', [InformationHubAdminController::class, 'destroyAnnouncement'])->name('admin.hub.announcements.destroy');
+        Route::get('/admin/pustaka/manage', [InformationHubAdminController::class, 'libraryIndex'])->name('admin.library.manage');
         Route::post('/admin/information-hub/library', [InformationHubAdminController::class, 'storeLibraryItem'])->name('admin.hub.library.store');
         Route::put('/admin/information-hub/library/{libraryItem}', [InformationHubAdminController::class, 'updateLibraryItem'])->name('admin.hub.library.update');
         Route::delete('/admin/information-hub/library/{libraryItem}', [InformationHubAdminController::class, 'destroyLibraryItem'])->name('admin.hub.library.destroy');
@@ -185,8 +201,11 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
         // Pendukung (emel bukan ahli) untuk hebahan
         Route::get('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'index'])->name('admin.supporters.index');
+        Route::get('/admin/supporters/export/excel', [\App\Http\Controllers\SupporterController::class, 'exportExcel'])->name('admin.supporters.export.excel');
+        Route::get('/admin/supporters/export/pdf', [\App\Http\Controllers\SupporterController::class, 'exportPdf'])->name('admin.supporters.export.pdf');
         Route::post('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'store'])->name('admin.supporters.store');
         Route::post('/admin/supporters/import', [\App\Http\Controllers\SupporterController::class, 'import'])->name('admin.supporters.import');
+        Route::post('/admin/supporters/invite', [\App\Http\Controllers\SupporterController::class, 'invite'])->name('admin.supporters.invite');
         Route::delete('/admin/supporters/{supporter}', [\App\Http\Controllers\SupporterController::class, 'destroy'])->name('admin.supporters.destroy');
         Route::get('/admin/facilities/manage', [FacilityBookingController::class, 'manageFacilities'])->name('admin.facilities.manage');
         Route::post('/admin/facilities', [FacilityBookingController::class, 'storeFacility'])->name('admin.facilities.store');
@@ -269,7 +288,6 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/superadmin/transactions', [PaymentController::class, 'allTransactions'])->name('superadmin.transactions');
         Route::get('/superadmin/transactions/export/csv', [PaymentController::class, 'exportCsv'])->name('superadmin.transactions.export.csv');
         Route::patch('/superadmin/transactions/{payment}', [PaymentController::class, 'updateTransactionStatus'])->name('superadmin.transactions.update');
-        Route::get('/superadmin/pustaka/manage', [InformationHubAdminController::class, 'libraryIndex'])->name('admin.library.manage');
         Route::get('/superadmin/dashboard-banners', [DashboardBannerController::class, 'index'])->name('superadmin.banners.index');
         Route::get('/superadmin/onboarding', [OnboardingSlideController::class, 'index'])->name('superadmin.onboarding.index');
         // Mesti didaftar sebelum route wildcard {onboardingSlide} supaya
@@ -283,8 +301,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('/superadmin/dashboard-banners/{dashboardBanner}', [DashboardBannerController::class, 'update'])->name('superadmin.banners.update');
         Route::delete('/superadmin/dashboard-banners/{dashboardBanner}', [DashboardBannerController::class, 'destroy'])->name('superadmin.banners.destroy');
 
-        Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
-        Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
+        Route::get('/superadmin/audit-log', [SuperadminAuditLogController::class, 'index'])->name('superadmin.audit-log.index');
+
+        Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');        Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
         Route::post('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'updateCardBack'])->name('superadmin.organizations.card-back.update');
         Route::delete('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'destroyCardBack'])->name('superadmin.organizations.card-back.destroy');
@@ -371,22 +390,16 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
     // Admin/Superadmin: manage catalog + manage orders
     Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
-        Route::resource('products', ProductController::class)->except(['index', 'show']);
-
         Route::resource('categories', CategoryController::class)->except(['show']);
-        Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
         // Cawangan (Branch) management — Admin manages own org, Superadmin manages all
-        Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
         Route::post('branches', [BranchController::class, 'store'])->name('branches.store');
         Route::put('branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
         Route::post('branches/{branch}/logo', [BranchController::class, 'updateLogo'])->name('branches.logo.update');
         Route::delete('branches/{branch}/logo', [BranchController::class, 'deleteLogo'])->name('branches.logo.destroy');
         Route::delete('branches/{branch}', [BranchController::class, 'destroy'])->name('branches.destroy');
 
-        // Branch admin management
-        Route::post('branches/{branch}/admins', [BranchController::class, 'storeAdmin'])->name('branches.admins.store');
-        Route::delete('branches/{branch}/admins/{user}', [BranchController::class, 'destroyAdmin'])->name('branches.admins.destroy');
+        // Branch admin account + setiausaha management
 
         // Positions management
         Route::get('positions', [PositionController::class, 'index'])->name('positions.index');
@@ -407,7 +420,34 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/finance/export/excel', [AdminFinanceController::class, 'exportExcel'])->name('admin.finance.export.excel');
         Route::get('/admin/finance/export/csv', [AdminFinanceController::class, 'exportCsv'])->name('admin.finance.export.csv');
 
-        // Member fee management
+        // Yuran ahli dan kemas kini profil ahli kini dikongsi dengan Admin Cawangan
+        // dalam kumpulan di bawah (dengan skop cawangan).
+
+        // Bulk branch change
+        Route::get('/admin/bulk-branch', [InformationHubAdminController::class, 'bulkBranch'])->name('admin.bulk-branch');
+        Route::patch('/admin/members/bulk-branch', [InformationHubAdminController::class, 'bulkBranchUpdate'])->name('admin.members.bulk-branch');
+    });
+
+    // Produk & pesanan — Org Admin dan Admin Cawangan (skop cawangan)
+    Route::middleware(['role:Admin|Superadmin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
+        Route::resource('products', ProductController::class)->except(['index', 'show']);
+        Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+    });
+
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
+        Route::get('branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::post('branches/{branch}/admin-account', [BranchController::class, 'storeAdminAccount'])->name('branches.admin-account.store');
+        Route::post('branches/{branch}/admin-account/assign', [BranchController::class, 'assignAdminAccount'])->name('branches.admin-account.assign');
+        Route::put('branches/{branch}/admin-account/password', [BranchController::class, 'updateAdminPassword'])->name('branches.admin-account.password');
+        Route::delete('branches/{branch}/admin-account', [BranchController::class, 'destroyAdminAccount'])->name('branches.admin-account.destroy');
+        Route::post('branches/{branch}/secretaries', [BranchController::class, 'storeSecretary'])->name('branches.secretaries.store');
+        Route::delete('branches/{branch}/secretaries/{user}', [BranchController::class, 'destroySecretary'])->name('branches.secretaries.destroy');
+    });
+
+    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
+
+    // Yuran ahli + kemas kini profil ahli — Org Admin, Branch Admin (skop cawangan)
+    Route::middleware(['role:Admin|Superadmin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
         Route::get('/admin/fees/members', [MemberFeeController::class, 'index'])->name('admin.fees.members');
         Route::get('/admin/fees/members/payments/{targetUser}', [MemberFeeController::class, 'paymentHistory'])->name('admin.fees.members.payments');
         Route::get('/admin/fees/members/logs/{targetUser}', [MemberFeeController::class, 'activityLog'])->name('admin.fees.members.logs');
@@ -426,29 +466,31 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/fees/members/{targetUser}/life-member', [MemberFeeController::class, 'toggleLifeMember'])->name('admin.fees.members.life-member');
         Route::post('/admin/fees/members/{targetUser}/exempted', [MemberFeeController::class, 'markExempted'])->name('admin.fees.members.exempted');
 
-        // Admin update member profile
         Route::patch('/admin/members/{user}/update', [InformationHubAdminController::class, 'updateMember'])->name('admin.members.update');
-
-        // Bulk branch change
-        Route::get('/admin/bulk-branch', [InformationHubAdminController::class, 'bulkBranch'])->name('admin.bulk-branch');
-        Route::patch('/admin/members/bulk-branch', [InformationHubAdminController::class, 'bulkBranchUpdate'])->name('admin.members.bulk-branch');
     });
 
-    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
-
-    // Branch change requests + member export — Org Admin, Branch Admin
-    Route::middleware('role:Admin|Superadmin|org-admin|Admin Cawangan')->group(function () {
-        Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
-        Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
+    // Branch change requests — hanya admin organisasi/superadmin boleh proses.
+    Route::middleware('role:Admin|Superadmin|org-admin')->group(function () {
         Route::get('branch-change-requests', [BranchChangeRequestController::class, 'index'])->name('branch-change-requests.index');
         Route::post('branch-change-requests/bulk-approve', [BranchChangeRequestController::class, 'approveBulk'])->name('branch-change-requests.bulk-approve');
         Route::post('branch-change-requests/{branchChangeRequest}/approve', [BranchChangeRequestController::class, 'approve'])->name('branch-change-requests.approve');
         Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
     });
+
+    // Member export + laporan cawangan — Org Admin, Branch Admin
+    Route::middleware('role:Admin|Superadmin|org-admin|Admin Cawangan')->group(function () {
+        Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
+        Route::get('/admin/members/export/states', [ExportController::class, 'exportMembersByState'])->name('admin.members.export.states');
+        Route::get('/admin/branch-report', [BranchReportController::class, 'index'])->name('admin.branch-report.index');
+        Route::get('/admin/branch-report/export', [BranchReportController::class, 'export'])->name('admin.branch-report.export');
+        Route::get('/admin/program-report', [ProgramReportController::class, 'index'])->name('admin.program-report.index');
+        Route::get('/admin/program-report/export/csv', [ProgramReportController::class, 'exportCsv'])->name('admin.program-report.export.csv');
+        Route::get('/admin/program-report/export/pdf', [ProgramReportController::class, 'exportPdf'])->name('admin.program-report.export.pdf');
+    });
 });
 
 // ─── MyWAP Mall — Akses Awam ────────────────────────────────────────────────
-Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1']], function () {
+Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1,web-mall']], function () {
     Route::get('/', [ProductController::class, 'index'])->name('mall.index');
     Route::get('/cart', [CartController::class, 'index'])->name('mall.cart');
     Route::post('/checkout', [OrderController::class, 'checkout'])->name('mall.checkout');
@@ -464,7 +506,7 @@ Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1']], function (
 });
 
 // ─── Perkhidmatan/Fasiliti — Tempahan Awam (termasuk org luar) ───────────────
-Route::group(['middleware' => ['throttle:60,1']], function () {
+Route::group(['middleware' => ['throttle:60,1,web-facilities']], function () {
     Route::get('/perkhidmatan', [FacilityBookingController::class, 'index'])->name('member.facilities.index');
     Route::get('/perkhidmatan/{facility}', [FacilityBookingController::class, 'show'])->name('member.facilities.show');
     Route::post('/perkhidmatan/{facility}/book', [FacilityBookingController::class, 'store'])->name('member.facilities.book');
@@ -473,16 +515,16 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 // ─── Chatbot API ─────────────────────────────────────────────────────────────
 Route::post('/api/chat', [ChatController::class, 'send'])
     ->name('api.chat.send')
-    ->middleware('throttle:30,1');
+    ->middleware('throttle:30,1,web-chat');
 
 // ─── Public Forms ─────────────────────────────────────────────────────────
-Route::group(['middleware' => ['throttle:60,1']], function () {
+Route::group(['middleware' => ['throttle:60,1,web-forms']], function () {
     Route::get('/borang/{token}', [FormController::class, 'publicShow'])->name('forms.public');
     Route::post('/borang/{token}', [FormController::class, 'publicSubmit'])->name('forms.public.submit');
 });
 
 // ─── Public Event Registration (bukan ahli, tanpa login) ───────────────────
-Route::group(['middleware' => ['throttle:60,1']], function () {
+Route::group(['middleware' => ['throttle:60,1,web-event-registration']], function () {
     Route::get('/daftar/{token}', [RegistrationController::class, 'publicCreate'])->name('events.register.public');
     Route::post('/daftar/{token}', [RegistrationController::class, 'publicStore'])->name('events.register.public.store');
     // Halaman terima kasih — akses public (tetamu & ahli). Kaedah `success()` sendiri
@@ -491,7 +533,7 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 });
 
 // ─── QR Kehadiran (SATU QR Event — ahli & bukan ahli) ──────────────────────
-Route::group(['middleware' => ['throttle:120,1']], function () {
+Route::group(['middleware' => ['throttle:120,1,web-event-attendance']], function () {
     Route::match(['get', 'post'], '/events/{id}/attend/{token}', [AttendanceController::class, 'scan'])
         ->name('events.attend');
     Route::post('/events/{id}/attend/{token}/identify', [AttendanceController::class, 'guestIdentify'])
@@ -501,7 +543,7 @@ Route::group(['middleware' => ['throttle:120,1']], function () {
 });
 
 // ─── Public Poll Feedback (program poster QR) ────────────────────────────────
-Route::group(['middleware' => ['throttle:60,1']], function () {
+Route::group(['middleware' => ['throttle:60,1,web-polls']], function () {
     Route::get('/polls/public/{poll}', [PollController::class, 'publicShow'])
         ->name('polls.public.show');
     Route::post('/polls/public/{poll}', [PollController::class, 'publicRespond'])
@@ -509,7 +551,7 @@ Route::group(['middleware' => ['throttle:60,1']], function () {
 });
 
 // ─── Program / Acara — Lihat Awam (tanpa login) ─────────────────────────────
-Route::group(['middleware' => ['throttle:60,1']], function () {
+Route::group(['middleware' => ['throttle:60,1,web-events']], function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event:slug}', [EventController::class, 'show'])->name('events.show');
     // Info organisasi boleh dilihat oleh semua (termasuk tetamu).

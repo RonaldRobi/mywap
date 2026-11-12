@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     Route::get('/api/check-member', [AuthenticatedSessionController::class, 'checkMemberIc'])
-        ->middleware('throttle:20,1')
+        ->middleware('throttle:20,1,web-check-member')
         ->name('login.check-member');
 
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -21,35 +21,29 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
-    Route::get('register/payment', [RegisteredUserController::class, 'payment'])
-        ->name('register.payment');
-
-    Route::post('register/payment', [RegisteredUserController::class, 'processPayment'])
-        ->name('register.payment.process');
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
     Route::post('login/send-otp', [AuthenticatedSessionController::class, 'sendOtp'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:5,1,web-send-otp')
         ->name('login.send-otp');
 
     Route::post('login/update-and-send-otp', [AuthenticatedSessionController::class, 'updateAndSendOtp'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:5,1,web-update-send-otp')
         ->name('login.update-and-send-otp');
 
     Route::post('login/verify-otp', [AuthenticatedSessionController::class, 'verifyOtp'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:10,1,web-verify-otp')
         ->name('login.verify-otp');
 
     Route::post('login/verify-identity', [AuthenticatedSessionController::class, 'verifyIdentity'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:5,1,web-verify-identity')
         ->name('login.verify-identity');
 
     Route::post('forgot-id', [AuthenticatedSessionController::class, 'forgotId'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:10,1,web-forgot-id')
         ->name('login.forgot-id');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
@@ -70,11 +64,11 @@ Route::middleware('auth')->group(function () {
         ->name('verification.notice');
 
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
+        ->middleware(['signed', 'throttle:6,1,web-verify-email'])
         ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:6,1,web-verification-send')
         ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])

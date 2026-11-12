@@ -15,6 +15,7 @@ class Facility extends Model
 
     protected $fillable = [
         'organization_id',
+        'branch_id',
         'name',
         'description',
         'location',
@@ -39,6 +40,11 @@ class Facility extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function bookings(): HasMany

@@ -80,7 +80,7 @@ class ImportAbim extends Command
             $branchId = $r['branchName'] ? ($branchMap[$r['branchName']] ?? null) : null;
 
             $record = [
-                'name' => $r['name'],
+                'name' => User::formatName($r['name']),
                 'member_no' => $r['member_no'],
                 'member_no_sequence' => $r['member_no_seq'],
                 'password' => $defaultPw,
@@ -94,7 +94,7 @@ class ImportAbim extends Command
                 'registration_year' => $r['reg_year'],
                 'notes' => $r['notes'],
                 'current_organization_id' => $abim->id,
-                'ic_number' => $r['ic'],
+                'ic_number' => User::normalizeIc($r['ic']),
             ];
 
             $exists = isset($existingIcs[$r['ic']]);

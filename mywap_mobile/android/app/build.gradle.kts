@@ -54,6 +54,11 @@ android {
 
     buildTypes {
         release {
+            // Flutter Gradle plugin sudah enable R8 (minify + shrink) untuk
+            // release; dinyatakan eksplisit di sini supaya niat jelas dan
+            // tidak terjejas jika lalai toolchain berubah.
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = if (keystoreProperties.isNotEmpty()) {
                 signingConfigs.getByName("release")
             } else {

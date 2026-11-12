@@ -79,7 +79,7 @@ class LoginRequest extends FormRequest
     private function authenticateByIdentifier(): void
     {
         $identifier = (string) $this->input('ic_number');
-        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $normalizedId = User::normalizeLoginId($identifier);
         $email = Str::lower(trim($identifier));
 
         $user = User::where(function ($query) use ($normalizedId, $email) {

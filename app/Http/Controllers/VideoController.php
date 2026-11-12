@@ -18,12 +18,14 @@ class VideoController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $videos = Video::query()
             ->with('organization:id,name')
             ->when(! $isSuperadmin, function ($query) use ($user) {
                 $query->where('organization_id', $user->current_organization_id);
             })
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->latest()
             ->get()
             ->map(fn (Video $video) => [
@@ -67,6 +69,7 @@ class VideoController extends Controller
 
         Video::create([
             'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
@@ -85,6 +88,10 @@ class VideoController extends Controller
             abort(403);
         }
 
+        if ($user->isBranchAdmin() && (int) $video->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
+
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
@@ -100,6 +107,7 @@ class VideoController extends Controller
 
         $video->update([
             'organization_id' => $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : $video->branch_id,
             'title' => $data['title'],
             'youtube_url' => $data['youtube_url'],
             'youtube_id' => $youtubeId,
@@ -115,6 +123,10 @@ class VideoController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         if (! $isSuperadmin && $video->organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        if ($user->isBranchAdmin() && (int) $video->branch_id !== (int) $user->managedBranchId()) {
             abort(403);
         }
 

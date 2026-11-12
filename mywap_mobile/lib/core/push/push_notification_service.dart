@@ -280,6 +280,7 @@ class PushNotificationService {
           currentAppLocalizations.pushChannelName,
           description: currentAppLocalizations.pushChannelDescription,
           importance: Importance.high,
+          showBadge: true,
         ),
       );
     } catch (_) {

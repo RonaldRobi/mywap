@@ -16,6 +16,9 @@ class NotificationController extends Controller
     {
         return ApiResponse::success([
             'notifications' => $this->notifications->notifications($request->user()),
+            // Jumlah sebenar (bukan terhad kepada 20 item senarai) untuk badge
+            // nombor pada ikon app.
+            'unread_count' => $request->user()->unreadNotifications()->count(),
         ]);
     }
 

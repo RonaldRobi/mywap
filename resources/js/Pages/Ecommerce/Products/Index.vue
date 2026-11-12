@@ -52,6 +52,11 @@ const isAdmin = computed(() => {
     return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin'].includes(role));
 });
 
+// Staff browse the catalogue; they do not add products to a cart.
+const isStaff = computed(() => {
+    return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan'].includes(role));
+});
+
 const search = ref(props.filters?.search || '');
 const category_id = ref(props.filters?.category_id || '');
 const sort = ref(props.filters?.sort || 'latest');
@@ -266,7 +271,7 @@ const productHref = (id) => route(props.isMall ? 'mall.show' : 'products.show', 
 
                             <div class="mt-2.5 flex items-center gap-2">
                                 <button
-                                    v-if="!isAdmin"
+                                    v-if="!isStaff"
                                     @click="addToCart(product, $event)"
                                     :disabled="product.stock <= 0"
                                     class="relative z-10 flex-1 rounded-xl px-2 py-2 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"

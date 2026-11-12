@@ -195,6 +195,20 @@ Yang anda boleh urus:
 
 ![A-19 — Senarai Peserta (Web)](screenshots/admin/19-peserta-web.png)
 
+### 7.5 Laporan Program
+
+**Buka:** Sidebar → **Laporan** → **Laporan Program**
+
+- Senarai semua program yang telah selesai, boleh ditapis mengikut tahun, bulan, atau semua tahun.
+- Skop mengikut peranan:
+  - **Superadmin:** semua organisasi.
+  - **Admin organisasi:** program organisasi sendiri dan program yang melibatkan organisasi itu.
+  - **Admin cawangan:** program cawangan yang diuruskan sahaja.
+- Ringkasan menunjukkan jumlah program, jumlah pendaftaran, peserta unik, jumlah kehadiran, dan kadar kehadiran.
+- Pecahan program mengikut bulan (atau tahun apabila memilih semua tahun) dan mengikut kategori.
+- Senarai program menunjukkan tarikh, kategori, organisasi, cawangan, peserta unik, kehadiran, dan kadar kehadiran. Tekan **Lihat** untuk membuka program.
+- **Muat Turun CSV** untuk analisis lanjut, atau **Muat Turun PDF** untuk laporan siap cetak.
+
 ---
 
 ## 8. Kempen
@@ -368,8 +382,20 @@ Yang anda boleh urus:
 2. Isi `Nama Cawangan`, `Negeri`, `Telefon`, `Emel`, `Alamat`.
 3. Simpan.
 4. Pada kad cawangan: `Edit` (termasuk `Logo Cawangan`, `Cawangan Aktif`).
-5. Urus **Admin Cawangan** — `Lantik Admin` hanya untuk ahli dalam cawangan tu.
+5. Urus **Akaun Admin & Setiausaha**:
+   - Cipta satu akaun admin cawangan (nama, emel login, kata laluan). Akaun ini dikongsi oleh setiausaha untuk membuat tindakan.
+   - Tukar kata laluan atau batalkan akses admin bila perlu.
+   - Lantik sehingga **3 setiausaha** daripada ahli cawangan yang mempunyai emel sebenar.
+   - Setiausaha menerima emel apabila ada permohonan tukar cawangan ke cawangan mereka.
 6. Padam cawangan — cawangan yang ada ahli tak boleh dipadam.
+
+**Akses Admin Cawangan:** Admin Cawangan boleh mengurus ahli, yuran, program, kehadiran, usrah, fasiliti, hebahan, pengumuman, artikel, video, pustaka/e-buku, produk dan pesanan cawangan, kempen infaq dan penderma cawangan, borang, serta laporan cawangan sendiri. Mereka tidak boleh mengurus cawangan lain, tetapan organisasi, kategori produk, jana yuran atau import.
+
+**Tukar cawangan:** Hanya admin organisasi/Superadmin boleh meluluskan atau menolak permohonan. Setiausaha cawangan destinasi hanya menerima emel makluman.
+
+**Kata laluan:** Admin Cawangan boleh menukar kata laluan akaun sendiri melalui Profil, dan menghantar pautan reset kepada ahli cawangan sendiri.
+
+**Audit:** Tindakan cipta akaun admin cawangan, tukar kata laluan, batal akses, lantik dan buang setiausaha direkod dalam Audit Log yang hanya boleh dilihat oleh Superadmin.
 
 ![A-34 — Pengurusan Cawangan (Web)](screenshots/admin/34-cawangan-web.png)
 

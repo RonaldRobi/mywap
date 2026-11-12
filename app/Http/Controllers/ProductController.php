@@ -52,6 +52,7 @@ class ProductController extends Controller
 
         $data = $this->productPayload($request, $validated);
         $data['organisasi_id'] = $this->resolveOrganisationId($request);
+        $data['branch_id'] = $request->user()->isBranchAdmin() ? $request->user()->managedBranchId() : null;
         $data['images'] = $this->storeExtraImages($request);
 
         if ($request->hasFile('image')) {
@@ -68,8 +69,14 @@ class ProductController extends Controller
     {
         // Drafts are previewable by admins only; buyers get a 404 rather than
         // a page for something that is not on sale.
-        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        $isAdmin = $request->user() && $request->user()->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
         abort_if(! $product->status && ! $isAdmin, 404);
+
+        if (! $product->status
+            && $request->user()?->isBranchAdmin()
+            && (int) $product->branch_id !== (int) $request->user()->managedBranchId()) {
+            abort(404);
+        }
 
         $detail = $this->products->showDetail($product, $request->user());
 
@@ -111,6 +118,10 @@ class ProductController extends Controller
         // organisasi_id untouched for them.
         if ($request->user()->hasRole('Superadmin')) {
             $data['organisasi_id'] = $this->resolveOrganisationId($request, $product->organisasi_id);
+        }
+
+        if ($request->user()->isBranchAdmin()) {
+            $data['branch_id'] = $request->user()->managedBranchId();
         }
 
         if ($request->hasFile('image')) {

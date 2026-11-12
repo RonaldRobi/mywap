@@ -42,6 +42,7 @@ class RegistrationReceived extends Notification implements ShouldQueue
         $logoUrl = $template?->headerImageUrl() ?? url($logoPath);
 
         return (new MailMessage)
+            ->mailer('transactional')
             ->subject($subject)
             ->view('emails.registration-received', [
                 'subject' => $subject,

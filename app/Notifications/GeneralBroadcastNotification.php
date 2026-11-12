@@ -64,7 +64,7 @@ class GeneralBroadcastNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $message = new MailMessage;
+        $message = (new MailMessage)->mailer('bulk');
 
         if ($this->broadcastMessage->email_use_template) {
             return $message

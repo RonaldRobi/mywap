@@ -196,6 +196,8 @@ class SendBroadcastJob implements ShouldQueue
     {
         $query = Supporter::query()
             ->where('is_active', true)
+            ->whereNotNull('email')
+            ->whereNull('converted_at')
             ->when($message->target_organization_id, fn ($q) => $q->where('organization_id', $message->target_organization_id));
 
         $target = 0;

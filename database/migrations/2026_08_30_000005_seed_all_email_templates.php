@@ -25,8 +25,8 @@ return new class extends Migration
             ],
             [
                 'key' => 'registration_activated',
-                'subject' => 'Akaun Anda Telah Diaktifkan - myWAP',
-                'body' => "Assalamualaikum {{name}},\n\nTahniah! Akaun myWAP anda telah diaktifkan.\n\nNo Ahli: {{member_no}}\nOrganisasi: {{organization}}\n\nAnda kini boleh log masuk kali pertama menggunakan No IC dan kod OTP yang akan dihantar ke emel anda.\n\n{{login_link}}\n\nSalam,\nmyWAP",
+                'subject' => 'Selamat datang ke {{organization}} - myWAP',
+                'body' => "Assalamualaikum {{name}},\n\nSelamat datang ke {{organization}}! Pendaftaran anda sebagai ahli telah berjaya. Akaun myWAP anda kini aktif dan sedia digunakan.\n\nPendaftaran adalah percuma. Gunakan panduan log masuk di bawah untuk mula menggunakan akaun anda.",
             ],
             [
                 'key' => 'new_member_alert',

@@ -8,6 +8,7 @@ use App\Models\BroadcastMessage;
 use App\Models\Event;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\Supporter;
 use App\Models\UsrahGroup;
 use App\Models\User;
 use App\Services\AdminService;
@@ -26,9 +27,12 @@ class BroadcastController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
+        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $messages = BroadcastMessage::query()
             ->with(['organization:id,name', 'targetOrganization:id,name'])
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->latest()
             ->take(20)
             ->get();
@@ -74,17 +78,14 @@ class BroadcastController extends Controller
                 'error_message' => $message->error_message,
             ]);
 
-        $announcementsQuery = Announcement::query()->with('organization:id,name,slug');
-        if (! $isSuperadmin) {
-            $announcementsQuery->where('organization_id', $user->current_organization_id);
-        }
-
-        $announcements = $announcementsQuery
-            ->with(['author:id,name', 'images'])
+        $announcements = Announcement::query()
+            ->with(['organization:id,name,slug', 'author:id,name', 'images'])
             ->withCount([
                 'reactions as likes_count' => fn ($q) => $q->where('reaction', 'like'),
                 'reads as reads_count',
             ])
+            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->latest('published_at')
             ->latest('id')
             ->take(50)
@@ -115,6 +116,7 @@ class BroadcastController extends Controller
                 : collect([['id' => $user->organization?->id, 'name' => $user->organization?->name]]);
 
         $usrahGroups = UsrahGroup::query()
+            ->when($user->isBranchAdmin(), fn ($q) => $q->where('branch_id', $user->managedBranchId()))
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
@@ -122,18 +124,31 @@ class BroadcastController extends Controller
         $branches = Branch::query()
             ->where('is_active', true)
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($q) => $q->where('id', $branchId))
             ->select('id', 'name', 'organization_id')
             ->orderBy('name')
             ->get();
+
+        $supporterCounts = $isBranchAdmin ? collect() : Supporter::query()
+            ->where('is_active', true)
+            ->whereNotNull('email')
+            ->whereNull('converted_at')
+            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->selectRaw('organization_id, COUNT(*) as total')
+            ->groupBy('organization_id')
+            ->pluck('total', 'organization_id')
+            ->map(fn ($total) => (int) $total);
 
         return Inertia::render('Admin/Broadcasts', [
             'recentMessages' => $messages,
             'defaultOrganizationId' => $user->current_organization_id,
             'isSuperadmin' => $isSuperadmin,
+            'isBranchAdmin' => $isBranchAdmin,
             'announcements' => $announcements,
             'organizations' => $organizations,
             'usrahGroups' => $usrahGroups,
             'branches' => $branches,
+            'supporterCounts' => $supporterCounts,
         ]);
     }
 
@@ -141,6 +156,8 @@ class BroadcastController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
+        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -161,7 +178,18 @@ class BroadcastController extends Controller
 
         $targetOrgId = null;
 
-        if ($data['target_criteria'] === 'all') {
+        if ($isBranchAdmin) {
+            if (($data['action_type'] ?? 'none') === 'product') {
+                throw ValidationException::withMessages([
+                    'action_type' => 'Admin cawangan tidak boleh memautkan produk dalam siaran cawangan.',
+                ]);
+            }
+
+            $data['target_criteria'] = 'branch';
+            $data['branch_id'] = $branchId;
+            $data['recipient_ids'] = null;
+            $targetOrgId = $user->current_organization_id;
+        } elseif ($data['target_criteria'] === 'all') {
             // 'Semua Ahli' untuk org-admin bermaksud semua ahli organisasinya sahaja,
             // bukan seluruh platform merentas tier. Superadmin: seluruh platform.
             $targetOrgId = $isSuperadmin ? null : $user->current_organization_id;
@@ -178,8 +206,14 @@ class BroadcastController extends Controller
             $targetOrgId = null;
         } elseif ($data['target_criteria'] === 'supporters') {
             // Pendukung cuma ada emel; siaran wajib melalui saluran emel.
+            if ($isSuperadmin && blank($data['target_organization_id'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'target_organization_id' => 'Pilih organisasi Pendukung yang ingin dihubungi.',
+                ]);
+            }
+
             $targetOrgId = $isSuperadmin
-                ? ($data['target_organization_id'] ?? null)
+                ? (int) $data['target_organization_id']
                 : $user->current_organization_id;
             $data['notification_channels'] = ['email'];
         }
@@ -224,7 +258,12 @@ class BroadcastController extends Controller
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
         $orgId = (int) $user->current_organization_id;
+
+        if ($isBranchAdmin && $type === 'product') {
+            return response()->json([]);
+        }
 
         if ($type === 'event') {
             $now = now();
@@ -233,7 +272,8 @@ class BroadcastController extends Controller
                 // LOWER() supaya carian tidak sensitif huruf besar/kecil pada
                 // PostgreSQL (LIKE biasa adalah case-sensitive di sana).
                 ->when($hasQuery, fn ($q) => $q->whereRaw('LOWER(title) LIKE ?', [$needle]))
-                ->when(! $isSuperadmin, function ($q) use ($orgId) {
+                ->when($isBranchAdmin, fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+                ->when(! $isSuperadmin && ! $isBranchAdmin, function ($q) use ($orgId) {
                     $q->where(function ($inner) use ($orgId) {
                         $inner->where('organization_id', $orgId)
                             ->orWhereNull('organization_id')
@@ -327,7 +367,11 @@ class BroadcastController extends Controller
                 throw ValidationException::withMessages(['action_id' => 'Program tidak dijumpai.']);
             }
 
-            if (! $isSuperadmin && $event->organization_id !== null && (int) $event->organization_id !== (int) $user->current_organization_id) {
+            if ($user->isBranchAdmin() && (int) $event->branch_id !== (int) $user->managedBranchId()) {
+                abort(403, 'Tiada kebenaran untuk program ini.');
+            }
+
+            if (! $isSuperadmin && ! $user->isBranchAdmin() && $event->organization_id !== null && (int) $event->organization_id !== (int) $user->current_organization_id) {
                 abort(403, 'Tiada kebenaran untuk program ini.');
             }
 
@@ -343,6 +387,10 @@ class BroadcastController extends Controller
 
         if ($product === null) {
             throw ValidationException::withMessages(['action_id' => 'Produk tidak dijumpai.']);
+        }
+
+        if ($user->isBranchAdmin()) {
+            abort(403, 'Admin cawangan tidak boleh memautkan produk.');
         }
 
         if (! $isSuperadmin && $product->organisasi_id !== null && (int) $product->organisasi_id !== (int) $user->current_organization_id) {
@@ -363,6 +411,12 @@ class BroadcastController extends Controller
      */
     public function logs(BroadcastMessage $broadcast): JsonResponse
     {
+        $user = request()->user();
+
+        if ($user?->isBranchAdmin() && (int) $broadcast->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
+
         $logs = $broadcast->logs()
             ->take(200)
             ->get()

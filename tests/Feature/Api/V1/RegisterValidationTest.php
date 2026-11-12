@@ -46,7 +46,8 @@ class RegisterValidationTest extends TestCase
 
     public function test_duplicate_ic_returns_malay_message(): void
     {
-        User::factory()->create(['ic_number' => '900101011234']);
+        $org = \App\Models\Organization::where('slug', 'pkpim')->firstOrFail();
+        User::factory()->create(['ic_number' => '900101011234', 'current_organization_id' => $org->id]);
 
         $this->postJson('/api/v1/auth/register', $this->payload([
             'email' => 'lain@example.test',
@@ -54,7 +55,7 @@ class RegisterValidationTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath(
                 'errors.ic_number.0',
-                'No. Kad Pengenalan ini sudah didaftarkan. Sila log masuk, atau hubungi admin jika anda terlupa No. Ahli.'
+                'No. Kad Pengenalan ini sudah didaftarkan dalam organisasi ini.'
             );
     }
 
@@ -93,7 +94,7 @@ class RegisterValidationTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath(
                 'errors.ic_number.0',
-                'No. Kad Pengenalan tidak sah. Masukkan 12 digit No. Kad Pengenalan (cth: 900101011234) atau No. Passport.'
+                'No. Kad Pengenalan mesti tepat 12 digit tanpa sengkang atau ruang (cth: 900101011234). Pasport mesti 6-32 aksara alfanumerik.'
             );
     }
 

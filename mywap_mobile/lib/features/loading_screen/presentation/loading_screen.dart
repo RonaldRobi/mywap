@@ -87,6 +87,7 @@ class _FallbackIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logo = logoUrl;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -109,6 +110,7 @@ class _FallbackIndicator extends StatelessWidget {
             child: CachedNetworkImage(
               imageUrl: logo,
               fit: BoxFit.contain,
+              memCacheWidth: (132 * dpr).round(),
               errorWidget:
                   (_, __, ___) => const Icon(
                     Icons.volunteer_activism,

@@ -7,6 +7,10 @@ use App\Listeners\LogTransitionAndNotify;
 use App\Models\AppSetting;
 use App\Models\EmailTemplate;
 use App\Models\Poll;
+use App\Models\Registration;
+use App\Models\User;
+use App\Observers\RegistrationObserver;
+use App\Observers\UserObserver;
 use App\Support\MailConfig;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -32,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureMailFromSettings();
         $this->configurePasswordResetMail();
         $this->registerApiRateLimiters();
+
+        Registration::observe(RegistrationObserver::class);
+        User::observe(UserObserver::class);
 
         Vite::prefetch(concurrency: 3);
 

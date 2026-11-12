@@ -27,6 +27,11 @@ class Article extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function comments()
     {
         return $this->hasMany(ArticleComment::class);

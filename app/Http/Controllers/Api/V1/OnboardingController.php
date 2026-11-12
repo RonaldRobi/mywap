@@ -26,8 +26,8 @@ class OnboardingController extends Controller
         return ApiResponse::success([
             'slides' => $slides,
             'login' => [
-                'title' => $setting->mobile_login_title ?? 'Selamat kembali',
-                'subtitle' => $setting->mobile_login_subtitle ?? 'Log masuk untuk meneruskan ke myWAP.',
+                'title' => $setting->mobile_login_title,
+                'subtitle' => $setting->mobile_login_subtitle,
                 'background_start' => $setting->mobile_login_background_start ?? '#F4F6F1',
                 'background_end' => $setting->mobile_login_background_end ?? '#EDF5EE',
                 'accent' => $setting->mobile_login_accent ?? '#2F6B32',

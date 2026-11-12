@@ -206,6 +206,25 @@ const ecommerceChildren = computed(() => {
         ];
     }
 
+    if (isBranchAdmin.value && ! isAdmin.value && ! isSuperadmin.value) {
+        return [
+            {
+                label: 'Produk',
+                href: route('products.index'),
+                active: route().current('products.*'),
+                colorClass: 'text-[#2F6B32]',
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/></svg>`,
+            },
+            {
+                label: 'Pesanan',
+                href: route('orders.index'),
+                active: route().current('orders.*'),
+                colorClass: 'text-[#2F6B32]',
+                icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
+            },
+        ];
+    }
+
     if (isMember.value) {
         return [
             {
@@ -260,7 +279,7 @@ const memberFacilityChildren = computed(() => {
 });
 const facilitiesActive = computed(() => memberFacilityChildren.value.some((c) => c.active));
 const adminFacilityChildren = computed(() => {
-    if (isAdmin.value || isSuperadmin.value) {
+    if (isAdmin.value || isSuperadmin.value || isBranchAdmin.value) {
         return [
             {
                 label: 'Urus Perkhidmatan/Fasiliti',
@@ -293,7 +312,8 @@ function isGroupOpen(groupKey) {
     return !!groupOpenState[groupKey];
 }
 
-const navItems = computed(() => [
+const navItems = computed(() => {
+    const items = [
     // ═══════════════════════════════════
     //  PAPAN PEMUKA
     // ═══════════════════════════════════
@@ -322,7 +342,7 @@ const navItems = computed(() => [
     }] : []),
     {
         label:  'Program & Acara',
-        href:   (isAdmin.value || isSuperadmin.value) ? route('admin.events.index') : route('events.index'),
+        href:   (isAdmin.value || isSuperadmin.value || isBranchAdmin.value) ? route('admin.events.index') : route('events.index'),
         active: route().current('admin.events.*') || route().current('events.*'),
         colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -338,7 +358,7 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>`,
     }] : []),
-    ...(isAdmin.value || isSuperadmin.value ? [{
+    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
         label:  'Peserta & Kehadiran',
         href:   route('admin.attendance'),
         active: route().current('admin.attendance*'),
@@ -367,7 +387,7 @@ const navItems = computed(() => [
     },
     {
         label:  'Artikel',
-        href:   isAdmin.value || isSuperadmin.value ? route('admin.articles.index') : route('articles.index'),
+        href:   isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? route('admin.articles.index') : route('articles.index'),
         active: route().current('articles.*') || route().current('admin.articles.*'),
         colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -376,7 +396,7 @@ const navItems = computed(() => [
     },
     {
         label:  'Video',
-        href:   isAdmin.value || isSuperadmin.value ? route('admin.videos.manage') : route('member.videos.index'),
+        href:   isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? route('admin.videos.manage') : route('member.videos.index'),
         active: route().current('admin.videos.*') || route().current('member.videos.*'),
         colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
@@ -415,6 +435,12 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>`,
     }, {
+        label:  'Pengurusan Admin',
+        href:   route('admin.admins.index'),
+        active: route().current('admin.admins.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
+    }, {
         label:  'Yuran Ahli',
         href:   route('admin.fees.members'),
         active: route().current('admin.fees.members'),
@@ -438,19 +464,63 @@ const navItems = computed(() => [
         active: route().current('branch-change-requests.*'),
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
-    }, {
-        label:  'Tukar Cawangan (Bulk)',
-        href:   route('admin.bulk-branch'),
-        active: route().current('admin.bulk-branch'),
+    }] : []),
+    ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{ type: 'section', label: 'Pengurusan Cawangan' }] : []),
+    ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
+        label:  'Ahli Cawangan',
+        href:   route('admin.hub.manage'),
+        active: route().current('admin.hub.*'),
         colorClass: 'text-[#2F6B32]',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
+    }, {
+        label:  'Yuran Ahli',
+        href:   route('admin.fees.members'),
+        active: route().current('admin.fees.members*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
+    }, {
+        label:  'Pustaka',
+        href:   route('admin.library.manage'),
+        active: route().current('admin.library.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-6.747-9.62h13.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/></svg>`,
+    }, {
+        label:  'Infaq & Penderma',
+        href:   route('superadmin.infaq.index'),
+        active: route().current('superadmin.infaq.*') || route().current('admin.donors.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"/></svg>`,
+    }, {
+        label:  'Laporan Cawangan',
+        href:   route('admin.branch-report.index'),
+        active: route().current('admin.branch-report.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`,
+    }, {
+        label:  'Hebahan Cawangan',
+        href:   route('admin.broadcasts.index'),
+        active: route().current('admin.broadcasts.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>`,
+    }] : []),
+
+    // ═══════════════════════════════════
+    //  LAPORAN
+    // ═══════════════════════════════════
+    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{ type: 'section', label: 'Laporan' }] : []),
+    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
+        label:  'Laporan Program',
+        href:   route('admin.program-report.index'),
+        active: route().current('admin.program-report.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`,
     }] : []),
     ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
-        label:  'Tukar Cawangan',
-        href:   route('branch-change-requests.index'),
-        active: route().current('branch-change-requests.*'),
+        label:  'Laporan Cawangan',
+        href:   route('admin.branch-report.index'),
+        active: route().current('admin.branch-report.*'),
         colorClass: 'text-[#2F6B32]',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`,
     }] : []),
 
     // ═══════════════════════════════════
@@ -550,6 +620,14 @@ const navItems = computed(() => [
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5h2m-6 4h10M6 13h12M8 17h8"/>
                 </svg>`,
+    }, {
+        label: 'Pendukung',
+        href: route('admin.supporters.index'),
+        active: route().current('admin.supporters.*'),
+        colorClass: 'text-[#071525]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                </svg>`,
     }] : []),
     ...(isSuperadmin.value ? [{
         label:  'Urus Pustaka',
@@ -596,6 +674,12 @@ const navItems = computed(() => [
     // ═══════════════════════════════════
     ...(isSuperadmin.value ? [{ type: 'section', label: 'Sistem' }] : []),
     ...(isSuperadmin.value ? [{
+        label:  'Audit Log',
+        href:   route('superadmin.audit-log.index'),
+        active: route().current('superadmin.audit-log.*'),
+        colorClass: 'text-[#071525]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`,
+    }, {
         label:  'Organisasi',
         href:   route('superadmin.organizations.index'),
         active: route().current('superadmin.organizations.*'),
@@ -704,7 +788,27 @@ const navItems = computed(() => [
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>`,
     },
-]);
+    ];
+
+    if (isBranchAdmin.value && !isMember.value && !isAdmin.value && !isSuperadmin.value) {
+        const blocked = new Set([
+            'Info Organisasi', 'Info Terkini', 'Undian',
+            'Pustaka', 'Kad Ahli', 'Jemput Ahli', 'Pengumuman',
+        ]);
+
+        const filtered = items.filter((item) => item.type === 'section' || !blocked.has(item.label));
+
+        return filtered.filter((item, index) => {
+            if (item.type !== 'section') return true;
+
+            const next = filtered[index + 1];
+
+            return next && next.type !== 'section';
+        });
+    }
+
+    return items;
+});
 
 // Auto-open grouped menus when inside them
 if (ecommerceActive.value) {

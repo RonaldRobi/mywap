@@ -208,6 +208,37 @@ void main() {
     expect(container.read(cartProvider).items.length, 1);
   });
 
+  test('cart charges the highest postage once per transaction', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(cartProvider.notifier);
+
+    notifier.add(
+      const CartItem(
+        key: '1:0',
+        productId: 1,
+        name: 'Baju',
+        unitPrice: 10,
+        quantity: 3,
+        postageCost: 8,
+      ),
+    );
+    notifier.add(
+      const CartItem(
+        key: '2:0',
+        productId: 2,
+        name: 'Seluar',
+        unitPrice: 20,
+        postageCost: 5,
+      ),
+    );
+
+    final cart = container.read(cartProvider);
+    expect(cart.subtotal, 50);
+    expect(cart.postage, 8);
+    expect(cart.grandTotal, 58);
+  });
+
   testWidgets('ProductsScreen marks sold-out products and disables buy', (
     tester,
   ) async {
@@ -525,7 +556,9 @@ void main() {
     );
 
     expect(find.text('Baju Melayu'), findsOneWidget);
-    expect(find.text('RM100'), findsNWidgets(2));
+    expect(find.text('RM100'), findsNWidgets(3));
+    expect(find.text('Subjumlah'), findsOneWidget);
+    expect(find.text('Pos'), findsOneWidget);
     expect(find.text('Teruskan ke Checkout'), findsOneWidget);
   });
 
@@ -663,7 +696,9 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
-    container.read(cartProvider.notifier).add(
+    container
+        .read(cartProvider.notifier)
+        .add(
           const CartItem(
             key: '1:0',
             productId: 1,
@@ -681,10 +716,7 @@ void main() {
       ),
     );
 
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nama'),
-      'Ali',
-    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nama'), 'Ali');
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
+use App\Models\BranchAdmin;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -16,7 +17,7 @@ use Spatie\Permission\Models\Role;
  * Setiap akaun:
  *   - emel   : abim-<slug-negeri>@mywap.my
  *   - katalaluan bersama (lihat PASSWORD)
- *   - peranan: Admin (Admin Organisasi) — skop seluruh organisasi ABIM
+ *   - peranan: Admin Cawangan — skop cawangan/negeri sendiri sahaja
  *   - organisasi: ABIM
  *   - cawangan: cawangan negeri berkenaan (jika wujud)
  *
@@ -61,8 +62,8 @@ class AbimStateAdminSeeder extends Seeder
             return;
         }
 
-        // Pastikan peranan Admin wujud (production mungkin belum di-seed).
-        $role = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
+        // Pastikan peranan Admin Cawangan wujud (production mungkin belum di-seed).
+        $role = Role::firstOrCreate(['name' => 'Admin Cawangan', 'guard_name' => 'web']);
 
         $rows = [];
 
@@ -103,6 +104,13 @@ class AbimStateAdminSeeder extends Seeder
             ])->save();
 
             $user->syncRoles([$role->name]);
+
+            if ($branch) {
+                BranchAdmin::updateOrCreate(
+                    ['branch_id' => $branch->id, 'user_id' => $user->id],
+                    ['role' => BranchAdmin::ROLE_MANAGER, 'created_by' => null]
+                );
+            }
 
             $rows[] = [$email, $state, $branch?->name ?? '-'];
         }

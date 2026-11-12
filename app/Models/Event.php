@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Enums\EventVisibility;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +37,7 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'organization_id', 'title', 'slug', 'description', 'type',
+        'organization_id', 'branch_id', 'visibility', 'title', 'slug', 'description', 'type',
         'location_or_link', 'maps_url', 'start_time', 'end_time',
         'featured_image_path', 'attendance_token',
         'status', 'category',
@@ -49,6 +50,7 @@ class Event extends Model
             'end_time' => 'datetime',
             'status' => EventStatus::class,
             'category' => EventCategory::class,
+            'visibility' => EventVisibility::class,
         ];
     }
 
@@ -119,6 +121,21 @@ class Event extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function isBranchOnly(): bool
+    {
+        return $this->visibility === EventVisibility::BranchOnly;
+    }
+
+    public function isOpen(): bool
+    {
+        return $this->visibility === EventVisibility::Open;
+    }
+
     public function rsvps(): HasMany
     {
         return $this->hasMany(EventRsvp::class);
@@ -150,6 +167,13 @@ class Event extends Model
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
+    }
+
+    public function supporters(): BelongsToMany
+    {
+        return $this->belongsToMany(Supporter::class, 'event_supporter')
+            ->withPivot('source')
+            ->withTimestamps();
     }
 
     public function forms(): HasMany

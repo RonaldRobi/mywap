@@ -601,14 +601,14 @@ onBeforeUnmount(() => {
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-black text-gray-800">Tetapan Emel (Mailer)</h2>
-                <p class="mt-1 text-xs text-gray-500">OTP dan pautan reset kata laluan sentiasa dihantar melalui Resend, dengan SMTP sebagai sandaran jika kuota habis. Emel pemberitahuan lain ikut pilihan di bawah. Pilih SMTP supaya kuota Resend tidak digunakan untuk emel pemberitahuan.</p>
+                <p class="mt-1 text-xs text-gray-500">OTP, reset kata laluan dan emel akaun (pendaftaran, surat keahlian) guna Resend, dengan SMTP sebagai sandaran. Siaran, promosi, resit pesanan dan emel lain sentiasa guna SMTP supaya kuota Resend tidak habis.</p>
 
                 <form class="mt-4 space-y-3" @submit.prevent="saveMailSettings">
                     <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-gray-500">Mailer untuk emel pemberitahuan</span>
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Saluran emel akaun</span>
                         <select v-model="mailForm.mail_mailer" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                            <option value="smtp">SMTP (notifikasi, jimat kuota Resend)</option>
-                            <option value="resend">Resend (semua emel melalui Resend)</option>
+                            <option value="smtp">SMTP sahaja (Resend dimatikan)</option>
+                            <option value="resend">Resend untuk OTP dan emel akaun</option>
                             <option value="log">Log (ujian, tiada emel sebenar)</option>
                         </select>
                         <p v-if="mailForm.errors.mail_mailer" class="mt-1 text-xs text-red-500">{{ mailForm.errors.mail_mailer }}</p>

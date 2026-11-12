@@ -25,6 +25,10 @@ class SendAnnouncementJob implements ShouldQueue
         $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $announcement->organization_id);
 
+        if ($announcement->branch_id) {
+            $query->where('branch_id', $announcement->branch_id);
+        }
+
         if ($announcement->target_criteria === 'unpaid_fees') {
             $query->whereDoesntHave('membershipFees', function ($feeQuery) {
                 $feeQuery->where('year', now()->year)

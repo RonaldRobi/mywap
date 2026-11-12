@@ -120,7 +120,7 @@ class MembershipLetterTest extends TestCase
         $this->assertNotNull($user->fresh()->membership_letter_sent_at);
     }
 
-    public function test_web_registration_sends_letter_after_payment(): void
+    public function test_web_registration_sends_letter_immediately(): void
     {
         Notification::fake();
 
@@ -132,12 +132,9 @@ class MembershipLetterTest extends TestCase
             'ic_number' => '900202025555',
             'phone' => '0123456789',
             'dob' => '1990-02-02',
-        ])->assertRedirect(route('register.payment', absolute: false));
+        ])->assertRedirect(route('login', absolute: false));
 
         $user = User::where('email', 'web@example.test')->firstOrFail();
-
-        $this->post('/register/payment', [])
-            ->assertRedirect(route('login', absolute: false));
 
         Notification::assertSentTo($user, MembershipLetterNotification::class);
     }
@@ -164,7 +161,7 @@ class MembershipLetterTest extends TestCase
 
         $context = app(MembershipLetterService::class)->context($user);
 
-        $this->assertStringContainsString('Aminah binti Ali', $context['body']);
+        $this->assertStringContainsString('Aminah Binti Ali', $context['body']);
         $this->assertStringContainsString('P00001', $context['body']);
         $this->assertStringContainsString('PKPIM', $context['body']);
     }

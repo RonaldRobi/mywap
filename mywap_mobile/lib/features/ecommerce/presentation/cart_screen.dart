@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/cart_notifier.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -19,6 +20,7 @@ class CartScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final cart = ref.watch(cartProvider);
+    final isStaff = ref.watch(currentUserProvider)?.isStaff ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +46,7 @@ class CartScreen extends ConsumerWidget {
                               _CartItemCard(item: cart.items[index]),
                     ),
                   ),
-                  _CartSummary(cart: cart),
+                  _CartSummary(cart: cart, isStaff: isStaff),
                 ],
               ),
     );
@@ -192,9 +194,10 @@ class _CartItemCard extends ConsumerWidget {
 }
 
 class _CartSummary extends StatelessWidget {
-  const _CartSummary({required this.cart});
+  const _CartSummary({required this.cart, required this.isStaff});
 
   final CartState cart;
+  final bool isStaff;
 
   @override
   Widget build(BuildContext context) {
@@ -214,12 +217,53 @@ class _CartSummary extends StatelessWidget {
             Row(
               children: [
                 Text(
+                  context.l10n.ecomSubtotal,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  Formatters.currency(cart.subtotal),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: Spacing.xs),
+            Row(
+              children: [
+                Text(
+                  context.l10n.ecomPostage,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  Formatters.currency(cart.postage),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: Spacing.xs),
+              child: Text(
+                context.l10n.ecomPostageOnceNote,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+            const Divider(height: Spacing.lg),
+            Row(
+              children: [
+                Text(
                   context.l10n.ecomTotal,
                   style: theme.textTheme.titleMedium,
                 ),
                 const Spacer(),
                 Text(
-                  Formatters.currency(cart.subtotal),
+                  Formatters.currency(cart.grandTotal),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -237,10 +281,21 @@ class _CartSummary extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
+            if (isStaff) ...[
+              const SizedBox(height: Spacing.sm),
+              Text(
+                context.l10n.ecomAdminCannotBuy,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: Spacing.md),
             FilledButton.icon(
               onPressed:
-                  cart.items.any((item) => item.isOutOfStock)
+                  isStaff || cart.items.any((item) => item.isOutOfStock)
                       ? null
                       : () => context.push('/checkout'),
               icon: const Icon(Icons.chevron_right),

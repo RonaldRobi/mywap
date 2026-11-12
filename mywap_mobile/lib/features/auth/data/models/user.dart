@@ -38,8 +38,17 @@ sealed class User with _$User {
 
   /// Admins/Superadmins are exempt from the forced profile-completion flow,
   /// mirroring the web `EnsureProfileIsComplete` middleware.
-  bool get isAdmin =>
-      (roles ?? const []).any(
-        (role) => role == 'Admin' || role == 'org-admin' || role == 'Superadmin',
-      );
+  bool get isAdmin => (roles ?? const []).any(
+    (role) => role == 'Admin' || role == 'org-admin' || role == 'Superadmin',
+  );
+
+  /// Staff accounts manage the mall catalogue and orders. They buy with a
+  /// member account or as a guest, never with their staff account.
+  bool get isStaff => (roles ?? const []).any(
+    (role) =>
+        role == 'Admin' ||
+        role == 'org-admin' ||
+        role == 'Superadmin' ||
+        role == 'Admin Cawangan',
+  );
 }

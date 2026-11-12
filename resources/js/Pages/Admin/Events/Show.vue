@@ -12,6 +12,7 @@ const props = defineProps({
     attendanceUrl: String,
     editUrl: String,
     qrUrl: { type: String, default: null },
+    isBranchAdmin: Boolean,
 });
 
 const isPublished = () => props.event?.status === 'published';

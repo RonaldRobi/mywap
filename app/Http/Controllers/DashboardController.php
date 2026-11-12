@@ -14,6 +14,7 @@ use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\AdminService;
+use App\Services\RegistrationShareService;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -114,6 +115,8 @@ class DashboardController extends Controller
             'overview' => $data['overview'],
             'managementLinks' => $data['managementLinks'],
             'campaigns' => $data['campaigns'],
+            'isBranchAdmin' => $user->isBranchAdmin(),
+            'registrationShare' => app(RegistrationShareService::class)->forUser($user),
         ]);
     }
 
@@ -211,13 +214,10 @@ class DashboardController extends Controller
             return 'admin.dashboard';
         }
 
-        // Admin Cawangan tidak dibenarkan masuk panel admin organisasi. Jika dia
-        // juga seorang ahli, beri dashboard ahli; jika tidak, hantar ke halaman
-        // yang memang dia boleh akses — jangan pulangkan 403.
+        // Admin Cawangan menggunakan dashboard admin yang sama, tetapi semua
+        // data diskopkan kepada cawangan yang diurus.
         if ($user->hasRole('Admin Cawangan')) {
-            return $user->hasRole('Member')
-                ? 'member.dashboard'
-                : 'branch-change-requests.index';
+            return 'admin.dashboard';
         }
 
         return 'member.dashboard';

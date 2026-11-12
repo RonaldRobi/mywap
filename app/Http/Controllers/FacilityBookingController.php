@@ -19,14 +19,16 @@ class FacilityBookingController extends Controller
 
     public function manageFacilities(Request $request): Response
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $facilities = Facility::query()
             ->with(['organization:id,name,slug', 'media'])
             ->when(! $isSuperadmin, fn ($query) => $query->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->orderBy('name')
             ->get()
             ->map(fn (Facility $facility) => [
@@ -65,7 +67,7 @@ class FacilityBookingController extends Controller
 
     public function storeFacility(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
 
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
@@ -93,6 +95,7 @@ class FacilityBookingController extends Controller
 
         $facility = Facility::create([
             'organization_id' => $organizationId,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'location' => $data['location'] ?? null,
@@ -117,7 +120,7 @@ class FacilityBookingController extends Controller
 
     public function updateFacility(Request $request, Facility $facility): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
         $this->authorizeFacilityAccess($request->user(), $facility);
 
         $user = $request->user();
@@ -191,7 +194,7 @@ class FacilityBookingController extends Controller
 
     public function destroyFacility(Request $request, Facility $facility): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
         $this->authorizeFacilityAccess($request->user(), $facility);
 
         $oldPath = ltrim(str_replace('/storage/', '', parse_url($facility->image_path ?? '', PHP_URL_PATH) ?? ''), '/');
@@ -277,16 +280,21 @@ class FacilityBookingController extends Controller
 
     public function adminIndex(Request $request): Response
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
 
         $user = $request->user();
         $status = trim((string) $request->query('status', ''));
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $bookings = FacilityBooking::query()
             ->with(['facility.organization:id,name,slug', 'user:id,name,email'])
             ->when(
                 ! $user->hasRole('Superadmin'),
                 fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id))
+            )
+            ->when(
+                $branchId,
+                fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId))
             )
             ->when(
                 $status !== '',
@@ -317,6 +325,7 @@ class FacilityBookingController extends Controller
                     ! $user->hasRole('Superadmin'),
                     fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id))
                 )
+                ->when($branchId, fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId)))
                 ->where('booking_status', 'pending')
                 ->count(),
             'approved' => FacilityBooking::query()
@@ -324,6 +333,7 @@ class FacilityBookingController extends Controller
                     ! $user->hasRole('Superadmin'),
                     fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id))
                 )
+                ->when($branchId, fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId)))
                 ->where('booking_status', 'approved')
                 ->count(),
             'rejected' => FacilityBooking::query()
@@ -331,6 +341,7 @@ class FacilityBookingController extends Controller
                     ! $user->hasRole('Superadmin'),
                     fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('organization_id', $user->current_organization_id))
                 )
+                ->when($branchId, fn ($query) => $query->whereHas('facility', fn ($facilityQuery) => $facilityQuery->where('branch_id', $branchId)))
                 ->where('booking_status', 'rejected')
                 ->count(),
         ];
@@ -346,13 +357,10 @@ class FacilityBookingController extends Controller
 
     public function updateStatus(Request $request, FacilityBooking $facilityBooking): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
 
-        if (! $request->user()->hasRole('Superadmin')) {
-            abort_if(
-                (int) $facilityBooking->facility?->organization_id !== (int) $request->user()->current_organization_id,
-                403
-            );
+        if ($facilityBooking->facility) {
+            $this->authorizeFacilityAccess($request->user(), $facilityBooking->facility);
         }
 
         $data = $request->validate([
@@ -387,13 +395,10 @@ class FacilityBookingController extends Controller
 
     public function markPaid(Request $request, FacilityBooking $facilityBooking): RedirectResponse
     {
-        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
 
-        if (! $request->user()->hasRole('Superadmin')) {
-            abort_if(
-                (int) $facilityBooking->facility?->organization_id !== (int) $request->user()->current_organization_id,
-                403
-            );
+        if ($facilityBooking->facility) {
+            $this->authorizeFacilityAccess($request->user(), $facilityBooking->facility);
         }
 
         if ($facilityBooking->booking_status !== 'approved') {
@@ -430,5 +435,9 @@ class FacilityBookingController extends Controller
         }
 
         abort_if((int) $user->current_organization_id !== (int) $facility->organization_id, 403);
+
+        if ($user->isBranchAdmin() && (int) $facility->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
     }
 }

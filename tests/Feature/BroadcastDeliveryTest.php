@@ -11,12 +11,15 @@ use App\Models\Category;
 use App\Models\Event;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\Supporter;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
+use App\Notifications\SupporterBroadcastNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -400,6 +403,117 @@ class BroadcastDeliveryTest extends TestCase
             ->getJson(route('admin.broadcasts.targets', ['type' => 'event', 'q' => '']))
             ->assertOk()
             ->assertJsonFragment(['id' => $event->id]);
+    }
+
+    public function test_supporter_broadcast_is_scoped_to_organisation_and_skips_converted_supporters(): void
+    {
+        Notification::fake();
+
+        $otherOrg = Organization::factory()->create(['name' => 'ABIM', 'slug' => 'abim']);
+
+        Supporter::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Pendukung PKPIM',
+            'email' => 'pendukung-pkpim@example.com',
+        ]);
+        Supporter::create([
+            'organization_id' => $otherOrg->id,
+            'name' => 'Pendukung ABIM',
+            'email' => 'pendukung-abim@example.com',
+        ]);
+        Supporter::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Sudah Jadi Ahli',
+            'email' => 'sudah-ahli@example.com',
+            'converted_at' => now(),
+        ]);
+
+        $message = BroadcastMessage::create([
+            'organization_id' => $this->org->id,
+            'target_organization_id' => $this->org->id,
+            'title' => 'Siaran Pendukung PKPIM',
+            'content' => 'Khas untuk Pendukung PKPIM.',
+            'target_criteria' => 'supporters',
+            'notification_channels' => ['email'],
+            'email_use_template' => false,
+        ]);
+
+        Bus::dispatchSync(new SendBroadcastJob($message->id));
+
+        $fresh = BroadcastMessage::withoutGlobalScopes()->find($message->id);
+
+        $this->assertSame('completed', $fresh->status);
+        $this->assertSame(1, $fresh->recipient_count);
+        $this->assertSame(1, $fresh->success_count);
+
+        Notification::assertSentOnDemand(
+            SupporterBroadcastNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'pendukung-pkpim@example.com',
+        );
+        Notification::assertSentOnDemandTimes(SupporterBroadcastNotification::class, 1);
+    }
+
+    public function test_org_admin_supporter_broadcast_is_pinned_to_own_organisation(): void
+    {
+        Notification::fake();
+
+        $otherOrg = Organization::factory()->create(['name' => 'ABIM', 'slug' => 'abim']);
+        $admin = $this->makeAdmin();
+
+        Supporter::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Pendukung PKPIM',
+            'email' => 'pkpim-supporter@example.com',
+        ]);
+        Supporter::create([
+            'organization_id' => $otherOrg->id,
+            'name' => 'Pendukung ABIM',
+            'email' => 'abim-supporter@example.com',
+        ]);
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Untuk Pendukung PKPIM',
+                'content' => 'Kandungan.',
+                'target_criteria' => 'supporters',
+                'target_organization_id' => $otherOrg->id,
+                'notification_channels' => ['in_app', 'email'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->first();
+
+        $this->assertNotNull($message);
+        $this->assertSame('supporters', $message->target_criteria);
+        $this->assertSame($this->org->id, (int) $message->target_organization_id);
+        $this->assertSame(['email'], $message->notification_channels);
+
+        Notification::assertSentOnDemand(
+            SupporterBroadcastNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'pkpim-supporter@example.com',
+        );
+        Notification::assertSentOnDemandTimes(SupporterBroadcastNotification::class, 1);
+    }
+
+    public function test_superadmin_supporter_broadcast_requires_selected_organisation(): void
+    {
+        $superadmin = User::factory()->create([
+            'email' => 'superadmin@example.com',
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+        ]);
+        $superadmin->assignRole('Superadmin');
+
+        $this->actingAs($superadmin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Siaran Pendukung',
+                'content' => 'Kandungan.',
+                'target_criteria' => 'supporters',
+                'notification_channels' => ['email'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasErrors(['target_organization_id']);
     }
 
     private function makeAdmin(): User

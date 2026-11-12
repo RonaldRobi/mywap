@@ -89,22 +89,24 @@ function removeImage() {
 const templateLabels = {
     otp_login: 'OTP Log Masuk',
     otp_email_verify: 'OTP Pengesahan Emel',
-    registration_received: 'Pendaftaran Diterima',
-    registration_activated: 'Akaun Diaktifkan',
+    registration_received: 'Pendaftaran Diterima (lama)',
+    registration_activated: 'Selamat Datang Ahli',
     new_member_alert: 'Pemberitahuan Admin (Ahli Baru)',
     registration_confirmation: 'Pengesahan Pendaftaran Program',
     form_invitation: 'Jemputan Borang',
+    supporter_invitation: 'Jemputan Menjadi Ahli',
     password_reset: 'Tetapkan Semula Kata Laluan',
 };
 
 const templateDescriptions = {
     otp_login: 'Dihantar kepada ahli semasa log masuk kali pertama (kod OTP).',
     otp_email_verify: 'Dihantar untuk mengesahkan alamat emel ahli (kod OTP).',
-    registration_received: 'Dihantar kepada pendaftar baharu selepas pendaftaran diterima, sebelum bayaran yuran.',
-    registration_activated: 'Dihantar selepas yuran disahkan dan akaun ahli diaktifkan.',
+    registration_received: 'Tidak digunakan lagi kerana pendaftaran ahli kini percuma.',
+    registration_activated: 'Dihantar serta-merta selepas ahli mendaftar. Sertakan panduan log masuk kali pertama.',
     new_member_alert: 'Dihantar kepada pentadbir apabila seorang ahli baharu mendaftar.',
     registration_confirmation: 'Dihantar kepada peserta selepas pendaftaran program/event disahkan.',
     form_invitation: 'Dihantar untuk menjemput seseorang mengisi borang pendaftaran.',
+    supporter_invitation: 'Dihantar kepada Pendukung terpilih untuk menjemput mereka mendaftar sebagai ahli.',
     password_reset: 'Dihantar kepada ahli yang meminta tetapan semula kata laluan.',
 };
 
@@ -130,6 +132,8 @@ const placeholders = {
         { key: '{{name}}', desc: 'Nama ahli' },
         { key: '{{member_no}}', desc: 'No Ahli' },
         { key: '{{organization}}', desc: 'Nama organisasi' },
+        { key: '{{branch}}', desc: 'Cawangan' },
+        { key: '{{email}}', desc: 'Emel ahli' },
         { key: '{{login_link}}', desc: 'Pautan log masuk' },
     ],
     new_member_alert: [
@@ -153,6 +157,11 @@ const placeholders = {
         { key: '{{form_title}}', desc: 'Tajuk borang' },
         { key: '{{form_link}}', desc: 'Pautan borang' },
         { key: '{{organization}}', desc: 'Nama organisasi' },
+    ],
+    supporter_invitation: [
+        { key: '{{name}}', desc: 'Nama penerima' },
+        { key: '{{organization}}', desc: 'Nama organisasi' },
+        { key: '{{register_link}}', desc: 'Pautan pendaftaran ahli' },
     ],
     password_reset: [
         { key: '{{name}}', desc: 'Nama ahli' },

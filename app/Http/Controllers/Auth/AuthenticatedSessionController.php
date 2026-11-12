@@ -67,7 +67,7 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         $identifier = $validated['ic_number'];
-        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $normalizedId = User::normalizeLoginId($identifier);
         $email = Str::lower(trim($identifier));
 
         $user = User::query()
@@ -295,7 +295,7 @@ class AuthenticatedSessionController extends Controller
 
     private function lookupUser(string $identifier): ?User
     {
-        $normalizedId = Str::upper(preg_replace('/\s+/', '', trim($identifier)) ?? '');
+        $normalizedId = User::normalizeLoginId($identifier);
         $email = Str::lower(trim($identifier));
 
         return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)

@@ -126,7 +126,7 @@ const submit = () => {
 
 <template>
     <div class="auth-canvas min-h-screen">
-        <Head title="Daftar Akaun" />
+        <Head title="Daftar Ahli" />
 
         <div class="mx-auto flex min-h-screen w-full max-w-6xl items-start justify-center px-3 py-4 sm:px-4 sm:py-10 md:px-8 lg:items-center">
             <div class="grid w-full grid-cols-1 gap-3 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
@@ -144,9 +144,9 @@ const submit = () => {
 
                 <section class="order-2 rounded-2xl border border-[#D5E3D8] bg-white p-5 shadow-[0_18px_50px_rgba(7,21,37,0.10)] sm:p-7 lg:order-2 lg:p-8">
                     <div class="mb-6">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F6B32]">Langkah 1 dari 2</p>
-                        <h2 class="mt-2 text-2xl font-black text-[#071525] sm:text-3xl">Daftar Akaun</h2>
-                        <p class="mt-1 text-sm text-[#4A5A50]">Lengkapkan butiran di bawah. Kata laluan akan ditetapkan semasa log masuk kali pertama.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F6B32]">Pendaftaran Percuma</p>
+                        <h2 class="mt-2 text-2xl font-black text-[#071525] sm:text-3xl">Daftar Ahli</h2>
+                        <p class="mt-1 text-sm text-[#4A5A50]">Tiada bayaran pendaftaran. Isi butiran di bawah dan kata laluan akan ditetapkan semasa log masuk kali pertama.</p>
                     </div>
 
                     <form @submit.prevent="submit" class="space-y-4">
@@ -226,17 +226,10 @@ const submit = () => {
                         </div>
 
                         <div v-if="inferredOrganization" class="rounded-2xl border border-[#6FBF8A] bg-[#EAF1EA] p-4">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-[#2F6B32]">Organisasi Dikesan</p>
-                                    <p class="mt-1 text-lg font-black text-[#071525]">{{ inferredOrganization.name }}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-[#2F6B32]">Yuran Tahunan</p>
-                                    <p class="mt-1 text-lg font-black text-[#071525]">RM {{ Number(inferredOrganization.fee_amount).toFixed(2) }}</p>
-                                </div>
-                            </div>
-                            <p v-if="inferredAge !== null" class="mt-2 text-xs text-[#123D2A]">Umur dikesan: {{ inferredAge }} tahun</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-[#2F6B32]">Organisasi Dikesan</p>
+                            <p class="mt-1 text-lg font-black text-[#071525]">{{ inferredOrganization.name }}</p>
+                            <p v-if="inferredAge !== null" class="mt-2 text-xs text-[#123D2A]">Umur dikesan: {{ inferredAge }} tahun. Organisasi ditentukan mengikut tahun lahir.</p>
+                            <p class="mt-2 text-sm font-semibold text-[#2F6B32]">Pendaftaran percuma.</p>
                         </div>
 
                         <div v-if="filteredBranches.length > 0 && inferredOrganization">
@@ -272,8 +265,12 @@ const submit = () => {
                             class="w-full justify-center rounded-xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            {{ form.processing ? 'Mendaftar...' : 'Daftar & Teruskan ke Bayaran' }}
+                            {{ form.processing ? 'Mendaftar...' : 'Daftar Ahli' }}
                         </button>
+
+                        <p class="text-center text-xs text-[#4A5A50]">
+                            Selepas mendaftar, kami akan hantar emel selamat datang dan panduan log masuk ke emel anda.
+                        </p>
 
                         <p class="text-center text-sm text-[#4A5A50]">
                             Sudah ada akaun?

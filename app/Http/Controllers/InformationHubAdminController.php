@@ -37,9 +37,12 @@ class InformationHubAdminController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $libraryItems = LibraryItem::query()
             ->with('organization:id,name,slug')
+            ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->latest()
             ->take(100)
             ->get()
@@ -47,6 +50,7 @@ class InformationHubAdminController extends Controller
                 'id' => $item->id,
                 'organization_id' => $item->organization_id,
                 'organization_name' => $item->organization?->name,
+                'branch_id' => $item->branch_id,
                 'title' => $item->title,
                 'description' => $item->description,
                 'file_path' => $item->file_path,
@@ -57,6 +61,7 @@ class InformationHubAdminController extends Controller
 
         return Inertia::render('Admin/LibraryManage', [
             'isSuperadmin' => $isSuperadmin,
+            'isBranchAdmin' => $user->isBranchAdmin(),
             'defaultOrganizationId' => $user->current_organization_id,
             'organizations' => $isSuperadmin
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug', 'min_age', 'max_age'])
@@ -75,6 +80,8 @@ class InformationHubAdminController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
+        $managedBranchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $search = $request->input('search');
         $organizationIdFilter = $request->input('organization_id');
@@ -82,6 +89,7 @@ class InformationHubAdminController extends Controller
         $branchIdFilter = $request->input('branch_id');
         $stateFilter = $request->input('state');
         $activeFilter = $request->input('active');
+        $appUsageFilter = $request->input('app_usage');
         $feeStatusFilter = $request->input('fee_status');
         $registeredFrom = $request->input('registered_from');
         $registeredTo = $request->input('registered_to');
@@ -108,7 +116,9 @@ class InformationHubAdminController extends Controller
             $query->where('current_organization_id', $organizationIdFilter);
         }
 
-        if ($branchIdFilter) {
+        if ($isBranchAdmin) {
+            $query->where('branch_id', $managedBranchId);
+        } elseif ($branchIdFilter) {
             $query->where('branch_id', $branchIdFilter);
         } elseif ($stateFilter) {
             // Padankan sama ada melalui cawangan atau negeri ahli sendiri, supaya
@@ -138,6 +148,12 @@ class InformationHubAdminController extends Controller
             $query->where('is_active', false);
         }
 
+        if ($appUsageFilter === 'used') {
+            $query->whereNotNull('first_login_at');
+        } elseif ($appUsageFilter === 'never') {
+            $query->whereNull('first_login_at');
+        }
+
         if ($feeStatusFilter) {
             if ($feeStatusFilter === 'paid') {
                 $query->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted']));
@@ -164,6 +180,7 @@ class InformationHubAdminController extends Controller
                 ->orderBy('state')->orderBy('name')
                 ->get(['id', 'name', 'state', 'organization_id'])
             : Branch::where('organization_id', $user->current_organization_id)
+                ->when($isBranchAdmin, fn ($q) => $q->where('id', $managedBranchId))
                 ->where('is_active', true)
                 ->orderBy('state')->orderBy('name')
                 ->get(['id', 'name', 'state', 'organization_id']);
@@ -181,7 +198,9 @@ class InformationHubAdminController extends Controller
                 'member_no' => $u->member_no,
                 'original_member_no' => $u->original_member_no,
                 'created_at' => $u->created_at?->format('d M Y'),
-                'ic_number' => $isSuperadmin ? ($u->ic_number ?: '-') : $this->maskIcNumber($u->ic_number),
+                'first_login_at' => $u->first_login_at?->format('d M Y'),
+                'has_used_app' => $u->first_login_at !== null,
+                'ic_number' => $u->ic_number ?: '-',
                 'phone' => $u->phone,
                 'dob' => $u->dob?->format('d M Y'),
                 'gender' => $u->gender,
@@ -193,6 +212,7 @@ class InformationHubAdminController extends Controller
                 'position' => $u->position,
                 'position_id' => $u->position_id,
                 'position_badge' => $u->positionBadgePayload(),
+                'membership_status' => $u->membership_status,
                 'topics' => $u->topics,
                 'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
                 'organization_id' => $u->current_organization_id,
@@ -228,11 +248,14 @@ class InformationHubAdminController extends Controller
             ->orderBy('display_order')->get(['id', 'name']);
 
         $userQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
-            ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id));
+            ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
+            ->when($isBranchAdmin, fn ($q) => $q->where('branch_id', $managedBranchId));
         $stats = [
             'total' => (clone $userQuery)->count(),
             'aktif' => (clone $userQuery)->where('is_active', true)->count(),
             'tidak_aktif' => (clone $userQuery)->where('is_active', false)->count(),
+            'sudah_guna_app' => (clone $userQuery)->whereNotNull('first_login_at')->count(),
+            'belum_guna_app' => (clone $userQuery)->whereNull('first_login_at')->count(),
             'trashed' => (clone $userQuery)->onlyTrashed()->count(),
         ];
 
@@ -249,6 +272,8 @@ class InformationHubAdminController extends Controller
 
         return Inertia::render('Admin/InformationHubManage', [
             'isSuperadmin' => $isSuperadmin,
+            'isBranchAdmin' => $isBranchAdmin,
+            'managedBranchId' => $managedBranchId,
             'defaultOrganizationId' => $user->current_organization_id,
             'organizations' => $isSuperadmin
                 ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug', 'min_age', 'max_age'])
@@ -272,6 +297,7 @@ class InformationHubAdminController extends Controller
                 'branch_id' => $branchIdFilter,
                 'state' => $stateFilter,
                 'active' => $activeFilter,
+                'app_usage' => $appUsageFilter,
                 'fee_status' => $feeStatusFilter,
                 'registered_from' => $registeredFrom,
                 'registered_to' => $registeredTo,
@@ -279,6 +305,68 @@ class InformationHubAdminController extends Controller
                 'per_page' => $perPage,
                 'trashed' => $trashed,
             ],
+        ]);
+    }
+
+    public function adminManagement(Request $request): Response
+    {
+        $authUser = $request->user();
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
+
+        $isSuperadmin = $authUser->hasRole('Superadmin');
+        $organizations = $isSuperadmin
+            ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
+            : collect();
+
+        $organizationId = $isSuperadmin
+            ? (int) ($request->input('organization_id') ?: $authUser->current_organization_id)
+            : (int) $authUser->current_organization_id;
+
+        $search = trim((string) $request->input('search'));
+
+        $membersQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            ->where('current_organization_id', $organizationId)
+            ->with(['roles', 'branch:id,name']);
+
+        if ($search !== '') {
+            MemberSearch::apply($membersQuery, $search);
+        }
+
+        $members = $membersQuery
+            ->orderBy('name')
+            ->limit(50)
+            ->get()
+            ->map(fn (User $member) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'member_no' => $member->member_no,
+                'email' => $member->email,
+                'branch_name' => $member->branch?->name,
+                'role' => $member->roles->pluck('name')->first() ?? 'Member',
+            ])
+            ->values();
+
+        $admins = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            ->where('current_organization_id', $organizationId)
+            ->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))
+            ->with('roles')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $member) => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'member_no' => $member->member_no,
+                'email' => $member->email,
+            ])
+            ->values();
+
+        return Inertia::render('Admin/AdminManage', [
+            'admins' => $admins,
+            'members' => $members,
+            'organizations' => $organizations,
+            'organization_id' => $organizationId,
+            'search' => $search,
+            'isSuperadmin' => $isSuperadmin,
         ]);
     }
 
@@ -291,11 +379,26 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
+        if ($authUser->isBranchAdmin() && (int) $user->branch_id !== (int) $authUser->managedBranchId()) {
+            abort(403);
+        }
+
+        if ($request->has('ic_number')) {
+            $request->merge(['ic_number' => User::normalizeIc($request->input('ic_number'))]);
+        }
+
+        $normalizedIc = $request->input('ic_number');
+        $icChanged = $normalizedIc !== User::normalizeIc($user->ic_number);
+        $icRule = ['nullable', 'string', 'max:32'];
+        if ($icChanged) {
+            $icRule[] = 'regex:'.User::IC_VALIDATION_REGEX;
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
-            'ic_number' => ['nullable', 'string', 'max:32', Rule::unique('users', 'ic_number')->ignore($user->id)],
+            'ic_number' => $icRule,
             'member_no' => ['nullable', 'string', 'max:12', Rule::unique('users', 'member_no')->ignore($user->id)],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
@@ -317,8 +420,17 @@ class InformationHubAdminController extends Controller
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
             'is_public_in_directory' => ['nullable', 'boolean'],
-            'is_branch_admin' => ['nullable', 'boolean'],
         ]);
+
+        if ($authUser->isBranchAdmin()) {
+            unset($validated['branch_id']);
+        }
+
+        if ($icChanged && $normalizedIc !== null && User::icExistsInOrganization($normalizedIc, (int) $user->current_organization_id, (int) $user->id)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
+            ]);
+        }
 
         $originalMemberNo = $user->getOriginal('member_no');
         $originalBranchId = $user->getOriginal('branch_id');
@@ -381,14 +493,6 @@ class InformationHubAdminController extends Controller
             ]);
         }
 
-        if ($request->has('is_branch_admin')) {
-            if ($request->boolean('is_branch_admin')) {
-                $user->assignRole('Admin Cawangan');
-            } else {
-                $user->removeRole('Admin Cawangan');
-            }
-        }
-
         return back()->with('success', 'Profil ahli berjaya dikemas kini.');
     }
 
@@ -414,6 +518,16 @@ class InformationHubAdminController extends Controller
         }
 
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+
+        if (($data['target_criteria'] ?? 'all') === 'specific_usrah' && ! empty($data['usrah_group_id']) && $branchId) {
+            $belongs = \App\Models\UsrahGroup::query()
+                ->whereKey($data['usrah_group_id'])
+                ->where('branch_id', $branchId)
+                ->exists();
+
+            abort_unless($belongs, 403);
+        }
 
         $coverPath = $request->hasFile('cover_image')
             ? '/storage/'.ltrim($request->file('cover_image')->store('announcements/covers', 'public'), '/')
@@ -421,6 +535,7 @@ class InformationHubAdminController extends Controller
 
         $announcement = Announcement::create([
             'organization_id' => $organizationId,
+            'branch_id' => $branchId,
             'author_id' => $user->id,
             'title' => $data['title'],
             'content' => $data['content'],
@@ -450,7 +565,7 @@ class InformationHubAdminController extends Controller
 
     public function togglePinned(Request $request, Announcement $announcement): RedirectResponse
     {
-        $this->authorizeOrganizationAccess($request->user(), $announcement->organization_id);
+        $this->authorizeAnnouncementAccess($request->user(), $announcement);
 
         $announcement->update([
             'is_pinned' => ! $announcement->is_pinned,
@@ -461,7 +576,7 @@ class InformationHubAdminController extends Controller
 
     public function updateAnnouncement(Request $request, Announcement $announcement): RedirectResponse
     {
-        $this->authorizeOrganizationAccess($request->user(), $announcement->organization_id);
+        $this->authorizeAnnouncementAccess($request->user(), $announcement);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -537,7 +652,7 @@ class InformationHubAdminController extends Controller
 
     public function destroyAnnouncement(Request $request, Announcement $announcement): RedirectResponse
     {
-        $this->authorizeOrganizationAccess($request->user(), $announcement->organization_id);
+        $this->authorizeAnnouncementAccess($request->user(), $announcement);
 
         $coverPath = ltrim(str_replace('/storage/', '', parse_url($announcement->cover_image_path ?? '', PHP_URL_PATH) ?? ''), '/');
         if ($coverPath !== '' && Storage::disk('public')->exists($coverPath)) {
@@ -578,6 +693,7 @@ class InformationHubAdminController extends Controller
 
         LibraryItem::create([
             'organization_id' => $organizationId,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category' => $data['category'] ?? 'Umum',
@@ -591,17 +707,15 @@ class InformationHubAdminController extends Controller
     public function storeMember(Request $request): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
-        $normalizedIcNumber = Str::upper(
-            preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
-        );
+        $normalizedIcNumber = (string) User::normalizeIc($request->input('ic_number'));
         $request->merge(['ic_number' => $normalizedIcNumber]);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255'], // Removed unique constraint
-            'ic_number' => ['required', 'string', 'max:32', 'unique:users,ic_number'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'ic_number' => ['required', 'string', 'max:32', 'regex:'.User::IC_VALIDATION_REGEX],
             'phone' => ['nullable', 'string', 'max:255'],
             'dob' => ['required', 'date'],
             'password' => ['nullable', 'string', 'min:6'],
@@ -619,6 +733,12 @@ class InformationHubAdminController extends Controller
         }
 
         abort_if(! $organization, 422, 'Organisasi admin tidak sah.');
+
+        if (User::icExistsInOrganization($normalizedIcNumber, (int) $organization->id)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ic_number' => 'No. Kad Pengenalan ini sudah didaftarkan dalam organisasi ini.',
+            ]);
+        }
 
         $prefix = match ($organization?->slug) {
             'pkpim' => 'P',
@@ -664,7 +784,7 @@ class InformationHubAdminController extends Controller
 
     public function destroyLibraryItem(Request $request, LibraryItem $libraryItem): RedirectResponse
     {
-        $this->authorizeOrganizationAccess($request->user(), $libraryItem->organization_id);
+        $this->authorizeLibraryItemAccess($request->user(), $libraryItem);
 
         $path = ltrim(str_replace('/storage/', '', parse_url($libraryItem->file_path, PHP_URL_PATH) ?? ''), '/');
 
@@ -685,7 +805,7 @@ class InformationHubAdminController extends Controller
 
     public function updateLibraryItem(Request $request, LibraryItem $libraryItem): RedirectResponse
     {
-        $this->authorizeOrganizationAccess($request->user(), $libraryItem->organization_id);
+        $this->authorizeLibraryItemAccess($request->user(), $libraryItem);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -734,7 +854,7 @@ class InformationHubAdminController extends Controller
         $this->authorizeOrganizationAccess($request->user(), $user->current_organization_id ?? 0);
 
         $data = $request->validate([
-            'role' => ['required', 'string', 'in:Admin,Admin Cawangan,Member'],
+            'role' => ['required', 'string', 'in:Admin,Member'],
         ]);
 
         // Prevent Superadmin from being demoted or others from becoming Superadmin through this route
@@ -760,17 +880,21 @@ class InformationHubAdminController extends Controller
     public function updateIcNumber(Request $request, User $user): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
-        $normalizedIcNumber = Str::upper(
-            preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
-        );
+        $normalizedIcNumber = (string) User::normalizeIc($request->input('ic_number'));
         $request->merge(['ic_number' => $normalizedIcNumber]);
 
         $data = $request->validate([
-            'ic_number' => ['required', 'string', 'max:32', 'unique:users,ic_number,'.$user->id],
+            'ic_number' => ['required', 'string', 'max:32', 'regex:'.User::IC_VALIDATION_REGEX],
         ]);
+
+        if (User::icExistsInOrganization($data['ic_number'], (int) $user->current_organization_id, (int) $user->id)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
+            ]);
+        }
 
         $user->update([
             'ic_number' => $data['ic_number'],
@@ -836,7 +960,7 @@ class InformationHubAdminController extends Controller
     public function importStart(Request $request)
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $request->validate([
             'excel_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -864,7 +988,7 @@ class InformationHubAdminController extends Controller
     public function importChunk(Request $request)
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $request->validate([
             'filename' => ['required', 'string'],
             'organization_id' => ['required', 'integer'],
@@ -902,7 +1026,7 @@ class InformationHubAdminController extends Controller
 
     public function importFinish(Request $request)
     {
-        abort_unless($request->user()?->isAdminPanelUser(), 403);
+        abort_unless($request->user()?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         if ($request->filename && Storage::disk('local')->exists($request->filename)) {
             Storage::disk('local')->delete($request->filename);
         }
@@ -940,8 +1064,12 @@ class InformationHubAdminController extends Controller
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
+
+        if ($authUser->isBranchAdmin() && (int) $user->branch_id !== (int) $authUser->managedBranchId()) {
+            abort(403);
+        }
 
         Password::sendResetLink(['email' => $user->email]);
 
@@ -1043,7 +1171,7 @@ class InformationHubAdminController extends Controller
     public function restoreMember(Request $request, int $id): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = User::onlyTrashed()->findOrFail($id);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
@@ -1071,7 +1199,7 @@ class InformationHubAdminController extends Controller
     public function forceDeleteMember(Request $request, int $id): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->isAdminPanelUser(), 403);
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
 
         $user = User::onlyTrashed()->findOrFail($id);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
@@ -1100,7 +1228,7 @@ class InformationHubAdminController extends Controller
     public function activityLog(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan'])) {
             abort(403);
         }
 
@@ -1108,9 +1236,21 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
+        if ($user->isBranchAdmin() && (int) $targetUser->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
+
         $logs = ActivityLog::with('user:id,name')
             ->where('target_type', User::class)
             ->where('target_id', $targetUser->id)
+            ->when(! $user->hasRole('Superadmin'), fn ($q) => $q->whereNotIn('action', [
+                'branch_admin_account_created',
+                'branch_admin_account_assigned',
+                'branch_admin_password_reset',
+                'branch_admin_account_revoked',
+                'branch_secretary_appointed',
+                'branch_secretary_removed',
+            ]))
             ->latest()
             ->take(20)
             ->get()
@@ -1131,11 +1271,15 @@ class InformationHubAdminController extends Controller
     public function memberPrograms(Request $request, User $targetUser): JsonResponse
     {
         $user = $request->user();
-        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+        if (! $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan'])) {
             abort(403);
         }
 
         if (! $user->hasRole('Superadmin') && $targetUser->current_organization_id !== $user->current_organization_id) {
+            abort(403);
+        }
+
+        if ($user->isBranchAdmin() && (int) $targetUser->branch_id !== (int) $user->managedBranchId()) {
             abort(403);
         }
 
@@ -1310,21 +1454,29 @@ class InformationHubAdminController extends Controller
         abort_if((int) $user->current_organization_id !== (int) $organizationId, 403);
     }
 
-    private function maskIcNumber(?string $icNumber): string
+    private function authorizeLibraryItemAccess($user, LibraryItem $item): void
     {
-        if (! $icNumber) {
-            return '-';
+        if ($user->hasRole('Superadmin')) {
+            return;
         }
 
-        $normalized = preg_replace('/\s+/', '', trim($icNumber)) ?? '';
+        abort_if((int) $user->current_organization_id !== (int) $item->organization_id, 403);
 
-        if ($normalized === '') {
-            return '-';
+        if ($user->isBranchAdmin() && (int) $item->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
+    }
+
+    private function authorizeAnnouncementAccess($user, Announcement $announcement): void
+    {
+        if ($user->hasRole('Superadmin')) {
+            return;
         }
 
-        $visiblePrefix = mb_substr($normalized, 0, 6);
-        $maskedLength = max(0, mb_strlen($normalized) - 6);
+        abort_if((int) $user->current_organization_id !== (int) $announcement->organization_id, 403);
 
-        return $visiblePrefix.str_repeat('*', $maskedLength);
+        if ($user->isBranchAdmin() && (int) $announcement->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
     }
 }

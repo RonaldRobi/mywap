@@ -16,6 +16,7 @@ class Infaq extends Model
 
     protected $fillable = [
         'organization_id',
+        'branch_id',
         'title',
         'slug',
         'description',
@@ -40,6 +41,11 @@ class Infaq extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function donations(): HasMany

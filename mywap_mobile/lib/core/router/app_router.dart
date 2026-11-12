@@ -9,6 +9,7 @@ import '../../features/auth/presentation/forgot_id_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/directory/presentation/routes.dart';
@@ -51,6 +52,7 @@ class _AuthRefresh extends ChangeNotifier {
 /// plus profile maintenance and the log-out action.
 bool _isProfileCompletionExempt(String location) {
   return location == '/language' ||
+      location.startsWith('/reset-password') ||
       location == '/profile/complete' ||
       location == '/profile/edit' ||
       location == '/profile/change-password';
@@ -90,6 +92,7 @@ bool _isPublicLocation(String location) {
   if (location.startsWith('/infaq/')) return true;
   if (location.startsWith('/forms/')) return true;
   if (location.startsWith('/card/')) return true;
+  if (location.startsWith('/reset-password')) return true;
   return false;
 }
 
@@ -165,6 +168,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder:
             (_, state) =>
                 FirstLoginOtpScreen(icNumber: state.uri.queryParameters['ic']),
+      ),
+      GoRoute(
+        path: '/reset-password/:token',
+        builder:
+            (_, state) => ResetPasswordScreen(
+              token: state.pathParameters['token']!,
+              email: state.uri.queryParameters['email'] ?? '',
+            ),
       ),
       GoRoute(
         path: '/onboarding',

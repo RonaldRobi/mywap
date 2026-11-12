@@ -2,14 +2,16 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ToastNotification from '@/Components/ToastNotification.vue';
 import ConfirmDialog from '@/Components/ConfirmDialog.vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({ members: Object, stats: Object, year: Number, years: Array, chart: Array, reconciliation: Object, organizations: Array, filters: Object });
 
+const page = usePage();
 const toast = ref(null);
 const confirmDialog = ref(null);
 const isSuperadmin = computed(() => props.organizations.length > 0);
+const isBranchAdmin = computed(() => page.props.auth.user?.roles?.includes('Admin Cawangan'));
 
 // ─── Esc key to close all ──────────────────────────────────────────────
 function onKeydown(e) {
@@ -423,8 +425,8 @@ function previewStatusClass(s) { return { ready: 'text-green-700 bg-green-50 bor
                     <option v-for="org in organizations" :key="org.id" :value="org.id">{{ org.name }}</option>
                 </select>
                 <button @click="openManualPay" class="rounded-xl border border-indigo-200 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">+ Manual</button>
-                <button @click="generateFees" class="rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Jana Yuran</button>
-                <button @click="openImport" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">Import CSV</button>
+                <button v-if="!isBranchAdmin" @click="generateFees" class="rounded-xl border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Jana Yuran</button>
+                <button v-if="!isBranchAdmin" @click="openImport" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">Import CSV</button>
                 <div class="relative group">
                     <button class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">Export ▾</button>
                     <div class="absolute right-0 top-full z-20 mt-1 hidden w-40 rounded-xl border border-gray-100 bg-white shadow-lg group-hover:block">

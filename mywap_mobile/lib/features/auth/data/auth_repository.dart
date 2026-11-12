@@ -111,6 +111,25 @@ class AuthRepository {
     return (data as Map<String, dynamic>?) ?? {};
   }
 
+  /// Tetapkan semula kata laluan menggunakan token dari pautan emel.
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final data = await _api.post(
+      ApiPaths.resetPassword,
+      body: {
+        'token': token,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
   /// Log masuk kali pertama — langkah 1: hantar OTP.
   Future<Map<String, dynamic>> sendOtp(String icNumber) async {
     final data = await _api.post(

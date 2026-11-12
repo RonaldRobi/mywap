@@ -31,9 +31,11 @@ class InfaqController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->isSuperadmin();
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $items = Infaq::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->with('organization:id,name,slug')
             ->withCount('donations')
             ->orderBy('display_order')
@@ -61,7 +63,10 @@ class InfaqController extends Controller
             ]);
 
         return Inertia::render('Superadmin/InfaqManage', [
-            'organizations' => Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug']),
+            'isSuperadmin' => $isSuperadmin,
+            'organizations' => $isSuperadmin
+                ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
+                : Organization::query()->whereKey($user->current_organization_id)->get(['id', 'name', 'slug']),
             'infaqItems' => $items,
         ]);
     }
@@ -98,6 +103,7 @@ class InfaqController extends Controller
 
         Infaq::create([
             'organization_id' => $organizationId,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : null,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -123,6 +129,10 @@ class InfaqController extends Controller
             ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
             403
         );
+
+        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -157,6 +167,7 @@ class InfaqController extends Controller
             'organization_id' => $user->isSuperadmin()
                 ? ($data['organization_id'] ?? null)
                 : $user->current_organization_id,
+            'branch_id' => $user->isBranchAdmin() ? $user->managedBranchId() : $infaq->branch_id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'external_url' => $data['external_url'] ?? null,
@@ -180,6 +191,10 @@ class InfaqController extends Controller
             ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
             403
         );
+
+        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
 
         if ($infaq->image_path) {
             $oldRel = ltrim(str_replace('/storage/', '', parse_url($infaq->image_path, PHP_URL_PATH) ?? ''), '/');
@@ -375,6 +390,10 @@ SVG;
             ! $user->isSuperadmin() && (int) $infaq->organization_id !== (int) $user->current_organization_id,
             403
         );
+
+        if ($user->isBranchAdmin() && (int) $infaq->branch_id !== (int) $user->managedBranchId()) {
+            abort(403);
+        }
 
         $donations = InfaqDonation::query()
             ->where('infaq_id', $infaq->id)

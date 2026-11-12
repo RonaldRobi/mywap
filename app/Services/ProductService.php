@@ -34,6 +34,7 @@ class ProductService
             'stock' => $product->stock,
             'category_id' => $product->category_id,
             'organisasi_id' => $product->organisasi_id,
+            'branch_id' => $product->branch_id,
             'image' => $product->image,
             'images' => $product->images ?? [],
             'status' => $product->status,
@@ -48,7 +49,9 @@ class ProductService
                 'id' => $product->organization->id,
                 'name' => $product->organization->name,
             ] : null,
-            'is_member' => $user !== null && $product->member_price !== null,
+            'is_member' => $user !== null
+                && $user->hasRole('Member')
+                && $product->member_price !== null,
             'price_for_member' => $product->member_price !== null ? (float) $product->member_price : null,
         ];
     }
@@ -92,12 +95,17 @@ class ProductService
     {
         $query = Product::with('category', 'organization')->withCount('variations');
 
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        $isBranchAdmin = $user?->isBranchAdmin() ?? false;
+        $isAdmin = $user && ($user->hasRole(['Superadmin', 'Admin', 'org-admin']) || $isBranchAdmin);
 
         if ($isMall || ! $isAdmin) {
             $query->active();
         } elseif ($request->filled('status')) {
             $query->where('status', $request->boolean('status'));
+        }
+
+        if ($isBranchAdmin) {
+            $query->where('branch_id', $user->managedBranchId());
         }
 
         if ($request->filled('search')) {

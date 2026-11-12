@@ -69,7 +69,7 @@ class OrganizationInfoController extends Controller
                 'is_current' => $currentOrganization?->id === $item->id,
             ])->values(),
             'chartMembers' => $chartMembers,
-            'canManage' => $isOwnOrganization && ($user?->isAdminPanelUser() ?? false),
+            'canManage' => $isOwnOrganization && ($user?->isOrgAdmin() ?? false),
             'isOwnOrganization' => $isOwnOrganization,
         ]);
     }

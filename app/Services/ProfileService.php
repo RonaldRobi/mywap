@@ -9,6 +9,8 @@ use App\Models\BranchTransitionHistory;
 use App\Models\EventRsvp;
 use App\Models\OrganizationPosition;
 use App\Models\User;
+use App\Notifications\BranchChangeRequestSubmitted;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -193,12 +195,23 @@ class ProfileService
             ->where('status', 'pending')
             ->update(['status' => 'cancelled']);
 
-        return BranchChangeRequest::create([
+        $branchChangeRequest = BranchChangeRequest::create([
             'user_id' => $user->id,
             'from_branch_id' => $user->branch_id,
             'to_branch_id' => $branch->id,
             'status' => 'pending',
         ]);
+
+        $recipients = $branch->secretaries()
+            ->where('users.is_active', true)
+            ->get()
+            ->reject(fn (User $secretary) => ! $secretary->email || $secretary->emailIsPlaceholder());
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new BranchChangeRequestSubmitted($branchChangeRequest));
+        }
+
+        return $branchChangeRequest;
     }
 
     /**

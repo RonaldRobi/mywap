@@ -19,13 +19,18 @@ class ProductPolicy
 
     public function create(User $user)
     {
-        return $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        return $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
     }
 
     public function update(User $user, Product $product)
     {
         if ($user->hasRole('Superadmin')) {
             return true;
+        }
+
+        if ($user->isBranchAdmin()) {
+            return $product->branch_id !== null
+                && (int) $product->branch_id === (int) $user->managedBranchId();
         }
 
         if (! $user->hasRole(['Admin', 'org-admin'])) {

@@ -147,9 +147,9 @@ class OrgAdminAccessTest extends TestCase
 
         $this->actingAs($branchAdmin)
             ->get('/dashboard')
-            ->assertRedirect(route('branch-change-requests.index'));
+            ->assertRedirect(route('admin.dashboard'));
 
-        $this->actingAs($branchAdmin)->get('/branch-change-requests')->assertOk();
+        $this->actingAs($branchAdmin)->get('/branch-change-requests')->assertForbidden();
     }
 
     public function test_admin_cannot_manage_members_of_other_organization(): void

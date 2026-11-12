@@ -81,6 +81,11 @@ class BroadcastMessage extends Model
         return $this->belongsTo(Organization::class, 'target_organization_id');
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function logs(): HasMany
     {
         return $this->hasMany(BroadcastLog::class)->latest('id');

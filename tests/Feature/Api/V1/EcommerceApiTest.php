@@ -232,6 +232,34 @@ class EcommerceApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_cannot_checkout_via_api(): void
+    {
+        $product = $this->product();
+
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Admin',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'admin@example.test',
+            'shipping_address' => 'Kuala Lumpur',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_admin_does_not_receive_member_pricing(): void
+    {
+        $this->product(['name' => 'Baju Ahli', 'member_price' => 80]);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->getJson('/api/v1/products')
+            ->assertOk()
+            ->assertJsonPath('data.0.is_member', false);
+    }
+
     public function test_checkout_validation_matches_web_rules(): void
     {
         $product = $this->product();

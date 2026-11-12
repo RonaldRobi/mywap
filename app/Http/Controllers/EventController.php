@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Enums\EventVisibility;
 use App\Models\AppSetting;
 use App\Models\Attendance;
 use App\Models\Event;
@@ -87,7 +88,7 @@ class EventController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
         $isSuperadmin = $user && $user->hasRole('Superadmin');
 
         $tab = $request->input('tab', 'upcoming');
@@ -118,6 +119,21 @@ class EventController extends Controller
                 $innerQuery->where('organization_id', $user->current_organization_id)
                     ->orWhereNull('organization_id')
                     ->orWhereHas('organizations', fn ($q) => $q->where('organizations.id', $user->current_organization_id));
+            });
+        }
+
+        if (! $isSuperadmin && ! ($user?->isOrgAdmin() ?? false)) {
+            $query->where(function ($q) use ($user) {
+                $q->where('visibility', EventVisibility::Open->value)
+                    ->orWhere(function ($q2) use ($user) {
+                        $q2->where('visibility', EventVisibility::BranchOnly->value);
+
+                        if ($user) {
+                            $q2->where('branch_id', $user->branch_id);
+                        } else {
+                            $q2->whereRaw('1 = 0');
+                        }
+                    });
             });
         }
 
@@ -214,7 +230,7 @@ class EventController extends Controller
     public function show(Request $request, string $slug): Response
     {
         $user = $request->user();
-        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin']);
+        $isAdmin = $user && $user->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']);
 
         $event = Event::with([
             'organization',
@@ -223,6 +239,15 @@ class EventController extends Controller
         ])
             ->where('slug', $slug)
             ->firstOrFail();
+
+        if ($event->isBranchOnly() && ! $user?->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+            $allowed = $user && (
+                ($user->isBranchAdmin() && (int) $user->managedBranchId() === (int) $event->branch_id)
+                || (int) $user->branch_id === (int) $event->branch_id
+            );
+
+            abort_unless($allowed, 404);
+        }
 
         // Tetamu & ahli biasa tidak boleh lihat draft/closed event.
         if (! $isAdmin && ! $event->isPublished()) {
@@ -263,6 +288,20 @@ class EventController extends Controller
                 }
             })
             ->when(! $isAdmin, fn ($q) => $q->where('status', EventStatus::Published->value))
+            ->when(! ($user?->isSuperadmin() ?? false) && ! ($user?->isOrgAdmin() ?? false), function ($q) use ($user) {
+                $q->where(function ($inner) use ($user) {
+                    $inner->where('visibility', EventVisibility::Open->value)
+                        ->orWhere(function ($q2) use ($user) {
+                            $q2->where('visibility', EventVisibility::BranchOnly->value);
+
+                            if ($user) {
+                                $q2->where('branch_id', $user->branch_id);
+                            } else {
+                                $q2->whereRaw('1 = 0');
+                            }
+                        });
+                });
+            })
             ->orderBy('start_time')
             ->take(3)
             ->get()
@@ -457,8 +496,9 @@ class EventController extends Controller
 
         $base = Event::query();
 
-        if (! $isSuperadmin) {
-            $base->where(function ($q) use ($user) {
+        if ($user->isBranchAdmin()) {
+            $base->where('branch_id', $user->managedBranchId());
+        } elseif (! $isSuperadmin) {            $base->where(function ($q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
                     ->orWhereHas('organizations', fn ($q2) => $q2->where('organizations.id', $user->current_organization_id));
             });
@@ -621,6 +661,7 @@ class EventController extends Controller
                 'attendance_closes_at' => $event->attendanceClosesAt()?->toIso8601String(),
             ],
             'forms' => $forms,
+            'isBranchAdmin' => $user->isBranchAdmin(),
             'buildFormUrl' => route('admin.forms.create', [
                 'event_id' => $event->id,
                 'back_to' => route('admin.events.show', $event->id),
@@ -634,14 +675,14 @@ class EventController extends Controller
 
     public function create(Request $request): Response
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan']), 403);
 
         return $this->eventForm($request, null);
     }
 
     public function edit(Request $request, Event $event): Response
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan']), 403);
 
         $isSuperadmin = $request->user()->hasRole('Superadmin');
         if (! $isSuperadmin && ! $this->adminOwnsEvent($request->user(), $event)) {
@@ -655,7 +696,7 @@ class EventController extends Controller
 
     public function storeAdmin(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan']), 403);
 
         $event = $this->persistEvent(null, $request);
 
@@ -665,7 +706,7 @@ class EventController extends Controller
 
     public function updateAdmin(Request $request, Event $event): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin']), 403);
+        abort_unless($request->user()->hasRole(['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan']), 403);
 
         $this->persistEvent($event, $request);
 
@@ -691,7 +732,10 @@ class EventController extends Controller
 
     private function eventForm(Request $request, ?Event $event): Response
     {
-        $isSuperadmin = $request->user()->hasRole('Superadmin');
+        $user = $request->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
+        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         return Inertia::render('Admin/Events/Form', [
             'event' => $event ? [
@@ -711,10 +755,18 @@ class EventController extends Controller
                 'end_time' => $event->end_time->format('Y-m-d\TH:i'),
                 'organization_id' => $event->organization_id,
                 'organization_ids' => $event->organizations->pluck('id')->all(),
+                'branch_id' => $event->branch_id,
+                'visibility' => $event->visibility?->value ?? EventVisibility::Open->value,
                 'featured_image_url' => $event->featured_image_url,
             ] : null,
-            'organizations' => Organization::orderBy('min_age')->get(['id', 'name']),
+            'organizations' => $isSuperadmin
+                ? Organization::orderBy('min_age')->get(['id', 'name'])
+                : Organization::whereKey($user->current_organization_id)->get(['id', 'name']),
             'isSuperadmin' => $isSuperadmin,
+            'isBranchAdmin' => $isBranchAdmin,
+            'branch' => $branchId ? \App\Models\Branch::find($branchId, ['id', 'name', 'state']) : null,
+            'visibilities' => collect(EventVisibility::cases())
+                ->map(fn ($v) => ['value' => $v->value, 'label' => $v->label()])->values(),
             'formsCount' => $event ? $event->forms()->count() : 0,
             'statuses' => $this->statusOptions(),
             'categories' => collect(EventCategory::cases())
@@ -727,7 +779,10 @@ class EventController extends Controller
      */
     private function persistEvent(?Event $event, Request $request): Event
     {
-        $isSuperadmin = $request->user()->hasRole('Superadmin');
+        $user = $request->user();
+        $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
+        $branchId = $isBranchAdmin ? $user->managedBranchId() : null;
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -736,6 +791,7 @@ class EventController extends Controller
             'type' => ['required', 'in:physical,online'],
             'status' => ['sometimes', 'required', 'in:draft,published'],
             'category' => ['sometimes', 'required', 'in:muktamar,ijtimak,seminar,kursus,kem,bengkel,konvensyen,lain'],
+            'visibility' => ['sometimes', 'required', 'in:branch_only,open'],
             'location_or_link' => ['nullable', 'string', 'max:255'],
             'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
@@ -759,6 +815,7 @@ class EventController extends Controller
             'type' => $data['type'],
             'status' => $data['status'] ?? $event?->status?->value ?? 'published',
             'category' => $data['category'] ?? $event?->category?->value ?? 'lain',
+            'visibility' => $data['visibility'] ?? $event?->visibility?->value ?? EventVisibility::Open->value,
             'location_or_link' => $data['location_or_link'] ?? null,
             'maps_url' => $data['maps_url'] ?? $event?->maps_url,
             'start_time' => $data['start_time'],
@@ -766,10 +823,14 @@ class EventController extends Controller
             'featured_image_path' => $data['featured_image_path'] ?? $event?->featured_image_path,
         ];
 
-        if ($isSuperadmin) {
+        if ($isBranchAdmin) {
+            $fields['organization_id'] = (int) $user->current_organization_id;
+            $fields['branch_id'] = $branchId;
+            $fields['visibility'] = $data['visibility'] ?? $event?->visibility?->value ?? EventVisibility::BranchOnly->value;
+        } elseif ($isSuperadmin) {
             $fields['organization_id'] = ($data['organization_id'] ?? null) ?: null;
         } elseif ($event === null) {
-            $fields['organization_id'] = (int) $request->user()->current_organization_id;
+            $fields['organization_id'] = (int) $user->current_organization_id;
         }
 
         $event = $event ? tap($event)->update($fields) : Event::create($fields);
@@ -781,6 +842,10 @@ class EventController extends Controller
 
     private function adminOwnsEvent($user, Event $event): bool
     {
+        if ($user->isBranchAdmin()) {
+            return (int) $event->branch_id === (int) $user->managedBranchId();
+        }
+
         $ownOrg = (int) $user->current_organization_id;
 
         if ((int) $event->organization_id === $ownOrg) {
@@ -798,7 +863,7 @@ class EventController extends Controller
      */
     public function rsvp(Request $request, Event $event): RedirectResponse
     {
-        if ($request->user()->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+        if ($request->user()->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan'])) {
             abort(403, 'Akaun pentadbir tidak dibenarkan mendaftar kehadiran program.');
         }
 

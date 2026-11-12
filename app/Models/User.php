@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Models\Scopes\OrganizationScope;
 use App\Support\NormalizesStoragePath;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -38,6 +40,8 @@ class User extends Authenticatable
 
     use NormalizesStoragePath;
 
+    public const IC_VALIDATION_REGEX = '/^(?:\d{12}|(?=.*[A-Z])[A-Z0-9]{6,32})$/';
+
     // ─── Mass Assignment ──────────────────────────────────────────────────────
 
     protected $fillable = [
@@ -51,6 +55,7 @@ class User extends Authenticatable
         'branch_id',
         'profile_completed_at',
         'is_active',
+        'membership_status',
         'education_level',
         'current_profession',
         'industry',
@@ -104,6 +109,7 @@ class User extends Authenticatable
             'first_login_at' => 'datetime',
             'membership_letter_sent_at' => 'datetime',
             'is_public_in_directory' => 'boolean',
+            'membership_status' => 'string',
             'key_in_date' => 'date',
         ];
     }
@@ -123,6 +129,79 @@ class User extends Authenticatable
         static::addGlobalScope(new OrganizationScope);
     }
 
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => self::formatName($value),
+        );
+    }
+
+    protected function icNumber(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => self::normalizeIc($value),
+        );
+    }
+
+    public static function normalizeIc(?string $value): ?string
+    {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+
+        $raw = strtoupper(str_replace(['-', ' '], '', $raw));
+
+        if (preg_match('/^(\d{12})\.0$/', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        $digits = (string) preg_replace('/\D/', '', $raw);
+
+        return strlen($digits) === 12 ? $digits : $raw;
+    }
+
+    public static function normalizeLoginId(string $identifier): string
+    {
+        $raw = trim($identifier);
+
+        if (str_contains($raw, '@')) {
+            return strtoupper($raw);
+        }
+
+        return self::normalizeIc($raw) ?? strtoupper($raw);
+    }
+
+    public static function formatName(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $name = trim((string) preg_replace('/\s+/u', ' ', $value));
+
+        return $name === '' ? $name : mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    public function isDeceased(): bool
+    {
+        return $this->membership_status === 'deceased';
+    }
+
+    public static function icExistsInOrganization(string $ic, ?int $organizationId, ?int $exceptUserId = null): bool
+    {
+        $normalized = self::normalizeIc($ic);
+        if ($normalized === null) {
+            return false;
+        }
+
+        return self::withoutGlobalScope(OrganizationScope::class)
+            ->where('current_organization_id', $organizationId)
+            ->where('ic_number', $normalized)
+            ->when($exceptUserId, fn ($query) => $query->where('id', '!=', $exceptUserId))
+            ->exists();
+    }
+
     // ─── Relationships ────────────────────────────────────────────────────────
 
     /**
@@ -136,6 +215,18 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function branchAdminAssignments(): HasMany
+    {
+        return $this->hasMany(BranchAdmin::class);
+    }
+
+    public function managedBranches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_admins')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     public function organizationPosition(): BelongsTo
@@ -173,6 +264,15 @@ class User extends Authenticatable
 
     public function positionBadgePayload(): ?array
     {
+        if ($this->isDeceased()) {
+            return [
+                'id' => null,
+                'name' => 'Meninggal Dunia',
+                'category' => 'Status',
+                'color' => '#6b7280',
+            ];
+        }
+
         $position = $this->badgePosition();
 
         if (! $position) {
@@ -303,11 +403,81 @@ class User extends Authenticatable
     }
 
     /**
-     * Sesiapa yang boleh masuk panel admin (Superadmin atau Admin organisasi).
+     * Admin cawangan: role `Admin Cawangan` tanpa peranan admin organisasi.
+     */
+    public function isBranchAdmin(): bool
+    {
+        return $this->hasRole('Admin Cawangan')
+            && ! $this->hasRole(['Superadmin', 'Admin', 'org-admin']);
+    }
+
+    /**
+     * Cawangan yang diuruskan oleh admin cawangan.
+     */
+    public function managedBranchId(): ?int
+    {
+        if (! $this->hasRole('Admin Cawangan')) {
+            return null;
+        }
+
+        $assignment = $this->relationLoaded('branchAdminAssignments')
+            ? $this->branchAdminAssignments->firstWhere('role', BranchAdmin::ROLE_MANAGER)
+            : $this->branchAdminAssignments()
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->first();
+
+        return $assignment?->branch_id ?? $this->branch_id;
+    }
+
+    /**
+     * Sesiapa yang boleh masuk panel admin (Superadmin, Admin organisasi atau Admin cawangan).
      */
     public function isAdminPanelUser(): bool
     {
-        return $this->isSuperadmin() || $this->isOrgAdmin();
+        return $this->isSuperadmin() || $this->isOrgAdmin() || $this->isBranchAdmin();
+    }
+
+    public function canManageBranch(?int $branchId): bool
+    {
+        if (! $branchId) {
+            return false;
+        }
+
+        if ($this->isSuperadmin()) {
+            return true;
+        }
+
+        if ($this->isBranchAdmin()) {
+            return (int) $this->managedBranchId() === (int) $branchId;
+        }
+
+        return $this->isOrgAdmin()
+            && Branch::query()
+                ->whereKey($branchId)
+                ->where('organization_id', $this->current_organization_id)
+                ->exists();
+    }
+
+    /**
+     * Akaun staf mengurus katalog/pesanan dan tidak membeli melalui mall.
+     * Mereka boleh log keluar atau guna akaun ahli untuk membeli.
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRole([
+            'Superadmin',
+            'Admin',
+            'org-admin',
+            'Admin Cawangan',
+        ]);
+    }
+
+    /**
+     * Bolehkah pengguna ini membuat pesanan mall sendiri?
+     */
+    public function canPurchase(): bool
+    {
+        return ! $this->isStaff();
     }
 
     /**

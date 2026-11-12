@@ -9,6 +9,12 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    unassignedAdmins: {
+        type: Array,
+        default: () => [],
+    },
+    isBranchAdmin: Boolean,
+    managedBranchId: Number,
 });
 
 const page = usePage();
@@ -156,12 +162,21 @@ function submitDeleteBranch() {
     });
 }
 
-// ── Admin Management ───────────────────────────────────────────────────────────
+// ── Admin & Setiausaha Management ──────────────────────────────────────────────
 const managingAdminsBranch = ref(null);
 const adminSearchQuery = ref('');
 const adminSearchResults = ref([]);
 const adminSearchLoading = ref(false);
 let adminSearchTimer = null;
+
+const managerForm = useForm({ name: '', email: '', password: '', password_confirmation: '' });
+const passwordForm = useForm({ password: '', password_confirmation: '' });
+const secretaryForm = useForm({ user_id: null });
+
+const secretaries = computed(() => managingAdminsBranch.value?.secretaries ?? []);
+const secretaryLimitReached = computed(() =>
+    secretaries.value.length >= (managingAdminsBranch.value?.secretary_limit ?? 3)
+);
 
 watch(adminSearchQuery, (val) => {
     clearTimeout(adminSearchTimer);
@@ -172,22 +187,53 @@ watch(adminSearchQuery, (val) => {
     adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
 });
 
+function findBranch(id) {
+    for (const org of page.props.organizations ?? []) {
+        const branch = org.branches.find((item) => item.id === id);
+        if (branch) return branch;
+    }
+    return null;
+}
+
+function refreshBranchRefs() {
+    if (managingAdminsBranch.value) {
+        const fresh = findBranch(managingAdminsBranch.value.id);
+        if (fresh) managingAdminsBranch.value = fresh;
+    }
+
+    if (editingBranch.value) {
+        const fresh = findBranch(editingBranch.value.id);
+        if (fresh) editingBranch.value = fresh;
+    }
+}
+
 function openAdminManage(branch) {
     managingAdminsBranch.value = branch;
     adminSearchQuery.value = '';
     adminSearchResults.value = [];
+    managerForm.reset();
+    passwordForm.reset();
 }
 
 function searchBranchMembers(val) {
     if (!managingAdminsBranch.value) return;
     adminSearchLoading.value = true;
-    axios.get('/api/members/search', { params: { q: val, organization_id: managingAdminsBranch.value.organization_id } })
+    axios.get('/api/members/search', {
+        params: {
+            q: val,
+            organization_id: managingAdminsBranch.value.organization_id,
+            branch_id: managingAdminsBranch.value.id,
+        },
+    })
         .then((res) => {
-            const existingIds = new Set((managingAdminsBranch.value?.admins || []).map(a => a.id));
-            adminSearchResults.value = (res.data || []).filter(m => !existingIds.has(m.id));
+            const existingIds = new Set([
+                ...(managingAdminsBranch.value?.admins || []).map((a) => a.id),
+                ...secretaries.value.map((a) => a.id),
+            ]);
+            adminSearchResults.value = (res.data || []).filter((m) => !existingIds.has(m.id));
         })
         .catch((err) => {
-            console.error('Admin search failed:', err);
+            console.error('Member search failed:', err);
             adminSearchResults.value = [];
         })
         .finally(() => {
@@ -195,19 +241,68 @@ function searchBranchMembers(val) {
         });
 }
 
-function assignAdmin(member) {
-    useForm({ user_id: member.id }).post(
-        route('branches.admins.store', managingAdminsBranch.value.id),
-        { preserveScroll: true }
-    );
-    adminSearchQuery.value = '';
-    adminSearchResults.value = [];
+function createManagerAccount() {
+    if (!managingAdminsBranch.value) return;
+
+    managerForm.post(route('branches.admin-account.store', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            managerForm.reset();
+            refreshBranchRefs();
+        },
+    });
 }
 
-function removeAdmin(admin) {
+function assignExistingAdmin(account) {
+    if (!managingAdminsBranch.value) return;
+
+    useForm({ user_id: account.id }).post(route('branches.admin-account.assign', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => refreshBranchRefs(),
+    });
+}
+
+function updateManagerPassword() {
+    if (!managingAdminsBranch.value) return;
+
+    passwordForm.put(route('branches.admin-account.password', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => passwordForm.reset(),
+    });
+}
+
+function removeManagerAccount() {
+    if (!managingAdminsBranch.value) return;
+
+    useForm({}).delete(route('branches.admin-account.destroy', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => refreshBranchRefs(),
+    });
+}
+
+function assignSecretary(member) {
+    if (!managingAdminsBranch.value) return;
+
+    secretaryForm.user_id = member.id;
+    secretaryForm.post(route('branches.secretaries.store', managingAdminsBranch.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            adminSearchQuery.value = '';
+            adminSearchResults.value = [];
+            refreshBranchRefs();
+        },
+    });
+}
+
+function removeSecretary(member) {
+    if (!managingAdminsBranch.value) return;
+
     useForm({}).delete(
-        route('branches.admins.destroy', { branch: managingAdminsBranch.value.id, user: admin.id }),
-        { preserveScroll: true }
+        route('branches.secretaries.destroy', {
+            branch: managingAdminsBranch.value.id,
+            user: member.id,
+        }),
+        { preserveScroll: true, onSuccess: () => refreshBranchRefs() }
     );
 }
 
@@ -324,6 +419,7 @@ const malaysianStates = [
                                 {{ collapsedOrgs[org.id] ? 'Kembang' : 'Kecut' }}
                             </button>
                             <button
+                                v-if="!isBranchAdmin"
                                 @click="openAddModal(org.id)"
                                 class="inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
                             >
@@ -358,7 +454,7 @@ const malaysianStates = [
                                     <span v-else class="text-lg font-black text-gray-300">{{ branch.name.charAt(0) }}</span>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-bold text-gray-900 truncate">{{ branch.name }}</p>
+                                    <Link :href="route('admin.hub.manage', { branch_id: branch.id })" class="font-bold text-gray-900 truncate hover:text-indigo-600 transition-colors">{{ branch.name }}</Link>
                                     <p v-if="branch.state" class="text-xs text-gray-500 truncate">{{ branch.state }}</p>
                                 </div>
                             </div>
@@ -408,6 +504,7 @@ const malaysianStates = [
                                         Admin
                                     </button>
                                     <button
+                                        v-if="!isBranchAdmin"
                                         @click="openEditDrawer(branch)"
                                         class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl transition-colors"
                                     >
@@ -563,32 +660,33 @@ const malaysianStates = [
                             <!-- Admin section in drawer -->
                             <div class="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Admin Cawangan</p>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Akaun Admin & Setiausaha</p>
                                     <button
                                         type="button"
                                         @click="openAdminManage(editingBranch); editingBranch = null"
                                         class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
                                     >
-                                        Urus Admin
+                                        Urus
                                     </button>
                                 </div>
-                                <div v-if="editingBranch.admins && editingBranch.admins.length > 0" class="space-y-2">
-                                    <div v-for="admin in editingBranch.admins" :key="admin.id" class="flex items-center gap-2 text-sm">
-                                        <div class="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 shrink-0">
-                                            {{ admin.name.charAt(0) }}
-                                        </div>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate">{{ admin.name }}</p>
-                                            <p class="text-xs text-gray-400 truncate">{{ admin.email }}</p>
-                                        </div>
+                                <div v-if="editingBranch.manager" class="flex items-center gap-2 text-sm">
+                                    <div class="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 shrink-0">
+                                        {{ editingBranch.manager.name.charAt(0) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 truncate">{{ editingBranch.manager.name }}</p>
+                                        <p class="text-xs text-gray-400 truncate">{{ editingBranch.manager.email }}</p>
                                     </div>
                                 </div>
                                 <div v-else class="flex items-center gap-2 text-xs text-amber-600">
                                     <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
-                                    <span class="font-medium">Belum ada admin dilantik</span>
+                                    <span class="font-medium">Belum ada akaun admin</span>
                                 </div>
+                                <p class="text-xs text-gray-500">
+                                    {{ editingBranch.secretaries?.length || 0 }} / {{ editingBranch.secretary_limit || 3 }} setiausaha dilantik
+                                </p>
                             </div>
 
                             <div class="flex items-center gap-3 pt-2">
@@ -615,10 +713,10 @@ const malaysianStates = [
             leave-to-class="opacity-0"
         >
             <div v-if="managingAdminsBranch" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="managingAdminsBranch = null">
-                <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl" @click.stop>
+                <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl" @click.stop>
                     <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                         <div>
-                            <h3 class="text-base font-bold text-gray-900">Admin Cawangan</h3>
+                            <h3 class="text-base font-bold text-gray-900">Akaun Admin & Setiausaha</h3>
                             <p class="text-xs text-gray-500 mt-0.5">{{ managingAdminsBranch.name }}</p>
                         </div>
                         <button @click="managingAdminsBranch = null" class="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition-colors">
@@ -626,67 +724,156 @@ const malaysianStates = [
                         </button>
                     </div>
 
-                    <div class="px-6 py-5 space-y-4">
-                        <!-- Current admins -->
+                    <div class="px-6 py-5 space-y-6">
+                        <!-- Akaun admin cawangan -->
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Admin Dilantik</p>
-                            <div v-if="managingAdminsBranch.admins && managingAdminsBranch.admins.length > 0" class="space-y-2">
-                                <div v-for="admin in managingAdminsBranch.admins" :key="admin.id" class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Akaun Admin Cawangan</p>
+
+                            <div v-if="managingAdminsBranch.manager" class="space-y-3">
+                                <div class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
                                     <div class="flex items-center gap-2.5 min-w-0">
-                                        <div class="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-black text-indigo-600 shrink-0">
-                                            {{ admin.name.charAt(0) }}
+                                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-black text-indigo-600 shrink-0">
+                                            {{ managingAdminsBranch.manager.name.charAt(0) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate">{{ admin.name }}</p>
-                                            <p class="text-xs text-gray-400 truncate">{{ admin.email }}</p>
+                                            <p class="text-sm font-medium text-gray-800 truncate">{{ managingAdminsBranch.manager.name }}</p>
+                                            <p class="text-xs text-gray-400 truncate">{{ managingAdminsBranch.manager.email }}</p>
                                         </div>
                                     </div>
                                     <button
-                                        @click="removeAdmin(admin)"
+                                        @click="removeManagerAccount"
+                                        class="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors ml-2"
+                                    >
+                                        Batalkan akses
+                                    </button>
+                                </div>
+
+                                <form @submit.prevent="updateManagerPassword" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Kata laluan baharu</label>
+                                        <input v-model="passwordForm.password" type="password" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" />
+                                        <p v-if="passwordForm.errors.password" class="mt-1 text-xs text-red-500">{{ passwordForm.errors.password }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Sahkan kata laluan</label>
+                                        <input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <button type="submit" :disabled="passwordForm.processing" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-60 transition-colors">
+                                            {{ passwordForm.processing ? 'Menyimpan...' : 'Tukar Kata Laluan' }}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div v-else class="space-y-4">
+                                <div v-if="unassignedAdmins.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-amber-700">Akaun Admin Cawangan Belum Ditugaskan</p>
+                                    <p class="mt-1 text-xs text-amber-700">Pilih akaun sedia ada untuk ditugaskan ke cawangan ini, atau cipta akaun baharu di bawah.</p>
+                                    <div class="mt-2 space-y-2">
+                                        <div v-for="account in unassignedAdmins" :key="account.id" class="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                                            <div class="min-w-0">
+                                                <p class="truncate text-sm font-semibold text-gray-800">{{ account.name }}</p>
+                                                <p class="truncate text-xs text-gray-400">{{ account.email }}</p>
+                                            </div>
+                                            <button type="button" @click="assignExistingAdmin(account)" class="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">Guna akaun ini</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <form @submit.prevent="createManagerAccount" class="space-y-3">
+                                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Nama akaun</label>
+                                        <input v-model="managerForm.name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" placeholder="cth. Admin ABIM Perak" />
+                                        <p v-if="managerForm.errors.name" class="mt-1 text-xs text-red-500">{{ managerForm.errors.name }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Emel login</label>
+                                        <input v-model="managerForm.email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" placeholder="cth. perak@mywap.my" />
+                                        <p v-if="managerForm.errors.email" class="mt-1 text-xs text-red-500">{{ managerForm.errors.email }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Kata laluan</label>
+                                        <input v-model="managerForm.password" type="password" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" />
+                                        <p v-if="managerForm.errors.password" class="mt-1 text-xs text-red-500">{{ managerForm.errors.password }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Sahkan kata laluan</label>
+                                        <input v-model="managerForm.password_confirmation" type="password" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none" />
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-400">Akaun ini dikongsi oleh setiausaha cawangan untuk membuat tindakan.</p>
+                                <button type="submit" :disabled="managerForm.processing" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors">
+                                    {{ managerForm.processing ? 'Mencipta...' : 'Cipta Akaun Admin' }}
+                                </button>
+                            </form>
+                            </div>
+                        </div>
+
+                        <!-- Setiausaha -->
+                        <div class="border-t border-gray-100 pt-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Setiausaha</p>
+                                <span class="text-xs text-gray-400">{{ secretaries.length }} / {{ managingAdminsBranch.secretary_limit || 3 }}</span>
+                            </div>
+
+                            <div v-if="secretaries.length > 0" class="space-y-2">
+                                <div v-for="secretary in secretaries" :key="secretary.id" class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-black text-emerald-600 shrink-0">
+                                            {{ secretary.name.charAt(0) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-gray-800 truncate">{{ secretary.name }}</p>
+                                            <p class="text-xs text-gray-400 truncate">{{ secretary.email }}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        @click="removeSecretary(secretary)"
                                         class="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors ml-2"
-                                        title="Buang admin"
+                                        title="Buang setiausaha"
                                     >
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                     </button>
                                 </div>
                             </div>
-                            <div v-else class="rounded-xl border border-dashed border-gray-200 py-6 text-center">
-                                <p class="text-xs text-gray-400">Belum ada admin dilantik untuk cawangan ini.</p>
+                            <div v-else class="rounded-xl border border-dashed border-gray-200 py-5 text-center">
+                                <p class="text-xs text-gray-400">Belum ada setiausaha dilantik.</p>
                             </div>
-                        </div>
 
-                        <!-- Add admin search -->
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Lantik Admin</p>
-                            <div class="relative">
-                                <input
-                                    v-model="adminSearchQuery"
-                                    type="text"
-                                    placeholder="Cari nama atau no ahli..."
-                                    class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors"
-                                />
-                                <div v-if="adminSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
-                                    <svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                </div>
-                                <ul
-                                    v-if="adminSearchResults.length > 0"
-                                    class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto"
-                                >
-                                    <li
-                                        v-for="member in adminSearchResults"
-                                        :key="member.id"
-                                        @click="assignAdmin(member)"
-                                        class="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+                            <div v-if="!secretaryLimitReached" class="mt-3">
+                                <div class="relative">
+                                    <input
+                                        v-model="adminSearchQuery"
+                                        type="text"
+                                        placeholder="Cari ahli cawangan untuk dilantik..."
+                                        class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors"
+                                    />
+                                    <div v-if="adminSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    </div>
+                                    <ul
+                                        v-if="adminSearchResults.length > 0"
+                                        class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto"
                                     >
-                                        <span class="font-medium text-gray-800">{{ member.name }}</span>
-                                        <span class="text-xs text-gray-400 font-mono">{{ member.member_no }}</span>
-                                    </li>
-                                </ul>
+                                        <li
+                                            v-for="member in adminSearchResults"
+                                            :key="member.id"
+                                            @click="assignSecretary(member)"
+                                            class="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 transition-colors"
+                                        >
+                                            <span class="font-medium text-gray-800">{{ member.name }}</span>
+                                            <span class="text-xs text-gray-400 font-mono">{{ member.member_no }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-400">Hanya ahli cawangan ini yang mempunyai emel sebenar boleh dilantik.</p>
                             </div>
-                            <p class="mt-1 text-xs text-gray-400">Hanya ahli dalam cawangan ini boleh dilantik.</p>
+                            <p v-else class="mt-2 text-xs font-medium text-amber-600">Had 3 setiausaha telah dicapai.</p>
                         </div>
                     </div>
 

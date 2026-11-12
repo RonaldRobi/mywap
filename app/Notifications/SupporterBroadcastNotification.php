@@ -25,7 +25,7 @@ class SupporterBroadcastNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $message = new MailMessage;
+        $message = (new MailMessage)->mailer('bulk');
 
         $message->subject($this->broadcastMessage->title);
 

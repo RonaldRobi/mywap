@@ -35,9 +35,7 @@ class PasswordResetLinkController extends Controller
             'ic_number' => ['required', 'string', 'max:32'],
         ]);
 
-        $normalizedIcNumber = Str::upper(
-            preg_replace('/\s+/', '', trim((string) $request->input('ic_number'))) ?? ''
-        );
+        $normalizedIcNumber = (string) User::normalizeIc($request->input('ic_number'));
 
         $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('ic_number', $normalizedIcNumber)

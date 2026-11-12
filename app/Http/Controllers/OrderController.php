@@ -23,7 +23,7 @@ class OrderController extends Controller
     {
         $this->authorize('viewAny', Order::class);
         $user = Auth::user();
-        $isAdmin = $user->hasAnyRole(['Admin', 'Superadmin']);
+        $isAdmin = $user->hasAnyRole(['Admin', 'Superadmin', 'Admin Cawangan']);
 
         return Inertia::render('Ecommerce/Orders/Index', [
             'orders' => $this->orders->list(request(), $user),

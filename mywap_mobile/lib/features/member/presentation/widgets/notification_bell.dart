@@ -19,7 +19,7 @@ class NotificationBell extends ConsumerWidget {
     if (!isAuthenticated) return const SizedBox.shrink();
 
     final state = ref.watch(notificationsControllerProvider);
-    final unread = state.notifications.where((n) => !n.isRead).length;
+    final unread = state.unreadCount;
 
     return IconButton(
       tooltip: context.l10n.menuNotifications,

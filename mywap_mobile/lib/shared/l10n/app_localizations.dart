@@ -671,12 +671,6 @@ abstract class AppLocalizations {
   /// **'First time logging in?'**
   String get firstLoginPrompt;
 
-  /// No description provided for @clickHere.
-  ///
-  /// In en, this message translates to:
-  /// **'Click here'**
-  String get clickHere;
-
   /// No description provided for @forgotMemberNo.
   ///
   /// In en, this message translates to:
@@ -692,7 +686,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerNow.
   ///
   /// In en, this message translates to:
-  /// **'Register Now'**
+  /// **'Register Member'**
   String get registerNow;
 
   /// No description provided for @browseAsGuest.
@@ -700,18 +694,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Browse as guest'**
   String get browseAsGuest;
-
-  /// No description provided for @officialPlatform.
-  ///
-  /// In en, this message translates to:
-  /// **'OFFICIAL ECOSYSTEM PLATFORM'**
-  String get officialPlatform;
-
-  /// No description provided for @movementPlatformTagline.
-  ///
-  /// In en, this message translates to:
-  /// **'Digital Platform for the Movement Ecosystem'**
-  String get movementPlatformTagline;
 
   /// No description provided for @enableFaceIdTitle.
   ///
@@ -755,6 +737,12 @@ abstract class AppLocalizations {
   /// **'Fill in the details below to join the myWAP ecosystem.'**
   String get registerSubtitle;
 
+  /// No description provided for @registerFreeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration is free for all organisations.'**
+  String get registerFreeNote;
+
   /// No description provided for @alreadyHaveAccount.
   ///
   /// In en, this message translates to:
@@ -764,7 +752,7 @@ abstract class AppLocalizations {
   /// No description provided for @invitedBy.
   ///
   /// In en, this message translates to:
-  /// **'Invited by {name}'**
+  /// **'Referred by {name}'**
   String invitedBy(String name);
 
   /// No description provided for @fullNameLabel.
@@ -878,7 +866,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerSuccessSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Your account has been activated. Please log in for the first time using your IC No. to set a password.'**
+  /// **'Your account has been activated. Check your email for login guidance. Please log in for the first time using your IC No. to set a password.'**
   String get registerSuccessSubtitle;
 
   /// No description provided for @yourMemberNo.
@@ -1114,6 +1102,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Passwords do not match.'**
   String get passwordMismatch;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set New Password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a new password for your myWAP account.'**
+  String get resetPasswordSubtitle;
+
+  /// No description provided for @resetPasswordInvalidLink.
+  ///
+  /// In en, this message translates to:
+  /// **'This reset link is invalid or has expired. Request a new link.'**
+  String get resetPasswordInvalidLink;
+
+  /// No description provided for @requestNewLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Request New Link'**
+  String get requestNewLink;
 
   /// No description provided for @verifyAndLogin.
   ///
@@ -2416,6 +2428,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Buy Now'**
   String get ecomBuyNow;
+
+  /// No description provided for @ecomAdminCannotBuy.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin accounts cannot place orders. Log out and continue as a guest, or log in with a member account.'**
+  String get ecomAdminCannotBuy;
+
+  /// No description provided for @ecomAdminAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin account'**
+  String get ecomAdminAccount;
+
+  /// No description provided for @ecomPostageOnceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Postage is charged once per order, not per unit.'**
+  String get ecomPostageOnceNote;
 
   /// No description provided for @ecomCartEmpty.
   ///

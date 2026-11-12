@@ -14,6 +14,7 @@ class Form extends Model
 
     protected $fillable = [
         'organization_id',
+        'branch_id',
         'event_id',
         'title',
         'slug',
@@ -58,6 +59,11 @@ class Form extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function event(): BelongsTo

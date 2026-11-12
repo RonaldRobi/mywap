@@ -17,7 +17,9 @@ final libraryFileServiceProvider = Provider<LibraryFileService>(
   (ref) => LibraryFileService(tokenStorage: ref.watch(tokenStorageProvider)),
 );
 
-final memberCardProvider = FutureProvider<MemberCardData>((ref) async {
+final memberCardProvider = FutureProvider.autoDispose<MemberCardData>((
+  ref,
+) async {
   return ref.watch(memberCoreRepositoryProvider).card();
 });
 

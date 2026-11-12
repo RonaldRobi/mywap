@@ -297,25 +297,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get firstLoginPrompt => 'Log masuk kali pertama?';
 
   @override
-  String get clickHere => 'Klik di sini';
-
-  @override
   String get forgotMemberNo => 'Lupa No. Ahli?';
 
   @override
   String get noAccount => 'Belum ada akaun?';
 
   @override
-  String get registerNow => 'Daftar Sekarang';
+  String get registerNow => 'Daftar Ahli';
 
   @override
   String get browseAsGuest => 'Layari sebagai tetamu';
-
-  @override
-  String get officialPlatform => 'PLATFORM RASMI EKOSISTEM';
-
-  @override
-  String get movementPlatformTagline => 'Platform Digital Ekosistem Gerakan';
 
   @override
   String get enableFaceIdTitle => 'Aktifkan Face ID?';
@@ -339,11 +330,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get registerSubtitle => 'Isi maklumat di bawah untuk menyertai ekosistem myWAP.';
 
   @override
+  String get registerFreeNote => 'Pendaftaran percuma untuk semua organisasi.';
+
+  @override
   String get alreadyHaveAccount => 'Sudah ada akaun?';
 
   @override
   String invitedBy(String name) {
-    return 'Dijemput oleh $name';
+    return 'Dirujuk oleh $name';
   }
 
   @override
@@ -401,7 +395,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get registerSuccessTitle => 'Pendaftaran Berjaya!';
 
   @override
-  String get registerSuccessSubtitle => 'Akaun anda telah diaktifkan. Sila log masuk kali pertama menggunakan No. IC anda untuk menetapkan kata laluan.';
+  String get registerSuccessSubtitle => 'Akaun anda telah diaktifkan. Semak emel anda untuk panduan log masuk. Sila log masuk kali pertama menggunakan No. IC anda untuk menetapkan kata laluan.';
 
   @override
   String get yourMemberNo => 'NO. AHLI ANDA';
@@ -521,6 +515,18 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get passwordMismatch => 'Kata laluan tidak sepadan.';
+
+  @override
+  String get resetPasswordTitle => 'Tetapkan Kata Laluan Baharu';
+
+  @override
+  String get resetPasswordSubtitle => 'Masukkan kata laluan baharu untuk akaun myWAP anda.';
+
+  @override
+  String get resetPasswordInvalidLink => 'Pautan reset ini tidak sah atau telah tamat tempoh. Minta pautan baharu.';
+
+  @override
+  String get requestNewLink => 'Minta Pautan Baharu';
 
   @override
   String get verifyAndLogin => 'Sahkan & Log Masuk';
@@ -1198,6 +1204,15 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get ecomBuyNow => 'Beli Sekarang';
+
+  @override
+  String get ecomAdminCannotBuy => 'Akaun admin tidak boleh membuat pesanan. Log keluar dan teruskan sebagai tetamu, atau log masuk dengan akaun ahli.';
+
+  @override
+  String get ecomAdminAccount => 'Akaun admin';
+
+  @override
+  String get ecomPostageOnceNote => 'Kos pos dikira sekali untuk setiap pesanan, bukan setiap unit.';
 
   @override
   String get ecomCartEmpty => 'Troli anda kosong.';

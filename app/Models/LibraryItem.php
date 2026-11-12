@@ -15,6 +15,7 @@ class LibraryItem extends Model
 
     protected $fillable = [
         'organization_id',
+        'branch_id',
         'title',
         'description',
         'file_path',
@@ -30,6 +31,11 @@ class LibraryItem extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function getFilePathAttribute($value): ?string

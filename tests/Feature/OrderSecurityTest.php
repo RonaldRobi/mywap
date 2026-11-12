@@ -161,6 +161,49 @@ class OrderSecurityTest extends TestCase
         $this->assertEquals(10.0, (float) $order->postage_cost);
     }
 
+    public function test_admin_cannot_place_a_mall_order(): void
+    {
+        $product = $this->product();
+
+        $admin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+        ]);
+        $admin->assignRole('Admin');
+
+        $this->actingAs($admin)->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Admin',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'admin@example.test',
+            'shipping_address' => 'KL',
+        ])->assertSessionHasErrors('error');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    /**
+     * Postage is a transaction charge, not a per-unit charge. Three units of
+     * the same product must still pay one postage fee.
+     */
+    public function test_postage_is_charged_once_for_multiple_units_of_the_same_product(): void
+    {
+        $product = $this->product(['price' => 50, 'postage_cost' => 10, 'stock' => 20]);
+
+        $this->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 3]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'KL',
+        ])->assertSessionHasNoErrors();
+
+        $order = Order::latest('id')->firstOrFail();
+
+        $this->assertEquals(150.0, (float) $order->total);
+        $this->assertEquals(10.0, (float) $order->postage_cost);
+    }
+
     /**
      * Cancelling an order must return the reserved stock to the catalogue,
      * otherwise inventory leaks away with every abandoned order.

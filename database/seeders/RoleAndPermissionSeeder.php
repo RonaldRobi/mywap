@@ -85,9 +85,10 @@ class RoleAndPermissionSeeder extends Seeder
 
         $branchAdmin = Role::firstOrCreate(['name' => 'Admin Cawangan']);
         $branchAdmin->syncPermissions([
-            'view.members',
-            'view.events',
-            'view.payments',
+            'view.members', 'edit.members',
+            'view.events', 'create.events', 'edit.events', 'delete.events',
+            'view.payments', 'manage.payments',
+            'view.documents',
         ]);
 
         // Superadmin gets all permissions unconditionally via Spatie's gate bypass.

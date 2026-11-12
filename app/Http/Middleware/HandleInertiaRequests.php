@@ -39,7 +39,12 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         if ($user) {
-            $user->loadMissing('organization:id,name,slug,color_theme,logo_path,website_url,facebook_url,instagram_url,twitter_url,youtube_url,tiktok_url', 'roles', 'branch:id,name');
+            $user->loadMissing(
+                'organization:id,name,slug,color_theme,logo_path,website_url,facebook_url,instagram_url,twitter_url,youtube_url,tiktok_url',
+                'roles',
+                'branch:id,name',
+                'branchAdminAssignments',
+            );
         }
 
         $appSetting = Cache::rememberForever('app_settings', fn () => Schema::hasTable('app_settings')
@@ -86,6 +91,7 @@ class HandleInertiaRequests extends Middleware
                     'state' => $user->state,
                     'is_public_in_directory' => (bool) $user->is_public_in_directory,
                     'roles' => $user->getRoleNames(),
+                    'managed_branch_id' => $user->managedBranchId(),
                     'organization' => $isSuperadmin
                         ? [
                             'id' => null,

@@ -137,9 +137,14 @@ class OrderService
     {
         $isAdmin = $user->hasAnyRole(['Admin', 'Superadmin']);
 
-        $query = $isAdmin
-            ? Order::query()
-            : $user->orders();
+        if ($user->isBranchAdmin()) {
+            $query = Order::query()
+                ->whereHas('items.product', fn ($q) => $q->where('branch_id', $user->managedBranchId()));
+        } else {
+            $query = $isAdmin
+                ? Order::query()
+                : $user->orders();
+        }
 
         return $query
             ->with('items.product')
@@ -170,6 +175,12 @@ class OrderService
      */
     public function createOrder(array $data, ?User $user = null, bool $applyMemberPricing = false): Order
     {
+        // Akaun staf mengurus katalog dan pesanan; pembelian mesti dibuat
+        // melalui akaun ahli atau sebagai tetamu.
+        if ($user && ! $user->canPurchase()) {
+            throw new \Exception('Akaun admin tidak boleh membuat pesanan. Sila log masuk dengan akaun ahli atau teruskan sebagai tetamu.');
+        }
+
         $shippingName = $data['shipping_name'] ?? null;
         $shippingPhone = $data['shipping_phone'] ?? null;
 
@@ -320,7 +331,11 @@ class OrderService
      */
     public function checkout(array $data, ?User $user = null): array
     {
-        $order = $this->createOrder($data, $user, $user !== null);
+        $order = $this->createOrder(
+            $data,
+            $user,
+            $user !== null && $user->hasRole('Member'),
+        );
 
         $this->notifyOrderPlaced($order);
 

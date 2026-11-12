@@ -15,6 +15,11 @@ const user = computed(() => page.props.auth?.user ?? null);
 // refuse to honour at checkout.
 const isMember = computed(() => user.value?.roles?.includes('Member') ?? false);
 
+// Staff accounts manage orders; they do not place them.
+const isStaff = computed(() =>
+    user.value?.roles?.some(role => ['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan'].includes(role)) ?? false
+);
+
 const shippingName = ref(user.value?.name ?? '');
 const shippingPhone = ref(user.value?.phone ?? '');
 const shippingAddress = ref(user.value?.address_1 ?? '');
@@ -55,6 +60,7 @@ function validate() {
 
 function checkout() {
     if (processing.value) return;
+    if (isStaff.value) return;
     if (!validate()) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
@@ -262,6 +268,7 @@ const inputClass =
                                         {{ cart.combinedPostage.value > 0 ? formatPrice(cart.combinedPostage.value) : 'Percuma' }}
                                     </dd>
                                 </div>
+                                <p class="text-xs text-gray-500">Kos pos dikira sekali untuk setiap pesanan, bukan setiap unit.</p>
 
                                 <div class="flex items-baseline justify-between border-t border-gray-200 pt-3">
                                     <dt class="text-sm font-bold text-gray-900">Jumlah</dt>
@@ -269,8 +276,12 @@ const inputClass =
                                 </div>
                             </dl>
 
+                            <div v-if="isStaff" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                                Akaun admin tidak boleh membuat pesanan. Log keluar dan teruskan sebagai tetamu, atau log masuk dengan akaun ahli.
+                            </div>
+
                             <button
-                                :disabled="processing"
+                                :disabled="processing || isStaff"
                                 class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
                                 @click="checkout"
                             >

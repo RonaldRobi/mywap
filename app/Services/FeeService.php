@@ -155,13 +155,14 @@ class FeeService
         );
     }
 
-    public function getDueCount(int $organizationId, ?int $year = null): int
+    public function getDueCount(int $organizationId, ?int $year = null, ?int $branchId = null): int
     {
         $year ??= now()->year;
 
-        return Cache::remember("due_count:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
+        return Cache::remember("due_count:{$organizationId}:{$branchId}:{$year}", 60, function () use ($organizationId, $branchId, $year) {
             return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $organizationId)
+                ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
                 ->count();
@@ -209,12 +210,15 @@ class FeeService
             })->all();
     }
 
-    public function getAdminStats(?int $organizationId, int $year): array
+    public function getAdminStats(?int $organizationId, int $year, ?int $branchId = null): array
     {
-        return Cache::remember("fee_stats:{$organizationId}:{$year}", 60, function () use ($organizationId, $year) {
+        return Cache::remember("fee_stats:{$organizationId}:{$branchId}:{$year}", 60, function () use ($organizationId, $branchId, $year) {
             $baseQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
             if ($organizationId) {
                 $baseQuery->where('current_organization_id', $organizationId);
+            }
+            if ($branchId) {
+                $baseQuery->where('branch_id', $branchId);
             }
 
             $stats = (clone $baseQuery)->selectRaw("
@@ -249,6 +253,10 @@ class FeeService
 
             if ($organizationId) {
                 $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $organizationId));
+            }
+
+            if ($branchId) {
+                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('branch_id', $branchId));
             }
 
             $collectedAmount = $collectedQuery->sum('amount');

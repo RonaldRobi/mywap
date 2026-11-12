@@ -33,6 +33,7 @@ class MembershipLetterNotification extends Notification implements ShouldQueue
             : url($settings?->system_logo_path ?? '/images/logomywaphorizontal.png');
 
         return (new MailMessage)
+            ->mailer('transactional')
             ->subject($service->subject($user))
             ->view('emails.membership-letter', [
                 'name' => $user->name,

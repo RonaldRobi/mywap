@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useCart } from '@/composables/useCart';
 import { productImageUrl, onImageError, formatPrice } from '@/composables/useProductImage';
@@ -24,7 +24,12 @@ const isAdmin = computed(() => {
     return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin'].includes(role));
 });
 
-const showShipping = ref(false);
+// Staff operate the catalogue; buying is for members and guests only.
+const isStaff = computed(() => {
+    return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan'].includes(role));
+});
+
+const user = computed(() => page.props.auth.user);
 const quantity = ref(1);
 
 // ─── Image Gallery ──────────────────────────────────────────────────────────
@@ -114,72 +119,14 @@ function selectOption(variationId, optionId) {
     }
 }
 
-// ─── Shipping ───────────────────────────────────────────────────────────────
+// ─── Buy ────────────────────────────────────────────────────────────────────
 
-const user = computed(() => page.props.auth.user);
-
-const shippingForm = useForm({
-    shipping_name: user.value?.name ?? '',
-    shipping_address: user.value?.address_1 ?? '',
-    shipping_postcode: user.value?.postcode ?? '',
-    shipping_phone: user.value?.phone ?? '',
-    shipping_email: user.value?.email ?? '',
-});
-
-const isGuest = computed(() => !user.value);
-const shippingErrors = ref({});
-const shippingSection = ref(null);
-
-// ─── Order Form ─────────────────────────────────────────────────────────────
-
-const buyForm = useForm({
-    products: [
-        {
-            id: props.product.id,
-            quantity: 1,
-            variation_option_id: null,
-        },
-    ],
-});
-
+// Shipping details are collected once on the cart/checkout page, not on the
+// product page. Buy now adds the chosen item and opens that page.
 function buyNow() {
-    const snapshot = {};
-    const optionIds = [];
-    for (const details of Object.values(selectedVariationDetails.value)) {
-        snapshot[details.variation.name] = details.option.name;
-        optionIds.push(details.option.id);
-    }
-
-    if (isGuest.value) {
-        const errors = {};
-        if (!shippingForm.shipping_name?.trim()) errors.shipping_name = 'Nama penerima diperlukan.';
-        if (!shippingForm.shipping_phone?.trim()) errors.shipping_phone = 'No telefon diperlukan.';
-        if (!shippingForm.shipping_email?.trim()) errors.shipping_email = 'Emel diperlukan untuk menerima resit pesanan.';
-        shippingErrors.value = errors;
-
-        if (Object.keys(errors).length) {
-            showShipping.value = true;
-            shippingSection.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-    }
-
-    buyForm.products[0].quantity = quantity.value;
-    buyForm.products[0].variation_option_id = optionIds[0] ?? null;
-    buyForm.products[0].variation_snapshot = Object.keys(snapshot).length ? JSON.stringify(snapshot) : null;
-
-    buyForm
-        .transform((data) => ({
-            ...data,
-            shipping_name: shippingForm.shipping_name,
-            shipping_address: shippingForm.shipping_address,
-            shipping_postcode: shippingForm.shipping_postcode,
-            shipping_phone: shippingForm.shipping_phone,
-            shipping_email: shippingForm.shipping_email,
-        }))
-        .post(route(props.isMall ? 'mall.checkout' : 'orders.store'), {
-            preserveScroll: true,
-        });
+    if (!canBuy.value) return;
+    addToBakul();
+    router.visit(route('mall.cart'));
 }
 
 function addToBakul() {
@@ -292,6 +239,7 @@ watch(availableStock, (stock) => {
                         Kos Pos: {{ formatPrice(postageCost) }}
                     </div>
                     <div v-else class="mt-1 text-sm text-emerald-600 font-semibold">Percuma Pos</div>
+                    <p class="mt-1 text-xs text-gray-500">Kos pos dikira sekali untuk setiap pesanan, bukan setiap unit.</p>
 
                     <!-- Share -->
                     <div v-if="isMall" class="mt-5 border-t border-gray-100 pt-4">
@@ -367,8 +315,13 @@ watch(availableStock, (stock) => {
                         </div>
                     </div>
 
+                    <!-- Staff browse only; they buy with a member or guest account. -->
+                    <div v-if="isStaff" class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Akaun admin tidak boleh membuat pesanan di sini. Untuk membeli, log keluar dan teruskan sebagai tetamu, atau log masuk dengan akaun ahli.
+                    </div>
+
                     <!-- Quantity & Buy -->
-                    <div class="mt-6 flex flex-col gap-4">
+                    <div v-else class="mt-6 flex flex-col gap-4">
                         <!-- Quantity -->
                         <div class="flex items-center gap-3">
                             <span class="text-sm font-semibold text-gray-700">Kuantiti</span>
@@ -430,73 +383,22 @@ watch(availableStock, (stock) => {
                                 + Tambah ke Bakul
                             </button>
                             <button
-                            type="button"
-                            @click="buyNow"
-                            :disabled="!canBuy || buyForm.processing"
-                            class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            <svg v-if="!buyForm.processing" class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
-                            </svg>
-                            <svg v-else class="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-
-                            <span v-if="buyForm.processing">Memproses...</span>
-                            <span v-else>
+                                type="button"
+                                @click="buyNow"
+                                :disabled="!canBuy"
+                                class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+                                </svg>
                                 Beli Sekarang
                                 <span class="ml-1 text-emerald-200">{{ formatPrice(totalPayable) }}</span>
-                            </span>
-                        </button>
+                            </button>
                         </div>
 
+                        <p class="text-xs text-gray-500">Kos pos dikira sekali untuk setiap pesanan. Alamat diisi di halaman bakul.</p>
                         <p v-if="!allRequiredSelected" class="text-xs text-amber-600">Sila pilih semua variasi yang wajib.</p>
                         <p v-else-if="availableStock < 1" class="text-xs text-red-600">Stok tidak mencukupi.</p>
-                    </div>
-
-                    <!-- Shipping Address (collapsible) -->
-                    <div ref="shippingSection" class="mt-5 border-t border-gray-100 pt-4">
-                        <button
-                            @click="showShipping = !showShipping"
-                            class="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900"
-                        >
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            Alamat Penghantaran
-                            <span v-if="isGuest" class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">Wajib</span>
-                            <svg
-                                class="h-3.5 w-3.5 transition-transform"
-                                :class="{ 'rotate-180': showShipping }"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            >
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-                        <div v-if="showShipping" class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div class="sm:col-span-2">
-                                <label class="mb-1 block text-xs font-semibold text-gray-400">Nama Penerima <span v-if="isGuest" class="text-red-500">*</span></label>
-                                <input v-model="shippingForm.shipping_name" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
-                                <p v-if="shippingErrors.shipping_name" class="mt-1 text-xs font-medium text-red-600">{{ shippingErrors.shipping_name }}</p>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="mb-1 block text-xs font-semibold text-gray-400">Alamat</label>
-                                <textarea v-model="shippingForm.shipping_address" rows="2" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0"></textarea>
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-semibold text-gray-400">Poskod</label>
-                                <input v-model="shippingForm.shipping_postcode" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-semibold text-gray-400">No. Telefon <span v-if="isGuest" class="text-red-500">*</span></label>
-                                <input v-model="shippingForm.shipping_phone" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0">
-                                <p v-if="shippingErrors.shipping_phone" class="mt-1 text-xs font-medium text-red-600">{{ shippingErrors.shipping_phone }}</p>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="mb-1 block text-xs font-semibold text-gray-400">Emel <span v-if="isGuest" class="text-red-500">*</span></label>
-                                <input v-model="shippingForm.shipping_email" type="email" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-500 focus:ring-0" placeholder="untuk resit & penjejakan">
-                                <p v-if="shippingErrors.shipping_email" class="mt-1 text-xs font-medium text-red-600">{{ shippingErrors.shipping_email }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

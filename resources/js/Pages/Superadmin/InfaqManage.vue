@@ -50,6 +50,7 @@ function downloadQr() {
 const props = defineProps({
     organizations: { type: Array, default: () => [] },
     infaqItems:    { type: Array, default: () => [] },
+    isSuperadmin:  { type: Boolean, default: false },
 });
 
 // ─── Create form ─────────────────────────────────────────────────────────────
@@ -174,6 +175,7 @@ function formatMYR(val) {
                             <p class="text-sm text-gray-500 mt-0.5">Cipta kempen derma untuk ahli.</p>
                         </div>
                         <button
+                            v-if="isSuperadmin"
                             @click="seedDemo"
                             :disabled="seedForm.processing"
                             class="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-60 shrink-0"

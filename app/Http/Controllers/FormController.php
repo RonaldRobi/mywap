@@ -39,6 +39,7 @@ class FormController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $query = Form::query()
             ->with(['organization:id,name', 'event:id,title,status,start_time,end_time'])
@@ -47,6 +48,13 @@ class FormController extends Controller
 
         if (! $isSuperadmin) {
             $query->where('organization_id', $user->current_organization_id);
+        }
+
+        if ($branchId) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                    ->orWhereHas('event', fn ($eventQuery) => $eventQuery->where('branch_id', $branchId));
+            });
         }
 
         if ($request->filled('search')) {
@@ -93,13 +101,15 @@ class FormController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
 
         $organizations = $isSuperadmin
             ? Organization::orderBy('min_age')->get(['id', 'name'])
             : [];
 
         $events = Event::query()
-            ->when(! $isSuperadmin, function ($q) use ($user) {
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
+            ->when(! $isSuperadmin && ! $branchId, function ($q) use ($user) {
                 $q->where(function ($q2) use ($user) {
                     $q2->where('organization_id', $user->current_organization_id)
                         ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $user->current_organization_id));
@@ -173,13 +183,15 @@ class FormController extends Controller
 
         $this->assertPaidFormHasPrice($data, $priceTiers);
 
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : null;
+
         // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
         $organizationId = $isSuperadmin ? ($data['organization_id'] ?? null) : $user->current_organization_id;
         if (! $organizationId && ! empty($data['event_id'])) {
             $organizationId = Event::find($data['event_id'])?->organization_id;
         }
 
-        $form = DB::transaction(function () use ($data, $request, $organizationId, $priceTiers) {
+        $form = DB::transaction(function () use ($data, $request, $organizationId, $priceTiers, $branchId) {
             $headerImagePath = $request->hasFile('header_image')
                 ? $request->file('header_image')->store('forms', 'public')
                 : null;
@@ -194,6 +206,7 @@ class FormController extends Controller
                 'is_active' => $data['is_active'] ?? true,
                 'allow_public' => $data['allow_public'] ?? true,
                 'organization_id' => $organizationId,
+                'branch_id' => $branchId,
                 'event_id' => $data['event_id'] ?? null,
                 'header_image_path' => $headerImagePath,
                 'recipient_emails' => collect($data['recipient_emails'] ?? [])
@@ -248,7 +261,8 @@ class FormController extends Controller
             : [];
 
         $events = Event::query()
-            ->when(! $isSuperadmin, function ($q) use ($user) {
+            ->when($user->isBranchAdmin(), fn ($q) => $q->where('branch_id', $user->managedBranchId()))
+            ->when(! $isSuperadmin && ! $user->isBranchAdmin(), function ($q) use ($user) {
                 $q->where(function ($q2) use ($user) {
                     $q2->where('organization_id', $user->current_organization_id)
                         ->orWhereHas('organizations', fn ($q3) => $q3->where('organizations.id', $user->current_organization_id));
@@ -367,6 +381,8 @@ class FormController extends Controller
 
         $this->assertPaidFormHasPrice($data, $priceTiers);
 
+        $branchId = $user->isBranchAdmin() ? $user->managedBranchId() : $form->branch_id;
+
         // Auto-set org dari event jika borang tiada org (borang pendaftaran event).
         $organizationId = $isSuperadmin
             ? ($data['organization_id'] ?? $form->organization_id)
@@ -375,7 +391,7 @@ class FormController extends Controller
             $organizationId = Event::find($data['event_id'])?->organization_id;
         }
 
-        DB::transaction(function () use ($form, $data, $request, $organizationId, $priceTiers) {
+        DB::transaction(function () use ($form, $data, $request, $organizationId, $priceTiers, $branchId) {
             $updateData = [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
@@ -386,6 +402,7 @@ class FormController extends Controller
                 'is_active' => $data['is_active'] ?? $form->is_active,
                 'allow_public' => $data['allow_public'] ?? $form->allow_public,
                 'organization_id' => $organizationId,
+                'branch_id' => $branchId,
                 'event_id' => $data['event_id'] ?? $form->event_id,
                 'recipient_emails' => collect($data['recipient_emails'] ?? [])
                     ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
@@ -612,6 +629,10 @@ class FormController extends Controller
             $query->where('current_organization_id', $orgId);
         }
 
+        if ($user->isBranchAdmin()) {
+            $query->where('branch_id', $user->managedBranchId());
+        }
+
         $emails = $query->pluck('email')
             ->filter(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))
             ->unique()
@@ -700,6 +721,8 @@ class FormController extends Controller
     {
         $form = $this->forms->findPublic($token);
 
+        abort_if($form->event?->isBranchOnly(), 403, 'Borang ini hanya untuk ahli cawangan penganjur.');
+
         $data = $request->validate($this->forms->validationRules($form));
 
         $this->forms->storeResponse($form, $data, $request->user());
@@ -713,7 +736,24 @@ class FormController extends Controller
     private function assertCanManageForm(Form $form): void
     {
         $user = request()->user();
-        if (! $user->hasRole('Superadmin') && $form->organization_id !== (int) $user->current_organization_id) {
+
+        if ($user->hasRole('Superadmin')) {
+            return;
+        }
+
+        if ($user->isBranchAdmin()) {
+            $event = $form->event;
+
+            if ($event) {
+                abort_unless((int) $event->branch_id === (int) $user->managedBranchId(), 403);
+            } else {
+                abort_unless((int) $form->branch_id === (int) $user->managedBranchId(), 403);
+            }
+
+            return;
+        }
+
+        if ($form->organization_id !== (int) $user->current_organization_id) {
             abort(403);
         }
     }
@@ -737,7 +777,26 @@ class FormController extends Controller
      */
     private function assertEventAllowedForOrg(?int $eventId, $user, bool $isSuperadmin): void
     {
-        if ($isSuperadmin || ! $eventId) {
+        if ($isSuperadmin) {
+            return;
+        }
+
+        if ($user->isBranchAdmin()) {
+            if (! $eventId) {
+                return;
+            }
+
+            $event = Event::find($eventId);
+
+            abort_unless(
+                $event && (int) $event->branch_id === (int) $user->managedBranchId(),
+                403
+            );
+
+            return;
+        }
+
+        if (! $eventId) {
             return;
         }
 

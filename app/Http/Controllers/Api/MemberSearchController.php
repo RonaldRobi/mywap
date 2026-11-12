@@ -26,7 +26,21 @@ class MemberSearchController extends Controller
         //    organization_id diberikan secara jelas.
         $actingUser = Auth::user();
         $isSuperadmin = $actingUser ? $actingUser->hasRole('Superadmin') : false;
+        $isBranchAdmin = $actingUser?->isBranchAdmin() ?? false;
         $orgId = $request->query('organization_id');
+        $branchId = $request->query('branch_id');
+
+        if ($actingUser && ! $isSuperadmin) {
+            $orgId = $actingUser->current_organization_id;
+        }
+
+        if ($isBranchAdmin) {
+            $branchId = $actingUser->managedBranchId();
+
+            if (! $branchId) {
+                return response()->json([]);
+            }
+        }
 
         // Tetamu awam (halaman pendaftaran) tidak boleh mengecam maklumat
         // sensitif (IC/emel/telefon) orang lain — padanan nama & no ahli sahaja.
@@ -36,15 +50,22 @@ class MemberSearchController extends Controller
             ? ['name', 'member_no']
             : MemberSearch::COLUMNS;
 
+        $select = ['id', 'name', 'member_no', 'current_organization_id'];
+
+        if ($actingUser?->isAdminPanelUser()) {
+            $select = array_merge($select, ['ic_number', 'phone', 'email']);
+        }
+
         $members = User::query()
             ->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->when($orgId, fn ($query) => $query->where('current_organization_id', (int) $orgId))
+            ->when($branchId, fn ($query) => $query->where('branch_id', (int) $branchId))
             ->when(! $orgId && $actingUser && ! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $actingUser->current_organization_id));
 
         MemberSearch::apply($members, $q, $columns);
 
         return response()->json(
-            $members->limit(25)->get(['id', 'name', 'member_no', 'current_organization_id'])
+            $members->limit(25)->get($select)
         );
     }
 }

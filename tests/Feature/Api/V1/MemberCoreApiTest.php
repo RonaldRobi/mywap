@@ -75,6 +75,19 @@ class MemberCoreApiTest extends TestCase
             ->assertJsonPath('data.qrPrivate', fn (string $svg) => str_contains($svg, '<svg'));
     }
 
+    public function test_member_card_qr_value_is_static_for_printed_cards(): void
+    {
+        Sanctum::actingAs($this->member);
+
+        $url = $this->getJson('/api/v1/member/card')->json('data.card.qr_value');
+
+        $this->assertSame(route('public.card', ['memberNo' => 'PKPIM-0001']), $url);
+        $this->assertStringEndsWith('/kad/PKPIM-0001', $url);
+        $this->assertStringNotContainsString('exp=', $url);
+        $this->assertStringNotContainsString('sig=', $url);
+        $this->assertStringNotContainsString('token=', $url);
+    }
+
     public function test_member_can_get_fee_status(): void
     {
         Sanctum::actingAs($this->member);

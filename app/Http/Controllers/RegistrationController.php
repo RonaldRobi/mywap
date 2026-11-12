@@ -53,6 +53,7 @@ class RegistrationController extends Controller
 
         abort_unless($event->isPublished(), 404, 'Event belum diterbitkan.');
         $this->abortUnlessRegistrationOpen($event);
+        $this->assertEventRegistrationAccess($event, $user);
 
         $existing = Registration::where('event_id', $event->id)
             ->where('user_id', $user->id)
@@ -95,6 +96,7 @@ class RegistrationController extends Controller
         abort_unless($form->is_active, 404);
 
         $this->abortUnlessRegistrationOpen($event);
+        $this->assertEventRegistrationAccess($event, $user);
 
         $data = $request->validate($this->registrations->validationRules($form));
 
@@ -119,6 +121,7 @@ class RegistrationController extends Controller
         abort_unless($form->event, 404, 'Event tidak dijumpai.');
         abort_unless($form->event->isPublished(), 404, 'Event belum diterbitkan.');
         $this->abortUnlessRegistrationOpen($form->event);
+        $this->assertEventRegistrationAccess($form->event, request()->user());
 
         // Alat kongsi hanya untuk admin/superadmin — orang awam tidak nampak.
         $user = request()->user();
@@ -163,6 +166,7 @@ class RegistrationController extends Controller
         abort_unless($form->event_id, 404);
         abort_unless($form->event, 404, 'Event tidak dijumpai.');
         $this->abortUnlessRegistrationOpen($form->event);
+        $this->assertEventRegistrationAccess($form->event, $request->user());
 
         $data = $request->validate($this->registrations->validationRules($form));
 
@@ -570,6 +574,12 @@ class RegistrationController extends Controller
             return $user;
         }
 
+        if ($user->isBranchAdmin()) {
+            abort_unless((int) $event->branch_id === (int) $user->managedBranchId(), 403);
+
+            return $user;
+        }
+
         $orgId = (int) $user->current_organization_id;
 
         $accessible = (int) $event->organization_id === $orgId
@@ -608,10 +618,27 @@ class RegistrationController extends Controller
      */
     protected function isEventOwner(User $user, Event $event): bool
     {
+        if ($user->isBranchAdmin()) {
+            return (int) $event->branch_id === (int) $user->managedBranchId();
+        }
+
         $orgId = (int) $user->current_organization_id;
 
         return (int) $event->organization_id === $orgId
             || $event->organizations()->where('organizations.id', $orgId)->exists();
+    }
+
+    protected function assertEventRegistrationAccess(Event $event, ?User $user): void
+    {
+        if (! $event->isBranchOnly()) {
+            return;
+        }
+
+        abort_unless(
+            $user && (int) $user->branch_id === (int) $event->branch_id,
+            403,
+            'Program ini hanya untuk ahli cawangan penganjur.'
+        );
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\V1\NewsController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Info Terkini (public — boleh dibaca tanpa log masuk) ─────────────────
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware('throttle:60,1,api-news')->group(function () {
     Route::get('/news', [NewsController::class, 'index']);
     Route::get('/news/{post}', [NewsController::class, 'show']);
 });

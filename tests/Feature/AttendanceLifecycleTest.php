@@ -435,4 +435,47 @@ class AttendanceLifecycleTest extends TestCase
             'action' => 'attendance_manual_clear',
         ]);
     }
+
+    // ─── Imbasan kad ahli (URL statik) ────────────────────────────────────────
+
+    public function test_member_card_url_parsing_ignores_host(): void
+    {
+        $this->assertSame('PKPIM-9001', Registration::extractMemberNo('https://mywap.my/kad/PKPIM-9001'));
+        $this->assertSame('PKPIM-9001', Registration::extractMemberNo('http://old-domain.test/kad/PKPIM-9001/?x=1'));
+        $this->assertSame('PKPIM-9001', Registration::extractMemberNo('/kad/PKPIM-9001'));
+        $this->assertNull(Registration::extractMemberNo('PKPIM-9001'));
+    }
+
+    public function test_web_scan_accepts_member_card_url(): void
+    {
+        $event = $this->event();
+        $registration = $this->registration($event);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.attendance.scan', ['event' => $event->id]), [
+                'identifier' => 'https://mywap.my/kad/PKPIM-9001?ref=card',
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', 'ok')
+            ->assertJsonPath('registration.member_no', 'PKPIM-9001');
+
+        $this->assertDatabaseHas('attendances', [
+            'registration_id' => $registration->id,
+            'event_id' => $event->id,
+            'method' => 'manual',
+            'recorded_by' => $this->admin->id,
+        ]);
+    }
+
+    public function test_web_scan_rejects_unknown_card(): void
+    {
+        $event = $this->event();
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.attendance.scan', ['event' => $event->id]), [
+                'identifier' => 'https://mywap.my/kad/TIDAK-WUJUD',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error');
+    }
 }

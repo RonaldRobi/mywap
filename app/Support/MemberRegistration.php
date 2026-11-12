@@ -20,7 +20,7 @@ class MemberRegistration
      */
     public static function normalizeIc(?string $ic): string
     {
-        return Str::upper(preg_replace('/\s+/', '', trim((string) $ic)) ?? '');
+        return (string) (\App\Models\User::normalizeIc($ic) ?? '');
     }
 
     /**
@@ -40,7 +40,7 @@ class MemberRegistration
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'ic_number' => ['required', 'string', 'min:6', 'max:32', 'unique:users,ic_number'],
+            'ic_number' => ['required', 'string', 'max:32', 'regex:'.\App\Models\User::IC_VALIDATION_REGEX],
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]{7,20}$/'],
             'dob' => ['required', 'date', 'before_or_equal:today'],
             'branch_id' => ['nullable', 'exists:branches,id'],
@@ -62,9 +62,7 @@ class MemberRegistration
             'email.unique' => 'Emel ini sudah didaftarkan. Sila log masuk, atau gunakan emel lain.',
 
             'ic_number.required' => 'Sila masukkan No. Kad Pengenalan atau No. Passport.',
-            'ic_number.min' => 'No. Kad Pengenalan tidak sah. Masukkan 12 digit No. Kad Pengenalan (cth: 900101011234) atau No. Passport.',
-            'ic_number.max' => 'No. Kad Pengenalan terlalu panjang.',
-            'ic_number.unique' => 'No. Kad Pengenalan ini sudah didaftarkan. Sila log masuk, atau hubungi admin jika anda terlupa No. Ahli.',
+            'ic_number.regex' => 'No. Kad Pengenalan mesti tepat 12 digit tanpa sengkang atau ruang (cth: 900101011234). Pasport mesti 6-32 aksara alfanumerik.',
 
             'phone.regex' => 'No. telefon tidak sah. Gunakan nombor sahaja, contoh: 0123456789.',
             'phone.max' => 'No. telefon terlalu panjang.',

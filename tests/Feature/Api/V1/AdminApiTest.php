@@ -11,6 +11,7 @@ use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Registration;
+use App\Models\Supporter;
 use App\Models\User;
 use App\Models\UsrahGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -405,6 +406,88 @@ class AdminApiTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('data.status', 'error')
             ->assertJsonPath('data.registration', null);
+    }
+
+    public function test_scan_member_card_without_registration_creates_walk_in(): void
+    {
+        $event = $this->makeEvent($this->org);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/admin/attendance/scan', [
+            'event_id' => $event->id,
+            'identifier' => 'https://mywap.my/kad/M-0001',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.registration.member_no', 'M-0001');
+
+        $registration = Registration::where('event_id', $event->id)
+            ->where('member_no', 'M-0001')
+            ->firstOrFail();
+
+        $this->assertSame($this->member->id, $registration->user_id);
+        $this->assertDatabaseHas('attendances', [
+            'registration_id' => $registration->id,
+            'event_id' => $event->id,
+            'method' => 'manual',
+            'recorded_by' => $this->admin->id,
+        ]);
+    }
+
+    public function test_scan_member_by_ic_without_registration_creates_walk_in(): void
+    {
+        $this->member->update(['ic_number' => '900101-14-1234']);
+        $event = $this->makeEvent($this->org);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/admin/attendance/scan', [
+            'event_id' => $event->id,
+            'identifier' => '900101141234',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.registration.member_no', 'M-0001');
+
+        $registration = Registration::where('event_id', $event->id)->firstOrFail();
+
+        $this->assertSame($this->member->id, $registration->user_id);
+    }
+
+    public function test_scan_member_by_phone_without_registration_creates_walk_in(): void
+    {
+        $this->member->update(['phone' => '012-345 6789']);
+        $event = $this->makeEvent($this->org);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/admin/attendance/scan', [
+            'event_id' => $event->id,
+            'identifier' => '60123456789',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.registration.member_no', 'M-0001');
+
+        $registration = Registration::where('event_id', $event->id)->firstOrFail();
+
+        $this->assertSame($this->member->id, $registration->user_id);
+    }
+
+    public function test_scan_non_member_does_not_auto_register(): void
+    {
+        $event = $this->makeEvent($this->org);
+
+        Sanctum::actingAs($this->admin);
+
+        $this->postJson('/api/v1/admin/attendance/scan', [
+            'event_id' => $event->id,
+            'identifier' => '920202142222',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('data.status', 'error');
+
+        $this->assertSame(0, Registration::where('event_id', $event->id)->count());
+        $this->assertSame(0, Supporter::query()->count());
     }
 
     public function test_scan_already_attended_returns_422(): void

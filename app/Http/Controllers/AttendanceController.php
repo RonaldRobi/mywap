@@ -9,6 +9,7 @@ use App\Models\Registration;
 use App\Services\AdminService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -229,6 +230,25 @@ class AttendanceController extends Controller
         $data = $this->admin->attendanceDetail($request, $event, $request->user());
 
         return Inertia::render('Admin/Events/AttendanceShow', $data);
+    }
+
+    /**
+     * Rekod kehadiran melalui imbasan kad ahli di web (USB scanner atau kamera).
+     * Menerima URL /kad/{memberNo} atau No. ahli / IC / telefon.
+     */
+    public function scanMember(Request $request, Event $event): JsonResponse
+    {
+        $data = $request->validate([
+            'identifier' => ['required', 'string', 'max:255'],
+        ]);
+
+        $result = $this->admin->scanAttendance(
+            $request->user(),
+            $event->id,
+            trim($data['identifier']),
+        );
+
+        return response()->json($result, $result['status'] === 'ok' ? 200 : 422);
     }
 
     /**
@@ -471,7 +491,9 @@ class AttendanceController extends Controller
             'formResponse.answers.question',
         ]);
 
-        if (! $isSuperadmin) {
+        if ($user->isBranchAdmin()) {
+            $query->whereHas('event', fn (Builder $q) => $q->where('branch_id', $user->managedBranchId()));
+        } elseif (! $isSuperadmin) {
             $query->where(function (Builder $q) use ($user) {
                 $q->where('organization_id', $user->current_organization_id)
                     ->orWhereHas('event', fn ($q2) => $q2->where('organization_id', $user->current_organization_id));

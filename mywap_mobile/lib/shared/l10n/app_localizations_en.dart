@@ -297,25 +297,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstLoginPrompt => 'First time logging in?';
 
   @override
-  String get clickHere => 'Click here';
-
-  @override
   String get forgotMemberNo => 'Forgot Member No.?';
 
   @override
   String get noAccount => 'Don\'t have an account?';
 
   @override
-  String get registerNow => 'Register Now';
+  String get registerNow => 'Register Member';
 
   @override
   String get browseAsGuest => 'Browse as guest';
-
-  @override
-  String get officialPlatform => 'OFFICIAL ECOSYSTEM PLATFORM';
-
-  @override
-  String get movementPlatformTagline => 'Digital Platform for the Movement Ecosystem';
 
   @override
   String get enableFaceIdTitle => 'Enable Face ID?';
@@ -339,11 +330,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerSubtitle => 'Fill in the details below to join the myWAP ecosystem.';
 
   @override
+  String get registerFreeNote => 'Registration is free for all organisations.';
+
+  @override
   String get alreadyHaveAccount => 'Already have an account?';
 
   @override
   String invitedBy(String name) {
-    return 'Invited by $name';
+    return 'Referred by $name';
   }
 
   @override
@@ -401,7 +395,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerSuccessTitle => 'Registration Successful!';
 
   @override
-  String get registerSuccessSubtitle => 'Your account has been activated. Please log in for the first time using your IC No. to set a password.';
+  String get registerSuccessSubtitle => 'Your account has been activated. Check your email for login guidance. Please log in for the first time using your IC No. to set a password.';
 
   @override
   String get yourMemberNo => 'YOUR MEMBER NO.';
@@ -521,6 +515,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordMismatch => 'Passwords do not match.';
+
+  @override
+  String get resetPasswordTitle => 'Set New Password';
+
+  @override
+  String get resetPasswordSubtitle => 'Enter a new password for your myWAP account.';
+
+  @override
+  String get resetPasswordInvalidLink => 'This reset link is invalid or has expired. Request a new link.';
+
+  @override
+  String get requestNewLink => 'Request New Link';
 
   @override
   String get verifyAndLogin => 'Verify & Log In';
@@ -1198,6 +1204,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ecomBuyNow => 'Buy Now';
+
+  @override
+  String get ecomAdminCannotBuy => 'Admin accounts cannot place orders. Log out and continue as a guest, or log in with a member account.';
+
+  @override
+  String get ecomAdminAccount => 'Admin account';
+
+  @override
+  String get ecomPostageOnceNote => 'Postage is charged once per order, not per unit.';
 
   @override
   String get ecomCartEmpty => 'Your cart is empty.';

@@ -17,11 +17,28 @@ import '../application/member_core_providers.dart';
 import '../data/models/member_card_data.dart';
 import 'widgets/member_card_layout.dart';
 
-class MemberCardScreen extends ConsumerWidget {
+class MemberCardScreen extends ConsumerStatefulWidget {
   const MemberCardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MemberCardScreen> createState() => _MemberCardScreenState();
+}
+
+class _MemberCardScreenState extends ConsumerState<MemberCardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final current = ref.read(memberCardProvider);
+      if (current.hasValue || current.hasError) {
+        ref.invalidate(memberCardProvider);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cardAsync = ref.watch(memberCardProvider);
     return Scaffold(
       appBar: AppBar(
@@ -29,6 +46,7 @@ class MemberCardScreen extends ConsumerWidget {
         title: Text(context.l10n.menuCard),
       ),
       body: cardAsync.when(
+        skipLoadingOnRefresh: true,
         data: (data) => _CardContent(data: data),
         loading: () => const _CardSkeleton(),
         error:

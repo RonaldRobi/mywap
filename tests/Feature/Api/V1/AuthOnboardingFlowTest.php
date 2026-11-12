@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use App\Models\OtpCode;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\RegistrationActivated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -39,7 +40,7 @@ class AuthOnboardingFlowTest extends TestCase
         ]);
     }
 
-    public function test_register_creates_member_and_activates_fee(): void
+    public function test_register_creates_member_for_free_and_sends_welcome_email(): void
     {
         Notification::fake();
 
@@ -62,10 +63,9 @@ class AuthOnboardingFlowTest extends TestCase
         $this->assertNotNull($user);
         $this->assertTrue($user->hasRole('Member'));
         $this->assertStringStartsWith('P', $user->member_no);
-        $this->assertDatabaseHas('membership_fees', [
-            'user_id' => $user->id,
-            'status' => 'paid',
-        ]);
+        $this->assertDatabaseMissing('membership_fees', ['user_id' => $user->id]);
+        $this->assertDatabaseMissing('payments', ['user_id' => $user->id]);
+        Notification::assertSentTo($user, RegistrationActivated::class);
     }
 
     public function test_register_rejects_duplicate_ic(): void

@@ -19,6 +19,7 @@ class Product extends Model
         'stock',
         'category_id',
         'organisasi_id',
+        'branch_id',
         'image',
         'images',
         'status',
@@ -76,6 +77,11 @@ class Product extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class, 'organisasi_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function variations(): HasMany

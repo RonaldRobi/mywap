@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureApiAdminAccess;
+use App\Http\Middleware\EnsureBranchAdminAccess;
 use App\Http\Middleware\EnsureProfileIsComplete;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'profile_complete' => EnsureProfileIsComplete::class,
             'api_admin' => EnsureApiAdminAccess::class,
+            'branch_admin_access' => EnsureBranchAdminAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

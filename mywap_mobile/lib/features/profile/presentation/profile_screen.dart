@@ -23,11 +23,28 @@ import '../application/profile_providers.dart';
 import '../data/models/profile_data.dart';
 import 'profile_format.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final current = ref.read(profileProvider);
+      if (current.hasValue || current.hasError) {
+        ref.invalidate(profileProvider);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
@@ -36,6 +53,7 @@ class ProfileScreen extends ConsumerWidget {
         title: Text(context.l10n.profileTitle),
       ),
       body: profileAsync.when(
+        skipLoadingOnRefresh: true,
         data:
             (data) => _ProfileContent(
               data: data,

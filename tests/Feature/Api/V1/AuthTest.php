@@ -195,4 +195,37 @@ class AuthTest extends TestCase
         $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
             ->assertOk();
     }
+
+    public function test_public_traffic_does_not_exhaust_login_rate_limit(): void
+    {
+        // Dulu semua `throttle:N,M` berkongsi satu bucket domain+IP, jadi
+        // melayari kandungan awam boleh menamatkan kuota login (429) walaupun
+        // pengguna baru cuba log masuk sekali.
+        for ($i = 0; $i < 30; $i++) {
+            $this->getJson('/api/v1/events')->assertOk();
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $this->user->email,
+            'password' => 'password',
+        ])->assertOk();
+    }
+
+    public function test_repeated_wrong_password_gets_friendly_message_not_429(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/v1/auth/login', [
+                'email' => $this->user->email,
+                'password' => 'wrong-password',
+            ])->assertStatus(422);
+        }
+
+        // Percubaan ke-6: had per-akaun (5/min) patut beri mesej mesra 422,
+        // bukan 429 mentah daripada had route.
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $this->user->email,
+            'password' => 'wrong-password',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+    }
 }

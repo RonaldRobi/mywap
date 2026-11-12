@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
+use App\Notifications\BranchChangeRequestReviewed;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -18,7 +19,6 @@ class BranchChangeRequestController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
-        $isBranchAdmin = $user->hasRole('Admin Cawangan');
 
         $query = BranchChangeRequest::with([
             'user:id,name,email,member_no,current_organization_id,branch_id',
@@ -28,17 +28,6 @@ class BranchChangeRequestController extends Controller
 
         if ($isSuperadmin) {
             // Superadmin sees all requests across all organizations
-        } elseif ($isBranchAdmin) {
-            abort_if(! $user->branch_id, 403, 'Akaun admin cawangan ini tiada cawangan.');
-
-            // Admin cawangan melihat permohonan yang melibatkan cawangannya,
-            // sama ada ahli keluar dari cawangan itu (sumber) atau masuk ke
-            // cawangan itu (destinasi).
-            $query->whereHas('user', fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
-                ->where(function ($q) use ($user) {
-                    $q->where('to_branch_id', $user->branch_id)
-                        ->orWhereHas('user', fn ($inner) => $inner->where('branch_id', $user->branch_id));
-                });
         } else {
             $query->whereHas('user', function ($q) use ($user) {
                 $q->where('current_organization_id', $user->current_organization_id);
@@ -142,6 +131,12 @@ class BranchChangeRequestController extends Controller
             'rejection_reason' => $data['rejection_reason'] ?? null,
         ]);
 
+        $branchChangeRequest->user?->notify(new BranchChangeRequestReviewed(
+            $branchChangeRequest,
+            'rejected',
+            $data['rejection_reason'] ?? null,
+        ));
+
         return back()->with('success', 'Permohonan pertukaran cawangan telah ditolak.');
     }
 
@@ -167,6 +162,8 @@ class BranchChangeRequestController extends Controller
             'change_type' => 'self_request',
             'request_id' => $branchChangeRequest->id,
         ]);
+
+        $branchChangeRequest->user?->notify(new BranchChangeRequestReviewed($branchChangeRequest, 'approved'));
     }
 
     private function authorizeOrgAccess($authUser, BranchChangeRequest $request): void
@@ -179,16 +176,6 @@ class BranchChangeRequestController extends Controller
 
         if ($targetUser->current_organization_id !== $authUser->current_organization_id) {
             abort(403, 'Akses ditolak.');
-        }
-
-        // Admin cawangan boleh urus permohonan yang melibatkan cawangannya —
-        // sama ada ahli keluar dari cawangan itu (sumber) atau masuk ke
-        // cawangan itu (destinasi).
-        if ($authUser->hasRole('Admin Cawangan')) {
-            $isSourceBranch = (int) $targetUser->branch_id === (int) $authUser->branch_id;
-            $isDestinationBranch = (int) $request->to_branch_id === (int) $authUser->branch_id;
-
-            abort_unless($isSourceBranch || $isDestinationBranch, 403, 'Akses ditolak.');
         }
     }
 }

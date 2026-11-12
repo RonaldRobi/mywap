@@ -6,14 +6,14 @@ use Illuminate\Support\Facades\Route;
 
 // ─── E-commerce (produk, kategori, checkout) ────────────────────────────────
 // Awam: tetamu boleh melayari produk dan membuat pesanan tanpa log masuk.
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware('throttle:60,1,api-ecommerce')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::get('/categories', [ProductController::class, 'categories']);
 
     // Tetamu: wajib isi nama/telefon (checkoutRules); ahli: harga ahli digunakan
     // bila token Bearer hadir. Had 8/minit per IP untuk elak spam pesanan.
-    Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:8,1');
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:8,1,api-orders');
 });
 
 // ─── Pesanan ahli berdaftar ─────────────────────────────────────────────────

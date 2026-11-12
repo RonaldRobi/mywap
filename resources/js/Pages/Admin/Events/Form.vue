@@ -7,6 +7,9 @@ const props = defineProps({
     event: { type: Object, default: null },
     organizations: Array,
     isSuperadmin: Boolean,
+    isBranchAdmin: Boolean,
+    branch: { type: Object, default: null },
+    visibilities: { type: Array, default: () => [] },
     statuses: Array,
     categories: Array,
     formsCount: { type: Number, default: 0 },
@@ -30,6 +33,7 @@ const form = useForm({
     type: props.event?.type ?? 'physical',
     status: props.event?.status ?? 'published',
     category: props.event?.category ?? 'muktamar',
+    visibility: props.event?.visibility ?? (props.isBranchAdmin ? 'branch_only' : 'open'),
     location_or_link: props.event?.location_or_link ?? '',
     maps_url: props.event?.maps_url ?? '',
     start_time: props.event?.start_time ?? '',
@@ -273,7 +277,12 @@ function submit() {
                     </div>
 
                     <div class="space-y-4 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Organisasi</h2>
+                        <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Organisasi &amp; Siapa Boleh Sertai</h2>
+
+                        <div v-if="isBranchAdmin" class="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-500">Cawangan penganjur</p>
+                            <p class="mt-1 text-sm font-bold text-gray-900">{{ branch?.name || 'Cawangan anda' }}</p>
+                        </div>
 
                         <div v-if="isSuperadmin">
                             <label class="mb-1 block text-sm font-semibold text-gray-700">Pemilik (Organisasi)</label>
@@ -283,7 +292,7 @@ function submit() {
                             </select>
                         </div>
 
-                        <div>
+                        <div v-if="!isBranchAdmin">
                             <label class="mb-1 block text-sm font-semibold text-gray-700">Organisasi Terlibat</label>
                             <p class="mb-2 text-xs text-gray-400">Ahli organisasi yang dipilih boleh melihat &amp; mendaftar.</p>
                             <div class="grid grid-cols-1 gap-2">
@@ -297,6 +306,16 @@ function submit() {
                                     {{ o.name }}
                                 </label>
                             </div>
+                        </div>
+
+                        <div v-if="isBranchAdmin || event?.branch_id">
+                            <label class="mb-1 block text-sm font-semibold text-gray-700">Siapa boleh lihat &amp; daftar</label>
+                            <select v-model="form.visibility" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
+                                <option v-for="v in visibilities" :key="v.value" :value="v.value">{{ v.label }}</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400">
+                                Pilih "Ahli cawangan sahaja" untuk menilai penyertaan ahli cawangan. Pilih "Terbuka kepada semua" jika program ingin dibuka kepada cawangan lain dan awam.
+                            </p>
                         </div>
                     </div>
 

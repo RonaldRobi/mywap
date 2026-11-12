@@ -14,8 +14,21 @@ class ProfileUpdateRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('ic_number')) {
+            $this->merge(['ic_number' => User::normalizeIc($this->input('ic_number'))]);
+        }
+    }
+
     public function rules(): array
     {
+        $icRule = ['nullable', 'string', 'max:32'];
+        $normalizedIc = User::normalizeIc($this->input('ic_number'));
+        if ($normalizedIc !== null && $normalizedIc !== User::normalizeIc($this->user()?->ic_number)) {
+            $icRule[] = 'regex:'.User::IC_VALIDATION_REGEX;
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -26,12 +39,7 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
-            'ic_number' => [
-                'nullable',
-                'string',
-                'max:32',
-                Rule::unique(User::class, 'ic_number')->ignore($this->user()->id),
-            ],
+            'ic_number' => $icRule,
             'phone' => ['nullable', 'string', 'max:30'],
             'dob' => ['nullable', 'date'],
             'education_level' => ['nullable', 'string', 'max:120'],

@@ -8,8 +8,13 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\Infaq;
 use App\Models\NewsPost;
+use App\Models\Organization;
 use App\Models\Product;
+use App\Services\RegistrationShareService;
+use App\Support\RegistrationPoster;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -103,6 +108,38 @@ class SharePreviewController extends Controller
         );
     }
 
+    public function register(Request $request, RegistrationShareService $share): View
+    {
+        $organization = $this->resolveSharedOrganization($request);
+        $referralCode = $this->referralCode($request);
+        $context = $share->context($organization, $referralCode);
+
+        $params = array_filter([
+            'org' => $organization?->slug,
+            'ref' => $referralCode,
+        ]);
+
+        return $this->renderPreview(
+            title: $context['title'],
+            description: $context['description'],
+            imageUrl: route('share.register.image', $params, true),
+            pageUrl: route('share.register', $params, true),
+            redirectUrl: route('register', array_filter(['ref' => $referralCode]), true),
+            type: 'website'
+        );
+    }
+
+    public function registerImage(Request $request, RegistrationShareService $share): Response
+    {
+        $organization = $this->resolveSharedOrganization($request);
+        $context = $share->context($organization, $this->referralCode($request));
+
+        return response(RegistrationPoster::render($organization, $context['register_url']), 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
+
     public function product(Product $product): View
     {
         // Drafts are not shareable; only published mall items get a preview.
@@ -134,6 +171,31 @@ class SharePreviewController extends Controller
         }
 
         return $this->absoluteUrl('/storage/'.ltrim($path, '/'));
+    }
+
+    private function resolveSharedOrganization(Request $request): ?Organization
+    {
+        $slug = $request->query('org');
+
+        if (! is_string($slug) || $slug === '') {
+            return null;
+        }
+
+        return Organization::query()
+            ->where('slug', $slug)
+            ->where('slug', '!=', 'management')
+            ->first();
+    }
+
+    private function referralCode(Request $request): ?string
+    {
+        $referralCode = $request->query('ref');
+
+        if (! is_string($referralCode) || $referralCode === '') {
+            return null;
+        }
+
+        return Str::limit($referralCode, 32, '');
     }
 
     private function renderPreview(
