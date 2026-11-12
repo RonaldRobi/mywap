@@ -227,6 +227,10 @@ class DokuController extends Controller
         }
 
         if ($payment->status === 'failed') {
+            if ($payment->payable_type === 'order' && $payment->payable_id && ($order = Order::find($payment->payable_id))) {
+                return redirect()->away($order->publicUrl())->with('error', 'Pembayaran tidak berjaya. Sila cuba lagi.');
+            }
+
             return redirect()->route('dashboard')->with('error', 'Pembayaran tidak berjaya. Sila cuba lagi.');
         }
 
@@ -298,7 +302,12 @@ class DokuController extends Controller
         }
 
         if ($payableType === 'order' && $payableId) {
-            return route('orders.show', $payableId);
+            $order = Order::find($payableId);
+            if ($order) {
+                // Guests have no session to open orders.show, so fall back to
+                // the signed public receipt they were given at checkout.
+                return $order->user_id ? route('orders.show', $order->id) : $order->publicUrl();
+            }
         }
 
         if ($payableType === Registration::class && $payableId) {

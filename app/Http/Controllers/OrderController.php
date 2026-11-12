@@ -6,7 +6,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariationOption;
 use App\Services\OrderService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -150,20 +149,24 @@ class OrderController extends Controller
     /**
      * Mall checkout — guest & member friendly.
      * Accepts a cart products array from the client and creates a single Order.
-     * Combined postage uses the HIGHEST item postage, not the sum.
+     * When the selling organisation has a live gateway, the buyer (guest or
+     * member) is handed to the payment page immediately; otherwise the order
+     * is created and the buyer lands on the receipt.
      */
-    public function checkout(Request $request): RedirectResponse
+    public function checkout(Request $request): Response
     {
         $validated = $request->validate(OrderService::checkoutRules($request->user()));
 
         try {
-            $order = $this->orders->createOrder($validated, $request->user(), true);
+            $result = $this->orders->checkout($validated, $request->user());
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
 
-        $this->orders->notifyOrderPlaced($order);
+        if (($result['status'] ?? null) === 'redirect' && ! empty($result['payment_url'])) {
+            return Inertia::location($result['payment_url']);
+        }
 
-        return redirect()->to($order->publicUrl())->with('success', 'Pesanan berjaya dibuat!');
+        return redirect()->to($result['order']->publicUrl())->with('success', 'Pesanan berjaya dibuat!');
     }
 }

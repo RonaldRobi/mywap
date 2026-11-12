@@ -258,6 +258,7 @@ class ProductUploadTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 1]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
             'shipping_address' => 'Kuala Lumpur',
         ])->assertSessionHasErrors('error');
 

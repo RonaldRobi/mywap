@@ -19,6 +19,7 @@ const shippingName = ref(user.value?.name ?? '');
 const shippingPhone = ref(user.value?.phone ?? '');
 const shippingAddress = ref(user.value?.address_1 ?? '');
 const shippingPostcode = ref(user.value?.postcode ?? '');
+const shippingEmail = ref(user.value?.email ?? '');
 
 // Guards against double-submitting an order on a slow connection.
 const processing = ref(false);
@@ -47,6 +48,7 @@ function validate() {
     if (!shippingName.value.trim()) errors.shipping_name = 'Nama penerima diperlukan.';
     if (!shippingPhone.value.trim()) errors.shipping_phone = 'No telefon diperlukan.';
     if (!shippingAddress.value.trim()) errors.shipping_address = 'Alamat penghantaran diperlukan.';
+    if (!user.value && !shippingEmail.value.trim()) errors.shipping_email = 'Emel diperlukan untuk menerima resit pesanan.';
     clientErrors.value = errors;
     return Object.keys(errors).length === 0;
 }
@@ -66,6 +68,7 @@ function checkout() {
     }));
 
     processing.value = true;
+    let failed = false;
 
     router.post(
         route('mall.checkout'),
@@ -75,11 +78,20 @@ function checkout() {
             shipping_phone: shippingPhone.value || null,
             shipping_address: shippingAddress.value || null,
             shipping_postcode: shippingPostcode.value || null,
+            shipping_email: shippingEmail.value || null,
         },
         {
             preserveScroll: true,
-            onSuccess: () => cart.clear(),
-            onFinish: () => (processing.value = false),
+            onError: () => {
+                failed = true;
+            },
+            onFinish: () => {
+                processing.value = false;
+                // When the seller has a live gateway the server sends us to an
+                // external payment page, so onSuccess never fires. Clear the
+                // cart here as long as the order was accepted (no error).
+                if (!failed) cart.clear();
+            },
         }
     );
 }
@@ -215,6 +227,13 @@ const inputClass =
                             <div>
                                 <label class="mb-1.5 block text-xs font-semibold text-gray-600">Poskod</label>
                                 <input v-model="shippingPostcode" type="text" maxlength="10" :class="inputClass" placeholder="43000" />
+                            </div>
+                            <div v-if="!user">
+                                <label class="mb-1.5 block text-xs font-semibold text-gray-600">Emel <span class="text-red-500">*</span></label>
+                                <input v-model="shippingEmail" type="email" :class="inputClass" placeholder="nama@domain.com" />
+                                <p v-if="clientErrors.shipping_email || page.props.errors?.shipping_email" class="mt-1 text-xs font-medium text-red-600">
+                                    {{ clientErrors.shipping_email || page.props.errors.shipping_email }}
+                                </p>
                             </div>
                         </div>
                     </section>

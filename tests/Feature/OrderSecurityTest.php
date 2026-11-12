@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\PaymentGatewayManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -53,6 +54,7 @@ class OrderSecurityTest extends TestCase
             'products' => [['id' => $this->product()->id, 'quantity' => 1]],
             'shipping_name' => 'Siti Aminah',
             'shipping_phone' => '0198887777',
+            'shipping_email' => 'siti@example.test',
             'shipping_address' => 'No 5, Jalan Rahsia, Shah Alam',
             'shipping_postcode' => '40000',
         ])->assertSessionHasNoErrors();
@@ -174,6 +176,7 @@ class OrderSecurityTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 3]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
             'shipping_address' => 'KL',
         ])->assertSessionHasNoErrors();
 
@@ -201,6 +204,7 @@ class OrderSecurityTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 1]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
             'shipping_address' => 'KL',
         ])->assertSessionHasNoErrors();
 
@@ -226,10 +230,44 @@ class OrderSecurityTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 5]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
             'shipping_address' => 'KL',
         ])->assertSessionHasErrors('error');
 
         $this->assertSame(2, $product->fresh()->stock);
         $this->assertDatabaseCount('orders', 0);
+    }
+
+    /**
+     * Guests must reach the same payment gateway as members: when the selling
+     * organisation has a live gateway, checkout hands the guest straight to
+     * the gateway instead of leaving a silent pending order.
+     */
+    public function test_guest_checkout_redirects_to_payment_gateway_when_live(): void
+    {
+        $product = $this->product();
+
+        $gateways = \Mockery::mock(PaymentGatewayManager::class);
+        $gateways->shouldReceive('isLive')->andReturn(true);
+        $gateways->shouldReceive('gatewayFor')->andReturn('bayarcash');
+        $gateways->shouldReceive('createPaymentRedirect')
+            ->once()
+            ->andReturn('https://pay.example.test/checkout');
+        $this->app->instance(PaymentGatewayManager::class, $gateways);
+
+        $this->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'KL',
+        ])->assertRedirect('https://pay.example.test/checkout');
+
+        $order = Order::latest('id')->firstOrFail();
+        $this->assertDatabaseHas('payments', [
+            'payable_type' => 'order',
+            'payable_id' => $order->id,
+            'status' => 'pending',
+        ]);
     }
 }

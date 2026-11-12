@@ -64,7 +64,7 @@ class OrderService
             'products.*.variation_snapshot' => 'nullable|string',
             'shipping_name' => [$isMember ? 'nullable' : 'required', 'string', 'max:255'],
             'shipping_phone' => [$isMember ? 'nullable' : 'required', 'string', 'max:20'],
-            'shipping_email' => ['nullable', 'email', 'max:255'],
+            'shipping_email' => [$isMember ? 'nullable' : 'required', 'email', 'max:255'],
             'shipping_address' => 'nullable|string',
             'shipping_postcode' => 'nullable|string|max:10',
         ];
