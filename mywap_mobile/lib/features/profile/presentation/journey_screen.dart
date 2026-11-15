@@ -140,6 +140,16 @@ class _TimelineEntry extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: theme.textTheme.titleSmall),
+              if (entry.from_member_no != null || entry.to_member_no != null)
+                Text(
+                  [
+                    entry.from_member_no,
+                    entry.to_member_no,
+                  ].whereType<String>().join(' → '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               const SizedBox(height: 2),
               Text(
                 entry.transitioned_at_human ?? '-',

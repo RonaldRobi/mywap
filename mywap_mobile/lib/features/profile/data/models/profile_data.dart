@@ -38,12 +38,7 @@ T? _fromJsonOrNull<T>(
 
 /// A small organization reference (id + name + slug + theme accent).
 class ProfileOrganization {
-  const ProfileOrganization({
-    this.id,
-    this.name,
-    this.slug,
-    this.color_theme,
-  });
+  const ProfileOrganization({this.id, this.name, this.slug, this.color_theme});
 
   factory ProfileOrganization.fromJson(Map<String, dynamic> json) {
     return ProfileOrganization(
@@ -93,6 +88,8 @@ class ProfileHistoryEntry {
     this.id,
     this.from_organization,
     this.to_organization,
+    this.from_member_no,
+    this.to_member_no,
     this.transitioned_at,
     this.transitioned_at_human,
   });
@@ -108,6 +105,8 @@ class ProfileHistoryEntry {
         json['to_organization'],
         ProfileOrganization.fromJson,
       ),
+      from_member_no: json['from_member_no'] as String?,
+      to_member_no: json['to_member_no'] as String?,
       transitioned_at: json['transitioned_at'] as String?,
       transitioned_at_human: json['transitioned_at_human'] as String?,
     );
@@ -116,6 +115,8 @@ class ProfileHistoryEntry {
   final int? id;
   final ProfileOrganization? from_organization;
   final ProfileOrganization? to_organization;
+  final String? from_member_no;
+  final String? to_member_no;
   final String? transitioned_at;
   final String? transitioned_at_human;
 }
@@ -233,9 +234,12 @@ class ProfileUser {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       ic_number: json['ic_number'] as String?,
-      roles: json['roles'] is List
-          ? (json['roles'] as List).whereType<String>().toList(growable: false)
-          : null,
+      roles:
+          json['roles'] is List
+              ? (json['roles'] as List).whereType<String>().toList(
+                growable: false,
+              )
+              : null,
       dob: json['dob'] as String?,
       age: parseIntValue(json['age']),
       gender: json['gender'] as String?,
@@ -314,11 +318,7 @@ class ProfileUser {
 
 /// Full profile payload from `GET /profile` (`ProfileService::showPayload()`).
 class ProfileData {
-  const ProfileData({
-    this.profileUser,
-    this.history,
-    this.attendedPrograms,
-  });
+  const ProfileData({this.profileUser, this.history, this.attendedPrograms});
 
   factory ProfileData.fromJson(Map<String, dynamic> json) {
     return ProfileData(

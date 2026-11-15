@@ -509,6 +509,10 @@ class _JourneyPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final from = entry.from_organization?.name;
     final to = entry.to_organization?.name;
+    final numbers = [
+      entry.from_member_no,
+      entry.to_member_no,
+    ].whereType<String>().join(' → ');
 
     return ListCard(
       leading: const Icon(Icons.swap_horiz, color: AppColors.movementGreen),
@@ -516,7 +520,10 @@ class _JourneyPreview extends StatelessWidget {
           from == null
               ? context.l10n.joinedOrg(to ?? context.l10n.orgFallback)
               : '$from → $to',
-      subtitle: entry.transitioned_at_human,
+      subtitle: [
+        numbers,
+        entry.transitioned_at_human,
+      ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
     );
   }
 }

@@ -41,7 +41,9 @@ class LogTransitionAndNotify implements ShouldQueue
         UserTransitionHistory::create([
             'user_id' => $user->id,
             'from_organization_id' => $event->fromOrganizationId,
+            'from_member_no' => $event->fromMemberNo,
             'to_organization_id' => $event->toOrganizationId,
+            'to_member_no' => $event->toMemberNo ?? $user->member_no,
             'transitioned_at' => now(),
         ]);
 

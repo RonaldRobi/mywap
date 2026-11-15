@@ -381,6 +381,16 @@ const initials = computed(() =>
                                         </template>
                                     </p>
 
+                                    <!-- No. ahli lama dipaparkan sebagai sejarah sahaja -->
+                                    <p
+                                        v-if="record.from_member_no || record.to_member_no"
+                                        class="mt-1.5 text-xs font-mono text-gray-500"
+                                    >
+                                        <span v-if="record.from_member_no">{{ record.from_member_no }}</span>
+                                        <span v-if="record.from_member_no && record.to_member_no"> → </span>
+                                        <span v-if="record.to_member_no">{{ record.to_member_no }}</span>
+                                    </p>
+
                                     <!-- Timestamp -->
                                     <p class="mt-1.5 flex items-center gap-1 text-xs text-gray-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">

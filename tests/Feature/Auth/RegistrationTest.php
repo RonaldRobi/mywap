@@ -42,6 +42,40 @@ class RegistrationTest extends TestCase
         Notification::assertSentTo($user, RegistrationActivated::class);
     }
 
+    public function test_registration_continues_wadah_member_number_series(): void
+    {
+        Notification::fake();
+
+        $wadah = Organization::factory()->create([
+            'name' => 'WADAH',
+            'slug' => 'wadah',
+            'min_age' => 30,
+            'max_age' => null,
+        ]);
+
+        User::factory()->create([
+            'dob' => null,
+            'current_organization_id' => $wadah->id,
+            'member_no' => 'W2550',
+            'member_no_sequence' => 2550,
+        ]);
+
+        $this->post('/register', [
+            'name' => 'Ahli Baru',
+            'email' => 'baru@example.com',
+            'ic_number' => 'B7654321',
+            'dob' => now()->subYears(35)->toDateString(),
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $user = User::where('email', 'baru@example.com')->firstOrFail();
+
+        $this->assertSame('W2551', $user->member_no);
+        $this->assertSame(2551, $user->member_no_sequence);
+        $this->assertSame('W2551', $user->original_member_no);
+    }
+
     public function test_registration_share_preview_has_social_meta(): void
     {
         Organization::factory()->create([

@@ -1851,6 +1851,8 @@ async function finishImport() {
                                                     </div>
                                                     <div class="min-w-0">
                                                         <p class="text-xs font-semibold text-gray-800 truncate">{{ t.to }}</p>
+                                                        <p v-if="t.to_member_no" class="text-[10px] font-mono text-gray-500">{{ t.to_member_no }}</p>
+                                                        <p v-if="t.from_member_no" class="text-[10px] text-gray-400">{{ t.from }}: {{ t.from_member_no }}</p>
                                                         <p class="text-[10px] text-gray-400">{{ t.date }}</p>
                                                     </div>
                                                 </div>

@@ -14,8 +14,12 @@ use App\Models\BranchTransitionHistory;
 use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\OrganizationPosition;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
+use App\Models\UsrahGroup;
 use App\Services\FeeService;
+use App\Support\MalaysiaStates;
+use App\Support\MemberNumber;
 use App\Support\MemberSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +30,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -243,6 +248,8 @@ class InformationHubAdminController extends Controller
                 'transition_history' => $u->transitionHistory->map(fn ($h) => [
                     'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
                     'to' => $h->toOrganization->name,
+                    'from_member_no' => $h->from_member_no,
+                    'to_member_no' => $h->to_member_no,
                     'date' => $h->transitioned_at->format('d M Y'),
                     'color' => $h->toOrganization?->color_theme ?? '#6b7280',
                 ])->values(),
@@ -254,7 +261,7 @@ class InformationHubAdminController extends Controller
         $positions = OrganizationPosition::where('organization_id', $user->current_organization_id)
             ->orderBy('display_order')->get(['id', 'name']);
 
-        $userQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $userQuery = User::withoutGlobalScope(OrganizationScope::class)
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->when($isBranchAdmin, fn ($q) => $q->whereIn('branch_id', $managedBranchIds));
         $stats = [
@@ -294,7 +301,7 @@ class InformationHubAdminController extends Controller
                 ]]),
             'members' => $members,
             'branches' => $branches,
-            'states' => \App\Support\MalaysiaStates::all(),
+            'states' => MalaysiaStates::all(),
             'orgPositions' => $positions,
             'stats' => $stats,
             'orgStats' => $orgStats,
@@ -332,7 +339,7 @@ class InformationHubAdminController extends Controller
 
         $search = trim((string) $request->input('search'));
 
-        $membersQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $membersQuery = User::withoutGlobalScope(OrganizationScope::class)
             ->where('current_organization_id', $organizationId)
             ->with(['roles', 'branch:id,name']);
 
@@ -354,7 +361,7 @@ class InformationHubAdminController extends Controller
             ])
             ->values();
 
-        $admins = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $admins = User::withoutGlobalScope(OrganizationScope::class)
             ->where('current_organization_id', $organizationId)
             ->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))
             ->with('roles')
@@ -435,7 +442,7 @@ class InformationHubAdminController extends Controller
         }
 
         if ($icChanged && $normalizedIc !== null && User::icExistsInOrganization($normalizedIc, (int) $user->current_organization_id, (int) $user->id)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
             ]);
         }
@@ -531,7 +538,7 @@ class InformationHubAdminController extends Controller
             : null;
 
         if (($data['target_criteria'] ?? 'all') === 'specific_usrah' && ! empty($data['usrah_group_id']) && $branchId) {
-            $usrahGroup = \App\Models\UsrahGroup::query()->find($data['usrah_group_id']);
+            $usrahGroup = UsrahGroup::query()->find($data['usrah_group_id']);
 
             abort_unless($usrahGroup && $user->canManageBranch($usrahGroup->branch_id), 403);
         }
@@ -744,7 +751,7 @@ class InformationHubAdminController extends Controller
         abort_if(! $organization, 422, 'Organisasi admin tidak sah.');
 
         if (User::icExistsInOrganization($normalizedIcNumber, (int) $organization->id)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'ic_number' => 'No. Kad Pengenalan ini sudah didaftarkan dalam organisasi ini.',
             ]);
         }
@@ -762,7 +769,7 @@ class InformationHubAdminController extends Controller
         $next = ($max ?? 0) + 1;
         $memberNo = $prefix.str_pad($next, $padding, '0', STR_PAD_LEFT);
 
-        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->create([
+        $user = User::withoutGlobalScope(OrganizationScope::class)->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'ic_number' => $data['ic_number'],
@@ -900,7 +907,7 @@ class InformationHubAdminController extends Controller
         ]);
 
         if (User::icExistsInOrganization($data['ic_number'], (int) $user->current_organization_id, (int) $user->id)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
             ]);
         }
@@ -945,14 +952,25 @@ class InformationHubAdminController extends Controller
             return back()->with('error', 'Ahli ini sudah berada dalam organisasi tersebut.');
         }
 
+        $fromMemberNo = $user->member_no;
+        $newNumber = MemberNumber::allocate($targetOrg);
+
         $user->update([
             'current_organization_id' => $targetOrg->id,
             'branch_id' => null,
             'position' => null,
             'position_id' => null,
+            'member_no' => $newNumber['member_no'] ?? $user->member_no,
+            'member_no_sequence' => $newNumber['sequence'] ?? $user->member_no_sequence,
         ]);
 
-        UserOrganizationTransitioned::dispatch($user, $fromOrgId, $targetOrg->id);
+        UserOrganizationTransitioned::dispatch(
+            $user,
+            $fromOrgId,
+            $targetOrg->id,
+            $fromMemberNo,
+            $newNumber['member_no'] ?? null,
+        );
 
         ActivityLog::create([
             'user_id' => $request->user()->id,

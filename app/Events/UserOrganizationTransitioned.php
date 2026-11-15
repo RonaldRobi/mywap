@@ -23,11 +23,15 @@ class UserOrganizationTransitioned
      * @param  User  $user  The member being transitioned.
      * @param  int|null  $fromOrganizationId  Previous NGO (null for first-time joins).
      * @param  int  $toOrganizationId  New NGO after the transition.
+     * @param  string|null  $fromMemberNo  No. ahli lama, disimpan sebagai sejarah.
+     * @param  string|null  $toMemberNo  No. ahli baharu dalam NGO sasaran.
      */
     public function __construct(
         public readonly User $user,
         public readonly ?int $fromOrganizationId,
         public readonly int $toOrganizationId,
+        public readonly ?string $fromMemberNo = null,
+        public readonly ?string $toMemberNo = null,
     ) {}
 
     /**

@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -67,6 +67,8 @@ class ProfileController extends Controller
                     ? ['id' => $record->fromOrganization->id, 'name' => $record->fromOrganization->name, 'slug' => $record->fromOrganization->slug, 'color_theme' => $record->fromOrganization->color_theme]
                     : null,
                 'to_organization' => ['id' => $record->toOrganization->id, 'name' => $record->toOrganization->name, 'slug' => $record->toOrganization->slug, 'color_theme' => $record->toOrganization->color_theme],
+                'from_member_no' => $record->from_member_no,
+                'to_member_no' => $record->to_member_no,
                 'transitioned_at' => $record->transitioned_at->toISOString(),
                 'transitioned_at_human' => $record->transitioned_at->translatedFormat('d F Y'),
             ]);
@@ -211,7 +213,7 @@ class ProfileController extends Controller
                 if ($normalizedIc !== null
                     && $normalizedIc !== User::normalizeIc($request->user()->ic_number)
                     && User::icExistsInOrganization($normalizedIc, $request->user()->current_organization_id, $request->user()->id)) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'ic_number' => 'No. Kad Pengenalan ini sudah digunakan dalam organisasi ini.',
                     ]);
                 }

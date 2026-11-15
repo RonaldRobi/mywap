@@ -24,9 +24,9 @@ class ProcessAgeTransitionsTest extends TestCase
     {
         parent::setUp();
 
-        $this->pkpim = Organization::factory()->create(['name' => 'PKPIM', 'min_age' => 0, 'max_age' => 19]);
-        $this->abim = Organization::factory()->create(['name' => 'ABIM', 'min_age' => 20, 'max_age' => 29]);
-        $this->wadah = Organization::factory()->create(['name' => 'WADAH', 'min_age' => 30, 'max_age' => null]);
+        $this->pkpim = Organization::factory()->create(['name' => 'PKPIM', 'slug' => 'pkpim', 'min_age' => 0, 'max_age' => 19]);
+        $this->abim = Organization::factory()->create(['name' => 'ABIM', 'slug' => 'abim', 'min_age' => 20, 'max_age' => 29]);
+        $this->wadah = Organization::factory()->create(['name' => 'WADAH', 'slug' => 'wadah', 'min_age' => 30, 'max_age' => null]);
 
         Role::findOrCreate('Member');
     }
@@ -59,5 +59,39 @@ class ProcessAgeTransitionsTest extends TestCase
         $this->artisan(ProcessAgeTransitions::class)->assertExitCode(0);
 
         $this->assertSame($this->wadah->id, $user->fresh()->current_organization_id);
+    }
+
+    public function test_transition_assigns_next_number_in_target_series(): void
+    {
+        AppSetting::singleton()->update(['age_transition_enabled' => true]);
+
+        User::factory()->create([
+            'dob' => null,
+            'current_organization_id' => $this->wadah->id,
+            'member_no' => 'W2550',
+            'member_no_sequence' => 2550,
+        ]);
+
+        $user = User::factory()->create([
+            'dob' => now()->subYears(35),
+            'current_organization_id' => $this->abim->id,
+            'member_no' => 'A01234',
+            'member_no_sequence' => 1234,
+            'original_member_no' => 'A01234',
+        ]);
+
+        $this->artisan(ProcessAgeTransitions::class)->assertExitCode(0);
+
+        $user->refresh();
+
+        $this->assertSame('W2551', $user->member_no);
+        $this->assertSame(2551, $user->member_no_sequence);
+        $this->assertSame('A01234', $user->original_member_no);
+
+        $history = $user->transitionHistory()->first();
+
+        $this->assertNotNull($history);
+        $this->assertSame('A01234', $history->from_member_no);
+        $this->assertSame('W2551', $history->to_member_no);
     }
 }

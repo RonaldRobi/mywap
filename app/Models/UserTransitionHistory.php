@@ -19,7 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $user_id
  * @property int|null $from_organization_id
+ * @property string|null $from_member_no
  * @property int $to_organization_id
+ * @property string|null $to_member_no
  * @property Carbon $transitioned_at
  */
 class UserTransitionHistory extends Model
@@ -27,7 +29,9 @@ class UserTransitionHistory extends Model
     protected $fillable = [
         'user_id',
         'from_organization_id',
+        'from_member_no',
         'to_organization_id',
+        'to_member_no',
         'transitioned_at',
     ];
 

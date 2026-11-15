@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\MemberNoPrefix;
 use App\Events\UserOrganizationTransitioned;
 use App\Models\AppSetting;
 use App\Models\Organization;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
+use App\Support\MemberNumber;
 use Illuminate\Console\Command;
 
 /**
@@ -30,8 +31,6 @@ use Illuminate\Console\Command;
  */
 class ProcessAgeTransitions extends Command
 {
-    use MemberNoPrefix;
-
     protected $signature = 'app:process-age-transitions
                             {--dry-run : Preview transitions without persisting any changes}';
 
@@ -56,7 +55,7 @@ class ProcessAgeTransitions extends Command
         // Preload all three organizations to avoid N+1 inside the chunk loop.
         $organizations = Organization::all()->keyBy('id');
 
-        User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        User::withoutGlobalScope(OrganizationScope::class)
             ->whereNotNull('dob')
             ->with('organization', 'roles')
             ->chunkById(500, function ($users) use (
@@ -99,10 +98,13 @@ class ProcessAgeTransitions extends Command
                     $this->line("  ↪  User #{$user->id} ({$user->name}) age {$age} → {$toOrgName}");
 
                     if (! $isDryRun) {
-                        // 1. Update member_no: prepend new org prefix
-                        $prefix = $this->prefixForOrg($correctOrg);
-                        if ($prefix && $user->member_no && ! str_starts_with($user->member_no, $prefix)) {
-                            $user->member_no = $prefix.$user->member_no;
+                        // 1. Assign the next number in the new org series.
+                        //    The old number is kept in transition history only.
+                        $fromMemberNo = $user->member_no;
+                        $newNumber = MemberNumber::allocate($correctOrg);
+                        if ($newNumber) {
+                            $user->member_no = $newNumber['member_no'];
+                            $user->member_no_sequence = $newNumber['sequence'];
                         }
 
                         // 2. Update the user's active organization.
@@ -123,6 +125,8 @@ class ProcessAgeTransitions extends Command
                             $user,
                             $fromOrgId,
                             $correctOrg->id,
+                            $fromMemberNo,
+                            $newNumber['member_no'] ?? null,
                         );
                     }
 
