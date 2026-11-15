@@ -12,11 +12,23 @@
             <td align="center">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:16px;overflow:hidden;">
 
+                    @php
+                        $resolvedLogoUrl = $logoUrl ?? null;
+
+                        if (! $resolvedLogoUrl) {
+                            try {
+                                $resolvedLogoUrl = url(\App\Models\AppSetting::singleton()->system_logo_path ?? '/images/logomywaphorizontal.png');
+                            } catch (\Throwable) {
+                                $resolvedLogoUrl = url('/images/logomywaphorizontal.png');
+                            }
+                        }
+                    @endphp
+
                     {{-- Header with Logo --}}
                     <tr>
                         <td style="padding:32px 32px 24px;text-align:center;background-color:#ffffff;">
-                            @if (!empty($logoUrl))
-                                <img src="{{ $logoUrl }}" alt="myWAP" style="max-height:48px;width:auto;border:0;outline:none;display:inline-block;">
+                            @if (!empty($resolvedLogoUrl))
+                                <img src="{{ $resolvedLogoUrl }}" alt="myWAP" style="max-height:48px;width:auto;border:0;outline:none;display:inline-block;">
                             @else
                                 <span style="font-size:22px;font-weight:800;color:#1e293b;">myWAP</span>
                             @endif

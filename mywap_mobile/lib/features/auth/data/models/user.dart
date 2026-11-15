@@ -39,8 +39,39 @@ sealed class User with _$User {
   /// Admins/Superadmins are exempt from the forced profile-completion flow,
   /// mirroring the web `EnsureProfileIsComplete` middleware.
   bool get isAdmin => (roles ?? const []).any(
-    (role) => role == 'Admin' || role == 'org-admin' || role == 'Superadmin',
+    (role) =>
+        role == 'Admin' ||
+        role == 'org-admin' ||
+        role == 'Superadmin' ||
+        role == 'Admin Cawangan',
   );
+
+  bool get isSuperadmin => (roles ?? const []).contains('Superadmin');
+
+  bool get isOrgAdmin => (roles ?? const []).any(
+    (role) => role == 'Admin' || role == 'org-admin',
+  );
+
+  bool get isBranchAdmin =>
+      (roles ?? const []).contains('Admin Cawangan') &&
+      !isSuperadmin &&
+      !isOrgAdmin;
+
+  /// Role label for UI display.
+  String get adminRoleTitle {
+    if (isSuperadmin) return 'Superadmin';
+    if (isBranchAdmin) {
+      return branch_name != null && branch_name!.isNotEmpty
+          ? 'Admin Cawangan ($branch_name)'
+          : 'Admin Cawangan';
+    }
+    if (isOrgAdmin) {
+      return organization?.name != null
+          ? 'Admin ${organization!.name}'
+          : 'Admin Organisasi';
+    }
+    return 'Ahli';
+  }
 
   /// Staff accounts manage the mall catalogue and orders. They buy with a
   /// member account or as a guest, never with their staff account.

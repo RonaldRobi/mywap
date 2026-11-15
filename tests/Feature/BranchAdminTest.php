@@ -23,7 +23,9 @@ use App\Models\Video;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\BranchChangeRequestSubmitted;
+use App\Notifications\BranchSecretaryAppointed;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
@@ -256,6 +258,8 @@ class BranchAdminTest extends TestCase
 
     public function test_org_admin_can_appoint_max_three_secretaries(): void
     {
+        Notification::fake();
+
         $members = collect(range(1, 4))->map(function (int $index) {
             $member = $this->member(
                 'Setiausaha '.$index,
@@ -286,6 +290,99 @@ class BranchAdminTest extends TestCase
         $this->assertSame(3, BranchAdmin::where('branch_id', $this->perak->id)
             ->where('role', BranchAdmin::ROLE_SETIAUSAHA)
             ->count());
+    }
+
+    public function test_appointing_secretary_emails_temporary_admin_credentials(): void
+    {
+        Notification::fake();
+
+        $secretary = $this->member('Setiausaha Perak', $this->abim, $this->perak, '930101015555');
+
+        $this->actingAs($this->orgAdmin)
+            ->post(route('branches.secretaries.store', $this->perak), ['user_id' => $secretary->id])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->branchAdmin->refresh();
+
+        $this->assertTrue($this->branchAdmin->must_change_password);
+        $this->assertFalse(Hash::check('password', $this->branchAdmin->password));
+
+        Notification::assertSentTo(
+            $secretary,
+            BranchSecretaryAppointed::class,
+            fn (BranchSecretaryAppointed $notification) => $notification->loginEmail === $this->branchAdmin->email
+                && $notification->temporaryPassword !== ''
+                && Hash::check($notification->temporaryPassword, $this->branchAdmin->password),
+        );
+    }
+
+    public function test_secretary_appointment_email_contains_credentials_and_logo(): void
+    {
+        $html = view('emails.branch-secretary-appointed', [
+            'subject' => 'Pelantikan setiausaha cawangan Perak',
+            'secretaryName' => 'Setiausaha Perak',
+            'branchName' => 'Perak',
+            'organizationName' => 'ABIM',
+            'loginEmail' => 'abim-perak@mywap.my',
+            'temporaryPassword' => 'TempPass123',
+            'loginUrl' => route('login'),
+            'logoUrl' => null,
+            'appName' => 'myWAP',
+        ])->render();
+
+        $this->assertStringContainsString('abim-perak@mywap.my', $html);
+        $this->assertStringContainsString('TempPass123', $html);
+        $this->assertStringContainsString('wajib', $html);
+        $this->assertStringContainsString('logomywaphorizontal.png', $html);
+    }
+
+    public function test_secretary_appointment_requires_branch_admin_account(): void
+    {
+        Notification::fake();
+
+        $secretary = $this->member('Setiausaha Johor', $this->abim, $this->johor, '930101015556');
+
+        $this->actingAs($this->orgAdmin)
+            ->post(route('branches.secretaries.store', $this->johor), ['user_id' => $secretary->id])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('branch_admins', [
+            'branch_id' => $this->johor->id,
+            'user_id' => $secretary->id,
+            'role' => BranchAdmin::ROLE_SETIAUSAHA,
+        ]);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_temporary_password_must_be_changed_before_accessing_admin(): void
+    {
+        $this->branchAdmin->update(['must_change_password' => true]);
+
+        $this->actingAs($this->branchAdmin)
+            ->get(route('admin.dashboard'))
+            ->assertRedirect(route('profile.edit'));
+
+        $this->actingAs($this->branchAdmin)
+            ->get(route('profile.edit'))
+            ->assertOk();
+    }
+
+    public function test_changing_password_clears_the_temporary_password_flag(): void
+    {
+        $this->branchAdmin->update(['must_change_password' => true]);
+
+        $this->actingAs($this->branchAdmin)
+            ->put(route('password.update'), [
+                'current_password' => 'password',
+                'password' => 'kata-laluan-baharu',
+                'password_confirmation' => 'kata-laluan-baharu',
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse($this->branchAdmin->fresh()->must_change_password);
     }
 
     public function test_branch_change_request_notifies_destination_secretaries_only(): void

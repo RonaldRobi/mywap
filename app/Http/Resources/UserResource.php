@@ -37,6 +37,11 @@ class UserResource extends JsonResource
             'profile_completed_at' => $user->profile_completed_at?->toISOString(),
             'member_since' => optional($user->created_at)->format('M Y'),
             'roles' => $user->getRoleNames()->values(),
+            'is_superadmin' => $user->isSuperadmin(),
+            'is_org_admin' => $user->isOrgAdmin(),
+            'is_branch_admin' => $user->isBranchAdmin(),
+            'is_admin' => $user->isAdminPanelUser(),
+            'managed_branch_ids' => $user->isBranchAdmin() ? $user->managedBranchIds() : [],
             'organization' => $user->organization ? [
                 'id' => $user->organization->id,
                 'name' => $user->organization->name,

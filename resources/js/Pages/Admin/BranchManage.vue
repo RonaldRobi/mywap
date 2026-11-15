@@ -384,6 +384,10 @@ function removeManagerAccount() {
 function assignSecretary(member) {
     if (!managingAdminsBranch.value) return;
 
+    if (!window.confirm('Melantik setiausaha akan menetapkan semula kata laluan akaun admin cawangan dan menghantarnya ke emel setiausaha. Teruskan?')) {
+        return;
+    }
+
     secretaryForm.user_id = member.id;
     secretaryForm.post(route('branches.secretaries.store', managingAdminsBranch.value.id), {
         preserveScroll: true,
@@ -1048,7 +1052,7 @@ const malaysianStates = [
                                         </li>
                                     </ul>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-400">Hanya ahli cawangan ini yang mempunyai emel sebenar boleh dilantik.</p>
+                                <p class="mt-1 text-xs text-gray-400">Hanya ahli cawangan ini yang mempunyai emel sebenar boleh dilantik. Setiap pelantikan menetapkan semula kata laluan akaun admin cawangan dan menghantar kata laluan sementara ke emel setiausaha.</p>
                             </div>
                             <p v-else class="mt-2 text-xs font-medium text-amber-600">Had 3 setiausaha telah dicapai.</p>
                         </div>

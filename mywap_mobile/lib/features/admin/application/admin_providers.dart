@@ -11,6 +11,10 @@ final adminRepositoryProvider = Provider<AdminRepository>(
   (ref) => AdminRepository(ref.watch(apiClientProvider)),
 );
 
+/// Suis mod antara ruang kerja pentadbir (Admin Mode) dan pandangan ahli (Member Mode).
+/// Lalai: true (mod pentadbir aktif apabila admin log masuk).
+final adminViewModeProvider = StateProvider<bool>((ref) => true);
+
 final adminDashboardProvider = FutureProvider<AdminDashboard>((ref) {
   return ref.watch(adminRepositoryProvider).dashboard();
 });

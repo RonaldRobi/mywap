@@ -21,8 +21,12 @@ class EnsureApiAdminAccess
     {
         $user = $request->user();
 
-        if (! $user || ! $user->hasRole(['Superadmin', 'Admin', 'org-admin'])) {
+        if (! $user || ! $user->isAdminPanelUser()) {
             return ApiResponse::error('Tiada kebenaran.', [], 403);
+        }
+
+        if ($user->isBranchAdmin() && $user->managedBranchIds() === []) {
+            return ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan.', [], 403);
         }
 
         return $next($request);

@@ -7,11 +7,13 @@ use App\Models\BranchAdmin;
 use App\Models\ActivityLog;
 use App\Models\Organization;
 use App\Models\User;
+use App\Notifications\BranchSecretaryAppointed;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -577,6 +579,26 @@ class BranchController extends Controller
                 return ['error' => 'Cawangan ini sudah mempunyai '.BranchAdmin::MAX_SETIAUSAHA.' setiausaha.'];
             }
 
+            $manager = BranchAdmin::query()
+                ->where('branch_id', $branch->id)
+                ->where('role', BranchAdmin::ROLE_MANAGER)
+                ->with('user')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $manager?->user) {
+                return ['error' => 'Cawangan ini belum mempunyai akaun admin. Cipta akaun admin cawangan terlebih dahulu sebelum melantik setiausaha.'];
+            }
+
+            $temporaryPassword = Str::password(12, symbols: false);
+
+            $manager->user->update([
+                'password' => $temporaryPassword,
+                'must_change_password' => true,
+            ]);
+
+            $manager->user->tokens()->delete();
+
             BranchAdmin::create([
                 'branch_id' => $branch->id,
                 'user_id' => $target->id,
@@ -590,15 +612,28 @@ class BranchController extends Controller
                 'target_type' => User::class,
                 'target_id' => $target->id,
                 'action' => 'branch_secretary_appointed',
-                'description' => "{$target->name} dilantik sebagai setiausaha cawangan {$branch->name}.",
+                'description' => "{$target->name} dilantik sebagai setiausaha cawangan {$branch->name}. Kata laluan sementara akaun admin cawangan dihantar melalui emel.",
             ]);
 
-            return ['success' => 'Setiausaha cawangan berjaya dilantik.'];
+            return [
+                'success' => 'Setiausaha cawangan berjaya dilantik.',
+                'secretary' => $target,
+                'login_email' => $manager->user->email,
+                'temporary_password' => $temporaryPassword,
+            ];
         });
 
         if (isset($result['error'])) {
             return back()->with('error', $result['error']);
         }
+
+        $result['secretary']->notify(new BranchSecretaryAppointed(
+            branchName: $branch->name,
+            organizationName: $branch->organization?->name ?? config('app.name'),
+            loginEmail: $result['login_email'],
+            temporaryPassword: $result['temporary_password'],
+            loginUrl: route('login'),
+        ));
 
         return back()->with('success', $result['success']);
     }

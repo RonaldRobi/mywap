@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureApiAdminAccess;
 use App\Http\Middleware\EnsureBranchAdminAccess;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureProfileIsComplete;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnsurePasswordIsChanged::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

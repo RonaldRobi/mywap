@@ -5,22 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../admin/application/admin_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 /// Scaffold wrapping the main member tabs.
-///
-/// Navigasi (selepas audit UX):
-/// - **Tiada drawer.** Drawer `Scaffold` lama memasang pengecam seretan pada
-///   tepi kiri skrin, zon yang sama digunakan oleh gesture "swipe untuk
-///   kembali" iOS dan predictive-back Android. Drawer menang perebutan itu,
-///   jadi pengguna kehilangan gesture kembali pada setiap skrin. Semua
-///   pautan kini berada dalam tab `Menu` — rujuk `MenuScreen`.
-/// - Bar navigasi bawah dengan butang "Imbas QR" terapung di tengah.
-/// - Loceng notifikasi kekal di kanan atas setiap tab (lihat
-///   `NotificationBell` — setiap skrin tab merendernya sendiri kerana setiap
-///   tab mengekalkan AppBar sendiri).
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
@@ -38,20 +28,82 @@ class MainShell extends StatelessWidget {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/events')) return 1;
     if (location.startsWith('/infaq')) return 3;
-    // Profil, admin dan setiap destinasi menu lain berada di bawah tab Menu,
-    // jadi tab itu kekal diserlahkan semasa menyemak imbas cabangnya.
     if (location.startsWith('/menu') ||
-        location.startsWith('/profile') ||
-        location.startsWith('/admin')) {
+        location.startsWith('/profile')) {
       return 4;
     }
     return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final isDualRoleAdmin = user?.isAdmin == true;
+
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          if (isDualRoleAdmin)
+            Material(
+              color: AppColors.paleGreen,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.md,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.visibility_outlined,
+                        size: 16,
+                        color: AppColors.movementDarkGreen,
+                      ),
+                      const SizedBox(width: Spacing.sm),
+                      const Expanded(
+                        child: Text(
+                          'Pandangan Ahli',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.movementDarkGreen,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          ref.read(adminViewModeProvider.notifier).state = true;
+                          context.go('/admin');
+                        },
+                        borderRadius: AppRadius.pill,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: AppColors.movementGreen,
+                            borderRadius: AppRadius.pill,
+                          ),
+                          child: const Text(
+                            'Mod Pentadbir',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: child),
+        ],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _ScanFab(onTap: () => context.push('/scan')),
       bottomNavigationBar: _BottomNavBar(

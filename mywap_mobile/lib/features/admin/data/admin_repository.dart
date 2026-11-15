@@ -17,6 +17,7 @@ class AdminRepository {
   static const _attendanceRegistrations = '/admin/attendance/registrations';
   static const _attendanceScan = '/admin/attendance/scan';
   static const _broadcast = '/admin/broadcast';
+  static const _adminEvents = '/admin/events';
 
   final ApiClient _api;
 
@@ -96,10 +97,10 @@ class AdminRepository {
     return BroadcastResult.fromJson((data as Map<String, dynamic>?) ?? {});
   }
 
-  /// Upcoming events via the public `/events` endpoint. Admins receive the
-  /// events with attendance arrays — used to pick an event for scanning.
+  /// Upcoming events via the scoped `/admin/events` endpoint. Scoped by role
+  /// (Superadmin = all, Org Admin = org, Branch Admin = branch).
   Future<List<Event>> upcomingEvents() async {
-    final data = await _api.get(ApiPaths.events, query: {
+    final data = await _api.get(_adminEvents, query: {
       'tab': 'upcoming',
       'per_page': 50,
     });

@@ -92,6 +92,7 @@ class User extends Authenticatable
         'referred_by_user_id',
         'first_login_at',
         'membership_letter_sent_at',
+        'must_change_password',
     ];
 
     protected $hidden = [
@@ -109,6 +110,7 @@ class User extends Authenticatable
             'first_login_at' => 'datetime',
             'membership_letter_sent_at' => 'datetime',
             'is_public_in_directory' => 'boolean',
+            'must_change_password' => 'boolean',
             'membership_status' => 'string',
             'key_in_date' => 'date',
         ];

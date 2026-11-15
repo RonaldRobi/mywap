@@ -24,6 +24,7 @@ class PasswordController extends Controller
 
         $user->update([
             'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
         ]);
 
         // Keselamatan: bila kata laluan ditukar, tarik balik semua token API

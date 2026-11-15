@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\BroadcastMessage;
+use App\Models\Event;
 use App\Models\User;
 use App\Services\AdminService;
+use App\Services\EventService;
 use App\Support\ApiResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -164,10 +166,56 @@ class AdminController extends Controller
         ]);
     }
 
+    public function events(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $this->authorizeAdmin($user);
+
+        $tab = $request->input('tab', 'upcoming');
+        $search = $request->input('search');
+
+        $query = Event::with(['organization', 'organizations', 'rsvps']);
+
+        if ($user->isBranchAdmin()) {
+            $query->whereIn('branch_id', $user->managedBranchIds());
+        } elseif (! $user->isSuperadmin()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('organization_id', $user->current_organization_id)
+                    ->orWhereHas('organizations', fn ($q2) => $q2->where('organizations.id', $user->current_organization_id));
+            });
+        }
+
+        if ($tab === 'past') {
+            $query->where('start_time', '<', now())->orderBy('start_time', 'desc');
+        } else {
+            // Sertakan acara dari semalam supaya acara yang sedang berjalan hari ini tidak hilang daripada senarai kehadiran
+            $query->where('start_time', '>=', now()->subDays(1))->orderBy('start_time', 'asc');
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('location_or_link', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = (int) $request->input('per_page', 50);
+        $paginator = $query->paginate($perPage);
+
+        $eventService = app(EventService::class);
+        $paginator->through(fn (Event $e) => $eventService->serialize($e, $user->id));
+
+        return ApiResponse::paginated($paginator);
+    }
+
     private function authorizeAdmin(User $user): void
     {
-        if (! $user->hasRole(['Admin', 'org-admin', 'Superadmin'])) {
+        if (! $user->isAdminPanelUser()) {
             throw new HttpResponseException(ApiResponse::error('Tiada kebenaran.', [], 403));
+        }
+
+        if ($user->isBranchAdmin() && $user->managedBranchIds() === []) {
+            throw new HttpResponseException(ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan.', [], 403));
         }
     }
 }

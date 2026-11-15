@@ -5,16 +5,19 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../admin/application/admin_providers.dart';
+import '../../admin/presentation/admin_shell.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/main_shell.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 /// Chooses the correct shell for the current auth state:
-/// - logged in  → [MainShell] (member tabs + QR scan FAB)
+/// - logged in as admin in admin mode → [AdminShell] (admin tabs + card scan FAB)
+/// - logged in as member (or admin in member view) → [MainShell] (member tabs + QR scan FAB)
 /// - logged out → [PublicShell] (public tabs + Log Masuk)
 ///
-/// Both shells wrap the same routed `child`, so screens can be reused for
-/// members and guests without duplication.
+/// All shells wrap the same routed `child`, so screens can be reused for
+/// members, admins and guests without duplication.
 class AdaptiveShell extends ConsumerWidget {
   const AdaptiveShell({super.key, required this.child});
 
@@ -22,10 +25,17 @@ class AdaptiveShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAuthenticated = ref.watch(currentUserProvider) != null;
-    return isAuthenticated
-        ? MainShell(child: child)
-        : PublicShell(child: child);
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return PublicShell(child: child);
+    }
+
+    final isAdminMode = user.isAdmin && ref.watch(adminViewModeProvider);
+    if (isAdminMode) {
+      return AdminShell(child: child);
+    }
+
+    return MainShell(child: child);
   }
 }
 

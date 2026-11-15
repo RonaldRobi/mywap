@@ -4,8 +4,10 @@ import 'admin_attendance_detail_screen.dart';
 import 'admin_attendance_screen.dart';
 import 'admin_broadcast_screen.dart';
 import 'admin_dashboard_screen.dart';
+import 'admin_fast_scan_screen.dart';
 import 'admin_fees_screen.dart';
 import 'admin_members_screen.dart';
+import 'admin_menu_screen.dart';
 
 /// Routes owned by the admin feature.
 ///
@@ -13,6 +15,8 @@ import 'admin_members_screen.dart';
 /// route — this registration is the source of truth for the sub-routes below).
 final List<RouteBase> adminRoutes = [
   GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
+  GoRoute(path: '/admin/scan', builder: (_, __) => const AdminFastScanScreen()),
+  GoRoute(path: '/admin/menu', builder: (_, __) => const AdminMenuScreen()),
   GoRoute(path: '/admin/members', builder: (_, __) => const AdminMembersScreen()),
   GoRoute(path: '/admin/fees', builder: (_, __) => const AdminFeesScreen()),
   GoRoute(path: '/admin/attendance', builder: (_, __) => const AdminAttendanceScreen()),

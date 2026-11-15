@@ -7,64 +7,110 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/main_shell.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/data/models/user.dart';
+import '../../events/data/models/event.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
-import '../../../shared/theme/app_text_theme.dart';
 
-/// Landing screen for the "Admin" bottom-nav tab (`/admin`).
+/// Skrin Utama / Dashboard Ruang Kerja Pentadbir (`/admin`).
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
     final dashboardAsync = ref.watch(adminDashboardProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: Text(context.l10n.adminPanelTitle),
-        actions: const [LogoutIconButton()],
+        title: Text(
+          user?.adminRoleTitle ?? 'Ruang Kerja Pentadbir',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        actions: [
+          // Suis Pantas ke Pandangan Ahli
+          TextButton.icon(
+            onPressed: () {
+              ref.read(adminViewModeProvider.notifier).state = false;
+              context.go('/dashboard');
+            },
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('Ahli'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.movementGreen,
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Notifikasi',
+            onPressed: () => context.push('/notifications'),
+          ),
+        ],
       ),
       body: dashboardAsync.when(
-        data: (data) => _DashboardContent(data: data),
+        data: (data) => _DashboardContent(user: user, data: data),
         loading: () => const _DashboardSkeleton(),
-        error:
-            (error, _) => ErrorRetry(
-              message:
-                  error is ApiException
-                      ? error.message
-                      : context.l10n.adminUnexpectedError,
-              onRetry: () => ref.invalidate(adminDashboardProvider),
-            ),
+        error: (error, _) => ErrorRetry(
+          message: error is ApiException
+              ? error.message
+              : context.l10n.adminUnexpectedError,
+          onRetry: () => ref.invalidate(adminDashboardProvider),
+        ),
       ),
     );
   }
 }
 
 class _DashboardContent extends ConsumerWidget {
-  const _DashboardContent({required this.data});
+  const _DashboardContent({required this.user, required this.data});
 
+  final User? user;
   final AdminDashboard data;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final upcomingEventsAsync = ref.watch(adminUpcomingEventsProvider);
+
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(adminDashboardProvider),
+      onRefresh: () async {
+        ref.invalidate(adminDashboardProvider);
+        ref.invalidate(adminUpcomingEventsProvider);
+      },
       child: ListView(
-        padding: const EdgeInsets.only(bottom: Spacing.xl),
+        padding: const EdgeInsets.only(bottom: Spacing.xxl),
         children: [
+          // 1. Kad Identiti Peranan & Skop
+          if (user != null) _RoleBanner(user: user!),
+
+          // 2. Kad Hero: Meja Pendaftaran Acara Terdekat
+          upcomingEventsAsync.maybeWhen(
+            data: (events) => _HeroEventDesk(events: events),
+            orElse: () => const SizedBox.shrink(),
+          ),
+
+          const SizedBox(height: Spacing.sm),
+
+          // 3. Tindakan Pantas Pentadbir (4 Grid Butang)
           SectionHeader(context.l10n.adminManagementSection),
-          const _AdminActions(),
+          const _AdminActionsGrid(),
+
           const SizedBox(height: Spacing.sm),
-          SectionHeader(context.l10n.adminAdvancedManagementSection),
-          const _WebOnlyActions(),
-          const SizedBox(height: Spacing.sm),
+
+          // 4. Ringkasan Statistik Berdasarkan Skop
           SectionHeader(context.l10n.adminSummarySection),
           _StatRow(stats: data.stats),
+
+          const SizedBox(height: Spacing.sm),
+
+          // 5. Carta Kutipan Yuran Bulanan
           SectionHeader(context.l10n.adminMonthlyRevenueSection),
           if (data.revenueValues.isEmpty)
             const _ChartEmpty()
@@ -72,6 +118,11 @@ class _DashboardContent extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               child: Card(
+                color: AppColors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.card,
+                  side: BorderSide(color: AppColors.divider),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.lg),
                   child: _RevenueChart(
@@ -81,9 +132,13 @@ class _DashboardContent extends ConsumerWidget {
                 ),
               ),
             ),
+
+          const SizedBox(height: Spacing.sm),
+
+          // 6. Aktiviti Pentadbiran Terkini
           SectionHeader(
             context.l10n.adminRecentActivitySection,
-            trailing: _count(data.activities.length),
+            trailing: _countBadge(data.activities.length),
           ),
           if (data.activities.isEmpty)
             Padding(
@@ -93,55 +148,327 @@ class _DashboardContent extends ConsumerWidget {
           else
             for (final activity in data.activities)
               _ActivityCard(activity: activity),
+
+          const SizedBox(height: Spacing.lg),
+
+          // 7. Nota Panduan Portal Web
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+            child: Container(
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: AppRadius.md,
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.laptop_chromebook_rounded,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  SizedBox(width: Spacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Operasi pendaftaran pukal, import fail CSV, dan konfigurasi sistem boleh diuruskan melalui portal web rasmi MyWAP.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _count(int count) => Container(
+  Widget _countBadge(int count) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
     decoration: BoxDecoration(
-      color: AppColors.movementSoftGreen,
+      color: AppColors.paleGreen,
       borderRadius: BorderRadius.circular(10),
     ),
     child: Text(
       '$count',
       style: const TextStyle(
-        color: AppColors.movementNavy,
+        color: AppColors.movementDarkGreen,
         fontWeight: FontWeight.w700,
-        fontSize: 14,
+        fontSize: 13,
       ),
     ),
   );
 }
 
-class _AdminActions extends StatelessWidget {
-  const _AdminActions();
+/// Kad pengenalan peranan & skop tanggungjawab admin
+class _RoleBanner extends StatelessWidget {
+  const _RoleBanner({required this.user});
+
+  final User user;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSuper = user.isSuperadmin;
+    final isBranch = user.isBranchAdmin;
+
+    Color badgeBg;
+    Color badgeText;
+    String scopeDesc;
+
+    if (isSuper) {
+      badgeBg = const Color(0xFF1E293B);
+      badgeText = AppColors.white;
+      scopeDesc = 'Akses penuh ekosistem 3 NGO: PKPIM, ABIM & WADAH';
+    } else if (isBranch) {
+      badgeBg = AppColors.accentTint;
+      badgeText = AppColors.warning;
+      scopeDesc = 'Skop Cawangan: ${user.branch_name ?? 'Cawangan Anda'}';
+    } else {
+      badgeBg = AppColors.paleGreen;
+      badgeText = AppColors.movementDarkGreen;
+      scopeDesc = 'Skop Organisasi: ${user.organization?.name ?? 'Organisasi'}';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.sm),
+      child: Container(
+        padding: const EdgeInsets.all(Spacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: AppRadius.card,
+          border: Border.all(color: AppColors.divider),
+          boxShadow: AppShadows.subtle,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: isSuper
+                  ? const Color(0xFF1E293B)
+                  : (isBranch ? AppColors.accent : AppColors.movementGreen),
+              child: Icon(
+                isSuper
+                    ? Icons.shield_outlined
+                    : (isBranch ? Icons.domain_rounded : Icons.account_balance_rounded),
+                color: AppColors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: AppRadius.pill,
+                        ),
+                        child: Text(
+                          user.adminRoleTitle,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: badgeText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    scopeDesc,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Hero Card Meja Pendaftaran Acara Terdekat (Hero Action)
+class _HeroEventDesk extends StatelessWidget {
+  const _HeroEventDesk({required this.events});
+
+  final List<Event> events;
+
+  @override
+  Widget build(BuildContext context) {
+    if (events.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final activeEvent = events.first;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.sm),
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: AppColors.movementNavy,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.movementSoftGreen,
+                      borderRadius: AppRadius.pill,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.fiber_manual_record, color: AppColors.movementNavy, size: 10),
+                        SizedBox(width: 4),
+                        Text(
+                          'MEJA PENDAFTARAN',
+                          style: TextStyle(
+                            color: AppColors.movementNavy,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  if (activeEvent.rsvp_count != null)
+                    Text(
+                      '${activeEvent.rsvp_count} Peserta',
+                      style: const TextStyle(
+                        color: AppColors.movementOffWhite,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Spacing.md),
+              Text(
+                activeEvent.title ?? 'Program',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              if (activeEvent.start_formatted != null)
+                Text(
+                  activeEvent.start_formatted!,
+                  style: const TextStyle(
+                    color: AppColors.divider,
+                    fontSize: 12,
+                  ),
+                ),
+              const SizedBox(height: Spacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: FilledButton.icon(
+                      onPressed: () => context.push('/admin/scan'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.movementGreen,
+                        foregroundColor: AppColors.white,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+                      ),
+                      icon: const Icon(Icons.qr_code_scanner, size: 20),
+                      label: const Text(
+                        'Imbas Kad Peserta',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Spacing.sm),
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        if (activeEvent.id != null) {
+                          context.push('/admin/attendance/${activeEvent.id}');
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.white,
+                        side: const BorderSide(color: AppColors.divider),
+                        minimumSize: const Size.fromHeight(48),
+                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+                      ),
+                      child: const Text(
+                        'Senarai',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tindakan Pantas Pentadbir (4 Grid Utama)
+class _AdminActionsGrid extends StatelessWidget {
+  const _AdminActionsGrid();
 
   @override
   Widget build(BuildContext context) {
     final actions = [
-      _Action(
-        context.l10n.adminMembersTab,
-        '/admin/members',
-        Icons.people_outline,
+      _ActionItem(
+        label: 'Imbas Kad',
+        path: '/admin/scan',
+        icon: Icons.qr_code_scanner_rounded,
+        color: AppColors.movementGreen,
       ),
-      _Action(
-        context.l10n.adminFeesTab,
-        '/admin/fees',
-        Icons.payments_outlined,
+      _ActionItem(
+        label: 'Kehadiran',
+        path: '/admin/attendance',
+        icon: Icons.event_available_rounded,
+        color: AppColors.movementDarkGreen,
       ),
-      _Action(
-        context.l10n.adminAttendanceTab,
-        '/admin/attendance',
-        Icons.qr_code_scanner,
+      _ActionItem(
+        label: 'Direktori Ahli',
+        path: '/admin/members',
+        icon: Icons.people_alt_rounded,
+        color: const Color(0xFF1E293B),
       ),
-      _Action(
-        context.l10n.adminBroadcastTab,
-        '/admin/broadcast',
-        Icons.campaign_outlined,
+      _ActionItem(
+        label: 'Yuran Ahli',
+        path: '/admin/fees',
+        icon: Icons.receipt_long_rounded,
+        color: AppColors.warning,
       ),
     ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
       child: GridView.builder(
@@ -157,6 +484,11 @@ class _AdminActions extends StatelessWidget {
           final action = actions[index];
           return Card(
             margin: EdgeInsets.zero,
+            color: AppColors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppRadius.md,
+              side: BorderSide(color: AppColors.divider),
+            ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () => context.push(action.path),
@@ -165,14 +497,22 @@ class _AdminActions extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(action.icon, color: AppColors.movementGreen, size: 26),
-                    const SizedBox(height: Spacing.sm),
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: action.color.withValues(alpha: 0.12),
+                      child: Icon(action.icon, color: action.color, size: 22),
+                    ),
+                    const SizedBox(height: Spacing.xs),
                     Text(
                       action.label,
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.movementNavy,
+                      ),
                     ),
                   ],
                 ),
@@ -185,134 +525,18 @@ class _AdminActions extends StatelessWidget {
   }
 }
 
-class _Action {
-  const _Action(this.label, this.path, this.icon);
+class _ActionItem {
+  const _ActionItem({
+    required this.label,
+    required this.path,
+    required this.icon,
+    required this.color,
+  });
 
   final String label;
   final String path;
   final IconData icon;
-}
-
-/// Fungsi pentadbiran yang hanya tersedia di versi web (PC/laptop) — sentuhan
-/// memaparkan dialog maklumat, bukan navigasi.
-class _WebOnlyActions extends StatelessWidget {
-  const _WebOnlyActions();
-
-  void _showWebOnlyNotice(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(context.l10n.adminWebOnlyTitle),
-          content: Text(context.l10n.adminWebOnlyMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(context.l10n.adminOkButton),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = [
-      _WebAction(context.l10n.adminWebManagePrograms, Icons.event_note),
-      _WebAction(context.l10n.adminWebManageFees, Icons.payments_outlined),
-      _WebAction(
-        context.l10n.adminWebFinance,
-        Icons.account_balance_wallet_outlined,
-      ),
-      _WebAction(
-        context.l10n.adminWebTransactions,
-        Icons.receipt_long_outlined,
-      ),
-      _WebAction(context.l10n.adminWebForms, Icons.assignment_outlined),
-      _WebAction(context.l10n.adminWebPolls, Icons.how_to_vote_outlined),
-      _WebAction(context.l10n.adminWebNewsArticles, Icons.newspaper_outlined),
-      _WebAction(context.l10n.adminWebAnnouncements, Icons.campaign_outlined),
-      _WebAction(context.l10n.adminWebFacilities, Icons.apartment_outlined),
-      _WebAction(context.l10n.adminWebBranches, Icons.account_tree_outlined),
-      _WebAction(context.l10n.adminWebPositions, Icons.badge_outlined),
-      _WebAction(context.l10n.adminWebExportMembers, Icons.download_outlined),
-      _WebAction(
-        context.l10n.adminWebDonors,
-        Icons.volunteer_activism_outlined,
-      ),
-      _WebAction(context.l10n.adminWebChangeBranch, Icons.swap_horiz_outlined),
-    ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisExtent: 64,
-          mainAxisSpacing: Spacing.sm,
-          crossAxisSpacing: Spacing.sm,
-        ),
-        itemCount: actions.length,
-        itemBuilder: (context, index) {
-          final action = actions[index];
-          return _WebOnlyAction(
-            label: action.label,
-            icon: action.icon,
-            onTap: () => _showWebOnlyNotice(context),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _WebAction {
-  const _WebAction(this.label, this.icon);
-
-  final String label;
-  final IconData icon;
-}
-
-class _WebOnlyAction extends StatelessWidget {
-  const _WebOnlyAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
-          child: Row(
-            children: [
-              Icon(icon, color: AppColors.movementGreen, size: 24),
-              const SizedBox(width: Spacing.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  final Color color;
 }
 
 class _StatRow extends StatelessWidget {
@@ -324,22 +548,22 @@ class _StatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _StatCard(
-        label: context.l10n.adminStatTotalMembers,
+        label: 'Jumlah Ahli',
         value: '${stats.totalMembers}',
         icon: Icons.group_outlined,
       ),
       _StatCard(
-        label: context.l10n.adminStatActiveMembers,
+        label: 'Ahli Aktif',
         value: '${stats.activeMembers}',
         icon: Icons.verified_user_outlined,
       ),
       _StatCard(
-        label: context.l10n.adminStatRevenue,
+        label: 'Kutipan Yuran',
         value: Formatters.currency(stats.totalRevenue),
         icon: Icons.payments_outlined,
       ),
       _StatCard(
-        label: context.l10n.adminStatUpcomingEvents,
+        label: 'Program Akan Datang',
         value: '${stats.upcomingEvents}',
         icon: Icons.event_outlined,
       ),
@@ -374,29 +598,37 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      width: 150,
+      width: 155,
       padding: const EdgeInsets.all(Spacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.movementDarkGreen,
-        borderRadius: AppRadius.lg,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.divider),
+        boxShadow: AppShadows.subtle,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.movementSoftGreen, size: 22),
-          const SizedBox(height: Spacing.sm),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.paleGreen,
+            child: Icon(icon, color: AppColors.movementDarkGreen, size: 20),
+          ),
+          const SizedBox(height: Spacing.md),
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: AppColors.white,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: AppColors.movementNavy,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textOnDark,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -499,63 +731,74 @@ class _ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: Spacing.lg,
-        vertical: Spacing.sm,
+        vertical: 4,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.movementSoftGreen,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.campaign_outlined,
-                color: AppColors.movementNavy,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: Spacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    activity.title.isEmpty
-                        ? context.l10n.adminActivityFallback
-                        : activity.title,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  if (activity.description.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      activity.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (activity.createdAt != null) ...[
-              const SizedBox(width: Spacing.sm),
-              Text(
-                Formatters.datetime(activity.createdAt),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: AppColors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.md,
+          side: BorderSide(color: AppColors.divider),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.paleGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.campaign_outlined,
+                  color: AppColors.movementDarkGreen,
+                  size: 18,
                 ),
               ),
+              const SizedBox(width: Spacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity.title.isEmpty
+                          ? context.l10n.adminActivityFallback
+                          : activity.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (activity.description.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        activity.description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (activity.createdAt != null) ...[
+                const SizedBox(width: Spacing.sm),
+                Text(
+                  Formatters.datetime(activity.createdAt),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -570,23 +813,15 @@ class _DashboardSkeleton extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
       children: const [
-        SkeletonBox(height: 24, width: 140),
+        SkeletonBox(height: 60),
         SizedBox(height: Spacing.md),
+        SkeletonBox(height: 140),
+        SizedBox(height: Spacing.xl),
         SkeletonBox(height: 96),
         SizedBox(height: Spacing.xl),
-        SkeletonBox(height: 24, width: 140),
-        SizedBox(height: Spacing.md),
         SkeletonBox(height: 110),
         SizedBox(height: Spacing.xl),
-        SkeletonBox(height: 24, width: 140),
-        SizedBox(height: Spacing.md),
         SkeletonBox(height: 220),
-        SizedBox(height: Spacing.xl),
-        SkeletonBox(height: 24, width: 140),
-        SizedBox(height: Spacing.md),
-        SkeletonBox(height: 72),
-        SizedBox(height: Spacing.sm),
-        SkeletonBox(height: 72),
       ],
     );
   }

@@ -59,7 +59,10 @@ class MenuScreen extends ConsumerWidget {
   // -------------------------------------------------------------------
 
   static bool _isAdmin(String? role) =>
-      role == 'Admin' || role == 'org-admin' || role == 'Superadmin';
+      role == 'Admin' ||
+      role == 'org-admin' ||
+      role == 'Superadmin' ||
+      role == 'Admin Cawangan';
 
   static List<Widget> _memberSections(
     AppLocalizations l10n,

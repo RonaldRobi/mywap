@@ -574,4 +574,87 @@ class AdminApiTest extends TestCase
             ->assertStatus(403)
             ->assertJsonPath('message', 'Tiada kebenaran.');
     }
+
+    public function test_branch_admin_can_access_dashboard_and_events(): void
+    {
+        Role::firstOrCreate(['name' => 'Admin Cawangan', 'guard_name' => 'web']);
+        $branch = \App\Models\Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan 1',
+            'state' => 'Melaka',
+            'is_active' => true,
+        ]);
+        $branchAdmin = User::factory()->create([
+            'name' => 'Branch Admin Test',
+            'current_organization_id' => $this->org->id,
+            'branch_id' => $branch->id,
+            'profile_completed_at' => now(),
+        ]);
+        $branchAdmin->assignRole('Admin Cawangan');
+
+        \App\Models\BranchAdmin::create([
+            'branch_id' => $branch->id,
+            'user_id' => $branchAdmin->id,
+            'role' => \App\Models\BranchAdmin::ROLE_MANAGER,
+        ]);
+
+        $ownEvent = Event::create([
+            'organization_id' => $this->org->id,
+            'branch_id' => $branch->id,
+            'title' => 'Program Cawangan Sendiri',
+            'description' => 'Test',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Seminar->value,
+            'location_or_link' => 'Dewan Cawangan',
+            'start_time' => now()->addDays(2),
+            'end_time' => now()->addDays(2)->addHours(2),
+        ]);
+
+        $otherBranch = \App\Models\Branch::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Cawangan 2',
+            'state' => 'Johor',
+            'is_active' => true,
+        ]);
+        $otherEvent = Event::create([
+            'organization_id' => $this->org->id,
+            'branch_id' => $otherBranch->id,
+            'title' => 'Program Cawangan Lain',
+            'description' => 'Test',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Seminar->value,
+            'location_or_link' => 'Dewan Johor',
+            'start_time' => now()->addDays(3),
+            'end_time' => now()->addDays(3)->addHours(2),
+        ]);
+
+        Sanctum::actingAs($branchAdmin);
+
+        $this->getJson('/api/v1/admin/dashboard')->assertOk();
+
+        $res = $this->getJson('/api/v1/admin/events')->assertOk();
+        $titles = collect($res->json('data'))->pluck('title');
+        $this->assertTrue($titles->contains('Program Cawangan Sendiri'));
+        $this->assertFalse($titles->contains('Program Cawangan Lain'));
+    }
+
+    public function test_unassigned_branch_admin_gets_403(): void
+    {
+        Role::firstOrCreate(['name' => 'Admin Cawangan', 'guard_name' => 'web']);
+        $unassigned = User::factory()->create([
+            'name' => 'Unassigned Branch Admin',
+            'current_organization_id' => $this->org->id,
+            'branch_id' => null,
+            'profile_completed_at' => now(),
+        ]);
+        $unassigned->assignRole('Admin Cawangan');
+
+        Sanctum::actingAs($unassigned);
+
+        $this->getJson('/api/v1/admin/dashboard')
+            ->assertStatus(403)
+            ->assertJsonPath('message', 'Akaun anda belum diperuntukkan ke mana-mana cawangan.');
+    }
 }

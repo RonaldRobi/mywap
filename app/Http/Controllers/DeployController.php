@@ -89,6 +89,8 @@ class DeployController extends Controller
             // seeding tidak seharusnya menggagalkan deploy kod.
             ['key' => 'seed_admins', 'critical' => false, 'cmd' => escapeshellarg($php).' artisan abim:state-admins'],
             ['key' => 'optimize', 'critical' => true, 'cmd' => escapeshellarg($php).' artisan optimize'],
+            ['key' => 'queue_restart', 'critical' => false, 'cmd' => escapeshellarg($php).' artisan queue:restart'],
+            ['key' => 'queue_ensure', 'critical' => false, 'cmd' => 'sleep 5; if ps aux | grep -q "[a]rtisan queue:work"; then echo "queue worker already running"; else nohup '.escapeshellarg($php).' artisan queue:work --sleep=3 --tries=3 >> storage/logs/queue-worker.log 2>&1 & echo "queue worker started"; fi'],
         ];
 
         $log = [];
