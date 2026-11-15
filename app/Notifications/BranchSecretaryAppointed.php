@@ -31,7 +31,6 @@ class BranchSecretaryAppointed extends Notification implements ShouldQueue
         $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
 
         return (new MailMessage)
-            ->mailer('transactional')
             ->subject('Pelantikan setiausaha cawangan '.$this->branchName)
             ->view('emails.branch-secretary-appointed', [
                 'subject' => 'Pelantikan setiausaha cawangan '.$this->branchName,

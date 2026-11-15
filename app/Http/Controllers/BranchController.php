@@ -627,13 +627,22 @@ class BranchController extends Controller
             return back()->with('error', $result['error']);
         }
 
-        $result['secretary']->notify(new BranchSecretaryAppointed(
-            branchName: $branch->name,
-            organizationName: $branch->organization?->name ?? config('app.name'),
-            loginEmail: $result['login_email'],
-            temporaryPassword: $result['temporary_password'],
-            loginUrl: route('login'),
-        ));
+        try {
+            $result['secretary']->notify(new BranchSecretaryAppointed(
+                branchName: $branch->name,
+                organizationName: $branch->organization?->name ?? config('app.name'),
+                loginEmail: $result['login_email'],
+                temporaryPassword: $result['temporary_password'],
+                loginUrl: route('login'),
+            ));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with(
+                'success',
+                $result['success'].' Namun emel butiran log masuk gagal dihantar. Sila reset kata laluan akaun admin cawangan dan berikan kepada setiausaha.'
+            );
+        }
 
         return back()->with('success', $result['success']);
     }
