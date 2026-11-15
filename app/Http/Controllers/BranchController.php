@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -542,6 +543,8 @@ class BranchController extends Controller
         ]);
 
         $result = DB::transaction(function () use ($branch, $data) {
+            DB::table('branches')->where('id', $branch->id)->lockForUpdate()->first();
+
             $target = User::withoutGlobalScopes()->findOrFail($data['user_id']);
 
             if ($target->trashed() || ! $target->is_active) {
@@ -572,7 +575,6 @@ class BranchController extends Controller
             $count = BranchAdmin::query()
                 ->where('branch_id', $branch->id)
                 ->where('role', BranchAdmin::ROLE_SETIAUSAHA)
-                ->lockForUpdate()
                 ->count();
 
             if ($count >= BranchAdmin::MAX_SETIAUSAHA) {
@@ -592,10 +594,13 @@ class BranchController extends Controller
 
             $temporaryPassword = Str::password(12, symbols: false);
 
-            $manager->user->update([
-                'password' => $temporaryPassword,
-                'must_change_password' => true,
-            ]);
+            $managerUpdates = ['password' => $temporaryPassword];
+
+            if (Schema::hasColumn('users', 'must_change_password')) {
+                $managerUpdates['must_change_password'] = true;
+            }
+
+            $manager->user->update($managerUpdates);
 
             $manager->user->tokens()->delete();
 
