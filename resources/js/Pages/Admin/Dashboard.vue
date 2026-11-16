@@ -57,9 +57,6 @@ const managementActions = computed(() => [
     { label: t('Semak yuran'), description: t('Status bayaran ahli'), href: props.managementLinks.fees_members_url, tone: 'plain' },
     { label: t('Urus usrah'), description: t('Kumpulan dan ahli'), href: props.managementLinks.usrah_manage_url, tone: 'plain' },
     { label: t('Hantar siaran'), description: t('Makluman kepada ahli'), href: props.managementLinks.broadcasts_url, tone: 'plain' },
-    { label: t('Urus infaq'), description: t('Kempen dan infaq'), href: props.managementLinks.infaq_url, tone: 'plain' },
-    { label: t('Urus banner'), description: t('Paparan utama aplikasi'), href: props.managementLinks.banners_url, tone: 'plain' },
-    { label: t('Urus pendukung'), description: t('Rekod dan hubungan'), href: props.managementLinks.supporters_url, tone: 'plain' },
 ].filter((item) => item.href));
 
 function copyShareLink() {
@@ -142,8 +139,10 @@ function activityTone(type = '') {
                                 <dd class="mt-1 text-2xl font-black tabular-nums">{{ overview.total_members }}</dd>
                             </div>
                             <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
-                                <dt class="text-xs text-slate-300">{{ t('Ahli Aktif') }}</dt>
-                                <dd class="mt-1 text-2xl font-black text-[#B8D9C0] tabular-nums">{{ overview.active_members }}</dd>
+                                <dt class="text-xs text-slate-300">{{ t('Pengguna aplikasi') }}</dt>
+                                <dd class="mt-1 text-2xl font-black text-[#B8D9C0] tabular-nums">{{ overview.app_users }}</dd>
+                                <p class="mt-1 text-[11px] font-semibold text-slate-300">{{ overview.app_usage_percent }}% {{ t('telah guna aplikasi') }}</p>
+                                <p class="mt-0.5 text-[10px] text-[#B8D9C0]">{{ t('Sasaran: 100%') }}</p>
                             </div>
                             <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
                                 <dt class="text-xs text-slate-300">{{ t('Ahli Baharu (30h)') }}</dt>
@@ -168,15 +167,15 @@ function activityTone(type = '') {
                     </div>
                     <p class="mt-5 truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-700" :title="registrationShare.share_url">{{ registrationShare.share_url }}</p>
                     <div class="mt-3 grid grid-cols-2 gap-2">
-                        <button type="button" class="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900" @click="copyShareLink">{{ shareCopied ? t('Pautan disalin') : t('Salin pautan') }}</button>
-                        <button type="button" class="min-h-11 rounded-xl bg-[#2F6B32] px-3 text-sm font-bold text-white transition hover:bg-[#123D2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" @click="shareRegistration">{{ t('Kongsi pautan') }}</button>
+                        <button type="button" class="min-h-11 cursor-pointer rounded-xl bg-slate-900 px-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900" @click="copyShareLink">{{ shareCopied ? t('Pautan disalin') : t('Salin pautan') }}</button>
+                        <button type="button" class="min-h-11 cursor-pointer rounded-xl bg-[#2F6B32] px-3 text-sm font-bold text-white transition hover:bg-[#123D2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" @click="shareRegistration">{{ t('Kongsi pautan') }}</button>
                     </div>
                     <Link v-if="!isBranchAdmin" :href="route('admin.jemput-ahli')" class="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]">{{ t('Buka halaman jemputan') }}</Link>
                 </aside>
             </div>
 
-            <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="actions-heading">
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:items-stretch lg:grid-cols-12">
+                <section class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="actions-heading">
                         <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <h2 id="actions-heading" class="text-lg font-black text-slate-900">{{ t('Tindakan utama') }}</h2>
@@ -194,7 +193,7 @@ function activityTone(type = '') {
                         </div>
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="organization-heading">
+                <section class="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="organization-heading">
                     <div class="flex items-baseline justify-between gap-3">
                         <div>
                             <h2 id="organization-heading" class="text-lg font-black text-slate-900">{{ isManagementView ? t('Pecahan mengikut entiti') : t('Pecahan program') }}</h2>
@@ -219,7 +218,7 @@ function activityTone(type = '') {
                     </div>
                 </section>
 
-                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="attention-heading">
+                <section class="h-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2 lg:col-span-4" aria-labelledby="attention-heading">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <h2 id="attention-heading" class="text-lg font-black text-slate-900">{{ t('Metrik operasi dan yuran') }}</h2>
@@ -247,17 +246,25 @@ function activityTone(type = '') {
                                 </h2>
                                 <p class="mt-1 text-sm text-slate-600">{{ t('Rekod dengan jumlah tertinggi dipaparkan untuk semakan pantas.') }}</p>
                             </div>
-                            <div v-if="isManagementView" class="inline-flex rounded-lg bg-slate-100 p-1" aria-label="Pilih pecahan ahli">
-                                <button type="button" class="min-h-11 rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'state' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" @click="breakdownMode = 'state'">{{ t('Negeri') }}</button>
-                                <button type="button" class="min-h-11 rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'branch' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" @click="breakdownMode = 'branch'">{{ t('Cawangan') }}</button>
+                            <div v-if="isManagementView" class="inline-flex self-start rounded-lg bg-slate-100 p-1" aria-label="Pilih pecahan ahli">
+                                <button type="button" class="min-h-11 cursor-pointer rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'state' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" :aria-pressed="breakdownMode === 'state'" @click="breakdownMode = 'state'">{{ t('Negeri') }}</button>
+                                <button type="button" class="min-h-11 cursor-pointer rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'branch' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" :aria-pressed="breakdownMode === 'branch'" @click="breakdownMode = 'branch'">{{ t('Cawangan') }}</button>
                             </div>
                         </div>
-                        <div v-if="memberBreakdown.length" class="grid max-h-[440px] gap-px overflow-y-auto bg-slate-100 sm:grid-cols-2">
-                            <div v-for="item in memberBreakdown" :key="`${item.organization ?? ''}-${item.label}`" class="bg-white p-4 sm:p-5">
+                        <div v-if="isManagementView" class="flex flex-wrap gap-2 border-b border-slate-100 px-5 py-3 sm:px-6" aria-label="Tapis organisasi">
+                            <button v-for="entity in [{ key: 'all', label: t('Semua') }, { key: 'wadah', label: 'WADAH' }, { key: 'abim', label: 'ABIM' }, { key: 'pkpim', label: 'PKPIM' }]" :key="entity.key" type="button" class="min-h-11 cursor-pointer rounded-lg border px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="activeEntity === entity.key ? 'border-[#071525] bg-[#071525] text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'" :aria-pressed="activeEntity === entity.key" @click="activeEntity = entity.key">{{ entity.label }}</button>
+                        </div>
+                        <div v-if="memberBreakdown.length" class="grid max-h-[440px] gap-2.5 overflow-y-auto p-3 sm:grid-cols-2 sm:p-4">
+                            <div v-for="item in memberBreakdown" :key="`${item.organization ?? ''}-${item.label}`" class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:bg-slate-100 sm:p-5">
                                 <div class="flex items-baseline justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-bold text-slate-900">{{ item.label ?? item.state }}</p>
+                                    <div class="flex min-w-0 items-center gap-2.5">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#123D2A]" aria-hidden="true">
+                                            <svg v-if="breakdownMode === 'branch'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1" /></svg>
+                                            <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.18 7-12a7 7 0 10-14 0c0 6.82 7 12 7 12z" /><circle cx="12" cy="9" r="2" /></svg>
+                                        </span>
+                                        <div class="min-w-0"><p class="truncate text-sm font-bold text-slate-900">{{ item.label ?? item.state }}</p>
                                         <p v-if="item.organization" class="mt-0.5 truncate text-xs text-slate-500">{{ item.organization }}</p>
+                                        </div>
                                     </div>
                                     <span class="shrink-0 text-lg font-black text-slate-900 tabular-nums">{{ item.count }}</span>
                                 </div>

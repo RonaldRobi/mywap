@@ -182,6 +182,10 @@ class AdminService
 
         $totalMembers = (clone $users)->count();
         $activeMembers = (clone $users)->whereNotNull('profile_completed_at')->count();
+        $appUsers = (clone $users)->whereNotNull('first_login_at')->count();
+        $appUsagePercent = $totalMembers > 0
+            ? round(($appUsers / $totalMembers) * 100, 1)
+            : 0.0;
 
         $events = Event::query()
             ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
@@ -471,6 +475,8 @@ class AdminService
             ],
             'overview' => [
                 'total_members' => $totalMembers,
+                'app_users' => $appUsers,
+                'app_usage_percent' => $appUsagePercent,
                 'fees_collected_month' => (float) $feesCollectedThisMonth,
                 'total_programs' => (int) $eventsCount,
                 'program_chart' => $programChart,
