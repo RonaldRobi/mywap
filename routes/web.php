@@ -93,6 +93,7 @@ Route::get('/resit/{payment}', [ResitController::class, 'show'])
     ->middleware(['signed', 'throttle:30,1,web-receipt']);
 
 Route::get('/privasi', fn () => inertia('PrivacyPolicy'))->name('privacy');
+Route::redirect('/terma-syarat', '/term-syarat', 301);
 Route::get('/term-syarat', fn () => inertia('TermsConditions'))->name('terms');
 Route::get('/keselamatan-kanak-kanak', fn () => inertia('ChildSafety'))->name('child.safety');
 Route::get('/faq', fn () => inertia('Faq'))->name('faq');
