@@ -123,10 +123,10 @@ function activityTone(type = '') {
     <AppLayout>
         <template #header>{{ t('Dashboard Pentadbir') }}</template>
 
-        <main class="mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-6 lg:py-7">
-            <section class="overflow-hidden rounded-2xl border border-slate-800 bg-[#071525] text-white">
-                <div class="grid lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-                    <div class="p-5 sm:p-7">
+        <main class="mx-auto w-full max-w-[1600px] space-y-5 px-4 py-5 sm:px-6 lg:py-7">
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                <section class="lg:col-span-8 rounded-2xl border border-slate-800 bg-[radial-gradient(110%_120%_at_95%_10%,#1e3a2f_0%,#0f172a_58%,#090e1a_100%)] p-5 text-white sm:p-7">
+                    <div>
                         <p class="text-xs font-semibold text-[#B8D9C0]">{{ scopeLabel }}</p>
                         <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
@@ -155,34 +155,28 @@ function activityTone(type = '') {
                             </div>
                         </dl>
                     </div>
+                </section>
 
-                    <aside class="border-t border-white/10 bg-[#0b1b2b] p-5 lg:border-l lg:border-t-0 sm:p-6" aria-labelledby="registration-heading">
-                        <div class="flex gap-4">
-                            <div class="w-20 shrink-0 rounded-xl bg-white p-1.5 [&_svg]:h-auto [&_svg]:w-full" v-html="registrationShare.qr_svg"></div>
-                            <div class="min-w-0">
-                                <p id="registration-heading" class="text-sm font-bold">{{ t('Pendaftaran ahli') }}</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-300">{{ t('Kongsi pautan rasmi untuk pendaftaran kendiri.') }}</p>
-                            </div>
+                <aside class="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="registration-heading">
+                    <div class="flex gap-4">
+                        <div class="w-20 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-1.5 [&_svg]:h-auto [&_svg]:w-full" v-html="registrationShare.qr_svg"></div>
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold uppercase tracking-wide text-[#2F6B32]">{{ t('Pendaftaran awam') }}</p>
+                            <h2 id="registration-heading" class="mt-1 text-base font-black text-slate-900">{{ t('Pautan dan kod QR keahlian') }}</h2>
+                            <p class="mt-1 text-xs leading-5 text-slate-600">{{ t('Kongsi pautan rasmi untuk pendaftaran kendiri.') }}</p>
                         </div>
-                        <p class="mt-4 truncate rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200" :title="registrationShare.share_url">{{ registrationShare.share_url }}</p>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button type="button" class="min-h-11 rounded-lg bg-white px-3 text-sm font-bold text-[#071525] transition hover:bg-[#E4EBE5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" @click="copyShareLink">
-                                {{ shareCopied ? t('Pautan disalin') : t('Salin pautan') }}
-                            </button>
-                            <button type="button" class="min-h-11 rounded-lg border border-white/20 px-3 text-sm font-bold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" @click="shareRegistration">
-                                {{ t('Kongsi pautan') }}
-                            </button>
-                        </div>
-                        <Link v-if="!isBranchAdmin" :href="route('admin.jemput-ahli')" class="mt-2 flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-3 text-sm font-bold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                            {{ t('Buka halaman jemputan') }}
-                        </Link>
-                    </aside>
-                </div>
-            </section>
+                    </div>
+                    <p class="mt-5 truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-700" :title="registrationShare.share_url">{{ registrationShare.share_url }}</p>
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button type="button" class="min-h-11 rounded-xl bg-slate-900 px-3 text-sm font-bold text-white transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900" @click="copyShareLink">{{ shareCopied ? t('Pautan disalin') : t('Salin pautan') }}</button>
+                        <button type="button" class="min-h-11 rounded-xl bg-[#2F6B32] px-3 text-sm font-bold text-white transition hover:bg-[#123D2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" @click="shareRegistration">{{ t('Kongsi pautan') }}</button>
+                    </div>
+                    <Link v-if="!isBranchAdmin" :href="route('admin.jemput-ahli')" class="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]">{{ t('Buka halaman jemputan') }}</Link>
+                </aside>
+            </div>
 
-            <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(330px,0.85fr)]">
-                <div class="space-y-5">
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="actions-heading">
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="actions-heading">
                         <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <h2 id="actions-heading" class="text-lg font-black text-slate-900">{{ t('Tindakan utama') }}</h2>
@@ -192,16 +186,61 @@ function activityTone(type = '') {
                                 {{ t('Buka direktori') }}
                             </Link>
                         </div>
-                        <div class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="mt-5 grid grid-cols-2 gap-2">
                             <Link v-for="action in managementActions" :key="action.label" :href="action.href" class="group min-h-28 rounded-xl border p-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="action.tone === 'primary' ? 'border-[#071525] bg-[#071525] text-white hover:bg-[#123D2A]' : 'border-slate-200 bg-white text-slate-900 hover:border-[#6FBF8A] hover:bg-[#F4F6F1]'">
                                 <p class="text-sm font-bold">{{ action.label }}</p>
                                 <p class="mt-1 text-xs leading-5" :class="action.tone === 'primary' ? 'text-slate-300' : 'text-slate-600'">{{ action.description }}</p>
                             </Link>
                         </div>
-                    </section>
+                </section>
 
-                    <section class="rounded-2xl border border-slate-200 bg-white" aria-labelledby="breakdown-heading">
-                        <div class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="organization-heading">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <div>
+                            <h2 id="organization-heading" class="text-lg font-black text-slate-900">{{ isManagementView ? t('Pecahan mengikut entiti') : t('Pecahan program') }}</h2>
+                            <p class="mt-1 text-sm text-slate-600">{{ isManagementView ? t('Taburan ahli setiap organisasi.') : t('Status modul dalam organisasi anda.') }}</p>
+                        </div>
+                        <span class="text-sm font-black text-slate-900 tabular-nums">{{ overview.total_members }}</span>
+                    </div>
+                    <div v-if="organizationItems.length" class="mt-5 space-y-4">
+                        <div v-for="org in organizationItems" :key="org.id">
+                            <div class="flex justify-between gap-3 text-sm">
+                                <span class="flex min-w-0 items-center gap-2 font-bold text-slate-800"><span class="h-2.5 w-2.5 shrink-0 rounded-sm" :style="{ backgroundColor: org.color_theme ?? '#334155' }"></span>{{ org.name }}</span>
+                                <span class="font-black text-slate-900 tabular-nums">{{ org.member_count }}</span>
+                            </div>
+                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" :style="{ width: `${Math.max(4, (Number(org.member_count) / Math.max(1, ...organizationItems.map((item) => Number(item.member_count)))) * 100)}%`, backgroundColor: org.color_theme ?? '#334155' }"></div></div>
+                        </div>
+                    </div>
+                    <div v-else class="mt-5 space-y-4">
+                        <div v-for="item in overview.program_chart" :key="item.label">
+                            <div class="flex justify-between gap-3 text-sm"><span class="font-bold text-slate-800">{{ t(item.label) }}</span><span class="font-black text-slate-900 tabular-nums">{{ item.value }}</span></div>
+                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-[#2F6B32]" :style="{ width: `${Math.max(4, (Number(item.value ?? 0) / chartMax) * 100)}%` }"></div></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4" aria-labelledby="attention-heading">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 id="attention-heading" class="text-lg font-black text-slate-900">{{ t('Metrik operasi dan yuran') }}</h2>
+                            <p class="mt-1 text-sm text-slate-600">{{ t('Status transaksi dan rekod semasa.') }}</p>
+                        </div>
+                        <span class="rounded-md bg-[#E4EBE5] px-2 py-1 text-xs font-bold text-[#123D2A]">{{ t('Aktif') }}</span>
+                    </div>
+                    <dl class="mt-5 grid grid-cols-2 gap-2.5">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><dt class="text-xs text-slate-600">{{ t('Jumlah Program') }}</dt><dd class="mt-1 text-xl font-black text-slate-900 tabular-nums">{{ overview.total_programs }}</dd></div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><dt class="text-xs text-slate-600">{{ t('Program Bulan Ini') }}</dt><dd class="mt-1 text-xl font-black text-slate-900 tabular-nums">{{ overview.events_this_month }}</dd></div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><dt class="text-xs text-slate-600">{{ t('Tempahan Pending') }}</dt><dd class="mt-1 text-xl font-black text-slate-900 tabular-nums">{{ overview.pending_facility_bookings }}</dd></div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><dt class="text-xs text-slate-600">{{ t('Yuran Tertunggak') }}</dt><dd class="mt-1 text-xl font-black text-slate-900 tabular-nums">{{ overview.fees_due_count }}</dd></div>
+                    </dl>
+                    <div v-if="alertItems.length" class="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3.5"><p class="text-sm font-bold text-rose-900">{{ t(alertItems[0].title) }}</p><p class="mt-1 text-xs text-rose-800">{{ alertDescription(alertItems[0]) }}</p></div>
+                    <div v-else class="mt-3 rounded-xl border border-[#D5E3D8] bg-[#F4F6F1] p-3.5 text-sm font-bold text-[#123D2A]">{{ t('Tiada tindakan tertunggak pada masa ini.') }}</div>
+                </section>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                <section class="rounded-2xl border border-slate-200 bg-white lg:col-span-8" aria-labelledby="breakdown-heading">
+                    <div class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
                             <div>
                                 <h2 id="breakdown-heading" class="text-lg font-black text-slate-900">
                                     {{ isManagementView ? t('Liputan ahli mengikut organisasi') : t('Liputan ahli mengikut negeri') }}
@@ -213,7 +252,7 @@ function activityTone(type = '') {
                                 <button type="button" class="min-h-11 rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'branch' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" @click="breakdownMode = 'branch'">{{ t('Cawangan') }}</button>
                             </div>
                         </div>
-                        <div v-if="memberBreakdown.length" class="grid gap-px bg-slate-100 sm:grid-cols-2">
+                        <div v-if="memberBreakdown.length" class="grid max-h-[440px] gap-px overflow-y-auto bg-slate-100 sm:grid-cols-2">
                             <div v-for="item in memberBreakdown" :key="`${item.organization ?? ''}-${item.label}`" class="bg-white p-4 sm:p-5">
                                 <div class="flex items-baseline justify-between gap-3">
                                     <div class="min-w-0">
@@ -233,48 +272,9 @@ function activityTone(type = '') {
                         <div class="flex justify-end border-t border-slate-100 px-5 py-3 sm:px-6">
                             <a :href="route('admin.members.export.states')" class="inline-flex min-h-11 items-center text-sm font-bold text-[#123D2A] hover:text-[#2F6B32] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]">{{ t('Muat turun laporan negeri') }}</a>
                         </div>
-                    </section>
-                </div>
+                </section>
 
-                <div class="space-y-5">
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="attention-heading">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <h2 id="attention-heading" class="text-lg font-black text-slate-900">{{ t('Perlu perhatian') }}</h2>
-                                <p class="mt-1 text-sm text-slate-600">{{ t('Status yang mungkin memerlukan tindakan anda.') }}</p>
-                            </div>
-                            <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700 tabular-nums">{{ alertItems.length }}</span>
-                        </div>
-                        <div v-if="alertItems.length" class="mt-5 space-y-3">
-                            <div v-for="(alert, index) in alertItems" :key="index" class="rounded-xl border p-4" :class="alert.type === 'high' ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'">
-                                <p class="text-sm font-bold" :class="alert.type === 'high' ? 'text-rose-900' : 'text-amber-900'">{{ t(alert.title) }}</p>
-                                <p class="mt-1 text-xs leading-5" :class="alert.type === 'high' ? 'text-rose-800' : 'text-amber-800'">{{ alertDescription(alert) }}</p>
-                            </div>
-                        </div>
-                        <div v-else class="mt-5 rounded-xl bg-[#F4F6F1] p-4 text-sm leading-6 text-[#123D2A]">
-                            {{ t('Tiada tindakan tertunggak pada masa ini.') }}
-                        </div>
-                    </section>
-
-                    <section v-if="organizationItems.length" class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="organizations-heading">
-                        <div class="flex items-baseline justify-between gap-3">
-                            <div>
-                                <h2 id="organizations-heading" class="text-lg font-black text-slate-900">{{ t('Mengikut organisasi') }}</h2>
-                                <p class="mt-1 text-sm text-slate-600">{{ t('Jumlah ahli dalam setiap organisasi.') }}</p>
-                            </div>
-                        </div>
-                        <div class="mt-4 divide-y divide-slate-100">
-                            <div v-for="org in organizationItems" :key="org.id" class="flex items-center justify-between gap-3 py-3">
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: org.color_theme ?? '#334155' }"></span>
-                                    <span class="truncate text-sm font-bold text-slate-800">{{ org.name }}</span>
-                                </div>
-                                <span class="text-lg font-black text-slate-900 tabular-nums">{{ org.member_count }}</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="activity-heading">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4 sm:p-6" aria-labelledby="activity-heading">
                         <div class="flex items-baseline justify-between gap-3">
                             <div>
                                 <h2 id="activity-heading" class="text-lg font-black text-slate-900">{{ t('Aktiviti terkini') }}</h2>
@@ -293,22 +293,6 @@ function activityTone(type = '') {
                         </div>
                         <p v-else class="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">{{ t('Belum ada aktiviti direkodkan.') }}</p>
                     </section>
-
-                    <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="program-heading">
-                        <h2 id="program-heading" class="text-lg font-black text-slate-900">{{ t('Ringkasan modul') }}</h2>
-                        <div class="mt-4 space-y-4">
-                            <div v-for="item in overview.program_chart" :key="item.label">
-                                <div class="flex justify-between gap-3 text-sm">
-                                    <span class="font-semibold text-slate-700">{{ t(item.label) }}</span>
-                                    <span class="font-black text-slate-900 tabular-nums">{{ item.value }}</span>
-                                </div>
-                                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-[#2F6B32]" :style="{ width: `${Math.max(4, (Number(item.value ?? 0) / chartMax) * 100)}%` }"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
             </div>
         </main>
     </AppLayout>
