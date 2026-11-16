@@ -65,9 +65,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final english = Localizations.localeOf(context).languageCode == 'en';
     return AuthScaffold(
       title: context.l10n.forgotPasswordTitle,
       subtitle: context.l10n.forgotPasswordSubtitle,
+      icon: Icons.lock_reset_rounded,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -103,7 +105,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                               : null,
                 ),
                 Text(
-                  'Masukkan No. IC tanpa tanda dash (-). Jika rekod ahli tidak dijumpai, sila hubungi admin.',
+                  english
+                      ? 'Enter your IC number without dashes. Contact an administrator if your member record cannot be found.'
+                      : 'Masukkan No. IC tanpa tanda sengkang. Hubungi pentadbir jika rekod ahli tidak dijumpai.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.35,
@@ -111,16 +115,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: Spacing.sm),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
+                  segments: [
+                    const ButtonSegment(
                       value: 'whatsapp',
                       label: Text('WhatsApp'),
                       icon: Icon(Icons.chat_outlined),
                     ),
                     ButtonSegment(
                       value: 'email',
-                      label: Text('Emel'),
-                      icon: Icon(Icons.mail_outline),
+                      label: Text(english ? 'Email' : 'Emel'),
+                      icon: const Icon(Icons.mail_outline),
                     ),
                   ],
                   selected: {_channel},
@@ -135,7 +139,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 AuthField(
                   label:
                       _channel == 'whatsapp'
-                          ? 'Nombor WhatsApp'
+                          ? english
+                              ? 'WhatsApp number'
+                              : 'Nombor WhatsApp'
                           : context.l10n.emailLabel,
                   controller: _contactController,
                   icon:
@@ -154,14 +160,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   onFieldSubmitted: (_) => _submit(),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Ruangan ini diperlukan.';
+                      return english
+                          ? 'This field is required.'
+                          : 'Ruangan ini diperlukan.';
                     }
                     if (_channel == 'email' && !v.contains('@')) {
                       return context.l10n.emailInvalidShort;
                     }
                     if (_channel == 'whatsapp' &&
                         v.replaceAll(RegExp(r'\D'), '').length < 10) {
-                      return 'Nombor WhatsApp tidak sah.';
+                      return english
+                          ? 'Enter a valid WhatsApp number.'
+                          : 'Nombor WhatsApp tidak sah.';
                     }
                     return null;
                   },

@@ -7,6 +7,7 @@ use App\Models\BranchAdmin;
 use App\Models\ActivityLog;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\BranchAdminProvisioner;
 use App\Notifications\BranchSecretaryAppointed;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,7 +120,8 @@ class BranchController extends Controller
             abort(403, 'Anda tidak dibenarkan menambah cawangan organisasi lain.');
         }
 
-        Branch::create($data);
+        $branch = Branch::create($data);
+        app(BranchAdminProvisioner::class)->provision($branch, Auth::id());
 
         return back()->with('success', 'Cawangan berjaya ditambah!');
     }

@@ -93,6 +93,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
       return AuthScaffold(
         title: context.l10n.memberNoFoundTitle,
         subtitle: context.l10n.memberNoFoundSubtitle,
+        icon: Icons.badge_outlined,
         children: [
           Container(
             padding: const EdgeInsets.all(Spacing.xl),
@@ -145,6 +146,7 @@ class _ForgotIdScreenState extends ConsumerState<ForgotIdScreen> {
           _needsDob
               ? context.l10n.forgotMemberNoVerifySubtitle
               : context.l10n.forgotMemberNoEnterIcSubtitle,
+      icon: Icons.badge_outlined,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,

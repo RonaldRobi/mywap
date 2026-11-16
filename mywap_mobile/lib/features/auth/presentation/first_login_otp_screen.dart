@@ -187,6 +187,7 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
   Widget build(BuildContext context) {
     final isVerifyStep = _step == _OtpStep.verify;
     final needsContact = _step == _OtpStep.requestChannel;
+    final english = Localizations.localeOf(context).languageCode == 'en';
 
     return AuthScaffold(
       title: context.l10n.firstLoginTitle,
@@ -194,8 +195,20 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
           isVerifyStep
               ? context.l10n.firstLoginVerifySubtitle
               : needsContact
-              ? 'Pilih saluran untuk menerima kod OTP.'
+              ? english
+                  ? 'Choose where you want to receive the OTP code.'
+                  : 'Pilih saluran untuk menerima kod OTP.'
               : context.l10n.firstLoginEnterIcSubtitle,
+      icon: Icons.key_rounded,
+      steps:
+          english
+              ? const ['1. Verify IC', '2. Delivery', '3. OTP & password']
+              : const ['1. Sahkan KP', '2. Saluran', '3. OTP & kata laluan'],
+      activeStep: switch (_step) {
+        _OtpStep.requestIc => 0,
+        _OtpStep.requestChannel => 1,
+        _OtpStep.verify => 2,
+      },
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -230,7 +243,9 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Masukkan No. IC tanpa tanda dash (-). Jika pernah mendaftar tetapi No. IC tidak dijumpai, sila hubungi admin.',
+                    english
+                        ? 'Enter your IC number without dashes. Contact an administrator if your registered record cannot be found.'
+                        : 'Masukkan No. IC tanpa tanda sengkang. Hubungi pentadbir jika rekod berdaftar tidak dijumpai.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                       height: 1.35,
@@ -240,13 +255,13 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
               if (needsContact) ...[
                 const SizedBox(height: Spacing.sm),
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'email',
-                      label: Text('Emel'),
-                      icon: Icon(Icons.mail_outline),
+                      label: Text(english ? 'Email' : 'Emel'),
+                      icon: const Icon(Icons.mail_outline),
                     ),
-                    ButtonSegment(
+                    const ButtonSegment(
                       value: 'whatsapp',
                       label: Text('WhatsApp'),
                       icon: Icon(Icons.chat_outlined),
@@ -264,7 +279,9 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                 AuthField(
                   label:
                       _channel == 'whatsapp'
-                          ? 'Nombor WhatsApp'
+                          ? english
+                              ? 'WhatsApp number'
+                              : 'Nombor WhatsApp'
                           : context.l10n.emailLabel,
                   controller: _contactController,
                   icon:
@@ -282,14 +299,18 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                   textInputAction: TextInputAction.done,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Ruangan ini diperlukan.';
+                      return english
+                          ? 'This field is required.'
+                          : 'Ruangan ini diperlukan.';
                     }
                     if (_channel == 'email' && !v.contains('@')) {
                       return context.l10n.emailInvalidShort;
                     }
                     if (_channel == 'whatsapp' &&
                         v.replaceAll(RegExp(r'\D'), '').length < 10) {
-                      return 'Nombor WhatsApp tidak sah.';
+                      return english
+                          ? 'Enter a valid WhatsApp number.'
+                          : 'Nombor WhatsApp tidak sah.';
                     }
                     return null;
                   },
@@ -308,7 +329,11 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                         _resendSeconds == 0 && !_submitting ? _resendOtp : null,
                     child: Text(
                       _resendSeconds > 0
-                          ? 'Minta kod lagi dalam ${_resendSeconds}s'
+                          ? english
+                              ? 'Request again in ${_resendSeconds}s'
+                              : 'Minta kod lagi dalam ${_resendSeconds}s'
+                          : english
+                          ? 'Request another code'
                           : 'Minta kod lagi',
                     ),
                   ),

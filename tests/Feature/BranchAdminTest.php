@@ -244,6 +244,89 @@ class BranchAdminTest extends TestCase
             ->assertSessionHas('error');
     }
 
+    public function test_abim_branch_creation_provisions_manager_account_automatically(): void
+    {
+        $this->actingAs($this->orgAdmin)
+            ->post(route('branches.store'), [
+                'organization_id' => $this->abim->id,
+                'name' => 'Batu Pahat',
+                'state' => 'Johor',
+                'is_active' => true,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $branch = Branch::where('organization_id', $this->abim->id)
+            ->where('name', 'Batu Pahat')
+            ->firstOrFail();
+        $manager = BranchAdmin::where('branch_id', $branch->id)
+            ->where('role', BranchAdmin::ROLE_MANAGER)
+            ->with('user')
+            ->firstOrFail();
+
+        $this->assertTrue($manager->user->hasRole('Admin Cawangan'));
+        $this->assertSame($branch->id, (int) $manager->user->branch_id);
+        $this->assertSame('abim-batu-pahat@mywap.my', $manager->user->email);
+    }
+
+    public function test_branch_admin_provisioning_is_idempotent_and_does_not_touch_wadah(): void
+    {
+        $this->actingAs($this->orgAdmin)
+            ->post(route('branches.store'), [
+                'organization_id' => $this->abim->id,
+                'name' => 'Pasir Gudang',
+                'state' => 'Johor',
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $branch = Branch::where('organization_id', $this->abim->id)
+            ->where('name', 'Pasir Gudang')
+            ->firstOrFail();
+
+        app(\App\Services\BranchAdminProvisioner::class)->provision($branch);
+        app(\App\Services\BranchAdminProvisioner::class)->provision($branch);
+
+        $this->assertSame(1, BranchAdmin::where('branch_id', $branch->id)
+            ->where('role', BranchAdmin::ROLE_MANAGER)
+            ->count());
+
+        $superadmin = User::factory()->create([
+            'profile_completed_at' => now(),
+        ]);
+        $superadmin->assignRole('Superadmin');
+
+        $this->actingAs($superadmin)
+            ->post(route('branches.store'), [
+                'organization_id' => $this->wadah->id,
+                'name' => 'Melaka Baharu',
+                'state' => 'Melaka',
+                'is_active' => true,
+            ])
+            ->assertRedirect();
+
+        $wadahBranch = Branch::where('organization_id', $this->wadah->id)
+            ->where('name', 'Melaka Baharu')
+            ->firstOrFail();
+
+        $this->assertDatabaseMissing('branch_admins', [
+            'branch_id' => $wadahBranch->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
+    }
+
+    public function test_provisioning_reuses_legacy_branch_admin_account(): void
+    {
+        $this->memberJohor->assignRole('Admin Cawangan');
+
+        $manager = app(\App\Services\BranchAdminProvisioner::class)->provision($this->johor);
+
+        $this->assertSame($this->memberJohor->id, $manager?->id);
+        $this->assertSame(1, BranchAdmin::where('branch_id', $this->johor->id)
+            ->where('role', BranchAdmin::ROLE_MANAGER)
+            ->count());
+    }
+
     public function test_branch_admin_cannot_create_manager_account_for_another_branch(): void
     {
         $this->actingAs($this->branchAdmin)
@@ -320,7 +403,7 @@ class BranchAdminTest extends TestCase
     public function test_secretary_appointment_email_contains_credentials_and_logo(): void
     {
         $html = view('emails.branch-secretary-appointed', [
-            'subject' => 'Pelantikan setiausaha cawangan Perak',
+            'subject' => 'Akses pentadbiran myWAP diaktifkan untuk cawangan Perak',
             'secretaryName' => 'Setiausaha Perak',
             'branchName' => 'Perak',
             'organizationName' => 'ABIM',
@@ -333,6 +416,8 @@ class BranchAdminTest extends TestCase
 
         $this->assertStringContainsString('abim-perak@mywap.my', $html);
         $this->assertStringContainsString('TempPass123', $html);
+        $this->assertStringContainsString('Akses anda sebagai Setiausaha Cawangan dalam sistem myWAP telah diaktifkan', $html);
+        $this->assertStringContainsString('tidak mengubah jawatan rasmi anda', $html);
         $this->assertStringContainsString('wajib', $html);
         $this->assertStringContainsString('logomywaphorizontal.png', $html);
     }

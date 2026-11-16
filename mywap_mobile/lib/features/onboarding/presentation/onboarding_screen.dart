@@ -206,21 +206,9 @@ class _OnboardingLogo extends ConsumerWidget {
     final logo = ref.watch(appLogoProvider);
     if (logo == null || logo.isEmpty) return const SizedBox.shrink();
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    return Container(
+    return SizedBox(
       width: 46,
       height: 46,
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: AppRadius.md,
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.scrimLight,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
       child: Image.network(
         logo,
         fit: BoxFit.contain,

@@ -104,6 +104,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       return AuthScaffold(
         title: context.l10n.resetPasswordTitle,
         subtitle: context.l10n.resetPasswordInvalidLink,
+        icon: Icons.link_off_rounded,
         footer: TextButton(
           onPressed: () => context.go('/login'),
           child: Text(context.l10n.backToLogin),
@@ -121,6 +122,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       return AuthScaffold(
         title: context.l10n.resetPasswordTitle,
         subtitle: context.l10n.resetPasswordSubtitle,
+        icon: Icons.check_circle_outline_rounded,
         children: [
           AuthSuccessBanner(message: context.l10n.passwordUpdated),
           FilledButton(
@@ -134,6 +136,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     return AuthScaffold(
       title: context.l10n.resetPasswordTitle,
       subtitle: context.l10n.resetPasswordSubtitle,
+      icon: Icons.lock_reset_rounded,
       footer: TextButton(
         onPressed: () => context.go('/login'),
         child: Text(context.l10n.backToLogin),

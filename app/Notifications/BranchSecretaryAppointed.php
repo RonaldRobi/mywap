@@ -31,9 +31,9 @@ class BranchSecretaryAppointed extends Notification implements ShouldQueue
         $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
 
         return (new MailMessage)
-            ->subject('Pelantikan setiausaha cawangan '.$this->branchName)
+            ->subject('Akses pentadbiran myWAP diaktifkan untuk cawangan '.$this->branchName)
             ->view('emails.branch-secretary-appointed', [
-                'subject' => 'Pelantikan setiausaha cawangan '.$this->branchName,
+                'subject' => 'Akses pentadbiran myWAP diaktifkan untuk cawangan '.$this->branchName,
                 'secretaryName' => $notifiable->name,
                 'branchName' => $this->branchName,
                 'organizationName' => $this->organizationName,
@@ -48,8 +48,8 @@ class BranchSecretaryAppointed extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'title' => 'Pelantikan setiausaha cawangan',
-            'content' => 'Anda dilantik sebagai setiausaha cawangan '.$this->branchName.'. Butiran log masuk akaun admin cawangan telah dihantar ke emel anda.',
+            'title' => 'Akses pentadbiran myWAP diaktifkan',
+            'content' => 'Akses anda sebagai Setiausaha Cawangan dalam myWAP telah diaktifkan untuk '.$this->branchName.'. Butiran log masuk telah dihantar ke emel anda.',
             'type' => 'branch_secretary_appointed',
             'action_type' => null,
             'action_id' => null,

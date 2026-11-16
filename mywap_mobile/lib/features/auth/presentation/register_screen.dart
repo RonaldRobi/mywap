@@ -145,6 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       title: context.l10n.registerTitle,
       subtitle:
           '${context.l10n.registerSubtitle}\n${context.l10n.registerFreeNote}',
+      icon: Icons.person_add_alt_1_rounded,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -299,6 +300,7 @@ class _RegisterSuccess extends StatelessWidget {
     return AuthScaffold(
       title: context.l10n.registerSuccessTitle,
       subtitle: context.l10n.registerSuccessSubtitle,
+      icon: Icons.check_circle_outline_rounded,
       children: [
         Container(
           padding: const EdgeInsets.all(Spacing.xl),

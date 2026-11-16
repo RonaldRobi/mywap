@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../onboarding/application/onboarding_providers.dart';
-import '../../onboarding/data/onboarding_repository.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_canvas_background.dart';
+import 'widgets/auth_scaffold.dart';
 import 'widgets/biometric_prompt.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
+
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
@@ -21,22 +21,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
-  String? _error;
   bool _bioSubmitting = false;
   bool _busy = false;
-
-  static const TextStyle _inputTextStyle = TextStyle(
-    fontSize: 16,
-    color: AppColors.textPrimary,
-  );
-
-  TextStyle _fieldLabelStyle(BuildContext context) =>
-      Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.w600,
-      ) ??
-      const TextStyle(color: AppColors.textPrimary);
+  String? _error;
 
   @override
   void dispose() {
@@ -46,18 +35,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (_busy) return;
-    if (!_formKey.currentState!.validate()) return;
+    if (_busy || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _error = null;
       _busy = true;
     });
     final identifier = _identifierController.text.trim();
 
-    // Kenal pasti akaun dahulu: ahli lama yang belum pernah log masuk perlu
-    // melalui aliran OTP "Log Masuk Kali Pertama", bukan dilempar ralat
-    // "kata laluan salah". Jika semakan gagal (cth. offline/404), teruskan
-    // log masuk biasa di bawah.
     try {
       final info = await ref
           .read(authRepositoryProvider)
@@ -71,7 +55,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
     } catch (_) {
-      // Abaikan dan cuba log masuk biasa.
+      // Login still works when the preliminary member check is unavailable.
     }
 
     if (!mounted) return;
@@ -111,321 +95,449 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (mounted) setState(() => _bioSubmitting = false);
   }
 
+  Future<void> _showRecoveryOptions() async {
+    final english = Localizations.localeOf(context).languageCode == 'en';
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
+      builder:
+          (sheetContext) => SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                Spacing.xl,
+                Spacing.sm,
+                Spacing.xl,
+                Spacing.xl + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: AppColors.greenTint,
+                          borderRadius: AppRadius.md,
+                        ),
+                        child: const Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.movementDarkGreen,
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              english ? 'Account recovery' : 'Pemulihan akaun',
+                              style: Theme.of(sheetContext)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            Text(
+                              english
+                                  ? 'Choose what you need to recover.'
+                                  : 'Pilih maklumat yang anda mahu pulihkan.',
+                              style: Theme.of(sheetContext).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  _RecoveryOption(
+                    icon: Icons.lock_reset_outlined,
+                    title: context.l10n.forgotPasswordTitle,
+                    subtitle: context.l10n.forgotPasswordSubtitle,
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      context.push('/forgot-password');
+                    },
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                  _RecoveryOption(
+                    icon: Icons.badge_outlined,
+                    title: context.l10n.forgotMemberNoTitle,
+                    subtitle: context.l10n.forgotMemberNoEnterIcSubtitle,
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      context.push('/forgot-id');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final fallback = MobileLoginBranding(
-      title: context.l10n.loginWelcomeTitle,
-      subtitle: context.l10n.loginWelcomeSubtitle,
-      backgroundStart: '#F3F6EF',
-      backgroundEnd: '#EDF4EC',
-      accent: '#147A3D',
-    );
-    final branding =
-        ref.watch(mobileAuthConfigurationProvider).valueOrNull?.login ??
-        fallback;
-    final accent = _parseColor(branding.accent);
+    final english = Localizations.localeOf(context).languageCode == 'en';
     final isSubmitting =
         _busy || ref.watch(authControllerProvider) is AuthLoading;
+    final identity = _identityType(english);
 
     return Scaffold(
       body: AuthCanvasBackground(
         child: SafeArea(
           child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(
               Spacing.lg,
               Spacing.md,
               Spacing.lg,
-              Spacing.lg,
+              Spacing.xl,
             ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight:
-                    MediaQuery.sizeOf(context).height -
-                    MediaQuery.paddingOf(context).vertical -
-                    Spacing.xxl,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Container(
-                    padding: const EdgeInsets.all(Spacing.xl),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: .88),
-                      borderRadius: AppRadius.card,
-                      border: Border.all(color: AppColors.white),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.glassTint,
-                          blurRadius: 32,
-                          offset: Offset(0, 12),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const AuthBrandHeader(),
+                    const SizedBox(height: Spacing.lg),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _BrandMark(branding: branding, accent: accent),
-                          const SizedBox(height: Spacing.xl),
                           Text(
-                            context.l10n.loginWelcomeTitle,
+                            english ? 'Welcome back,' : 'Selamat kembali,',
                             style: Theme.of(
                               context,
-                            ).textTheme.headlineMedium?.copyWith(
+                            ).textTheme.headlineSmall?.copyWith(
                               color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
                             ),
                           ),
-                          const SizedBox(height: Spacing.sm),
                           Text(
-                            context.l10n.loginWelcomeSubtitle,
+                            english ? 'myWAP Member' : 'Ahli myWAP',
                             style: Theme.of(
                               context,
-                            ).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.5,
+                            ).textTheme.headlineSmall?.copyWith(
+                              color: AppColors.movementDarkGreen,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
                             ),
                           ),
-                          const SizedBox(height: Spacing.lg),
-                          _FirstLoginCallout(
-                            onPressed: () => context.push('/first-login'),
-                          ),
-                          const SizedBox(height: Spacing.lg),
-                          if (_error != null) ...[
-                            _ErrorBanner(message: _error!),
-                            const SizedBox(height: Spacing.lg),
-                          ],
+                          const SizedBox(height: Spacing.sm),
                           Text(
-                            context.l10n.loginIdentifierLabel,
-                            style: _fieldLabelStyle(context),
-                          ),
-                          const SizedBox(height: Spacing.sm),
-                          TextFormField(
-                            controller: _identifierController,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
-                            style: _inputTextStyle,
-                            decoration: _inputDecoration(
-                              context.l10n.loginIdentifierHint,
-                              Icons.person_outline,
-                              accent,
-                            ),
-                            validator:
-                                (value) =>
-                                    value == null || value.trim().isEmpty
-                                        ? context.l10n.loginIdentifierRequired
-                                        : null,
-                          ),
-                          const SizedBox(height: Spacing.lg),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                context.l10n.passwordLabel,
-                                style: _fieldLabelStyle(context),
-                              ),
-                              TextButton(
-                                onPressed:
-                                    () => context.push('/forgot-password'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: accent,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(44, 36),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  textStyle: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                child: Text(context.l10n.forgotPassword),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: Spacing.sm),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _submit(),
-                            style: _inputTextStyle,
-                            decoration: _inputDecoration(
-                              context.l10n.passwordHint,
-                              Icons.lock_outline,
-                              accent,
-                            ).copyWith(
-                              suffixIcon: IconButton(
-                                onPressed:
-                                    () => setState(
-                                      () =>
-                                          _obscurePassword = !_obscurePassword,
-                                    ),
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            validator:
-                                (value) =>
-                                    value == null || value.isEmpty
-                                        ? context.l10n.passwordRequired
-                                        : null,
-                          ),
-                          const SizedBox(height: Spacing.xl),
-                          SizedBox(
-                            height: AppSizes.buttonHeight,
-                            child: FilledButton(
-                              onPressed: isSubmitting ? null : _submit,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: accent,
-                                foregroundColor: AppColors.white,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: AppRadius.lg,
-                                ),
-                              ),
-                              child:
-                                  isSubmitting
-                                      ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: AppColors.white,
-                                        ),
-                                      )
-                                      : Text(context.l10n.login),
-                            ),
-                          ),
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final bioAvailable = ref.watch(
-                                biometricAvailableProvider,
-                              );
-                              final hasFaceId =
-                                  ref.watch(hasFaceIdProvider).valueOrNull ??
-                                  false;
-                              return bioAvailable.maybeWhen(
-                                data: (available) {
-                                  if (!available) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: Spacing.md,
-                                    ),
-                                    child: SizedBox(
-                                      height: 52,
-                                      child: OutlinedButton.icon(
-                                        onPressed:
-                                            _bioSubmitting
-                                                ? null
-                                                : _loginWithBiometrics,
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: accent,
-                                          side: const BorderSide(
-                                            color: AppColors.inputBorder,
-                                          ),
-                                          shape: const RoundedRectangleBorder(
-                                            borderRadius: AppRadius.lg,
-                                          ),
-                                        ),
-                                        icon:
-                                            _bioSubmitting
-                                                ? const SizedBox(
-                                                  width: 18,
-                                                  height: 18,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
-                                                )
-                                                : Icon(
-                                                  hasFaceId
-                                                      ? Icons
-                                                          .face_retouching_natural
-                                                      : Icons.fingerprint,
-                                                ),
-                                        label: Text(
-                                          hasFaceId
-                                              ? context
-                                                  .l10n
-                                                  .biometricFaceIdLogin
-                                              : context
-                                                  .l10n
-                                                  .biometricFingerprintLogin,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                orElse: () => const SizedBox.shrink(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: Spacing.xl),
-                          const Divider(color: AppColors.divider, height: 1),
-                          const SizedBox(height: Spacing.lg),
-                          SizedBox(
-                            height: 52,
-                            child: OutlinedButton.icon(
-                              onPressed: () => context.go('/home'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textSecondary,
-                                side: const BorderSide(
-                                  color: AppColors.divider,
-                                ),
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: AppRadius.lg,
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.explore_outlined,
-                                size: 20,
-                              ),
-                              label: Text(context.l10n.browseAsGuest),
-                            ),
-                          ),
-                          const SizedBox(height: Spacing.xl),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                context.l10n.noAccount,
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.textSecondary),
-                              ),
-                              TextButton(
-                                onPressed: () => context.push('/register'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: accent,
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(44, 36),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(context.l10n.registerNow),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: Spacing.sm),
-                          _FooterLink(
-                            label: context.l10n.firstLoginPrompt,
-                            onPressed: () => context.push('/first-login'),
-                          ),
-                          _FooterLink(
-                            label: context.l10n.forgotMemberNo,
-                            onPressed: () => context.push('/forgot-id'),
+                            english
+                                ? 'Log in to access your membership account.'
+                                : 'Log masuk untuk mengakses akaun keahlian anda.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: Spacing.lg),
+                    _FirstLoginBanner(
+                      english: english,
+                      onPressed: () => context.push('/first-login'),
+                    ),
+                    const SizedBox(height: Spacing.md),
+                    AuthCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (_error != null) ...[
+                              AuthErrorBanner(message: _error!),
+                            ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    context.l10n.loginIdentifierLabel,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: identity.color.withValues(alpha: .1),
+                                    borderRadius: AppRadius.xs,
+                                  ),
+                                  child: Text(
+                                    identity.label,
+                                    style: TextStyle(
+                                      color: identity.color,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextFormField(
+                              controller: _identifierController,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.username],
+                              onChanged: (_) => setState(() {}),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: _fieldDecoration(
+                                hint: context.l10n.loginIdentifierHint,
+                                icon: Icons.person_outline,
+                                suffix:
+                                    _identifierController.text.isEmpty
+                                        ? null
+                                        : IconButton(
+                                          tooltip:
+                                              english
+                                                  ? 'Clear input'
+                                                  : 'Padam input',
+                                          onPressed:
+                                              () => setState(
+                                                _identifierController.clear,
+                                              ),
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                          ),
+                                        ),
+                              ),
+                              validator:
+                                  (value) =>
+                                      value == null || value.trim().isEmpty
+                                          ? context.l10n.loginIdentifierRequired
+                                          : null,
+                            ),
+                            const SizedBox(height: Spacing.lg),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  context.l10n.passwordLabel,
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                TextButton(
+                                  onPressed:
+                                      () => context.push('/forgot-password'),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: const Size(44, 44),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  child: Text(context.l10n.forgotPassword),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.password],
+                              onFieldSubmitted: (_) => _submit(),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              decoration: _fieldDecoration(
+                                hint: context.l10n.passwordHint,
+                                icon: Icons.lock_outline,
+                                suffix: IconButton(
+                                  tooltip:
+                                      _obscurePassword
+                                          ? context.l10n.show
+                                          : context.l10n.hide,
+                                  onPressed:
+                                      () => setState(
+                                        () =>
+                                            _obscurePassword =
+                                                !_obscurePassword,
+                                      ),
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                              validator:
+                                  (value) =>
+                                      value == null || value.isEmpty
+                                          ? context.l10n.passwordRequired
+                                          : null,
+                            ),
+                            const SizedBox(height: Spacing.lg),
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final bioAvailable = ref.watch(
+                                  biometricAvailableProvider,
+                                );
+                                final hasFaceId =
+                                    ref.watch(hasFaceIdProvider).valueOrNull ??
+                                    false;
+                                final available =
+                                    bioAvailable.valueOrNull ?? false;
+                                return Row(
+                                  children: [
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 52,
+                                        child: FilledButton(
+                                          onPressed:
+                                              isSubmitting ? null : _submit,
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.movementDarkGreen,
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: AppRadius.md,
+                                            ),
+                                          ),
+                                          child:
+                                              isSubmitting
+                                                  ? const SizedBox(
+                                                    width: 21,
+                                                    height: 21,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2.5,
+                                                          color:
+                                                              AppColors.white,
+                                                        ),
+                                                  )
+                                                  : Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Text(context.l10n.login),
+                                                      const Icon(
+                                                        Icons
+                                                            .arrow_forward_rounded,
+                                                        size: 19,
+                                                      ),
+                                                    ],
+                                                  ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (available) ...[
+                                      const SizedBox(width: Spacing.sm),
+                                      SizedBox(
+                                        width: 52,
+                                        height: 52,
+                                        child: OutlinedButton(
+                                          onPressed:
+                                              _bioSubmitting
+                                                  ? null
+                                                  : _loginWithBiometrics,
+                                          style: OutlinedButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            backgroundColor:
+                                                AppColors.greenTint,
+                                            side: const BorderSide(
+                                              color: AppColors.inputBorder,
+                                            ),
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: AppRadius.md,
+                                            ),
+                                          ),
+                                          child:
+                                              _bioSubmitting
+                                                  ? const SizedBox(
+                                                    width: 19,
+                                                    height: 19,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
+                                                  : Icon(
+                                                    hasFaceId
+                                                        ? Icons
+                                                            .face_retouching_natural
+                                                        : Icons.fingerprint,
+                                                    semanticLabel:
+                                                        hasFaceId
+                                                            ? context
+                                                                .l10n
+                                                                .biometricFaceIdLogin
+                                                            : context
+                                                                .l10n
+                                                                .biometricFingerprintLogin,
+                                                  ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: Spacing.lg),
+                            const Divider(height: 1),
+                            const SizedBox(height: Spacing.md),
+                            _RecoveryHub(
+                              english: english,
+                              onPressed: _showRecoveryOptions,
+                            ),
+                            const SizedBox(height: Spacing.md),
+                            SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                onPressed: () => context.go('/home'),
+                                icon: const Icon(
+                                  Icons.public_rounded,
+                                  size: 19,
+                                ),
+                                label: Text(context.l10n.browseAsGuest),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textSecondary,
+                                  side: const BorderSide(
+                                    color: AppColors.inputBorder,
+                                  ),
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: AppRadius.md,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.md),
+                    _RegistrationTile(
+                      english: english,
+                      onPressed: () => context.push('/register'),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -434,200 +546,378 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+
+  _IdentityType _identityType(bool english) {
+    final value = _identifierController.text.trim();
+    if (value.isEmpty) {
+      return _IdentityType(
+        english ? 'Auto-detect' : 'Kesan auto',
+        AppColors.textSecondary,
+      );
+    }
+    if (value.contains('@')) {
+      return _IdentityType(
+        english ? 'Email address' : 'Alamat e-mel',
+        AppColors.movementGreen,
+      );
+    }
+    if (RegExp(r'^\d[\d\s-]*$').hasMatch(value)) {
+      return _IdentityType(
+        english ? 'IC number' : 'No. Kad Pengenalan',
+        AppColors.movementGreen,
+      );
+    }
+    return _IdentityType(english ? 'Member ID' : 'ID Ahli', AppColors.accent);
+  }
 }
 
-class _FirstLoginCallout extends StatelessWidget {
-  const _FirstLoginCallout({required this.onPressed});
+class _IdentityType {
+  const _IdentityType(this.label, this.color);
 
+  final String label;
+  final Color color;
+}
+
+class _FirstLoginBanner extends StatelessWidget {
+  const _FirstLoginBanner({required this.english, required this.onPressed});
+
+  final bool english;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onPressed,
+      borderRadius: AppRadius.lg,
+      child: Ink(
+        padding: const EdgeInsets.all(Spacing.md),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              AppColors.accentTint,
+              AppColors.white,
+              AppColors.greenTint,
+            ],
+          ),
+          borderRadius: AppRadius.lg,
+          border: Border.all(
+            color: AppColors.accent.withValues(alpha: .45),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: AppColors.accent,
+                borderRadius: AppRadius.md,
+              ),
+              child: const Icon(
+                Icons.key_rounded,
+                color: AppColors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    english ? 'NEW APP USER?' : 'PENGGUNA BAHARU?',
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    english
+                        ? 'First time logging in?'
+                        : 'Log masuk kali pertama?',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    english
+                        ? 'Activate your existing member account'
+                        : 'Aktifkan akaun ahli sedia ada anda',
+                    maxLines: 2,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Spacing.sm),
+            Container(
+              constraints: const BoxConstraints(minHeight: 40),
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+              decoration: const BoxDecoration(
+                color: AppColors.movementDarkGreen,
+                borderRadius: AppRadius.sm,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                english ? 'Activate' : 'Aktifkan',
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _RecoveryHub extends StatelessWidget {
+  const _RecoveryHub({required this.english, required this.onPressed});
+
+  final bool english;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(Spacing.sm),
+    decoration: BoxDecoration(
+      color: AppColors.greenTint,
+      borderRadius: AppRadius.md,
+      border: Border.all(color: AppColors.paleGreen),
+    ),
+    child: Row(
+      children: [
+        const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(
+            Icons.help_outline_rounded,
+            color: AppColors.movementDarkGreen,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                english
+                    ? 'Forgot password or Member No.?'
+                    : 'Lupa kata laluan atau No. Ahli?',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                english
+                    ? 'Recover your account using your IC number'
+                    : 'Pulihkan akaun menggunakan No. KP',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            minimumSize: const Size(52, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            backgroundColor: AppColors.white,
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.sm),
+            textStyle: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          child: Text(english ? 'Recover' : 'Pulihkan'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _RegistrationTile extends StatelessWidget {
+  const _RegistrationTile({required this.english, required this.onPressed});
+
+  final bool english;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(Spacing.md),
     decoration: BoxDecoration(
-      color: AppColors.accentTint,
-      borderRadius: AppRadius.md,
-      border: Border.all(color: AppColors.accent.withValues(alpha: .35)),
+      color: AppColors.white.withValues(alpha: .86),
+      borderRadius: AppRadius.lg,
+      border: Border.all(color: AppColors.white),
+      boxShadow: AppShadows.subtle,
     ),
     child: Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           decoration: const BoxDecoration(
-            color: AppColors.accent,
-            borderRadius: AppRadius.sm,
+            color: AppColors.movementGreen,
+            borderRadius: AppRadius.md,
           ),
           child: const Icon(
-            Icons.key_outlined,
+            Icons.person_add_alt_1_rounded,
             color: AppColors.white,
             size: 21,
           ),
         ),
         const SizedBox(width: Spacing.md),
         Expanded(
-          child: Text(
-            context.l10n.firstLoginPrompt,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                english ? 'Not a member yet?' : 'Belum menjadi ahli?',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                english
+                    ? 'Register with WADAH, ABIM or PKPIM'
+                    : 'Daftar bersama WADAH, ABIM atau PKPIM',
+                maxLines: 2,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: Spacing.sm),
+        FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(74, 44),
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+            backgroundColor: AppColors.movementDarkGreen,
+            shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+            textStyle: const TextStyle(
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
-        ),
-        TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.movementDarkGreen,
-            minimumSize: const Size(44, 44),
-            padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
-          ),
-          child: Text(context.l10n.firstTimeLogin),
+          child: Text(english ? 'Register' : 'Daftar'),
         ),
       ],
     ),
   );
 }
 
-class _BrandMark extends StatelessWidget {
-  const _BrandMark({required this.branding, required this.accent});
-  final MobileLoginBranding branding;
-  final Color accent;
+class _RecoveryOption extends StatelessWidget {
+  const _RecoveryOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onPressed,
+  });
 
-  static const double _logoSize = 56;
-  static const BorderRadius _logoRadius = BorderRadius.all(Radius.circular(4));
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: _logoSize,
-        height: _logoSize,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: _logoRadius,
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.glassTint,
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child:
-            branding.logoUrl?.isNotEmpty == true
-                ? ClipRRect(
-                  borderRadius: _logoRadius,
-                  child: Image.network(
-                    branding.logoUrl!,
-                    fit: BoxFit.contain,
-                    cacheWidth:
-                        (_logoSize * MediaQuery.devicePixelRatioOf(context))
-                            .round(),
-                    errorBuilder: (_, __, ___) => _fallback(),
-                  ),
-                )
-                : _fallback(),
-      ),
-      const SizedBox(width: Spacing.lg),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'myWAP',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.movementDarkGreen,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'WADAH | ABIM | PKPIM',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-  Widget _fallback() =>
-      Icon(Icons.volunteer_activism_outlined, color: accent, size: 30);
-}
-
-InputDecoration _inputDecoration(String hint, IconData icon, Color accent) =>
-    InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 15),
-      prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 22),
-      filled: true,
-      fillColor: AppColors.white,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: Spacing.lg,
-        vertical: 18,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: AppRadius.md,
-        borderSide: const BorderSide(color: AppColors.inputBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: AppRadius.md,
-        borderSide: const BorderSide(color: AppColors.inputBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadius.md,
-        borderSide: BorderSide(color: accent, width: 1.8),
-      ),
-    );
-
-class _FooterLink extends StatelessWidget {
-  const _FooterLink({required this.label, required this.onPressed});
-  final String label;
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.textSecondary,
-        padding: EdgeInsets.zero,
-        minimumSize: const Size(44, 36),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-      ),
-      child: Text(label),
-    ),
-  );
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-  final String message;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(Spacing.md),
-    decoration: BoxDecoration(
-      color: AppColors.error.withValues(alpha: .08),
-      borderRadius: AppRadius.md,
-      border: Border.all(color: AppColors.error.withValues(alpha: .35)),
+  Widget build(BuildContext context) => OutlinedButton(
+    onPressed: onPressed,
+    style: OutlinedButton.styleFrom(
+      padding: const EdgeInsets.all(Spacing.md),
+      alignment: Alignment.centerLeft,
+      side: const BorderSide(color: AppColors.inputBorder),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
     ),
     child: Row(
       children: [
-        const Icon(Icons.error_outline, color: AppColors.error),
+        Icon(icon, color: AppColors.movementDarkGreen),
         const SizedBox(width: Spacing.md),
         Expanded(
-          child: Text(message, style: const TextStyle(color: AppColors.error)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
+        const Icon(Icons.chevron_right_rounded, size: 20),
       ],
     ),
   );
 }
 
-Color _parseColor(String value) =>
-    Color(int.parse('FF${value.replaceFirst('#', '')}', radix: 16));
+InputDecoration _fieldDecoration({
+  required String hint,
+  required IconData icon,
+  Widget? suffix,
+}) => InputDecoration(
+  hintText: hint,
+  hintStyle: const TextStyle(
+    color: AppColors.textTertiary,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+  ),
+  prefixIcon: Icon(icon, color: AppColors.textTertiary, size: 21),
+  suffixIcon: suffix,
+  filled: true,
+  fillColor: AppColors.surfaceMuted,
+  contentPadding: const EdgeInsets.symmetric(
+    horizontal: Spacing.md,
+    vertical: 14,
+  ),
+  border: OutlineInputBorder(
+    borderRadius: AppRadius.md,
+    borderSide: const BorderSide(color: AppColors.inputBorder),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: AppRadius.md,
+    borderSide: const BorderSide(color: AppColors.inputBorder),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: AppRadius.md,
+    borderSide: const BorderSide(
+      color: AppColors.movementDarkGreen,
+      width: 1.8,
+    ),
+  ),
+);
