@@ -108,9 +108,9 @@ function alertDescription(alert) {
 }
 
 function activityTone(type = '') {
-    if (type === 'payment') return 'bg-emerald-50 text-emerald-800';
-    if (type === 'booking') return 'bg-amber-50 text-amber-800';
-    return 'bg-slate-100 text-slate-700';
+    if (type === 'payment') return 'bg-emerald-600';
+    if (type === 'booking') return 'bg-amber-500';
+    return 'bg-indigo-600';
 }
 </script>
 
@@ -133,24 +133,26 @@ function activityTone(type = '') {
                             <ExportCsvButton :href="route('admin.members.export')" />
                         </div>
 
-                        <dl class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-4">
-                            <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
+                        <dl class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                            <div class="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3.5">
                                 <dt class="text-xs text-slate-300">{{ t('Jumlah Ahli') }}</dt>
                                 <dd class="mt-1 text-2xl font-black tabular-nums">{{ overview.total_members }}</dd>
                             </div>
-                            <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
-                                <dt class="text-xs text-slate-300">{{ t('Pengguna aplikasi') }}</dt>
-                                <dd class="mt-1 text-2xl font-black text-[#B8D9C0] tabular-nums">{{ overview.app_users }}</dd>
-                                <p class="mt-1 text-[11px] font-semibold text-slate-300">{{ overview.app_usage_percent }}% {{ t('telah guna aplikasi') }}</p>
-                                <p class="mt-0.5 text-[10px] text-[#B8D9C0]">{{ t('Sasaran: 100%') }}</p>
+                            <div class="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3.5">
+                                <dt class="text-xs text-slate-300">{{ t('Ahli Aktif') }}</dt>
+                                <dd class="mt-1 text-2xl font-black text-[#B8D9C0] tabular-nums">{{ overview.active_members }}</dd>
                             </div>
-                            <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
+                            <div class="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3.5">
                                 <dt class="text-xs text-slate-300">{{ t('Ahli Baharu (30h)') }}</dt>
                                 <dd class="mt-1 text-2xl font-black tabular-nums">{{ overview.new_members_30d }}</dd>
                             </div>
-                            <div class="min-w-0 bg-[#0c2032] p-3.5 sm:p-4">
-                                <dt class="text-xs text-slate-300">{{ t('Yuran Bulan Ini') }}</dt>
-                                <dd class="mt-1 text-xl font-black text-[#B8D9C0] tabular-nums sm:text-2xl">{{ formatCurrency(overview.fees_collected_month) }}</dd>
+                            <div class="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3.5">
+                                <dt class="text-xs text-slate-300">{{ t('Pengguna aplikasi') }}</dt>
+                                <dd class="mt-1 text-2xl font-black text-[#B8D9C0] tabular-nums">{{ overview.app_users }}</dd>
+                            </div>
+                            <div class="col-span-2 min-w-0 rounded-xl border border-amber-400/30 bg-amber-500/15 p-3.5 sm:col-span-1">
+                                <dt class="text-xs text-amber-200">{{ t('Yuran Tertunggak') }}</dt>
+                                <dd class="mt-1 text-2xl font-black text-amber-300 tabular-nums">{{ overview.fees_due_count }}</dd>
                             </div>
                         </dl>
                     </div>
@@ -185,8 +187,8 @@ function activityTone(type = '') {
                                 {{ t('Buka direktori') }}
                             </Link>
                         </div>
-                        <div class="mt-5 grid grid-cols-2 gap-2">
-                            <Link v-for="action in managementActions" :key="action.label" :href="action.href" class="group min-h-28 rounded-xl border p-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="action.tone === 'primary' ? 'border-[#071525] bg-[#071525] text-white hover:bg-[#123D2A]' : 'border-slate-200 bg-white text-slate-900 hover:border-[#6FBF8A] hover:bg-[#F4F6F1]'">
+                        <div class="mt-5 grid flex-1 grid-cols-2 gap-2.5">
+                            <Link v-for="action in managementActions" :key="action.label" :href="action.href" class="group flex min-h-0 flex-col justify-between rounded-xl border p-3 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="action.tone === 'primary' ? 'border-[#071525] bg-[#071525] text-white hover:bg-[#123D2A]' : 'border-slate-200 bg-slate-50 text-slate-900 hover:border-[#6FBF8A] hover:bg-[#F4F6F1]'">
                                 <p class="text-sm font-bold">{{ action.label }}</p>
                                 <p class="mt-1 text-xs leading-5" :class="action.tone === 'primary' ? 'text-slate-300' : 'text-slate-600'">{{ action.description }}</p>
                             </Link>
