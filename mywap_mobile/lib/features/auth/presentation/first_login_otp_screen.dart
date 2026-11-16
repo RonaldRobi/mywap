@@ -200,6 +200,7 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                   : 'Pilih saluran untuk menerima kod OTP.'
               : context.l10n.firstLoginEnterIcSubtitle,
       icon: Icons.key_rounded,
+      headingInCard: true,
       steps:
           english
               ? const ['1. Verify IC', '2. Delivery', '3. OTP & password']

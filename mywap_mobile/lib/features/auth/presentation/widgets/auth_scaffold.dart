@@ -18,6 +18,7 @@ class AuthScaffold extends StatelessWidget {
     this.icon = Icons.shield_outlined,
     this.steps,
     this.activeStep,
+    this.headingInCard = false,
   });
 
   final String title;
@@ -28,6 +29,7 @@ class AuthScaffold extends StatelessWidget {
   final IconData icon;
   final List<String>? steps;
   final int? activeStep;
+  final bool headingInCard;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -61,57 +63,33 @@ class AuthScaffold extends StatelessWidget {
                     ),
                     const SizedBox(height: Spacing.md),
                   ],
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          color: AppColors.greenTint,
-                          borderRadius: AppRadius.md,
-                        ),
-                        child: Icon(icon, color: AppColors.movementDarkGreen),
-                      ),
-                      const SizedBox(width: Spacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.headlineSmall?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                                height: 1.15,
-                              ),
-                            ),
-                            const SizedBox(height: Spacing.xs),
-                            Text(
-                              subtitle,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  if (!headingInCard) ...[
+                    _AuthHeading(icon: icon, title: title, subtitle: subtitle),
+                    if (steps != null && steps!.isNotEmpty) ...[
+                      const SizedBox(height: Spacing.lg),
+                      AuthStepStrip(steps: steps!, activeStep: activeStep ?? 0),
                     ],
-                  ),
-                  if (steps != null && steps!.isNotEmpty) ...[
                     const SizedBox(height: Spacing.lg),
-                    AuthStepStrip(steps: steps!, activeStep: activeStep ?? 0),
                   ],
-                  const SizedBox(height: Spacing.lg),
                   AuthCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (headingInCard) ...[
+                          _AuthHeading(
+                            icon: icon,
+                            title: title,
+                            subtitle: subtitle,
+                          ),
+                          if (steps != null && steps!.isNotEmpty) ...[
+                            const SizedBox(height: Spacing.lg),
+                            AuthStepStrip(
+                              steps: steps!,
+                              activeStep: activeStep ?? 0,
+                            ),
+                          ],
+                          const SizedBox(height: Spacing.xl),
+                        ],
                         ...children,
                         if (footer != null) ...[
                           const SizedBox(height: Spacing.md),
@@ -129,6 +107,58 @@ class AuthScaffold extends StatelessWidget {
         ),
       ),
     ),
+  );
+}
+
+class _AuthHeading extends StatelessWidget {
+  const _AuthHeading({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: 44,
+        height: 44,
+        decoration: const BoxDecoration(
+          color: AppColors.greenTint,
+          borderRadius: AppRadius.md,
+        ),
+        child: Icon(icon, color: AppColors.movementDarkGreen),
+      ),
+      const SizedBox(width: Spacing.md),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+              ),
+            ),
+            const SizedBox(height: Spacing.xs),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 }
 

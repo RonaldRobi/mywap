@@ -146,6 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       subtitle:
           '${context.l10n.registerSubtitle}\n${context.l10n.registerFreeNote}',
       icon: Icons.person_add_alt_1_rounded,
+      headingInCard: true,
       onBack: () => context.pop(),
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,

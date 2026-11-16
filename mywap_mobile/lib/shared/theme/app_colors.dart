@@ -44,6 +44,8 @@ abstract final class AppColors {
   /// bentuk organik lut-sinar (lihat `OrganicCanvasBackground`) menyatu.
   static const Color pageBackground = Color(0xFFF2FBF6);
   static const Color background = pageBackground;
+  static const Color authBackground = Color(0xFFE5F0E8);
+  static const Color authPattern = Color(0xFFCFE2D4);
   static const Color surface = white;
   static const Color surfaceMuted = Color(0xFFF1F4EF);
 

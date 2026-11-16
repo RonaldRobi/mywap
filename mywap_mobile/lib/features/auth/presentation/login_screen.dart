@@ -95,6 +95,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (mounted) setState(() => _bioSubmitting = false);
   }
 
+  void _showBiometricSetupMessage() {
+    final english = Localizations.localeOf(context).languageCode == 'en';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          english
+              ? 'Log in normally first, then enable biometric login in your profile.'
+              : 'Log masuk seperti biasa dahulu, kemudian aktifkan log masuk biometrik dalam profil.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _showRecoveryOptions() async {
     final english = Localizations.localeOf(context).languageCode == 'en';
     await showModalBottomSheet<void>(
@@ -328,33 +341,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           ? context.l10n.loginIdentifierRequired
                                           : null,
                             ),
-                            const SizedBox(height: Spacing.lg),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  context.l10n.passwordLabel,
-                                  style: Theme.of(context).textTheme.labelLarge
-                                      ?.copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                TextButton(
-                                  onPressed:
-                                      () => context.push('/forgot-password'),
-                                  style: TextButton.styleFrom(
-                                    minimumSize: const Size(44, 44),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  child: Text(context.l10n.forgotPassword),
-                                ),
-                              ],
+                            const SizedBox(height: Spacing.md),
+                            Text(
+                              context.l10n.passwordLabel,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 6),
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
@@ -400,14 +393,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 final bioAvailable = ref.watch(
                                   biometricAvailableProvider,
                                 );
+                                final bioSupported = ref.watch(
+                                  biometricSupportedProvider,
+                                );
                                 final hasFaceId =
                                     ref.watch(hasFaceIdProvider).valueOrNull ??
                                     false;
                                 final available =
                                     bioAvailable.valueOrNull ?? false;
+                                final supported =
+                                    bioSupported.valueOrNull ?? false;
                                 return Row(
                                   children: [
                                     Expanded(
+                                      flex: supported ? 4 : 1,
                                       child: SizedBox(
                                         height: 52,
                                         child: FilledButton(
@@ -448,51 +447,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         ),
                                       ),
                                     ),
-                                    if (available) ...[
+                                    if (supported) ...[
                                       const SizedBox(width: Spacing.sm),
-                                      SizedBox(
-                                        width: 52,
-                                        height: 52,
-                                        child: OutlinedButton(
-                                          onPressed:
-                                              _bioSubmitting
-                                                  ? null
-                                                  : _loginWithBiometrics,
-                                          style: OutlinedButton.styleFrom(
-                                            padding: EdgeInsets.zero,
-                                            backgroundColor:
-                                                AppColors.greenTint,
-                                            side: const BorderSide(
-                                              color: AppColors.inputBorder,
-                                            ),
-                                            shape: const RoundedRectangleBorder(
-                                              borderRadius: AppRadius.md,
-                                            ),
-                                          ),
-                                          child:
-                                              _bioSubmitting
-                                                  ? const SizedBox(
-                                                    width: 19,
-                                                    height: 19,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                  : Icon(
-                                                    hasFaceId
-                                                        ? Icons
-                                                            .face_retouching_natural
-                                                        : Icons.fingerprint,
-                                                    semanticLabel:
-                                                        hasFaceId
-                                                            ? context
-                                                                .l10n
-                                                                .biometricFaceIdLogin
-                                                            : context
-                                                                .l10n
-                                                                .biometricFingerprintLogin,
+                                      Expanded(
+                                        flex: 1,
+                                        child: SizedBox(
+                                          height: 52,
+                                          child: OutlinedButton(
+                                            onPressed:
+                                                _bioSubmitting
+                                                    ? null
+                                                    : available
+                                                    ? _loginWithBiometrics
+                                                    : _showBiometricSetupMessage,
+                                            style: OutlinedButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              foregroundColor:
+                                                  AppColors.movementDarkGreen,
+                                              side: const BorderSide(
+                                                color:
+                                                    AppColors.movementDarkGreen,
+                                                width: 1.5,
+                                              ),
+                                              shape:
+                                                  const RoundedRectangleBorder(
+                                                    borderRadius: AppRadius.md,
                                                   ),
+                                            ),
+                                            child:
+                                                _bioSubmitting
+                                                    ? const SizedBox(
+                                                      width: 19,
+                                                      height: 19,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    )
+                                                    : Icon(
+                                                      hasFaceId
+                                                          ? Icons
+                                                              .face_retouching_natural
+                                                          : Icons.fingerprint,
+                                                      semanticLabel:
+                                                          hasFaceId
+                                                              ? context
+                                                                  .l10n
+                                                                  .biometricFaceIdLogin
+                                                              : context
+                                                                  .l10n
+                                                                  .biometricFingerprintLogin,
+                                                    ),
+                                          ),
                                         ),
                                       ),
                                     ],

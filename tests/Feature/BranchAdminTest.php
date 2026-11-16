@@ -390,6 +390,11 @@ class BranchAdminTest extends TestCase
 
         $this->assertTrue($this->branchAdmin->must_change_password);
         $this->assertFalse(Hash::check('password', $this->branchAdmin->password));
+        $this->assertDatabaseHas('branch_admins', [
+            'branch_id' => $this->perak->id,
+            'user_id' => $secretary->id,
+            'role' => BranchAdmin::ROLE_SETIAUSAHA,
+        ]);
 
         Notification::assertSentTo(
             $secretary,

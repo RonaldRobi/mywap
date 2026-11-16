@@ -177,6 +177,7 @@ const managerForm = useForm({ name: '', email: '', password: '', password_confir
 const passwordForm = useForm({ password: '', password_confirmation: '' });
 const secretaryForm = useForm({ user_id: null });
 const branchScopeForm = useForm({ branch_ids: [] });
+const secretaryStatus = ref({ type: '', message: '' });
 
 const existingSearchQuery = ref('');
 const existingSearchResults = ref([]);
@@ -249,17 +250,17 @@ watch(existingSearchQuery, (val) => {
     existingSearchTimer = setTimeout(() => searchExistingAccounts(val), 300);
 });
 
-function findBranch(id) {
-    for (const org of page.props.organizations ?? []) {
+function findBranch(id, organizations = page.props.organizations) {
+    for (const org of organizations ?? []) {
         const branch = org.branches.find((item) => item.id === id);
         if (branch) return branch;
     }
     return null;
 }
 
-function refreshBranchRefs() {
+function refreshBranchRefs(organizations = page.props.organizations) {
     if (managingAdminsBranch.value) {
-        const fresh = findBranch(managingAdminsBranch.value.id);
+        const fresh = findBranch(managingAdminsBranch.value.id, organizations);
         if (fresh) {
             managingAdminsBranch.value = fresh;
             selectedManagedBranchIds.value = [...(fresh.manager?.managed_branch_ids ?? [])];
@@ -267,7 +268,7 @@ function refreshBranchRefs() {
     }
 
     if (editingBranch.value) {
-        const fresh = findBranch(editingBranch.value.id);
+        const fresh = findBranch(editingBranch.value.id, organizations);
         if (fresh) editingBranch.value = fresh;
     }
 }
@@ -279,6 +280,7 @@ function openAdminManage(branch) {
     existingSearchQuery.value = '';
     existingSearchResults.value = [];
     existingSearchError.value = '';
+    secretaryStatus.value = { type: '', message: '' };
     selectedManagedBranchIds.value = [...(branch.manager?.managed_branch_ids ?? [])];
     managerForm.reset();
     passwordForm.reset();
@@ -388,13 +390,35 @@ function assignSecretary(member) {
         return;
     }
 
+    secretaryStatus.value = { type: '', message: '' };
     secretaryForm.user_id = member.id;
     secretaryForm.post(route('branches.secretaries.store', managingAdminsBranch.value.id), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
+            const flash = page.props.flash ?? {};
+
+            if (flash.error) {
+                secretaryStatus.value = { type: 'error', message: flash.error };
+
+                return;
+            }
+
+            secretaryStatus.value = {
+                type: 'success',
+                message: flash.success || 'Setiausaha berjaya dilantik.',
+            };
             adminSearchQuery.value = '';
             adminSearchResults.value = [];
-            refreshBranchRefs();
+            secretaryForm.reset();
+            refreshBranchRefs(page.props.organizations);
+        },
+        onError: (errors) => {
+            const firstError = Object.values(errors)[0];
+
+            secretaryStatus.value = {
+                type: 'error',
+                message: Array.isArray(firstError) ? firstError[0] : (firstError || 'Setiausaha tidak dapat dilantik.'),
+            };
         },
     });
 }
@@ -997,6 +1021,16 @@ const malaysianStates = [
                             <div class="flex items-center justify-between mb-3">
                                 <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Setiausaha</p>
                                 <span class="text-xs text-gray-400">{{ secretaries.length }} / {{ managingAdminsBranch.secretary_limit || 3 }}</span>
+                            </div>
+
+                            <div
+                                v-if="secretaryStatus.message"
+                                class="mb-3 rounded-xl border px-3 py-2.5 text-xs font-semibold"
+                                :class="secretaryStatus.type === 'error'
+                                    ? 'border-red-200 bg-red-50 text-red-700'
+                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'"
+                            >
+                                {{ secretaryStatus.message }}
                             </div>
 
                             <div v-if="secretaries.length > 0" class="space-y-2">
