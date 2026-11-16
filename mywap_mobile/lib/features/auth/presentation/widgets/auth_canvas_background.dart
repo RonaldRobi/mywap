@@ -143,56 +143,46 @@ class _AuthCanvasPainter extends CustomPainter {
     canvas.restore();
   }
 
-  /// One interlocking-curve motif tile — approximates the islimi pattern
-  /// from the web SVG (two waves + petal shapes + a center dot) at a
-  /// simplified fidelity suitable for a CustomPainter tile.
+  /// Repeating vertical waves mirror the login reference without competing
+  /// with the form.
   void _drawMotif(Canvas canvas, Offset origin, double s, Paint paint) {
-    Offset p(double x, double y) => origin + Offset(x * s, y * s);
+    final left = Path()..moveTo(origin.dx + s * .25, origin.dy);
+    left.cubicTo(
+      origin.dx + s * .65,
+      origin.dy + s * .25,
+      origin.dx - s * .15,
+      origin.dy + s * .5,
+      origin.dx + s * .25,
+      origin.dy + s * .75,
+    );
+    left.cubicTo(
+      origin.dx + s * .65,
+      origin.dy + s,
+      origin.dx - s * .15,
+      origin.dy + s * 1.25,
+      origin.dx + s * .25,
+      origin.dy + s * 1.5,
+    );
+    canvas.drawPath(left, paint);
 
-    final wave1 =
-        Path()
-          ..moveTo(p(0, .5).dx, p(0, .5).dy)
-          ..cubicTo(
-            p(.17, .33).dx,
-            p(.17, .33).dy,
-            p(.33, .33).dx,
-            p(.33, .33).dy,
-            p(.5, .5).dx,
-            p(.5, .5).dy,
-          )
-          ..cubicTo(
-            p(.67, .67).dx,
-            p(.67, .67).dy,
-            p(.83, .67).dx,
-            p(.83, .67).dy,
-            p(1, .5).dx,
-            p(1, .5).dy,
-          );
-    canvas.drawPath(wave1, paint);
-
-    final wave2 =
-        Path()
-          ..moveTo(p(.5, 0).dx, p(.5, 0).dy)
-          ..cubicTo(
-            p(.33, .17).dx,
-            p(.33, .17).dy,
-            p(.33, .33).dx,
-            p(.33, .33).dy,
-            p(.5, .5).dx,
-            p(.5, .5).dy,
-          )
-          ..cubicTo(
-            p(.67, .67).dx,
-            p(.67, .67).dy,
-            p(.67, .83).dx,
-            p(.67, .83).dy,
-            p(.5, 1).dx,
-            p(.5, 1).dy,
-          );
-    canvas.drawPath(wave2, paint);
-
-    canvas.drawCircle(p(.5, .5), s * 0.028, paint..style = PaintingStyle.fill);
-    paint.style = PaintingStyle.stroke;
+    final right = Path()..moveTo(origin.dx + s * 1.25, origin.dy);
+    right.cubicTo(
+      origin.dx + s * .85,
+      origin.dy + s * .25,
+      origin.dx + s * 1.65,
+      origin.dy + s * .5,
+      origin.dx + s * 1.25,
+      origin.dy + s * .75,
+    );
+    right.cubicTo(
+      origin.dx + s * .85,
+      origin.dy + s,
+      origin.dx + s * 1.65,
+      origin.dy + s * 1.25,
+      origin.dx + s * 1.25,
+      origin.dy + s * 1.5,
+    );
+    canvas.drawPath(right, paint);
   }
 
   @override

@@ -27,7 +27,14 @@ class AdminMenuScreen extends ConsumerWidget {
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         title: const Text('Menu Pentadbir'),
-        actions: const [LogoutIconButton()],
+        actions: [
+          IconButton(
+            tooltip: context.l10n.logout,
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).logout(),
+            icon: const Icon(Icons.logout, color: AppColors.movementGreen),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(

@@ -59,8 +59,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // "kata laluan salah". Jika semakan gagal (cth. offline/404), teruskan
     // log masuk biasa di bawah.
     try {
-      final info =
-          await ref.read(authRepositoryProvider).checkMember(identifier);
+      final info = await ref
+          .read(authRepositoryProvider)
+          .checkMember(identifier);
       if (!mounted) return;
       if (info['is_first_login'] == true) {
         setState(() => _busy = false);
@@ -130,7 +131,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: AuthCanvasBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.xl),
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.md,
+              Spacing.lg,
+              Spacing.lg,
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight:
@@ -145,8 +151,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.all(Spacing.xl),
                     decoration: BoxDecoration(
                       color: AppColors.white.withValues(alpha: .88),
-                      borderRadius: AppRadius.hero,
-                      border: Border.all(color: AppColors.paleGreen),
+                      borderRadius: AppRadius.card,
+                      border: Border.all(color: AppColors.white),
                       boxShadow: const [
                         BoxShadow(
                           color: AppColors.glassTint,
@@ -161,26 +167,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _BrandMark(branding: branding, accent: accent),
-                          const SizedBox(height: Spacing.xxl),
+                          const SizedBox(height: Spacing.xl),
                           Text(
-                            branding.title,
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.2,
-                                ),
+                            context.l10n.loginWelcomeTitle,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineMedium?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                            ),
                           ),
                           const SizedBox(height: Spacing.sm),
                           Text(
-                            branding.subtitle,
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: AppColors.textSecondary,
-                                  height: 1.5,
-                                ),
+                            context.l10n.loginWelcomeSubtitle,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyLarge?.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.5,
+                            ),
                           ),
-                          const SizedBox(height: Spacing.xl),
+                          const SizedBox(height: Spacing.lg),
+                          _FirstLoginCallout(
+                            onPressed: () => context.push('/first-login'),
+                          ),
+                          const SizedBox(height: Spacing.lg),
                           if (_error != null) ...[
                             _ErrorBanner(message: _error!),
                             const SizedBox(height: Spacing.lg),
@@ -216,8 +228,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 style: _fieldLabelStyle(context),
                               ),
                               TextButton(
-                                onPressed: () =>
-                                    context.push('/forgot-password'),
+                                onPressed:
+                                    () => context.push('/forgot-password'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: accent,
                                   padding: EdgeInsets.zero,
@@ -386,9 +398,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Text(
                                 context.l10n.noAccount,
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    ?.copyWith(color: AppColors.textSecondary),
                               ),
                               TextButton(
                                 onPressed: () => context.push('/register'),
@@ -424,6 +434,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+}
+
+class _FirstLoginCallout extends StatelessWidget {
+  const _FirstLoginCallout({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(Spacing.md),
+    decoration: BoxDecoration(
+      color: AppColors.accentTint,
+      borderRadius: AppRadius.md,
+      border: Border.all(color: AppColors.accent.withValues(alpha: .35)),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: AppRadius.sm,
+          ),
+          child: const Icon(
+            Icons.key_outlined,
+            color: AppColors.white,
+            size: 21,
+          ),
+        ),
+        const SizedBox(width: Spacing.md),
+        Expanded(
+          child: Text(
+            context.l10n.firstLoginPrompt,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.movementDarkGreen,
+            minimumSize: const Size(44, 44),
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.sm),
+          ),
+          child: Text(context.l10n.firstTimeLogin),
+        ),
+      ],
+    ),
+  );
 }
 
 class _BrandMark extends StatelessWidget {
@@ -536,10 +599,7 @@ class _FooterLink extends StatelessWidget {
         padding: EdgeInsets.zero,
         minimumSize: const Size(44, 36),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       ),
       child: Text(label),
     ),
