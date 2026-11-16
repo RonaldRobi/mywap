@@ -329,6 +329,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/superadmin/settings/admin-contact', [SuperadminSystemSettingController::class, 'updateAdminContact'])->name('superadmin.settings.admin-contact.update');
         Route::post('/superadmin/settings/chatbot-logo', [SuperadminSystemSettingController::class, 'updateChatbotLogo'])->name('superadmin.settings.chatbot-logo.update');
         Route::post('/superadmin/settings/resend-key', [SuperadminSystemSettingController::class, 'updateResendKey'])->name('superadmin.settings.resend-key.update');
+        Route::post('/superadmin/settings/onesender', [SuperadminSystemSettingController::class, 'updateOneSender'])->name('superadmin.settings.onesender.update');
         Route::post('/superadmin/settings/mail', [SuperadminSystemSettingController::class, 'updateMailSettings'])->name('superadmin.settings.mail.update');
         Route::post('/superadmin/settings/mail/test', [SuperadminSystemSettingController::class, 'testMail'])->name('superadmin.settings.mail.test');
         Route::post('/superadmin/settings/gemini-key', [SuperadminSystemSettingController::class, 'updateGeminiKey'])->name('superadmin.settings.gemini-key.update');

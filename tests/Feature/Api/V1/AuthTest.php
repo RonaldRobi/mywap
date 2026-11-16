@@ -176,9 +176,11 @@ class AuthTest extends TestCase
             'ic_number' => 'B7654321',
             'email' => 'legacy@real-mail.test',
         ])->assertOk();
+
+        $this->assertTrue($legacy->fresh()->emailIsPlaceholder());
     }
 
-    public function test_send_otp_can_be_resent(): void
+    public function test_send_otp_requires_sixty_second_resend_cooldown(): void
     {
         Queue::fake();
 
@@ -193,7 +195,8 @@ class AuthTest extends TestCase
             ->assertOk();
 
         $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
-            ->assertOk();
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Sila tunggu 60 saat sebelum meminta kod OTP baharu.');
     }
 
     public function test_public_traffic_does_not_exhaust_login_rate_limit(): void

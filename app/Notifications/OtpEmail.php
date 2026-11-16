@@ -16,6 +16,7 @@ class OtpEmail extends Notification implements ShouldQueue
     public function __construct(
         public string $code,
         public string $purpose = 'login',
+        public ?string $recipient = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -46,7 +47,7 @@ class OtpEmail extends Notification implements ShouldQueue
         $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
         $logoUrl = $template?->headerImageUrl() ?? url($logoPath);
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject($subject)
             ->mailer('transactional')
             ->view('emails.otp', [
@@ -58,5 +59,11 @@ class OtpEmail extends Notification implements ShouldQueue
                 'logoUrl' => $logoUrl,
                 'appName' => config('app.name'),
             ]);
+
+        if ($this->recipient) {
+            $mail->to($this->recipient);
+        }
+
+        return $mail;
     }
 }

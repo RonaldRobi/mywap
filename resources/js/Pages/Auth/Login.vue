@@ -29,6 +29,8 @@ const form = useForm({
 const otpForm = useForm({
     ic_number: '',
     code: '',
+    channel: 'whatsapp',
+    contact: '',
     email: '',
     password: '',
     password_confirmation: '',
@@ -192,13 +194,15 @@ const sendOtp = async () => {
     otpProcessing.value = true;
 
     try {
-        const endpoint = memberHasEmail.value ? 'login.send-otp' : 'login.update-and-send-otp';
-        const body = memberHasEmail.value
-            ? { ic_number: otpForm.ic_number }
-            : { ic_number: otpForm.ic_number, email: otpForm.email };
+        const endpoint = memberHasEmail.value && otpForm.channel === 'email' ? 'login.send-otp' : 'login.update-and-send-otp';
+        const body = {
+            ic_number: otpForm.ic_number,
+            channel: otpForm.channel,
+            contact: otpForm.contact || otpForm.email,
+        };
 
-        if (!memberHasEmail.value && !otpForm.email?.trim()) {
-            otpError.value = 'Sila masukkan alamat emel anda.';
+        if (!body.contact?.trim()) {
+            otpError.value = otpForm.channel === 'whatsapp' ? 'Sila masukkan nombor WhatsApp anda.' : 'Sila masukkan alamat emel anda.';
             otpProcessing.value = false;
             return;
         }
@@ -542,21 +546,21 @@ const submit = () => {
                                     </p>
                                 </div>
 
-                                <div v-if="!memberHasEmail" class="space-y-2">
-                                    <InputLabel for="otp_email" value="Alamat Emel" class="!text-slate-200" />
+                                <div class="space-y-3">
+                                    <InputLabel value="Hantar kod OTP melalui" class="!text-slate-200" />
+                                    <div class="flex gap-4 text-sm text-slate-200">
+                                        <label class="flex items-center gap-2"><input v-model="otpForm.channel" type="radio" value="whatsapp"> WhatsApp</label>
+                                        <label class="flex items-center gap-2"><input v-model="otpForm.channel" type="radio" value="email"> Emel</label>
+                                    </div>
                                     <TextInput
-                                        id="otp_email"
-                                        type="email"
+                                        id="otp_contact"
+                                        :type="otpForm.channel === 'whatsapp' ? 'tel' : 'email'"
                                         class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="otpForm.email"
+                                        v-model="otpForm.contact"
                                         required
-                                        placeholder="nama@domain.com"
+                                        :placeholder="otpForm.channel === 'whatsapp' ? '+601157452119' : 'nama@domain.com'"
                                     />
-                                    <p class="text-xs text-slate-400">Akaun anda tiada emel berdaftar. Sila masukkan emel untuk menerima kod OTP.</p>
-                                </div>
-
-                                <div v-else class="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">
-                                    Kod OTP akan dihantar ke emel: <span class="font-medium text-emerald-200">{{ memberMaskedEmail }}</span>
+                                    <p class="text-xs text-slate-400">Masukkan emel atau nombor WhatsApp yang boleh menerima kod OTP.</p>
                                 </div>
 
                                 <InputError class="mt-2" :message="otpError" />
@@ -594,16 +598,20 @@ const submit = () => {
                                 </div>
 
                                 <div>
-                                    <InputLabel for="otp_code" value="Kod OTP" class="!text-slate-200" />
-                                    <TextInput
-                                        id="otp_code"
-                                        type="text"
-                                        class="mt-1 block w-full text-center text-lg tracking-widest focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="otpForm.code"
-                                        required
-                                        maxlength="6"
-                                        placeholder="••••••"
-                                    />
+                                    <InputLabel value="Kod OTP" class="!text-slate-200" />
+                                    <div class="mt-2 grid grid-cols-6 gap-2">
+                                        <input
+                                            v-for="(_, index) in otpDigits"
+                                            :key="index"
+                                            :value="otpDigits[index]"
+                                            type="text"
+                                            inputmode="numeric"
+                                            maxlength="6"
+                                            class="w-full rounded-xl border border-white/20 bg-white/10 px-2 py-3 text-center text-lg font-semibold text-white focus:border-[#6FBF8A] focus:ring-[#6FBF8A]"
+                                            required
+                                            @input="updateOtpDigit(index, $event.target.value)"
+                                        >
+                                    </div>
                                 </div>
 
                                 <div>

@@ -32,6 +32,12 @@ return [
         'api_key' => env('GEMINI_API_KEY'),
     ],
 
+    'onesender' => [
+        'url' => env('ONESENDER_URL'),
+        'key' => env('ONESENDER_KEY'),
+        'contact' => env('ONESENDER_CONTACT', '+601157452119'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

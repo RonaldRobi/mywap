@@ -14,6 +14,7 @@ use App\Notifications\NewMemberAlert;
 use App\Notifications\RegistrationActivated;
 use App\Services\MembershipLetterService;
 use App\Services\OtpService;
+use App\Services\OneSenderWhatsappService;
 use App\Support\ApiResponse;
 use App\Support\MemberRegistration;
 use Illuminate\Auth\Events\Registered;
@@ -345,9 +346,13 @@ class AuthController extends Controller
      *
      * @throws ValidationException
      */
-    public function forgotPassword(Request $request): JsonResponse
+    public function forgotPassword(Request $request, OneSenderWhatsappService $whatsapp): JsonResponse
     {
-        $request->validate(['ic_number' => ['required', 'string', 'max:32']]);
+        $request->validate([
+            'ic_number' => ['required', 'string', 'max:32'],
+            'channel' => ['nullable', 'in:email,whatsapp'],
+            'contact' => ['nullable', 'string', 'max:255'],
+        ]);
 
         $normalizedIcNumber = (string) User::normalizeIc($request->input('ic_number'));
 
@@ -355,6 +360,42 @@ class AuthController extends Controller
 
         if (! $user) {
             return ApiResponse::error('No IC/Passport tidak ditemui dalam sistem.', status: 404);
+        }
+
+        $channel = $request->input('channel', 'email');
+        $contact = trim((string) $request->input('contact'));
+
+        if ($channel === 'email' && $contact !== '') {
+            $request->validate(['contact' => ['email']]);
+            $user->update(['email' => Str::lower($contact)]);
+        }
+
+        if ($channel === 'whatsapp') {
+            if ($contact === '') {
+                return ApiResponse::error('Sila masukkan nombor WhatsApp.', status: 422);
+            }
+
+            $phone = $whatsapp->normalizePhone($contact);
+            if (strlen($phone) < 10) {
+                return ApiResponse::error('Nombor WhatsApp tidak sah.', status: 422);
+            }
+
+            $user->update(['phone' => $phone]);
+            $token = Password::broker()->createToken($user);
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $user->getEmailForPasswordReset(),
+            ], false));
+
+            if (! $whatsapp->sendResetLink($phone, $url)) {
+                Password::broker()->deleteToken($user);
+                return ApiResponse::error('Pautan reset WhatsApp tidak dapat dihantar. Sila cuba lagi.', status: 422);
+            }
+
+            return ApiResponse::success([
+                'message' => 'Pautan reset kata laluan telah dihantar melalui WhatsApp.',
+                'channel' => 'whatsapp',
+            ]);
         }
 
         if (! $user->email || $user->emailIsPlaceholder()) {
@@ -373,6 +414,7 @@ class AuthController extends Controller
         return ApiResponse::success([
             'message' => 'Pautan reset kata laluan telah dihantar ke emel berdaftar anda.',
             'masked_email' => $this->maskEmail($user->email),
+            'channel' => 'email',
         ]);
     }
 
@@ -412,32 +454,12 @@ class AuthController extends Controller
     /**
      * Log masuk kali pertama — langkah 1: hantar OTP ke emel berdaftar.
      */
-    public function sendOtp(Request $request, OtpService $otp): JsonResponse
-    {
-        $request->validate(['ic_number' => ['required', 'string', 'max:255']]);
-
-        [$user, $error] = $this->guardOtpEligible($request->input('ic_number'));
-        if ($error) {
-            return $error;
-        }
-
-        if (! $user->email || $user->emailIsPlaceholder()) {
-            return ApiResponse::error('Akaun ini tiada emel berdaftar.', status: 422);
-        }
-
-        $otp->send($user, 'login');
-
-        return ApiResponse::success(['message' => 'Kod OTP telah dihantar ke emel berdaftar anda.']);
-    }
-
-    /**
-     * Log masuk kali pertama — kemas kini emel dahulu (jika salah/tiada) lalu hantar OTP.
-     */
-    public function updateAndSendOtp(Request $request, OtpService $otp): JsonResponse
+    public function sendOtp(Request $request, OtpService $otp, OneSenderWhatsappService $whatsapp): JsonResponse
     {
         $request->validate([
             'ic_number' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'lowercase'],
+            'channel' => ['nullable', 'in:email,whatsapp'],
+            'contact' => ['nullable', 'string', 'max:255'],
         ]);
 
         [$user, $error] = $this->guardOtpEligible($request->input('ic_number'));
@@ -445,20 +467,84 @@ class AuthController extends Controller
             return $error;
         }
 
-        $newEmail = Str::lower(trim($request->input('email')));
+        $channel = $request->input('channel', 'email');
+        $contact = trim((string) $request->input('contact'));
 
-        if ($user->email !== $newEmail) {
+        if ($channel === 'whatsapp') {
+            if ($contact === '') {
+                return ApiResponse::error('Sila masukkan nombor WhatsApp.', status: 422);
+            }
+            $contact = $whatsapp->normalizePhone($contact);
+        } elseif ($contact !== '') {
+            $request->validate(['contact' => ['email']]);
+            $contact = Str::lower($contact);
+        }
+
+        if ($channel === 'email' && (! $user->email || $user->emailIsPlaceholder())) {
+            return ApiResponse::error(
+                $contact === '' ? 'Akaun ini tiada emel berdaftar.' : 'Sila masukkan emel yang boleh menerima OTP.',
+                status: 422,
+            );
+        }
+
+        $otp->send($user, 'login', $channel, $contact ?: null);
+
+        return ApiResponse::success([
+            'message' => $channel === 'whatsapp'
+                ? 'Kod OTP telah dihantar melalui WhatsApp.'
+                : 'Kod OTP telah dihantar ke emel anda.',
+            'channel' => $channel,
+        ]);
+    }
+
+    /**
+     * Log masuk kali pertama — kemas kini emel dahulu (jika salah/tiada) lalu hantar OTP.
+     */
+    public function updateAndSendOtp(Request $request, OtpService $otp, OneSenderWhatsappService $whatsapp): JsonResponse
+    {
+        $request->validate([
+            'ic_number' => ['required', 'string', 'max:255'],
+            'channel' => ['nullable', 'in:email,whatsapp'],
+            'contact' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        [$user, $error] = $this->guardOtpEligible($request->input('ic_number'));
+        if ($error) {
+            return $error;
+        }
+
+        $channel = $request->input('channel', $request->filled('email') ? 'email' : 'whatsapp');
+        $contact = trim((string) ($request->input('contact') ?: $request->input('email')));
+
+        if ($contact === '') {
+            return ApiResponse::error('Sila masukkan emel atau nombor WhatsApp.', status: 422);
+        }
+
+        if ($channel === 'whatsapp') {
+            $newPhone = $whatsapp->normalizePhone($contact);
+            if (strlen($newPhone) < 10) {
+                return ApiResponse::error('Nombor WhatsApp tidak sah.', status: 422);
+            }
+            $contact = $newPhone;
+        } else {
+            $request->validate(['contact' => ['email']]);
+            $newEmail = Str::lower($contact);
             $exists = User::where('email', $newEmail)->where('id', '!=', $user->id)->exists();
             if ($exists) {
                 return ApiResponse::error('Emel ini sudah digunakan oleh akaun lain.', status: 422);
             }
+            $contact = $newEmail;
         }
 
-        $user->update(['email' => $newEmail]);
+        $otp->send($user, 'login', $channel, $contact);
 
-        $otp->send($user, 'login');
-
-        return ApiResponse::success(['message' => 'Kod OTP telah dihantar ke emel anda.']);
+        return ApiResponse::success([
+            'message' => $channel === 'whatsapp'
+                ? 'Kod OTP telah dihantar melalui WhatsApp.'
+                : 'Kod OTP telah dihantar ke emel anda.',
+            'channel' => $channel,
+        ]);
     }
 
     /**
@@ -480,8 +566,15 @@ class AuthController extends Controller
             return ApiResponse::error('Ahli tidak dijumpai.', status: 404);
         }
 
-        if (! $otp->verify($user, $request->input('code'), 'login')) {
+        $verifiedOtp = $otp->verifyAndReturn($user, $request->input('code'), 'login');
+        if (! $verifiedOtp) {
             return ApiResponse::error('Kod OTP tidak sah atau telah tamat tempoh.', status: 422);
+        }
+
+        if ($verifiedOtp->channel === 'whatsapp' && $verifiedOtp->recipient) {
+            $user->update(['phone' => $verifiedOtp->recipient]);
+        } elseif ($verifiedOtp->channel === 'email' && $verifiedOtp->recipient) {
+            $user->update(['email' => $verifiedOtp->recipient]);
         }
 
         if (is_null($user->first_login_at)) {

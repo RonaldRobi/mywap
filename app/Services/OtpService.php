@@ -6,6 +6,7 @@ use App\Models\OtpCode;
 use App\Models\User;
 use App\Notifications\OtpEmail;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class OtpService
 {
@@ -16,6 +17,13 @@ class OtpService
 
     public function generate(User $user, string $purpose = 'login'): OtpCode
     {
+        $retryAfter = $this->retryAfter($user, $purpose);
+        if ($retryAfter > 0) {
+            throw ValidationException::withMessages([
+                'otp' => "Sila tunggu {$retryAfter} saat sebelum meminta kod OTP baharu.",
+            ]);
+        }
+
         $this->invalidatePrevious($user, $purpose);
 
         $code = $this->generateCode();
@@ -31,16 +39,32 @@ class OtpService
         return $otp;
     }
 
-    public function send(User $user, string $purpose = 'login'): OtpCode
+    public function send(User $user, string $purpose = 'login', string $channel = 'email', ?string $recipient = null): OtpCode
     {
         $otp = $this->generate($user, $purpose);
+        $recipient ??= $channel === 'whatsapp' ? (string) $user->phone : (string) $user->email;
+        $otp->update(['channel' => $channel, 'recipient' => $recipient]);
 
-        $user->notify(new OtpEmail($otp->code, $purpose));
+        if ($channel === 'whatsapp') {
+            if (! app(OneSenderWhatsappService::class)->sendOtp($recipient, $otp->code)) {
+                $otp->update(['used_at' => now()]);
+                throw ValidationException::withMessages([
+                    'otp' => 'Kod WhatsApp tidak dapat dihantar. Sila cuba lagi atau pilih emel.',
+                ]);
+            }
+        } else {
+            $user->notify(new OtpEmail($otp->code, $purpose, $recipient));
+        }
 
         return $otp;
     }
 
     public function verify(User $user, string $code, string $purpose = 'login'): bool
+    {
+        return $this->verifyAndReturn($user, $code, $purpose) !== null;
+    }
+
+    public function verifyAndReturn(User $user, string $code, string $purpose = 'login'): ?OtpCode
     {
         $otp = OtpCode::query()
             ->where('user_id', $user->id)
@@ -50,7 +74,7 @@ class OtpService
             ->first();
 
         if (! $otp) {
-            return false;
+            return null;
         }
 
         if (! hash_equals((string) $otp->code, (string) $code)) {
@@ -62,12 +86,12 @@ class OtpService
                 $otp->update(['used_at' => now()]);
             }
 
-            return false;
+            return null;
         }
 
         $otp->update(['used_at' => now()]);
 
-        return true;
+        return $otp;
     }
 
     public function invalidatePrevious(User $user, string $purpose = 'login'): void
@@ -77,6 +101,21 @@ class OtpService
             ->where('purpose', $purpose)
             ->whereNull('used_at')
             ->update(['used_at' => now()]);
+    }
+
+    public function retryAfter(User $user, string $purpose = 'login'): int
+    {
+        $latest = OtpCode::query()
+            ->where('user_id', $user->id)
+            ->where('purpose', $purpose)
+            ->latest()
+            ->first();
+
+        if (! $latest || $latest->created_at === null) {
+            return 0;
+        }
+
+        return max(0, 60 - now()->diffInSeconds($latest->created_at));
     }
 
     private function generateCode(): string

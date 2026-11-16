@@ -96,6 +96,18 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    oneSenderUrl: {
+        type: String,
+        default: '',
+    },
+    oneSenderContact: {
+        type: String,
+        default: '+601157452119',
+    },
+    hasOneSenderKey: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const form = useForm({
@@ -263,6 +275,19 @@ function sendTestMail() {
 const geminiForm = useForm({
     gemini_api_key: '',
 });
+
+const oneSenderForm = useForm({
+    onesender_url: props.oneSenderUrl || '',
+    onesender_api_key: '',
+    onesender_contact: props.oneSenderContact || '+601157452119',
+});
+
+function saveOneSender() {
+    oneSenderForm.post(route('superadmin.settings.onesender.update'), {
+        preserveScroll: true,
+        onSuccess: () => oneSenderForm.reset('onesender_api_key'),
+    });
+}
 
 function saveGeminiKey() {
     geminiForm.post(route('superadmin.settings.gemini-key.update'), {
@@ -597,6 +622,40 @@ onBeforeUnmount(() => {
                     <p v-if="ageTransitionForm.errors.enabled" class="text-xs text-red-500">{{ ageTransitionForm.errors.enabled }}</p>
                     <p v-if="ageTransitionForm.processing" class="text-xs text-gray-400">Menyimpan...</p>
                 </div>
+            </section>
+
+            <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-black text-gray-800">WhatsApp OTP (OneSender)</h2>
+                <p class="mt-1 text-xs text-gray-500">Digunakan untuk OTP log masuk kali pertama dan pemulihan akaun. Kunci API disimpan secara encrypted.</p>
+
+                <form class="mt-4 space-y-3" @submit.prevent="saveOneSender">
+                    <p v-if="hasOneSenderKey" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                        Kunci OneSender telah disimpan. Kosongkan ruangan kunci untuk mengekalkannya.
+                    </p>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">API URL</span>
+                        <input v-model="oneSenderForm.onesender_url" type="url" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" placeholder="https://.../api/v1/messages">
+                        <p v-if="oneSenderForm.errors.onesender_url" class="mt-1 text-xs text-red-500">{{ oneSenderForm.errors.onesender_url }}</p>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">API Key</span>
+                        <input v-model="oneSenderForm.onesender_api_key" type="password" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" :placeholder="hasOneSenderKey ? 'Kosongkan untuk kekalkan kunci sedia ada' : 'Masukkan API key OneSender'">
+                        <p v-if="oneSenderForm.errors.onesender_api_key" class="mt-1 text-xs text-red-500">{{ oneSenderForm.errors.onesender_api_key }}</p>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-semibold text-gray-500">Nombor WhatsApp Bantuan</span>
+                        <input v-model="oneSenderForm.onesender_contact" type="text" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono" placeholder="+601157452119">
+                        <p class="mt-1 text-xs text-gray-400">Nombor ini dipaparkan dalam mesej OTP apabila user menghadapi masalah.</p>
+                        <p v-if="oneSenderForm.errors.onesender_contact" class="mt-1 text-xs text-red-500">{{ oneSenderForm.errors.onesender_contact }}</p>
+                    </label>
+
+                    <button type="submit" :disabled="oneSenderForm.processing" class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60">
+                        {{ oneSenderForm.processing ? 'Menyimpan...' : 'Simpan Tetapan WhatsApp OTP' }}
+                    </button>
+                </form>
             </section>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

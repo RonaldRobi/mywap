@@ -23,6 +23,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _icController = TextEditingController();
+  final _contactController = TextEditingController();
+  String _channel = 'whatsapp';
   bool _submitting = false;
   String? _error;
   String? _successMessage;
@@ -30,6 +32,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   void dispose() {
     _icController.dispose();
+    _contactController.dispose();
     super.dispose();
   }
 
@@ -42,7 +45,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     try {
       final result = await ref
           .read(authRepositoryProvider)
-          .forgotPassword(_icController.text.trim());
+          .forgotPassword(
+            _icController.text.replaceAll(RegExp(r'[\s-]'), '').trim(),
+            channel: _channel,
+            contact: _contactController.text.trim(),
+          );
       if (!mounted) return;
       setState(
         () =>
@@ -94,6 +101,70 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           v == null || v.trim().isEmpty
                               ? context.l10n.icRequiredShort
                               : null,
+                ),
+                Text(
+                  'Masukkan No. IC tanpa tanda dash (-). Jika rekod ahli tidak dijumpai, sila hubungi admin.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: Spacing.sm),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'whatsapp',
+                      label: Text('WhatsApp'),
+                      icon: Icon(Icons.chat_outlined),
+                    ),
+                    ButtonSegment(
+                      value: 'email',
+                      label: Text('Emel'),
+                      icon: Icon(Icons.mail_outline),
+                    ),
+                  ],
+                  selected: {_channel},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _channel = selection.first;
+                      _contactController.clear();
+                    });
+                  },
+                ),
+                const SizedBox(height: Spacing.md),
+                AuthField(
+                  label:
+                      _channel == 'whatsapp'
+                          ? 'Nombor WhatsApp'
+                          : context.l10n.emailLabel,
+                  controller: _contactController,
+                  icon:
+                      _channel == 'whatsapp'
+                          ? Icons.chat_outlined
+                          : Icons.mail_outline,
+                  hint:
+                      _channel == 'whatsapp'
+                          ? '+601157452119'
+                          : context.l10n.emailHint,
+                  keyboardType:
+                      _channel == 'whatsapp'
+                          ? TextInputType.phone
+                          : TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Ruangan ini diperlukan.';
+                    }
+                    if (_channel == 'email' && !v.contains('@')) {
+                      return context.l10n.emailInvalidShort;
+                    }
+                    if (_channel == 'whatsapp' &&
+                        v.replaceAll(RegExp(r'\D'), '').length < 10) {
+                      return 'Nombor WhatsApp tidak sah.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: Spacing.md),
                 FilledButton(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,17 +26,22 @@ class FirstLoginOtpScreen extends ConsumerStatefulWidget {
       _FirstLoginOtpScreenState();
 }
 
-enum _OtpStep { requestIc, requestEmail, verify }
+enum _OtpStep { requestIc, requestChannel, verify }
 
 class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _icController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _contactController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
+  final _otpFocusNodes = List.generate(6, (_) => FocusNode());
+  final _otpControllers = List.generate(6, (_) => TextEditingController());
+  Timer? _resendTimer;
+  int _resendSeconds = 0;
 
   _OtpStep _step = _OtpStep.requestIc;
+  String _channel = 'email';
   bool _submitting = false;
   bool _obscurePassword = true;
   String? _error;
@@ -48,45 +55,94 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
   @override
   void dispose() {
     _icController.dispose();
-    _emailController.dispose();
+    _contactController.dispose();
     _codeController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
+    for (final node in _otpFocusNodes) {
+      node.dispose();
+    }
+    for (final controller in _otpControllers) {
+      controller.dispose();
+    }
+    _resendTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _sendOtp() async {
     if (!_formKey.currentState!.validate()) return;
+    _icController.text = _icController.text.replaceAll(RegExp(r'[\s-]'), '');
+    if (_step == _OtpStep.requestIc) {
+      setState(() => _step = _OtpStep.requestChannel);
+      return;
+    }
     setState(() {
       _submitting = true;
       _error = null;
     });
     try {
       final repo = ref.read(authRepositoryProvider);
-      if (_step == _OtpStep.requestEmail) {
-        await repo.updateAndSendOtp(
-          _icController.text.trim(),
-          _emailController.text.trim(),
-        );
-      } else {
-        await repo.sendOtp(_icController.text.trim());
-      }
+      await repo.updateAndSendOtp(
+        _icController.text.trim(),
+        _channel,
+        _contactController.text.trim(),
+      );
       if (!mounted) return;
       setState(() => _step = _OtpStep.verify);
+      _startResendCooldown();
     } on ApiException catch (e) {
-      // Tiada emel berdaftar → minta pengguna isikan emel dahulu.
-      if (e.message.toLowerCase().contains('tiada emel') &&
-          _step == _OtpStep.requestIc) {
-        setState(() => _step = _OtpStep.requestEmail);
-      } else {
-        setState(() => _error = e.message);
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    setState(() => _resendSeconds = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
       }
+      if (_resendSeconds <= 1) {
+        timer.cancel();
+        setState(() => _resendSeconds = 0);
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
+
+  Future<void> _resendOtp() async {
+    if (_resendSeconds > 0 || _submitting) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .updateAndSendOtp(
+            _icController.text.trim(),
+            _channel,
+            _contactController.text.trim(),
+          );
+      if (mounted) _startResendCooldown();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
   Future<void> _verify() async {
+    _codeController.text =
+        _otpControllers.map((controller) => controller.text).join();
+    if (_codeController.text.length != 6) {
+      setState(() => _error = context.l10n.otpInvalid);
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _submitting = true;
@@ -130,15 +186,15 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
   @override
   Widget build(BuildContext context) {
     final isVerifyStep = _step == _OtpStep.verify;
-    final needsEmail = _step == _OtpStep.requestEmail;
+    final needsContact = _step == _OtpStep.requestChannel;
 
     return AuthScaffold(
       title: context.l10n.firstLoginTitle,
       subtitle:
           isVerifyStep
               ? context.l10n.firstLoginVerifySubtitle
-              : needsEmail
-              ? context.l10n.firstLoginNoEmailSubtitle
+              : needsContact
+              ? 'Pilih saluran untuk menerima kod OTP.'
               : context.l10n.firstLoginEnterIcSubtitle,
       onBack: () => context.pop(),
       footer: Row(
@@ -170,35 +226,92 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                             ? context.l10n.icRequiredShort
                             : null,
               ),
-              if (needsEmail)
+              if (_step == _OtpStep.requestIc)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Masukkan No. IC tanpa tanda dash (-). Jika pernah mendaftar tetapi No. IC tidak dijumpai, sila hubungi admin.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              if (needsContact) ...[
+                const SizedBox(height: Spacing.sm),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(
+                      value: 'email',
+                      label: Text('Emel'),
+                      icon: Icon(Icons.mail_outline),
+                    ),
+                    ButtonSegment(
+                      value: 'whatsapp',
+                      label: Text('WhatsApp'),
+                      icon: Icon(Icons.chat_outlined),
+                    ),
+                  ],
+                  selected: {_channel},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _channel = selection.first;
+                      _contactController.clear();
+                    });
+                  },
+                ),
+                const SizedBox(height: Spacing.md),
                 AuthField(
-                  label: context.l10n.emailLabel,
-                  controller: _emailController,
-                  icon: Icons.mail_outline,
-                  hint: context.l10n.emailHint,
-                  keyboardType: TextInputType.emailAddress,
+                  label:
+                      _channel == 'whatsapp'
+                          ? 'Nombor WhatsApp'
+                          : context.l10n.emailLabel,
+                  controller: _contactController,
+                  icon:
+                      _channel == 'whatsapp'
+                          ? Icons.chat_outlined
+                          : Icons.mail_outline,
+                  hint:
+                      _channel == 'whatsapp'
+                          ? '+601157452119'
+                          : context.l10n.emailHint,
+                  keyboardType:
+                      _channel == 'whatsapp'
+                          ? TextInputType.phone
+                          : TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return context.l10n.emailRequiredShort;
+                      return 'Ruangan ini diperlukan.';
                     }
-                    if (!v.contains('@')) return context.l10n.emailInvalidShort;
+                    if (_channel == 'email' && !v.contains('@')) {
+                      return context.l10n.emailInvalidShort;
+                    }
+                    if (_channel == 'whatsapp' &&
+                        v.replaceAll(RegExp(r'\D'), '').length < 10) {
+                      return 'Nombor WhatsApp tidak sah.';
+                    }
                     return null;
                   },
                 ),
+              ],
               if (isVerifyStep) ...[
-                AuthField(
-                  label: context.l10n.otpLabel,
-                  controller: _codeController,
-                  icon: Icons.pin_outlined,
-                  hint: '000000',
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
-                  validator:
-                      (v) =>
-                          v == null || v.trim().length != 6
-                              ? context.l10n.otpInvalid
-                              : null,
+                _OtpBoxes(
+                  controllers: _otpControllers,
+                  focusNodes: _otpFocusNodes,
+                  onChanged: () => setState(() {}),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed:
+                        _resendSeconds == 0 && !_submitting ? _resendOtp : null,
+                    child: Text(
+                      _resendSeconds > 0
+                          ? 'Minta kod lagi dalam ${_resendSeconds}s'
+                          : 'Minta kod lagi',
+                    ),
+                  ),
                 ),
                 AuthField(
                   label: context.l10n.newPasswordLabel,
@@ -261,6 +374,78 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OtpBoxes extends StatelessWidget {
+  const _OtpBoxes({
+    required this.controllers,
+    required this.focusNodes,
+    required this.onChanged,
+  });
+
+  final List<TextEditingController> controllers;
+  final List<FocusNode> focusNodes;
+  final VoidCallback onChanged;
+
+  void _handleChange(BuildContext context, int index, String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+
+    if (digits.length > 1) {
+      for (
+        var offset = 0;
+        offset < digits.length && index + offset < 6;
+        offset++
+      ) {
+        controllers[index + offset].text = digits[offset];
+      }
+      final next = (index + digits.length).clamp(0, 5);
+      focusNodes[next].requestFocus();
+    } else if (digits.isNotEmpty) {
+      controllers[index].text = digits;
+      if (index < 5) focusNodes[index + 1].requestFocus();
+    } else {
+      controllers[index].clear();
+    }
+
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          context.l10n.otpLabel,
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: Spacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(6, (index) {
+            return SizedBox(
+              width: 45,
+              child: TextField(
+                controller: controllers[index],
+                focusNode: focusNodes[index],
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: const InputDecoration(
+                  counterText: '',
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (value) => _handleChange(context, index, value),
+              ),
+            );
+          }),
         ),
       ],
     );

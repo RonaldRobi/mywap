@@ -14,6 +14,8 @@ defineProps({
 
 const form = useForm({
     ic_number: '',
+    channel: 'whatsapp',
+    contact: '',
 });
 
 const submit = () => {
@@ -26,8 +28,7 @@ const submit = () => {
         <Head title="Forgot Password" />
 
         <div class="mb-4 text-sm text-gray-600">
-            Lupa kata laluan? Masukkan No IC / Passport anda. Sistem akan hantar pautan
-            tetapan semula kata laluan ke emel berdaftar akaun anda.
+            Lupa kata laluan? Masukkan No IC / Passport dan pilih saluran untuk menerima pautan reset.
         </div>
 
         <div
@@ -36,7 +37,7 @@ const submit = () => {
         >
             {{ status }}
             <p class="mt-1 text-xs font-normal text-gray-500">
-                Tidak terima pautan? Sila semak folder <strong>Spam/Junk</strong> dalam emel anda.
+                Tidak terima pautan? Cuba semula selepas 60 saat atau hubungi admin.
             </p>
         </div>
 
@@ -55,6 +56,28 @@ const submit = () => {
                 />
 
                 <InputError class="mt-2" :message="form.errors.ic_number" />
+                <p class="mt-1 text-xs text-gray-500">Masukkan No. IC tanpa tanda dash (-). Jika rekod ahli tidak dijumpai, sila hubungi admin.</p>
+            </div>
+
+            <div class="mt-4">
+                <InputLabel value="Hantar melalui" />
+                <div class="mt-2 flex gap-4 text-sm text-gray-700">
+                    <label class="flex items-center gap-2"><input v-model="form.channel" type="radio" value="whatsapp"> WhatsApp</label>
+                    <label class="flex items-center gap-2"><input v-model="form.channel" type="radio" value="email"> Emel</label>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <InputLabel for="contact" :value="form.channel === 'whatsapp' ? 'Nombor WhatsApp' : 'Emel'" />
+                <TextInput
+                    id="contact"
+                    v-model="form.contact"
+                    :type="form.channel === 'whatsapp' ? 'tel' : 'email'"
+                    class="mt-1 block w-full"
+                    :placeholder="form.channel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
+                    required
+                />
+                <InputError class="mt-2" :message="form.errors.contact" />
             </div>
 
             <div class="mt-4 flex items-center justify-end">

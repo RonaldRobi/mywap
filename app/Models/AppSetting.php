@@ -38,6 +38,9 @@ class AppSetting extends Model
         'admin_contact_email',
         'admin_contact_phone',
         'resend_api_key',
+        'onesender_url',
+        'onesender_api_key',
+        'onesender_contact',
         'gemini_api_key',
         'mail_from_address',
         'mail_from_name',
@@ -64,6 +67,7 @@ class AppSetting extends Model
             'loading_screen_duration_ms' => 'integer',
             'loading_screen_enabled' => 'boolean',
             'resend_api_key' => 'encrypted',
+            'onesender_api_key' => 'encrypted',
             'mail_smtp_password' => 'encrypted',
         ];
     }

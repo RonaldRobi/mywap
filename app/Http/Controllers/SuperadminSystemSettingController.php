@@ -43,6 +43,9 @@ class SuperadminSystemSettingController extends Controller
             'mailSmtpUsername' => $setting?->mail_smtp_username ?? '',
             'mailSmtpEncryption' => $setting?->mail_smtp_encryption ?? '',
             'ageTransitionEnabled' => (bool) ($setting?->age_transition_enabled ?? false),
+            'oneSenderUrl' => $setting?->onesender_url ?? config('services.onesender.url', ''),
+            'oneSenderContact' => $setting?->onesender_contact ?? config('services.onesender.contact', '+601157452119'),
+            'hasOneSenderKey' => $setting && $setting->onesender_api_key ? true : false,
             'canManageSystemLogo' => $canManageSystemLogo,
         ]);
     }
@@ -101,6 +104,29 @@ class SuperadminSystemSettingController extends Controller
         config(MailConfig::build($setting));
 
         return back()->with('success', 'Tetapan emel berjaya disimpan.');
+    }
+
+    public function updateOneSender(Request $request): RedirectResponse
+    {
+        if (! Schema::hasTable('app_settings')) {
+            return back()->with('error', 'Sistem tetapan tidak tersedia.');
+        }
+
+        $data = $request->validate([
+            'onesender_url' => ['nullable', 'url', 'max:255'],
+            'onesender_api_key' => ['nullable', 'string', 'max:500'],
+            'onesender_contact' => ['required', 'string', 'max:20'],
+        ]);
+
+        $setting = AppSetting::singleton();
+        $setting->update([
+            'onesender_url' => $data['onesender_url'] ?: null,
+            'onesender_contact' => $data['onesender_contact'],
+        ] + ($request->filled('onesender_api_key')
+            ? ['onesender_api_key' => $data['onesender_api_key']]
+            : []));
+
+        return back()->with('success', 'Tetapan WhatsApp OTP berjaya disimpan.');
     }
 
     public function updateMailSettings(Request $request): RedirectResponse

@@ -12,18 +12,26 @@ class AuthRepository {
   final ApiClient _api;
   final TokenStorage _tokenStorage;
 
-  Future<User> login({String? email, String? icNumber, required String password}) async {
+  Future<User> login({
+    String? email,
+    String? icNumber,
+    required String password,
+  }) async {
     final identifier =
-        (email != null && email.isNotEmpty) ? email.trim() : (icNumber?.trim() ?? '');
+        (email != null && email.isNotEmpty)
+            ? email.trim()
+            : (icNumber?.trim() ?? '');
     final isEmail = identifier.contains('@');
-    final data = await _api.post(
-      ApiPaths.login,
-      body: {
-        if (isEmail) 'email': identifier,
-        if (!isEmail) 'ic_number': identifier,
-        'password': password,
-      },
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.post(
+              ApiPaths.login,
+              body: {
+                if (isEmail) 'email': identifier,
+                if (!isEmail) 'ic_number': identifier,
+                'password': password,
+              },
+            )
+            as Map<String, dynamic>;
 
     return _persistSession(data);
   }
@@ -94,19 +102,20 @@ class AuthRepository {
   Future<Map<String, dynamic>> forgotId(String icNumber, {String? dob}) async {
     final data = await _api.post(
       ApiPaths.forgotId,
-      body: {
-        'ic_number': icNumber,
-        if (dob != null) 'dob': dob,
-      },
+      body: {'ic_number': icNumber, if (dob != null) 'dob': dob},
     );
     return (data as Map<String, dynamic>?) ?? {};
   }
 
   /// Lupa kata laluan — hantar pautan reset ke emel berdaftar.
-  Future<Map<String, dynamic>> forgotPassword(String icNumber) async {
+  Future<Map<String, dynamic>> forgotPassword(
+    String icNumber, {
+    String channel = 'whatsapp',
+    required String contact,
+  }) async {
     final data = await _api.post(
       ApiPaths.forgotPassword,
-      body: {'ic_number': icNumber},
+      body: {'ic_number': icNumber, 'channel': channel, 'contact': contact},
     );
     return (data as Map<String, dynamic>?) ?? {};
   }
@@ -142,11 +151,12 @@ class AuthRepository {
   /// Log masuk kali pertama — kemas kini emel dahulu, lalu hantar OTP.
   Future<Map<String, dynamic>> updateAndSendOtp(
     String icNumber,
-    String email,
+    String channel,
+    String contact,
   ) async {
     final data = await _api.post(
       ApiPaths.updateAndSendOtp,
-      body: {'ic_number': icNumber, 'email': email},
+      body: {'ic_number': icNumber, 'channel': channel, 'contact': contact},
     );
     return (data as Map<String, dynamic>?) ?? {};
   }
@@ -159,16 +169,18 @@ class AuthRepository {
     String? password,
     String? passwordConfirmation,
   }) async {
-    final data = await _api.post(
-      ApiPaths.verifyOtp,
-      body: {
-        'ic_number': icNumber,
-        'code': code,
-        if (password != null) 'password': password,
-        if (passwordConfirmation != null)
-          'password_confirmation': passwordConfirmation,
-      },
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.post(
+              ApiPaths.verifyOtp,
+              body: {
+                'ic_number': icNumber,
+                'code': code,
+                if (password != null) 'password': password,
+                if (passwordConfirmation != null)
+                  'password_confirmation': passwordConfirmation,
+              },
+            )
+            as Map<String, dynamic>;
 
     return _persistSession(data);
   }
