@@ -565,7 +565,7 @@ const malaysianStates = [
                         <div
                             v-for="branch in org.branches"
                             :key="branch.id"
-                            class="relative flex flex-col gap-3 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow"
+                            class="relative min-w-0 flex flex-col gap-3 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow"
                         >
                             <!-- Active badge -->
                             <span
@@ -582,9 +582,12 @@ const malaysianStates = [
                                     <img v-else-if="org.logo_path" :src="org.logo_path" :alt="org.name" class="h-full w-full object-contain p-1 opacity-40" />
                                     <span v-else class="text-lg font-black text-gray-300">{{ branch.name.charAt(0) }}</span>
                                 </div>
-                                <div class="min-w-0">
-                                    <Link :href="route('admin.hub.manage', { branch_id: branch.id })" class="font-bold text-gray-900 truncate hover:text-indigo-600 transition-colors">{{ branch.name }}</Link>
-                                    <p v-if="branch.state" class="text-xs text-gray-500 truncate">{{ branch.state }}</p>
+                                <div class="min-w-0 flex-1">
+                                    <Link
+                                        :href="route('admin.hub.manage', { branch_id: branch.id })"
+                                        class="block max-w-full break-words line-clamp-2 font-bold leading-tight text-gray-900 hover:text-indigo-600 transition-colors"
+                                    >{{ branch.name }}</Link>
+                                    <p v-if="branch.state" class="mt-0.5 max-w-full truncate text-xs text-gray-500">{{ branch.state }}</p>
                                 </div>
                             </div>
 
@@ -592,11 +595,11 @@ const malaysianStates = [
                             <div class="space-y-1.5 text-xs text-gray-500">
                                 <div v-if="branch.phone" class="flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                    {{ branch.phone }}
+                                    <span class="min-w-0 truncate">{{ branch.phone }}</span>
                                 </div>
                                 <div v-if="branch.email" class="flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    {{ branch.email }}
+                                    <span class="min-w-0 truncate">{{ branch.email }}</span>
                                 </div>
                                 <div v-if="branch.address" class="flex items-start gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
