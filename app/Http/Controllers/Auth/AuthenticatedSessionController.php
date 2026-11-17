@@ -177,6 +177,9 @@ class AuthenticatedSessionController extends Controller
         $contact = trim((string) $request->input('contact'));
         if ($channel === 'whatsapp') {
             $contact = $whatsapp->normalizePhone($contact);
+            if (strlen($contact) < 10) {
+                return response()->json(['message' => 'Nombor WhatsApp tidak sah.'], 422);
+            }
         } elseif ($contact !== '') {
             $request->validate(['contact' => ['email']]);
             $contact = Str::lower($contact);
@@ -188,7 +191,12 @@ class AuthenticatedSessionController extends Controller
 
         $otp->send($user, 'login', $channel, $contact ?: null);
 
-        return response()->json(['message' => 'Kod OTP telah dihantar ke emel berdaftar anda.']);
+        return response()->json([
+            'message' => $channel === 'whatsapp'
+                ? 'Kod OTP telah dihantar melalui WhatsApp.'
+                : 'Kod OTP telah dihantar ke emel berdaftar anda.',
+            'channel' => $channel,
+        ]);
     }
 
     public function updateAndSendOtp(Request $request, OtpService $otp, OneSenderWhatsappService $whatsapp): JsonResponse
@@ -220,7 +228,10 @@ class AuthenticatedSessionController extends Controller
             }
             $otp->send($user, 'login', $channel, $contact);
 
-            return response()->json(['message' => 'Kod OTP telah dihantar melalui WhatsApp.']);
+            return response()->json([
+                'message' => 'Kod OTP telah dihantar melalui WhatsApp.',
+                'channel' => 'whatsapp',
+            ]);
         }
 
         $request->validate(['contact' => ['nullable', 'email']]);
@@ -235,7 +246,10 @@ class AuthenticatedSessionController extends Controller
 
         $otp->send($user, 'login', 'email', $newEmail);
 
-        return response()->json(['message' => 'Kod OTP telah dihantar ke emel anda.']);
+        return response()->json([
+            'message' => 'Kod OTP telah dihantar ke emel anda.',
+            'channel' => 'email',
+        ]);
     }
 
     public function verifyOtp(Request $request, OtpService $otp): JsonResponse

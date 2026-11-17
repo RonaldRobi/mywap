@@ -74,7 +74,7 @@ const submit = () => {
                     v-model="form.contact"
                     :type="form.channel === 'whatsapp' ? 'tel' : 'email'"
                     class="mt-1 block w-full"
-                    :placeholder="form.channel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
+                    :placeholder="form.channel === 'whatsapp' ? '0132716575' : 'nama@example.com'"
                     required
                 />
                 <InputError class="mt-2" :message="form.errors.contact" />

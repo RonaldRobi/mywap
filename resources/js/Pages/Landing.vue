@@ -587,7 +587,7 @@ const sendResetLink = () => {
                                          v-model="ftContact"
                                          :type="ftChannel === 'whatsapp' ? 'tel' : 'email'"
                                         class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-emerald-400 focus:bg-white focus:ring-0"
-                                         :placeholder="ftChannel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
+                                         :placeholder="ftChannel === 'whatsapp' ? '0132716575' : 'nama@example.com'"
                                     >
                                     <label
                                          for="ft_contact"
@@ -763,7 +763,7 @@ const sendResetLink = () => {
                                      <input
                                          v-model="fiContact"
                                          :type="fiChannel === 'whatsapp' ? 'tel' : 'email'"
-                                         :placeholder="fiChannel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
+                                         :placeholder="fiChannel === 'whatsapp' ? '0132716575' : 'nama@example.com'"
                                          class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-emerald-400 focus:ring-0"
                                      >
                                  </div>

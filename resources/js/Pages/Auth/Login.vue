@@ -558,7 +558,7 @@ const submit = () => {
                                         class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                                         v-model="otpForm.contact"
                                         required
-                                        :placeholder="otpForm.channel === 'whatsapp' ? '+601157452119' : 'nama@domain.com'"
+                                         :placeholder="otpForm.channel === 'whatsapp' ? '0132716575' : 'nama@domain.com'"
                                     />
                                     <p class="text-xs text-slate-400">Masukkan emel atau nombor WhatsApp yang boleh menerima kod OTP.</p>
                                 </div>

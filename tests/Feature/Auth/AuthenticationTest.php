@@ -3,8 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\Organization;
+use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -86,6 +88,35 @@ class AuthenticationTest extends TestCase
             ->assertJson([
                 'found' => false,
             ]);
+    }
+
+    public function test_web_first_login_whatsapp_otp_uses_normalized_number(): void
+    {
+        Http::fake([
+            '*' => Http::response(['code' => 200], 200),
+        ]);
+
+        AppSetting::singleton()->update([
+            'onesender_url' => 'https://onesender.test/messages',
+            'onesender_api_key' => 'test-key',
+        ]);
+
+        $user = User::factory()->create([
+            'ic_number' => '940729045407',
+            'first_login_at' => null,
+        ]);
+
+        $this->postJson(route('login.update-and-send-otp'), [
+            'ic_number' => $user->ic_number,
+            'channel' => 'whatsapp',
+            'contact' => '0132716575',
+        ])->assertOk()->assertJson([
+            'channel' => 'whatsapp',
+            'message' => 'Kod OTP telah dihantar melalui WhatsApp.',
+        ]);
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://onesender.test/messages'
+            && $request['to'] === '60132716575');
     }
 
     public function test_members_can_authenticate_with_ic_number(): void
