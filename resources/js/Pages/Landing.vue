@@ -101,7 +101,7 @@ const resetFlow = () => {
 
 const startFtCooldown = () => {
     if (ftCooldownTimer) clearInterval(ftCooldownTimer);
-    ftCooldownSeconds.value = 60;
+    ftCooldownSeconds.value = 180;
     ftCooldownTimer = setInterval(() => {
         ftCooldownSeconds.value = Math.max(0, ftCooldownSeconds.value - 1);
         if (ftCooldownSeconds.value === 0) clearInterval(ftCooldownTimer);

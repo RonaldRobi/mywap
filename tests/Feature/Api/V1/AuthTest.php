@@ -198,7 +198,7 @@ class AuthTest extends TestCase
 
         $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Sila tunggu 1 minit sebelum meminta kod OTP baharu.');
+            ->assertJsonPath('message', 'Sila tunggu 3 minit sebelum meminta kod OTP baharu.');
     }
 
     public function test_public_traffic_does_not_exhaust_login_rate_limit(): void

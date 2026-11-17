@@ -16,6 +16,8 @@ class OtpService
      */
     public const MAX_ATTEMPTS = 5;
 
+    public const RESEND_COOLDOWN_SECONDS = 180;
+
     public function generate(User $user, string $purpose = 'login'): OtpCode
     {
         $retryAfter = $this->retryAfter($user, $purpose);
@@ -130,7 +132,13 @@ class OtpService
             return 0;
         }
 
-        return max(0, 60 - now()->diffInSeconds($latest->created_at));
+        $elapsed = now()->diffInSeconds($latest->created_at, false);
+
+        if ($elapsed < 0) {
+            return self::RESEND_COOLDOWN_SECONDS;
+        }
+
+        return max(0, self::RESEND_COOLDOWN_SECONDS - $elapsed);
     }
 
     private function generateCode(): string
