@@ -36,7 +36,7 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.l10n.infaqTitle),
+        title: const SizedBox.shrink(),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: listAsync.when(

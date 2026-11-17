@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../core/utils/formatters.dart';
 
 /// Localized label for an order lifecycle status.
 String orderStatusLabel(BuildContext context, String? status) =>
@@ -34,27 +35,8 @@ String paymentStatusLabel(BuildContext context, String? status) =>
       _ => status ?? '-',
     };
 
-/// Formats an ISO-8601 datetime as `d MMM yyyy` (Malay months) without
-/// depending on intl locale data initialization.
 String formatOrderDate(String? iso) {
-  if (iso == null || iso.isEmpty) return '-';
-  final dt = DateTime.tryParse(iso);
-  if (dt == null) return iso;
-  const months = [
-    'Jan',
-    'Feb',
-    'Mac',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Ogo',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Dis',
-  ];
-  return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  return Formatters.dateFromIso(iso);
 }
 
 /// Best-effort deep-link into a courier's tracking page for a known courier

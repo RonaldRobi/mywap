@@ -35,7 +35,7 @@ class ArticleService
             'cover_image' => $article->cover_image_path,
             'excerpt' => Str::limit(strip_tags($article->content), 100),
             'author_name' => $article->author?->name ?? 'Admin',
-            'published_date' => $article->published_at ? $article->published_at->format('d M Y') : $article->created_at->format('d M Y'),
+            'published_date' => $article->published_at ? $article->published_at->format('d/m/Y') : $article->created_at->format('d/m/Y'),
             'public_url' => route('articles.show', $article->slug),
             'is_featured' => $article->is_featured,
             'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),

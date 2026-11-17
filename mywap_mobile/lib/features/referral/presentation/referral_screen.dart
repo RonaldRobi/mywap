@@ -30,7 +30,7 @@ class ReferralScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.referralTitle),
+        title: const SizedBox.shrink(),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(

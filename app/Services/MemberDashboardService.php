@@ -146,7 +146,7 @@ class MemberDashboardService
                     'type' => $e->type,
                     'location_or_link' => $e->location_or_link,
                     'start_time' => $e->start_time->toISOString(),
-                    'start_formatted' => $e->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                    'start_formatted' => $e->start_time->format('d/m/Y H:i'),
                     'featured_image_url' => $e->featured_image_url,
                     'organization' => [
                         'name' => $e->organization?->name ?? 'Semua Organisasi',
@@ -349,10 +349,10 @@ class MemberDashboardService
                 'locality' => $user->locality,
                 'profession' => $user->current_profession,
                 'photo_url' => $user->profile_photo_path,
-                'member_since' => optional($user->created_at)->format('M Y'),
+                'member_since' => optional($user->created_at)->format('d/m/Y'),
                 'member_no' => $user->member_no,
                 'state' => $user->state,
-                'dob' => optional($user->dob)->format('d M Y'),
+                'dob' => optional($user->dob)->format('d/m/Y'),
                 'qr_value' => $user->member_no
                     ? route('public.card', ['memberNo' => $user->member_no])
                     : route('member.card'),
@@ -370,7 +370,7 @@ class MemberDashboardService
             'feeAmount' => $feeAmount,
             'nextEvent' => $nextEventRsvp ? [
                 'title' => $nextEventRsvp->event->title,
-                'start_formatted' => $nextEventRsvp->event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'start_formatted' => $nextEventRsvp->event->start_time->format('d/m/Y H:i'),
                 'location_or_link' => $nextEventRsvp->event->location_or_link,
                 'status' => $nextEventRsvp->status,
             ] : null,

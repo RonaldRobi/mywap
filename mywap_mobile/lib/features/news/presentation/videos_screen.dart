@@ -25,7 +25,7 @@ class VideosScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.videoTitle),
+        title: const SizedBox.shrink(),
       ),
       body: async.when(
         data:

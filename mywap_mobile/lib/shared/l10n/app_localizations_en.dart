@@ -523,6 +523,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dobInvalid => 'That date is not valid.';
 
   @override
+  String get mediaStatementsTitle => 'Media Statements';
+
+  @override
   String get newPasswordLabel => 'New Password';
 
   @override

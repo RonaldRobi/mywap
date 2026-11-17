@@ -344,8 +344,21 @@ class AdminApiTest extends TestCase
             ->assertJsonPath('data.fees.0.status', 'paid');
     }
 
-    // ─── Kehadiran ───────────────────────────────────────────────────────────
+    public function test_superadmin_can_access_fees(): void
+    {
+        Sanctum::actingAs($this->superadmin);
 
+        $this->getJson('/api/v1/admin/fees')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'summary' => ['total_members', 'paid_count', 'pending_count', 'revenue'],
+                    'fees',
+                ],
+            ]);
+    }
+
+    // ─── Kehadiran ───────────────────────────────────────────────────────────
     public function test_attendance_registrations_returns_event_stats(): void
     {
         $event = $this->makeEvent($this->org);

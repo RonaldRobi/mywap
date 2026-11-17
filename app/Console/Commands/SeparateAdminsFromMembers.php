@@ -31,6 +31,11 @@ class SeparateAdminsFromMembers extends Command
                     ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'Member'))
                     ->orWhereHas('membershipFees');
             })
+            ->whereRaw("LOWER(COALESCE(email, '')) NOT LIKE 'admin%@mywap.my'")
+            ->whereRaw("LOWER(COALESCE(email, '')) NOT LIKE 'demo%@mywap.my'")
+            ->whereRaw("LOWER(COALESCE(name, '')) NOT LIKE 'admin %'")
+            ->whereRaw("LOWER(COALESCE(name, '')) NOT LIKE 'demo admin%'")
+            ->whereRaw("COALESCE(member_no, '') NOT LIKE '%-%'")
             ->with(['organization', 'roles'])
             ->orderBy('id')
             ->get();
@@ -69,8 +74,14 @@ class SeparateAdminsFromMembers extends Command
 
         $adminOnly = User::withoutGlobalScope(OrganizationScope::class)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', ['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']))
-            ->whereNull('member_no')
-            ->whereDoesntHave('roles', fn ($query) => $query->where('name', 'Member'))
+            ->where(function ($query) {
+                $query->whereNull('member_no')
+                    ->orWhere('member_no', 'like', '%-%')
+                    ->orWhereRaw("LOWER(COALESCE(email, '')) LIKE 'admin%@mywap.my'")
+                    ->orWhereRaw("LOWER(COALESCE(email, '')) LIKE 'demo%@mywap.my'")
+                    ->orWhereRaw("LOWER(COALESCE(name, '')) LIKE 'admin %'")
+                    ->orWhereRaw("LOWER(COALESCE(name, '')) LIKE 'demo admin%'");
+            })
             ->whereDoesntHave('membershipFees')
             ->with('roles')
             ->orderBy('id')
@@ -87,6 +98,23 @@ class SeparateAdminsFromMembers extends Command
             }
 
             $isSuperadmin = $user->hasRole('Superadmin');
+
+            if ($user->hasRole('Member')) {
+                $user->removeRole('Member');
+            }
+
+            $email = strtolower((string) $user->email);
+            $fakeMemberNo = $user->member_no !== null && (
+                str_contains($user->member_no, '-')
+                || ((str_starts_with($email, 'admin') || str_starts_with($email, 'demo'))
+                    && str_ends_with($email, '@mywap.my'))
+            );
+
+            if ($fakeMemberNo) {
+                $user->member_no = null;
+                $user->member_no_sequence = null;
+                $user->original_member_no = null;
+            }
 
             $user->is_public_in_directory = false;
             $user->position = null;

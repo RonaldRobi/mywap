@@ -28,7 +28,7 @@ class FacilitiesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.facTitle),
+        title: const SizedBox.shrink(),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(

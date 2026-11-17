@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/organic_canvas_background.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../core/utils/formatters.dart';
 import '../../loading_screen/application/loading_screen_providers.dart';
 import '../application/public_home_providers.dart';
 import '../data/public_home_repository.dart';
@@ -91,6 +92,7 @@ class _PublicHomeScreenState extends ConsumerState<PublicHomeScreen> {
                       _NewsSection(items: data.news),
                       _EventsSection(items: data.events),
                       _InfaqSection(items: data.infaqs),
+                      _MediaStatementsSection(items: data.mediaStatements),
                       const _MemberCta(),
                     ],
                   ),
@@ -434,7 +436,7 @@ class _ArticleTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${article.authorName ?? context.l10n.adminFallback} • ${article.publishedAt ?? ''}',
+                      '${article.authorName ?? context.l10n.adminFallback} • ${Formatters.dateFromIso(article.publishedAt)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -670,7 +672,7 @@ class _NewsTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${item.categoryName ?? context.l10n.generalCategory} • ${item.publishedAt ?? ''}',
+                      '${item.categoryName ?? context.l10n.generalCategory} • ${Formatters.dateFromIso(item.publishedAt)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -783,6 +785,89 @@ class _InfaqSection extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MediaStatementsSection extends StatelessWidget {
+  const _MediaStatementsSection({required this.items});
+  final List<PublicMediaStatement> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: context.l10n.mediaStatementsTitle,
+          path: '/media-statements',
+        ),
+        if (items.isEmpty)
+          const _EmptyHint(message: 'Belum ada kenyataan media.')
+        else
+          SizedBox(
+            height: 104,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+              itemBuilder:
+                  (_, index) => _MediaStatementTile(item: items[index]),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MediaStatementTile extends StatelessWidget {
+  const _MediaStatementTile({required this.item});
+  final PublicMediaStatement item;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 250,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push('/media-statements/${item.id}'),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 88,
+                height: 104,
+                child:
+                    item.featuredImage == null
+                        ? const ColoredBox(
+                          color: AppColors.greenTint,
+                          child: Icon(Icons.campaign_outlined),
+                        )
+                        : AppImage(
+                          item.featuredImage,
+                          fit: BoxFit.cover,
+                          borderRadius: BorderRadius.zero,
+                        ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.sm),
+                  child: Text(
+                    item.title ?? '-',
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

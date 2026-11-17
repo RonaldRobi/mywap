@@ -697,6 +697,9 @@ class _BottomBar extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: canBuy ? onAddToCart : null,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                    ),
                     icon: const Icon(Icons.add_shopping_cart),
                     label: Text(context.l10n.ecomAddToCart),
                   ),
@@ -705,6 +708,9 @@ class _BottomBar extends StatelessWidget {
                 Expanded(
                   child: FilledButton(
                     onPressed: canBuy ? onBuyNow : null,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                    ),
                     child: Text(
                       soldOut
                           ? context.l10n.ecomSoldOut

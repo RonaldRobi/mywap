@@ -177,6 +177,28 @@ class PublicInfaq {
   );
 }
 
+class PublicMediaStatement {
+  const PublicMediaStatement({
+    this.id,
+    this.title,
+    this.featuredImage,
+    this.pdfUrl,
+  });
+
+  final int? id;
+  final String? title;
+  final String? featuredImage;
+  final String? pdfUrl;
+
+  factory PublicMediaStatement.fromJson(Map<String, dynamic> json) =>
+      PublicMediaStatement(
+        id: parseIntValue(json['id']),
+        title: json['title'] as String?,
+        featuredImage: json['featured_image'] as String?,
+        pdfUrl: json['pdf_url'] as String?,
+      );
+}
+
 /// Payload penuh Beranda awam (`GET /public/home`).
 class PublicHomeData {
   const PublicHomeData({
@@ -188,6 +210,7 @@ class PublicHomeData {
     this.library = const [],
     this.events = const [],
     this.infaqs = const [],
+    this.mediaStatements = const [],
   });
 
   final String? logoUrl;
@@ -198,6 +221,7 @@ class PublicHomeData {
   final List<PublicLibraryItem> library;
   final List<PublicEvent> events;
   final List<PublicInfaq> infaqs;
+  final List<PublicMediaStatement> mediaStatements;
 
   factory PublicHomeData.fromJson(Map<String, dynamic> json) => PublicHomeData(
     logoUrl: json['logo_url'] as String?,
@@ -208,6 +232,10 @@ class PublicHomeData {
     library: _listOf(json['library'], PublicLibraryItem.fromJson),
     events: _listOf(json['events'], PublicEvent.fromJson),
     infaqs: _listOf(json['infaqs'], PublicInfaq.fromJson),
+    mediaStatements: _listOf(
+      json['media_statements'],
+      PublicMediaStatement.fromJson,
+    ),
   );
 }
 

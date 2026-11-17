@@ -41,7 +41,7 @@ class EventService
             'category_label' => $event->category->label(),
             'location_or_link' => $event->location_or_link,
             'start_time' => $event->start_time->toISOString(),
-            'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+            'start_formatted' => $event->start_time->format('d/m/Y H:i'),
             'end_time' => $event->end_time->toISOString(),
             'featured_image_url' => $event->featured_image_url,
             'google_calendar_url' => $event->google_calendar_url,
@@ -235,7 +235,7 @@ class EventService
                         'name' => $event->organization?->name ?? 'Semua Organisasi',
                         'color_theme' => $event->organization?->color_theme ?? '#334155',
                     ],
-                    'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                    'start_formatted' => $event->start_time->format('d/m/Y H:i'),
                     'location_or_link' => $event->location_or_link,
                     'attended_at' => optional($rsvp->attended_at)->format('d/m/Y H:i'),
                 ];

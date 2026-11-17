@@ -6,6 +6,7 @@ use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -137,6 +138,31 @@ class ResetMembershipFeesTest extends TestCase
             'amount' => 50,
             'status' => 'unpaid',
         ]);
+    }
+
+    public function test_reset_is_idempotent(): void
+    {
+        $member = $this->member();
+
+        $fee = MembershipFee::factory()->create([
+            'user_id' => $member->id,
+            'organization_id' => $this->org->id,
+            'year' => 2026,
+            'amount' => 50,
+            'status' => 'unpaid',
+        ]);
+
+        $this->artisan('fees:reset-baseline')->assertSuccessful();
+
+        $first = DB::table('membership_fees')->where('id', $fee->id)->first();
+
+        $this->artisan('fees:reset-baseline')->assertSuccessful();
+
+        $second = DB::table('membership_fees')->where('id', $fee->id)->first();
+
+        $this->assertSame((string) $first->updated_at, (string) $second->updated_at);
+        $this->assertSame('paid', $second->status);
+        $this->assertEquals(0.0, (float) $second->amount);
     }
 
     private function member(array $attributes = []): User

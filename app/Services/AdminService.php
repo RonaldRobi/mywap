@@ -706,7 +706,7 @@ class AdminService
         $years = range(max($startYear - 1, now()->year - 10), now()->year + 1);
 
         $orgIds = $isSuperadmin
-            ? Organization::pluck('fee_amount', 'id')
+            ? Organization::pluck('fee_amount', 'id')->all()
             : [$orgId => Organization::find($orgId)?->fee_amount ?? 0];
 
         $expectedAmount = 0.0;

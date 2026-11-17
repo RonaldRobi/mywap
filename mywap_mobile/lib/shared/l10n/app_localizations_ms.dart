@@ -523,6 +523,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get dobInvalid => 'Tarikh ini tidak sah.';
 
   @override
+  String get mediaStatementsTitle => 'Kenyataan Media';
+
+  @override
   String get newPasswordLabel => 'Kata Laluan Baharu';
 
   @override

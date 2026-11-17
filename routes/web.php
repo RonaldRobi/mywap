@@ -34,6 +34,7 @@ use App\Http\Controllers\InformationHubController;
 use App\Http\Controllers\MemberCardController;
 use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MemberFeeController;
+use App\Http\Controllers\MediaStatementController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingSlideController;
@@ -107,6 +108,8 @@ Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.inde
 Route::get('/artikel/{article:slug}', [ArticleController::class, 'show'])->name('articles.show')->middleware('throttle:60,1,web-article');
 Route::post('/artikel/{article:slug}/react', [ArticleController::class, 'react'])->name('articles.react')->middleware('throttle:30,1,web-article-react');
 Route::post('/artikel/{article:slug}/comments', [ArticleController::class, 'storeComment'])->name('articles.comments.store')->middleware('throttle:10,1,web-article-comments');
+Route::get('/kenyataan-media', [MediaStatementController::class, 'index'])->name('media-statements.index');
+Route::get('/kenyataan-media/{mediaStatement}', [MediaStatementController::class, 'show'])->name('media-statements.show');
 
 Route::get('/sumbangan', [InfaqController::class, 'index'])->name('infaq.index')->middleware('throttle:60,1,web-infaq');
 Route::get('/sumbangan/{year}/{month}/{day}/{infaq:slug}', [InfaqController::class, 'show'])->name('infaq.show')->middleware('throttle:60,1,web-infaq-show');
@@ -244,6 +247,12 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::put('/admin/articles/{article}', [ArticleController::class, 'update'])->name('admin.articles.update');
         Route::delete('/admin/articles/{article}', [ArticleController::class, 'destroy'])->name('admin.articles.destroy');
         Route::delete('/admin/articles/media/{media}', [ArticleController::class, 'deleteMedia'])->name('admin.articles.media.destroy');
+        Route::get('/admin/media-statements', [MediaStatementController::class, 'adminIndex'])->name('admin.media-statements.index');
+        Route::get('/admin/media-statements/create', [MediaStatementController::class, 'create'])->name('admin.media-statements.create');
+        Route::post('/admin/media-statements', [MediaStatementController::class, 'store'])->name('admin.media-statements.store');
+        Route::get('/admin/media-statements/{mediaStatement}/edit', [MediaStatementController::class, 'edit'])->name('admin.media-statements.edit');
+        Route::put('/admin/media-statements/{mediaStatement}', [MediaStatementController::class, 'update'])->name('admin.media-statements.update');
+        Route::delete('/admin/media-statements/{mediaStatement}', [MediaStatementController::class, 'destroy'])->name('admin.media-statements.destroy');
 
         // Video management (Admin + Superadmin)
         Route::get('/admin/videos/manage', [VideoController::class, 'manage'])->name('admin.videos.manage');

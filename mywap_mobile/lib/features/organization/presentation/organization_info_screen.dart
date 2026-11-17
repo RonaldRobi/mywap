@@ -28,7 +28,7 @@ class OrganizationInfoScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.orgInfoTitle),
+        title: const SizedBox.shrink(),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: infoAsync.when(
@@ -710,7 +710,9 @@ List<(IconData, String, String?)> _socialLinks(
 ) {
   final phone = org.phone?.trim() ?? '';
   final tel = phone.replaceAll(RegExp(r'[^0-9+]'), '');
-  final wa = phone.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst(RegExp(r'^0'), '60');
+  final wa = phone
+      .replaceAll(RegExp(r'[^0-9]'), '')
+      .replaceFirst(RegExp(r'^0'), '60');
 
   return [
     (

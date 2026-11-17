@@ -10,8 +10,6 @@ abstract final class Formatters {
     symbol: 'RM',
     decimalDigits: 0,
   );
-  static DateFormat _date = DateFormat('d MMM yyyy', _locale);
-  static DateFormat _datetime = DateFormat('d MMM yyyy, h:mm a', _locale);
 
   /// Ikut bahasa paparan semasa. Dipanggil oleh `MyWapApp` setiap rebuild.
   static void setLocale(Locale locale) {
@@ -23,8 +21,6 @@ abstract final class Formatters {
       symbol: 'RM',
       decimalDigits: 0,
     );
-    _date = DateFormat('d MMM yyyy', code);
-    _datetime = DateFormat('d MMM yyyy, h:mm a', code);
   }
 
   /// Formats a value (num or String) as RM, e.g. 50 → "RM50".
@@ -35,8 +31,25 @@ abstract final class Formatters {
     return _currency.format(n);
   }
 
-  static String date(DateTime? date) => date == null ? '-' : _date.format(date);
+  static String date(DateTime? date) {
+    if (date == null) return '-';
+    String pad(int value) => value.toString().padLeft(2, '0');
+    return '${pad(date.day)}/${pad(date.month)}/${date.year}';
+  }
 
-  static String datetime(DateTime? date) =>
-      date == null ? '-' : _datetime.format(date);
+  static String datetime(DateTime? value) {
+    if (value == null) return '-';
+    String pad(int value) => value.toString().padLeft(2, '0');
+    return '${date(value)} ${pad(value.hour)}:${pad(value.minute)}';
+  }
+
+  static String dateFromIso(String? value) {
+    if (value == null || value.isEmpty) return '-';
+    return date(DateTime.tryParse(value));
+  }
+
+  static String datetimeFromIso(String? value) {
+    if (value == null || value.isEmpty) return '-';
+    return datetime(DateTime.tryParse(value));
+  }
 }

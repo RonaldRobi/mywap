@@ -62,7 +62,16 @@ class ResetMembershipFees extends Command
 
         $feeRows = DB::table('membership_fees')
             ->where('year', '<=', $baselineYear)
-            ->where('status', '!=', 'life_member');
+            ->where('status', '!=', 'life_member')
+            ->where(function ($q) use ($note) {
+                $q->where('status', '!=', 'paid')
+                    ->orWhere('amount', '!=', 0)
+                    ->orWhereNotNull('payment_id')
+                    ->orWhereNotNull('paid_at')
+                    ->orWhere(function ($notesQuery) use ($note) {
+                        $notesQuery->whereNull('notes')->orWhere('notes', '!=', $note);
+                    });
+            });
 
         if ($adminIds !== []) {
             $feeRows->whereNotIn('user_id', $adminIds);

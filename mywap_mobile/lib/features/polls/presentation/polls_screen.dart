@@ -24,7 +24,7 @@ class PollsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.pollTitle),
+        title: const SizedBox.shrink(),
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: pollsAsync.when(

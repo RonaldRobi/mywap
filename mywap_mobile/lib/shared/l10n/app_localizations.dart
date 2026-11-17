@@ -1115,6 +1115,12 @@ abstract class AppLocalizations {
   /// **'That date is not valid.'**
   String get dobInvalid;
 
+  /// No description provided for @mediaStatementsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Statements'**
+  String get mediaStatementsTitle;
+
   /// No description provided for @newPasswordLabel.
   ///
   /// In en, this message translates to:

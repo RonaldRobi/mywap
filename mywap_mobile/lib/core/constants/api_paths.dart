@@ -74,6 +74,9 @@ abstract final class ApiPaths {
   static String articleReact(int id) => '/articles/$id/react';
   static String articleComments(int id) => '/articles/$id/comments';
 
+  static const String mediaStatements = '/media-statements';
+  static String mediaStatementDetail(int id) => '/media-statements/$id';
+
   // ---- Videos ----
   static const String videos = '/videos';
 

@@ -92,7 +92,7 @@ class DirectoryService
         return [
             'name' => $user->name,
             'member_no' => $user->member_no,
-            'member_since' => optional($user->created_at)->format('M Y'),
+            'member_since' => optional($user->created_at)->format('d/m/Y'),
             'position_badge' => $user->positionBadgePayload(),
             'photo_url' => $user->profile_photo_path,
             'organization' => [

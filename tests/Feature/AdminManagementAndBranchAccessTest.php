@@ -7,6 +7,7 @@ use App\Models\BranchAdmin;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -149,5 +150,100 @@ class AdminManagementAndBranchAccessTest extends TestCase
 
         $branches = $response->viewData('page')['props']['organizations'][0]['branches'];
         $this->assertCount(2, $branches);
+    }
+
+    public function test_superadmin_sees_all_admins_across_organizations_and_roles(): void
+    {
+        $superadmin = $this->makeSuperadmin();
+        $otherOrg = Organization::factory()->create(['name' => 'PKPIM', 'slug' => 'pkpim']);
+        $otherAdmin = User::factory()->create([
+            'name' => 'Admin Lain',
+            'current_organization_id' => $otherOrg->id,
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $response = $this->actingAs($superadmin)->get(route('admin.admins.index'));
+        $response->assertOk();
+
+        $admins = collect($response->viewData('page')['props']['admins']);
+
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $this->orgAdmin->id));
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $this->branchAdmin->id));
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $otherAdmin->id));
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $superadmin->id));
+        $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $this->member->id));
+
+        $branchAdminRow = $admins->firstWhere('id', $this->branchAdmin->id);
+        $this->assertSame('PERAK', $branchAdminRow['branch_name']);
+        $this->assertTrue($branchAdminRow['is_branch_admin']);
+    }
+
+    public function test_org_admin_only_sees_admins_from_own_organization(): void
+    {
+        $otherOrg = Organization::factory()->create(['name' => 'PKPIM', 'slug' => 'pkpim']);
+        $otherAdmin = User::factory()->create([
+            'name' => 'Admin Lain',
+            'current_organization_id' => $otherOrg->id,
+        ]);
+        $otherAdmin->assignRole('Admin');
+
+        $response = $this->actingAs($this->orgAdmin)->get(route('admin.admins.index'));
+        $response->assertOk();
+
+        $admins = collect($response->viewData('page')['props']['admins']);
+
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $this->orgAdmin->id));
+        $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $otherAdmin->id));
+        $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $this->branchAdmin->id));
+    }
+
+    public function test_superadmin_can_toggle_reset_and_delete_org_admin(): void
+    {
+        $superadmin = $this->makeSuperadmin();
+
+        $this->actingAs($superadmin)
+            ->patch(route('admin.hub.members.toggle-active', $this->orgAdmin))
+            ->assertRedirect();
+        $this->assertFalse($this->orgAdmin->fresh()->is_active);
+
+        $this->actingAs($superadmin)
+            ->post(route('admin.hub.members.reset-password', $this->orgAdmin), [
+                'password' => 'password-baharu-123',
+                'password_confirmation' => 'password-baharu-123',
+            ])
+            ->assertRedirect();
+
+        $this->orgAdmin->refresh();
+        $this->assertTrue(Hash::check('password-baharu-123', $this->orgAdmin->password));
+        $this->assertTrue((bool) $this->orgAdmin->must_change_password);
+
+        $this->actingAs($superadmin)
+            ->delete(route('admin.hub.members.destroy', $this->orgAdmin))
+            ->assertRedirect();
+
+        $this->assertSoftDeleted('users', ['id' => $this->orgAdmin->id]);
+    }
+
+    public function test_superadmin_cannot_deactivate_self_or_last_superadmin(): void
+    {
+        $superadmin = $this->makeSuperadmin();
+
+        $this->actingAs($superadmin)
+            ->patch(route('admin.hub.members.toggle-active', $superadmin))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertTrue($superadmin->fresh()->is_active);
+    }
+
+    private function makeSuperadmin(): User
+    {
+        $superadmin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+        ]);
+        $superadmin->assignRole('Superadmin');
+
+        return $superadmin;
     }
 }

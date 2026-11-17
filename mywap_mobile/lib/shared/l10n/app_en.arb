@@ -170,6 +170,7 @@
   "dobYear": "Year",
   "dobUseDate": "Use this date",
   "dobInvalid": "That date is not valid.",
+  "mediaStatementsTitle": "Media Statements",
   "newPasswordLabel": "New Password",
   "newPasswordHint": "Minimum 8 characters",
   "newPasswordMin": "Password must be at least 8 characters.",

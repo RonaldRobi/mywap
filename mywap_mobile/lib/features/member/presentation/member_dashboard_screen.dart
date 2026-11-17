@@ -19,6 +19,9 @@ import '../data/models/dashboard_data.dart';
 import '../data/models/library_item.dart';
 import 'library_reader_screen.dart';
 import 'widgets/notification_bell.dart';
+import '../../prayer/presentation/prayer_banner.dart';
+import '../../media_statements/application/media_statement_providers.dart';
+import '../../media_statements/data/media_statement_repository.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 class MemberDashboardScreen extends ConsumerWidget {
@@ -71,6 +74,9 @@ class _DashboardContent extends ConsumerWidget {
     final news = data.latest_news ?? const [];
     final articles = data.latest_articles ?? const [];
     final polls = data.active_polls ?? const [];
+    final mediaStatements =
+        ref.watch(mediaStatementsProvider).valueOrNull ??
+        const <MediaStatement>[];
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -88,6 +94,7 @@ class _DashboardContent extends ConsumerWidget {
             title: _Greeting(name: memberName),
             actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
           ),
+          const SliverToBoxAdapter(child: PrayerBanner()),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               Spacing.lg,
@@ -152,6 +159,28 @@ class _DashboardContent extends ConsumerWidget {
                           (_, __) => const SizedBox(width: Spacing.md),
                       itemBuilder:
                           (_, index) => _InfaqCard(item: infaqItems[index]),
+                    ),
+                  ),
+                ],
+                if (mediaStatements.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: context.l10n.mediaStatementsTitle,
+                    subtitle: 'Kenyataan dan bahan rasmi organisasi',
+                    action: () => context.push('/media-statements'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 104,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: mediaStatements.length,
+                      separatorBuilder:
+                          (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder:
+                          (_, index) => _MediaStatementPreview(
+                            item: mediaStatements[index],
+                          ),
                     ),
                   ),
                 ],
@@ -1247,6 +1276,58 @@ class _InfaqCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MediaStatementPreview extends StatelessWidget {
+  const _MediaStatementPreview({required this.item});
+
+  final MediaStatement item;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 250,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push('/media-statements/${item.id}'),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 88,
+                height: 104,
+                child:
+                    item.featuredImage == null
+                        ? const ColoredBox(
+                          color: AppColors.greenTint,
+                          child: Icon(Icons.campaign_outlined),
+                        )
+                        : AppImage(
+                          item.featuredImage,
+                          fit: BoxFit.cover,
+                          borderRadius: BorderRadius.zero,
+                        ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.sm),
+                  child: Text(
+                    item.title ?? '-',
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

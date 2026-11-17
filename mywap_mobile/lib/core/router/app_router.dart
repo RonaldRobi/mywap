@@ -31,6 +31,7 @@ import '../../features/public/presentation/public_home_screen.dart';
 import '../../features/public/presentation/public_shell.dart';
 import '../../features/financial/presentation/financial_overview_screen.dart';
 import '../../features/news/presentation/routes.dart';
+import '../../features/media_statements/presentation/media_statement_screen.dart';
 import '../../features/organization/presentation/organization_info_screen.dart';
 import '../../features/polls/presentation/routes.dart';
 import '../../features/profile/presentation/routes.dart';
@@ -68,6 +69,7 @@ bool _isPublicLocation(String location) {
     '/language',
     '/settings',
     '/articles',
+    '/media-statements',
     '/news',
     '/videos',
     '/infaq',
@@ -86,6 +88,7 @@ bool _isPublicLocation(String location) {
   };
   if (exact.contains(location)) return true;
   if (RegExp(r'^/(articles|news)/\d+$').hasMatch(location)) return true;
+  if (RegExp(r'^/media-statements/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/products/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/events/\d+$').hasMatch(location)) return true;
   if (RegExp(r'^/events/\d+/attend/[^/]+$').hasMatch(location)) return true;
@@ -218,6 +221,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const InfaqLandingScreen(),
           ),
           GoRoute(path: '/menu', builder: (_, __) => const MenuScreen()),
+          GoRoute(
+            path: '/media-statements',
+            builder: (_, __) => const MediaStatementsScreen(),
+          ),
+          GoRoute(
+            path: '/media-statements/:id',
+            builder:
+                (_, state) => MediaStatementDetailScreen(
+                  id: int.parse(state.pathParameters['id']!),
+                ),
+          ),
           // Static event route must be matched before `/events/:id`.
           ...eventsRoutes,
           GoRoute(

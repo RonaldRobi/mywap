@@ -25,7 +25,7 @@ class EventsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.l10n.eventsTitle),
+        title: const SizedBox.shrink(),
         actions: [
           if (isAuthenticated)
             IconButton(

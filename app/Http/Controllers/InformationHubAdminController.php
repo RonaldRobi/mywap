@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Announcement;
 use App\Models\AnnouncementImage;
 use App\Models\Branch;
+use App\Models\BranchAdmin;
 use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
 use App\Models\LibraryItem;
@@ -350,13 +351,18 @@ class InformationHubAdminController extends Controller
             : collect();
 
         $organizationId = $isSuperadmin
-            ? (int) ($request->input('organization_id') ?: $authUser->current_organization_id)
+            ? ($request->filled('organization_id') ? (int) $request->input('organization_id') : null)
             : (int) $authUser->current_organization_id;
 
+        $adminRoles = $isSuperadmin
+            ? ['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']
+            : ['Admin', 'org-admin'];
+
         $admins = User::withoutGlobalScope(OrganizationScope::class)
-            ->where('current_organization_id', $organizationId)
-            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'org-admin']))
-            ->with('roles')
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', $adminRoles))
+            ->when($isSuperadmin && $organizationId !== null, fn ($query) => $query->where('current_organization_id', $organizationId))
+            ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $authUser->current_organization_id))
+            ->with(['roles', 'organization:id,name,slug', 'branch:id,name'])
             ->orderBy('name')
             ->get()
             ->map(fn (User $admin) => [
@@ -364,6 +370,15 @@ class InformationHubAdminController extends Controller
                 'name' => $admin->name,
                 'email' => $admin->email,
                 'is_active' => (bool) $admin->is_active,
+                'roles' => $admin->getRoleNames()->sort()->values(),
+                'organization_name' => $admin->organization?->name,
+                'branch_name' => $admin->branch?->name,
+                'is_superadmin' => $admin->hasRole('Superadmin'),
+                'is_branch_admin' => $admin->isBranchAdmin(),
+                'is_self' => $admin->id === $authUser->id,
+                'can_toggle' => $admin->id !== $authUser->id,
+                'can_reset_password' => $admin->id !== $authUser->id,
+                'can_delete' => $admin->id !== $authUser->id && ! $admin->hasRole('Superadmin'),
             ])
             ->values();
 
@@ -1065,6 +1080,21 @@ class InformationHubAdminController extends Controller
         $authUser = $request->user();
         $this->authorizeAccountManagement($authUser, $user);
 
+        if ($authUser->id === $user->id && $user->is_active) {
+            return back()->with('error', 'Anda tidak boleh menyahaktifkan akaun sendiri.');
+        }
+
+        if ($user->is_active && $user->hasRole('Superadmin')) {
+            $activeSuperadmins = User::withoutGlobalScope(OrganizationScope::class)
+                ->whereHas('roles', fn ($query) => $query->where('name', 'Superadmin'))
+                ->where('is_active', true)
+                ->count();
+
+            if ($activeSuperadmins <= 1) {
+                return back()->with('error', 'Superadmin terakhir tidak boleh dinyahaktifkan.');
+            }
+        }
+
         $user->update(['is_active' => ! $user->is_active]);
 
         if (! $user->is_active) {
@@ -1194,6 +1224,11 @@ class InformationHubAdminController extends Controller
             'action' => 'delete_member',
             'description' => "Ahli \"{$name}\" dipindahkan ke Tong Sampah.",
         ]);
+
+        BranchAdmin::query()
+            ->where('user_id', $user->id)
+            ->where('role', BranchAdmin::ROLE_MANAGER)
+            ->delete();
 
         $user->delete();
 

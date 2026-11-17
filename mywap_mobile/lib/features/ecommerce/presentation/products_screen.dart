@@ -600,7 +600,7 @@ class _ProductCard extends ConsumerWidget {
                     const SizedBox(height: 6),
                     SizedBox(
                       width: double.infinity,
-                      height: 34,
+                      height: AppSizes.buttonHeight,
                       child:
                           isStaff
                               ? Center(

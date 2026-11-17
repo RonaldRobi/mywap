@@ -14,6 +14,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import '../../../shared/theme/app_text_theme.dart';
+import '../../../core/utils/formatters.dart';
 
 class ArticlesListScreen extends ConsumerWidget {
   const ArticlesListScreen({super.key});
@@ -25,7 +26,7 @@ class ArticlesListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.articlesTitle),
+        title: const SizedBox.shrink(),
       ),
       body: async.when(
         data:
@@ -137,7 +138,7 @@ class _ArticleCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        article.publishedDate ?? '',
+                        Formatters.dateFromIso(article.publishedDate),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),

@@ -20,7 +20,7 @@ abstract final class AppRadius {
   static const BorderRadius md = BorderRadius.all(Radius.circular(14));
   static const BorderRadius lg = BorderRadius.all(Radius.circular(18));
   static const BorderRadius xl = BorderRadius.all(Radius.circular(26));
-  static const BorderRadius card = BorderRadius.all(Radius.circular(22));
+  static const BorderRadius card = BorderRadius.all(Radius.circular(14));
   static const BorderRadius hero = BorderRadius.all(Radius.circular(32));
 
   /// Radius untuk kad banner/hero carousel sahaja — sengaja lebih kecil

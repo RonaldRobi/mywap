@@ -53,4 +53,47 @@ class SeparateAdminsFromMembersTest extends TestCase
         $this->assertFalse((bool) $pureAdmin->is_public_in_directory);
         $this->assertNotNull($pureAdmin->profile_completed_at);
     }
+
+    public function test_admin_only_accounts_with_fake_member_numbers_keep_admin_roles(): void
+    {
+        foreach (['Superadmin', 'Admin', 'Admin Cawangan', 'Member'] as $role) {
+            Role::findOrCreate($role);
+        }
+
+        $org = Organization::factory()->create(['slug' => 'wadah']);
+
+        $admin = User::factory()->create([
+            'name' => 'Admin Wadah',
+            'email' => 'adminwadah@mywap.my',
+            'current_organization_id' => $org->id,
+            'member_no' => 'AW-234567',
+            'member_no_sequence' => 234567,
+            'original_member_no' => 'AW-234567',
+        ]);
+        $admin->assignRole('Admin');
+        $admin->assignRole('Member');
+
+        $branchAdmin = User::factory()->create([
+            'name' => 'Admin Cawangan Wadah',
+            'email' => 'admincawwadah@mywap.my',
+            'current_organization_id' => $org->id,
+            'member_no' => 'AW-123456',
+        ]);
+        $branchAdmin->assignRole('Member');
+        $branchAdmin->assignRole('Admin Cawangan');
+
+        $this->artisan('admins:separate-from-members', ['--apply' => true])
+            ->assertExitCode(0);
+
+        $admin->refresh();
+        $branchAdmin->refresh();
+
+        $this->assertTrue($admin->hasRole('Admin'));
+        $this->assertFalse($admin->hasRole('Member'));
+        $this->assertNull($admin->member_no);
+
+        $this->assertTrue($branchAdmin->hasRole('Admin Cawangan'));
+        $this->assertFalse($branchAdmin->hasRole('Member'));
+        $this->assertNull($branchAdmin->member_no);
+    }
 }

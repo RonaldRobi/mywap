@@ -16,6 +16,7 @@ import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
 import '../../../shared/theme/app_text_theme.dart';
+import '../../../core/utils/formatters.dart';
 
 class NewsDetailScreen extends ConsumerWidget {
   const NewsDetailScreen({super.key, required this.newsId});
@@ -130,7 +131,7 @@ class _NewsDetailBody extends StatelessWidget {
               const SizedBox(width: Spacing.sm),
               Expanded(
                 child: Text(
-                  post.publishedAt ?? '',
+                  Formatters.datetimeFromIso(post.publishedAt),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),

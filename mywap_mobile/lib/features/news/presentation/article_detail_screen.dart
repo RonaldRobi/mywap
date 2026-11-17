@@ -16,6 +16,7 @@ import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import 'content_widgets.dart';
 import '../../../shared/theme/app_text_theme.dart';
+import '../../../core/utils/formatters.dart';
 
 class ArticleDetailScreen extends ConsumerWidget {
   const ArticleDetailScreen({super.key, required this.articleId});
@@ -114,7 +115,7 @@ class _ArticleDetailBody extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${article.authorName ?? context.l10n.adminFallback} • ${article.publishedAt ?? ''}',
+                  '${article.authorName ?? context.l10n.adminFallback} • ${Formatters.datetimeFromIso(article.publishedAt)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.movementGreen,
                     fontWeight: FontWeight.w600,

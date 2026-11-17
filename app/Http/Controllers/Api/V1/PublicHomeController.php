@@ -9,6 +9,7 @@ use App\Models\DashboardBanner;
 use App\Models\Event;
 use App\Models\Infaq;
 use App\Models\LibraryItem;
+use App\Models\MediaStatement;
 use App\Models\NewsPost;
 use App\Models\Video;
 use App\Support\ApiResponse;
@@ -39,6 +40,7 @@ class PublicHomeController extends Controller
             'library' => $this->section('library', fn () => $this->library()),
             'events' => $this->section('events', fn () => $this->events()),
             'infaqs' => $this->section('infaqs', fn () => $this->infaqs()),
+            'media_statements' => $this->section('media_statements', fn () => $this->mediaStatements()),
         ]);
     }
 
@@ -176,7 +178,7 @@ class PublicHomeController extends Controller
                 'title' => $event->title,
                 'type' => $event->type,
                 'location_or_link' => $event->location_or_link,
-                'start_formatted' => $event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                'start_formatted' => $event->start_time->format('d/m/Y H:i'),
                 'featured_image_url' => $event->featured_image_url,
                 'organization_name' => $event->organization?->name ?? 'Semua Organisasi',
             ])
@@ -203,6 +205,26 @@ class PublicHomeController extends Controller
                 'collected_amount' => $infaq->collected_amount,
                 'progress_percent' => $infaq->progress_percent,
                 'organization_name' => $infaq->organization?->name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function mediaStatements(): array
+    {
+        return MediaStatement::query()
+            ->where('is_published', true)
+            ->where(fn ($query) => $query->whereNull('published_at')->orWhere('published_at', '<=', now()))
+            ->whereNull('organization_id')
+            ->latest('published_at')
+            ->latest('id')
+            ->take(6)
+            ->get()
+            ->map(fn (MediaStatement $statement) => [
+                'id' => $statement->id,
+                'title' => $statement->title,
+                'featured_image' => $statement->featured_image_path ? asset($statement->featured_image_path) : null,
+                'pdf_url' => $statement->pdf_path ? asset($statement->pdf_path) : null,
             ])
             ->values()
             ->all();

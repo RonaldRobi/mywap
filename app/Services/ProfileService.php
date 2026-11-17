@@ -45,7 +45,7 @@ class ProfileService
             'ic_number' => $user->ic_number,
             'photo_url' => $user->profile_photo_path,
             'roles' => $user->getRoleNames()->values(),
-            'dob' => $isSuperadmin ? null : $user->dob?->format('d M Y'),
+            'dob' => $isSuperadmin ? null : $user->dob?->format('d/m/Y'),
             'age' => $isSuperadmin ? null : $user->dob?->age,
             'gender' => $user->gender,
             'marital_status' => $user->marital_status,
@@ -95,7 +95,7 @@ class ProfileService
                 'event' => [
                     'id' => $rsvp->event->id,
                     'title' => $rsvp->event->title,
-                    'start_formatted' => $rsvp->event->start_time->locale('ms')->isoFormat('ddd, D MMM YYYY [•] h:mm A'),
+                    'start_formatted' => $rsvp->event->start_time->format('d/m/Y H:i'),
                     'location_or_link' => $rsvp->event->location_or_link,
                     'organization' => [
                         'name' => $rsvp->event->organization?->name,
@@ -103,7 +103,7 @@ class ProfileService
                     ],
                 ],
                 'attended_at' => $rsvp->attended_at?->toISOString(),
-                'attended_at_human' => $rsvp->attended_at?->locale('ms')->isoFormat('D MMM YYYY, h:mm A'),
+                'attended_at_human' => $rsvp->attended_at?->format('d/m/Y H:i'),
             ])
             ->values();
 
