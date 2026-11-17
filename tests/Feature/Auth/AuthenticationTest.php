@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -117,6 +118,37 @@ class AuthenticationTest extends TestCase
 
         Http::assertSent(fn ($request) => $request->url() === 'https://onesender.test/messages'
             && $request['to'] === '60132716575');
+    }
+
+    public function test_failed_web_whatsapp_otp_allows_immediate_email_fallback(): void
+    {
+        Http::fake([
+            '*' => Http::response(['code' => 500], 500),
+        ]);
+        Queue::fake();
+
+        AppSetting::singleton()->update([
+            'onesender_url' => 'https://onesender.test/messages',
+            'onesender_api_key' => 'test-key',
+        ]);
+
+        $user = User::factory()->create([
+            'ic_number' => '940729045407',
+            'first_login_at' => null,
+            'email' => 'wan@example.test',
+        ]);
+
+        $this->postJson(route('login.update-and-send-otp'), [
+            'ic_number' => $user->ic_number,
+            'channel' => 'whatsapp',
+            'contact' => '0132716575',
+        ])->assertStatus(422);
+
+        $this->postJson(route('login.update-and-send-otp'), [
+            'ic_number' => $user->ic_number,
+            'channel' => 'email',
+            'contact' => $user->email,
+        ])->assertOk()->assertJsonPath('channel', 'email');
     }
 
     public function test_members_can_authenticate_with_ic_number(): void

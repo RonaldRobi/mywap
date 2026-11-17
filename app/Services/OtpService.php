@@ -108,6 +108,7 @@ class OtpService
         $latest = OtpCode::query()
             ->where('user_id', $user->id)
             ->where('purpose', $purpose)
+            ->whereNull('used_at')
             ->latest()
             ->first();
 
