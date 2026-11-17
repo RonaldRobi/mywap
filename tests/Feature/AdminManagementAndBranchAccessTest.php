@@ -7,6 +7,7 @@ use App\Models\BranchAdmin;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -234,6 +235,21 @@ class AdminManagementAndBranchAccessTest extends TestCase
             ->assertSessionHas('error');
 
         $this->assertTrue($superadmin->fresh()->is_active);
+    }
+
+    public function test_superadmin_dashboard_has_no_overdue_fees_before_fee_start_year(): void
+    {
+        config(['membership.fee_start_year' => now()->year + 1]);
+        Cache::flush();
+
+        $superadmin = $this->makeSuperadmin();
+
+        $response = $this->actingAs($superadmin)->get(route('admin.dashboard'));
+        $response->assertOk();
+
+        $overview = $response->viewData('page')['props']['overview'];
+
+        $this->assertSame(0, $overview['fees_due_count']);
     }
 
     private function makeSuperadmin(): User

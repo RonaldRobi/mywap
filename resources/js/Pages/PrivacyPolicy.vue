@@ -20,7 +20,7 @@ import { Head, Link } from '@inertiajs/vue3';
         <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
             <article class="rounded-3xl border border-gray-100 bg-white p-8 md:p-12 shadow-sm">
                 <h1 class="text-3xl font-bold text-slate-900 mb-2">Polisi Privasi (PDPA)</h1>
-                <p class="text-sm text-slate-500 mb-8">Kemas Kini Terakhir: Jun 2026</p>
+                <p class="text-sm text-slate-500 mb-8">Kemas Kini Terakhir: November 2026</p>
 
                 <div class="prose prose-slate max-w-none space-y-6 text-slate-600 leading-relaxed">
 
@@ -77,13 +77,27 @@ import { Head, Link } from '@inertiajs/vue3';
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">5. Pendedahan Data kepada Pihak Ketiga</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">5. Data Lokasi</h2>
+                        <p>
+                            Aplikasi mudah alih myWAP meminta kebenaran lokasi semasa aplikasi digunakan untuk memaparkan waktu solat bagi kawasan anda. Koordinat lokasi dihantar kepada perkhidmatan pihak ketiga AlAdhan (api.aladhan.com) untuk mendapatkan waktu solat dan tarikh Hijri.
+                        </p>
+                        <p>
+                            myWAP tidak menyimpan koordinat atau sejarah lokasi anda dalam pangkalan data. Lokasi tidak digunakan untuk pengiklanan, analitik, atau penjejakan. Jika anda menolak kebenaran lokasi, waktu solat tidak akan dipaparkan, tetapi ciri lain myWAP tetap berfungsi.
+                        </p>
+                        <p>
+                            Anda boleh membenarkan atau membatalkan kebenaran lokasi pada bila-bila masa melalui tetapan peranti anda.
+                        </p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">6. Pendedahan Data kepada Pihak Ketiga</h2>
                         <p>
                             Kami mungkin mendedahkan data peribadi anda kepada pihak ketiga yang berikut untuk tujuan yang dinyatakan di atas:
                         </p>
                         <ul class="list-disc pl-6 space-y-1 mt-2">
                             <li>Pemproses pembayaran (ToyyibPay, Bayarcash) – untuk pemprosesan transaksi kewangan</li>
                             <li>Penyedia perkhidmatan e-mel dan pemberitahuan (Resend.com)</li>
+                            <li>AlAdhan (api.aladhan.com) – menerima koordinat lokasi untuk mengira waktu solat</li>
                             <li>Pihak berkuasa penguatkuasaan undang-undang jika dikehendaki oleh undang-undang</li>
                             <li>Organisasi induk dan gabungan PKPIM, ABIM, dan WADAH untuk tujuan pengurusan keahlian</li>
                         </ul>
@@ -93,7 +107,7 @@ import { Head, Link } from '@inertiajs/vue3';
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">6. Hak Subjek Data</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">7. Hak Subjek Data</h2>
                         <p>Di bawah PDPA, anda mempunyai hak-hak berikut:</p>
                         <ul class="list-disc pl-6 space-y-1 mt-2">
                             <li><strong>Hak untuk dimaklumkan</strong> – mengenai pengumpulan dan pemprosesan data peribadi anda</li>
@@ -109,14 +123,14 @@ import { Head, Link } from '@inertiajs/vue3';
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">7. Tempoh Penyimpanan Data</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">8. Tempoh Penyimpanan Data</h2>
                         <p>
                             Kami akan menyimpan data peribadi anda selama tempoh yang diperlukan untuk memenuhi tujuan pemprosesan yang dinyatakan dalam polisi ini, atau selama tempoh yang dikehendaki oleh undang-undang yang berkenaan. Setelah tempoh penyimpanan tamat, data peribadi anda akan dimusnahkan atau dijadikan tanpa nama (anonymized).
                         </p>
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">8. Keselamatan Data</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">9. Keselamatan Data</h2>
                         <p>
                             Kami melaksanakan langkah-langkah keselamatan teknikal dan organisasi yang sesuai untuk melindungi data peribadi anda daripada akses tanpa kebenaran, pendedahan, pengubahsuaian, atau pemusnahan. Langkah-langkah ini termasuk:
                         </p>
@@ -130,14 +144,14 @@ import { Head, Link } from '@inertiajs/vue3';
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">9. Penggunaan Kuki</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">10. Penggunaan Kuki</h2>
                         <p>
                             Sistem myWAP menggunakan kuki (cookies) sesi untuk memastikan fungsi sistem berjalan dengan lancar. Kuki ini tidak mengandungi maklumat peribadi yang sensitif. Anda boleh memilih untuk mematikan kuki melalui tetapan pelayar web anda, tetapi ini mungkin menjejaskan fungsi sistem.
                         </p>
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">10. Pertanyaan & Hubungi Kami</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">11. Pertanyaan & Hubungi Kami</h2>
                         <p>
                             Jika anda mempunyai sebarang pertanyaan mengenai Polisi Privasi ini atau ingin melaksanakan hak-hak anda di bawah PDPA, sila hubungi kami:
                         </p>
@@ -150,7 +164,7 @@ import { Head, Link } from '@inertiajs/vue3';
                     </section>
 
                     <section>
-                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">11. Pindaan Polisi</h2>
+                        <h2 class="text-xl font-semibold text-slate-800 mt-8 mb-3">12. Pindaan Polisi</h2>
                         <p>
                             Kami berhak untuk meminda Polisi Privasi ini dari semasa ke semasa. Pemberitahuan mengenai sebarang pindaan akan dimaklumkan melalui laman web dan/atau e-mel. Anda dinasihatkan untuk menyemak polisi ini secara berkala.
                         </p>

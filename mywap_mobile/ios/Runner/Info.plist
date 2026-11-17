@@ -63,6 +63,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Kamera digunakan untuk mengimbas kod QR dan kad ahli.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Lokasi digunakan untuk memaparkan waktu solat kawasan anda.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Lokasi digunakan untuk memaparkan waktu solat kawasan anda.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

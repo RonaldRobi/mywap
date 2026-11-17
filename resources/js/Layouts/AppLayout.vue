@@ -393,8 +393,17 @@ const navItems = computed(() => {
         colorClass: 'text-[#123D2A]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
-                </svg>`,
+                 </svg>`,
     },
+    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
+        label:  'Kenyataan Media',
+        href:   route('admin.media-statements.index'),
+        active: route().current('admin.media-statements.*'),
+        colorClass: 'text-[#123D2A]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2zm3 5h6m-6 4h6m-6 4h3"/>
+                </svg>`,
+    }] : []),
     {
         label:  'Video',
         href:   isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? route('admin.videos.manage') : route('member.videos.index'),

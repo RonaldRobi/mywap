@@ -378,12 +378,17 @@ class AdminService
         }
 
         $year = now()->year;
-        $feesDueCount = ($isSuperadmin || $isBranchAdmin)
-            ? (clone $users)
-                ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
-                ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
-                ->count()
-            : $this->fees->getDueCount($user->current_organization_id, $year);
+        $feesDueCount = 0;
+
+        if ($year >= $this->fees->startYear()) {
+            $feesDueCount = ($isSuperadmin || $isBranchAdmin)
+                ? (clone $users)
+                    ->excludeDeceased()
+                    ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
+                    ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
+                    ->count()
+                : $this->fees->getDueCount($user->current_organization_id, $year);
+        }
 
         $alerts = collect();
 

@@ -17,6 +17,16 @@ class PrayerSnapshot {
   final bool isDay;
 }
 
+class PrayerPermissionDenied implements Exception {
+  const PrayerPermissionDenied({required this.permanent});
+
+  final bool permanent;
+}
+
+class PrayerLocationDisabled implements Exception {
+  const PrayerLocationDisabled();
+}
+
 class PrayerRepository {
   PrayerRepository(this._client);
 
@@ -31,21 +41,26 @@ class PrayerRepository {
             : await Geolocator.requestPermission();
     if (granted != LocationPermission.always &&
         granted != LocationPermission.whileInUse) {
-      throw Exception('Location permission is required.');
+      throw PrayerPermissionDenied(
+        permanent: granted == LocationPermission.deniedForever,
+      );
     }
     if (!await Geolocator.isLocationServiceEnabled()) {
-      throw Exception('Location service is disabled.');
+      throw const PrayerLocationDisabled();
     }
 
     final position = await Geolocator.getCurrentPosition(
-      locationSettings: LocationSettings(accuracy: LocationAccuracy.medium),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        timeLimit: Duration(seconds: 15),
+      ),
     );
     final response = await _client.get(
       'https://api.aladhan.com/v1/timings',
       queryParameters: {
         'latitude': position.latitude,
         'longitude': position.longitude,
-        'method': 3,
+        'method': 17,
       },
     );
     final data = response.data['data'] as Map<String, dynamic>;

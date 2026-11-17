@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -25,11 +26,39 @@ class PrayerBanner extends ConsumerWidget {
               height: 64,
               child: Center(child: LinearProgressIndicator(minHeight: 2)),
             ),
-        error:
-            (_, __) => _PrayerMessage(
+        error: (error, _) {
+          if (error is PrayerPermissionDenied) {
+            if (error.permanent) {
+              return _PrayerMessage(
+                text: 'Lokasi disekat. Benarkan dalam Tetapan.',
+                icon: Icons.settings_outlined,
+                onTap: () async {
+                  await Geolocator.openAppSettings();
+                  ref.invalidate(prayerProvider);
+                },
+              );
+            }
+            return _PrayerMessage(
               text: 'Benarkan lokasi untuk waktu solat kawasan anda',
-              onRetry: () => ref.invalidate(prayerProvider),
-            ),
+              onTap: () => ref.invalidate(prayerProvider),
+            );
+          }
+          if (error is PrayerLocationDisabled) {
+            return _PrayerMessage(
+              text:
+                  'Perkhidmatan lokasi dimatikan. Hidupkan untuk waktu solat.',
+              icon: Icons.location_off_outlined,
+              onTap: () async {
+                await Geolocator.openLocationSettings();
+                ref.invalidate(prayerProvider);
+              },
+            );
+          }
+          return _PrayerMessage(
+            text: 'Waktu solat tak dapat dimuatkan. Cuba lagi.',
+            onTap: () => ref.invalidate(prayerProvider),
+          );
+        },
         data: (snapshot) => _PrayerContent(snapshot: snapshot),
       ),
     );
@@ -97,13 +126,18 @@ class _PrayerContent extends StatelessWidget {
 }
 
 class _PrayerMessage extends StatelessWidget {
-  const _PrayerMessage({required this.text, required this.onRetry});
+  const _PrayerMessage({
+    required this.text,
+    required this.onTap,
+    this.icon = Icons.refresh_outlined,
+  });
   final String text;
-  final VoidCallback onRetry;
+  final VoidCallback onTap;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) => InkWell(
-    onTap: onRetry,
+    onTap: onTap,
     borderRadius: AppRadius.md,
     child: Container(
       height: 64,
@@ -126,7 +160,7 @@ class _PrayerMessage extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          const Icon(Icons.refresh_outlined),
+          Icon(icon),
         ],
       ),
     ),
