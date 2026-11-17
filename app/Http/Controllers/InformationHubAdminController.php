@@ -26,7 +26,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -1064,13 +1063,13 @@ class InformationHubAdminController extends Controller
     public function toggleActive(Request $request, User $user): RedirectResponse
     {
         $authUser = $request->user();
-        $isSuperadmin = $authUser->hasRole('Superadmin');
-
-        if (! $isSuperadmin && $user->current_organization_id !== $authUser->current_organization_id) {
-            abort(403);
-        }
+        $this->authorizeAccountManagement($authUser, $user);
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        if (! $user->is_active) {
+            $user->tokens()->delete();
+        }
 
         ActivityLog::create([
             'user_id' => $authUser->id,
@@ -1079,26 +1078,62 @@ class InformationHubAdminController extends Controller
             'target_id' => $user->id,
             'action' => $user->is_active ? 'activate_member' : 'deactivate_member',
             'description' => $user->is_active
-                ? 'Ahli diaktifkan semula.'
-                : 'Ahli dinyahaktifkan.',
+                ? 'Akaun diaktifkan semula.'
+                : 'Akaun dinyahaktifkan.',
         ]);
 
         $status = $user->is_active ? 'diaktifkan' : 'dinyahaktifkan';
 
-        return back()->with('success', "Ahli berjaya {$status}.");
+        return back()->with('success', "Akaun berjaya {$status}.");
+    }
+
+    public function activateAccount(Request $request, User $user): RedirectResponse
+    {
+        $authUser = $request->user();
+        $this->authorizeAccountManagement($authUser, $user);
+
+        if (! is_null($user->first_login_at)) {
+            return back()->with('error', 'Akaun ini telah diaktifkan sebelum ini. Gunakan Tukar Kata Laluan jika pengguna tidak dapat log masuk.');
+        }
+
+        $temporaryPassword = 'Ahli'.random_int(1000, 9999);
+
+        $user->update([
+            'password' => Hash::make($temporaryPassword),
+            'first_login_at' => now(),
+            'must_change_password' => true,
+            'is_active' => true,
+        ]);
+        $user->tokens()->delete();
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $user->current_organization_id,
+            'target_type' => User::class,
+            'target_id' => $user->id,
+            'action' => 'activate_account_by_admin',
+            'description' => 'Akaun diaktifkan oleh admin dengan kata laluan sementara.',
+        ]);
+
+        return back()
+            ->with('success', "Akaun {$user->name} telah diaktifkan. Berikan kata laluan sementara ini kepada pengguna.")
+            ->with('temporary_password', $temporaryPassword);
     }
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
         $authUser = $request->user();
-        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
-        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
+        $this->authorizeAccountManagement($authUser, $user);
 
-        if ($authUser->isBranchAdmin() && ! $authUser->canManageBranch($user->branch_id)) {
-            abort(403);
-        }
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'max:128', 'confirmed'],
+        ]);
 
-        Password::sendResetLink(['email' => $user->email]);
+        $user->update([
+            'password' => Hash::make($data['password']),
+            'must_change_password' => true,
+        ]);
+        $user->tokens()->delete();
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -1106,10 +1141,24 @@ class InformationHubAdminController extends Controller
             'target_type' => User::class,
             'target_id' => $user->id,
             'action' => 'reset_password',
-            'description' => 'Link reset kata laluan dihantar ke emel ahli.',
+            'description' => 'Kata laluan ditetapkan semula oleh admin.',
         ]);
 
-        return back()->with('success', 'Link reset kata laluan telah dihantar ke emel ahli.');
+        return back()->with('success', 'Kata laluan berjaya ditetapkan. Pengguna perlu menukarnya selepas log masuk.');
+    }
+
+    private function authorizeAccountManagement(?User $authUser, User $user): void
+    {
+        abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']), 403);
+        $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
+
+        if (! $authUser->hasRole('Superadmin') && $user->hasRole('Superadmin')) {
+            abort(403);
+        }
+
+        if ($authUser->isBranchAdmin() && ! $authUser->canManageBranch($user->branch_id)) {
+            abort(403);
+        }
     }
 
     /**

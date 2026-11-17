@@ -168,6 +168,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::patch('/admin/information-hub/members/{user}/role', [InformationHubAdminController::class, 'updateRole'])->name('admin.hub.members.role.update');
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
         Route::patch('/admin/information-hub/members/{user}/toggle-active', [InformationHubAdminController::class, 'toggleActive'])->name('admin.hub.members.toggle-active');
+        Route::post('/admin/information-hub/members/{user}/activate-account', [InformationHubAdminController::class, 'activateAccount'])->name('admin.hub.members.activate-account');
         Route::post('/admin/information-hub/members/{user}/reset-password', [InformationHubAdminController::class, 'resetPassword'])->name('admin.hub.members.reset-password');
         Route::post('/admin/information-hub/members', [InformationHubAdminController::class, 'storeMember'])->name('superadmin.members.store');
         Route::delete('/admin/information-hub/members/{user}', [InformationHubAdminController::class, 'destroyMember'])->name('admin.hub.members.destroy');

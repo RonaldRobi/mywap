@@ -52,6 +52,21 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_inactive_users_are_told_to_contact_admin(): void
+    {
+        $user = User::factory()->create(['is_active' => false]);
+
+        $response = $this->from('/login')->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors([
+            'email' => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.',
+        ]);
+    }
+
     public function test_member_lookup_returns_organization_for_valid_ic_number(): void
     {
         $organization = Organization::query()->create([

@@ -6,6 +6,7 @@ use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -118,6 +119,84 @@ class InformationHubMemberManageTest extends TestCase
             ->assertRedirect();
 
         $this->assertFalse((bool) $member->fresh()->is_active);
+    }
+
+    public function test_deactivating_member_revokes_mobile_tokens(): void
+    {
+        $member = $this->makeMember(['is_active' => true]);
+        $member->createToken('mobile');
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.hub.members.toggle-active', $member))
+            ->assertRedirect();
+
+        $this->assertFalse((bool) $member->fresh()->is_active);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_admin_can_activate_unverified_member_with_temporary_password(): void
+    {
+        $member = $this->makeMember([
+            'first_login_at' => null,
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.hub.members.activate-account', $member));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('temporary_password');
+
+        $temporaryPassword = $response->getSession()->get('temporary_password');
+        $member->refresh();
+
+        $this->assertNotNull($member->first_login_at);
+        $this->assertTrue((bool) $member->is_active);
+        $this->assertTrue($member->must_change_password);
+        $this->assertTrue(Hash::check($temporaryPassword, $member->password));
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'activate_account_by_admin',
+            'target_id' => $member->id,
+        ]);
+    }
+
+    public function test_admin_can_set_member_password_and_force_its_change(): void
+    {
+        $member = $this->makeMember(['first_login_at' => now()]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.hub.members.reset-password', $member), [
+                'password' => 'Mudah123',
+                'password_confirmation' => 'Mudah123',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $member->refresh();
+        $this->assertTrue($member->must_change_password);
+        $this->assertTrue(Hash::check('Mudah123', $member->password));
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'reset_password',
+            'target_id' => $member->id,
+        ]);
+    }
+
+    public function test_admin_can_set_another_admin_password_in_the_same_organization(): void
+    {
+        $targetAdmin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+        ]);
+        $targetAdmin->assignRole('Admin');
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.hub.members.reset-password', $targetAdmin), [
+                'password' => 'Admin123',
+                'password_confirmation' => 'Admin123',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(Hash::check('Admin123', $targetAdmin->fresh()->password));
     }
 
     public function test_active_status_filter(): void

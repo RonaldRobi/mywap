@@ -106,6 +106,39 @@ class AuthTest extends TestCase
         $response->assertJsonPath('message', 'Akaun ini belum aktif. Sila gunakan pautan "Log Masuk Kali Pertama" di bawah.');
     }
 
+    public function test_login_rejects_deactivated_account_even_with_correct_password(): void
+    {
+        $inactive = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'first_login_at' => now(),
+            'is_active' => false,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $inactive->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.');
+    }
+
+    public function test_otp_cannot_be_requested_for_deactivated_account(): void
+    {
+        $inactive = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'ic_number' => 'INACTIVE123',
+            'first_login_at' => null,
+            'is_active' => false,
+        ]);
+
+        $this->postJson('/api/v1/auth/send-otp', [
+            'ic_number' => $inactive->ic_number,
+        ])->assertStatus(403)
+            ->assertJsonPath('message', 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.');
+    }
+
     public function test_login_requires_password(): void
     {
         $this->postJson('/api/v1/auth/login', ['email' => 'a@b.test'])

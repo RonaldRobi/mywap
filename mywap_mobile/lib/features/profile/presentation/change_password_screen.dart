@@ -6,6 +6,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/profile_providers.dart';
 
 /// Tukar kata laluan akaun (`POST /profile/password`).
@@ -50,6 +51,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             currentPassword: _currentController.text.trim(),
             newPassword: _newController.text,
           );
+      await ref.read(authControllerProvider.notifier).refreshCurrentUser();
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

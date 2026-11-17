@@ -21,6 +21,7 @@ sealed class User with _$User {
     String? gender,
     String? branch_name,
     bool? is_first_login,
+    bool? must_change_password,
     String? profile_completed_at,
     List<String>? roles,
     Organization? organization,
@@ -48,9 +49,8 @@ sealed class User with _$User {
 
   bool get isSuperadmin => (roles ?? const []).contains('Superadmin');
 
-  bool get isOrgAdmin => (roles ?? const []).any(
-    (role) => role == 'Admin' || role == 'org-admin',
-  );
+  bool get isOrgAdmin =>
+      (roles ?? const []).any((role) => role == 'Admin' || role == 'org-admin');
 
   bool get isBranchAdmin =>
       (roles ?? const []).contains('Admin Cawangan') &&

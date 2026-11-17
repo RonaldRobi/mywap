@@ -41,6 +41,8 @@ class EnsureBranchAdminAccess
         'admin.hub.manage',
         'admin.hub.members.logs',
         'admin.hub.members.programs',
+        'admin.hub.members.toggle-active',
+        'admin.hub.members.activate-account',
         'admin.hub.members.reset-password',
         'admin.branch-report.',
         'admin.program-report.',

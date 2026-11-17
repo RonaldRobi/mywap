@@ -61,6 +61,12 @@ class LoginRequest extends FormRequest
 
         $user = User::where('email', $email)->first();
 
+        if ($user && ! (bool) $user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.',
+            ]);
+        }
+
         if (! Auth::attempt(['email' => $email, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
@@ -92,6 +98,12 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
             throw ValidationException::withMessages([
                 'ic_number' => trans('auth.failed'),
+            ]);
+        }
+
+        if (! (bool) $user->is_active) {
+            throw ValidationException::withMessages([
+                'ic_number' => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.',
             ]);
         }
 

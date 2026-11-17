@@ -120,11 +120,42 @@ function toggleActive(member) {
 }
 
 function resetPassword(member) {
-    if (!confirm('Hantar link reset kata laluan ke emel ahli?')) return;
-    router.post(route('admin.hub.members.reset-password', member.id), {}, {
+    passwordTargetMember.value = member;
+    passwordForm.reset();
+    passwordForm.clearErrors();
+    showPasswordModal.value = true;
+    openDropdownId.value = null;
+}
+
+function submitPasswordReset() {
+    if (!passwordTargetMember.value) return;
+
+    passwordForm.post(route('admin.hub.members.reset-password', passwordTargetMember.value.id), {
+        preserveScroll: true,
+        onSuccess: () => closePasswordModal(),
+    });
+}
+
+function activateAccount(member) {
+    if (!confirm(`Aktifkan akaun ${member.name} tanpa OTP? Kata laluan sementara akan dijana.`)) return;
+
+    router.post(route('admin.hub.members.activate-account', member.id), {}, {
         preserveScroll: true,
         onSuccess: () => { openDropdownId.value = null; },
     });
+}
+
+const showPasswordModal = ref(false);
+const passwordTargetMember = ref(null);
+const passwordForm = useForm({ password: '', password_confirmation: '' });
+const showAdminPassword = ref(false);
+
+function closePasswordModal() {
+    showPasswordModal.value = false;
+    passwordTargetMember.value = null;
+    showAdminPassword.value = false;
+    passwordForm.reset();
+    passwordForm.clearErrors();
 }
 
 // ─── Padam / Pulih Ahli ───────────────────────────────────────────────────────
@@ -860,6 +891,12 @@ async function finishImport() {
                 </span>
             </div>
 
+            <div v-if="$page.props.flash?.temporary_password" class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+                Kata laluan sementara:
+                <code class="rounded bg-white px-2 py-1 font-bold text-gray-900">{{ $page.props.flash.temporary_password }}</code>
+                <p class="mt-2 text-xs">Berikan kata laluan ini kepada pengguna. Ia perlu ditukar selepas log masuk.</p>
+            </div>
+
             <div v-if="$page.props.flash?.error" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm transition-all duration-300">
                 <span class="flex items-center gap-2">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -1369,7 +1406,7 @@ async function finishImport() {
                                         <button @click.stop="toggleDropdown(member.id)" class="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
                                         </button>
-                                        <div v-if="openDropdownId === member.id" class="absolute right-0 top-full mt-1 z-30 w-44 rounded-xl border border-gray-100 bg-white py-1 shadow-lg" @click.stop>
+                                        <div v-if="openDropdownId === member.id" class="absolute right-0 top-full mt-1 z-30 w-52 rounded-xl border border-gray-100 bg-white py-1 shadow-lg" @click.stop>
                                             <button @click="viewProfile(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 Lihat Profil
@@ -1382,17 +1419,21 @@ async function finishImport() {
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                                                 Update IC
                                             </button>
+                                            <button v-if="!member.has_used_app" @click="activateAccount(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-7a2 2 0 00-2-2h-1V7a5 5 0 00-10 0v3H6a2 2 0 00-2 2v7a2 2 0 002 2z"/></svg>
+                                                Aktifkan Tanpa OTP
+                                            </button>
                                             <button @click="resetPassword(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                                Reset Kata Laluan
+                                                Tetapkan Kata Laluan
                                             </button>
                                             <button v-if="isSuperadmin" @click="openMoveModal(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                                                 Pindah Organisasi
                                             </button>
-                                            <button v-if="!isBranchAdmin" @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
+                                            <button @click="toggleActive(member)" class="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-gray-50" :class="member.is_active ? 'text-red-600' : 'text-emerald-600'">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                                {{ member.is_active ? 'Nyahaktifkan' : 'Aktifkan' }}
+                                                {{ member.is_active ? 'Nyahaktifkan Akaun' : 'Aktifkan Akaun' }}
                                             </button>
                                             <button v-if="!isBranchAdmin" @click="openDeleteModal(member)" class="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">
                                                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -1575,6 +1616,42 @@ async function finishImport() {
                                 </div>
                             </form>
                         </div>
+                    </div>
+                </Transition>
+
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0"
+                    enter-to-class="opacity-100"
+                    leave-active-class="transition ease-in duration-150"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                >
+                    <div v-if="showPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm" @click.self="closePasswordModal">
+                        <form class="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl" @submit.prevent="submitPasswordReset">
+                            <h3 class="text-lg font-black text-gray-900">Tetapkan Kata Laluan</h3>
+                            <p class="mt-1 text-sm text-gray-500">Tetapkan kata laluan baharu untuk <span class="font-semibold text-gray-900">{{ passwordTargetMember?.name }}</span>. Pengguna akan diminta menukarnya selepas log masuk.</p>
+                            <div class="mt-4 space-y-3">
+                                <div>
+                                    <label for="admin-password" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Kata Laluan Baharu</label>
+                                    <div class="relative">
+                                        <input id="admin-password" v-model="passwordForm.password" :type="showAdminPassword ? 'text' : 'password'" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2 pr-20 text-sm focus:border-gray-900 focus:ring-gray-900" required>
+                                        <button type="button" class="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-gray-500 hover:text-gray-900" @click="showAdminPassword = !showAdminPassword" :aria-label="showAdminPassword ? 'Sembunyikan kata laluan' : 'Papar kata laluan'">
+                                            {{ showAdminPassword ? 'Sembunyi' : 'Papar' }}
+                                        </button>
+                                    </div>
+                                    <p v-if="passwordForm.errors.password" class="mt-1 text-xs text-red-600">{{ passwordForm.errors.password }}</p>
+                                </div>
+                                <div>
+                                    <label for="admin-password-confirmation" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Sahkan Kata Laluan</label>
+                                    <input id="admin-password-confirmation" v-model="passwordForm.password_confirmation" :type="showAdminPassword ? 'text' : 'password'" minlength="8" autocomplete="new-password" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-gray-900" required>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex justify-end gap-2">
+                                <button type="button" @click="closePasswordModal" class="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
+                                <button type="submit" :disabled="passwordForm.processing" class="rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800 disabled:opacity-60">{{ passwordForm.processing ? 'Menyimpan...' : 'Tetapkan Kata Laluan' }}</button>
+                            </div>
+                        </form>
                     </div>
                 </Transition>
 

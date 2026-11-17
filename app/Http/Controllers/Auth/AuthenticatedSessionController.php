@@ -169,6 +169,10 @@ class AuthenticatedSessionController extends Controller
             return response()->json(['message' => 'Ahli tidak dijumpai.'], 404);
         }
 
+        if (! (bool) $user->is_active) {
+            return response()->json(['message' => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.'], 403);
+        }
+
         if (! is_null($user->first_login_at)) {
             return response()->json(['message' => 'Akaun ini sudah pun log masuk kali pertama. Sila log masuk menggunakan kata laluan anda.'], 422);
         }
@@ -212,6 +216,10 @@ class AuthenticatedSessionController extends Controller
 
         if (! $user) {
             return response()->json(['message' => 'Ahli tidak dijumpai.'], 404);
+        }
+
+        if (! (bool) $user->is_active) {
+            return response()->json(['message' => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.'], 403);
         }
 
         if (! is_null($user->first_login_at)) {

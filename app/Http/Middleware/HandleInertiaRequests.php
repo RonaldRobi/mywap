@@ -60,6 +60,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'info' => $request->session()->get('info'),
+                'temporary_password' => $request->session()->get('temporary_password'),
             ],
             'auth' => [
                 'user' => $user ? [

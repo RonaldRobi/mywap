@@ -133,6 +133,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             : '/splash';
       }
       if (auth is AuthAuthenticated) {
+        if (auth.user.must_change_password == true &&
+            location != '/profile/change-password') {
+          return '/profile/change-password';
+        }
         // Members who have never completed their profile are forced to do so
         // before they can use any other part of the app.
         if (auth.user.needsProfileCompletion &&

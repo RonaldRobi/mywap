@@ -34,6 +34,7 @@ class UserResource extends JsonResource
             'profile_photo_path' => $user->profile_photo_path,
             'is_public_in_directory' => $user->is_public_in_directory,
             'is_first_login' => is_null($user->first_login_at),
+            'must_change_password' => (bool) $user->must_change_password,
             'profile_completed_at' => $user->profile_completed_at?->toISOString(),
             'member_since' => optional($user->created_at)->format('M Y'),
             'roles' => $user->getRoleNames()->values(),

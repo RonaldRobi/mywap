@@ -54,6 +54,12 @@ class AuthController extends Controller
 
         $field = $request->filled('email') ? 'email' : 'ic_number';
 
+        if ($user && ! (bool) $user->is_active) {
+            throw ValidationException::withMessages([
+                $field => 'Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.',
+            ]);
+        }
+
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             RateLimiter::hit($this->loginThrottleKey($request));
 
@@ -437,6 +443,7 @@ class AuthController extends Controller
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
+                    'must_change_password' => false,
                 ])->save();
 
                 // Tarik balik semua token API lama — password reset = kunci semula semua peranti.
@@ -566,6 +573,10 @@ class AuthController extends Controller
             return ApiResponse::error('Ahli tidak dijumpai.', status: 404);
         }
 
+        if (! (bool) $user->is_active) {
+            return ApiResponse::error('Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.', status: 403);
+        }
+
         $verifiedOtp = $otp->verifyAndReturn($user, $request->input('code'), 'login');
         if (! $verifiedOtp) {
             return ApiResponse::error('Kod OTP tidak sah atau telah tamat tempoh.', status: 422);
@@ -640,6 +651,10 @@ class AuthController extends Controller
 
         if (! $user) {
             return [null, ApiResponse::error('Ahli tidak dijumpai.', status: 404)];
+        }
+
+        if (! (bool) $user->is_active) {
+            return [null, ApiResponse::error('Akaun anda tidak aktif. Sila hubungi admin untuk mengaktifkannya.', status: 403)];
         }
 
         if (! is_null($user->first_login_at)) {

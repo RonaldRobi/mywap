@@ -108,7 +108,10 @@ class ProfileController extends Controller
             ]);
         }
 
-        $user->update(['password' => Hash::make($validated['password'])]);
+        $user->update([
+            'password' => Hash::make($validated['password']),
+            'must_change_password' => false,
+        ]);
 
         $user->tokens()
             ->where('id', '!=', $user->currentAccessToken()?->id)
