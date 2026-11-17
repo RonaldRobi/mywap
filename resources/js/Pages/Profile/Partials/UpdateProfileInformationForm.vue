@@ -1,6 +1,7 @@
 <script setup>
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { parseDobFromIc } from '@/composables/useDob';
@@ -225,7 +226,7 @@ function submitProfile() {
 
                     <div>
                         <InputLabel for="dob" value="Tarikh Lahir" />
-                        <TextInput id="dob" type="date" class="mt-1 block w-full" v-model="form.dob" @input="dobManuallyEdited = true" />
+                        <MalaysianDateInput id="dob" v-model="form.dob" @update:model-value="dobManuallyEdited = true" />
                         <p class="mt-1 text-xs text-gray-400">Auto-fill dari IC</p>
                         <InputError class="mt-2" :message="form.errors.dob" />
                     </div>

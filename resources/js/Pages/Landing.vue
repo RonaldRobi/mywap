@@ -1,5 +1,6 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
+import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -42,7 +43,8 @@ const loginError = ref('');
 // First-time flow
 const ftStep = ref('ic');
 const ftIcNumber = ref('');
-const ftEmail = ref('');
+const ftChannel = ref('email');
+const ftContact = ref('');
 const ftCode = ref('');
 const ftPassword = ref('');
 const ftPasswordConfirmation = ref('');
@@ -57,6 +59,8 @@ const fiIcNumber = ref('');
 const fiDob = ref('');
 const fiMaskedEmail = ref('');
 const fiMemberNo = ref('');
+const fiChannel = ref('whatsapp');
+const fiContact = ref('');
 const fiProcessing = ref(false);
 const fiError = ref('');
 const fiVerified = ref(false);
@@ -69,7 +73,8 @@ const resetFlow = () => {
 
     ftStep.value = 'ic';
     ftIcNumber.value = '';
-    ftEmail.value = '';
+    ftChannel.value = 'email';
+    ftContact.value = '';
     ftCode.value = '';
     ftPassword.value = '';
     ftPasswordConfirmation.value = '';
@@ -83,6 +88,8 @@ const resetFlow = () => {
     fiDob.value = '';
     fiMaskedEmail.value = '';
     fiMemberNo.value = '';
+    fiChannel.value = 'whatsapp';
+    fiContact.value = '';
     fiProcessing.value = false;
     fiError.value = '';
     fiVerified.value = false;
@@ -160,8 +167,9 @@ const ftLookup = async () => {
 
 const ftSendOtp = async () => {
     ftError.value = '';
-    if (!ftEmail.value?.trim()) {
-        ftError.value = 'Emel diperlukan.';
+    const contact = ftContact.value.trim();
+    if (!contact) {
+        ftError.value = ftChannel.value === 'whatsapp' ? 'Nombor WhatsApp diperlukan.' : 'Emel diperlukan.';
         return;
     }
 
@@ -171,7 +179,12 @@ const ftSendOtp = async () => {
             method: 'POST',
             headers: csrfHeaders(),
             credentials: 'same-origin',
-            body: JSON.stringify({ ic_number: ftIcNumber.value, email: ftEmail.value }),
+            body: JSON.stringify({
+                ic_number: ftIcNumber.value,
+                channel: ftChannel.value,
+                contact,
+                ...(ftChannel.value === 'email' ? { email: contact } : {}),
+            }),
         });
         const payload = await res.json();
 
@@ -321,11 +334,23 @@ const closeFirstTimePrompt = () => {
 };
 
 const sendResetLink = () => {
+    if (!fiContact.value.trim()) {
+        fiError.value = fiChannel.value === 'whatsapp' ? 'Nombor WhatsApp diperlukan.' : 'Emel diperlukan.';
+        return;
+    }
+
     resetLinkSending.value = true;
     const icNumber = fiIcNumber.value || ftIcNumber.value;
 
-    router.post(route('password.email'), { ic_number: icNumber }, {
+    router.post(route('password.email'), {
+        ic_number: icNumber,
+        channel: fiChannel.value,
+        contact: fiContact.value.trim(),
+    }, {
         preserveScroll: true,
+        onError: (errors) => {
+            fiError.value = errors.contact || errors.ic_number || 'Pautan reset tidak dapat dihantar.';
+        },
         onFinish: () => { resetLinkSending.value = false; },
     });
 };
@@ -539,26 +564,36 @@ const sendResetLink = () => {
                                 </button>
                             </div>
 
-                            <!-- Step 2: Email -->
+                            <!-- Step 2: Delivery channel -->
                             <div v-else-if="ftStep === 'email'" class="space-y-4">
                                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
                                     <p class="font-semibold">Anda adalah ahli {{ ftOrg?.name }}</p>
                                     <img v-if="ftOrg?.logo_url" :src="ftOrg.logo_url" :alt="`Logo ${ftOrg.name}`" class="mt-2 h-12 w-auto rounded-lg border border-emerald-200 bg-white p-1">
                                 </div>
-                                <p class="text-sm text-slate-600">Daftarkan emel anda untuk menerima kod pengesahan.</p>
-                                <div class="relative">
-                                    <input
-                                        id="ft_email"
-                                        v-model="ftEmail"
-                                        type="email"
+                                 <p class="text-sm text-slate-600">Pilih saluran untuk menerima kod pengesahan.</p>
+                                 <div class="grid grid-cols-2 gap-2">
+                                     <label class="flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-3 text-sm" :class="ftChannel === 'email' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-600'">
+                                         <input v-model="ftChannel" type="radio" value="email" @change="ftContact = ''">
+                                         Emel
+                                     </label>
+                                     <label class="flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-3 text-sm" :class="ftChannel === 'whatsapp' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-600'">
+                                         <input v-model="ftChannel" type="radio" value="whatsapp" @change="ftContact = ''">
+                                         WhatsApp
+                                     </label>
+                                 </div>
+                                 <div class="relative">
+                                     <input
+                                         id="ft_contact"
+                                         v-model="ftContact"
+                                         :type="ftChannel === 'whatsapp' ? 'tel' : 'email'"
                                         class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-emerald-400 focus:bg-white focus:ring-0"
-                                        placeholder="Emel"
+                                         :placeholder="ftChannel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
                                     >
                                     <label
-                                        for="ft_email"
+                                         for="ft_contact"
                                         class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-emerald-600"
                                     >
-                                        Emel
+                                         {{ ftChannel === 'whatsapp' ? 'Nombor WhatsApp' : 'Emel' }}
                                     </label>
                                 </div>
                                 <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
@@ -574,7 +609,7 @@ const sendResetLink = () => {
 
                             <!-- Step 3: OTP -->
                             <div v-else class="space-y-4">
-                                <p class="text-sm text-slate-600">Masukkan kod 6-digit yang dihantar ke <strong>{{ ftEmail }}</strong>.</p>
+                                 <p class="text-sm text-slate-600">Masukkan kod 6-digit yang dihantar melalui <strong>{{ ftChannel === 'whatsapp' ? 'WhatsApp' : 'emel' }}</strong>.</p>
                                 <div class="relative">
                                     <input
                                         id="ft_code"
@@ -685,19 +720,8 @@ const sendResetLink = () => {
                             <div v-else-if="fiStep === 'verify'" class="space-y-4">
                                 <p class="text-sm text-slate-600">Sahkan identiti anda dengan tarikh lahir.</p>
                                 <div class="relative">
-                                    <input
-                                        id="fi_dob"
-                                        v-model="fiDob"
-                                        type="date"
-                                        class="peer w-full rounded-3xl border border-slate-200/90 bg-slate-100/85 px-5 pt-5 pb-2.5 text-base text-slate-900 placeholder-transparent focus:border-amber-400 focus:bg-white focus:ring-0"
-                                    >
-                                    <label
-                                        for="fi_dob"
-                                        class="absolute left-5 top-2 text-[11px] font-semibold text-slate-400 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-medium peer-focus:top-2 peer-focus:text-[11px] peer-focus:font-semibold peer-focus:text-amber-600"
-                                    >
-                                        Tarikh Lahir
-                                    </label>
-                                </div>
+                                     <MalaysianDateInput id="fi_dob" v-model="fiDob" />
+                                 </div>
                                 <p v-if="fiError" class="text-xs text-red-500">{{ fiError }}</p>
                                 <button
                                     type="button"
@@ -719,12 +743,32 @@ const sendResetLink = () => {
                                         <p class="text-lg font-bold text-slate-900">{{ fiMaskedEmail }}</p>
                                     </div>
 
-                                    <div v-if="fiMemberNo" class="mt-2">
+                                 <div v-if="fiMemberNo" class="mt-2">
                                         <p class="text-xs text-slate-500">No Ahli:</p>
                                         <p class="text-lg font-bold text-slate-900">{{ fiMemberNo }}</p>
-                                    </div>
+                                 </div>
 
-                                    <div v-if="!fiMaskedEmail && !fiMemberNo" class="mt-2">
+                                 <div class="space-y-3 border-t border-emerald-200 pt-3">
+                                     <p class="text-xs font-semibold text-slate-600">Hantar pautan reset melalui:</p>
+                                     <div class="grid grid-cols-2 gap-2">
+                                         <label class="flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-3 text-sm" :class="fiChannel === 'whatsapp' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-600'">
+                                             <input v-model="fiChannel" type="radio" value="whatsapp" @change="fiContact = ''">
+                                             WhatsApp
+                                         </label>
+                                         <label class="flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-3 text-sm" :class="fiChannel === 'email' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-600'">
+                                             <input v-model="fiChannel" type="radio" value="email" @change="fiContact = ''">
+                                             Emel
+                                         </label>
+                                     </div>
+                                     <input
+                                         v-model="fiContact"
+                                         :type="fiChannel === 'whatsapp' ? 'tel' : 'email'"
+                                         :placeholder="fiChannel === 'whatsapp' ? '+601157452119' : 'nama@example.com'"
+                                         class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-emerald-400 focus:ring-0"
+                                     >
+                                 </div>
+
+                                 <div v-if="!fiMaskedEmail && !fiMemberNo" class="mt-2">
                                         <p class="text-sm text-slate-600">Akaun anda tiada emel dan no ahli berdaftar. Sila hubungi admin.</p>
                                     </div>
                                 </div>

@@ -1,6 +1,7 @@
 <script setup>
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import MemberSearch from '@/Components/MemberSearch.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -212,14 +213,7 @@ const submit = () => {
 
                             <div>
                                 <InputLabel for="dob" value="Tarikh Lahir" class="!text-[#123D2A]" />
-                                <TextInput
-                                    id="dob"
-                                    type="date"
-                                    class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                    v-model="form.dob"
-                                    autocomplete="bday"
-                                    @input="dobManuallyEdited = true"
-                                />
+                                <MalaysianDateInput id="dob" v-model="form.dob" @update:model-value="dobManuallyEdited = true" />
                                 <InputError class="mt-2" :message="form.errors.dob" />
                                 <p v-if="inferredDob" class="mt-1 text-xs text-[#4A5A50]">Auto dari No IC. Boleh ubah jika salah.</p>
                             </div>

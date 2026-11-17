@@ -1,5 +1,6 @@
 <script setup>
 import { parseDobFromIc } from '@/composables/useDob';
+import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import axios from 'axios';
@@ -85,7 +86,7 @@ const submit = () => {
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Tarikh Lahir</label>
-                        <input v-model="form.dob" type="date" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0">
+                        <MalaysianDateInput id="complete_dob" v-model="form.dob" />
                         <p class="mt-1 text-xs text-gray-400">Auto-fill dari nombor IC</p>
                         <p v-if="form.errors.dob" class="mt-1 text-xs text-red-500">{{ form.errors.dob }}</p>
                     </div>

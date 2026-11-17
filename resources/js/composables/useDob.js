@@ -20,5 +20,8 @@ export function parseDobFromIc(ic) {
     let yyyy = 2000 + yy;
     if (yyyy > new Date().getFullYear()) yyyy -= 100;
 
+    const date = new Date(yyyy, mm - 1, dd);
+    if (date.getFullYear() !== yyyy || date.getMonth() !== mm - 1 || date.getDate() !== dd) return '';
+
     return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
 }
