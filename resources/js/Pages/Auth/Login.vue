@@ -217,7 +217,7 @@ const sendOtp = async () => {
         const data = await response.json();
 
         if (!response.ok) {
-            otpError.value = data.message || 'Ralat menghantar OTP. Sila cuba sebentar lagi.';
+            otpError.value = data.errors?.otp?.[0] || data.message || 'Ralat menghantar OTP. Sila cuba sebentar lagi.';
             return;
         }
 

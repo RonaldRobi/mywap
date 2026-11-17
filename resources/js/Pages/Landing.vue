@@ -3,7 +3,7 @@ import Modal from '@/Components/Modal.vue';
 import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
 const _page = usePage();
 
@@ -51,6 +51,8 @@ const ftPasswordConfirmation = ref('');
 const ftOrg = ref(null);
 const ftIsFirstLogin = ref(false);
 const ftProcessing = ref(false);
+const ftCooldownSeconds = ref(0);
+let ftCooldownTimer = null;
 const ftError = ref('');
 
 // Forgot ID flow
@@ -81,6 +83,8 @@ const resetFlow = () => {
     ftOrg.value = null;
     ftIsFirstLogin.value = false;
     ftProcessing.value = false;
+    ftCooldownSeconds.value = 0;
+    if (ftCooldownTimer) clearInterval(ftCooldownTimer);
     ftError.value = '';
 
     fiStep.value = 'ic';
@@ -94,6 +98,26 @@ const resetFlow = () => {
     fiError.value = '';
     fiVerified.value = false;
 };
+
+const startFtCooldown = () => {
+    if (ftCooldownTimer) clearInterval(ftCooldownTimer);
+    ftCooldownSeconds.value = 60;
+    ftCooldownTimer = setInterval(() => {
+        ftCooldownSeconds.value = Math.max(0, ftCooldownSeconds.value - 1);
+        if (ftCooldownSeconds.value === 0) clearInterval(ftCooldownTimer);
+    }, 1000);
+};
+
+const formatCooldown = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remaining = seconds % 60;
+    if (minutes === 0) return `${remaining} saat`;
+    return remaining === 0 ? `${minutes} minit` : `${minutes} minit ${remaining} saat`;
+};
+
+onBeforeUnmount(() => {
+    if (ftCooldownTimer) clearInterval(ftCooldownTimer);
+});
 
 const handleLogin = () => {
     loginError.value = '';
@@ -189,11 +213,12 @@ const ftSendOtp = async () => {
         const payload = await res.json();
 
         if (!res.ok) {
-            ftError.value = payload?.message || 'Ralat menghantar OTP.';
+            ftError.value = payload?.errors?.otp?.[0] || payload?.message || 'Ralat menghantar OTP.';
             return;
         }
 
         ftStep.value = 'otp';
+        startFtCooldown();
     } catch {
         ftError.value = 'Ralat rangkaian. Sila cuba sebentar lagi.';
     } finally {
@@ -553,8 +578,8 @@ const sendResetLink = () => {
                                         No Kad Pengenalan / Passport
                                     </label>
                                 </div>
-                                <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
-                                <button
+                                 <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                 <button
                                     type="button"
                                     :disabled="ftProcessing"
                                     class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
@@ -596,7 +621,7 @@ const sendResetLink = () => {
                                          {{ ftChannel === 'whatsapp' ? 'Nombor WhatsApp' : 'Emel' }}
                                     </label>
                                 </div>
-                                <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                 <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
                                 <button
                                     type="button"
                                     :disabled="ftProcessing"
@@ -662,7 +687,17 @@ const sendResetLink = () => {
                                     </div>
                                 </div>
 
-                                <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                 <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                 <button
+                                     v-if="ftCooldownSeconds === 0"
+                                     type="button"
+                                     :disabled="ftProcessing"
+                                     class="w-full rounded-3xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+                                     @click="ftSendOtp"
+                                 >
+                                     Hantar Kod OTP Semula
+                                 </button>
+                                 <p v-else class="text-center text-xs text-slate-500">Boleh minta kod baharu dalam {{ formatCooldown(ftCooldownSeconds) }}.</p>
                                 <button
                                     type="button"
                                     :disabled="ftProcessing || ftCode.length !== 6"

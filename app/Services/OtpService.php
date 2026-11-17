@@ -6,6 +6,7 @@ use App\Models\OtpCode;
 use App\Models\User;
 use App\Notifications\OtpEmail;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class OtpService
@@ -20,7 +21,7 @@ class OtpService
         $retryAfter = $this->retryAfter($user, $purpose);
         if ($retryAfter > 0) {
             throw ValidationException::withMessages([
-                'otp' => "Sila tunggu {$retryAfter} saat sebelum meminta kod OTP baharu.",
+                'otp' => 'Sila tunggu '.$this->formatRetryAfter($retryAfter).' sebelum meminta kod OTP baharu.',
             ]);
         }
 
@@ -53,7 +54,20 @@ class OtpService
                 ]);
             }
         } else {
-            $user->notify(new OtpEmail($otp->code, $purpose, $recipient));
+            try {
+                $user->notify(new OtpEmail($otp->code, $purpose, $recipient));
+            } catch (\Throwable $exception) {
+                $otp->update(['used_at' => now()]);
+                Log::error('OTP email delivery failed.', [
+                    'user_id' => $user->id,
+                    'purpose' => $purpose,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                throw ValidationException::withMessages([
+                    'otp' => 'OTP emel tidak dapat dihantar. Sila cuba lagi atau pilih WhatsApp.',
+                ]);
+            }
         }
 
         return $otp;
@@ -122,5 +136,21 @@ class OtpService
     private function generateCode(): string
     {
         return (string) random_int(100000, 999999);
+    }
+
+    private function formatRetryAfter(int $seconds): string
+    {
+        $minutes = intdiv($seconds, 60);
+        $remainingSeconds = $seconds % 60;
+
+        if ($minutes === 0) {
+            return "{$remainingSeconds} saat";
+        }
+
+        if ($remainingSeconds === 0) {
+            return $minutes === 1 ? '1 minit' : "{$minutes} minit";
+        }
+
+        return ($minutes === 1 ? '1 minit' : "{$minutes} minit")." {$remainingSeconds} saat";
     }
 }

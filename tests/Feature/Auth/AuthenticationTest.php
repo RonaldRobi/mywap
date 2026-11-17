@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -126,6 +127,7 @@ class AuthenticationTest extends TestCase
             '*' => Http::response(['code' => 500], 500),
         ]);
         Queue::fake();
+        Notification::fake();
 
         AppSetting::singleton()->update([
             'onesender_url' => 'https://onesender.test/messages',

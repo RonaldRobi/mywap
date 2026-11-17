@@ -4,15 +4,11 @@ namespace App\Notifications;
 
 use App\Models\AppSetting;
 use App\Models\EmailTemplate;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OtpEmail extends Notification implements ShouldQueue
+class OtpEmail extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public string $code,
         public string $purpose = 'login',
