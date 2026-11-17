@@ -18,9 +18,9 @@ class OtpService
 
     public const RESEND_COOLDOWN_SECONDS = 180;
 
-    public function generate(User $user, string $purpose = 'login'): OtpCode
+    public function generate(User $user, string $purpose = 'login', ?string $channel = null): OtpCode
     {
-        $retryAfter = $this->retryAfter($user, $purpose);
+        $retryAfter = $this->retryAfter($user, $purpose, $channel);
         if ($retryAfter > 0) {
             throw ValidationException::withMessages([
                 'otp' => 'Sila tunggu '.$this->formatRetryAfter($retryAfter).' sebelum meminta kod OTP baharu.',
@@ -44,7 +44,7 @@ class OtpService
 
     public function send(User $user, string $purpose = 'login', string $channel = 'email', ?string $recipient = null): OtpCode
     {
-        $otp = $this->generate($user, $purpose);
+        $otp = $this->generate($user, $purpose, $channel);
         $recipient ??= $channel === 'whatsapp' ? (string) $user->phone : (string) $user->email;
         $otp->update(['channel' => $channel, 'recipient' => $recipient]);
 
@@ -119,12 +119,13 @@ class OtpService
             ->update(['used_at' => now()]);
     }
 
-    public function retryAfter(User $user, string $purpose = 'login'): int
+    public function retryAfter(User $user, string $purpose = 'login', ?string $channel = null): int
     {
         $latest = OtpCode::query()
             ->where('user_id', $user->id)
             ->where('purpose', $purpose)
             ->whereNull('used_at')
+            ->when($channel !== null, fn ($query) => $query->where('channel', $channel))
             ->latest()
             ->first();
 

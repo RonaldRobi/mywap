@@ -101,7 +101,7 @@ const resetFlow = () => {
 
 const startFtCooldown = (seconds = 180) => {
     if (ftCooldownTimer) clearInterval(ftCooldownTimer);
-    ftCooldownSeconds.value = 180;
+    ftCooldownSeconds.value = Math.min(180, seconds);
     ftCooldownTimer = setInterval(() => {
         ftCooldownSeconds.value = Math.max(0, ftCooldownSeconds.value - 1);
         if (ftCooldownSeconds.value === 0) clearInterval(ftCooldownTimer);
@@ -632,9 +632,10 @@ const sendResetLink = () => {
                                     </label>
                                 </div>
                                  <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
-                                <button
-                                    type="button"
-                                    :disabled="ftProcessing"
+                                 <p v-if="ftCooldownSeconds > 0" class="text-center text-xs text-slate-500">Boleh minta kod baharu dalam {{ formatCooldown(ftCooldownSeconds) }}.</p>
+                                 <button
+                                     type="button"
+                                     :disabled="ftProcessing || ftCooldownSeconds > 0"
                                     class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="ftSendOtp"
                                 >
