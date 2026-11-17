@@ -99,13 +99,20 @@ const resetFlow = () => {
     fiVerified.value = false;
 };
 
-const startFtCooldown = () => {
+const startFtCooldown = (seconds = 180) => {
     if (ftCooldownTimer) clearInterval(ftCooldownTimer);
     ftCooldownSeconds.value = 180;
     ftCooldownTimer = setInterval(() => {
         ftCooldownSeconds.value = Math.max(0, ftCooldownSeconds.value - 1);
         if (ftCooldownSeconds.value === 0) clearInterval(ftCooldownTimer);
     }, 1000);
+};
+
+const cooldownSecondsFromMessage = (message) => {
+    const text = String(message || '');
+    const minutes = Number(text.match(/(\d+) minit/)?.[1] || 0);
+    const seconds = Number(text.match(/(\d+) saat/)?.[1] || 0);
+    return Math.min(180, minutes * 60 + seconds);
 };
 
 const formatCooldown = (seconds) => {
@@ -214,6 +221,8 @@ const ftSendOtp = async () => {
 
         if (!res.ok) {
             ftError.value = payload?.errors?.otp?.[0] || payload?.message || 'Ralat menghantar OTP.';
+            const cooldown = cooldownSecondsFromMessage(ftError.value);
+            if (cooldown > 0) startFtCooldown(cooldown);
             return;
         }
 
@@ -578,10 +587,11 @@ const sendResetLink = () => {
                                         No Kad Pengenalan / Passport
                                     </label>
                                 </div>
-                                 <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                  <p v-if="ftError" class="text-xs text-red-500">{{ ftError }}</p>
+                                 <p v-if="ftCooldownSeconds > 0" class="text-center text-xs text-slate-500">Boleh minta kod baharu dalam {{ formatCooldown(ftCooldownSeconds) }}.</p>
                                  <button
-                                    type="button"
-                                    :disabled="ftProcessing"
+                                     type="button"
+                                     :disabled="ftProcessing || ftCooldownSeconds > 0"
                                     class="w-full rounded-3xl bg-[#2F6B32] px-4 py-3 text-base font-semibold text-[#F4F6F1] transition hover:bg-[#123D2A] disabled:opacity-60"
                                     @click="ftLookup"
                                 >
