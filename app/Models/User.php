@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Scopes\OrganizationScope;
+use App\Notifications\OtpEmail;
 use App\Support\NormalizesStoragePath;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -39,6 +40,15 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     use NormalizesStoragePath;
+
+    public function routeNotificationForMail($notification = null): ?string
+    {
+        if ($notification instanceof OtpEmail && $notification->recipient) {
+            return $notification->recipient;
+        }
+
+        return $this->email;
+    }
 
     public const IC_VALIDATION_REGEX = '/^(?:\d{12}|(?=.*[A-Z])[A-Z0-9]{6,32})$/';
 

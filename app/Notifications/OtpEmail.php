@@ -60,10 +60,6 @@ class OtpEmail extends Notification implements ShouldQueue
                 'appName' => config('app.name'),
             ]);
 
-        if ($this->recipient) {
-            $mail->to($this->recipient);
-        }
-
         return $mail;
     }
 }
