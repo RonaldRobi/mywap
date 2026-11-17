@@ -499,6 +499,30 @@ class AppLocalizationsMs extends AppLocalizations {
   String get otpInvalid => 'Kod OTP mesti 6 digit.';
 
   @override
+  String get pasteOtpCode => 'Tampal kod';
+
+  @override
+  String get otpPasteMissing => 'Tiada kod 6 digit dalam papan klip.';
+
+  @override
+  String get dobFromIcHint => 'Diambil dari No. IC. Boleh diubah.';
+
+  @override
+  String get dobDay => 'Hari';
+
+  @override
+  String get dobMonth => 'Bulan';
+
+  @override
+  String get dobYear => 'Tahun';
+
+  @override
+  String get dobUseDate => 'Guna tarikh ini';
+
+  @override
+  String get dobInvalid => 'Tarikh ini tidak sah.';
+
+  @override
   String get newPasswordLabel => 'Kata Laluan Baharu';
 
   @override

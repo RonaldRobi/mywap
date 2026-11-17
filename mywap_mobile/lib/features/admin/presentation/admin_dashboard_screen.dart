@@ -30,24 +30,26 @@ class AdminDashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: Text(
-          user?.adminRoleTitle ?? 'Ruang Kerja Pentadbir',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.adminPanelTitle,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            if (user != null)
+              Text(
+                user.adminRoleTitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
         ),
         actions: [
-          // Suis Pantas ke Pandangan Ahli
-          TextButton.icon(
-            onPressed: () {
-              ref.read(adminViewModeProvider.notifier).state = false;
-              context.go('/dashboard');
-            },
-            icon: const Icon(Icons.visibility_outlined, size: 18),
-            label: const Text('Ahli'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.movementGreen,
-              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             tooltip: 'Notifikasi',
@@ -125,9 +127,18 @@ class _DashboardContent extends ConsumerWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(Spacing.lg),
-                  child: _RevenueChart(
-                    labels: data.revenueLabels,
-                    values: data.revenueValues,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (data.revenueValues.length >= 2) ...[
+                        _buildRevenueTrend(data.revenueValues),
+                        const SizedBox(height: Spacing.md),
+                      ],
+                      _RevenueChart(
+                        labels: data.revenueLabels,
+                        values: data.revenueValues,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -202,6 +213,47 @@ class _DashboardContent extends ConsumerWidget {
       ),
     ),
   );
+
+  Widget _buildRevenueTrend(List<double> values) {
+    final current = values.last;
+    final previous = values[values.length - 2];
+    if (previous <= 0) return const SizedBox.shrink();
+
+    final diff = current - previous;
+    final pct = ((diff / previous) * 100).round();
+    final isPositive = diff >= 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isPositive ? AppColors.paleGreen : AppColors.surfaceMuted,
+        borderRadius: AppRadius.pill,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+            size: 16,
+            color: isPositive ? AppColors.movementDarkGreen : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isPositive
+                ? '+$pct% berbanding bulan lepas'
+                : '$pct% berbanding bulan lepas',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isPositive
+                  ? AppColors.movementDarkGreen
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Kad pengenalan peranan & skop tanggungjawab admin
@@ -672,6 +724,39 @@ class _RevenueChart extends StatelessWidget {
           barGroups: groups,
           gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.movementNavy,
+              tooltipRoundedRadius: 8,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final label =
+                    groupIndex < labels.length ? labels[groupIndex] : '';
+                return BarTooltipItem(
+                  '$label\n',
+                  const TextStyle(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: Formatters.currency(rod.toY),
+                      style: const TextStyle(
+                        color: AppColors.movementSoftGreen,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(
               sideTitles: SideTitles(showTitles: false),

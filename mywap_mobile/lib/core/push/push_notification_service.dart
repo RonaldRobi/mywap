@@ -9,6 +9,7 @@ import '../../shared/l10n/l10n.dart';
 
 import '../constants/api_paths.dart';
 import '../network/api_client.dart';
+import 'app_badge_service.dart';
 import 'firebase_options.dart';
 
 /// Push notification (FCM) service. Di-initialize pada runtime dengan
@@ -231,8 +232,25 @@ class PushNotificationService {
   void _handleForeground(RemoteMessage message) {
     final title = message.notification?.title ?? message.data['title'] ?? '';
     final body = message.notification?.body ?? message.data['body'] ?? '';
-    _showLocalNotification(title, body, _payload(message));
+    final badge = _unreadBadge(message);
+    _showLocalNotification(title, body, _payload(message), badge: badge);
+    if (badge != null) unawaited(AppBadgeService.setUnread(badge));
     onMessage?.call(_payload(message));
+  }
+
+  int? _unreadBadge(RemoteMessage message) {
+    final apple = message.notification?.apple?.badge;
+    final parsed = apple == null ? null : int.tryParse(apple);
+    if (parsed != null) return parsed < 0 ? 0 : parsed;
+    final count = message.notification?.android?.count;
+    if (count == null) return null;
+    return count < 0 ? 0 : count;
+  }
+
+  Future<void> clearPresented() async {
+    try {
+      await _localNotifications?.cancelAll();
+    } catch (_) {}
   }
 
   void _handleTap(RemoteMessage message) {
@@ -292,8 +310,9 @@ class PushNotificationService {
   Future<void> _showLocalNotification(
     String title,
     String body,
-    String payload,
-  ) async {
+    String payload, {
+    int? badge,
+  }) async {
     final plugin = _localNotifications;
     if (plugin == null) return;
 
@@ -305,11 +324,15 @@ class PushNotificationService {
           channelDescription: currentAppLocalizations.pushChannelDescription,
           importance: Importance.high,
           priority: Priority.high,
+          number: badge,
+          channelShowBadge: true,
         ),
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBanner: true,
           presentSound: true,
+          presentBadge: badge != null,
+          badgeNumber: badge,
         ),
       );
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Models\UsrahAttendance;
 use App\Models\UsrahGroup;
@@ -37,8 +38,12 @@ class UsrahService
      */
     public function myGroup(User $user): array
     {
+        if ($user->isAdminPanelUser()) {
+            return ['groups' => [], 'attendanceHistory' => []];
+        }
+
         $groups = $user->usrahGroups()
-            ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
+            ->with(['members' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class)->excludeAdminPanel()->select('users.id', 'name')])
             ->get();
 
         $groupsData = $groups->map(fn (UsrahGroup $group) => $this->serializeGroup($group, $user->id));

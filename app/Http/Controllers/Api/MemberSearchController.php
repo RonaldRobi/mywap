@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Support\MemberSearch;
 use Illuminate\Http\JsonResponse;
@@ -64,7 +65,8 @@ class MemberSearchController extends Controller
         }
 
         $members = User::query()
-            ->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            ->withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->when($orgId, fn ($query) => $query->where('current_organization_id', (int) $orgId))
             ->when($branchIds !== [], fn ($query) => $query->whereIn('branch_id', $branchIds))
             ->when(! $orgId && $actingUser && ! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $actingUser->current_organization_id));

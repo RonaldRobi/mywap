@@ -8,6 +8,7 @@ use App\Models\PollAnswer;
 use App\Models\PollOption;
 use App\Models\PollQuestion;
 use App\Models\PollResponse;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Models\UsrahGroup;
 use App\Services\PollService;
@@ -176,7 +177,7 @@ class PollController extends Controller
             'usrahGroups' => UsrahGroup::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
                 ->get(['id', 'name']),
-            'members' => User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            'members' => User::withoutGlobalScope(OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id)
                 ->select('id', 'name', 'email')
                 ->orderBy('name')
@@ -270,7 +271,7 @@ class PollController extends Controller
             'usrahGroups' => UsrahGroup::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
                 ->get(['id', 'name']),
-            'members' => User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            'members' => User::withoutGlobalScope(OrganizationScope::class)
                 ->where('current_organization_id', $user->current_organization_id)
                 ->select('id', 'name', 'email')
                 ->orderBy('name')
@@ -356,7 +357,8 @@ class PollController extends Controller
         $poll->load(['questions.options', 'responses' => fn ($q) => $q->with('user:id,name,email')]);
 
         $totalResponses = $poll->responses->count();
-        $totalMembers = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $totalMembers = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $poll->organization_id)
             ->count();
 

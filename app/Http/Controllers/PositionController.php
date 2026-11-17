@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrganizationPosition;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class PositionController extends Controller
         $orgId = $user->current_organization_id;
 
         $positionCounts = User::where('current_organization_id', $orgId)
+            ->excludeAdminPanel()
             ->whereNotNull('position_id')
             ->selectRaw('position_id, COUNT(*) as count')
             ->groupBy('position_id')
@@ -96,7 +98,7 @@ class PositionController extends Controller
         $position->update($data);
 
         if ($position->wasChanged('name')) {
-            User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+            User::withoutGlobalScope(OrganizationScope::class)
                 ->where('position_id', $position->id)
                 ->update(['position' => $position->name]);
         }
@@ -163,7 +165,8 @@ class PositionController extends Controller
     {
         $this->ensureSameOrganization($request, $position);
 
-        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $members = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $request->user()->current_organization_id)
             ->where('position_id', $position->id)
             ->select('id', 'name', 'member_no', 'email', 'phone', 'branch_name')
@@ -179,7 +182,8 @@ class PositionController extends Controller
 
         $search = trim((string) $request->query('search'));
 
-        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $members = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $position->organization_id)
             ->where(function ($query) use ($position) {
                 $query->whereNull('position_id')
@@ -207,8 +211,12 @@ class PositionController extends Controller
             'user_id' => ['required', 'integer', 'exists:users,id'],
         ]);
 
-        $user = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $user = User::withoutGlobalScope(OrganizationScope::class)
             ->findOrFail($data['user_id']);
+
+        if ($user->isAdminPanelUser()) {
+            return back()->with('error', 'Akaun pentadbir tidak boleh memegang jawatan ahli.');
+        }
 
         if ((int) $user->current_organization_id !== (int) $position->organization_id) {
             return back()->with('error', 'Ahli ini bukan dalam organisasi jawatan tersebut.');

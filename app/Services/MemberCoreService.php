@@ -79,9 +79,13 @@ class MemberCoreService
     {
         $user->loadMissing('organization');
 
+        $feeAmount = $user->isFeeExcluded() || now()->year < $this->fees->startYear()
+            ? 0.0
+            : (float) ($user->organization?->fee_amount ?? 50.00);
+
         return [
             'status' => $this->fees->getStatus($user),
-            'fee_amount' => (float) ($user->organization?->fee_amount ?? 50.00),
+            'fee_amount' => $feeAmount,
         ];
     }
 

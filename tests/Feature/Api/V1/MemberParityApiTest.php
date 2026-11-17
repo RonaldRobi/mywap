@@ -33,6 +33,8 @@ class MemberParityApiTest extends TestCase
     {
         parent::setUp();
 
+        config(['membership.fee_start_year' => now()->year]);
+
         Role::create(['name' => 'Superadmin', 'guard_name' => 'web']);
         Role::create(['name' => 'Admin', 'guard_name' => 'web']);
         Role::create(['name' => 'Member', 'guard_name' => 'web']);

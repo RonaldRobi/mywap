@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/admin/application/admin_providers.dart';
 import '../../features/admin/presentation/routes.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/first_login_otp_screen.dart';
@@ -100,7 +99,6 @@ bool _isPublicLocation(String location) {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefresh();
   ref.listen(authControllerProvider, (_, __) => refresh.notify());
-  ref.listen(adminViewModeProvider, (_, __) => refresh.notify());
 
   return GoRouter(
     initialLocation: '/splash',
@@ -143,12 +141,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             !_isProfileCompletionExempt(location)) {
           return '/profile/complete';
         }
-        // Members land on their dashboard; admins in admin mode land on /admin.
+        // Pentadbir dibawa terus ke /admin; ahli biasa dibawa ke /dashboard.
         if (isSplash || isLogin || isOnboarding || location == '/home') {
-          if (auth.user.isAdmin && ref.read(adminViewModeProvider)) {
-            return '/admin';
-          }
-          return '/dashboard';
+          return auth.user.isAdmin ? '/admin' : '/dashboard';
+        }
+        // Pentadbir tidak mempunyai kad ahli atau yuran peribadi — halakan ke panel admin
+        if (auth.user.isAdmin &&
+            (location == '/dashboard' ||
+                location == '/card' ||
+                location == '/member/fee-status' ||
+                location == '/member/financial/overview' ||
+                location == '/member/referral')) {
+          return '/admin';
         }
         return null;
       }

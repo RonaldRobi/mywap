@@ -8,6 +8,7 @@ use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -143,7 +144,7 @@ class ExportController extends Controller
     {
         $admin = $request->user();
 
-        $query = User::withoutGlobalScope(OrganizationScope::class);
+        $query = User::withoutGlobalScope(OrganizationScope::class)->excludeAdminPanel();
 
         $organizationId = (int) $request->input('organization_id');
         $branchId = (int) $request->input('branch_id');
@@ -215,7 +216,7 @@ class ExportController extends Controller
         return '';
     }
 
-    private function stateReportRows(Builder $query, ?int $orgId): \Illuminate\Support\Collection
+    private function stateReportRows(Builder $query, ?int $orgId): Collection
     {
         if ($orgId && Organization::whereKey($orgId)->value('slug') === 'wadah') {
             return $this->wadahStateRows($query, $orgId);
@@ -224,7 +225,7 @@ class ExportController extends Controller
         return $this->genericStateRows($query);
     }
 
-    private function wadahStateRows(Builder $query, int $orgId): \Illuminate\Support\Collection
+    private function wadahStateRows(Builder $query, int $orgId): Collection
     {
         $branchCounts = (clone $query)
             ->selectRaw('branch_id, COUNT(*) as total')
@@ -251,7 +252,7 @@ class ExportController extends Controller
             ->map(fn ($state) => (object) ['state' => $state, 'total' => $counts[$state] ?? 0]);
     }
 
-    private function genericStateRows(Builder $query): \Illuminate\Support\Collection
+    private function genericStateRows(Builder $query): Collection
     {
         $rows = (clone $query)
             ->selectRaw("COALESCE(NULLIF(TRIM(state), ''), 'Tidak Dinyatakan') as state, COUNT(*) as total")

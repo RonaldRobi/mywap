@@ -6,6 +6,27 @@ def env_path(name, default)
   File.expand_path(ENV.fetch(name, default), __dir__)
 end
 
+def pubspec_version
+  path = File.expand_path("../pubspec.yaml", __dir__)
+  line = File.readlines(path).find { |l| l.start_with?("version:") }
+  match = line.to_s.match(/version:\s*([^+\s]+)(?:\+([0-9]+))?/)
+  UI.user_error!("Baris 'version:' dalam #{path} tidak sah") unless match
+  { marketing: match[1], build: (match[2] || "0").to_i }
+end
+
+def version_env(*args)
+  script = File.expand_path("../tool/version.rb", __dir__)
+  out = IO.popen(["ruby", script, *args], err: File::NULL, &:read)
+  out.to_s.lines.map { |line| line.strip.split("=", 2) }
+     .select { |pair| pair.size == 2 }.to_h
+end
+
+def version_tool(*args)
+  script = File.expand_path("../tool/version.rb", __dir__)
+  system("ruby", script, *args)
+  $?.exitstatus
+end
+
 platform :ios do
   desc "Upload IPA ke TestFlight"
   lane :beta do
@@ -18,11 +39,26 @@ platform :ios do
     UI.user_error!("Fail API key tiada: #{api_key_path}") unless File.exist?(api_key_path)
     UI.user_error!("IPA tiada: #{ipa}") unless File.exist?(ipa)
 
+    version = pubspec_version
+    latest = version_env("status", "--env", "--ios-only")["IOS_LATEST_BUILD"].to_s.to_i
+    if latest >= version[:build]
+      UI.user_error!(
+        "Build #{version[:build]} tidak lebih tinggi daripada TestFlight (#{latest}). " \
+        "Jalankan: ruby mywap_mobile/tool/version.rb bump-build --write"
+      )
+    end
+
     pilot(
       ipa: ipa,
       api_key_path: api_key_path,
       skip_waiting_for_build_processing: true
     )
+  end
+
+  desc "Semak versi tempatan vs App Store Connect + Play"
+  lane :status do
+    code = version_tool("status")
+    UI.user_error!("Semakan versi gagal (kod #{code})") unless code.zero?
   end
 
   desc "Cetak build number terakhir TestFlight (untuk bump build yang selamat)"
@@ -45,11 +81,22 @@ platform :ios do
     UI.user_error!("Fail API key tiada: #{api_key_path}") unless File.exist?(api_key_path)
     UI.user_error!("IPA tiada: #{ipa}") unless File.exist?(ipa)
 
+    code = version_tool("next-release", "--dry-run")
+    unless code.zero?
+      UI.user_error!(
+        "Version App Store tidak boleh dihantar sekarang (kod #{code}). " \
+        "Semak: ruby mywap_mobile/tool/version.rb status"
+      )
+    end
+    version = pubspec_version
+
     # Hantar build + submit untuk review. automatic_release: false bermaksud
     # selepas lulus review, awak tekan "Release" sendiri di App Store Connect.
     deliver(
       ipa: ipa,
       api_key_path: api_key_path,
+      app_version: version[:marketing],
+      build_number: version[:build].to_s,
       submit_for_review: true,
       automatic_release: false,
       force: true,
@@ -71,6 +118,15 @@ platform :android do
     UI.user_error!("Fail service account tiada: #{json_key}") unless File.exist?(json_key)
     UI.user_error!("AAB tiada: #{aab}") unless File.exist?(aab)
 
+    version = pubspec_version
+    latest = version_env("status", "--env", "--android-only")["ANDROID_LATEST_CODE"].to_s.to_i
+    if latest >= version[:build]
+      UI.user_error!(
+        "versionCode #{version[:build]} tidak lebih tinggi daripada Play (#{latest}). " \
+        "Jalankan: ruby mywap_mobile/tool/version.rb bump-build --write"
+      )
+    end
+
     supply(
       aab: aab,
       json_key: json_key,
@@ -81,6 +137,12 @@ platform :android do
       skip_upload_images: true,
       skip_upload_screenshots: true
     )
+  end
+
+  desc "Semak versi tempatan vs Play Console"
+  lane :status do
+    code = version_tool("status")
+    UI.user_error!("Semakan versi gagal (kod #{code})") unless code.zero?
   end
 
   desc "Cetak versionCode tertinggi merentas semua track Play (untuk bump selamat)"
@@ -97,7 +159,7 @@ platform :android do
           package_name: PACKAGE_NAME,
           track: track
         )
-        max_code = [max_code, *(codes || [])].max
+        max_code = [max_code, *(codes || []).map(&:to_i)].max
       rescue => e
         UI.message("Track #{track} tidak dapat dibaca: #{e.message}")
       end

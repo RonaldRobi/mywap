@@ -83,15 +83,50 @@ class AdminManagementAndBranchAccessTest extends TestCase
         $this->actingAs($this->member)->get(route('admin.admins.index'))->assertForbidden();
     }
 
-    public function test_org_admin_can_open_admin_management_and_appoint_admin(): void
+    public function test_org_admin_can_open_admin_management(): void
     {
         $this->actingAs($this->orgAdmin)->get(route('admin.admins.index'))->assertOk();
+    }
 
-        $this->actingAs($this->orgAdmin)
-            ->patch(route('admin.hub.members.role.update', $this->member), ['role' => 'Admin'])
+    public function test_superadmin_can_create_org_admin(): void
+    {
+        $superadmin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+        ]);
+        $superadmin->assignRole('Superadmin');
+
+        $this->actingAs($superadmin)
+            ->post(route('admin.admins.store'), [
+                'name' => 'Admin Baharu',
+                'email' => 'admin.baharu@abim.org.my',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'organization_id' => $this->org->id,
+            ])
             ->assertRedirect();
 
-        $this->assertTrue($this->member->fresh()->hasRole('Admin'));
+        $admin = User::where('email', 'admin.baharu@abim.org.my')->firstOrFail();
+
+        $this->assertTrue($admin->hasRole('Admin'));
+        $this->assertNull($admin->member_no);
+        $this->assertFalse((bool) $admin->is_public_in_directory);
+        $this->assertNotNull($admin->profile_completed_at);
+    }
+
+    public function test_org_admin_cannot_create_org_admin(): void
+    {
+        $this->actingAs($this->orgAdmin)
+            ->post(route('admin.admins.store'), [
+                'name' => 'Admin Baharu',
+                'email' => 'admin.baharu@abim.org.my',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'organization_id' => $this->org->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('users', ['email' => 'admin.baharu@abim.org.my']);
     }
 
     public function test_branch_admin_can_open_branch_page_but_not_admin_management(): void
@@ -105,9 +140,6 @@ class AdminManagementAndBranchAccessTest extends TestCase
         $this->assertSame($this->perak->id, $organizations[0]['branches'][0]['id']);
 
         $this->actingAs($this->branchAdmin)->get(route('admin.admins.index'))->assertForbidden();
-        $this->actingAs($this->branchAdmin)
-            ->patch(route('admin.hub.members.role.update', $this->member), ['role' => 'Admin'])
-            ->assertForbidden();
     }
 
     public function test_org_admin_can_open_all_branches_of_own_organization(): void

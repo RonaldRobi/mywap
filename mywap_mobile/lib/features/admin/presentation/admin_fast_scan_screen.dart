@@ -7,16 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/network/api_exception.dart';
-import '../../../core/utils/formatters.dart';
-import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
-import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
-import '../../events/data/models/event.dart';
 import '../application/admin_providers.dart';
-import '../data/models/admin_models.dart';
 
 /// Pengimbas Pantas Kad Keahlian untuk Pentadbir (`/admin/scan`).
 ///
@@ -467,3 +461,4 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
     );
   }
 }
+

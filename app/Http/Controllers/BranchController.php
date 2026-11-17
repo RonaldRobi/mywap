@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Branch;
 use App\Models\BranchAdmin;
-use App\Models\ActivityLog;
 use App\Models\Organization;
 use App\Models\User;
-use App\Services\BranchAdminProvisioner;
 use App\Notifications\BranchSecretaryAppointed;
+use App\Services\BranchAdminProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +37,7 @@ class BranchController extends Controller
 
         $organizations = Organization::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('id', $user->current_organization_id))
-            ->with(['branches' => fn ($q) => $q->withCount('members')->with(['admins', 'secretaries'])->when($isBranchAdmin, fn ($query) => $query->whereKey($managedBranchIds))->orderBy('state')])
+            ->with(['branches' => fn ($q) => $q->withCount(['members' => fn ($memberQuery) => $memberQuery->excludeAdminPanel()])->with(['admins', 'secretaries'])->when($isBranchAdmin, fn ($query) => $query->whereKey($managedBranchIds))->orderBy('state')])
             ->orderBy('sort_order')
             ->orderBy('min_age')
             ->get()

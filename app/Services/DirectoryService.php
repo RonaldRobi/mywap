@@ -19,6 +19,7 @@ class DirectoryService
         $industry = trim((string) $request->query('industry', ''));
 
         $query = User::query()
+            ->excludeAdminPanel()
             ->with('organization')
             ->where('is_public_in_directory', true)
             ->whereNotNull('name');
@@ -41,6 +42,7 @@ class DirectoryService
             ->through(fn (User $user) => $this->serializeDirectoryUser($user));
 
         $industries = User::query()
+            ->excludeAdminPanel()
             ->where('is_public_in_directory', true)
             ->whereNotNull('industry')
             ->select('industry')
@@ -82,7 +84,7 @@ class DirectoryService
      */
     public function publicCard(string $memberNo): array
     {
-        $user = User::where('member_no', $memberNo)->with('organization')->firstOrFail();
+        $user = User::where('member_no', $memberNo)->excludeAdminPanel()->with('organization')->firstOrFail();
         $setting = Schema::hasTable('app_settings')
             ? AppSetting::query()->first()
             : null;

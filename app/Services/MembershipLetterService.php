@@ -50,6 +50,10 @@ BODY;
     {
         $user->loadMissing(['organization', 'branch']);
 
+        if ($user->isAdminPanelUser()) {
+            return false;
+        }
+
         if (! $this->isEnabled($user)) {
             return false;
         }

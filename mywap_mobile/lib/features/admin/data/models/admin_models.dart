@@ -288,6 +288,9 @@ class Registration {
     this.id,
     this.name = '',
     this.memberNo = '',
+    this.registrationNo = '',
+    this.icNumber = '',
+    this.phone = '',
     this.status = '',
     this.attended = false,
     this.attendedAt,
@@ -296,6 +299,9 @@ class Registration {
   final int? id;
   final String name;
   final String memberNo;
+  final String registrationNo;
+  final String icNumber;
+  final String phone;
   final String status;
   final bool attended;
   final DateTime? attendedAt;
@@ -304,6 +310,9 @@ class Registration {
         id: json['id'] is num ? (json['id'] as num).toInt() : null,
         name: _toStr(json['name']),
         memberNo: _toStr(json['member_no']),
+        registrationNo: _toStr(json['registration_no']),
+        icNumber: _toStr(json['ic_number']),
+        phone: _toStr(json['phone']),
         status: _toStr(json['status']),
         attended: _toBool(json['attended']),
         attendedAt: DateTime.tryParse(_toStr(json['attended_at'])),

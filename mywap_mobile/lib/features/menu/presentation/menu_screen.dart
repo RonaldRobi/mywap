@@ -74,36 +74,39 @@ class MenuScreen extends ConsumerWidget {
       MenuSection(
         title: l10n.menuSectionMembership,
         items: [
-          MenuEntry(
-            icon: Icons.badge_outlined,
-            label: l10n.menuCard,
-            path: '/card',
-            subtitle: l10n.menuCardSubtitle,
-          ),
+          if (!isAdmin)
+            MenuEntry(
+              icon: Icons.badge_outlined,
+              label: l10n.menuCard,
+              path: '/card',
+              subtitle: l10n.menuCardSubtitle,
+            ),
           MenuEntry(
             icon: Icons.person_outline,
             label: l10n.menuProfile,
             path: '/profile',
             subtitle: l10n.menuProfileSubtitle,
           ),
-          MenuEntry(
-            icon: Icons.person_add_alt_outlined,
-            label: l10n.menuInvite,
-            path: '/member/referral',
-            subtitle: l10n.menuInviteSubtitle,
-          ),
+          if (!isAdmin)
+            MenuEntry(
+              icon: Icons.person_add_alt_outlined,
+              label: l10n.menuInvite,
+              path: '/member/referral',
+              subtitle: l10n.menuInviteSubtitle,
+            ),
         ],
       ),
       MenuSection(
         title: l10n.menuSectionFinance,
         tint: AppColors.accent,
         items: [
-          MenuEntry(
-            icon: Icons.receipt_long_outlined,
-            label: l10n.menuFees,
-            path: '/member/financial/overview',
-            subtitle: l10n.menuFeesSubtitle,
-          ),
+          if (!isAdmin)
+            MenuEntry(
+              icon: Icons.receipt_long_outlined,
+              label: l10n.menuFees,
+              path: '/member/financial/overview',
+              subtitle: l10n.menuFeesSubtitle,
+            ),
           MenuEntry(
             icon: Icons.volunteer_activism_outlined,
             label: l10n.menuInfaq,
@@ -127,12 +130,13 @@ class MenuScreen extends ConsumerWidget {
             path: '/events/my-registrations',
             subtitle: l10n.menuMyRegistrationsSubtitle,
           ),
-          MenuEntry(
-            icon: Icons.groups_outlined,
-            label: l10n.menuUsrah,
-            path: '/usrah',
-            subtitle: l10n.menuUsrahSubtitle,
-          ),
+          if (!isAdmin)
+            MenuEntry(
+              icon: Icons.groups_outlined,
+              label: l10n.menuUsrah,
+              path: '/usrah',
+              subtitle: l10n.menuUsrahSubtitle,
+            ),
           MenuEntry(
             icon: Icons.how_to_vote_outlined,
             label: l10n.menuPolls,

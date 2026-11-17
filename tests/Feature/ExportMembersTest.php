@@ -69,14 +69,16 @@ class ExportMembersTest extends TestCase
 
     public function test_full_export_contains_address_columns(): void
     {
-        $superadmin = $this->makeUser('Super Admin', $this->wadah, null, [
+        $superadmin = $this->makeUser('Super Admin', $this->wadah, null);
+        $superadmin->assignRole('Superadmin');
+
+        $this->memberSelangor->update([
             'address_1' => 'No 1 Jalan Satu',
             'address_2' => 'Taman Test',
             'postcode' => '43000',
             'city' => 'Kajang',
             'state' => 'Selangor',
         ]);
-        $superadmin->assignRole('Superadmin');
 
         $content = $this->export($superadmin, 'type=full');
 

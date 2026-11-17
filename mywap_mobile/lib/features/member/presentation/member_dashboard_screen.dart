@@ -342,16 +342,21 @@ class _SectionLabel extends StatelessWidget {
 ///
 /// Lapan item sahaja (Pustaka & Undian dibuang — ia ada dalam drawer dan
 /// bukan tindakan pantas). Dua baris 4-lajur supaya seimbang.
-class _ShortcutsGrid extends StatelessWidget {
+class _ShortcutsGrid extends ConsumerWidget {
   const _ShortcutsGrid();
 
-  static List<_ShortcutItem> _items(AppLocalizations l10n) => [
-    _ShortcutItem(
-      icon: Icons.receipt_long_rounded,
-      label: l10n.quickFees,
-      color: AppColors.shortcutFee,
-      path: '/member/fee-status',
-    ),
+  static List<_ShortcutItem> _items(
+    AppLocalizations l10n, {
+    required bool includeFee,
+    required bool isAdmin,
+  }) => [
+    if (includeFee)
+      _ShortcutItem(
+        icon: Icons.receipt_long_rounded,
+        label: l10n.quickFees,
+        color: AppColors.shortcutFee,
+        path: '/member/fee-status',
+      ),
     _ShortcutItem(
       icon: Icons.calendar_today_rounded,
       label: l10n.quickBook,
@@ -370,35 +375,39 @@ class _ShortcutsGrid extends StatelessWidget {
       color: AppColors.shortcutInfaq,
       path: '/infaq',
     ),
-    _ShortcutItem(
-      icon: Icons.contact_page_rounded,
-      label: l10n.quickCard,
-      color: AppColors.shortcutCard,
-      path: '/card',
-    ),
-    _ShortcutItem(
-      icon: Icons.groups_2_rounded,
-      label: l10n.menuUsrah,
-      color: AppColors.shortcutUsrah,
-      path: '/usrah',
-    ),
+    if (!isAdmin)
+      _ShortcutItem(
+        icon: Icons.contact_page_rounded,
+        label: l10n.quickCard,
+        color: AppColors.shortcutCard,
+        path: '/card',
+      ),
+    if (!isAdmin)
+      _ShortcutItem(
+        icon: Icons.groups_2_rounded,
+        label: l10n.menuUsrah,
+        color: AppColors.shortcutUsrah,
+        path: '/usrah',
+      ),
     _ShortcutItem(
       icon: Icons.shopping_bag_rounded,
       label: l10n.quickMall,
       color: AppColors.shortcutShop,
       path: '/products',
     ),
-    _ShortcutItem(
-      icon: Icons.share_rounded,
-      label: l10n.quickInvite,
-      color: AppColors.shortcutReferral,
-      path: '/member/referral',
-    ),
+    if (!isAdmin)
+      _ShortcutItem(
+        icon: Icons.share_rounded,
+        label: l10n.quickInvite,
+        color: AppColors.shortcutReferral,
+        path: '/member/referral',
+      ),
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final items = _items(context.l10n);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAdmin = ref.watch(currentUserProvider)?.isAdmin ?? false;
+    final items = _items(context.l10n, includeFee: !isAdmin, isAdmin: isAdmin);
     final rows = <Widget>[];
     for (var i = 0; i < items.length; i += 4) {
       if (i > 0) rows.add(const SizedBox(height: Spacing.sm));

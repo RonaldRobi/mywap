@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -67,6 +68,23 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
     }
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _pasteOtp() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final code = _sixDigitCode(data?.text);
+    if (!mounted) return;
+    if (code == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.otpPasteMissing)));
+      return;
+    }
+    for (var i = 0; i < 6; i++) {
+      _otpControllers[i].text = code[i];
+    }
+    _otpFocusNodes[5].requestFocus();
+    setState(() {});
   }
 
   Future<void> _sendOtp() async {
@@ -323,21 +341,30 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
                   focusNodes: _otpFocusNodes,
                   onChanged: () => setState(() {}),
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed:
-                        _resendSeconds == 0 && !_submitting ? _resendOtp : null,
-                    child: Text(
-                      _resendSeconds > 0
-                          ? english
-                              ? 'Request again in ${_resendSeconds}s'
-                              : 'Minta kod lagi dalam ${_resendSeconds}s'
-                          : english
-                          ? 'Request another code'
-                          : 'Minta kod lagi',
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: _submitting ? null : _pasteOtp,
+                      icon: const Icon(Icons.content_paste_outlined),
+                      label: Text(context.l10n.pasteOtpCode),
                     ),
-                  ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed:
+                          _resendSeconds == 0 && !_submitting
+                              ? _resendOtp
+                              : null,
+                      child: Text(
+                        _resendSeconds > 0
+                            ? english
+                                ? 'Request again in ${_resendSeconds}s'
+                                : 'Minta kod lagi dalam ${_resendSeconds}s'
+                            : english
+                            ? 'Request another code'
+                            : 'Minta kod lagi',
+                      ),
+                    ),
+                  ],
                 ),
                 AuthField(
                   label: context.l10n.newPasswordLabel,
@@ -406,6 +433,15 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
   }
 }
 
+String? _sixDigitCode(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  for (final match in RegExp(r'\d+').allMatches(raw)) {
+    final digits = match.group(0)!;
+    if (digits.length == 6) return digits;
+  }
+  return null;
+}
+
 class _OtpBoxes extends StatelessWidget {
   const _OtpBoxes({
     required this.controllers,
@@ -450,28 +486,37 @@ class _OtpBoxes extends StatelessWidget {
           style: Theme.of(context).textTheme.labelLarge,
         ),
         const SizedBox(height: Spacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(6, (index) {
-            return SizedBox(
-              width: 45,
-              child: TextField(
-                controller: controllers[index],
-                focusNode: focusNodes[index],
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+        AutofillGroup(
+          child: Row(
+            children: List.generate(6, (index) {
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: index == 0 ? 0 : 6),
+                  child: TextField(
+                    controller: controllers[index],
+                    focusNode: focusNodes[index],
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    autofillHints:
+                        index == 0 ? const [AutofillHints.oneTimeCode] : null,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onChanged: (value) => _handleChange(context, index, value),
+                  ),
                 ),
-                decoration: const InputDecoration(
-                  counterText: '',
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
-                ),
-                onChanged: (value) => _handleChange(context, index, value),
-              ),
-            );
-          }),
+              );
+            }),
+          ),
         ),
       ],
     );

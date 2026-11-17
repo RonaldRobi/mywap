@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../admin/application/admin_providers.dart';
 import '../../admin/presentation/admin_shell.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/main_shell.dart';
@@ -30,8 +29,7 @@ class AdaptiveShell extends ConsumerWidget {
       return PublicShell(child: child);
     }
 
-    final isAdminMode = user.isAdmin && ref.watch(adminViewModeProvider);
-    if (isAdminMode) {
+    if (user.isAdmin) {
       return AdminShell(child: child);
     }
 

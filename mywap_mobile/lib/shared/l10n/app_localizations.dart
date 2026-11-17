@@ -1067,6 +1067,54 @@ abstract class AppLocalizations {
   /// **'OTP code must be 6 digits.'**
   String get otpInvalid;
 
+  /// No description provided for @pasteOtpCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste code'**
+  String get pasteOtpCode;
+
+  /// No description provided for @otpPasteMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No 6-digit code on the clipboard.'**
+  String get otpPasteMissing;
+
+  /// No description provided for @dobFromIcHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from IC No. You can change it.'**
+  String get dobFromIcHint;
+
+  /// No description provided for @dobDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get dobDay;
+
+  /// No description provided for @dobMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get dobMonth;
+
+  /// No description provided for @dobYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get dobYear;
+
+  /// No description provided for @dobUseDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this date'**
+  String get dobUseDate;
+
+  /// No description provided for @dobInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That date is not valid.'**
+  String get dobInvalid;
+
   /// No description provided for @newPasswordLabel.
   ///
   /// In en, this message translates to:

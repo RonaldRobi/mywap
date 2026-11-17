@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Models\UsrahAttendance;
 use App\Models\UsrahGroup;
@@ -22,7 +23,7 @@ class UsrahController extends Controller
 
         $groups = UsrahGroup::query()
             ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
-            ->with(['members' => fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->select('users.id', 'name')])
+            ->with(['members' => fn ($q) => $q->withoutGlobalScope(OrganizationScope::class)->excludeAdminPanel()->select('users.id', 'name')])
             ->latest()
             ->get()
             ->map(fn (UsrahGroup $group) => [
@@ -40,7 +41,8 @@ class UsrahController extends Controller
                     ->values(),
             ]);
 
-        $members = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $members = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $user->current_organization_id)
             ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
             ->orderBy('name')
@@ -113,9 +115,20 @@ class UsrahController extends Controller
         ]);
 
         $user = $request->user();
+        $requestedIds = collect($data['members'])->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+
+        $memberIds = User::withoutGlobalScopes()
+            ->whereIn('id', $requestedIds)
+            ->excludeAdminPanel()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (array_diff($requestedIds, $memberIds) !== []) {
+            abort(422, 'Akaun pentadbir tidak boleh ditambah ke kumpulan usrah.');
+        }
 
         if ($user->isBranchAdmin()) {
-            $requestedIds = collect($data['members'])->pluck('user_id')->map(fn ($id) => (int) $id)->all();
             $allowedIds = User::withoutGlobalScopes()
                 ->whereIn('id', $requestedIds)
                 ->whereIn('branch_id', $user->managedBranchIds())

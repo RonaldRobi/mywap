@@ -633,7 +633,7 @@ class FormController extends Controller
             return back()->with('error', 'Tiada organisasi dikaitkan dengan borang ini.');
         }
 
-        $query = User::query()->where('is_active', true);
+        $query = User::query()->where('is_active', true)->excludeAdminPanel();
 
         if ($orgId) {
             $query->where('current_organization_id', $orgId);

@@ -3,6 +3,9 @@ set -e
 
 # myWAP — build IPA App Store (TestFlight/Transporter) untuk team Cyberocket.
 #
+# Guna: ./build_ios_release.sh [--no-bump]
+#   --no-bump  Jangan naikkan build number (pubspec sudah disediakan oleh ship.sh).
+#
 # Nota signing: team ini tiada device berdaftar, jadi automatic signing untuk
 # `archive` gagal (Xcode minta development profile). Strategi:
 #   1. archive TANPA signing,
@@ -10,10 +13,26 @@ set -e
 #   3. re-sign app dengan entitlements dari profile (kekalkan aps-environment).
 # Hasil: IPA sah untuk App Store Connect / Transporter.
 
-API_BASE_URL="https://mywap.my"
+API_BASE_URL="${API_BASE_URL:-https://mywap.my}"
 TEAM_ID="BW4B5LCN9S"
 BUNDLE_ID="com.mywap.mywapMobile"
 SIGN_IDENTITY="Apple Distribution: Cyberocket Tech ($TEAM_ID)"
+
+NO_BUMP=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-bump) NO_BUMP=1 ;;
+    -h|--help)
+      echo "Penggunaan: ./build_ios_release.sh [--no-bump]"
+      echo "  --no-bump  Jangan naikkan build number (guna pubspec semasa)."
+      exit 0
+      ;;
+    *)
+      echo "✗ Argumen tidak dikenali: $arg"
+      exit 1
+      ;;
+  esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FLUTTER_DIR="$SCRIPT_DIR/mywap_mobile"
@@ -23,10 +42,23 @@ EXPORT_DIR="$FLUTTER_DIR/build/ios/ipa"
 EXPORT_OPTIONS="$IOS_DIR/ExportOptions.plist"
 IPA="$EXPORT_DIR/myWAP.ipa"
 
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+
 if ! command -v flutter >/dev/null 2>&1; then
   echo "✗ flutter tidak ditemui dalam PATH."
   exit 1
 fi
+
+if [ "$NO_BUMP" -eq 0 ]; then
+  echo "→ Semak build number (App Store Connect + Play)..."
+  (cd "$FLUTTER_DIR" && ruby tool/version.rb bump-build --write) || {
+    echo "✗ Gagal bump build number. Betulkan rangkaian/kunci, atau guna --no-bump jika pubspec memang sudah betul."
+    exit 1
+  }
+fi
+
+PUB_VERSION="$(sed -n 's/^version:[[:space:]]*//p' "$FLUTTER_DIR/pubspec.yaml" | head -1)"
+echo "→ Versi: $PUB_VERSION"
 
 if ! security find-identity -v -p codesigning | grep -q "$SIGN_IDENTITY"; then
   echo "✗ Tiada cert '$SIGN_IDENTITY' dalam keychain."
@@ -85,5 +117,20 @@ rm -f "$IPA"
 (cd "$TMP" && zip -qryX "$IPA" Payload)
 rm -rf "$TMP"
 
-echo "✓ Siap. IPA untuk Transporter:"
+echo "→ Sahkan versi dalam IPA..."
+VERIFY_DIR="$(mktemp -d)"
+unzip -q "$IPA" -d "$VERIFY_DIR"
+IPA_VERSION="$(plutil -extract CFBundleShortVersionString raw "$VERIFY_DIR/Payload/Runner.app/Info.plist")"
+IPA_BUILD="$(plutil -extract CFBundleVersion raw "$VERIFY_DIR/Payload/Runner.app/Info.plist")"
+rm -rf "$VERIFY_DIR"
+
+PUB_MARKETING="${PUB_VERSION%%+*}"
+PUB_BUILD="${PUB_VERSION##*+}"
+if [ "$IPA_VERSION" != "$PUB_MARKETING" ] || [ "$IPA_BUILD" != "$PUB_BUILD" ]; then
+  echo "✗ IPA $IPA_VERSION ($IPA_BUILD) tidak sepadan dengan pubspec $PUB_MARKETING ($PUB_BUILD)."
+  echo "  Jalankan semula tanpa --no-bump, atau betulkan pubspec."
+  exit 1
+fi
+
+echo "✓ Siap. IPA $IPA_VERSION ($IPA_BUILD) untuk TestFlight/Transporter:"
 ls -lah "$IPA"

@@ -499,6 +499,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpInvalid => 'OTP code must be 6 digits.';
 
   @override
+  String get pasteOtpCode => 'Paste code';
+
+  @override
+  String get otpPasteMissing => 'No 6-digit code on the clipboard.';
+
+  @override
+  String get dobFromIcHint => 'Taken from IC No. You can change it.';
+
+  @override
+  String get dobDay => 'Day';
+
+  @override
+  String get dobMonth => 'Month';
+
+  @override
+  String get dobYear => 'Year';
+
+  @override
+  String get dobUseDate => 'Use this date';
+
+  @override
+  String get dobInvalid => 'That date is not valid.';
+
+  @override
   String get newPasswordLabel => 'New Password';
 
   @override

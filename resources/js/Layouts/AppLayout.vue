@@ -134,6 +134,7 @@ const isSuperadmin = computed(() => roles.value.includes('Superadmin'));
 const isAdmin      = computed(() => roles.value.includes('Admin') || roles.value.includes('org-admin'));
 const isBranchAdmin = computed(() => roles.value.includes('Admin Cawangan'));
 const isMember     = computed(() => roles.value.includes('Member'));
+const isAdminPanel = computed(() => isSuperadmin.value || isAdmin.value || isBranchAdmin.value);
 const notifications = computed(() => page.props.notifications ?? { unread_count: 0, recent: [] });
 
 function openNotifications() {
@@ -739,8 +740,8 @@ const navItems = computed(() => {
     // ═══════════════════════════════════
     //  SUMBER & KEAHLIAN  (Member only)
     // ═══════════════════════════════════
-    ...(isMember.value ? [{ type: 'section', label: 'Sumber & Keahlian' }] : []),
-    ...(isMember.value ? [{
+    ...(isMember.value && !isAdminPanel.value ? [{ type: 'section', label: 'Sumber & Keahlian' }] : []),
+    ...(isMember.value && !isAdminPanel.value ? [{
         label: 'Pustaka',
         href: route('member.library'),
         active: route().current('member.library'),

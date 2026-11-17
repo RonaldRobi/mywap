@@ -91,7 +91,15 @@ class FinancialController extends Controller
             return ApiResponse::error('Akaun ini tidak dibenarkan membayar yuran.', status: 403);
         }
 
+        if ($user->isFeeExcluded()) {
+            return ApiResponse::error('Akaun ini tidak dikenakan yuran keahlian.', status: 422);
+        }
+
         $year = now()->year;
+
+        if ($year < $feeService->startYear()) {
+            return ApiResponse::error('Yuran keahlian akan bermula pada tahun '.$feeService->startYear().'.', status: 422);
+        }
 
         if ($feeService->isLifeMember($user)) {
             return ApiResponse::error('Anda adalah ahli seumur hidup — tidak perlu bayar yuran.', status: 422);

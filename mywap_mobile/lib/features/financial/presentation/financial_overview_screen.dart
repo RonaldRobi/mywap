@@ -11,6 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/financial_providers.dart';
 import '../data/models/financial_overview.dart';
@@ -26,6 +27,7 @@ class FinancialOverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dataAsync = ref.watch(financialOverviewProvider);
+    final isAdmin = ref.watch(currentUserProvider)?.isAdmin ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -37,6 +39,7 @@ class FinancialOverviewScreen extends ConsumerWidget {
         data:
             (data) => _FinancialContent(
               data: data,
+              showFee: !isAdmin,
               onRefresh: () async => ref.invalidate(financialOverviewProvider),
             ),
         loading: () => const _FinancialSkeleton(),
@@ -54,8 +57,13 @@ class FinancialOverviewScreen extends ConsumerWidget {
 }
 
 class _FinancialContent extends StatelessWidget {
-  const _FinancialContent({required this.data, required this.onRefresh});
+  const _FinancialContent({
+    required this.data,
+    required this.showFee,
+    required this.onRefresh,
+  });
   final FinancialOverviewData data;
+  final bool showFee;
   final Future<void> Function() onRefresh;
 
   @override
@@ -70,8 +78,10 @@ class _FinancialContent extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(Spacing.lg),
         children: [
-          _FeeStatusCard(fee: fee),
-          const SizedBox(height: Spacing.xl),
+          if (showFee) ...[
+            _FeeStatusCard(fee: fee),
+            const SizedBox(height: Spacing.xl),
+          ],
           Text(
             context.l10n.finActiveInfaqCampaigns,
             style: Theme.of(

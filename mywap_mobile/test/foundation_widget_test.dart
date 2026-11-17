@@ -243,7 +243,7 @@ void main() {
 
     router.go('/menu');
     await tester.pumpAndSettle();
-    expect(find.text('Kad Ahli'), findsOneWidget);
+    expect(find.text('Kad Ahli'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

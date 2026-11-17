@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\FeeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FeeServiceTest extends TestCase
@@ -24,6 +25,8 @@ class FeeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        config(['membership.fee_start_year' => now()->year]);
 
         $this->org = Organization::factory()->create(['fee_amount' => 50.00]);
         $this->user = User::factory()->create(['current_organization_id' => $this->org->id]);
@@ -484,5 +487,89 @@ class FeeServiceTest extends TestCase
         $history = $this->feeService->getPaymentHistory($this->user);
 
         $this->assertEmpty($history);
+    }
+
+    // ─── Fee start year & eligible members ─────────────────────────────────────
+
+    public function test_get_status_is_active_before_fee_start_year()
+    {
+        config(['membership.fee_start_year' => now()->year + 1]);
+
+        $status = $this->feeService->getStatus($this->user, now()->year);
+
+        $this->assertSame('active', $status['status']);
+        $this->assertSame(0.0, $status['amount_due']);
+    }
+
+    public function test_generate_annual_fees_does_nothing_before_fee_start_year()
+    {
+        config(['membership.fee_start_year' => now()->year + 1]);
+
+        $count = $this->feeService->generateAnnualFees($this->org, now()->year);
+
+        $this->assertSame(0, $count);
+        $this->assertDatabaseMissing('membership_fees', [
+            'user_id' => $this->user->id,
+            'year' => now()->year,
+        ]);
+    }
+
+    public function test_admin_is_excluded_from_fees()
+    {
+        Role::create(['name' => 'Admin', 'guard_name' => 'web']);
+        $this->user->assignRole('Admin');
+
+        $status = $this->feeService->getStatus($this->user, now()->year);
+
+        $this->assertSame('active', $status['status']);
+        $this->assertSame(0.0, $status['amount_due']);
+        $this->assertSame(0, $this->feeService->generateAnnualFees($this->org, now()->year));
+        $this->assertSame(0, $this->feeService->getDueCount($this->org->id, now()->year));
+
+        $stats = $this->feeService->getAdminStats($this->org->id, now()->year);
+        $this->assertSame(0, $stats['total']);
+        $this->assertSame(0, $stats['due']);
+    }
+
+    public function test_deceased_member_is_excluded_from_fees()
+    {
+        $this->user->update(['membership_status' => 'deceased']);
+
+        $status = $this->feeService->getStatus($this->user, now()->year);
+
+        $this->assertSame('active', $status['status']);
+        $this->assertSame(0, $this->feeService->generateAnnualFees($this->org, now()->year));
+        $this->assertSame(0, $this->feeService->getDueCount($this->org->id, now()->year));
+
+        $stats = $this->feeService->getAdminStats($this->org->id, now()->year);
+        $this->assertSame(0, $stats['total']);
+    }
+
+    public function test_inactive_member_is_still_charged()
+    {
+        $this->user->update(['is_active' => false]);
+
+        $count = $this->feeService->generateAnnualFees($this->org, now()->year);
+
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas('membership_fees', [
+            'user_id' => $this->user->id,
+            'year' => now()->year,
+            'status' => 'unpaid',
+        ]);
+    }
+
+    public function test_payment_history_excludes_zero_amount_reset_records()
+    {
+        MembershipFee::factory()->create([
+            'user_id' => $this->user->id,
+            'organization_id' => $this->org->id,
+            'year' => now()->year,
+            'amount' => 0,
+            'status' => FeeStatus::Paid,
+            'payment_id' => null,
+        ]);
+
+        $this->assertEmpty($this->feeService->getPaymentHistory($this->user));
     }
 }

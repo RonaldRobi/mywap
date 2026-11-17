@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Http\Controllers\BroadcastController;
 use App\Jobs\SendBroadcastJob;
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
@@ -107,6 +108,28 @@ class BroadcastDeliveryTest extends TestCase
             ->where('broadcast_message_id', $message->id)
             ->where('event', 'completed')
             ->exists());
+    }
+
+    public function test_broadcast_skips_admin_accounts(): void
+    {
+        $admin = User::factory()->create([
+            'name' => 'Admin PKPIM',
+            'email' => 'admin@pkpim.test',
+            'current_organization_id' => $this->org->id,
+        ]);
+        $admin->assignRole('Admin');
+
+        $message = $this->createBroadcast(['in_app']);
+
+        Bus::dispatchSync(new SendBroadcastJob($message->id));
+
+        $fresh = BroadcastMessage::withoutGlobalScopes()->find($message->id);
+
+        $this->assertSame(3, $fresh->recipient_count);
+        $this->assertDatabaseMissing('notifications', [
+            'notifiable_type' => User::class,
+            'notifiable_id' => $admin->id,
+        ]);
     }
 
     public function test_email_only_broadcast_skips_users_without_email_and_sends_no_database_notifications(): void
@@ -532,9 +555,9 @@ class BroadcastDeliveryTest extends TestCase
 
     private function resolveRecipientPreviews(BroadcastMessage $message): array
     {
-        $method = new \ReflectionMethod(\App\Http\Controllers\BroadcastController::class, 'resolveRecipientPreviews');
+        $method = new \ReflectionMethod(BroadcastController::class, 'resolveRecipientPreviews');
         $method->setAccessible(true);
 
-        return $method->invoke(app(\App\Http\Controllers\BroadcastController::class), collect([$message]));
+        return $method->invoke(app(BroadcastController::class), collect([$message]));
     }
 }

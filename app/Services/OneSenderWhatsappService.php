@@ -21,10 +21,8 @@ class OneSenderWhatsappService
             return false;
         }
 
-        $message = "Assalamualaikum,\n\n"
-            ."Kod OTP myWAP anda ialah:\n\n"
-            ."{$otp}\n\n"
-            ."Kod ini digunakan untuk pengesahan log masuk myWAP dan sah selama 5 minit.\n\n"
+        $message = "Kod OTP myWAP: *{$otp}*\n\n"
+            ."Assalamualaikum. Kod ini untuk pengesahan log masuk myWAP dan sah selama 5 minit.\n\n"
             ."Jika anda tidak menerima kod atau menghadapi masalah, sila hubungi {$contact}.\n\n"
             ."Jangan kongsi kod ini dengan sesiapa.";
 

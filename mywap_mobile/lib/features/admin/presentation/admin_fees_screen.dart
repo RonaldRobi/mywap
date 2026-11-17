@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -12,14 +13,27 @@ import '../../../shared/widgets/list_card.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/admin_providers.dart';
 import '../data/models/admin_models.dart';
-import '../../../shared/theme/app_text_theme.dart';
 
-/// Admin fee tracking (`/admin/fees`).
-class AdminFeesScreen extends ConsumerWidget {
+/// Skrin Pemantauan Kutipan Yuran Pentadbir (`/admin/fees`).
+class AdminFeesScreen extends ConsumerStatefulWidget {
   const AdminFeesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminFeesScreen> createState() => _AdminFeesScreenState();
+}
+
+class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final status = ref.watch(_statusProvider);
     final feesAsync = ref.watch(adminFeesProvider(status));
     final filters = <(String, String)>[
@@ -29,56 +43,95 @@ class AdminFeesScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.adminFeesTitle)),
+      backgroundColor: AppColors.pageBackground,
+      appBar: AppBar(
+        title: Text(context.l10n.adminFeesTitle),
+      ),
       body: Column(
         children: [
+          // 1. Bar Carian Ahli Yuran
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.xs),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val.trim()),
+              decoration: InputDecoration(
+                hintText: 'Cari nama atau No. Ahli...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: 12,
+                ),
+                filled: true,
+                fillColor: AppColors.white,
+                border: OutlineInputBorder(
+                  borderRadius: AppRadius.card,
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppRadius.card,
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Cip Penapis Status Pembayaran
           SizedBox(
-            height: 52,
+            height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
               children: [
                 for (final (value, label) in filters)
                   Padding(
-                    padding: const EdgeInsets.only(
-                      right: Spacing.sm,
-                      top: Spacing.sm,
-                      bottom: Spacing.sm,
-                    ),
+                    padding: const EdgeInsets.only(right: Spacing.sm),
                     child: ChoiceChip(
                       label: Text(label),
                       selected: status == value,
-                      onSelected:
-                          (_) =>
-                              ref.read(_statusProvider.notifier).state = value,
+                      onSelected: (_) =>
+                          ref.read(_statusProvider.notifier).state = value,
                       showCheckmark: false,
                       selectedColor: AppColors.movementDarkGreen,
                       labelStyle: TextStyle(
-                        color:
-                            status == value
-                                ? AppColors.white
-                                : AppColors.textPrimary,
+                        color: status == value
+                            ? AppColors.white
+                            : AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
-                      backgroundColor: AppColors.surface,
+                      backgroundColor: AppColors.white,
                       side: const BorderSide(color: AppColors.divider),
                     ),
                   ),
               ],
             ),
           ),
+
+          // 3. Kandungan Data Yuran
           Expanded(
             child: feesAsync.when(
-              data: (data) => _FeesContent(data: data),
+              data: (data) => _FeesContent(
+                data: data,
+                searchQuery: _searchQuery,
+              ),
               loading: () => const _FeesSkeleton(),
-              error:
-                  (error, _) => ErrorRetry(
-                    message:
-                        error is ApiException
-                            ? error.message
-                            : context.l10n.adminUnexpectedError,
-                    onRetry: () => ref.invalidate(adminFeesProvider(status)),
-                  ),
+              error: (error, _) => ErrorRetry(
+                message: error is ApiException
+                    ? error.message
+                    : context.l10n.adminUnexpectedError,
+                onRetry: () => ref.invalidate(adminFeesProvider(status)),
+              ),
             ),
           ),
         ],
@@ -90,9 +143,13 @@ class AdminFeesScreen extends ConsumerWidget {
 final _statusProvider = StateProvider<String>((ref) => '');
 
 class _FeesContent extends StatelessWidget {
-  const _FeesContent({required this.data});
+  const _FeesContent({
+    required this.data,
+    required this.searchQuery,
+  });
 
   final FeesData data;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +159,14 @@ class _FeesContent extends StatelessWidget {
         message: context.l10n.adminNoFeeRecords,
       );
     }
+
+    final filteredFees = data.fees.where((fee) {
+      if (searchQuery.isEmpty) return true;
+      final q = searchQuery.toLowerCase();
+      return fee.name.toLowerCase().contains(q) ||
+          fee.memberNo.toLowerCase().contains(q);
+    }).toList();
+
     final summary = data.summary;
     return ListView(
       padding: const EdgeInsets.only(bottom: Spacing.xl),
@@ -145,7 +210,18 @@ class _FeesContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Spacing.sm),
-        for (final fee in data.fees) _FeeCard(fee: fee),
+        if (filteredFees.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(Spacing.xl),
+            child: Center(
+              child: Text(
+                'Tiada rekod yuran sepadan dengan carian.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
+        else
+          for (final fee in filteredFees) _FeeCard(fee: fee),
       ],
     );
   }
@@ -169,19 +245,34 @@ class _SummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       margin: EdgeInsets.zero,
+      color: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: const BorderSide(color: AppColors.divider),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(Spacing.lg),
+        padding: const EdgeInsets.all(Spacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 22),
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Icon(icon, color: color, size: 16),
+            ),
             const SizedBox(height: Spacing.sm),
-            Text(value, style: theme.textTheme.titleMedium),
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
+                fontSize: 11,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -213,17 +304,17 @@ class _FeeCard extends StatelessWidget {
           Text(
             Formatters.currency(fee.amount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: fee.isPaid ? AppColors.success : AppColors.warning,
-            ),
+                  color: fee.isPaid ? AppColors.success : AppColors.warning,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           const SizedBox(width: Spacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color:
-                  fee.isPaid
-                      ? AppColors.movementSoftGreen
-                      : AppColors.warning.withValues(alpha: 0.15),
+              color: fee.isPaid
+                  ? AppColors.movementSoftGreen
+                  : AppColors.warning.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -251,13 +342,13 @@ class _FeesSkeleton extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(Spacing.lg),
       children: const [
-        SkeletonBox(height: 96),
+        SkeletonBox(height: 80),
         SizedBox(height: Spacing.lg),
-        SkeletonBox(height: 76),
+        SkeletonBox(height: 70),
         SizedBox(height: Spacing.sm),
-        SkeletonBox(height: 76),
+        SkeletonBox(height: 70),
         SizedBox(height: Spacing.sm),
-        SkeletonBox(height: 76),
+        SkeletonBox(height: 70),
       ],
     );
   }

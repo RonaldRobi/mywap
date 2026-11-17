@@ -6,9 +6,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_button.dart';
 import '../../auth/application/auth_controller.dart';
-import '../application/admin_providers.dart';
 
 /// Skrin Menu & Hab Operasi Pentadbir (`/admin/menu`).
 class AdminMenuScreen extends ConsumerWidget {
@@ -26,7 +24,10 @@ class AdminMenuScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: const Text('Menu Pentadbir'),
+        title: const Text(
+          'Menu Pentadbir',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
           IconButton(
             tooltip: context.l10n.logout,
@@ -148,76 +149,10 @@ class AdminMenuScreen extends ConsumerWidget {
             ),
           ),
 
-          const SizedBox(height: Spacing.lg),
-
-          // Kad Penukar Mod: Tukar ke Pandangan Ahli
-          Card(
-            margin: EdgeInsets.zero,
-            color: AppColors.greenTint,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppRadius.card,
-              side: BorderSide(color: AppColors.movementGreen.withValues(alpha: 0.3)),
-            ),
-            child: InkWell(
-              borderRadius: AppRadius.card,
-              onTap: () {
-                ref.read(adminViewModeProvider.notifier).state = false;
-                context.go('/dashboard');
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.lg),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: AppColors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.swap_horiz_rounded,
-                        color: AppColors.movementGreen,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: Spacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tukar ke Pandangan Ahli',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.movementNavy,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Akses kad keahlian peribadi, yuran anda & infaq',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: AppColors.movementGreen,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
           const SizedBox(height: Spacing.xl),
 
           Text(
-            'Fungsi Operasi',
+            'Fungsi Pengurusan & Operasi',
             style: theme.textTheme.titleSmall?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
@@ -225,41 +160,41 @@ class AdminMenuScreen extends ConsumerWidget {
           ),
           const SizedBox(height: Spacing.sm),
 
-          // Pilihan menu operasi
+          // Pilihan menu operasi pentadbir
           _MenuTile(
             icon: Icons.qr_code_scanner_rounded,
             title: 'Imbas Kad Kehadiran',
-            subtitle: 'Pengimbas pantas kehadiran acara menggunakan kamera',
+            subtitle: 'Pengimbas pantas kamera untuk kad keahlian peserta di program',
             onTap: () => context.push('/admin/scan'),
           ),
           _MenuTile(
             icon: Icons.event_note_outlined,
-            title: 'Pengurusan Program',
-            subtitle: 'Senarai program, kehadiran & status pendaftaran',
+            title: 'Program & Kehadiran',
+            subtitle: 'Senarai program, rekod kehadiran & status pendaftaran',
             onTap: () => context.push('/admin/attendance'),
           ),
           _MenuTile(
             icon: Icons.people_alt_outlined,
-            title: 'Direktori Ahli',
-            subtitle: 'Carian ahli, status aktif & maklumat perhubungan',
+            title: 'Direktori Keahlian',
+            subtitle: 'Carian ahli, semakan status aktif & maklumat perhubungan',
             onTap: () => context.push('/admin/members'),
           ),
           _MenuTile(
             icon: Icons.receipt_long_outlined,
-            title: 'Semakan Yuran Keahlian',
-            subtitle: 'Pantau pembayaran yuran tahunan & kutipan',
+            title: 'Kutipan Yuran Ahli',
+            subtitle: 'Pantau status bayaran yuran tahunan ahli & ringkasan kutipan',
             onTap: () => context.push('/admin/fees'),
           ),
           _MenuTile(
             icon: Icons.campaign_outlined,
-            title: 'Hantar Siaran (Broadcast)',
-            subtitle: 'Hantar notifikasi pengumuman segera kepada ahli',
+            title: 'Mesej Siaran (Broadcast)',
+            subtitle: 'Hantar notifikasi pengumuman segera kepada kumpulan ahli',
             onTap: () => context.push('/admin/broadcast'),
           ),
           _MenuTile(
             icon: Icons.menu_book_outlined,
-            title: 'Manual Pengguna',
-            subtitle: 'Panduan operasi sistem MyWAP',
+            title: 'Manual Pengguna Pentadbir',
+            subtitle: 'Panduan operasi sistem MyWAP untuk pentadbir',
             onTap: () => context.push('/manual'),
           ),
 
@@ -276,7 +211,7 @@ class AdminMenuScreen extends ConsumerWidget {
             ),
             icon: const Icon(Icons.logout_rounded),
             label: const Text(
-              'Log Keluar Akaun',
+              'Log Keluar Akaun Pentadbir',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),

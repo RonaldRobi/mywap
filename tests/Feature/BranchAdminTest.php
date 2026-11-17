@@ -706,12 +706,18 @@ class BranchAdminTest extends TestCase
         Notification::fake();
 
         $this->actingAs($this->branchAdmin)
-            ->post(route('admin.hub.members.reset-password', $this->memberPerak))
+            ->post(route('admin.hub.members.reset-password', $this->memberPerak), [
+                'password' => 'Mudah123',
+                'password_confirmation' => 'Mudah123',
+            ])
             ->assertRedirect()
             ->assertSessionHas('success');
 
         $this->actingAs($this->branchAdmin)
-            ->post(route('admin.hub.members.reset-password', $this->memberJohor))
+            ->post(route('admin.hub.members.reset-password', $this->memberJohor), [
+                'password' => 'Mudah123',
+                'password_confirmation' => 'Mudah123',
+            ])
             ->assertForbidden();
     }
 

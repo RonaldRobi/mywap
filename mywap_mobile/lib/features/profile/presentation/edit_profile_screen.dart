@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/ic/malaysian_ic.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/dob_picker.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -55,6 +57,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   };
 
   DateTime? _dob;
+  bool _dobFromIc = false;
   String? _gender;
   String? _maritalStatus;
   String? _organizationName;
@@ -128,6 +131,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     fill('emergency_contact_phone', user.emergency_contact_phone);
 
     _dob = user.dob == null ? null : ProfileFormat.parseDate(user.dob!);
+    if (_dob == null) {
+      _dob = parseDobFromIc(user.ic_number);
+      _dobFromIc = _dob != null;
+    }
     _gender = user.gender;
     _maritalStatus = user.marital_status;
     _organizationName = user.organization?.name;
@@ -514,57 +521,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget _dobField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
-      child: InkWell(
-        onTap: _pickDob,
-        borderRadius: AppRadius.md,
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: context.l10n.dobLabel,
-            errorText: _serverErrors['dob'],
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 20,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: Spacing.sm),
-              Expanded(
-                child: Text(
-                  _dob == null
-                      ? context.l10n.selectDate
-                      : ProfileFormat.date(_dob!),
-                  style: TextStyle(
-                    fontSize: 16,
-                    color:
-                        _dob == null
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      child: DobPicker(
+        label: context.l10n.dobLabel,
+        value: _dob,
+        inferredFromIc: _dobFromIc,
+        errorText: _serverErrors['dob'],
+        onChanged: (date) {
+          setState(() {
+            _dob = date;
+            _dobFromIc = false;
+            _serverErrors.remove('dob');
+          });
+        },
       ),
     );
-  }
-
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
-      firstDate: DateTime(1940),
-      lastDate: now,
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        _dob = picked;
-        _serverErrors.remove('dob');
-      });
-    }
   }
 
   Map<String, dynamic> _payload() {
@@ -813,7 +783,8 @@ class _BranchChangeSheetState extends ConsumerState<_BranchChangeSheet> {
                   DropdownMenuItem(
                     value: branch.id,
                     child: Text(
-                      branch.name ?? context.l10n.branchOption('${branch.id ?? ''}'),
+                      branch.name ??
+                          context.l10n.branchOption('${branch.id ?? ''}'),
                     ),
                   ),
               ],

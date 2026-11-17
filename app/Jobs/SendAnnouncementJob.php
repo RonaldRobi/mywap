@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Announcement;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Notifications\AnnouncementPublishedNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,13 +17,14 @@ class SendAnnouncementJob implements ShouldQueue
 
     public function handle(): void
     {
-        $announcement = Announcement::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->find($this->announcementId);
+        $announcement = Announcement::withoutGlobalScope(OrganizationScope::class)->find($this->announcementId);
 
         if (! $announcement) {
             return;
         }
 
-        $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        $query = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $announcement->organization_id);
 
         if ($announcement->branch_id) {

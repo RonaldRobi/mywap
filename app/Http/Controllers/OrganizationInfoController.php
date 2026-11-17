@@ -25,7 +25,7 @@ class OrganizationInfoController extends Controller
         $currentOrganization = $user?->organization;
 
         $organizations = Organization::query()
-            ->withCount(['members', 'chartMembers'])
+            ->withCount(['members' => fn ($query) => $query->excludeAdminPanel(), 'chartMembers'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/ic/malaysian_ic.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/dob_picker.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_scaffold.dart';
 
@@ -27,8 +29,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _icController = TextEditingController();
   final _phoneController = TextEditingController();
-  static final _nonDigit = RegExp(r'[^0-9]');
+  final _dobFieldKey = GlobalKey<FormFieldState<DateTime>>();
   DateTime? _dob;
+  bool _dobEdited = false;
   bool _submitting = false;
   String? _error;
   String? _memberNo;
@@ -59,33 +62,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(now.year - 20),
-      firstDate: DateTime(now.year - 100),
-      lastDate: now,
-      helpText: context.l10n.selectDob,
-    );
-    if (picked != null) setState(() => _dob = picked);
-  }
-
-  /// Semak sama ada No. IC mengandungi tarikh lahir yang boleh dibaca
-  /// (format IC Malaysia: YYMMDD di 6 digit pertama).
-  bool _icHasReadableDob(String value) {
-    final digits = value.replaceAll(_nonDigit, '');
-    if (digits.length < 6) return false;
-
-    final yy = int.parse(digits.substring(0, 2));
-    final mm = int.parse(digits.substring(2, 4));
-    final dd = int.parse(digits.substring(4, 6));
-
-    var year = 2000 + yy;
-    if (year > DateTime.now().year) year -= 100;
-
-    final date = DateTime(year, mm, dd);
-    return date.year == year && date.month == mm && date.day == dd;
+  void _onIcChanged(String value) {
+    if (_dobEdited) return;
+    final parsed = parseDobFromIc(value);
+    setState(() => _dob = parsed);
+    final field = _dobFieldKey.currentState;
+    if (field?.hasError ?? false) {
+      field!.didChange(parsed);
+      field.validate();
+    }
   }
 
   String? _validateIc(String? value) {
@@ -116,10 +101,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _phoneController.text.trim().isEmpty
                 ? null
                 : _phoneController.text.trim(),
-        dob:
-            _dob != null
-                ? '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}'
-                : null,
+        dob: _dob == null ? null : formatDobApi(_dob!),
         referralCode: widget.referralCode,
       );
       if (!mounted) return;
@@ -203,8 +185,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 icon: Icons.badge_outlined,
                 hint: context.l10n.icHint,
                 textInputAction: TextInputAction.next,
+                onChanged: _onIcChanged,
                 validator: _validateIc,
               ),
+              FormField<DateTime>(
+                key: _dobFieldKey,
+                validator: (_) {
+                  if (_validateIc(_icController.text) != null) return null;
+                  if (_dob == null &&
+                      parseDobFromIc(_icController.text) == null) {
+                    return context.l10n.dobRequiredForIc;
+                  }
+                  return null;
+                },
+                builder:
+                    (field) => DobPicker(
+                      label: context.l10n.dobLabelRequired,
+                      labelAbove: true,
+                      value: _dob,
+                      inferredFromIc: !_dobEdited && _dob != null,
+                      errorText: field.errorText,
+                      onChanged: (date) {
+                        setState(() {
+                          _dob = date;
+                          _dobEdited = true;
+                        });
+                        field.didChange(date);
+                        field.validate();
+                      },
+                    ),
+              ),
+              const SizedBox(height: Spacing.md),
               AuthField(
                 label: context.l10n.phoneOptionalLabel,
                 controller: _phoneController,
@@ -220,54 +231,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   }
                   return null;
                 },
-              ),
-              FormField<DateTime>(
-                validator: (_) {
-                  if (_validateIc(_icController.text) != null) return null;
-                  if (_dob == null && !_icHasReadableDob(_icController.text)) {
-                    return context.l10n.dobRequiredForIc;
-                  }
-                  return null;
-                },
-                builder:
-                    (field) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.l10n.dobLabelRequired,
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: Spacing.sm),
-                        InkWell(
-                          onTap: () async {
-                            await _pickDob();
-                            field.didChange(_dob);
-                            field.validate();
-                          },
-                          borderRadius: AppRadius.md,
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              errorText: field.errorText,
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_month_outlined,
-                                  color: AppColors.movementGreen,
-                                ),
-                                const SizedBox(width: Spacing.md),
-                                Text(
-                                  _dob == null
-                                      ? context.l10n.selectDob
-                                      : '${_dob!.day}/${_dob!.month}/${_dob!.year}',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
               ),
               const SizedBox(height: Spacing.xl),
               FilledButton(

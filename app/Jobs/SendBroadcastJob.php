@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\BroadcastLog;
 use App\Models\BroadcastMessage;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\Supporter;
 use App\Models\User;
 use App\Notifications\GeneralBroadcastNotification;
@@ -27,7 +28,7 @@ class SendBroadcastJob implements ShouldQueue
 
     public function handle(): void
     {
-        $message = BroadcastMessage::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->find($this->broadcastMessageId);
+        $message = BroadcastMessage::withoutGlobalScope(OrganizationScope::class)->find($this->broadcastMessageId);
 
         if (! $message || $message->sent_at) {
             return;
@@ -75,7 +76,8 @@ class SendBroadcastJob implements ShouldQueue
                 return;
             }
 
-            $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
+            $query = User::withoutGlobalScope(OrganizationScope::class)
+                ->excludeAdminPanel();
 
             if ($message->target_criteria === 'all' && $message->target_organization_id) {
                 $query->where('current_organization_id', $message->target_organization_id);
@@ -251,7 +253,8 @@ class SendBroadcastJob implements ShouldQueue
     }
 
     private function log(BroadcastMessage $message, string $event, ?string $channel, ?int $userId, ?string $text): void
-    {        try {
+    {
+        try {
             BroadcastLog::create([
                 'broadcast_message_id' => $message->id,
                 'event' => $event,

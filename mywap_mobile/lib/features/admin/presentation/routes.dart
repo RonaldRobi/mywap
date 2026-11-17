@@ -15,7 +15,15 @@ import 'admin_menu_screen.dart';
 /// route — this registration is the source of truth for the sub-routes below).
 final List<RouteBase> adminRoutes = [
   GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
-  GoRoute(path: '/admin/scan', builder: (_, __) => const AdminFastScanScreen()),
+  GoRoute(
+    path: '/admin/scan',
+    builder: (_, state) {
+      final eventIdStr = state.uri.queryParameters['eventId'];
+      return AdminFastScanScreen(
+        initialEventId: eventIdStr != null ? int.tryParse(eventIdStr) : null,
+      );
+    },
+  ),
   GoRoute(path: '/admin/menu', builder: (_, __) => const AdminMenuScreen()),
   GoRoute(path: '/admin/members', builder: (_, __) => const AdminMembersScreen()),
   GoRoute(path: '/admin/fees', builder: (_, __) => const AdminFeesScreen()),

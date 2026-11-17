@@ -104,16 +104,19 @@ class InformationHubAdminController extends Controller
         $perPage = in_array($perPage, [25, 50, 100]) ? $perPage : 25;
 
         $year = now()->year;
+        $startYear = $feeService->startYear();
 
-        $query = ($trashed ? User::onlyTrashed() : User::query())->with([
-            'organization:id,name,color_theme',
-            'organizationPosition',
-            'branch:id,name,organization_id',
-            'roles',
-            'membershipFees',
-            'transitionHistory.fromOrganization',
-            'transitionHistory.toOrganization',
-        ]);
+        $query = ($trashed ? User::onlyTrashed() : User::query())
+            ->excludeAdminPanel()
+            ->with([
+                'organization:id,name,color_theme',
+                'organizationPosition',
+                'branch:id,name,organization_id',
+                'roles',
+                'membershipFees',
+                'transitionHistory.fromOrganization',
+                'transitionHistory.toOrganization',
+            ]);
 
         if (! $isSuperadmin) {
             $query->where('current_organization_id', $user->current_organization_id);
@@ -166,7 +169,15 @@ class InformationHubAdminController extends Controller
         }
 
         if ($feeStatusFilter) {
-            if ($feeStatusFilter === 'paid') {
+            if ($year < $startYear) {
+                if (in_array($feeStatusFilter, ['due', 'pending'], true)) {
+                    $query->whereRaw('1 = 0');
+                } elseif ($feeStatusFilter === 'life_member') {
+                    $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'));
+                } elseif ($feeStatusFilter === 'exempted') {
+                    $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'exempted'));
+                }
+            } elseif ($feeStatusFilter === 'paid') {
                 $query->whereHas('membershipFees', fn ($q) => $q->where('year', $year)->whereIn('status', ['paid', 'exempted']));
             } elseif ($feeStatusFilter === 'life_member') {
                 $query->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'));
@@ -202,65 +213,71 @@ class InformationHubAdminController extends Controller
             ->when($sort === 'oldest', fn ($q) => $q->orderBy('created_at')->orderBy('id'))
             ->when(! in_array($sort, ['name_asc', 'name_desc', 'recent_activation', 'oldest']), fn ($q) => $q->orderByDesc('created_at')->orderByDesc('id'))
             ->paginate($perPage)->withQueryString()
-            ->through(fn (User $u) => [
-                'id' => $u->id,
-                'name' => $u->name,
-                'email' => $u->email,
-                'member_no' => $u->member_no,
-                'original_member_no' => $u->original_member_no,
-                'created_at' => $u->created_at?->format('d M Y'),
-                'first_login_at' => $u->first_login_at?->format('d M Y'),
-                'has_used_app' => $u->first_login_at !== null,
-                'ic_number' => $u->ic_number ?: '-',
-                'phone' => $u->phone,
-                'dob' => $u->dob?->format('d M Y'),
-                'gender' => $u->gender,
-                'marital_status' => $u->marital_status,
-                'education_level' => $u->education_level,
-                'current_profession' => $u->current_profession,
-                'industry' => $u->industry,
-                'expertise' => $u->expertise,
-                'position' => $u->position,
-                'position_id' => $u->position_id,
-                'position_badge' => $u->positionBadgePayload(),
-                'membership_status' => $u->membership_status,
-                'topics' => $u->topics,
-                'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
-                'organization_id' => $u->current_organization_id,
-                'organization_color' => $u->organization?->color_theme,
-                'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
-                'branch_id' => $u->branch_id,
-                'locality' => $u->locality,
-                'linkedin_url' => $u->linkedin_url,
-                'profile_photo_path' => $u->profile_photo_path,
-                'address_1' => $u->address_1,
-                'address_2' => $u->address_2,
-                'postcode' => $u->postcode,
-                'city' => $u->city,
-                'state' => $u->state,
-                'emergency_contact_name' => $u->emergency_contact_name,
-                'emergency_contact_phone' => $u->emergency_contact_phone,
-                'role' => $u->roles->pluck('name')->first() ?? 'Member',
-                'has_role_admin_cawangan' => $u->roles->pluck('name')->contains('Admin Cawangan'),
-                'is_active' => (bool) $u->is_active,
-                'deleted_at' => $u->deleted_at?->format('d M Y H:i'),
-                'transition_history' => $u->transitionHistory->map(fn ($h) => [
-                    'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
-                    'to' => $h->toOrganization->name,
-                    'from_member_no' => $h->from_member_no,
-                    'to_member_no' => $h->to_member_no,
-                    'date' => $h->transitioned_at->format('d M Y'),
-                    'color' => $h->toOrganization?->color_theme ?? '#6b7280',
-                ])->values(),
-                'fee_status' => $u->membershipFees
-                    ->where('year', $year)
-                    ->first()?->status ?? 'unpaid',
-            ]);
+            ->through(function (User $u) use ($year, $startYear) {
+                $fee = $u->membershipFees->where('year', $year)->first();
+                $feeStatus = $fee?->status;
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'member_no' => $u->member_no,
+                    'original_member_no' => $u->original_member_no,
+                    'created_at' => $u->created_at?->format('d M Y'),
+                    'first_login_at' => $u->first_login_at?->format('d M Y'),
+                    'has_used_app' => $u->first_login_at !== null,
+                    'ic_number' => $u->ic_number ?: '-',
+                    'phone' => $u->phone,
+                    'dob' => $u->dob?->format('d M Y'),
+                    'gender' => $u->gender,
+                    'marital_status' => $u->marital_status,
+                    'education_level' => $u->education_level,
+                    'current_profession' => $u->current_profession,
+                    'industry' => $u->industry,
+                    'expertise' => $u->expertise,
+                    'position' => $u->position,
+                    'position_id' => $u->position_id,
+                    'position_badge' => $u->positionBadgePayload(),
+                    'membership_status' => $u->membership_status,
+                    'topics' => $u->topics,
+                    'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
+                    'organization_id' => $u->current_organization_id,
+                    'organization_color' => $u->organization?->color_theme,
+                    'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
+                    'branch_id' => $u->branch_id,
+                    'locality' => $u->locality,
+                    'linkedin_url' => $u->linkedin_url,
+                    'profile_photo_path' => $u->profile_photo_path,
+                    'address_1' => $u->address_1,
+                    'address_2' => $u->address_2,
+                    'postcode' => $u->postcode,
+                    'city' => $u->city,
+                    'state' => $u->state,
+                    'emergency_contact_name' => $u->emergency_contact_name,
+                    'emergency_contact_phone' => $u->emergency_contact_phone,
+                    'role' => $u->roles->pluck('name')->first() ?? 'Member',
+                    'has_role_admin_cawangan' => $u->roles->pluck('name')->contains('Admin Cawangan'),
+                    'is_active' => (bool) $u->is_active,
+                    'deleted_at' => $u->deleted_at?->format('d M Y H:i'),
+                    'transition_history' => $u->transitionHistory->map(fn ($h) => [
+                        'from' => $h->fromOrganization?->name ?? 'Pendaftaran',
+                        'to' => $h->toOrganization->name,
+                        'from_member_no' => $h->from_member_no,
+                        'to_member_no' => $h->to_member_no,
+                        'date' => $h->transitioned_at->format('d M Y'),
+                        'color' => $h->toOrganization?->color_theme ?? '#6b7280',
+                    ])->values(),
+                    'fee_status' => $u->isFeeExcluded()
+                        ? 'exempted'
+                        : ($feeStatus?->value ?? $feeStatus ?? ($year < $startYear ? 'paid' : 'unpaid')),
+                ];
+            });
 
         $positions = OrganizationPosition::where('organization_id', $user->current_organization_id)
             ->orderBy('display_order')->get(['id', 'name']);
 
         $userQuery = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->when($isBranchAdmin, fn ($q) => $q->whereIn('branch_id', $managedBranchIds));
         $stats = [
@@ -279,7 +296,7 @@ class InformationHubAdminController extends Controller
                     'id' => $org->id,
                     'name' => $org->name,
                     'slug' => $org->slug,
-                    'member_count' => User::where('current_organization_id', $org->id)->count(),
+                    'member_count' => User::where('current_organization_id', $org->id)->excludeAdminPanel()->count(),
                 ])->values();
         }
 
@@ -336,52 +353,63 @@ class InformationHubAdminController extends Controller
             ? (int) ($request->input('organization_id') ?: $authUser->current_organization_id)
             : (int) $authUser->current_organization_id;
 
-        $search = trim((string) $request->input('search'));
-
-        $membersQuery = User::withoutGlobalScope(OrganizationScope::class)
-            ->where('current_organization_id', $organizationId)
-            ->with(['roles', 'branch:id,name']);
-
-        if ($search !== '') {
-            MemberSearch::apply($membersQuery, $search);
-        }
-
-        $members = $membersQuery
-            ->orderBy('name')
-            ->limit(50)
-            ->get()
-            ->map(fn (User $member) => [
-                'id' => $member->id,
-                'name' => $member->name,
-                'member_no' => $member->member_no,
-                'email' => $member->email,
-                'branch_name' => $member->branch?->name,
-                'role' => $member->roles->pluck('name')->first() ?? 'Member',
-            ])
-            ->values();
-
         $admins = User::withoutGlobalScope(OrganizationScope::class)
             ->where('current_organization_id', $organizationId)
-            ->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'org-admin']))
             ->with('roles')
             ->orderBy('name')
             ->get()
-            ->map(fn (User $member) => [
-                'id' => $member->id,
-                'name' => $member->name,
-                'member_no' => $member->member_no,
-                'email' => $member->email,
+            ->map(fn (User $admin) => [
+                'id' => $admin->id,
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'is_active' => (bool) $admin->is_active,
             ])
             ->values();
 
         return Inertia::render('Admin/AdminManage', [
             'admins' => $admins,
-            'members' => $members,
             'organizations' => $organizations,
             'organization_id' => $organizationId,
-            'search' => $search,
             'isSuperadmin' => $isSuperadmin,
         ]);
+    }
+
+    public function storeAdmin(Request $request): RedirectResponse
+    {
+        $authUser = $request->user();
+        abort_unless($authUser?->hasRole('Superadmin'), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'organization_id' => ['required', 'integer', 'exists:organizations,id'],
+        ]);
+
+        $admin = User::withoutGlobalScopes()->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'current_organization_id' => $data['organization_id'],
+            'is_active' => true,
+            'is_public_in_directory' => false,
+            'email_verified_at' => now(),
+            'profile_completed_at' => now(),
+        ]);
+
+        $admin->assignRole('Admin');
+
+        ActivityLog::create([
+            'user_id' => $authUser->id,
+            'organization_id' => $data['organization_id'],
+            'target_type' => User::class,
+            'target_id' => $admin->id,
+            'action' => 'create_admin',
+            'description' => "Akaun admin organisasi {$admin->name} dicipta oleh {$authUser->name}.",
+        ]);
+
+        return back()->with('success', 'Akaun admin organisasi berjaya dicipta.');
     }
 
     public function updateMember(Request $request, User $user): RedirectResponse
@@ -862,34 +890,6 @@ class InformationHubAdminController extends Controller
         ]);
 
         return back()->with('success', 'Dokumen PDF berjaya dikemas kini.');
-    }
-
-    public function updateRole(Request $request, User $user): RedirectResponse
-    {
-        $this->authorizeOrganizationAccess($request->user(), $user->current_organization_id ?? 0);
-
-        $data = $request->validate([
-            'role' => ['required', 'string', 'in:Admin,Member'],
-        ]);
-
-        // Prevent Superadmin from being demoted or others from becoming Superadmin through this route
-        if ($user->hasRole('Superadmin') || $data['role'] === 'Superadmin') {
-            abort(403, 'Akses ditolak.');
-        }
-
-        // We only allow syncing Admin or Member roles here.
-        $user->syncRoles([$data['role']]);
-
-        ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'organization_id' => $user->current_organization_id,
-            'target_type' => User::class,
-            'target_id' => $user->id,
-            'action' => 'update_role',
-            'description' => "Peranan ahli ditukar kepada {$data['role']}.",
-        ]);
-
-        return back()->with('success', 'Peranan ahli berjaya dikemas kini.');
     }
 
     public function updateIcNumber(Request $request, User $user): RedirectResponse

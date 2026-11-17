@@ -12,7 +12,7 @@ class PublicCardController extends Controller
 {
     public function show(string $memberNo): Response
     {
-        $user = User::where('member_no', $memberNo)->with('organization')->firstOrFail();
+        $user = User::where('member_no', $memberNo)->excludeAdminPanel()->with('organization')->firstOrFail();
         $setting = Schema::hasTable('app_settings')
             ? AppSetting::query()->first()
             : null;

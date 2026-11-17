@@ -21,7 +21,7 @@ class SuperadminOrganizationController extends Controller
         $hasCardColumn = Schema::hasColumn('organizations', 'card_front_path');
 
         $organizations = Organization::query()
-            ->withCount('members')
+            ->withCount(['members' => fn ($query) => $query->excludeAdminPanel()])
             ->with('chartMembers')
             ->orderBy($hasSortOrderColumn ? 'sort_order' : 'min_age')
             ->orderBy('min_age')

@@ -550,30 +550,11 @@ function resetFilters() {
 
 // ─── Update Role ─────────────────────────────────────────────────────────────
 
-const updatingUserId = ref(null);
 const showIcModal = ref(false);
 const icTargetMember = ref(null);
 const icForm = useForm({
     ic_number: '',
 });
-
-function updateRole(userId, newRole) {
-    if (!confirm(`Sahkan penukaran peranan kepada ${newRole}?`)) return;
-    updatingUserId.value = userId;
-
-    router.patch(route('admin.hub.members.role.update', userId), { role: newRole }, {
-        preserveScroll: true,
-        onSuccess: () => {
-            updatingUserId.value = null;
-        },
-        onError: (errors) => {
-            console.error('Role update failed:', errors);
-            updatingUserId.value = null;
-            alert('Gagal menukar peranan. Sila cuba lagi.');
-        },
-        onFinish: () => { updatingUserId.value = null; }
-    });
-}
 
 function maskedPreviewToRaw(masked) {
     if (!masked) return '';
@@ -940,8 +921,8 @@ async function finishImport() {
             <!-- Page Header -->
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 class="text-3xl font-black tracking-tight text-gray-900">Senarai Ahli & Pengguna</h2>
-                    <p class="text-sm font-medium text-gray-500 mt-1">Urus keahlian, organisasi, dan peranan sistem.</p>
+                    <h2 class="text-3xl font-black tracking-tight text-gray-900">Senarai Ahli</h2>
+                    <p class="text-sm font-medium text-gray-500 mt-1">Urus keahlian, organisasi, dan status yuran.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <button
@@ -1167,8 +1148,7 @@ async function finishImport() {
                             <div class="relative">
                                 <select v-model="roleFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
                                     <option value="">Semua Peranan</option>
-                                    <option value="Admin">Admin</option>
-                                    <option value="Member">Member / Ahli</option>
+                                    <option value="Member">Ahli</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>

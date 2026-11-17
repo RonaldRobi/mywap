@@ -4,7 +4,10 @@ namespace Tests\Feature\Api\V1;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Jobs\SendBroadcastJob;
 use App\Models\Attendance;
+use App\Models\Branch;
+use App\Models\BranchAdmin;
 use App\Models\BroadcastMessage;
 use App\Models\Event;
 use App\Models\MembershipFee;
@@ -44,6 +47,8 @@ class AdminApiTest extends TestCase
     {
         parent::setUp();
 
+        config(['membership.fee_start_year' => now()->year]);
+
         Role::create(['name' => 'Superadmin', 'guard_name' => 'web']);
         Role::create(['name' => 'Admin', 'guard_name' => 'web']);
         Role::create(['name' => 'org-admin', 'guard_name' => 'web']);
@@ -54,6 +59,7 @@ class AdminApiTest extends TestCase
 
         $this->admin = User::factory()->create([
             'name' => 'Admin Test',
+            'email' => 'admin.test@pkpim.org.my',
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
             'member_no' => 'ADMIN-001',
@@ -62,6 +68,7 @@ class AdminApiTest extends TestCase
 
         $this->superadmin = User::factory()->create([
             'name' => 'Super Test',
+            'email' => 'super.test@pkpim.org.my',
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
         ]);
@@ -69,6 +76,7 @@ class AdminApiTest extends TestCase
 
         $this->orgAdmin = User::factory()->create([
             'name' => 'Org Admin Test',
+            'email' => 'orgadmin.test@pkpim.org.my',
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
         ]);
@@ -76,6 +84,7 @@ class AdminApiTest extends TestCase
 
         $this->member = User::factory()->create([
             'name' => 'Ali Member',
+            'email' => 'ali.member@pkpim.org.my',
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => now(),
             'member_no' => 'M-0001',
@@ -84,6 +93,7 @@ class AdminApiTest extends TestCase
 
         $this->pendingMember = User::factory()->create([
             'name' => 'Budi Pending',
+            'email' => 'budi.pending@pkpim.org.my',
             'current_organization_id' => $this->org->id,
             'profile_completed_at' => null,
             'member_no' => 'M-0002',
@@ -92,6 +102,7 @@ class AdminApiTest extends TestCase
 
         $this->otherMember = User::factory()->create([
             'name' => 'Zaid Lain',
+            'email' => 'zaid.lain@abim.org.my',
             'current_organization_id' => $this->otherOrg->id,
             'profile_completed_at' => now(),
             'member_no' => 'ABIM-001',
@@ -168,8 +179,8 @@ class AdminApiTest extends TestCase
                     'revenue_by_month' => ['labels', 'values'],
                 ],
             ])
-            ->assertJsonPath('data.stats.total_members', 5)
-            ->assertJsonPath('data.stats.active_members', 4)
+            ->assertJsonPath('data.stats.total_members', 2)
+            ->assertJsonPath('data.stats.active_members', 1)
             ->assertJsonPath('data.stats.pending_members', 1)
             ->assertJsonPath('data.stats.total_events', 2)
             ->assertJsonPath('data.stats.upcoming_events', 1)
@@ -186,7 +197,7 @@ class AdminApiTest extends TestCase
 
         $this->getJson('/api/v1/admin/dashboard')
             ->assertOk()
-            ->assertJsonPath('data.stats.total_members', 5);
+            ->assertJsonPath('data.stats.total_members', 2);
     }
 
     public function test_member_gets_403_on_dashboard(): void
@@ -211,7 +222,7 @@ class AdminApiTest extends TestCase
                 'meta' => ['current_page', 'last_page', 'per_page', 'total'],
                 'links' => ['first', 'last', 'prev', 'next'],
             ])
-            ->assertJsonPath('meta.total', 5);
+            ->assertJsonPath('meta.total', 2);
 
         // Ahli dari organisasi lain tidak kelihatan.
         $this->getJson('/api/v1/admin/members?search=Zaid')
@@ -225,7 +236,7 @@ class AdminApiTest extends TestCase
 
         $this->getJson('/api/v1/admin/members')
             ->assertOk()
-            ->assertJsonPath('meta.total', 6);
+            ->assertJsonPath('meta.total', 3);
     }
 
     public function test_members_search_and_status_filter(): void
@@ -325,9 +336,9 @@ class AdminApiTest extends TestCase
                     'fees' => [['id', 'user_id', 'name', 'member_no', 'year', 'amount', 'status', 'paid_at']],
                 ],
             ])
-            ->assertJsonPath('data.summary.total_members', 5)
+            ->assertJsonPath('data.summary.total_members', 2)
             ->assertJsonPath('data.summary.paid_count', 1)
-            ->assertJsonPath('data.summary.pending_count', 4)
+            ->assertJsonPath('data.summary.pending_count', 1)
             ->assertJsonPath('data.summary.revenue', 50)
             ->assertJsonPath('data.fees.0.user_id', $this->member->id)
             ->assertJsonPath('data.fees.0.status', 'paid');
@@ -530,7 +541,7 @@ class AdminApiTest extends TestCase
         $this->assertSame('organization', $message->target_criteria);
         $this->assertSame($this->org->id, (int) $message->target_organization_id);
 
-        Queue::assertPushed(\App\Jobs\SendBroadcastJob::class);
+        Queue::assertPushed(SendBroadcastJob::class);
     }
 
     public function test_broadcast_usrah_audience_resolves_member_ids(): void
@@ -578,7 +589,7 @@ class AdminApiTest extends TestCase
     public function test_branch_admin_can_access_dashboard_and_events(): void
     {
         Role::firstOrCreate(['name' => 'Admin Cawangan', 'guard_name' => 'web']);
-        $branch = \App\Models\Branch::create([
+        $branch = Branch::create([
             'organization_id' => $this->org->id,
             'name' => 'Cawangan 1',
             'state' => 'Melaka',
@@ -592,10 +603,10 @@ class AdminApiTest extends TestCase
         ]);
         $branchAdmin->assignRole('Admin Cawangan');
 
-        \App\Models\BranchAdmin::create([
+        BranchAdmin::create([
             'branch_id' => $branch->id,
             'user_id' => $branchAdmin->id,
-            'role' => \App\Models\BranchAdmin::ROLE_MANAGER,
+            'role' => BranchAdmin::ROLE_MANAGER,
         ]);
 
         $ownEvent = Event::create([
@@ -611,7 +622,7 @@ class AdminApiTest extends TestCase
             'end_time' => now()->addDays(2)->addHours(2),
         ]);
 
-        $otherBranch = \App\Models\Branch::create([
+        $otherBranch = Branch::create([
             'organization_id' => $this->org->id,
             'name' => 'Cawangan 2',
             'state' => 'Johor',

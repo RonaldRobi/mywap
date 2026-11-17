@@ -13,6 +13,8 @@ class MemberCardController extends Controller
 {
     public function show(Request $request, MemberCoreService $core): Response
     {
+        abort_if($request->user()->isAdminPanelUser(), 403, 'Akaun pentadbir tiada kad ahli.');
+
         return Inertia::render('Member/Card', $core->card($request->user(), true));
     }
 
@@ -23,6 +25,8 @@ class MemberCardController extends Controller
     {
         $user = $request->user();
 
+        abort_if($user->isAdminPanelUser(), 403, 'Akaun pentadbir tiada surat ahli.');
+
         return $letters->pdf($user)->download($letters->filename($user));
     }
 
@@ -32,6 +36,8 @@ class MemberCardController extends Controller
      */
     public function letterPdfSigned(User $user, MembershipLetterService $letters): \Symfony\Component\HttpFoundation\Response
     {
+        abort_if($user->isAdminPanelUser(), 404);
+
         return $letters->pdf($user)->download($letters->filename($user));
     }
 }

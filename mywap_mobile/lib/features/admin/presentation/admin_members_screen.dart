@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
@@ -405,7 +406,77 @@ class _MemberDetailSheet extends StatelessWidget {
               member.name.isEmpty ? context.l10n.adminNoName : member.name,
               style: theme.textTheme.headlineSmall,
             ),
-            const SizedBox(height: Spacing.lg),
+            if (member.phone.isNotEmpty || member.email.isNotEmpty) ...[
+              const SizedBox(height: Spacing.sm),
+              Wrap(
+                spacing: Spacing.sm,
+                runSpacing: Spacing.xs,
+                children: [
+                  if (member.phone.isNotEmpty) ...[
+                    FilledButton.icon(
+                      onPressed: () {
+                        final digits = _sanitizePhone(member.phone);
+                        launchUrl(
+                          Uri.parse('https://wa.me/$digits'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                      label: const Text('WhatsApp'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        final cleanPhone = member.phone.replaceAll(RegExp(r'\s+'), '');
+                        launchUrl(
+                          Uri.parse('tel:$cleanPhone'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      icon: const Icon(Icons.phone_outlined, size: 16),
+                      label: const Text('Panggil'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (member.email.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        launchUrl(
+                          Uri.parse('mailto:${member.email}'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      icon: const Icon(Icons.email_outlined, size: 16),
+                      label: const Text('Emel'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: Spacing.md),
             for (final (label, value) in rows) ...[
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,6 +537,16 @@ class _MemberDetailSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _sanitizePhone(String phone) {
+    var digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      digits = '60${digits.substring(1)}';
+    } else if (!digits.startsWith('60') && digits.isNotEmpty) {
+      digits = '60$digits';
+    }
+    return digits;
   }
 }
 

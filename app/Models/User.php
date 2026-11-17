@@ -7,6 +7,7 @@ use App\Models\Scopes\OrganizationScope;
 use App\Notifications\OtpEmail;
 use App\Support\NormalizesStoragePath;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -197,7 +197,62 @@ class User extends Authenticatable
 
     public function isDeceased(): bool
     {
-        return $this->membership_status === 'deceased';
+        if ($this->membership_status === 'deceased') {
+            return true;
+        }
+
+        if (strcasecmp((string) $this->position, 'Meninggal Dunia') === 0) {
+            return true;
+        }
+
+        if (! $this->position_id) {
+            return false;
+        }
+
+        $position = $this->relationLoaded('organizationPosition')
+            ? $this->organizationPosition
+            : $this->organizationPosition()->first();
+
+        return $position !== null
+            && strcasecmp((string) $position->name, 'Meninggal Dunia') === 0;
+    }
+
+    /**
+     * Akaun pentadbir dan ahli yang telah meninggal tidak terlibat dalam yuran.
+     */
+    public function isFeeExcluded(): bool
+    {
+        return $this->isAdminPanelUser() || $this->isDeceased();
+    }
+
+    public function scopeExcludeAdminPanel(Builder $query): Builder
+    {
+        return $query->whereDoesntHave(
+            'roles',
+            fn (Builder $roleQuery) => $roleQuery->whereIn('name', [
+                'Superadmin',
+                'Admin',
+                'org-admin',
+                'Admin Cawangan',
+            ]),
+        );
+    }
+
+    public function scopeExcludeDeceased(Builder $query): Builder
+    {
+        return $query
+            ->where(function (Builder $statusQuery) {
+                $statusQuery->whereNull('membership_status')
+                    ->orWhere('membership_status', '!=', 'deceased');
+            })
+            ->where(function (Builder $positionQuery) {
+                $positionQuery->whereNull('position')
+                    ->orWhere('position', '!=', 'Meninggal Dunia');
+            })
+            ->whereDoesntHave(
+                'organizationPosition',
+                fn (Builder $positionQuery) => $positionQuery->whereRaw('UPPER(name) = ?', ['MENINGGAL DUNIA']),
+            );
     }
 
     public static function icExistsInOrganization(string $ic, ?int $organizationId, ?int $exceptUserId = null): bool
@@ -208,6 +263,7 @@ class User extends Authenticatable
         }
 
         return self::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $organizationId)
             ->where('ic_number', $normalized)
             ->when($exceptUserId, fn ($query) => $query->where('id', '!=', $exceptUserId))

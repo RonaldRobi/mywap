@@ -16,6 +16,15 @@ class FeeService
     {
         $year ??= now()->year;
 
+        if ($year < $this->startYear() || $user->isFeeExcluded()) {
+            return [
+                'status' => 'active',
+                'amount_due' => 0.0,
+                'last_paid_at' => null,
+                'last_reference' => null,
+            ];
+        }
+
         if ($this->isLifeMember($user) || $this->isExempted($user)) {
             $fee = MembershipFee::where('user_id', $user->id)
                 ->whereIn('status', ['life_member', 'exempted'])
@@ -158,6 +167,11 @@ class FeeService
     public function getDueCount(int $organizationId, ?int $year = null, int|array|null $branchId = null): int
     {
         $year ??= now()->year;
+
+        if ($year < $this->startYear()) {
+            return 0;
+        }
+
         $branchIds = $this->normalizeBranchIds($branchId);
         $branchKey = $branchIds === [] ? 'all' : implode('-', $branchIds);
 
@@ -165,6 +179,8 @@ class FeeService
             return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
                 ->where('current_organization_id', $organizationId)
                 ->when($branchIds !== [], fn ($q) => $q->whereIn('branch_id', $branchIds))
+                ->excludeAdminPanel()
+                ->excludeDeceased()
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
                 ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year)->where('status', 'paid'))
                 ->count();
@@ -176,6 +192,7 @@ class FeeService
         return MembershipFee::with('payment')
             ->where('user_id', $user->id)
             ->where('status', FeeStatus::Paid)
+            ->where(fn ($query) => $query->where('amount', '>', 0)->orWhereNotNull('payment_id'))
             ->latest('year')
             ->take($limit)
             ->get()
@@ -218,12 +235,33 @@ class FeeService
         $branchKey = $branchIds === [] ? 'all' : implode('-', $branchIds);
 
         return Cache::remember("fee_stats:{$organizationId}:{$branchKey}:{$year}", 60, function () use ($organizationId, $branchIds, $year) {
-            $baseQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
+            $baseQuery = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+                ->excludeAdminPanel()
+                ->excludeDeceased();
             if ($organizationId) {
                 $baseQuery->where('current_organization_id', $organizationId);
             }
             if ($branchIds !== []) {
                 $baseQuery->whereIn('branch_id', $branchIds);
+            }
+
+            if ($year < $this->startYear()) {
+                $total = (clone $baseQuery)->count();
+                $lifeMember = (clone $baseQuery)
+                    ->whereHas('membershipFees', fn ($q) => $q->where('status', 'life_member'))
+                    ->count();
+                $exempted = (clone $baseQuery)
+                    ->whereHas('membershipFees', fn ($q) => $q->where('status', 'exempted'))
+                    ->count();
+
+                return [
+                    'total' => max(0, $total),
+                    'paid' => max(0, $total - $lifeMember - $exempted),
+                    'due' => 0,
+                    'life_member' => max(0, $lifeMember),
+                    'exempted' => max(0, $exempted),
+                    'collected_amount' => 0.0,
+                ];
             }
 
             $stats = (clone $baseQuery)->selectRaw("
@@ -254,15 +292,14 @@ class FeeService
             $collectedQuery = Payment::query()
                 ->where('status', 'successful')
                 ->whereYear('created_at', $year)
-                ->where('payable_type', MembershipFee::class);
-
-            if ($organizationId) {
-                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->where('current_organization_id', $organizationId));
-            }
-
-            if ($branchIds !== []) {
-                $collectedQuery->whereHas('user', fn ($q) => $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->whereIn('branch_id', $branchIds));
-            }
+                ->where('payable_type', MembershipFee::class)
+                ->whereHas('user', function ($q) use ($organizationId, $branchIds) {
+                    $q->withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+                        ->excludeAdminPanel()
+                        ->excludeDeceased()
+                        ->when($organizationId, fn ($userQuery) => $userQuery->where('current_organization_id', $organizationId))
+                        ->when($branchIds !== [], fn ($userQuery) => $userQuery->whereIn('branch_id', $branchIds));
+                });
 
             $collectedAmount = $collectedQuery->sum('amount');
             $due = $total - $paid - $lifeMember - $exempted;
@@ -280,11 +317,17 @@ class FeeService
 
     public function generateAnnualFees(Organization $org, int $year): int
     {
+        if ($year < $this->startYear()) {
+            return 0;
+        }
+
         $amount = (float) ($org->fee_amount ?? 0);
         $count = 0;
 
         User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
             ->where('current_organization_id', $org->id)
+            ->excludeAdminPanel()
+            ->excludeDeceased()
             ->whereDoesntHave('membershipFees', fn ($q) => $q->whereIn('status', ['life_member', 'exempted']))
             ->whereDoesntHave('membershipFees', fn ($q) => $q->where('year', $year))
             ->chunk(100, function ($users) use ($year, $amount, &$count) {
@@ -303,6 +346,11 @@ class FeeService
             });
 
         return $count;
+    }
+
+    public function startYear(): int
+    {
+        return (int) config('membership.fee_start_year', 2027);
     }
 
     /**

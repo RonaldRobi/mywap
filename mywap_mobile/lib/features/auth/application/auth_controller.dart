@@ -240,6 +240,7 @@ class AuthController extends Notifier<AuthState> {
     }
     // Buang badge ikon selepas log keluar supaya peranti ini tidak memaparkan
     // kiraan notifikasi akaun lama.
+    await ref.read(pushServiceProvider).clearPresented();
     await AppBadgeService.clear();
     state = const AuthUnauthenticated();
   }

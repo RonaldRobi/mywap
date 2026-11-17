@@ -57,6 +57,10 @@ sealed class User with _$User {
       !isSuperadmin &&
       !isOrgAdmin;
 
+  int? get currentOrganizationId => organization?.id;
+
+  String? get organizationName => organization?.name;
+
   /// Role label for UI display.
   String get adminRoleTitle {
     if (isSuperadmin) return 'Superadmin';

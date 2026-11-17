@@ -9,6 +9,7 @@ use App\Models\FeeImport as FeeImportModel;
 use App\Models\MembershipFee;
 use App\Models\Organization;
 use App\Models\Payment;
+use App\Models\Scopes\OrganizationScope;
 use App\Models\User;
 use App\Services\AdminService;
 use App\Services\FeeService;
@@ -258,7 +259,7 @@ class MemberFeeController extends Controller
             'proof' => ['required', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'],
         ]);
 
-        $targetUser = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)->findOrFail($data['user_id']);
+        $targetUser = User::withoutGlobalScope(OrganizationScope::class)->findOrFail($data['user_id']);
         $this->authorizeOrg($user, $targetUser);
 
         if ($feeService->isLifeMember($targetUser) || $feeService->isExempted($targetUser)) {
@@ -349,7 +350,8 @@ class MemberFeeController extends Controller
             $userMatch = null;
 
             if ($ic || $memberNo) {
-                $query = User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class);
+                $query = User::withoutGlobalScope(OrganizationScope::class)
+                    ->excludeAdminPanel();
                 if (! $user->hasRole('Superadmin')) {
                     $query->where('current_organization_id', $user->current_organization_id);
                 }
@@ -531,7 +533,9 @@ class MemberFeeController extends Controller
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
 
-        return User::withoutGlobalScope(\App\Models\Scopes\OrganizationScope::class)
+        return User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
+            ->excludeDeceased()
             ->with(['membershipFees' => fn ($q) => $q->where('year', $year)->with('payment'), 'organization'])
             ->when(! $isSuperadmin, fn ($q) => $q->where('current_organization_id', $user->current_organization_id))
             ->when($user->isBranchAdmin(), fn ($q) => $q->whereIn('branch_id', $user->managedBranchIds()))

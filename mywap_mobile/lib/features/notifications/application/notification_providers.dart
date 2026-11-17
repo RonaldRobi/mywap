@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/providers.dart';
 import '../../../core/push/app_badge_service.dart';
+import '../../../core/push/push_providers.dart';
 import '../data/models/app_notification.dart';
 import '../data/notification_repository.dart';
 
@@ -14,8 +15,8 @@ final notificationRepositoryProvider = Provider<NotificationRepository>(
 
 final notificationsControllerProvider =
     NotifierProvider<NotificationsController, NotificationsState>(
-  NotificationsController.new,
-);
+      NotificationsController.new,
+    );
 
 class NotificationsState {
   const NotificationsState({
@@ -102,18 +103,18 @@ class NotificationsController extends Notifier<NotificationsState> {
     final previous = state;
     final nextUnread = state.unreadCount > 0 ? state.unreadCount - 1 : 0;
     state = state.copyWith(
-      notifications:
-          state.notifications
-              .map(
-                (n) => n.id == id ? n.copyWith(readAt: DateTime.now()) : n,
-              )
-              .toList(growable: false),
+      notifications: state.notifications
+          .map((n) => n.id == id ? n.copyWith(readAt: DateTime.now()) : n)
+          .toList(growable: false),
       unreadCount: nextUnread,
     );
     unawaited(AppBadgeService.setUnread(nextUnread));
 
     try {
       await ref.read(notificationRepositoryProvider).read(id);
+      if (nextUnread == 0) {
+        unawaited(ref.read(pushServiceProvider).clearPresented());
+      }
     } on ApiException catch (e) {
       state = previous.copyWith(error: e.message);
       unawaited(AppBadgeService.setUnread(previous.unreadCount));
@@ -126,13 +127,15 @@ class NotificationsController extends Notifier<NotificationsState> {
     try {
       await ref.read(notificationRepositoryProvider).readAll();
       state = state.copyWith(
-        notifications: state.notifications
-            .map((n) => n.copyWith(readAt: DateTime.now()))
-            .toList(),
+        notifications:
+            state.notifications
+                .map((n) => n.copyWith(readAt: DateTime.now()))
+                .toList(),
         isMarking: false,
         unreadCount: 0,
       );
       unawaited(AppBadgeService.setUnread(0));
+      unawaited(ref.read(pushServiceProvider).clearPresented());
     } on ApiException catch (e) {
       state = state.copyWith(isMarking: false, error: e.message);
     }

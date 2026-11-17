@@ -38,7 +38,6 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingSlideController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\ProgramReportController;
 use App\Http\Controllers\OrganizationInfoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PollController;
@@ -47,6 +46,7 @@ use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PostcodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProgramReportController;
 use App\Http\Controllers\PublicCardController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\RegistrationShareController;
@@ -56,10 +56,12 @@ use App\Http\Controllers\SharePreviewController;
 use App\Http\Controllers\SuperadminAuditLogController;
 use App\Http\Controllers\SuperadminOrganizationController;
 use App\Http\Controllers\SuperadminSystemSettingController;
+use App\Http\Controllers\SupporterController;
 use App\Http\Controllers\UsrahController;
 use App\Http\Controllers\VideoController;
 use App\Models\Infaq;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -134,7 +136,7 @@ Route::get('/s/{infaq:slug}', fn (Infaq $infaq) => redirect()->route('infaq.show
 Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboardRedirect'])->name('dashboard');
 
-    Route::get('/admin-unassigned', fn () => \Inertia\Inertia::render('Admin/BranchAdminUnassigned'))
+    Route::get('/admin-unassigned', fn () => Inertia::render('Admin/BranchAdminUnassigned'))
         ->middleware('role:Admin Cawangan')
         ->name('branch-admin.unassigned');
 
@@ -159,13 +161,13 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('/admin/events/registrations/{registration}/mark-paid', [RegistrationController::class, 'markPaid'])->name('admin.events.registrations.mark-paid');
         Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         Route::get('/admin/admins', [InformationHubAdminController::class, 'adminManagement'])->name('admin.admins.index');
+        Route::post('/admin/admins', [InformationHubAdminController::class, 'storeAdmin'])->name('admin.admins.store');
         Route::get('/admin/jemput-ahli', [RegistrationShareController::class, 'show'])->name('admin.jemput-ahli');
         Route::get('/admin/jemput-ahli/qr.png', [RegistrationShareController::class, 'downloadQr'])->name('admin.jemput-ahli.qr');
         Route::get('/admin/jemput-ahli/poster.png', [RegistrationShareController::class, 'downloadPoster'])->name('admin.jemput-ahli.poster');
         Route::get('/admin/campaigns', [FinancialController::class, 'adminCampaigns'])->name('admin.campaigns.index');
         Route::post('/admin/campaigns', [FinancialController::class, 'storeCampaign'])->name('admin.campaigns.store');
         Route::get('/admin/information-hub/manage', [InformationHubAdminController::class, 'index'])->name('admin.hub.manage');
-        Route::patch('/admin/information-hub/members/{user}/role', [InformationHubAdminController::class, 'updateRole'])->name('admin.hub.members.role.update');
         Route::patch('/admin/information-hub/members/{user}/ic-number', [InformationHubAdminController::class, 'updateIcNumber'])->name('admin.hub.members.ic.update');
         Route::patch('/admin/information-hub/members/{user}/toggle-active', [InformationHubAdminController::class, 'toggleActive'])->name('admin.hub.members.toggle-active');
         Route::post('/admin/information-hub/members/{user}/activate-account', [InformationHubAdminController::class, 'activateAccount'])->name('admin.hub.members.activate-account');
@@ -202,13 +204,13 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/broadcasts/targets', [BroadcastController::class, 'targets'])->name('admin.broadcasts.targets');
         Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
         // Pendukung (emel bukan ahli) untuk hebahan
-        Route::get('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'index'])->name('admin.supporters.index');
-        Route::get('/admin/supporters/export/excel', [\App\Http\Controllers\SupporterController::class, 'exportExcel'])->name('admin.supporters.export.excel');
-        Route::get('/admin/supporters/export/pdf', [\App\Http\Controllers\SupporterController::class, 'exportPdf'])->name('admin.supporters.export.pdf');
-        Route::post('/admin/supporters', [\App\Http\Controllers\SupporterController::class, 'store'])->name('admin.supporters.store');
-        Route::post('/admin/supporters/import', [\App\Http\Controllers\SupporterController::class, 'import'])->name('admin.supporters.import');
-        Route::post('/admin/supporters/invite', [\App\Http\Controllers\SupporterController::class, 'invite'])->name('admin.supporters.invite');
-        Route::delete('/admin/supporters/{supporter}', [\App\Http\Controllers\SupporterController::class, 'destroy'])->name('admin.supporters.destroy');
+        Route::get('/admin/supporters', [SupporterController::class, 'index'])->name('admin.supporters.index');
+        Route::get('/admin/supporters/export/excel', [SupporterController::class, 'exportExcel'])->name('admin.supporters.export.excel');
+        Route::get('/admin/supporters/export/pdf', [SupporterController::class, 'exportPdf'])->name('admin.supporters.export.pdf');
+        Route::post('/admin/supporters', [SupporterController::class, 'store'])->name('admin.supporters.store');
+        Route::post('/admin/supporters/import', [SupporterController::class, 'import'])->name('admin.supporters.import');
+        Route::post('/admin/supporters/invite', [SupporterController::class, 'invite'])->name('admin.supporters.invite');
+        Route::delete('/admin/supporters/{supporter}', [SupporterController::class, 'destroy'])->name('admin.supporters.destroy');
         Route::get('/admin/facilities/manage', [FacilityBookingController::class, 'manageFacilities'])->name('admin.facilities.manage');
         Route::post('/admin/facilities', [FacilityBookingController::class, 'storeFacility'])->name('admin.facilities.store');
         Route::put('/admin/facilities/{facility}', [FacilityBookingController::class, 'updateFacility'])->name('admin.facilities.update');
@@ -305,7 +307,8 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
 
         Route::get('/superadmin/audit-log', [SuperadminAuditLogController::class, 'index'])->name('superadmin.audit-log.index');
 
-        Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');        Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
+        Route::get('/superadmin/organizations', [SuperadminOrganizationController::class, 'index'])->name('superadmin.organizations.index');
+        Route::put('/superadmin/organizations/{organization}', [SuperadminOrganizationController::class, 'update'])->name('superadmin.organizations.update');
         Route::post('/superadmin/organizations/{organization}/logo', [SuperadminOrganizationController::class, 'updateLogo'])->name('superadmin.organizations.logo.update');
         Route::post('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'updateCardBack'])->name('superadmin.organizations.card-back.update');
         Route::delete('/superadmin/organizations/card-back', [SuperadminOrganizationController::class, 'destroyCardBack'])->name('superadmin.organizations.card-back.destroy');

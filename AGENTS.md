@@ -4,27 +4,49 @@ Panduan untuk ejen/AI yang bekerja dalam repo ini.
 
 ## Peraturan build & versi (WAJIB)
 
-Sebelum membina release iOS/Android, **sentiasa bump build number** dalam
-`mywap_mobile/pubspec.yaml` (bahagian `+N`). App Store Connect & Google Play
-menolak build dengan versi yang sama atau lebih rendah daripada yang telah
-dimuat naik.
+Jangan bump nombor secara manual. Guna `mywap_mobile/tool/version.rb`, yang
+membaca App Store Connect dan Google Play dan memilih build seterusnya yang
+selamat (`max(iOS builds, Play versionCodes, pubspec) + 1`).
 
-- Format: `version: <semver>+<build_number>`, cth `1.1.2+14`.
-- Setiap build baharu: naikkan `<build_number>` sekurang-kurangnya 1.
-- Naikkan `<semver>` (cth `1.1.3`) hanya untuk perubahan besar/feature.
-- Jangan sekali-kali build release tanpa bump — ia akan gagal di upload.
+- Semak: `ruby mywap_mobile/tool/version.rb status`
+- Bump: `ruby mywap_mobile/tool/version.rb bump-build --write`
+- Lebih mudah: `./ship.sh` (lihat bawah) — ia bump, build dua-dua, dan upload.
 
-Contoh ralat yang akan berlaku jika terlupa:
-`The bundle version must be higher than the previously uploaded version: '13'.`
+Peraturan nombor depan (`2.5` → `2.6`):
+
+- Upload ke TestFlight/Transporter: **build number sahaja**, nombor depan kekal.
+- Version App Store masih `PREPARE_FOR_SUBMISSION` atau ditolak: guna semula
+  nombor depan yang sama, bump build.
+- Version App Store dah `READY_FOR_SALE`: **wajib** naik nombor depan untuk
+  release baru. `version.rb next-release --write` buat ini secara automatik.
+- Version App Store `IN_REVIEW`: tunggu; Apple tak benarkan build baru masuk
+  ke version itu. `next-release` akan berhenti dengan arahan.
+
+Google Play: `versionCode` mesti lebih tinggi daripada semua track
+(internal/alpha/beta/production). `versionName` ikut pubspec, tiada logik
+berasingan.
 
 ## Arahan build
 
-- **iOS (IPA untuk TestFlight/Transporter):**
-  `./build_ios_release.sh`
-  → hasil: `mywap_mobile/build/ios/ipa/myWAP.ipa`
-- **Android (AAB untuk Play Store):**
-  `cd mywap_mobile && flutter build appbundle --release --dart-define=API_BASE_URL=https://mywap.my`
-  → hasil: `mywap_mobile/build/app/outputs/bundle/release/app-release.aab`
+Cara biasa (satu command, build + upload):
+
+- `./ship.sh` → TestFlight + Play internal
+- `./ship.sh --release` → App Store review + Play production
+- `./ship.sh --ios-only` / `--android-only`, `--track beta`, `--dry-run`
+
+Prasyarat sekali sahaja: `cd mywap_mobile && bundle install` (guna Homebrew
+Ruby 3.4; skrip sudah set PATH `/opt/homebrew/opt/ruby/bin`).
+
+Build sahaja (tanpa upload):
+
+- **iOS (IPA):** `./build_ios_release.sh`
+  → `mywap_mobile/build/ios/ipa/myWAP.ipa`
+- **Android (AAB):** `./build_android_release.sh`
+  → `mywap_mobile/build/app/outputs/bundle/release/app-release.aab`
+
+Kedua-dua skrip bump build secara automatik; flag `--no-bump` hanya untuk
+kes di mana pubspec sudah disediakan (cth dalam `ship.sh`). Skrip juga
+mengesahkan versi dalam IPA/AAB sepadan dengan pubspec sebelum selesai.
 
 ## Nota ruang cakera (macOS)
 

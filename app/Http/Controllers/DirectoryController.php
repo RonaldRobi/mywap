@@ -15,6 +15,7 @@ class DirectoryController extends Controller
         $industry = trim((string) $request->query('industry', ''));
 
         $query = User::query()
+            ->excludeAdminPanel()
             ->with('organization')
             ->where('is_public_in_directory', true)
             ->whereNotNull('name');
@@ -47,6 +48,7 @@ class DirectoryController extends Controller
             ]);
 
         $industries = User::query()
+            ->excludeAdminPanel()
             ->where('is_public_in_directory', true)
             ->whereNotNull('industry')
             ->select('industry')

@@ -85,6 +85,7 @@ class BranchReportController extends Controller
         }
 
         $users = User::withoutGlobalScope(OrganizationScope::class)
+            ->excludeAdminPanel()
             ->where('current_organization_id', $branch->organization_id)
             ->where('branch_id', $branch->id);
 
@@ -102,6 +103,7 @@ class BranchReportController extends Controller
             ->where('year', $year)
             ->where('status', 'paid')
             ->whereHas('user', fn ($q) => $q->withoutGlobalScope(OrganizationScope::class)
+                ->excludeAdminPanel()
                 ->where('branch_id', $branch->id))
             ->sum('amount');
 
