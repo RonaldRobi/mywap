@@ -49,6 +49,22 @@ if ! command -v flutter >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v xcodebuild >/dev/null 2>&1; then
+  echo "✗ xcodebuild tidak ditemui dalam PATH."
+  exit 1
+fi
+
+XCODE_VERSION="$(xcodebuild -version | awk 'NR == 1 {print $2}')"
+XCODE_MAJOR="${XCODE_VERSION%%.*}"
+if [ "$(date +%Y%m%d)" -ge 20270401 ] && [ "$XCODE_MAJOR" -lt 27 ]; then
+  echo "✗ Apple memerlukan iOS 27 SDK dari Xcode 27 atau lebih baharu."
+  echo "  Xcode aktif: $XCODE_VERSION. Kemas kini Xcode sebelum membina IPA baharu."
+  exit 1
+fi
+if [ "$XCODE_MAJOR" -lt 27 ]; then
+  echo "! Xcode $XCODE_VERSION menggunakan iOS SDK sebelum 27. Apple akan mewajibkan Xcode 27 mulai April 2027."
+fi
+
 if [ "$NO_BUMP" -eq 0 ]; then
   echo "→ Semak build number (App Store Connect + Play)..."
   (cd "$FLUTTER_DIR" && ruby tool/version.rb bump-build --write) || {

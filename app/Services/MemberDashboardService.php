@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Actions\LoadUsrahForUser;
+use App\Enums\EventStatus;
+use App\Enums\EventVisibility;
 use App\Models\AppSetting;
 use App\Models\Article;
 use App\Models\Campaign;
@@ -130,9 +132,18 @@ class MemberDashboardService
             'rsvps' => fn ($q) => $q->where('user_id', $user->id),
         ])
             ->where('start_time', '>=', now())
+            ->where('status', EventStatus::Published->value)
             ->where(function ($q) use ($user) {
                 $q->whereNull('organization_id')
-                    ->orWhere('organization_id', $user->current_organization_id);
+                    ->orWhere('organization_id', $user->current_organization_id)
+                    ->orWhereHas('organizations', fn ($pivot) => $pivot->where('organizations.id', $user->current_organization_id));
+            })
+            ->where(function ($q) use ($user) {
+                $q->where('visibility', EventVisibility::Open->value)
+                    ->orWhere(function ($q2) use ($user) {
+                        $q2->where('visibility', EventVisibility::BranchOnly->value)
+                            ->where('branch_id', $user->branch_id);
+                    });
             })
             ->orderBy('start_time')
             ->take(5)

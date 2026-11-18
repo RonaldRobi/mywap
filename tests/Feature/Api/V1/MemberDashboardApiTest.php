@@ -73,6 +73,43 @@ class MemberDashboardApiTest extends TestCase
             ]);
     }
 
+    public function test_upcoming_events_include_programmes_sharing_own_organisation(): void
+    {
+        $other = Organization::factory()->create(['name' => 'ABIM']);
+
+        $owner = Event::create([
+            'organization_id' => $other->id,
+            'title' => 'Program Bersama',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Kem->value,
+            'location_or_link' => 'Perak',
+            'start_time' => now()->addWeek(),
+            'end_time' => now()->addWeek()->addHours(2),
+        ]);
+        $owner->organizations()->sync([$other->id, $this->org->id]);
+
+        Event::create([
+            'organization_id' => $other->id,
+            'title' => 'Program Asing',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Kem->value,
+            'location_or_link' => 'Perak',
+            'start_time' => now()->addWeek(),
+            'end_time' => now()->addWeek()->addHours(2),
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/member/dashboard')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.upcomingEvents')
+            ->assertJsonPath('data.upcomingEvents.0.title', 'Program Bersama');
+    }
+
     public function test_dashboard_uses_selected_branch_even_when_legacy_branch_name_is_empty(): void
     {
         $branch = Branch::create([

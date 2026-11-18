@@ -105,6 +105,14 @@ ruby -e 'exit(RUBY_VERSION.split(".").first.to_i >= 3 ? 0 : 1)' \
 if [ "$IOS" -eq 1 ]; then
   command -v xcodebuild >/dev/null 2>&1 || fail "xcodebuild tidak ditemui."
   [ -f "$FLUTTER_DIR/fastlane/asc_key.json" ] || fail "Tiada $FLUTTER_DIR/fastlane/asc_key.json"
+  XCODE_VERSION="$(xcodebuild -version | awk 'NR == 1 {print $2}')"
+  XCODE_MAJOR="${XCODE_VERSION%%.*}"
+  if [ "$(date +%Y%m%d)" -ge 20270401 ] && [ "$XCODE_MAJOR" -lt 27 ]; then
+    fail "Apple memerlukan iOS 27 SDK dari Xcode 27 atau lebih baharu. Xcode aktif: $XCODE_VERSION."
+  fi
+  if [ "$XCODE_MAJOR" -lt 27 ]; then
+    printf '! Xcode %s menggunakan iOS SDK sebelum 27. Apple akan mewajibkan Xcode 27 mulai April 2027.\n' "$XCODE_VERSION"
+  fi
 fi
 if [ "$ANDROID" -eq 1 ]; then
   [ -f "$FLUTTER_DIR/fastlane/play_service_account.json" ] \
