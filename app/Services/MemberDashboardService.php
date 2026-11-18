@@ -40,6 +40,21 @@ class MemberDashboardService
         return Cache::remember("member.dashboard.{$user->id}", 60, fn () => $this->buildData($user));
     }
 
+    /**
+     * Buang cache dashboard ahli (contoh selepas program ditambah/dikemas kini)
+     * supaya senarai "Program akan datang" tidak tertinggal sehingga 60 saat.
+     */
+    public static function forgetCache(?int $userId = null): void
+    {
+        if ($userId !== null) {
+            Cache::forget("member.dashboard.{$userId}");
+
+            return;
+        }
+
+        Cache::flush();
+    }
+
     public function buildData(User $user): array
     {
         $user->load(['organization', 'branch']);
@@ -129,9 +144,10 @@ class MemberDashboardService
 
         $upcomingEvents = Event::with([
             'organization',
+            'organizations',
             'rsvps' => fn ($q) => $q->where('user_id', $user->id),
         ])
-            ->where('start_time', '>=', now())
+            ->where('start_time', '>=', now()->startOfDay())
             ->where('status', EventStatus::Published->value)
             ->where(function ($q) use ($user) {
                 $q->whereNull('organization_id')

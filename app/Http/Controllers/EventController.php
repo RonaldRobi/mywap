@@ -14,6 +14,7 @@ use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\Scopes\OrganizationScope;
 use App\Rules\NoEmojiInTitle;
+use App\Services\MemberDashboardService;
 use App\Services\RegistrationDedupeService;
 use App\Support\QrPng;
 use Illuminate\Contracts\View\View;
@@ -845,6 +846,8 @@ class EventController extends Controller
         $event = $event ? tap($event)->update($fields) : Event::create($fields);
 
         $this->syncOrganizations($event, $request, $isSuperadmin);
+
+        MemberDashboardService::forgetCache();
 
         return $event;
     }

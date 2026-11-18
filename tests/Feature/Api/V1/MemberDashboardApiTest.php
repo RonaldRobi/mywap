@@ -110,6 +110,27 @@ class MemberDashboardApiTest extends TestCase
             ->assertJsonPath('data.upcomingEvents.0.title', 'Program Bersama');
     }
 
+    public function test_upcoming_events_include_programmes_starting_earlier_today(): void
+    {
+        Event::create([
+            'organization_id' => $this->org->id,
+            'title' => 'Program Pagi Ini',
+            'description' => 'x',
+            'type' => 'physical',
+            'status' => EventStatus::Published->value,
+            'category' => EventCategory::Kem->value,
+            'location_or_link' => 'Perak',
+            'start_time' => now()->startOfDay()->addHour(),
+            'end_time' => now()->addDay(),
+        ]);
+
+        Sanctum::actingAs($this->member);
+
+        $this->getJson('/api/v1/member/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.upcomingEvents.0.title', 'Program Pagi Ini');
+    }
+
     public function test_dashboard_uses_selected_branch_even_when_legacy_branch_name_is_empty(): void
     {
         $branch = Branch::create([
