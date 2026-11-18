@@ -256,7 +256,7 @@ class MemberFeeController extends Controller
             'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'reference' => ['nullable', 'string', 'max:100'],
-            'proof' => ['required', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'],
+            'proof' => ['required', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:2048'],
         ]);
 
         $targetUser = User::withoutGlobalScope(OrganizationScope::class)->findOrFail($data['user_id']);
@@ -311,7 +311,7 @@ class MemberFeeController extends Controller
         }
 
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240'],
             'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
         ]);
 
@@ -393,9 +393,9 @@ class MemberFeeController extends Controller
         }
 
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240'],
             'year' => ['required', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
-            'proof' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:10240'],
+            'proof' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:2048'],
         ]);
 
         $year = (int) $request->year;

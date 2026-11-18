@@ -72,7 +72,7 @@ class RegistrationService
             'answers' => ['required', 'array'],
             'payment_method' => ['nullable', 'in:fpx,duitnow_qr'],
             'ticket_type' => ['nullable', 'string', 'max:255'],
-            'document' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:5120'],
+            'document' => ['nullable', 'file', 'mimes:pdf,png,jpg,jpeg', 'max:2048'],
             // Optional add-ons / merchandise. Prices are never trusted from the
             // client — they are resolved server-side from the database.
             'items' => ['nullable', 'array', 'max:20'],
@@ -88,7 +88,7 @@ class RegistrationService
             if ($q->type === 'file') {
                 $rule[] = 'file';
                 $rule[] = 'mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip';
-                $rule[] = 'max:10240';
+                $rule[] = 'max:2048';
             } elseif ($q->type === 'email') {
                 $rule[] = 'email';
             } elseif ($q->type === 'number') {

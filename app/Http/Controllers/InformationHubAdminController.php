@@ -565,9 +565,9 @@ class InformationHubAdminController extends Controller
             'published_at' => ['nullable', 'date'],
             'target_criteria' => ['nullable', 'in:all,unpaid_fees,specific_usrah'],
             'usrah_group_id' => ['nullable', 'integer', 'exists:usrah_groups,id'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'gallery_images' => ['nullable', 'array'],
-            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         if (($data['target_criteria'] ?? 'all') === 'specific_usrah' && empty($data['usrah_group_id'])) {
@@ -641,10 +641,10 @@ class InformationHubAdminController extends Controller
             'published_at' => ['nullable', 'date'],
             'target_criteria' => ['nullable', 'in:all,unpaid_fees,specific_usrah'],
             'usrah_group_id' => ['nullable', 'integer', 'exists:usrah_groups,id'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'remove_cover_image' => ['nullable', 'boolean'],
             'gallery_images' => ['nullable', 'array'],
-            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'remove_image_ids' => ['nullable', 'array'],
             'remove_image_ids.*' => ['integer', 'exists:announcement_images,id'],
         ]);
@@ -736,8 +736,8 @@ class InformationHubAdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
-            'pdf_file' => ['required', 'file', 'mimes:pdf', 'max:5120'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'pdf_file' => ['required', 'file', 'mimes:pdf', 'max:15360'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         $organizationId = $this->resolveOrganizationId($user, $data['organization_id'] ?? null);
@@ -869,8 +869,8 @@ class InformationHubAdminController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
-            'pdf_file' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:4096'],
+            'pdf_file' => ['nullable', 'file', 'mimes:pdf', 'max:15360'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         $filePath = $libraryItem->file_path;
@@ -1003,7 +1003,7 @@ class InformationHubAdminController extends Controller
         $authUser = $request->user();
         abort_unless($authUser?->hasRole(['Superadmin', 'Admin', 'org-admin']), 403);
         $request->validate([
-            'excel_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:20480'],
+            'excel_file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
         ]);
 

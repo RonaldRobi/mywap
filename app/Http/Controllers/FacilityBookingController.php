@@ -81,9 +81,9 @@ class FacilityBookingController extends Controller
             'price_per_unit' => ['required', 'numeric', 'min:0'],
             'member_price_per_unit' => ['nullable', 'numeric', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'gallery' => ['nullable', 'array'],
-            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -137,9 +137,9 @@ class FacilityBookingController extends Controller
             'price_per_unit' => ['required', 'numeric', 'min:0'],
             'member_price_per_unit' => ['nullable', 'numeric', 'min:0'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'gallery' => ['nullable', 'array'],
-            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'delete_media' => ['nullable', 'array'],
             'delete_media.*' => ['integer', 'exists:facility_media,id'],
             'is_active' => ['nullable', 'boolean'],

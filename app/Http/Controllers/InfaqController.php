@@ -86,7 +86,7 @@ class InfaqController extends Controller
             'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
             'is_active' => ['nullable', 'boolean'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         $isExternal = filled($data['external_url'] ?? null);
@@ -147,7 +147,7 @@ class InfaqController extends Controller
             'target_amount' => ['nullable', 'numeric', 'min:1', 'max:9999999'],
             'is_active' => ['nullable', 'boolean'],
             'display_order' => ['nullable', 'integer', 'min:1', 'max:9999'],
-            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'infaq_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         $isExternal = filled($data['external_url'] ?? null);

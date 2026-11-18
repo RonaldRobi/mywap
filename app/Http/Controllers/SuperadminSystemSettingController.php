@@ -272,7 +272,7 @@ class SuperadminSystemSettingController extends Controller
         }
 
         $data = $request->validate([
-            'splash_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:3072'],
+            'splash_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:2048'],
             'splash_background_color' => ['required', 'string', 'regex:/^#([A-Fa-f0-9]{6})$/'],
             'splash_title' => ['nullable', 'string', 'max:120'],
             'splash_duration_ms' => ['required', 'integer', 'min:300', 'max:6000'],
@@ -388,7 +388,7 @@ class SuperadminSystemSettingController extends Controller
         }
 
         $data = $request->validate([
-            'og_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'og_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $setting = AppSetting::singleton();
@@ -416,7 +416,7 @@ class SuperadminSystemSettingController extends Controller
         }
 
         $data = $request->validate([
-            'login_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'login_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $setting = AppSetting::singleton();

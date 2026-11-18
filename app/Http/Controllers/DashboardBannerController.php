@@ -43,7 +43,7 @@ class DashboardBannerController extends Controller
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
-            'banner_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'banner_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'link_url' => ['nullable', 'url', 'max:2048'],
             'link_target' => ['nullable', 'in:_self,_blank'],
             'is_active' => ['nullable', 'boolean'],
@@ -70,7 +70,7 @@ class DashboardBannerController extends Controller
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'title' => ['required', 'string', 'max:255'],
-            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'link_url' => ['nullable', 'url', 'max:2048'],
             'link_target' => ['nullable', 'in:_self,_blank'],
             'is_active' => ['nullable', 'boolean'],

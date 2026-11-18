@@ -170,9 +170,9 @@ class ProductController extends Controller
             'postage_cost' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:2048',
             'images' => 'nullable|array|max:6',
-            'images.*' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:2048',
             'variations' => 'nullable|array',
             // The `id` keys must be declared, otherwise validate() strips them
             // from the validated payload and syncVariations() recreates every

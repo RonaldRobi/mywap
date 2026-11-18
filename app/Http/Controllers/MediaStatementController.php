@@ -67,7 +67,7 @@ class MediaStatementController extends Controller
     public function uploadContentImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => ['required', 'image', 'max:4096'],
+            'image' => ['required', 'image', 'max:2048'],
         ]);
 
         $path = $request->file('image')->store('media-statements/content', 'public');
@@ -124,11 +124,11 @@ class MediaStatementController extends Controller
             'content' => ['nullable', 'string'],
             'is_published' => ['boolean'],
             'is_featured' => ['boolean'],
-            'featured_image' => ['nullable', 'image', 'max:4096'],
+            'featured_image' => ['nullable', 'image', 'max:2048'],
             'remove_featured_image' => ['boolean'],
-            'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
+            'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['image', 'max:4096'],
+            'attachments.*' => ['image', 'max:2048'],
         ], [
             'content_type.required' => 'Pilih sama ada kandungan teks, PDF, atau kedua-duanya.',
         ]);

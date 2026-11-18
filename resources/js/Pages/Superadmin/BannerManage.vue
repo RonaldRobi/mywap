@@ -307,7 +307,7 @@ const dropZoneActive = ref(false);
                             </template>
                             <input type="file" accept="image/*" @change="e => handleFileSelect(e, 'create')" class="absolute inset-0 opacity-0 cursor-pointer">
                         </div>
-                        <p class="mt-1.5 text-[11px] text-gray-400">Saiz disyorkan: 1200×514px (nisbah 21:9). Format: JPG, PNG, WebP, SVG. Maks 5MB.</p>
+                        <p class="mt-1.5 text-[11px] text-gray-400">Saiz disyorkan: 1200×514px (nisbah 21:9). Format: JPG, PNG, WebP, SVG. Maks 2MB.</p>
                         <p v-if="form.errors.banner_image" class="mt-1 text-xs font-semibold text-red-600">{{ form.errors.banner_image }}</p>
                     </div>
 

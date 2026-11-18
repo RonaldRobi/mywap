@@ -77,8 +77,24 @@ function toggleOrg(id) {
 
 const invalidTimes = computed(() => {
     if (!form.start_date || !form.start_clock || !form.end_date || !form.end_clock) return false;
-    return new Date(`${form.end_date}T${form.end_clock}`).getTime()
+    return new Date(`${resolvedEndDate.value}T${form.end_clock}`).getTime()
         <= new Date(`${form.start_date}T${form.start_clock}`).getTime();
+});
+
+const resolvedEndDate = computed(() => {
+    if (
+        !form.multi_day
+        && form.end_clock === '00:00'
+        && form.start_clock > '00:00'
+        && form.start_date === form.end_date
+    ) {
+        const nextDate = new Date(`${form.start_date}T00:00:00`);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const pad = (value) => String(value).padStart(2, '0');
+        return `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}-${pad(nextDate.getDate())}`;
+    }
+
+    return form.multi_day ? form.end_date : form.start_date;
 });
 
 watch(() => form.start_date, (value) => {
@@ -132,7 +148,7 @@ function submit() {
         delete payload.organization_ids;
         // Jangan hantar featured_image kosong (elak ralat "failed to upload").
         payload.start_time = `${data.start_date}T${data.start_clock}`;
-        payload.end_time = `${data.multi_day ? data.end_date : data.start_date}T${data.end_clock}`;
+        payload.end_time = `${resolvedEndDate.value}T${data.end_clock}`;
         delete payload.start_date;
         delete payload.start_clock;
         delete payload.end_date;
@@ -324,6 +340,9 @@ function submit() {
                                     <input v-model="form.end_clock" type="time" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-0" />
                                 </div>
                             </div>
+                            <p v-if="!form.multi_day && form.end_clock === '00:00' && form.start_clock > '00:00'" class="text-xs text-indigo-700">
+                                12:00 AM akan dikira sebagai tengah malam hari berikutnya.
+                            </p>
                             <p v-if="form.errors.end_time" class="text-xs text-red-500">{{ form.errors.end_time }}</p>
                         </div>
 

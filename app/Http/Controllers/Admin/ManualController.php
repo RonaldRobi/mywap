@@ -45,7 +45,7 @@ class ManualController extends Controller
             'audience' => ['required', 'string', 'in:'.implode(',', Manual::AUDIENCES)],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
-            'document' => ['required', 'file', 'mimes:pdf', 'max:30720'],
+            'document' => ['required', 'file', 'mimes:pdf', 'max:5120'],
         ]);
 
         $storedPath = $request->file('document')->store('manuals', 'public');
@@ -70,7 +70,7 @@ class ManualController extends Controller
             'audience' => ['required', 'string', 'in:'.implode(',', Manual::AUDIENCES)],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
-            'document' => ['nullable', 'file', 'mimes:pdf', 'max:30720'],
+            'document' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
         ]);
 
         $manual->title = $data['title'];

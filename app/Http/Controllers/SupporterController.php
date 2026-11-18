@@ -282,7 +282,7 @@ class SupporterController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:4096'],
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
         ]);
 

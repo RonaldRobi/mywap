@@ -152,7 +152,7 @@ class ArticleController extends Controller
             'categories.*' => 'exists:article_categories,id',
             'tags' => 'nullable|string',
             'gallery' => 'nullable|array',
-            'gallery.*' => 'image|max:4096',
+            'gallery.*' => 'image|max:2048',
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -227,7 +227,7 @@ class ArticleController extends Controller
             'categories.*' => 'exists:article_categories,id',
             'tags' => 'nullable|string',
             'gallery' => 'nullable|array',
-            'gallery.*' => 'image|max:4096',
+            'gallery.*' => 'image|max:2048',
         ]);
 
         if ($request->hasFile('cover_image')) {

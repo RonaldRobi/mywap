@@ -334,7 +334,7 @@ onBeforeUnmount(() => {
 
                     <label for="statement-pdf" class="mt-3 block text-xs font-semibold text-gray-500">Muat naik PDF</label>
                     <input id="statement-pdf" type="file" accept="application/pdf" class="mt-1 block w-full text-sm" @change="form.pdf = $event.target.files?.[0] ?? null" />
-                    <p class="mt-1 text-xs text-gray-400">Maksimum 10MB.</p>
+                    <p class="mt-1 text-xs text-gray-400">Maksimum 5MB.</p>
                     <p v-if="pdfMissing" class="mt-1 text-xs text-red-600">Muat naik fail PDF untuk jenis kandungan ini.</p>
                     <p v-else-if="form.errors.pdf" class="mt-1 text-xs text-red-600">{{ form.errors.pdf }}</p>
                 </section>

@@ -296,7 +296,7 @@ function updateOrganizationLogo(organization) {
                         <p class="text-sm font-black text-gray-800">Kad Keahlian — Belakang</p>
                         <p class="text-[11px] text-gray-500">
                             Satu design untuk semua organisasi (static, tiada data ahli).
-                            Saiz: <strong>638 × 1004 px</strong> (kad TNG 54 × 85 mm, menegak). JPG/PNG/WEBP, maks 5MB.
+                            Saiz: <strong>638 × 1004 px</strong> (kad TNG 54 × 85 mm, menegak). JPG/PNG/WEBP, maks 2MB.
                         </p>
                         <input
                             type="file"

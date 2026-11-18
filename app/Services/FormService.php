@@ -87,7 +87,7 @@ class FormService
             if ($q->type === 'file') {
                 $rule[] = 'file';
                 $rule[] = 'mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip';
-                $rule[] = 'max:10240';
+                $rule[] = 'max:2048';
             } elseif (in_array($q->type, ['email'])) {
                 $rule[] = 'email';
             } elseif (in_array($q->type, ['number'])) {

@@ -44,7 +44,7 @@ class KnowledgeBaseController extends Controller
             'answer' => ['required', 'string'],
             'keywords' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'in:'.implode(',', KnowledgeArticle::CATEGORIES)],
-            'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:10240'],
+            'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -84,7 +84,7 @@ class KnowledgeBaseController extends Controller
             'answer' => ['nullable', 'string'],
             'keywords' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'in:'.implode(',', KnowledgeArticle::CATEGORIES)],
-            'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:10240'],
+            'document' => ['nullable', 'file', 'mimes:txt,pdf', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 

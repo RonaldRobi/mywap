@@ -203,7 +203,7 @@ class SuperadminOrganizationController extends Controller
     public function updateCardFront(Request $request, Organization $organization): RedirectResponse
     {
         $data = $request->validate([
-            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $this->deletePublicFile($organization->card_front_path);
@@ -230,7 +230,7 @@ class SuperadminOrganizationController extends Controller
     public function updateCardBack(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'card_back' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'card_back' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $setting = AppSetting::singleton();
@@ -260,7 +260,7 @@ class SuperadminOrganizationController extends Controller
     public function updateCardFrontDefault(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'card_front' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $setting = AppSetting::singleton();
@@ -286,7 +286,7 @@ class SuperadminOrganizationController extends Controller
     public function updateLetterhead(Request $request, Organization $organization): RedirectResponse
     {
         $data = $request->validate([
-            'membership_letter_letterhead' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'membership_letter_letterhead' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $this->deletePublicFile($organization->membership_letter_letterhead_path);
