@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
+use App\Services\RegistrationDedupeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -73,12 +75,16 @@ class DiagnosticsController extends Controller
                 ];
             }
 
+            $summary = app(RegistrationDedupeService::class)->summary(Event::find($event->id));
+
             $report[] = [
                 'id' => $event->id,
                 'title' => $event->title,
                 'start_time' => $event->start_time,
                 'end_time' => $event->end_time,
                 'registrations' => $regs->count(),
+                'unique_participants' => $summary['unique_identities'],
+                'duplicate_rows' => $summary['duplicate_rows'],
                 'by_source' => $regs->groupBy('source')->map->count()->sortKeys()->all(),
                 'by_status' => $regs->groupBy('status')->map->count()->sortKeys()->all(),
                 'with_form' => $regs->whereNotNull('form_id')->count(),
