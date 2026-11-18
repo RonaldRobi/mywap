@@ -16,12 +16,18 @@ class PasswordController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
         $user = $request->user();
+        $forceChange = (bool) $user->must_change_password;
+
+        $rules = [
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ];
+
+        if (! $forceChange) {
+            $rules['current_password'] = ['required', 'current_password'];
+        }
+
+        $validated = $request->validate($rules);
 
         $updates = ['password' => Hash::make($validated['password'])];
 
@@ -34,6 +40,12 @@ class PasswordController extends Controller
         // Keselamatan: bila kata laluan ditukar, tarik balik semua token API
         // (peranti mobile) supaya token lama yang terlepas tidak kekal sah.
         $user->tokens()->delete();
+
+        if ($forceChange) {
+            return redirect()
+                ->route('dashboard')
+                ->with('success', 'Kata laluan berjaya ditukar.');
+        }
 
         return back();
     }

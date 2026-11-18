@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -177,11 +178,6 @@ class PollController extends Controller
             'usrahGroups' => UsrahGroup::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
                 ->get(['id', 'name']),
-            'members' => User::withoutGlobalScope(OrganizationScope::class)
-                ->where('current_organization_id', $user->current_organization_id)
-                ->select('id', 'name', 'email')
-                ->orderBy('name')
-                ->get(),
         ]);
     }
 
@@ -191,14 +187,15 @@ class PollController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $data = $this->validatePollRequest($request);
+        $organizationId = $isSuperadmin
+            ? (int) ($data['organization_id'] ?? $user->current_organization_id)
+            : (int) $user->current_organization_id;
+        $this->assertTargetsBelongToOrganization($data, $organizationId);
 
-        DB::transaction(function () use ($data, $user, $isSuperadmin) {
-            $orgId = $isSuperadmin
-                ? (int) ($data['organization_id'] ?? $user->current_organization_id)
-                : (int) $user->current_organization_id;
+        DB::transaction(function () use ($data, $organizationId) {
 
             $poll = Poll::create([
-                'organization_id' => $orgId,
+                'organization_id' => $organizationId,
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
                 'type' => $data['type'],
@@ -263,6 +260,12 @@ class PollController extends Controller
                     ]),
                 ]),
                 'target_members' => $poll->targetMembers->pluck('id')->toArray(),
+                'target_members_details' => $poll->targetMembers->map(fn (User $member) => [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'member_no' => $member->member_no,
+                ])->values(),
                 'target_usrah_groups' => $poll->targetUsrahGroups->pluck('id')->toArray(),
             ],
             'organizations' => $user->hasRole('Superadmin')
@@ -271,11 +274,6 @@ class PollController extends Controller
             'usrahGroups' => UsrahGroup::where('organization_id', $user->current_organization_id)
                 ->where('is_active', true)
                 ->get(['id', 'name']),
-            'members' => User::withoutGlobalScope(OrganizationScope::class)
-                ->where('current_organization_id', $user->current_organization_id)
-                ->select('id', 'name', 'email')
-                ->orderBy('name')
-                ->get(),
         ]);
     }
 
@@ -290,6 +288,7 @@ class PollController extends Controller
         }
 
         $data = $this->validatePollRequest($request);
+        $this->assertTargetsBelongToOrganization($data, (int) $poll->organization_id);
 
         DB::transaction(function () use ($data, $poll) {
             $poll->update([
@@ -549,5 +548,37 @@ class PollController extends Controller
             'target_usrah_groups' => ['nullable', 'array'],
             'target_usrah_groups.*' => ['integer', 'exists:usrah_groups,id'],
         ]);
+    }
+
+    private function assertTargetsBelongToOrganization(array $data, int $organizationId): void
+    {
+        if (($data['target_type'] ?? null) === 'members') {
+            $ids = $data['target_members'] ?? [];
+            $count = User::withoutGlobalScope(OrganizationScope::class)
+                ->excludeAdminPanel()
+                ->where('current_organization_id', $organizationId)
+                ->whereIn('id', $ids)
+                ->count();
+
+            if ($count !== count(array_unique($ids))) {
+                throw ValidationException::withMessages([
+                    'target_members' => 'Semua ahli sasaran mesti daripada organisasi undian ini.',
+                ]);
+            }
+        }
+
+        if (($data['target_type'] ?? null) === 'usrah') {
+            $ids = $data['target_usrah_groups'] ?? [];
+            $count = UsrahGroup::query()
+                ->where('organization_id', $organizationId)
+                ->whereIn('id', $ids)
+                ->count();
+
+            if ($count !== count(array_unique($ids))) {
+                throw ValidationException::withMessages([
+                    'target_usrah_groups' => 'Semua kumpulan usrah sasaran mesti daripada organisasi undian ini.',
+                ]);
+            }
+        }
     }
 }

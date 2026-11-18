@@ -997,6 +997,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get changePasswordSubtitle2 => 'Kemas kini kata laluan akaun myWAP anda.';
 
   @override
+  String get changePasswordTemporarySubtitle => 'Kata laluan sementara anda perlu ditukar sebelum meneruskan.';
+
+  @override
   String get currentPasswordLabel => 'Kata Laluan Semasa *';
 
   @override

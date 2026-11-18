@@ -48,4 +48,34 @@ class MemberWebPollAccessTest extends TestCase
             ->get(route('member.polls.results', $poll->id))
             ->assertOk();
     }
+
+    public function test_admin_cannot_target_member_from_another_organization(): void
+    {
+        foreach (['Superadmin', 'Admin', 'Member'] as $role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+        }
+
+        $orgA = Organization::factory()->create(['name' => 'Org A']);
+        $orgB = Organization::factory()->create(['name' => 'Org B']);
+        $admin = User::factory()->create(['current_organization_id' => $orgA->id]);
+        $admin->assignRole('Admin');
+        $foreignMember = User::factory()->create(['current_organization_id' => $orgB->id]);
+        $foreignMember->assignRole('Member');
+
+        $this->actingAs($admin)
+            ->post(route('admin.polls.store'), [
+                'title' => 'Undian Terhad',
+                'type' => 'poll',
+                'target_type' => 'members',
+                'questions' => [[
+                    'question_text' => 'Setuju?',
+                    'type' => 'single_choice',
+                    'options' => [['option_text' => 'Ya'], ['option_text' => 'Tidak']],
+                ]],
+                'target_members' => [$foreignMember->id],
+            ])
+            ->assertSessionHasErrors('target_members');
+
+        $this->assertDatabaseCount('polls', 0);
+    }
 }

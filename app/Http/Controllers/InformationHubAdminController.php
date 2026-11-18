@@ -148,7 +148,7 @@ class InformationHubAdminController extends Controller
             // Padanan tidak sensitif huruf besar/kecil + tahan NBSP / berbilang
             // ruang, dan OR antara token supaya nama penuh tetap muncul walaupun
             // ada perkataan tambahan (cth. "bin Abdullah").
-            MemberSearch::apply($query, $search);
+            MemberSearch::apply($query, $search, MemberSearch::COLUMNS, $sort === 'newest');
         }
 
         if ($roleFilter) {

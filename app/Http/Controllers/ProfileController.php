@@ -121,6 +121,18 @@ class ProfileController extends Controller
     }
 
     /**
+     * Layar wajib tukar kata laluan untuk akaun dengan kata laluan sementara.
+     */
+    public function forcePasswordChange(Request $request): Response|RedirectResponse
+    {
+        if (! $request->user()->must_change_password) {
+            return Redirect::route('profile.edit');
+        }
+
+        return Inertia::render('Profile/ForcePasswordChange');
+    }
+
+    /**
      * Display the user's profile form.
      */
     public function edit(Request $request): Response

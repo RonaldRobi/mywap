@@ -60,6 +60,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'info' => $request->session()->get('info'),
+                'warning' => $request->session()->get('warning'),
                 'temporary_password' => $request->session()->get('temporary_password'),
             ],
             'auth' => [
@@ -92,6 +93,7 @@ class HandleInertiaRequests extends Middleware
                     'state' => $user->state,
                     'is_public_in_directory' => (bool) $user->is_public_in_directory,
                     'roles' => $user->getRoleNames(),
+                    'must_change_password' => (bool) $user->must_change_password,
                     'managed_branch_id' => $user->managedBranchId(),
                     'managed_branch_ids' => $user->managedBranchIds(),
                     'organization' => $isSuperadmin

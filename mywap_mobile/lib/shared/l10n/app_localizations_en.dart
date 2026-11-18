@@ -997,6 +997,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePasswordSubtitle2 => 'Update your myWAP account password.';
 
   @override
+  String get changePasswordTemporarySubtitle => 'Your temporary password must be changed before you continue.';
+
+  @override
   String get currentPasswordLabel => 'Current Password *';
 
   @override

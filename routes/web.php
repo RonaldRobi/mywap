@@ -31,10 +31,10 @@ use App\Http\Controllers\FormController;
 use App\Http\Controllers\InfaqController;
 use App\Http\Controllers\InformationHubAdminController;
 use App\Http\Controllers\InformationHubController;
+use App\Http\Controllers\MediaStatementController;
 use App\Http\Controllers\MemberCardController;
 use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\MemberFeeController;
-use App\Http\Controllers\MediaStatementController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingSlideController;
@@ -205,9 +205,9 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::delete('/admin/usrah/groups/{usrahGroup}', [UsrahController::class, 'deleteGroup'])->name('admin.usrah.groups.delete');
         Route::post('/admin/usrah/groups/{usrahGroup}/assign', [UsrahController::class, 'assignMembers'])->name('admin.usrah.groups.assign');
         Route::get('/admin/broadcasts', [BroadcastController::class, 'index'])->name('admin.broadcasts.index');
-         Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
-         Route::post('/admin/broadcasts/{broadcast}/resend', [BroadcastController::class, 'resend'])->name('admin.broadcasts.resend');
-         Route::get('/admin/broadcasts/targets', [BroadcastController::class, 'targets'])->name('admin.broadcasts.targets');
+        Route::post('/admin/broadcasts', [BroadcastController::class, 'store'])->name('admin.broadcasts.store');
+        Route::post('/admin/broadcasts/{broadcast}/resend', [BroadcastController::class, 'resend'])->name('admin.broadcasts.resend');
+        Route::get('/admin/broadcasts/targets', [BroadcastController::class, 'targets'])->name('admin.broadcasts.targets');
         Route::get('/admin/broadcasts/{broadcast}/logs', [BroadcastController::class, 'logs'])->name('admin.broadcasts.logs');
         // Pendukung (emel bukan ahli) untuk hebahan
         Route::get('/admin/supporters', [SupporterController::class, 'index'])->name('admin.supporters.index');
@@ -593,6 +593,10 @@ Route::middleware('auth')->group(function () {
     // Force profile update flow (intentionally outside profile_complete middleware blocking)
     Route::get('/member/complete-profile', [ProfileController::class, 'completeProfile'])->name('member.complete-profile');
     Route::post('/member/complete-profile', [ProfileController::class, 'storeCompleteProfile'])->name('member.complete-profile.store');
+
+    // Wajib tukar kata laluan sementara. Diletak di luar kumpulan profile_complete
+    // supaya pengguna tidak tersangkut pada halaman profile.
+    Route::get('/profile/change-password', [ProfileController::class, 'forcePasswordChange'])->name('profile.change-password');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

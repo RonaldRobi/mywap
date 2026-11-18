@@ -17,7 +17,7 @@ class EnsurePasswordIsChanged
         }
 
         if (
-            $request->routeIs('profile.edit', 'profile.update', 'profile.show', 'password.update', 'logout')
+            $request->routeIs('profile.change-password', 'password.update', 'logout')
             || $request->routeIs('password.*')
             || $request->routeIs('login*')
             || $request->is('build/*')
@@ -28,7 +28,7 @@ class EnsurePasswordIsChanged
         }
 
         return redirect()
-            ->route('profile.edit')
+            ->route('profile.change-password')
             ->with('warning', 'Kata laluan sementara anda perlu ditukar sebelum meneruskan.');
     }
 }

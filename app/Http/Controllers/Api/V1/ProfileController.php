@@ -95,14 +95,20 @@ class ProfileController extends Controller
      */
     public function password(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
         $user = $request->user();
+        $forceChange = (bool) $user->must_change_password;
 
-        if (! Hash::check($validated['current_password'], $user->password)) {
+        $rules = [
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ];
+
+        if (! $forceChange) {
+            $rules['current_password'] = ['required', 'string'];
+        }
+
+        $validated = $request->validate($rules);
+
+        if (! $forceChange && ! Hash::check((string) ($validated['current_password'] ?? ''), $user->password)) {
             throw ValidationException::withMessages([
                 'current_password' => 'Kata laluan semasa tidak tepat.',
             ]);

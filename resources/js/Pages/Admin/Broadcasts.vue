@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useMemberSearch } from '@/composables/useMemberSearch';
 
 const props = defineProps({
     recentMessages: { type: Array, default: () => [] },
@@ -116,56 +117,21 @@ function submitBroadcast() {
 }
 
 // ─── Multi-Member Search ─────────────────────────────────────────────────────
-const memberSearchQuery = ref('');
-const memberResults = ref([]);
 const selectedMembers = ref([]);
-const memberSearchLoading = ref(false);
-const memberSearchError = ref('');
-const showMemberDropdown = ref(false);
-let memberDebounceTimer = null;
-let memberRequestSequence = 0;
+const { query: memberSearchQuery, results: memberResults, loading: memberSearchLoading, error: memberSearchError, open: showMemberDropdown, search: searchMembers, clear: clearMemberSearch } = useMemberSearch({
+    params: () => props.isSuperadmin ? {} : { organization_id: props.defaultOrganizationId },
+});
+const availableMemberResults = computed(() => {
+    const selectedIds = selectedMembers.value.map((member) => member.id);
+    return memberResults.value.filter((member) => !selectedIds.includes(member.id));
+});
 
 function orgNameById(orgId) {
     return props.organizations.find((o) => Number(o.id) === Number(orgId))?.name;
 }
 
 function onMemberSearchInput(val) {
-    const normalized = val.trim();
-    memberSearchQuery.value = val;
-    memberSearchError.value = '';
-    clearTimeout(memberDebounceTimer);
-    memberRequestSequence += 1;
-    if (normalized.length < 2) {
-        memberResults.value = [];
-        showMemberDropdown.value = false;
-        return;
-    }
-    memberDebounceTimer = setTimeout(() => {
-        const sequence = ++memberRequestSequence;
-        memberSearchLoading.value = true;
-        const params = { q: normalized };
-        if (!props.isSuperadmin) {
-            params.organization_id = props.defaultOrganizationId;
-        }
-        axios.get('/api/members/search', { params })
-            .then((res) => {
-                if (sequence !== memberRequestSequence) return;
-                const alreadySelected = selectedMembers.value.map(m => m.id);
-                memberResults.value = (res.data || []).filter(m => !alreadySelected.includes(m.id));
-                showMemberDropdown.value = true;
-            })
-            .catch((err) => {
-                if (sequence !== memberRequestSequence) return;
-                memberResults.value = [];
-                memberSearchError.value = err?.response?.status === 429
-                    ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
-                    : 'Ralat carian. Sila cuba lagi.';
-                showMemberDropdown.value = true;
-            })
-            .finally(() => {
-                if (sequence === memberRequestSequence) memberSearchLoading.value = false;
-            });
-    }, 300);
+    searchMembers(val);
 }
 
 function addMember(member) {
@@ -173,10 +139,7 @@ function addMember(member) {
         selectedMembers.value.push(member);
         broadcastForm.recipient_ids = selectedMembers.value.map(m => m.id);
     }
-    memberSearchQuery.value = '';
-    memberResults.value = [];
-    memberSearchError.value = '';
-    showMemberDropdown.value = false;
+    clearMemberSearch();
 }
 
 function removeMember(memberId) {
@@ -189,7 +152,7 @@ function onMemberBlur() {
 }
 
 function onMemberFocus() {
-    if (memberResults.value.length > 0 || memberSearchError.value) {
+    if (availableMemberResults.value.length > 0 || memberSearchError.value) {
         showMemberDropdown.value = true;
     }
 }
@@ -544,9 +507,7 @@ watch(() => props.recentMessages, () => {
 
 onBeforeUnmount(() => {
     stopPolling();
-    clearTimeout(memberDebounceTimer);
     clearTimeout(targetDebounceTimer);
-    memberRequestSequence += 1;
     targetRequestSequence += 1;
 });
 </script>
@@ -787,7 +748,7 @@ onBeforeUnmount(() => {
 
                                 <ul v-if="showMemberDropdown" class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white py-1 shadow-lg max-h-48 overflow-y-auto">
                                     <li
-                                        v-for="member in memberResults"
+                                        v-for="member in availableMemberResults"
                                         :key="member.id"
                                         @mousedown.prevent="addMember(member)"
                                         class="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -803,7 +764,7 @@ onBeforeUnmount(() => {
                                         </span>
                                     </li>
                                     <li v-if="memberSearchError" class="px-4 py-3 text-sm text-red-600 text-center">{{ memberSearchError }}</li>
-                                    <li v-else-if="!memberSearchLoading && memberResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
+                                    <li v-else-if="!memberSearchLoading && availableMemberResults.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">Tiada hasil</li>
                                 </ul>
                             </div>
 

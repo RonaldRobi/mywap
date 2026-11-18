@@ -57,6 +57,7 @@ class BranchAdminTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutVite();
 
         foreach (['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan', 'Member'] as $role) {
             Role::create(['name' => $role, 'guard_name' => 'web']);
@@ -494,11 +495,15 @@ class BranchAdminTest extends TestCase
 
         $this->actingAs($this->branchAdmin)
             ->get(route('admin.dashboard'))
-            ->assertRedirect(route('profile.edit'));
+            ->assertRedirect(route('profile.change-password'));
+
+        $this->actingAs($this->branchAdmin)
+            ->get(route('profile.change-password'))
+            ->assertOk();
 
         $this->actingAs($this->branchAdmin)
             ->get(route('profile.edit'))
-            ->assertOk();
+            ->assertRedirect(route('profile.change-password'));
     }
 
     public function test_changing_password_clears_the_temporary_password_flag(): void

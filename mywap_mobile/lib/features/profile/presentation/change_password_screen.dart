@@ -40,6 +40,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final mustChangePassword =
+        ref.read(currentUserProvider)?.must_change_password ?? false;
+
     setState(() {
       _saving = true;
       _error = null;
@@ -48,7 +51,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       await ref
           .read(profileRepositoryProvider)
           .changePassword(
-            currentPassword: _currentController.text.trim(),
+            currentPassword:
+                mustChangePassword ? null : _currentController.text.trim(),
             newPassword: _newController.text,
           );
       await ref.read(authControllerProvider.notifier).refreshCurrentUser();
@@ -56,7 +60,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.passwordUpdated)));
-      Navigator.of(context).pop();
+      Navigator.of(context).maybePop();
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -75,16 +79,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mustChangePassword =
+        ref.watch(currentUserProvider)?.must_change_password ?? false;
+
     return Scaffold(
       appBar: AppBar(
-        leading: const AppBackButton(),
+        automaticallyImplyLeading: !mustChangePassword,
+        leading: mustChangePassword ? null : const AppBackButton(),
         title: Text(context.l10n.changePassword),
       ),
       body: ListView(
         padding: const EdgeInsets.all(Spacing.lg),
         children: [
           Text(
-            context.l10n.changePasswordSubtitle2,
+            mustChangePassword
+                ? context.l10n.changePasswordTemporarySubtitle
+                : context.l10n.changePasswordSubtitle2,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -94,20 +104,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             key: _formKey,
             child: Column(
               children: [
-                TextFormField(
-                  controller: _currentController,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.currentPasswordLabel,
-                    prefixIcon: const Icon(Icons.lock_outline),
+                if (!mustChangePassword) ...[
+                  TextFormField(
+                    controller: _currentController,
+                    obscureText: _obscure,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.currentPasswordLabel,
+                      prefixIcon: const Icon(Icons.lock_outline),
+                    ),
+                    validator:
+                        (value) =>
+                            (value == null || value.trim().isEmpty)
+                                ? context.l10n.currentPasswordRequired
+                                : null,
                   ),
-                  validator:
-                      (value) =>
-                          (value == null || value.trim().isEmpty)
-                              ? context.l10n.currentPasswordRequired
-                              : null,
-                ),
-                const SizedBox(height: Spacing.md),
+                  const SizedBox(height: Spacing.md),
+                ],
                 TextFormField(
                   controller: _newController,
                   obscureText: _obscure,
@@ -185,6 +197,18 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               _saving ? context.l10n.saving : context.l10n.savePassword,
             ),
           ),
+          if (mustChangePassword) ...[
+            const SizedBox(height: Spacing.md),
+            TextButton(
+              onPressed:
+                  _saving
+                      ? null
+                      : () => ref
+                            .read(authControllerProvider.notifier)
+                            .logout(),
+              child: Text(context.l10n.logout),
+            ),
+          ],
         ],
       ),
     );

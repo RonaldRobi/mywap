@@ -107,6 +107,21 @@ class InformationHubMemberManageTest extends TestCase
         $this->assertSame('Ahmad Firdaus', $names[0]);
     }
 
+    public function test_explicit_member_sort_overrides_search_relevance(): void
+    {
+        $this->makeMember(['name' => 'Ahmad Firdaus']);
+        $this->makeMember(['name' => 'Ahmad Zaki']);
+
+        $response = $this->actingAs($this->superadmin)
+            ->get('/admin/information-hub/manage?search='.urlencode('Ahmad Firdaus').'&sort=name_desc');
+
+        $response->assertOk();
+        $props = $response->viewData('page')['props'] ?? [];
+        $names = collect($props['members']['data'] ?? [])->pluck('name')->all();
+
+        $this->assertSame('Ahmad Zaki', $names[0]);
+    }
+
     public function test_bulk_branch_search_uses_the_member_search_contract(): void
     {
         $member = $this->makeMember([

@@ -2027,6 +2027,12 @@ abstract class AppLocalizations {
   /// **'Update your myWAP account password.'**
   String get changePasswordSubtitle2;
 
+  /// No description provided for @changePasswordTemporarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your temporary password must be changed before you continue.'**
+  String get changePasswordTemporarySubtitle;
+
   /// No description provided for @currentPasswordLabel.
   ///
   /// In en, this message translates to:

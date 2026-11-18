@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onUnmounted } from 'vue';
-import axios from 'axios';
+import { ref, computed } from 'vue';
+import { useMemberSearch } from '@/composables/useMemberSearch';
 
 const props = defineProps({
     modelValue: {
@@ -19,52 +19,17 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const query = ref('');
-const results = ref([]);
-const loading = ref(false);
-const error = ref('');
 const selected = ref(props.modelValue);
-const showDropdown = ref(false);
-let debounceTimer = null;
-let requestSequence = 0;
+const { query, results, loading, error, open: showDropdown, search, clear } = useMemberSearch();
 
 const hasSelection = computed(() => selected.value !== null);
 
 function onInput(val) {
-    const normalized = val.trim();
-    query.value = val;
-    error.value = '';
     if (hasSelection.value) {
         selected.value = null;
         emit('update:modelValue', null);
     }
-    clearTimeout(debounceTimer);
-    if (normalized.length < 2) {
-        results.value = [];
-        showDropdown.value = false;
-        return;
-    }
-    debounceTimer = setTimeout(() => search(normalized), 300);
-}
-
-function search(val) {
-    const sequence = ++requestSequence;
-    loading.value = true;
-    axios.get('/api/members/search', { params: { q: val } })
-        .then((res) => {
-            if (sequence !== requestSequence) return;
-            results.value = res.data;
-            showDropdown.value = true;
-        })
-        .catch(() => {
-            if (sequence !== requestSequence) return;
-            results.value = [];
-            error.value = 'Carian gagal. Sila cuba lagi.';
-            showDropdown.value = true;
-        })
-        .finally(() => {
-            if (sequence === requestSequence) loading.value = false;
-        });
+    search(val);
 }
 
 function select(member) {
@@ -76,10 +41,7 @@ function select(member) {
 
 function clearSelection() {
     selected.value = null;
-    query.value = '';
-    results.value = [];
-    error.value = '';
-    showDropdown.value = false;
+    clear();
     emit('update:modelValue', null);
 }
 
@@ -93,10 +55,6 @@ function onFocus() {
     }
 }
 
-onUnmounted(() => {
-    clearTimeout(debounceTimer);
-    requestSequence += 1;
-});
 </script>
 
 <template>

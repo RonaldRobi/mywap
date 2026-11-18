@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, reactive, watch } from 'vue';
+import { ref, computed, reactive } from 'vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { useMemberSearch } from '@/composables/useMemberSearch';
 
 const props = defineProps({
     organizations: {
@@ -49,7 +49,11 @@ const filteredOrganizations = computed(() => {
 
     return props.organizations.map(org => {
         const filteredBranches = org.branches.filter(b => {
-            const matchesSearch = !query || b.name.toLowerCase().includes(query);
+            const searchable = [b.name, b.state, b.email, b.phone, org.name]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            const matchesSearch = !query || searchable.includes(query);
             const matchesState = !state || b.state === state;
             return matchesSearch && matchesState;
         });
@@ -168,10 +172,12 @@ function submitDeleteBranch() {
 
 // ── Admin & Setiausaha Management ──────────────────────────────────────────────
 const managingAdminsBranch = ref(null);
-const adminSearchQuery = ref('');
-const adminSearchResults = ref([]);
-const adminSearchLoading = ref(false);
-let adminSearchTimer = null;
+const { query: adminSearchQuery, results: adminSearchResults, loading: adminSearchLoading, error: adminSearchError, open: adminSearchOpen, search: searchBranchMembers, clear: clearBranchMemberSearch } = useMemberSearch({
+    params: () => managingAdminsBranch.value ? {
+        organization_id: managingAdminsBranch.value.organization_id,
+        branch_id: managingAdminsBranch.value.id,
+    } : {},
+});
 
 const managerForm = useForm({ name: '', email: '', password: '', password_confirmation: '' });
 const passwordForm = useForm({ password: '', password_confirmation: '' });
@@ -227,15 +233,6 @@ const secretaryLimitReached = computed(() =>
     secretaries.value.length >= (managingAdminsBranch.value?.secretary_limit ?? 3)
 );
 
-watch(adminSearchQuery, (val) => {
-    clearTimeout(adminSearchTimer);
-    if (!val || val.length < 2) {
-        adminSearchResults.value = [];
-        return;
-    }
-    adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
-});
-
 function findBranch(id, organizations = page.props.organizations) {
     for (const org of organizations ?? []) {
         const branch = org.branches.find((item) => item.id === id);
@@ -261,39 +258,12 @@ function refreshBranchRefs(organizations = page.props.organizations) {
 
 function openAdminManage(branch) {
     managingAdminsBranch.value = branch;
-    adminSearchQuery.value = '';
-    adminSearchResults.value = [];
+    clearBranchMemberSearch();
     secretaryStatus.value = { type: '', message: '' };
     selectedManagedBranchIds.value = [...(branch.manager?.managed_branch_ids ?? [])];
     managerForm.reset();
     passwordForm.reset();
     branchScopeForm.reset();
-}
-
-function searchBranchMembers(val) {
-    if (!managingAdminsBranch.value) return;
-    adminSearchLoading.value = true;
-    axios.get('/api/members/search', {
-        params: {
-            q: val,
-            organization_id: managingAdminsBranch.value.organization_id,
-            branch_id: managingAdminsBranch.value.id,
-        },
-    })
-        .then((res) => {
-            const existingIds = new Set([
-                ...(managingAdminsBranch.value?.admins || []).map((a) => a.id),
-                ...secretaries.value.map((a) => a.id),
-            ]);
-            adminSearchResults.value = (res.data || []).filter((m) => !existingIds.has(m.id));
-        })
-        .catch((err) => {
-            console.error('Member search failed:', err);
-            adminSearchResults.value = [];
-        })
-        .finally(() => {
-            adminSearchLoading.value = false;
-        });
 }
 
 function createManagerAccount() {
@@ -361,8 +331,7 @@ function assignSecretary(member) {
                 type: 'success',
                 message: flash.success || 'Setiausaha berjaya dilantik.',
             };
-            adminSearchQuery.value = '';
-            adminSearchResults.value = [];
+            clearBranchMemberSearch();
             secretaryForm.reset();
             refreshBranchRefs(page.props.organizations);
         },
@@ -448,7 +417,7 @@ const malaysianStates = [
                     <input
                         v-model="searchQuery"
                         type="text"
-                        placeholder="Cari cawangan..."
+                        placeholder="Cari cawangan, negeri, organisasi atau emel..."
                         class="w-full rounded-2xl border border-gray-200 pl-10 pr-4 py-2.5 text-sm placeholder:text-gray-400 focus:border-indigo-400 focus:ring-0 outline-none transition-colors"
                     />
                 </div>
@@ -978,10 +947,12 @@ const malaysianStates = [
                             <div v-if="!secretaryLimitReached" class="mt-3">
                                 <div class="relative">
                                     <input
-                                        v-model="adminSearchQuery"
+                                        :value="adminSearchQuery"
                                         type="text"
                                         placeholder="Cari ahli cawangan untuk dilantik..."
                                         class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors"
+                                        @input="searchBranchMembers($event.target.value)"
+                                        @focus="adminSearchOpen = adminSearchResults.length > 0 || adminSearchError"
                                     />
                                     <div v-if="adminSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
                                         <svg class="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
@@ -990,10 +961,12 @@ const malaysianStates = [
                                         </svg>
                                     </div>
                                     <ul
-                                        v-if="adminSearchResults.length > 0"
+                                        v-if="adminSearchOpen"
                                         class="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto"
                                     >
+                                        <li v-if="adminSearchError" class="px-3 py-2.5 text-sm text-red-600">{{ adminSearchError }}</li>
                                         <li
+                                            v-else
                                             v-for="member in adminSearchResults"
                                             :key="member.id"
                                             @click="assignSecretary(member)"
@@ -1002,6 +975,7 @@ const malaysianStates = [
                                             <span class="font-medium text-gray-800">{{ member.name }}</span>
                                             <span class="text-xs text-gray-400 font-mono">{{ member.member_no }}</span>
                                         </li>
+                                        <li v-if="!adminSearchError && !adminSearchLoading && adminSearchResults.length === 0" class="px-3 py-2.5 text-sm text-gray-500">Tiada ahli dijumpai.</li>
                                     </ul>
                                 </div>
                                 <p class="mt-1 text-xs text-gray-400">Hanya ahli cawangan ini yang mempunyai emel sebenar boleh dilantik. Setiap pelantikan menetapkan semula kata laluan akaun admin cawangan dan menghantar kata laluan sementara ke emel setiausaha.</p>

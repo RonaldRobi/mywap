@@ -59,7 +59,7 @@ class MemberSearch
      *
      * @param  list<string>  $columns
      */
-    public static function apply(Builder $query, mixed $search, array $columns = self::COLUMNS): void
+    public static function apply(Builder $query, mixed $search, array $columns = self::COLUMNS, bool $rankByRelevance = true): void
     {
         $tokens = self::tokens($search);
         if ($tokens === []) {
@@ -77,7 +77,9 @@ class MemberSearch
             }
         });
 
-        self::orderByRelevance($query, $tokens);
+        if ($rankByRelevance) {
+            self::orderByRelevance($query, $tokens);
+        }
     }
 
     /**

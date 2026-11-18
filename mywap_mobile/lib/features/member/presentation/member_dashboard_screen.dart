@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -127,11 +128,10 @@ class _DashboardContent extends ConsumerWidget {
                   )
                 else
                   SizedBox(
-                    // Kad program kini guna poster 4:5 penuh (175 × 218.75)
-                    // + blok teks di bawah; 230 lama terlalu rendah dan
-                    // menyebabkan limpahan (overflow).
-                    height: 320,
+                    // Kad poster penuh 4:5 (200 × 250) mengikut standard poster moden.
+                    height: 250,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: events.length,
                       separatorBuilder:
@@ -1028,102 +1028,245 @@ class _Watermark extends StatelessWidget {
   }
 }
 
+String _formatEventDate(Event event) {
+  if (event.start_time?.isNotEmpty == true) {
+    final dt = DateTime.tryParse(event.start_time!);
+    if (dt != null) {
+      return Formatters.shortDate(dt.toLocal());
+    }
+  }
+  final raw = event.start_formatted?.trim();
+  if (raw == null || raw.isEmpty) return '';
+
+  if (raw.contains('/')) {
+    final datePart = raw.split(' ').first;
+    final parts = datePart.split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null && m >= 1 && m <= 12) {
+        return '$d ${Formatters.months[m - 1]} $y';
+      }
+    }
+  }
+
+  if (raw.contains('•')) {
+    final datePart = raw.split('•').first.trim();
+    if (datePart.contains(',')) {
+      return datePart.split(',').last.trim();
+    }
+    return datePart;
+  }
+
+  return raw;
+}
+
 class _EventCard extends StatelessWidget {
   const _EventCard({required this.event});
   final Event event;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 175,
-      child: Material(
-        color: AppColors.white,
+    final isOnline = event.type == 'online';
+    final locationText = isOnline
+        ? (event.location_or_link?.isNotEmpty == true
+            ? event.location_or_link!
+            : context.l10n.eventOnline)
+        : (event.location_or_link?.isNotEmpty == true
+            ? event.location_or_link!
+            : context.l10n.eventPhysical);
+    final dateText = _formatEventDate(event);
+
+    return Container(
+      width: 200,
+      decoration: BoxDecoration(
+        color: AppColors.movementNavy,
         borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.35),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.card,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: AppRadius.card,
           onTap: () => context.push('/events/${event.id}'),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Poster program 1080×1350 (4:5). `Expanded` + `BoxFit.cover`
-                // lama memotong poster; guna ratio sumber supaya poster penuh
-                // kelihatan. Tinggi senarai mendatar di atas dinaikkan untuk
-                // memberi ruang.
-                AspectRatio(
-                  aspectRatio: 4 / 5,
-                  child: Stack(
-                    fit: StackFit.expand,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Poster imej latar penuh (4:5)
+              if (event.featured_image_url?.isNotEmpty == true)
+                AppImage(event.featured_image_url, fit: BoxFit.cover)
+              else
+                Container(
+                  color: AppColors.movementNavy,
+                  child: Center(
+                    child: Icon(
+                      Icons.event_outlined,
+                      size: 44,
+                      color: AppColors.movementSoftGreen.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              // Lapisan gradien halus dari tengah ke bawah untuk kontras teks
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Color(0x2012241C),
+                      Color(0xCC12241C),
+                      Color(0xF512241C),
+                    ],
+                    stops: [0.35, 0.55, 0.80, 1.0],
+                  ),
+                ),
+              ),
+              // Lencana status Online / Fizikal di bucu atas (rekaan kemas berpetunjuk titik bercahaya)
+              Positioned(
+                left: Spacing.sm + 2,
+                top: Spacing.sm + 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.movementNavy.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: AppColors.white.withValues(alpha: 0.22),
+                      width: 0.75,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (event.featured_image_url?.isNotEmpty == true)
-                        AppImage(event.featured_image_url, fit: BoxFit.cover)
-                      else
-                        Container(color: AppColors.paleGreen),
-                      const DecoratedBox(
+                      Container(
+                        width: 6,
+                        height: 6,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [AppColors.scrim, Colors.transparent],
-                          ),
+                          shape: BoxShape.circle,
+                          color:
+                              isOnline
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFFFBBF24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isOnline
+                                      ? const Color(0xFF34D399)
+                                      : const Color(0xFFFBBF24))
+                                  .withValues(alpha: 0.6),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
                       ),
-                      Positioned(
-                        left: Spacing.sm,
-                        top: Spacing.sm,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            event.type == 'physical'
-                                ? context.l10n.eventPhysical
-                                : context.l10n.eventOnline,
-                            style: const TextStyle(
-                              fontSize: AppTextTheme.minSize,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isOnline
+                            ? context.l10n.eventOnline.toUpperCase()
+                            : context.l10n.eventPhysical.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ],
                   ),
                 ),
-                // `Flexible` supaya blok teks boleh mengecil apabila pengguna
-                // membesarkan saiz teks sistem, tanpa limpahan (overflow).
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Spacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          event.title ?? '-',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              // Blok maklumat di bahagian bawah (ketinggian seragam)
+              Positioned(
+                left: Spacing.md,
+                right: Spacing.md,
+                bottom: Spacing.md,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dateText.isNotEmpty) ...[
+                      Text(
+                        dateText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF6EE7B7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          event.start_formatted ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
+                    SizedBox(
+                      height: 36,
+                      child: Text(
+                        event.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          isOnline
+                              ? Icons.link_rounded
+                              : Icons.location_on_outlined,
+                          size: 13,
+                          color: AppColors.white.withValues(alpha: 0.85),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            locationText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.white.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.white.withValues(alpha: 0.18),
+                            border: Border.all(
+                              color: AppColors.white.withValues(alpha: 0.25),
+                              width: 0.75,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 12,
+                            color: AppColors.white,
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1209,77 +1352,68 @@ class _InfaqCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress =
         ((item.progress_percent ?? 0) / 100).clamp(0, 1).toDouble();
-    return SizedBox(
-      width: 172,
-      child: Material(
+    return Container(
+      width: 176,
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.subtle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: AppRadius.card,
           onTap: () => context.go('/infaq'),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      AppImage(item.image_path, fit: BoxFit.cover),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [AppColors.scrim, Colors.transparent],
-                          ),
-                        ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: AppImage(item.image_path, fit: BoxFit.cover),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Spacing.md),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: Spacing.sm),
+                    ClipRRect(
+                      borderRadius: AppRadius.xs,
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 5,
+                        backgroundColor: AppColors.divider,
+                        color: AppColors.movementGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.l10n.collectedPercent(
+                        (item.progress_percent ?? 0).toInt(),
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(Spacing.sm),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title ?? '-',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                        ),
-                      ),
-                      const SizedBox(height: Spacing.sm),
-                      ClipRRect(
-                        borderRadius: AppRadius.xs,
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 5,
-                          backgroundColor: AppColors.divider,
-                          color: AppColors.movementGreen,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        context.l10n.collectedPercent(
-                          (item.progress_percent ?? 0).toInt(),
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1294,75 +1428,80 @@ class _MediaStatementPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: 175,
-      child: Material(
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.subtle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: AppRadius.card,
           onTap: () => context.push('/media-statements/${item.id}'),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AspectRatio(
-                  aspectRatio: 4 / 5,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (item.featuredImage?.isNotEmpty == true)
-                        AppImage(item.featuredImage, fit: BoxFit.cover)
-                      else
-                        Container(color: AppColors.paleGreen),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [AppColors.scrim, Colors.transparent],
-                          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 4 / 5,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (item.featuredImage?.isNotEmpty == true)
+                      AppImage(item.featuredImage, fit: BoxFit.cover)
+                    else
+                      Container(color: AppColors.paleGreen),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [AppColors.scrim, Colors.transparent],
                         ),
                       ),
-                      Positioned(
-                        left: Spacing.sm,
-                        bottom: Spacing.sm,
-                        right: Spacing.sm,
-                        child: Text(
-                          item.organizationName ?? context.l10n.newsAllOrganizations,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: AppTextTheme.minSize,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.white,
-                          ),
+                    ),
+                    Positioned(
+                      left: Spacing.sm,
+                      bottom: Spacing.sm,
+                      right: Spacing.sm,
+                      child: Text(
+                        item.organizationName ?? context.l10n.newsAllOrganizations,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: AppTextTheme.minSize,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.white,
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.all(Spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
                 ),
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Spacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          item.title ?? '-',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1435,51 +1574,56 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 172,
-      child: Material(
+    return Container(
+      width: 176,
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.subtle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: AppRadius.card,
           onTap: () => context.push('/news/${item.id}'),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child:
-                      item.cover_image_path?.isNotEmpty == true
-                          ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                          : Container(color: AppColors.paleGreen),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title ?? '-',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child:
+                    item.cover_image_path?.isNotEmpty == true
+                        ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                        : Container(color: AppColors.paleGreen),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.category_name ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.category_name ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1493,51 +1637,56 @@ class _ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 172,
-      child: Material(
+    return Container(
+      width: 176,
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: AppRadius.card,
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
+        boxShadow: AppShadows.subtle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: AppRadius.card,
           onTap: () => context.push('/articles/${item.id}'),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child:
-                      item.cover_image_path?.isNotEmpty == true
-                          ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                          : Container(color: AppColors.paleGreen),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title ?? '-',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child:
+                    item.cover_image_path?.isNotEmpty == true
+                        ? AppImage(item.cover_image_path, fit: BoxFit.cover)
+                        : Container(color: AppColors.paleGreen),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.author_name ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.author_name ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

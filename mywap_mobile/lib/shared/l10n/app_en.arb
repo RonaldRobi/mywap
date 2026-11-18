@@ -336,6 +336,7 @@
   "profileCompleted": "Profile completed successfully.",
   "passwordUpdated": "Your password has been updated.",
   "changePasswordSubtitle2": "Update your myWAP account password.",
+  "changePasswordTemporarySubtitle": "Your temporary password must be changed before you continue.",
   "currentPasswordLabel": "Current Password *",
   "currentPasswordRequired": "Please enter your current password.",
   "newPasswordRequiredLabel": "New Password *",

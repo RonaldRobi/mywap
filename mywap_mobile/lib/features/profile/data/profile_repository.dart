@@ -59,11 +59,12 @@ class ProfileRepository {
 
   /// `POST /profile/password` — change the account password.
   Future<void> changePassword({
-    required String currentPassword,
+    String? currentPassword,
     required String newPassword,
   }) async {
     await _api.post(ApiPaths.profilePassword, body: {
-      'current_password': currentPassword,
+      if (currentPassword != null && currentPassword.isNotEmpty)
+        'current_password': currentPassword,
       'password': newPassword,
       'password_confirmation': newPassword,
     });

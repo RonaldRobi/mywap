@@ -322,6 +322,7 @@
   "profileCompleted": "Profil berjaya dilengkapkan.",
   "passwordUpdated": "Kata laluan anda telah dikemas kini.",
   "changePasswordSubtitle2": "Kemas kini kata laluan akaun myWAP anda.",
+  "changePasswordTemporarySubtitle": "Kata laluan sementara anda perlu ditukar sebelum meneruskan.",
   "currentPasswordLabel": "Kata Laluan Semasa *",
   "currentPasswordRequired": "Sila masukkan kata laluan semasa.",
   "newPasswordRequiredLabel": "Kata Laluan Baharu *",
