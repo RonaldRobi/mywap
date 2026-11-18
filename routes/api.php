@@ -6,10 +6,7 @@ use App\Http\Controllers\Api\V1\AppConfigController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\MemberDashboardController;
 use App\Http\Controllers\Api\V1\OnboardingController;
-use App\Http\Controllers\DiagnosticsController;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/__diag/dialog-ummah/{token}', [DiagnosticsController::class, 'dialogUmmah']);
 
 Route::middleware(['throttle:120,1,api-members-search'])->group(function () {
     Route::get('/members/search', [MemberSearchController::class, 'search']);
