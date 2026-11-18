@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Registration;
 use App\Services\DokuService;
 use App\Services\FeeService;
+use App\Services\OrderService;
 use App\Services\RegistrationPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -272,7 +273,10 @@ class DokuController extends Controller
                 $this->feeService->markAsPaid($user, $year, (float) $payment->amount, $payment->id);
             }
         } elseif ($payableType === 'order' && $payableId) {
-            Order::where('id', $payableId)->update(['status' => 'paid']);
+            $order = Order::find($payableId);
+            if ($order) {
+                app(OrderService::class)->markOrderPaid($order);
+            }
         } elseif ($payableType === Registration::class) {
             app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }

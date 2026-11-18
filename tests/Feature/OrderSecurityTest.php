@@ -313,4 +313,59 @@ class OrderSecurityTest extends TestCase
             'status' => 'pending',
         ]);
     }
+
+    public function test_expiring_unpaid_order_cancels_it_and_releases_stock(): void
+    {
+        $product = $this->product(['stock' => 20]);
+
+        $this->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 3]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+        ])->assertSessionHasNoErrors();
+
+        $order = Order::latest('id')->firstOrFail();
+        $order->created_at = now()->subHours(25);
+        $order->saveQuietly();
+
+        $this->artisan('orders:expire-unpaid')->assertSuccessful();
+
+        $this->assertSame('cancelled', $order->fresh()->status);
+        $this->assertSame(20, $product->fresh()->stock);
+
+        // Running the command again must not restore the same reservation twice.
+        $this->artisan('orders:expire-unpaid')->assertSuccessful();
+        $this->assertSame(20, $product->fresh()->stock);
+    }
+
+    public function test_expiry_does_not_cancel_recent_or_paid_orders(): void
+    {
+        $product = $this->product(['stock' => 20]);
+
+        $this->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+        ])->assertSessionHasNoErrors();
+        $pending = Order::latest('id')->firstOrFail();
+
+        $this->post(route('mall.checkout'), [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Siti',
+            'shipping_phone' => '0123456788',
+            'shipping_email' => 'siti@example.test',
+        ])->assertSessionHasNoErrors();
+        $paid = Order::latest('id')->firstOrFail();
+        $paid->status = 'paid';
+        $paid->created_at = now()->subHours(25);
+        $paid->saveQuietly();
+
+        $this->artisan('orders:expire-unpaid')->assertSuccessful();
+
+        $this->assertSame('pending', $pending->fresh()->status);
+        $this->assertSame('paid', $paid->fresh()->status);
+        $this->assertSame(18, $product->fresh()->stock);
+    }
 }

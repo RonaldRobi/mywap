@@ -12,6 +12,7 @@ use App\Services\BayarCashService;
 use App\Services\DonorService;
 use App\Services\FeeService;
 use App\Services\RegistrationPaymentService;
+use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -427,7 +428,10 @@ class BayarCashController extends Controller
                 $this->feeService->markAsPaid($user, $year, (float) $payment->amount, $payment->id);
             }
         } elseif ($payableType === 'order' && $payableId) {
-            Order::where('id', $payableId)->update(['status' => 'paid']);
+            $order = Order::find($payableId);
+            if ($order) {
+                app(OrderService::class)->markOrderPaid($order);
+            }
         } elseif ($payableType === Registration::class) {
             app(RegistrationPaymentService::class)->confirmRegistration($payment);
         }

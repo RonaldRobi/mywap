@@ -8,8 +8,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Resit / pengesahan pesanan diterima, dihantar ke emel pelanggan (ahli atau
- * tetamu). Pautan resit ialah signed URL supaya tidak boleh dienumerasi.
+ * Pengesahan pesanan selepas bayaran berjaya, dihantar ke emel pelanggan.
+ * Pautan resit ialah signed URL supaya tidak boleh dienumerasi.
  */
 class OrderPlacedEmail extends Notification
 {
@@ -28,9 +28,9 @@ class OrderPlacedEmail extends Notification
         $total = number_format((float) $order->total + (float) $order->postage_cost, 2, '.', '');
 
         $message = (new MailMessage)
-            ->subject('Pesanan Diterima #'.$order->id)
+            ->subject('Bayaran Disahkan, Pesanan Diproses #'.$order->id)
             ->greeting('Terima kasih')
-            ->line('Pesanan anda telah diterima dan sedang diproses.')
+            ->line('Bayaran anda telah disahkan. Pesanan sedang diproses.')
             ->line('Jumlah: RM '.$total);
 
         foreach ($order->items as $item) {

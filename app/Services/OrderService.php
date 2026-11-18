@@ -337,8 +337,6 @@ class OrderService
             $user !== null && $user->hasRole('Member'),
         );
 
-        $this->notifyOrderPlaced($order);
-
         $org = Organization::find($order->organisasi_id);
         if ($org && $this->gateways->isLive($org)) {
             $result = $user
@@ -381,6 +379,78 @@ class OrderService
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Confirm an order after a successful payment and send the confirmation
+     * only once. A pending checkout must stay silent.
+     */
+    public function markOrderPaid(Order $order): void
+    {
+        if ($order->status === 'paid') {
+            return;
+        }
+
+        $order->update(['status' => 'paid']);
+        $this->notifyOrderPlaced($order->fresh());
+    }
+
+    /**
+     * Cancel unpaid orders older than the reservation window and release stock.
+     */
+    public function expireUnpaidOrders(int $hours = 24): int
+    {
+        $cutoff = now()->subHours(max(1, $hours));
+        $expired = 0;
+
+        Order::query()
+            ->where('status', 'pending')
+            ->where('created_at', '<=', $cutoff)
+            ->select('id')
+            ->chunkById(100, function ($orders) use (&$expired) {
+                foreach ($orders as $candidate) {
+                    $didExpire = DB::transaction(function () use ($candidate) {
+                        $order = Order::with('items')
+                            ->whereKey($candidate->id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (! $order || $order->status !== 'pending') {
+                            return false;
+                        }
+
+                        $order->update(['status' => 'cancelled']);
+                        $this->restoreStock($order);
+
+                        return true;
+                    });
+
+                    if ($didExpire) {
+                        $expired++;
+                    }
+                }
+            });
+
+        return $expired;
+    }
+
+    private function restoreStock(Order $order): void
+    {
+        foreach ($order->items as $item) {
+            if ($item->product_variation_option_id) {
+                $option = ProductVariationOption::lockForUpdate()->find($item->product_variation_option_id);
+
+                if ($option && $option->stock !== null) {
+                    $option->increment('stock', $item->quantity);
+
+                    continue;
+                }
+            }
+
+            if ($product = Product::lockForUpdate()->find($item->product_id)) {
+                $product->increment('stock', $item->quantity);
+            }
         }
     }
 
@@ -447,7 +517,7 @@ class OrderService
         $result = $this->initiatePayment($order, $user);
 
         if ($result['status'] === 'no_gateway') {
-            $order->update(['status' => 'paid']);
+            $this->markOrderPaid($order);
 
             return ['status' => 'success'];
         }

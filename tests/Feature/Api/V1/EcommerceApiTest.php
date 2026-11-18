@@ -7,7 +7,9 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\OrderPlacedEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -232,6 +234,21 @@ class EcommerceApiTest extends TestCase
         ]);
     }
 
+    public function test_pending_checkout_does_not_send_order_confirmation(): void
+    {
+        Notification::fake();
+        $product = $this->product(['member_price' => null]);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+        ])->assertOk();
+
+        Notification::assertNothingSent();
+    }
+
     public function test_admin_cannot_checkout_via_api(): void
     {
         $product = $this->product();
@@ -273,6 +290,7 @@ class EcommerceApiTest extends TestCase
 
     public function test_member_can_pay_pending_order_without_gateway(): void
     {
+        Notification::fake();
         $product = $this->product(['price' => 50, 'member_price' => null, 'stock' => 5]);
 
         Sanctum::actingAs($this->member);
@@ -299,6 +317,10 @@ class EcommerceApiTest extends TestCase
             'status' => 'successful',
             'gateway' => 'dummy',
         ]);
+        Notification::assertSentTo(
+            Notification::route('mail', $this->member->email),
+            OrderPlacedEmail::class,
+        );
     }
 
     public function test_cannot_pay_an_order_twice(): void

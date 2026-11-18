@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Registration;
 use App\Services\FeeService;
+use App\Services\OrderService;
 use App\Services\RegistrationPaymentService;
 use App\Services\SenangPayService;
 use Illuminate\Http\JsonResponse;
@@ -172,7 +173,10 @@ class SenangPayController extends Controller
         if ($payment->payable_type === Registration::class) {
             $this->registrations->confirmRegistration($payment);
         } elseif ($payment->payable_type === 'order' && $payment->payable_id) {
-            Order::where('id', $payment->payable_id)->update(['status' => 'paid']);
+            $order = Order::find($payment->payable_id);
+            if ($order) {
+                app(OrderService::class)->markOrderPaid($order);
+            }
         } elseif ($payment->payable_type === 'membership_fee') {
             $user = $payment->user;
             if ($user) {

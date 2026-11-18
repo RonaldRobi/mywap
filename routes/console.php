@@ -77,3 +77,12 @@ Schedule::command('registrations:expire-unpaid')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/registrations-expiry.log'));
+
+/**
+ * Expire unpaid mall orders and release their stock reservation.
+ */
+Schedule::command('orders:expire-unpaid')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/orders-expiry.log'));
