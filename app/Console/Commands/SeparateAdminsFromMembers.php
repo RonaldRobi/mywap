@@ -131,8 +131,10 @@ class SeparateAdminsFromMembers extends Command
             $user->save();
         }
 
+        $this->newLine();
+        $this->info("Ringkasan: {$demote->count()} calon diturunkan, {$adminOnly->count()} akaun admin-only diproses.");
+
         if (! $apply) {
-            $this->newLine();
             $this->warn('Tiada perubahan dibuat. Jalankan semula dengan --apply untuk menyimpan.');
         }
 
