@@ -60,6 +60,19 @@ class DiagnosticsController extends Controller
                 }
             }
 
+            $batches = [];
+            foreach ($imports->groupBy(fn ($row) => Carbon::parse($row->created_at)->format('Y-m-d H:i')) as $minute => $rows) {
+                $batchIds = $rows->pluck('id');
+                $batches[$minute] = [
+                    'count' => $rows->count(),
+                    'with_attendance' => DB::table('attendances')->whereIn('registration_id', $batchIds)->count(),
+                    'with_payments' => DB::table('payments')->where('payable_type', 'App\\Models\\Registration')->whereIn('payable_id', $batchIds)->count(),
+                    'with_form_responses' => DB::table('form_responses')->whereIn('registration_id', $batchIds)->count(),
+                    'with_user' => $rows->whereNotNull('user_id')->count(),
+                    'statuses' => $rows->groupBy('status')->map->count()->all(),
+                ];
+            }
+
             $report[] = [
                 'id' => $event->id,
                 'title' => $event->title,
@@ -75,6 +88,7 @@ class DiagnosticsController extends Controller
                 'import_payments' => $importIds->isEmpty() ? 0 : DB::table('payments')->where('payable_type', 'App\\Models\\Registration')->whereIn('payable_id', $importIds)->count(),
                 'import_form_responses' => $importIds->isEmpty() ? 0 : DB::table('form_responses')->whereIn('registration_id', $importIds)->count(),
                 'import_minutes' => array_slice($minutes, 0, 8, true),
+                'created_batches' => $batches,
                 'import_raw_columns' => array_slice(array_keys(json_decode((string) ($first->raw_data ?? ''), true) ?? []), 0, 15),
                 'import_matching_non_import' => $matches,
                 'attendance' => DB::table('attendances')->where('event_id', $event->id)->count(),
