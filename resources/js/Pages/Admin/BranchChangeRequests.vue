@@ -1,11 +1,12 @@
 <script setup>
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
-    requests: Array,
+    requests: { type: Object, default: () => ({ data: [], links: [] }) },
     branches: Array,
+    filters: { type: Object, default: () => ({ search: '', from_branch_id: '', to_branch_id: '', per_page: 25 }) },
 });
 
 const user = usePage().props.auth.user;
@@ -15,13 +16,55 @@ const rejectForm = useForm({ rejection_reason: '' });
 
 const selectedIds = ref([]);
 const bulkApproving = ref(false);
+const search = ref(props.filters.search ?? '');
+const fromBranchId = ref(props.filters.from_branch_id ?? '');
+const toBranchId = ref(props.filters.to_branch_id ?? '');
+let filterDebounce;
+
+const requestRows = computed(() => props.requests?.data ?? []);
+const visiblePages = computed(() => {
+    const last = props.requests?.last_page ?? 1;
+    const current = props.requests?.current_page ?? 1;
+    if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+    const pages = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
+    if (current < last - 2) pages.push('...');
+    pages.push(last);
+    return pages;
+});
+
+function filterParams(page = 1) {
+    return {
+        search: search.value.trim(),
+        from_branch_id: fromBranchId.value || '',
+        to_branch_id: toBranchId.value || '',
+        per_page: props.filters.per_page ?? 25,
+        page,
+    };
+}
+
+function requestNow(page = 1) {
+    clearTimeout(filterDebounce);
+    selectedIds.value = [];
+    router.get(route('branch-change-requests.index'), filterParams(page), {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
+watch([search, fromBranchId, toBranchId], () => {
+    clearTimeout(filterDebounce);
+    filterDebounce = setTimeout(() => requestNow(), 300);
+});
 
 const allSelected = computed(() =>
-    props.requests.length > 0 && props.requests.every((r) => selectedIds.value.includes(r.id))
+    requestRows.value.length > 0 && requestRows.value.every((r) => selectedIds.value.includes(r.id))
 );
 
 function toggleSelectAll() {
-    selectedIds.value = allSelected.value ? [] : props.requests.map((r) => r.id);
+    selectedIds.value = allSelected.value ? [] : requestRows.value.map((r) => r.id);
 }
 
 function toggleSelect(id) {
@@ -106,9 +149,27 @@ function approve(r) {
                 </div>
             </div>
 
-            <div v-if="requests.length === 0" class="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
-                <p class="text-gray-500">Tiada permohonan yang menunggu kelulusan.</p>
-            </div>
+             <div class="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                 <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem_auto]">
+                     <label class="sr-only" for="branch-change-search">Cari permohonan</label>
+                     <input id="branch-change-search" v-model="search" type="search" placeholder="Cari nama, no. ahli atau emel..." class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
+                     <label class="sr-only" for="from-branch-filter">Cawangan asal</label>
+                     <select id="from-branch-filter" v-model="fromBranchId" class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
+                         <option value="">Semua cawangan asal</option>
+                         <option v-for="branch in branches" :key="`from-${branch.id}`" :value="branch.id">{{ branch.name }}</option>
+                     </select>
+                     <label class="sr-only" for="to-branch-filter">Cawangan sasaran</label>
+                     <select id="to-branch-filter" v-model="toBranchId" class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
+                         <option value="">Semua cawangan sasaran</option>
+                         <option v-for="branch in branches" :key="`to-${branch.id}`" :value="branch.id">{{ branch.name }}</option>
+                     </select>
+                     <button type="button" class="min-h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="search = ''; fromBranchId = ''; toBranchId = ''">Reset</button>
+                 </div>
+             </div>
+
+             <div v-if="requestRows.length === 0" class="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center">
+                 <p class="text-gray-500">{{ search || fromBranchId || toBranchId ? 'Tiada permohonan sepadan dengan carian.' : 'Tiada permohonan yang menunggu kelulusan.' }}</p>
+             </div>
 
             <div v-else class="space-y-3">
                 <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 shadow-sm">
@@ -120,7 +181,7 @@ function approve(r) {
                                 @change="toggleSelectAll"
                                 class="h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                             >
-                            Pilih semua ({{ requests.length }})
+                            Pilih semua pada halaman ini ({{ requestRows.length }})
                         </label>
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="text-xs font-semibold text-indigo-700">{{ selectedIds.length }} dipilih</span>
@@ -143,7 +204,7 @@ function approve(r) {
                 </div>
 
                 <div
-                    v-for="r in requests"
+                    v-for="r in requestRows"
                     :key="r.id"
                     class="rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition"
                     :class="selectedIds.includes(r.id) ? 'border-indigo-300 ring-1 ring-indigo-200' : 'border-gray-100'"
@@ -157,7 +218,7 @@ function approve(r) {
                             :aria-label="`Pilih permohonan ${r.user.name}`"
                         >
                         <div class="flex min-w-0 flex-1 items-start justify-between gap-4">
-                        <div class="min-w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                             <p class="text-sm font-semibold text-gray-900">{{ r.user.name }}</p>
                             <p class="text-xs text-gray-500">{{ r.user.email }} · {{ r.user.member_no }}</p>
                             <div class="mt-2 flex items-center gap-2 text-sm">
@@ -172,8 +233,8 @@ function approve(r) {
                                 </span>
                             </div>
                             <p class="mt-1 text-xs text-gray-400">Dihantar {{ r.submitted_at }}</p>
-                        </div>
-                        <div class="flex shrink-0 gap-2">
+                            </div>
+                            <div class="flex shrink-0 gap-2">
                             <button
                                 @click="approve(r)"
                                 class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition"
@@ -186,8 +247,15 @@ function approve(r) {
                             >
                                 Reject
                             </button>
+                            </div>
                         </div>
-                        </div>
+                    </div>
+                </div>
+
+                <div v-if="requests.last_page > 1" class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs text-gray-500">{{ requests.from }}–{{ requests.to }} daripada {{ requests.total }}</p>
+                    <div class="flex items-center gap-1">
+                        <button v-for="(page, index) in visiblePages" :key="`${page}-${index}`" type="button" :disabled="page === '...'" class="min-h-10 min-w-10 rounded-lg px-2 text-xs font-bold" :class="page == requests.current_page ? 'bg-gray-900 text-white' : 'border border-gray-200 text-gray-600 hover:border-gray-900'" @click="page !== '...' && requestNow(page)">{{ page }}</button>
                     </div>
                 </div>
             </div>

@@ -7,7 +7,6 @@ use App\Models\Announcement;
 use App\Models\Article;
 use App\Models\Branch;
 use App\Models\BranchAdmin;
-use App\Models\BranchChangeRequest;
 use App\Models\BroadcastMessage;
 use App\Models\Category;
 use App\Models\Event;
@@ -18,17 +17,18 @@ use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\Supporter;
-use App\Models\UsrahGroup;
 use App\Models\User;
+use App\Models\UsrahGroup;
 use App\Models\Video;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use App\Notifications\BranchChangeRequestSubmitted;
 use App\Notifications\BranchSecretaryAppointed;
+use App\Services\BranchAdminProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -325,8 +325,8 @@ class BranchAdminTest extends TestCase
             ->where('name', 'Pasir Gudang')
             ->firstOrFail();
 
-        app(\App\Services\BranchAdminProvisioner::class)->provision($branch);
-        app(\App\Services\BranchAdminProvisioner::class)->provision($branch);
+        app(BranchAdminProvisioner::class)->provision($branch);
+        app(BranchAdminProvisioner::class)->provision($branch);
 
         $this->assertSame(1, BranchAdmin::where('branch_id', $branch->id)
             ->where('role', BranchAdmin::ROLE_MANAGER)
@@ -360,7 +360,7 @@ class BranchAdminTest extends TestCase
     {
         $this->memberJohor->assignRole('Admin Cawangan');
 
-        $manager = app(\App\Services\BranchAdminProvisioner::class)->provision($this->johor);
+        $manager = app(BranchAdminProvisioner::class)->provision($this->johor);
 
         $this->assertSame($this->memberJohor->id, $manager?->id);
         $this->assertSame(1, BranchAdmin::where('branch_id', $this->johor->id)
@@ -992,22 +992,21 @@ class BranchAdminTest extends TestCase
         $this->assertSame($this->abim->id, (int) $form->organization_id);
     }
 
-    public function test_org_admin_can_attach_existing_member_as_branch_admin(): void
+    public function test_org_admin_cannot_attach_existing_member_as_branch_admin(): void
     {
         $this->assertFalse($this->memberJohor->hasRole('Admin Cawangan'));
 
         $this->actingAs($this->orgAdmin)
             ->post(route('branches.admin-account.assign', $this->johor), ['user_id' => $this->memberJohor->id])
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('error');
 
-        $this->assertTrue($this->memberJohor->fresh()->hasRole('Admin Cawangan'));
-        $this->assertDatabaseHas('branch_admins', [
+        $this->assertFalse($this->memberJohor->fresh()->hasRole('Admin Cawangan'));
+        $this->assertDatabaseMissing('branch_admins', [
             'branch_id' => $this->johor->id,
             'user_id' => $this->memberJohor->id,
             'role' => BranchAdmin::ROLE_MANAGER,
         ]);
-        $this->assertSame($this->johor->id, (int) $this->memberJohor->fresh()->branch_id);
     }
 
     public function test_existing_admin_account_can_be_assigned_to_additional_branches(): void

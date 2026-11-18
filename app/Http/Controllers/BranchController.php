@@ -334,7 +334,7 @@ class BranchController extends Controller
             }
 
             if (! $target->hasRole('Admin Cawangan')) {
-                $target->assignRole('Admin Cawangan');
+                return ['error' => 'Akaun ini bukan akaun admin cawangan. Cipta akaun admin cawangan berasingan.'];
             }
 
             $target->forceFill([

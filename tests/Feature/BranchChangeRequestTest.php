@@ -111,6 +111,56 @@ class BranchChangeRequestTest extends TestCase
         $this->assertSame('approved', $this->request->fresh()->status);
     }
 
+    public function test_admin_can_search_pending_requests_by_member_fields(): void
+    {
+        $this->member->update([
+            'name' => 'Ahmad Firdaus',
+            'email' => 'ahmad@example.test',
+            'member_no' => 'ABIM-123',
+        ]);
+
+        foreach (['Ahmad Firdaus', 'ahmad@example.test', 'ABIM-123'] as $term) {
+            $response = $this->actingAs($this->adminUser())
+                ->get(route('branch-change-requests.index', ['search' => $term]));
+
+            $response->assertOk();
+            $props = $response->viewData('page')['props'] ?? [];
+            $ids = collect($props['requests']['data'] ?? [])->pluck('user.id')->all();
+
+            $this->assertContains($this->member->id, $ids);
+        }
+    }
+
+    public function test_branch_change_requests_are_paginated_and_filters_are_preserved(): void
+    {
+        $admin = $this->adminUser();
+
+        $response = $this->actingAs($admin)
+            ->get(route('branch-change-requests.index', [
+                'from_branch_id' => $this->selangor->id,
+                'to_branch_id' => $this->johor->id,
+                'per_page' => 25,
+            ]));
+
+        $response->assertOk();
+        $props = $response->viewData('page')['props'] ?? [];
+
+        $this->assertSame($this->selangor->id, (int) ($props['filters']['from_branch_id'] ?? 0));
+        $this->assertSame($this->johor->id, (int) ($props['filters']['to_branch_id'] ?? 0));
+        $this->assertSame(25, (int) ($props['requests']['per_page'] ?? 0));
+    }
+
+    private function adminUser(): User
+    {
+        $admin = User::factory()->create([
+            'current_organization_id' => $this->abim->id,
+            'profile_completed_at' => now(),
+        ]);
+        $admin->assignRole('Admin');
+
+        return $admin;
+    }
+
     public function test_member_can_request_branch_change_from_profile(): void
     {
         $this->actingAs($this->member)

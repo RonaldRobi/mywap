@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -86,14 +86,6 @@ function submitReset() {
     });
 }
 
-function deleteAdmin(admin) {
-    if (!confirm(`Padam akaun admin ${admin.name}? Akaun akan dipindahkan ke Tong Sampah.`)) return;
-
-    router.delete(route('admin.hub.members.destroy', admin.id), {
-        preserveScroll: true,
-    });
-}
-
 function roleLabel(role) {
     return role === 'org-admin' ? 'Admin' : role;
 }
@@ -117,10 +109,10 @@ function roleClass(role) {
                     <h1 class="text-xl font-black text-gray-900">Pengurusan Admin</h1>
                     <p class="mt-1 text-sm text-gray-500">
                         <template v-if="isSuperadmin">
-                            Semua akaun pentadbir (Superadmin, Admin, Admin Cawangan) diurus di sini. Penetapan cawangan Admin Cawangan masih di halaman Cawangan.
+                            Superadmin boleh mengurus semua akaun pentadbir. Cipta Admin organisasi di bawah, dan urus Admin Cawangan di halaman Cawangan.
                         </template>
                         <template v-else>
-                            Akaun pentadbir organisasi diurus di sini.
+                            Admin organisasi boleh mengurus Admin Cawangan/Negeri organisasi ini. Admin organisasi lain hanya boleh diurus oleh Superadmin.
                         </template>
                     </p>
                 </div>
@@ -145,11 +137,16 @@ function roleClass(role) {
             </div>
 
             <section class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-gray-900">Admin Semasa</h2>
-                    <span class="text-xs font-semibold text-gray-400">
-                        {{ selectedOrganization?.name ?? 'Semua organisasi' }} · {{ admins.length }} akaun
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold text-gray-400">
+                            {{ selectedOrganization?.name ?? 'Semua organisasi' }} · {{ admins.length }} akaun
+                        </span>
+                        <Link :href="route('branches.index')" class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                            Urus Cawangan
+                        </Link>
+                    </div>
                 </div>
 
                 <div v-if="admins.length" class="mt-3 divide-y divide-gray-100">
@@ -171,7 +168,9 @@ function roleClass(role) {
                                     {{ roleLabel(role) }}
                                 </span>
                                 <span v-if="admin.organization_name" class="text-[11px] font-medium text-gray-400">{{ admin.organization_name }}</span>
-                                <span v-if="admin.branch_name" class="text-[11px] font-medium text-gray-400">· {{ admin.branch_name }}</span>
+                                <span v-if="admin.is_branch_admin" class="text-[11px] font-medium text-gray-400">
+                                    · {{ admin.managed_branches?.length ? admin.managed_branches.map((branch) => branch.name).join(', ') : (admin.branch_name || 'Tiada cawangan') }}
+                                </span>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -191,14 +190,6 @@ function roleClass(role) {
                                 @click="openReset(admin)"
                             >
                                 Tukar Kata Laluan
-                            </button>
-                            <button
-                                v-if="admin.can_delete"
-                                type="button"
-                                class="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
-                                @click="deleteAdmin(admin)"
-                            >
-                                Padam
                             </button>
                         </div>
                     </div>

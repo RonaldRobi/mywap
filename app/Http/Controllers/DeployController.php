@@ -101,6 +101,14 @@ class DeployController extends Controller
             ];
         }
 
+        if ($request->input('maintenance') === 'separate-admins') {
+            $steps[] = [
+                'key' => 'separate_admins',
+                'critical' => false,
+                'cmd' => escapeshellarg($php).' artisan admins:separate-from-members --apply',
+            ];
+        }
+
         $log = [];
         $failedCritical = null;
 

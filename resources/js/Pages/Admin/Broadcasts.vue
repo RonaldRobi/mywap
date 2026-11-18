@@ -123,40 +123,48 @@ const memberSearchLoading = ref(false);
 const memberSearchError = ref('');
 const showMemberDropdown = ref(false);
 let memberDebounceTimer = null;
+let memberRequestSequence = 0;
 
 function orgNameById(orgId) {
     return props.organizations.find((o) => Number(o.id) === Number(orgId))?.name;
 }
 
 function onMemberSearchInput(val) {
+    const normalized = val.trim();
     memberSearchQuery.value = val;
     memberSearchError.value = '';
     clearTimeout(memberDebounceTimer);
-    if (val.length < 2) {
+    memberRequestSequence += 1;
+    if (normalized.length < 2) {
         memberResults.value = [];
         showMemberDropdown.value = false;
         return;
     }
     memberDebounceTimer = setTimeout(() => {
+        const sequence = ++memberRequestSequence;
         memberSearchLoading.value = true;
-        const params = { q: val };
+        const params = { q: normalized };
         if (!props.isSuperadmin) {
             params.organization_id = props.defaultOrganizationId;
         }
         axios.get('/api/members/search', { params })
             .then((res) => {
+                if (sequence !== memberRequestSequence) return;
                 const alreadySelected = selectedMembers.value.map(m => m.id);
                 memberResults.value = (res.data || []).filter(m => !alreadySelected.includes(m.id));
                 showMemberDropdown.value = true;
             })
             .catch((err) => {
+                if (sequence !== memberRequestSequence) return;
                 memberResults.value = [];
                 memberSearchError.value = err?.response?.status === 429
                     ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
                     : 'Ralat carian. Sila cuba lagi.';
                 showMemberDropdown.value = true;
             })
-            .finally(() => { memberSearchLoading.value = false; });
+            .finally(() => {
+                if (sequence === memberRequestSequence) memberSearchLoading.value = false;
+            });
     }, 300);
 }
 
@@ -194,6 +202,7 @@ const targetSearchLoading = ref(false);
 const targetSearchError = ref('');
 const showTargetDropdown = ref(false);
 let targetDebounceTimer = null;
+let targetRequestSequence = 0;
 
 const needsTargetSearch = computed(() => ['event', 'product'].includes(broadcastForm.action_type));
 const targetSearchLabel = computed(() => broadcastForm.action_type === 'product' ? 'Cari Produk' : 'Cari Program');
@@ -217,6 +226,7 @@ function clearTarget() {
 function fetchTargets(val) {
     if (!needsTargetSearch.value) return;
 
+    const sequence = ++targetRequestSequence;
     targetSearchLoading.value = true;
     targetSearchError.value = '';
     showTargetDropdown.value = true;
@@ -225,31 +235,37 @@ function fetchTargets(val) {
         params: { q: val, type: broadcastForm.action_type },
     })
         .then((res) => {
+            if (sequence !== targetRequestSequence) return;
             targetResults.value = res.data || [];
         })
         .catch((err) => {
+            if (sequence !== targetRequestSequence) return;
             targetResults.value = [];
             targetSearchError.value = err?.response?.status === 429
                 ? 'Terlalu banyak carian. Sila tunggu sebentar dan cuba lagi.'
                 : 'Ralat carian. Sila cuba lagi.';
         })
-        .finally(() => { targetSearchLoading.value = false; });
+        .finally(() => {
+            if (sequence === targetRequestSequence) targetSearchLoading.value = false;
+        });
 }
 
 function onTargetSearchInput(val) {
+    const normalized = val.trim();
     targetSearchQuery.value = val;
     targetSearchError.value = '';
     clearTimeout(targetDebounceTimer);
+    targetRequestSequence += 1;
 
     if (!needsTargetSearch.value) return;
 
     // Taip 0 atau 1 huruf: papar senarai terbaru supaya dropdown tidak kosong.
-    if (val.length < 2) {
+    if (normalized.length < 2) {
         targetDebounceTimer = setTimeout(() => fetchTargets(''), 150);
         return;
     }
 
-    targetDebounceTimer = setTimeout(() => fetchTargets(val), 300);
+    targetDebounceTimer = setTimeout(() => fetchTargets(normalized), 300);
 }
 
 function selectTarget(item) {
@@ -526,7 +542,13 @@ watch(() => props.recentMessages, () => {
     }
 }, { immediate: true });
 
-onBeforeUnmount(stopPolling);
+onBeforeUnmount(() => {
+    stopPolling();
+    clearTimeout(memberDebounceTimer);
+    clearTimeout(targetDebounceTimer);
+    memberRequestSequence += 1;
+    targetRequestSequence += 1;
+});
 </script>
 
 <template>

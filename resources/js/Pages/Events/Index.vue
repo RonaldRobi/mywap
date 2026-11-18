@@ -607,7 +607,7 @@ watch([searchQuery, typeFilter, orgFilter], customDebounce(([newSearch, newType,
                                     class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
                                     @change="createProgramForm.featured_image = $event.target.files?.[0] ?? null"
                                 >
-                                <p class="text-[11px] text-gray-400">Cadangan saiz poster: 1080 × 1350 px (nisbah 4:5) untuk paparan seragam.</p>
+                                <p class="text-[11px] text-gray-400">Maksimum 2MB setiap fail. Cadangan saiz poster: 1080 × 1350 px (nisbah 4:5) untuk paparan seragam.</p>
                                 <p v-if="createProgramForm.errors.featured_image" class="text-xs text-red-500">{{ createProgramForm.errors.featured_image }}</p>
                             </div>
 

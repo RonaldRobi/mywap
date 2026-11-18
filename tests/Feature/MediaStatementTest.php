@@ -64,7 +64,7 @@ class MediaStatementTest extends TestCase
         $this->get(route('share.media-statement', $statement))
             ->assertOk()
             ->assertSee('property="og:image"', false)
-            ->assertSee(url('/storage/media-statements/cover.jpg'), false)
+            ->assertSee(rtrim((string) config('app.share_url'), '/').'/storage/media-statements/cover.jpg', false)
             ->assertSee('Kenyataan Media Rasmi');
     }
 

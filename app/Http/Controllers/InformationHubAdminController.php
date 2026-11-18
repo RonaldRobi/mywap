@@ -350,36 +350,59 @@ class InformationHubAdminController extends Controller
             ? Organization::query()->orderBy('min_age')->get(['id', 'name', 'slug'])
             : collect();
 
+        $requestedOrganizationId = $request->input('organization_id');
         $organizationId = $isSuperadmin
-            ? ($request->filled('organization_id') ? (int) $request->input('organization_id') : null)
+            ? (($requestedOrganizationId !== null && $requestedOrganizationId !== '' && (int) $requestedOrganizationId > 0)
+                ? (int) $requestedOrganizationId
+                : null)
             : (int) $authUser->current_organization_id;
 
         $adminRoles = $isSuperadmin
             ? ['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']
-            : ['Admin', 'org-admin'];
+            : ['Admin', 'org-admin', 'Admin Cawangan'];
 
         $admins = User::withoutGlobalScope(OrganizationScope::class)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', $adminRoles))
             ->when($isSuperadmin && $organizationId !== null, fn ($query) => $query->where('current_organization_id', $organizationId))
             ->when(! $isSuperadmin, fn ($query) => $query->where('current_organization_id', $authUser->current_organization_id))
-            ->with(['roles', 'organization:id,name,slug', 'branch:id,name'])
+            ->with([
+                'roles',
+                'organization:id,name,slug',
+                'branch:id,name,state',
+                'branchAdminAssignments.branch:id,name,state',
+            ])
             ->orderBy('name')
             ->get()
-            ->map(fn (User $admin) => [
-                'id' => $admin->id,
-                'name' => $admin->name,
-                'email' => $admin->email,
-                'is_active' => (bool) $admin->is_active,
-                'roles' => $admin->getRoleNames()->sort()->values(),
-                'organization_name' => $admin->organization?->name,
-                'branch_name' => $admin->branch?->name,
-                'is_superadmin' => $admin->hasRole('Superadmin'),
-                'is_branch_admin' => $admin->isBranchAdmin(),
-                'is_self' => $admin->id === $authUser->id,
-                'can_toggle' => $admin->id !== $authUser->id,
-                'can_reset_password' => $admin->id !== $authUser->id,
-                'can_delete' => $admin->id !== $authUser->id && ! $admin->hasRole('Superadmin'),
-            ])
+            ->map(function (User $admin) use ($authUser, $isSuperadmin) {
+                $canManageTarget = $admin->id !== $authUser->id
+                    && ($isSuperadmin || $admin->isBranchAdmin());
+
+                return [
+                    'id' => $admin->id,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'is_active' => (bool) $admin->is_active,
+                    'roles' => $admin->getRoleNames()->sort()->values(),
+                    'organization_name' => $admin->organization?->name,
+                    'branch_name' => $admin->branch?->name,
+                    'managed_branches' => $admin->isBranchAdmin()
+                        ? $admin->branchAdminAssignments
+                            ->where('role', BranchAdmin::ROLE_MANAGER)
+                            ->map(fn (BranchAdmin $assignment) => [
+                                'id' => $assignment->branch?->id,
+                                'name' => $assignment->branch?->name,
+                                'state' => $assignment->branch?->state,
+                            ])
+                            ->filter(fn (array $branch) => $branch['id'] !== null)
+                            ->values()
+                        : [],
+                    'is_superadmin' => $admin->hasRole('Superadmin'),
+                    'is_branch_admin' => $admin->isBranchAdmin(),
+                    'is_self' => $admin->id === $authUser->id,
+                    'can_toggle' => $canManageTarget,
+                    'can_reset_password' => $canManageTarget,
+                ];
+            })
             ->values();
 
         return Inertia::render('Admin/AdminManage', [
@@ -1186,6 +1209,12 @@ class InformationHubAdminController extends Controller
             abort(403);
         }
 
+        // Admin organisasi hanya mengurus ahli dan Admin Cawangan. Admin
+        // organisasi lain hanya boleh diurus oleh Superadmin.
+        if (! $authUser->hasRole('Superadmin') && $user->isAdminPanelUser() && ! $user->isBranchAdmin()) {
+            abort(403);
+        }
+
         if ($authUser->isBranchAdmin() && ! $authUser->canManageBranch($user->branch_id)) {
             abort(403);
         }
@@ -1210,8 +1239,8 @@ class InformationHubAdminController extends Controller
             return back()->with('error', 'Anda tidak boleh memadam akaun anda sendiri.');
         }
 
-        if ($user->hasRole('Superadmin')) {
-            return back()->with('error', 'Akaun Superadmin tidak boleh dipadam.');
+        if ($user->isAdminPanelUser()) {
+            return back()->with('error', 'Akaun pentadbir tidak boleh dipadam. Nyahaktifkan akaun sahaja.');
         }
 
         $name = $user->name;
@@ -1256,7 +1285,7 @@ class InformationHubAdminController extends Controller
 
         $count = 0;
         foreach ($query->get() as $user) {
-            if ($user->id === $authUser->id || $user->hasRole('Superadmin')) {
+            if ($user->id === $authUser->id || $user->isAdminPanelUser()) {
                 continue;
             }
 
@@ -1315,8 +1344,8 @@ class InformationHubAdminController extends Controller
         $user = User::onlyTrashed()->findOrFail($id);
         $this->authorizeOrganizationAccess($authUser, (int) ($user->current_organization_id ?? 0));
 
-        if ($user->hasRole('Superadmin')) {
-            return back()->with('error', 'Akaun Superadmin tidak boleh dipadam.');
+        if ($user->isAdminPanelUser()) {
+            return back()->with('error', 'Akaun pentadbir tidak boleh dipadam. Nyahaktifkan akaun sahaja.');
         }
 
         $name = $user->name;
@@ -1436,12 +1465,7 @@ class InformationHubAdminController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('ic_number', 'like', "%{$search}%");
-            });
+            MemberSearch::apply($query, $search);
         }
 
         $members = $query->orderBy('name')->paginate($perPage)->withQueryString()

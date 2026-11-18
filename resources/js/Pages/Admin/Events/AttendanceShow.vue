@@ -109,12 +109,15 @@ const memberSearchResults = ref([]);
 const memberSearchLoading = ref(false);
 const memberSearchOpen = ref(false);
 let memberSearchTimer = null;
+let memberSearchSequence = 0;
 
 function onMemberSearchInput(value) {
+    const normalized = value.trim();
     clearTimeout(memberSearchTimer);
+    memberSearchSequence += 1;
     memberSearchQuery.value = value;
 
-    if (value.trim().length < 2) {
+    if (normalized.length < 2) {
         memberSearchResults.value = [];
         memberSearchOpen.value = false;
         return;
@@ -122,17 +125,20 @@ function onMemberSearchInput(value) {
 
     memberSearchLoading.value = true;
     memberSearchTimer = setTimeout(() => {
-        axios.get('/api/members/search', { params: { q: value } })
+        const sequence = ++memberSearchSequence;
+        axios.get('/api/members/search', { params: { q: normalized } })
             .then((res) => {
+                if (sequence !== memberSearchSequence) return;
                 memberSearchResults.value = res.data || [];
-                memberSearchOpen.value = memberSearchResults.value.length > 0;
+                memberSearchOpen.value = true;
             })
             .catch(() => {
+                if (sequence !== memberSearchSequence) return;
                 memberSearchResults.value = [];
                 memberSearchOpen.value = false;
             })
             .finally(() => {
-                memberSearchLoading.value = false;
+                if (sequence === memberSearchSequence) memberSearchLoading.value = false;
             });
     }, 300);
 }
@@ -300,6 +306,8 @@ onUnmounted(() => {
     window.removeEventListener('focus', handleWindowFocus);
     clearTimeout(autoSubmitTimer);
     clearTimeout(reloadTimer);
+    clearTimeout(memberSearchTimer);
+    memberSearchSequence += 1;
 });
 
 const exportQuery = computed(() => {
@@ -787,7 +795,7 @@ function auditMeta(action) {
                             @focus="memberSearchOpen = memberSearchResults.length > 0"
                         />
                         <div v-if="memberSearchLoading" class="absolute right-3 top-8 text-xs text-gray-400">Mencari...</div>
-                        <div v-if="memberSearchOpen && memberSearchResults.length" class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                        <div v-if="memberSearchOpen" class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
                             <button
                                 v-for="member in memberSearchResults"
                                 :key="member.id"
@@ -798,6 +806,7 @@ function auditMeta(action) {
                                 <span class="font-semibold text-gray-800">{{ member.name }}</span>
                                 <span class="text-xs text-gray-400">{{ member.member_no }}</span>
                             </button>
+                            <p v-if="!memberSearchLoading && memberSearchResults.length === 0" class="px-3 py-3 text-sm text-gray-500">Tiada ahli dijumpai.</p>
                         </div>
                         <p class="mt-1 text-xs text-gray-400">Pilih ahli untuk isi butiran secara automatik, atau isi manual di bawah.</p>
                     </div>

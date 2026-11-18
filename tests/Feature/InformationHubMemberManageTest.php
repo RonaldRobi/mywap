@@ -107,6 +107,26 @@ class InformationHubMemberManageTest extends TestCase
         $this->assertSame('Ahmad Firdaus', $names[0]);
     }
 
+    public function test_bulk_branch_search_uses_the_member_search_contract(): void
+    {
+        $member = $this->makeMember([
+            'name' => "Siti\u{00A0}Aminah",
+            'email' => 'siti@example.test',
+            'original_member_no' => 'LEGACY-456',
+        ]);
+
+        foreach (['Siti Aminah', 'siti@example.test', 'LEGACY-456'] as $term) {
+            $response = $this->actingAs($this->superadmin)
+                ->get('/admin/bulk-branch?search='.urlencode($term));
+
+            $response->assertOk();
+            $props = $response->viewData('page')['props'] ?? [];
+            $ids = collect($props['members']['data'] ?? [])->pluck('id')->all();
+
+            $this->assertContains($member->id, $ids);
+        }
+    }
+
     // ─── Status aktif ────────────────────────────────────────────────────────
 
     public function test_web_toggle_member_active_persists(): void
@@ -181,7 +201,7 @@ class InformationHubMemberManageTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_set_another_admin_password_in_the_same_organization(): void
+    public function test_admin_cannot_set_another_admin_password_in_the_same_organization(): void
     {
         $targetAdmin = User::factory()->create([
             'current_organization_id' => $this->org->id,
@@ -194,9 +214,9 @@ class InformationHubMemberManageTest extends TestCase
                 'password' => 'Admin123',
                 'password_confirmation' => 'Admin123',
             ])
-            ->assertRedirect();
+            ->assertForbidden();
 
-        $this->assertTrue(Hash::check('Admin123', $targetAdmin->fresh()->password));
+        $this->assertFalse(Hash::check('Admin123', $targetAdmin->fresh()->password));
     }
 
     public function test_active_status_filter(): void

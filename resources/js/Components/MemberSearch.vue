@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -22,39 +22,48 @@ const emit = defineEmits(['update:modelValue']);
 const query = ref('');
 const results = ref([]);
 const loading = ref(false);
+const error = ref('');
 const selected = ref(props.modelValue);
 const showDropdown = ref(false);
 let debounceTimer = null;
+let requestSequence = 0;
 
 const hasSelection = computed(() => selected.value !== null);
 
 function onInput(val) {
+    const normalized = val.trim();
     query.value = val;
+    error.value = '';
     if (hasSelection.value) {
         selected.value = null;
         emit('update:modelValue', null);
     }
     clearTimeout(debounceTimer);
-    if (val.length < 2) {
+    if (normalized.length < 2) {
         results.value = [];
         showDropdown.value = false;
         return;
     }
-    debounceTimer = setTimeout(() => search(val), 300);
+    debounceTimer = setTimeout(() => search(normalized), 300);
 }
 
 function search(val) {
+    const sequence = ++requestSequence;
     loading.value = true;
     axios.get('/api/members/search', { params: { q: val } })
         .then((res) => {
+            if (sequence !== requestSequence) return;
             results.value = res.data;
-            showDropdown.value = results.value.length > 0;
+            showDropdown.value = true;
         })
         .catch(() => {
+            if (sequence !== requestSequence) return;
             results.value = [];
+            error.value = 'Carian gagal. Sila cuba lagi.';
+            showDropdown.value = true;
         })
         .finally(() => {
-            loading.value = false;
+            if (sequence === requestSequence) loading.value = false;
         });
 }
 
@@ -69,6 +78,7 @@ function clearSelection() {
     selected.value = null;
     query.value = '';
     results.value = [];
+    error.value = '';
     showDropdown.value = false;
     emit('update:modelValue', null);
 }
@@ -78,10 +88,15 @@ function onBlur() {
 }
 
 function onFocus() {
-    if (results.value.length > 0) {
+    if (results.value.length > 0 || error.value) {
         showDropdown.value = true;
     }
 }
+
+onUnmounted(() => {
+    clearTimeout(debounceTimer);
+    requestSequence += 1;
+});
 </script>
 
 <template>
@@ -114,19 +129,23 @@ function onFocus() {
                 </svg>
             </div>
         </div>
-        <ul
+        <div
             v-if="showDropdown"
             class="absolute z-50 mt-1 w-full rounded-xl border border-[#D5E3D8] bg-white py-1 shadow-xl max-h-48 overflow-y-auto"
         >
-            <li
+            <p v-if="error" class="px-4 py-3 text-sm text-red-600">{{ error }}</p>
+            <p v-else-if="!loading && results.length === 0" class="px-4 py-3 text-sm text-[#4A5A50]">Tiada ahli dijumpai.</p>
+            <button
+                v-else
                 v-for="member in results"
                 :key="member.id"
                 @mousedown.prevent="select(member)"
+                type="button"
                 class="flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm text-[#123D2A] hover:bg-[#EAF1EA] transition-colors"
             >
                 <span>{{ member.name }}</span>
                 <span class="text-xs text-[#4A5A50] font-mono">{{ member.member_no }}</span>
-            </li>
-        </ul>
+            </button>
+        </div>
     </div>
 </template>

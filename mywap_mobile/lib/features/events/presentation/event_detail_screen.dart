@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -218,17 +220,7 @@ class _DetailContent extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
         children: [
-          // Poster program biasanya 1080×1350 (4:5). Menggunakan `height`
-          // tetap memotong sebahagian besar poster — `AspectRatio` memastikan
-          // keseluruhan imej kelihatan tanpa crop.
-          AspectRatio(
-            aspectRatio: 4 / 5,
-            child: AppImage(
-              event?.featured_image_url,
-              width: double.infinity,
-              borderRadius: BorderRadius.zero,
-            ),
-          ),
+          _EventPosterCarousel(event: event, title: title),
           Padding(
             padding: const EdgeInsets.all(Spacing.xl),
             child: Column(
@@ -469,6 +461,117 @@ class _DetailContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EventPosterCarousel extends StatefulWidget {
+  const _EventPosterCarousel({required this.event, required this.title});
+
+  final Event? event;
+  final String title;
+
+  @override
+  State<_EventPosterCarousel> createState() => _EventPosterCarouselState();
+}
+
+class _EventPosterCarouselState extends State<_EventPosterCarousel> {
+  late final PageController _controller;
+  Timer? _timer;
+  late final List<String> _posters;
+  int _activeIndex = 0;
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _posters = [
+      ...(widget.event?.poster_urls ?? const <String>[]),
+    ].where((url) => url.isNotEmpty).toList();
+    if (_posters.isEmpty && widget.event?.featured_image_url != null) {
+      _posters.add(widget.event!.featured_image_url!);
+    }
+    if (_posters.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+        if (!_paused && mounted &&
+            !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
+          final next = (_activeIndex + 1) % _posters.length;
+          _controller.animateToPage(
+            next,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  void _pause() => setState(() => _paused = true);
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_posters.isEmpty) {
+      return const AspectRatio(aspectRatio: 4 / 5, child: SizedBox.shrink());
+    }
+
+    return Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 4 / 5,
+          child: GestureDetector(
+            onTap: _pause,
+            onPanDown: (_) => _pause(),
+            child: PageView.builder(
+              controller: _controller,
+              itemCount: _posters.length,
+              onPageChanged: (index) => setState(() => _activeIndex = index),
+              itemBuilder: (context, index) => Semantics(
+                label: '${widget.title}, poster ${index + 1} daripada ${_posters.length}',
+                image: true,
+                child: AppImage(
+                  _posters[index],
+                  width: double.infinity,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_posters.length > 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var index = 0; index < _posters.length; index++)
+                  Semantics(
+                    label: 'Poster ${index + 1}',
+                    selected: index == _activeIndex,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      height: 8,
+                      width: index == _activeIndex ? 20 : 8,
+                      decoration: BoxDecoration(
+                        color: index == _activeIndex
+                            ? AppColors.movementGreen
+                            : AppColors.textSecondary.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

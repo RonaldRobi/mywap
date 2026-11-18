@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SocialShareButtons from '@/Components/SocialShareButtons.vue';
@@ -38,8 +38,58 @@ const rsvpConfig = {
 };
 
 const isPast = computed(() => new Date(props.event.start_time) < new Date());
-const posterUrls = computed(() => props.event.poster_urls?.length ? props.event.poster_urls : [props.event.featured_image_url]);
+const posterUrls = computed(() => {
+    const posters = props.event.poster_urls?.filter(Boolean) ?? [];
+    return posters.length ? posters : [props.event.featured_image_url].filter(Boolean);
+});
 const activePoster = ref(0);
+const carouselPaused = ref(false);
+const touchStartX = ref(null);
+let carouselTimer = null;
+
+function nextPoster() {
+    if (posterUrls.value.length < 2) return;
+    activePoster.value = (activePoster.value + 1) % posterUrls.value.length;
+}
+
+function previousPoster() {
+    if (posterUrls.value.length < 2) return;
+    activePoster.value = (activePoster.value - 1 + posterUrls.value.length) % posterUrls.value.length;
+}
+
+function pauseCarousel() {
+    carouselPaused.value = true;
+}
+
+function handleTouchStart(event) {
+    pauseCarousel();
+    touchStartX.value = event.changedTouches[0]?.clientX ?? null;
+}
+
+function handleTouchEnd(event) {
+    if (touchStartX.value === null) return;
+    const distance = event.changedTouches[0]?.clientX - touchStartX.value;
+    touchStartX.value = null;
+    if (Math.abs(distance) < 40) return;
+    distance < 0 ? nextPoster() : previousPoster();
+}
+
+function selectPoster(index) {
+    activePoster.value = index;
+    pauseCarousel();
+}
+
+onMounted(() => {
+    carouselTimer = window.setInterval(() => {
+        const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (!carouselPaused.value && !reducedMotion) nextPoster();
+    }, 5000);
+});
+
+onBeforeUnmount(() => {
+    if (carouselTimer) window.clearInterval(carouselTimer);
+    if (countdownTimer) window.clearInterval(countdownTimer);
+});
 
 // ─── Countdown ────────────────────────────────────────────────────────────
 
@@ -74,10 +124,6 @@ const lightboxOpen = ref(false);
 
 function openLightbox() { lightboxOpen.value = true; }
 function closeLightbox() { lightboxOpen.value = false; }
-
-function selectPoster(index) {
-    activePoster.value = index;
-}
 
 // ─── Google Maps ──────────────────────────────────────────────────────────
 
@@ -270,6 +316,10 @@ function copyPromoLink() {
             <div
                 class="relative bg-gray-900 rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
                 @click="openLightbox"
+                @mouseenter="pauseCarousel"
+                @focusin="pauseCarousel"
+                @touchstart="handleTouchStart"
+                @touchend="handleTouchEnd"
             >
                 <div class="flex items-center justify-center w-full min-h-[300px] max-h-[75vh] bg-gray-900">
                     <img
@@ -280,6 +330,37 @@ function copyPromoLink() {
                     />
                 </div>
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent pointer-events-none"></div>
+
+                <template v-if="posterUrls.length > 1">
+                    <button
+                        type="button"
+                        class="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        aria-label="Poster sebelumnya"
+                        @click.stop="previousPoster"
+                    >
+                        <span aria-hidden="true" class="text-2xl leading-none">‹</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        aria-label="Poster seterusnya"
+                        @click.stop="nextPoster"
+                    >
+                        <span aria-hidden="true" class="text-2xl leading-none">›</span>
+                    </button>
+                    <div class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5" aria-label="Kedudukan poster">
+                        <button
+                            v-for="(_, index) in posterUrls"
+                            :key="index"
+                            type="button"
+                            class="h-3 w-3 rounded-full border border-white/80 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                            :class="activePoster === index ? 'bg-white' : 'bg-white/35'"
+                            :aria-label="`Papar poster ${index + 1}`"
+                            :aria-current="activePoster === index ? 'true' : undefined"
+                            @click.stop="selectPoster(index)"
+                        ></button>
+                    </div>
+                </template>
 
                 <!-- Org Badge -->
                 <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-sm flex items-center gap-1.5">
@@ -304,7 +385,7 @@ function copyPromoLink() {
                     </svg>
                 </div>
             </div>
-            <div v-if="posterUrls.length > 1" class="flex gap-2 overflow-x-auto pb-1" aria-label="Poster program">
+            <div v-if="posterUrls.length > 1" class="flex gap-2 overflow-x-auto pb-1" aria-label="Pilihan poster program">
                 <button
                     v-for="(poster, index) in posterUrls"
                     :key="poster"

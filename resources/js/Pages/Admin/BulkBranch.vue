@@ -25,43 +25,44 @@ watch([search, orgFilter, branchFilter], () => {
             search: search.value?.trim() || '',
             organization_id: orgFilter.value || '',
             branch_id: branchFilter.value || '',
+            per_page: props.filters.per_page ?? 50,
+            page: 1,
         }, { preserveState: true, preserveScroll: true, replace: true });
     }, 300);
 });
 
 // Selection
-const selectedIds = ref(new Set());
+const selectedIds = ref([]);
 const selectAll = ref(false);
 
 const allPageIds = computed(() => props.members.data.map(m => m.id));
 
 watch(selectAll, (val) => {
     if (val) {
-        allPageIds.value.forEach(id => selectedIds.value.add(id));
+        selectedIds.value = [...new Set([...selectedIds.value, ...allPageIds.value])];
     } else {
-        allPageIds.value.forEach(id => selectedIds.value.delete(id));
+        selectedIds.value = selectedIds.value.filter(id => !allPageIds.value.includes(id));
     }
 });
 
 watch(() => props.members.data, () => {
+    selectedIds.value = [];
     selectAll.value = false;
 });
 
 function toggleMember(id) {
-    if (selectedIds.value.has(id)) {
-        selectedIds.value.delete(id);
+    if (selectedIds.value.includes(id)) {
+        selectedIds.value = selectedIds.value.filter(selectedId => selectedId !== id);
     } else {
-        selectedIds.value.add(id);
+        selectedIds.value = [...selectedIds.value, id];
     }
-    selectAll.value = selectedIds.value.size === allPageIds.value.length && allPageIds.value.length > 0;
+    selectAll.value = selectedIds.value.length === allPageIds.value.length && allPageIds.value.length > 0;
 }
 
 // Selected members data for preview
 const selectedMembers = computed(() =>
-    props.members.data.filter(m => selectedIds.value.has(m.id))
+    props.members.data.filter(m => selectedIds.value.includes(m.id))
 );
-
-const selectionFromOtherPages = ref([]);
 
 // Target branch
 const targetBranchId = ref('');
@@ -82,7 +83,7 @@ const willChangeMembers = computed(() =>
 );
 
 const totalSelected = computed(() =>
-    selectedIds.value.size + selectionFromOtherPages.value.length
+    selectedIds.value.length
 );
 
 // Pagination helpers
@@ -105,7 +106,7 @@ function changePerPage(e) {
 // Submit
 async function submitBulkChange() {
     if (!targetBranchId.value) return alert('Sila pilih cawangan sasaran.');
-    if (!willChangeMembers.value.length && !selectionFromOtherPages.value.length) {
+    if (!willChangeMembers.value.length) {
         return alert('Tiada ahli yang perlu ditukar cawangan.');
     }
 
@@ -118,8 +119,7 @@ async function submitBulkChange() {
             member_ids: willChangeMembers.value.map(m => m.id),
         });
         result.value = res.data;
-        selectedIds.value.clear();
-        selectionFromOtherPages.value = [];
+        selectedIds.value = [];
         targetBranchId.value = '';
     } catch (e) {
         alert(e.response?.data?.message ?? 'Ralat semasa memproses.');
@@ -175,9 +175,9 @@ async function submitBulkChange() {
                                     <tr v-if="members.data.length === 0">
                                         <td colspan="3" class="px-4 py-12 text-center text-gray-400">Tiada ahli dijumpai.</td>
                                     </tr>
-                                    <tr v-for="m in members.data" :key="m.id" class="hover:bg-gray-50/50 transition-colors cursor-pointer" @click="toggleMember(m.id)" :class="{ 'bg-indigo-50/50': selectedIds.has(m.id) }">
+                                    <tr v-for="m in members.data" :key="m.id" class="hover:bg-gray-50/50 transition-colors cursor-pointer" @click="toggleMember(m.id)" :class="{ 'bg-indigo-50/50': selectedIds.includes(m.id) }">
                                         <td class="px-4 py-3">
-                                            <input type="checkbox" :checked="selectedIds.has(m.id)" @click.stop="toggleMember(m.id)" class="rounded border-gray-300 text-gray-900 focus:ring-0">
+                                            <input type="checkbox" :checked="selectedIds.includes(m.id)" @click.stop="toggleMember(m.id)" class="rounded border-gray-300 text-gray-900 focus:ring-0">
                                         </td>
                                         <td class="px-4 py-3">
                                             <div class="text-sm font-bold text-gray-900">{{ m.name }}</div>
@@ -272,7 +272,7 @@ async function submitBulkChange() {
                         <!-- Clear selection -->
                         <button
                             v-if="totalSelected"
-                            @click="selectedIds.clear(); selectionFromOtherPages = []; selectAll = false"
+                            @click="selectedIds = []; selectAll = false"
                             class="w-full text-xs font-semibold text-gray-400 hover:text-gray-600"
                         >
                             Kosongkan pilihan

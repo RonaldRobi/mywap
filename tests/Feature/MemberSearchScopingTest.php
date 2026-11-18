@@ -158,4 +158,23 @@ class MemberSearchScopingTest extends TestCase
         $ids = collect($response->json())->pluck('id')->all();
         $this->assertContains($memberDoubleSpace->id, $ids);
     }
+
+    public function test_admin_can_search_by_email_phone_and_legacy_member_number(): void
+    {
+        $member = User::factory()->create([
+            'name' => 'Search Fields Member',
+            'email' => 'fields@example.test',
+            'phone' => '0123456789',
+            'original_member_no' => 'LEGACY-123',
+            'current_organization_id' => $this->pkpim->id,
+        ]);
+
+        foreach (['fields@example.test', '0123456789', 'LEGACY-123'] as $term) {
+            $response = $this->actingAs($this->admin, 'web')
+                ->get('/api/members/search?q='.urlencode($term));
+
+            $response->assertOk();
+            $this->assertContains($member->id, collect($response->json())->pluck('id')->all());
+        }
+    }
 }

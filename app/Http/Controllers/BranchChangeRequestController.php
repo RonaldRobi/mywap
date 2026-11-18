@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
 use App\Notifications\BranchChangeRequestReviewed;
+use App\Support\MemberSearch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -19,6 +20,12 @@ class BranchChangeRequestController extends Controller
     {
         $user = $request->user()->load('organization');
         $isSuperadmin = $user->hasRole('Superadmin');
+
+        $search = trim((string) $request->query('search', ''));
+        $fromBranchId = $request->query('from_branch_id');
+        $toBranchId = $request->query('to_branch_id');
+        $perPage = (int) $request->query('per_page', 25);
+        $perPage = in_array($perPage, [25, 50, 100], true) ? $perPage : 25;
 
         $query = BranchChangeRequest::with([
             'user:id,name,email,member_no,current_organization_id,branch_id',
@@ -34,7 +41,14 @@ class BranchChangeRequestController extends Controller
             });
         }
 
-        $requests = $query->latest()->get()->map(fn ($r) => [
+        if ($search !== '') {
+            $query->whereHas('user', fn ($userQuery) => MemberSearch::apply($userQuery, $search));
+        }
+
+        $query->when($fromBranchId, fn ($q) => $q->where('from_branch_id', $fromBranchId))
+            ->when($toBranchId, fn ($q) => $q->where('to_branch_id', $toBranchId));
+
+        $requests = $query->latest()->paginate($perPage)->withQueryString()->through(fn ($r) => [
             'id' => $r->id,
             'user' => [
                 'id' => $r->user->id,
@@ -58,6 +72,12 @@ class BranchChangeRequestController extends Controller
         return Inertia::render('Admin/BranchChangeRequests', [
             'requests' => $requests,
             'branches' => $branches,
+            'filters' => [
+                'search' => $search,
+                'from_branch_id' => $fromBranchId,
+                'to_branch_id' => $toBranchId,
+                'per_page' => $perPage,
+            ],
         ]);
     }
 

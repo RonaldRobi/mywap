@@ -431,7 +431,7 @@ function submit() {
 
                     <div class="space-y-3 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                         <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Poster Program</h2>
-                        <p class="text-xs text-gray-400">Setiap fail mesti kurang daripada 2MB. Featured image digunakan sebagai poster utama program.</p>
+                        <p class="text-xs text-gray-400">Setiap fail maksimum 2MB. Cadangan saiz: 1080 × 1350 px (nisbah 4:5). Featured image digunakan sebagai poster utama program.</p>
 
                         <div class="space-y-2">
                             <label class="block text-sm font-semibold text-gray-700">Featured image</label>

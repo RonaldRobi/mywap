@@ -179,12 +179,7 @@ const secretaryForm = useForm({ user_id: null });
 const branchScopeForm = useForm({ branch_ids: [] });
 const secretaryStatus = ref({ type: '', message: '' });
 
-const existingSearchQuery = ref('');
-const existingSearchResults = ref([]);
-const existingSearchLoading = ref(false);
-const existingSearchError = ref('');
 const selectedManagedBranchIds = ref([]);
-let existingSearchTimer = null;
 
 const organizationBranches = computed(() => {
     if (!managingAdminsBranch.value) return [];
@@ -241,15 +236,6 @@ watch(adminSearchQuery, (val) => {
     adminSearchTimer = setTimeout(() => searchBranchMembers(val), 300);
 });
 
-watch(existingSearchQuery, (val) => {
-    clearTimeout(existingSearchTimer);
-    if (!val || val.length < 2) {
-        existingSearchResults.value = [];
-        return;
-    }
-    existingSearchTimer = setTimeout(() => searchExistingAccounts(val), 300);
-});
-
 function findBranch(id, organizations = page.props.organizations) {
     for (const org of organizations ?? []) {
         const branch = org.branches.find((item) => item.id === id);
@@ -277,9 +263,6 @@ function openAdminManage(branch) {
     managingAdminsBranch.value = branch;
     adminSearchQuery.value = '';
     adminSearchResults.value = [];
-    existingSearchQuery.value = '';
-    existingSearchResults.value = [];
-    existingSearchError.value = '';
     secretaryStatus.value = { type: '', message: '' };
     selectedManagedBranchIds.value = [...(branch.manager?.managed_branch_ids ?? [])];
     managerForm.reset();
@@ -325,41 +308,12 @@ function createManagerAccount() {
     });
 }
 
-function searchExistingAccounts(val) {
-    if (!managingAdminsBranch.value) return;
-    existingSearchLoading.value = true;
-    existingSearchError.value = '';
-    axios.get('/api/members/search', {
-        params: {
-            q: val,
-            organization_id: managingAdminsBranch.value.organization_id,
-        },
-    })
-        .then((res) => {
-            const existingIds = new Set([
-                managingAdminsBranch.value?.manager?.id,
-                ...secretaries.value.map((a) => a.id),
-            ]);
-            existingSearchResults.value = (res.data || []).filter((m) => !existingIds.has(m.id));
-        })
-        .catch((err) => {
-            console.error('Existing account search failed:', err);
-            existingSearchResults.value = [];
-            existingSearchError.value = 'Carian gagal. Cuba lagi.';
-        })
-        .finally(() => {
-            existingSearchLoading.value = false;
-        });
-}
-
 function assignExistingAdmin(account) {
     if (!managingAdminsBranch.value) return;
 
     useForm({ user_id: account.id }).post(route('branches.admin-account.assign', managingAdminsBranch.value.id), {
         preserveScroll: true,
         onSuccess: () => {
-            existingSearchQuery.value = '';
-            existingSearchResults.value = [];
             refreshBranchRefs();
         },
     });
@@ -947,45 +901,6 @@ const malaysianStates = [
                                             </div>
                                             <button type="button" @click="assignExistingAdmin(account)" class="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">Guna akaun ini</button>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Guna akaun ahli sedia ada</p>
-                                    <p class="mt-1 text-xs text-emerald-700">Cari nama, no. IC atau emel ahli dalam organisasi ini, kemudian lantik sebagai admin cawangan.</p>
-                                    <div class="relative mt-2">
-                                        <input
-                                            v-model="existingSearchQuery"
-                                            type="text"
-                                            placeholder="Cari akaun sedia ada..."
-                                            class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-colors"
-                                        />
-                                        <div v-if="existingSearchLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
-                                            <svg class="w-4 h-4 animate-spin text-emerald-500" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                            </svg>
-                                        </div>
-                                        <ul
-                                            v-if="existingSearchResults.length > 0"
-                                            class="absolute z-50 mt-1 w-full rounded-lg border border-emerald-200 bg-white shadow-lg max-h-48 overflow-y-auto"
-                                        >
-                                            <li v-for="member in existingSearchResults" :key="member.id">
-                                                <button
-                                                    type="button"
-                                                    @click="assignExistingAdmin(member)"
-                                                    class="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-emerald-50 transition-colors"
-                                                >
-                                                    <span class="min-w-0">
-                                                        <span class="block truncate text-sm font-semibold text-gray-800">{{ member.name }}</span>
-                                                        <span class="block truncate text-xs text-gray-400">{{ member.email || member.member_no }}</span>
-                                                    </span>
-                                                    <span class="shrink-0 text-xs font-semibold text-emerald-700">Guna</span>
-                                                </button>
-                                            </li>
-                                        </ul>
-                                        <p v-else-if="existingSearchQuery.length >= 2 && !existingSearchLoading && !existingSearchError" class="mt-1 text-xs text-gray-500">Tiada akaun ditemui.</p>
-                                        <p v-if="existingSearchError" class="mt-1 text-xs text-red-500">{{ existingSearchError }}</p>
                                     </div>
                                 </div>
 

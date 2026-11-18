@@ -195,10 +195,39 @@ class AdminManagementAndBranchAccessTest extends TestCase
 
         $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $this->orgAdmin->id));
         $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $otherAdmin->id));
-        $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $this->branchAdmin->id));
+        $this->assertTrue($admins->contains(fn ($admin) => $admin['id'] === $this->branchAdmin->id));
+
+        $orgAdminRow = $admins->firstWhere('id', $this->orgAdmin->id);
+        $branchAdminRow = $admins->firstWhere('id', $this->branchAdmin->id);
+
+        $this->assertFalse($orgAdminRow['can_toggle']);
+        $this->assertFalse($orgAdminRow['can_reset_password']);
+        $this->assertTrue($branchAdminRow['can_toggle']);
+        $this->assertTrue($branchAdminRow['can_reset_password']);
     }
 
-    public function test_superadmin_can_toggle_reset_and_delete_org_admin(): void
+    public function test_org_admin_can_manage_branch_admin_but_not_other_org_admin(): void
+    {
+        $otherOrgAdmin = User::factory()->create([
+            'current_organization_id' => $this->org->id,
+            'profile_completed_at' => now(),
+        ]);
+        $otherOrgAdmin->assignRole('Admin');
+
+        $this->actingAs($this->orgAdmin)
+            ->patch(route('admin.hub.members.toggle-active', $this->branchAdmin))
+            ->assertRedirect();
+
+        $this->assertFalse($this->branchAdmin->fresh()->is_active);
+
+        $this->actingAs($this->orgAdmin)
+            ->patch(route('admin.hub.members.toggle-active', $otherOrgAdmin))
+            ->assertForbidden();
+
+        $this->assertTrue($otherOrgAdmin->fresh()->is_active);
+    }
+
+    public function test_superadmin_can_toggle_and_reset_org_admin(): void
     {
         $superadmin = $this->makeSuperadmin();
 
@@ -220,9 +249,10 @@ class AdminManagementAndBranchAccessTest extends TestCase
 
         $this->actingAs($superadmin)
             ->delete(route('admin.hub.members.destroy', $this->orgAdmin))
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('error');
 
-        $this->assertSoftDeleted('users', ['id' => $this->orgAdmin->id]);
+        $this->assertNotSoftDeleted('users', ['id' => $this->orgAdmin->id]);
     }
 
     public function test_superadmin_cannot_deactivate_self_or_last_superadmin(): void
