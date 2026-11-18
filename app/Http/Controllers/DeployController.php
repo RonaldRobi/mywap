@@ -93,6 +93,14 @@ class DeployController extends Controller
             ['key' => 'queue_ensure', 'critical' => false, 'cmd' => 'sleep 5; if ps aux | grep -q "[a]rtisan queue:work"; then echo "queue worker already running"; else nohup '.escapeshellarg($php).' artisan queue:work --sleep=3 --tries=3 >> storage/logs/queue-worker.log 2>&1 & echo "queue worker started"; fi'],
         ];
 
+        if ($request->boolean('run_schedule')) {
+            $steps[] = [
+                'key' => 'schedule_run',
+                'critical' => false,
+                'cmd' => escapeshellarg($php).' artisan schedule:run',
+            ];
+        }
+
         $log = [];
         $failedCritical = null;
 
