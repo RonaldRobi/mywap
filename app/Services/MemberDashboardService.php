@@ -52,7 +52,9 @@ class MemberDashboardService
             return;
         }
 
-        Cache::flush();
+        User::query()->pluck('id')->each(
+            fn (int $id) => Cache::forget("member.dashboard.{$id}")
+        );
     }
 
     public function buildData(User $user): array

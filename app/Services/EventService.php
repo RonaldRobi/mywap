@@ -46,6 +46,10 @@ class EventService
             'start_formatted' => $event->start_time->format('d/m/Y H:i'),
             'end_time' => $event->end_time->toISOString(),
             'featured_image_url' => $event->featured_image_url,
+            'poster_urls' => collect([$event->featured_image_url])
+                ->merge($event->posters->map(fn ($poster) => asset('storage/'.$poster->path)))
+                ->unique()
+                ->values(),
             'share_url' => $event->status === EventStatus::Draft ? null : ShareUrl::route('share.event', $event),
             'google_calendar_url' => $event->google_calendar_url,
             'organization' => [

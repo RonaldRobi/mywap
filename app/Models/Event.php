@@ -169,6 +169,11 @@ class Event extends Model
         return $this->hasMany(Registration::class);
     }
 
+    public function posters(): HasMany
+    {
+        return $this->hasMany(EventPoster::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function supporters(): BelongsToMany
     {
         return $this->belongsToMany(Supporter::class, 'event_supporter')

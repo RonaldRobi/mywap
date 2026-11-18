@@ -106,7 +106,7 @@ function eventShareUrl() {
             <div class="rounded-3xl bg-white border border-gray-100 shadow-sm overflow-hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
                     <div class="aspect-[4/5] bg-gray-100 overflow-hidden">
-                        <img :src="event.featured_image_url" :alt="event.title" class="w-full h-full object-cover" />
+                        <img :src="event.featured_image_url" :alt="`${event.title} poster utama`" class="w-full h-full object-cover" />
                     </div>
                     <div class="p-6">
                         <div class="flex flex-wrap items-center gap-2 mb-2">
@@ -124,6 +124,9 @@ function eventShareUrl() {
                         <p class="text-sm text-gray-500 mt-1">{{ event.start_formatted }} · {{ event.location_or_link || '—' }}</p>
                         <p class="text-sm text-gray-400 mt-0.5">{{ event.organization_name }}</p>
                         <p v-if="event.organizations.length > 1" class="text-xs text-gray-400 mt-0.5">Terlibat: {{ event.organizations.join(', ') }}</p>
+                        <p v-if="event.poster_urls?.length > 1" class="mt-3 text-xs text-gray-500">
+                            {{ event.poster_urls.length }} poster disimpan. Poster pertama ialah featured image.
+                        </p>
 
                         <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
                             <span class="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">

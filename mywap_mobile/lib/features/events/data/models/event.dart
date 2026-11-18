@@ -24,6 +24,7 @@ sealed class Event with _$Event {
     String? start_formatted,
     String? end_time,
     String? featured_image_url,
+    @JsonKey(name: 'poster_urls') List<String>? poster_urls,
     String? share_url,
     Organization? organization,
     List<Organization>? organizations,

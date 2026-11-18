@@ -38,6 +38,8 @@ const rsvpConfig = {
 };
 
 const isPast = computed(() => new Date(props.event.start_time) < new Date());
+const posterUrls = computed(() => props.event.poster_urls?.length ? props.event.poster_urls : [props.event.featured_image_url]);
+const activePoster = ref(0);
 
 // ─── Countdown ────────────────────────────────────────────────────────────
 
@@ -72,6 +74,10 @@ const lightboxOpen = ref(false);
 
 function openLightbox() { lightboxOpen.value = true; }
 function closeLightbox() { lightboxOpen.value = false; }
+
+function selectPoster(index) {
+    activePoster.value = index;
+}
 
 // ─── Google Maps ──────────────────────────────────────────────────────────
 
@@ -267,8 +273,8 @@ function copyPromoLink() {
             >
                 <div class="flex items-center justify-center w-full min-h-[300px] max-h-[75vh] bg-gray-900">
                     <img
-                        :src="event.featured_image_url"
-                        :alt="event.title"
+                        :src="posterUrls[activePoster]"
+                        :alt="`${event.title} poster ${activePoster + 1}`"
                         class="w-full h-full max-h-[75vh] object-contain"
                         loading="eager"
                     />
@@ -297,6 +303,19 @@ function copyPromoLink() {
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                     </svg>
                 </div>
+            </div>
+            <div v-if="posterUrls.length > 1" class="flex gap-2 overflow-x-auto pb-1" aria-label="Poster program">
+                <button
+                    v-for="(poster, index) in posterUrls"
+                    :key="poster"
+                    type="button"
+                    class="h-20 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-gray-100 transition"
+                    :class="activePoster === index ? 'border-indigo-600' : 'border-transparent'"
+                    :aria-label="`Pilih poster ${index + 1}`"
+                    @click="selectPoster(index)"
+                >
+                    <img :src="poster" :alt="`${event.title} poster ${index + 1}`" class="h-full w-full object-cover" loading="lazy" />
+                </button>
             </div>
 
             <!-- ─── Title ────────────────────────────────────────────────────── -->
@@ -728,8 +747,8 @@ function copyPromoLink() {
                         </svg>
                     </button>
                     <img
-                        :src="event.featured_image_url"
-                        :alt="event.title"
+                        :src="posterUrls[activePoster]"
+                        :alt="`${event.title} poster ${activePoster + 1}`"
                         class="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
                         @click.self="closeLightbox"
                     />

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\BroadcastLog;
 use App\Models\Branch;
 use App\Models\BroadcastMessage;
 use App\Models\Event;
@@ -15,6 +16,7 @@ use App\Services\AdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -74,7 +76,8 @@ class BroadcastController extends Controller
                 'success_count' => $message->success_count,
                 'failed_count' => $message->failed_count,
                 'started_at' => $message->started_at?->toDateTimeString(),
-                'finished_at' => $message->finished_at?->toDateTimeString(),
+                 'finished_at' => $message->finished_at?->toDateTimeString(),
+                 'scheduled_at' => $message->scheduled_at?->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i'),
                 'error_message' => $message->error_message,
             ]);
 
@@ -173,7 +176,12 @@ class BroadcastController extends Controller
             'notification_channels' => ['required', 'array', 'min:1'],
             'notification_channels.*' => ['string', 'in:in_app,email'],
             'email_use_template' => ['boolean'],
+            'scheduled_at' => ['nullable', 'date_format:Y-m-d\\TH:i', 'after:now'],
         ]);
+
+        if (! empty($data['scheduled_at'])) {
+            $data['scheduled_at'] = Carbon::createFromFormat('Y-m-d\\TH:i', $data['scheduled_at'], 'Asia/Kuala_Lumpur');
+        }
 
         $targetOrgId = null;
 
@@ -233,10 +241,45 @@ class BroadcastController extends Controller
             'target_criteria' => $data['target_criteria'],
             'recipient_ids' => $data['recipient_ids'] ?? null,
             'notification_channels' => $data['notification_channels'],
-            'email_use_template' => $request->boolean('email_use_template', false),
-        ]);
+             'email_use_template' => $request->boolean('email_use_template', false),
+             'scheduled_at' => $data['scheduled_at'] ?? null,
+         ]);
 
         return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
+    }
+
+    public function resend(Request $request, BroadcastMessage $broadcast): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->isBranchAdmin() && ! $user->canManageBranch($broadcast->branch_id)) {
+            abort(403);
+        }
+
+        $copy = $this->broadcasts->broadcast([
+            'organization_id' => $broadcast->organization_id,
+            'sender_label' => $broadcast->sender_label,
+            'target_organization_id' => $broadcast->target_organization_id,
+            'branch_id' => $broadcast->branch_id,
+            'title' => $broadcast->title,
+            'content' => $broadcast->content,
+            'action_type' => $broadcast->action_type,
+            'action_id' => $broadcast->action_id,
+            'action_label' => $broadcast->action_label,
+            'action_url' => $broadcast->action_url,
+            'target_criteria' => $broadcast->target_criteria,
+            'recipient_ids' => $broadcast->recipient_ids,
+            'notification_channels' => $broadcast->notification_channels,
+            'email_use_template' => $broadcast->email_use_template,
+        ]);
+
+        BroadcastLog::create([
+            'broadcast_message_id' => $broadcast->id,
+            'event' => 'resent',
+            'message' => "Dihantar semula sebagai siaran #{$copy->id}.",
+        ]);
+
+        return back()->with('success', 'Push notification dihantar semula dan sedang diproses.');
     }
 
     /**

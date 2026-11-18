@@ -1779,7 +1779,11 @@ class AdminService
             'email_use_template' => $input['email_use_template'] ?? false,
         ]);
 
-        SendBroadcastJob::dispatch($message->id);
+        $dispatch = SendBroadcastJob::dispatch($message->id);
+
+        if (! empty($input['scheduled_at'])) {
+            $dispatch->delay($message->scheduled_at);
+        }
 
         BroadcastLog::create([
             'broadcast_message_id' => $message->id,

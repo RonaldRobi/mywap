@@ -41,6 +41,7 @@ const form = useForm({
     organization_id: props.event?.organization_id ?? '',
     organization_ids: props.event?.organization_ids ?? [],
     featured_image: null,
+    poster_images: [],
 });
 
 function startsWithHttp(value) {
@@ -70,6 +71,9 @@ function submit() {
         // Jangan hantar featured_image kosong (elak ralat "failed to upload").
         if (!payload.featured_image) {
             delete payload.featured_image;
+        }
+        if (!payload.poster_images?.length) {
+            delete payload.poster_images;
         }
         // Multipart PUT tidak di-parse oleh PHP — guna POST + method spoofing.
         if (isEditing) {
@@ -321,18 +325,22 @@ function submit() {
 
                     <div class="space-y-3 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                         <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Poster Program</h2>
-                        <p class="text-xs text-gray-400">Guna poster <strong>1080 × 1350 px</strong> (nisbah 4:5) supaya paparan seragam dan tidak dipotong. Poster ini juga jadi imej preview apabila dikongsi.</p>
+                        <p class="text-xs text-gray-400">Pilih satu atau beberapa poster. Poster pertama menjadi featured image dan poster seterusnya disimpan sebagai galeri.</p>
                         <input
                             type="file"
+                            multiple
                             accept="image/jpg,image/jpeg,image/png,image/webp"
                             class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                            @change="form.featured_image = $event.target.files?.[0] ?? null"
+                            @change="form.poster_images = Array.from($event.target.files ?? [])"
                         />
+                        <p v-if="form.poster_images.length" class="text-xs font-semibold text-indigo-700">
+                            {{ form.poster_images.length }} poster dipilih. Poster pertama kekal sebagai featured image.
+                        </p>
                         <div v-if="isEditing && event.featured_image_url" class="mx-auto w-full max-w-[280px]">
                             <div class="aspect-[4/5] w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
                                 <img :src="event.featured_image_url" class="h-full w-full object-contain" alt="Poster semasa (nisbah 4:5)" />
                             </div>
-                            <p class="mt-1 text-center text-xs text-gray-400">Pratonton nisbah 4:5. Biarkan kosong untuk kekalkan poster semasa.</p>
+                            <p class="mt-1 text-center text-xs text-gray-400">Poster semasa ialah featured image. Pilih fail baharu jika mahu menggantikannya dan menambah galeri.</p>
                         </div>
                     </div>
                 </div>
