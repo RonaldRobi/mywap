@@ -119,7 +119,7 @@ class RegisterValidationTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath(
                 'errors.phone.0',
-                'No. telefon tidak sah. Gunakan nombor sahaja, contoh: 0123456789.'
+                'No. telefon tidak sah. Gunakan format Malaysia tanpa +60, contoh: 0123456789.'
             );
     }
 }

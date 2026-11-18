@@ -56,7 +56,7 @@ class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen> {
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
               decoration: InputDecoration(
-                hintText: 'Cari nama atau No. Ahli...',
+                hintText: context.l10n.adminSearchFeesHint,
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -211,12 +211,12 @@ class _FeesContent extends StatelessWidget {
         ),
         const SizedBox(height: Spacing.sm),
         if (filteredFees.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(Spacing.xl),
+          Padding(
+            padding: const EdgeInsets.all(Spacing.xl),
             child: Center(
               child: Text(
-                'Tiada rekod yuran sepadan dengan carian.',
-                style: TextStyle(color: AppColors.textSecondary),
+                context.l10n.adminNoMatchingFeeRecords,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
           )

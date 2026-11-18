@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -90,9 +91,9 @@ class _AdminScanFab extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
-          child: const Tooltip(
-            message: 'Imbas Kad Kehadiran',
-            child: Icon(
+          child: Tooltip(
+            message: context.l10n.adminScanAttendanceCard,
+            child: const Icon(
               Icons.qr_code_scanner_rounded,
               color: AppColors.white,
               size: 26,
@@ -128,14 +129,14 @@ class _AdminBottomNavBar extends StatelessWidget {
           _AdminNavItem(
             icon: Icons.dashboard_outlined,
             selectedIcon: Icons.dashboard_rounded,
-            label: 'Utama',
+            label: context.l10n.adminNavHome,
             selected: selectedIndex == 0,
             onTap: () => onSelect(0),
           ),
           _AdminNavItem(
             icon: Icons.event_note_outlined,
             selectedIcon: Icons.event_note_rounded,
-            label: 'Program',
+            label: context.l10n.navProgram,
             selected: selectedIndex == 1,
             onTap: () => onSelect(1),
           ),
@@ -143,14 +144,14 @@ class _AdminBottomNavBar extends StatelessWidget {
           _AdminNavItem(
             icon: Icons.people_outline_rounded,
             selectedIcon: Icons.people_rounded,
-            label: 'Ahli',
+            label: context.l10n.adminMembersTab,
             selected: selectedIndex == 3,
             onTap: () => onSelect(3),
           ),
           _AdminNavItem(
             icon: Icons.grid_view_outlined,
             selectedIcon: Icons.grid_view_rounded,
-            label: 'Operasi',
+            label: context.l10n.adminNavOperations,
             selected: selectedIndex == 4,
             onTap: () => onSelect(4),
           ),

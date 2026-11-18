@@ -151,8 +151,8 @@ class EventQrPrintTest extends TestCase
             ->assertOk()
             ->assertSee('Logo PKPIM')
             ->assertSee('Logo ABIM')
-            ->assertSee('Logo WADAH')
-            ->assertSee('PKPIM · ABIM · WADAH');
+            ->assertSee('Logo Wadah')
+            ->assertSee('PKPIM · ABIM · Wadah');
     }
 
     public function test_other_organization_admin_cannot_print_event_qr(): void

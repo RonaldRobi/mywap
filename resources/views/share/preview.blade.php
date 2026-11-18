@@ -11,6 +11,9 @@
     <meta property="og:title" content="{{ $metaTitle }}">
     <meta property="og:description" content="{{ $metaDescription }}">
     <meta property="og:image" content="{{ $metaImage }}">
+    <meta property="og:image:secure_url" content="{{ $metaImage }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="{{ $metaUrl }}">
     <meta property="og:site_name" content="{{ $siteName }}">
 
@@ -18,6 +21,7 @@
     <meta name="twitter:title" content="{{ $metaTitle }}">
     <meta name="twitter:description" content="{{ $metaDescription }}">
     <meta name="twitter:image" content="{{ $metaImage }}">
+    <link rel="canonical" href="{{ $metaUrl }}">
 
     <meta http-equiv="refresh" content="2;url={{ $redirectUrl }}">
 

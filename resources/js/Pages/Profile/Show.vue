@@ -122,7 +122,7 @@ const initials = computed(() =>
                     <div class="space-y-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-xl font-bold text-gray-800 leading-tight">
-                                {{ profileUser.name }}
+                                {{ [profileUser.salutation, profileUser.name].filter(Boolean).join(' ') }}
                             </h2>
                             <span
                                 v-if="profileUser.position_badge"
@@ -224,8 +224,8 @@ const initials = computed(() =>
                     <div class="text-sm text-gray-700 space-y-0.5">
                         <p v-if="profileUser.address_1">{{ profileUser.address_1 }}</p>
                         <p v-if="profileUser.address_2">{{ profileUser.address_2 }}</p>
-                        <p v-if="profileUser.postcode || profileUser.city || profileUser.state">
-                            {{ [profileUser.postcode, profileUser.city, profileUser.state].filter(Boolean).join(', ') }}
+                        <p v-if="profileUser.postcode || profileUser.district || profileUser.city || profileUser.state">
+                            {{ [profileUser.postcode, profileUser.district || profileUser.city, profileUser.state].filter(Boolean).join(', ') }}
                         </p>
                     </div>
                 </div>

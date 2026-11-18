@@ -11,6 +11,7 @@ use App\Models\FormResponse;
 use App\Models\Organization;
 use App\Models\User;
 use App\Notifications\FormInvitationNotification;
+use App\Rules\NoEmojiInTitle;
 use App\Services\FormService;
 use App\Support\QrPng;
 use Illuminate\Http\RedirectResponse;
@@ -134,7 +135,7 @@ class FormController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
             'price_tiers' => ['nullable', 'array'],
@@ -334,7 +335,7 @@ class FormController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
 
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:999999'],
             'price_tiers' => ['nullable', 'array'],

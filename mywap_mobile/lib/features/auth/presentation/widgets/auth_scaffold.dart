@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_locale.dart';
@@ -450,6 +451,7 @@ class AuthField extends StatelessWidget {
     this.onFieldSubmitted,
     this.autofillHints,
     this.onChanged,
+    this.inputFormatters,
   });
 
   final String label;
@@ -464,6 +466,7 @@ class AuthField extends StatelessWidget {
   final void Function(String)? onFieldSubmitted;
   final Iterable<String>? autofillHints;
   final ValueChanged<String>? onChanged;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -486,6 +489,7 @@ class AuthField extends StatelessWidget {
         autofillHints: autofillHints,
         validator: validator,
         onChanged: onChanged,
+        inputFormatters: inputFormatters,
         style: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 14,

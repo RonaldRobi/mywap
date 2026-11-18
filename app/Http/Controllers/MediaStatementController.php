@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\MediaStatement;
 use App\Models\Organization;
+use App\Rules\NoEmojiInTitle;
 use App\Services\MediaStatementService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MediaStatementController extends Controller
@@ -52,11 +56,23 @@ class MediaStatementController extends Controller
         $data['is_featured'] = $request->boolean('is_featured');
         $data['published_at'] = $data['is_published'] ? now() : null;
         $this->storeFiles($request, $data);
+        $this->applyContentType($data);
 
         $statement = MediaStatement::create($data);
         $this->storeAttachments($request, $statement);
 
         return redirect()->route('admin.media-statements.edit', $statement)->with('success', 'Kenyataan media berjaya dicipta.');
+    }
+
+    public function uploadContentImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'max:4096'],
+        ]);
+
+        $path = $request->file('image')->store('media-statements/content', 'public');
+
+        return response()->json(['url' => '/storage/'.$path]);
     }
 
     public function edit(Request $request, MediaStatement $mediaStatement)
@@ -73,12 +89,13 @@ class MediaStatementController extends Controller
     public function update(Request $request, MediaStatement $mediaStatement)
     {
         $this->authorizeAccess($request->user(), $mediaStatement);
-        $data = $this->validateData($request);
+        $data = $this->validateData($request, $mediaStatement);
         $data['organization_id'] = $request->user()->isSuperadmin() ? ($data['organization_id'] ?? null) : $request->user()->current_organization_id;
         $data['is_published'] = $request->boolean('is_published');
         $data['is_featured'] = $request->boolean('is_featured');
         $data['published_at'] = $data['is_published'] ? ($mediaStatement->published_at ?? now()) : null;
         $this->storeFiles($request, $data, $mediaStatement);
+        $this->applyContentType($data, $mediaStatement);
 
         $mediaStatement->update($data);
         $this->storeAttachments($request, $mediaStatement);
@@ -98,19 +115,39 @@ class MediaStatementController extends Controller
         return redirect()->route('admin.media-statements.index')->with('success', 'Kenyataan media berjaya dipadam.');
     }
 
-    private function validateData(Request $request): array
+    private function validateData(Request $request, ?MediaStatement $statement = null): array
     {
-        return $request->validate([
+        $validator = Validator::make($request->all(), [
             'organization_id' => ['nullable', 'exists:organizations,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
+            'content_type' => ['required', Rule::in(['text', 'pdf', 'both'])],
+            'content' => ['nullable', 'string'],
             'is_published' => ['boolean'],
             'is_featured' => ['boolean'],
             'featured_image' => ['nullable', 'image', 'max:4096'],
+            'remove_featured_image' => ['boolean'],
             'pdf' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['image', 'max:4096'],
+        ], [
+            'content_type.required' => 'Pilih sama ada kandungan teks, PDF, atau kedua-duanya.',
         ]);
+
+        $validator->after(function ($validator) use ($request, $statement) {
+            $type = $request->input('content_type');
+            $content = trim(str_replace("\u{00A0}", ' ', html_entity_decode(strip_tags((string) $request->input('content')))));
+            $hasPdf = $request->hasFile('pdf') || $statement?->pdf_path;
+
+            if (in_array($type, ['text', 'both'], true) && $content === '') {
+                $validator->errors()->add('content', 'Tulis kandungan untuk kenyataan media ini.');
+            }
+
+            if (in_array($type, ['pdf', 'both'], true) && ! $hasPdf) {
+                $validator->errors()->add('pdf', 'Muat naik fail PDF untuk kenyataan media ini.');
+            }
+        });
+
+        return $validator->validate();
     }
 
     private function storeFiles(Request $request, array &$data, ?MediaStatement $statement = null): void
@@ -120,14 +157,43 @@ class MediaStatementController extends Controller
                 Storage::disk('public')->delete(str_replace('/storage/', '', $statement->featured_image_path));
             }
             $data['featured_image_path'] = '/storage/'.$request->file('featured_image')->store('media-statements', 'public');
+        } elseif ($request->boolean('remove_featured_image') && $statement?->featured_image_path) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $statement->featured_image_path));
+            $data['featured_image_path'] = null;
         }
+
         if ($request->hasFile('pdf')) {
             if ($statement?->pdf_path) {
                 Storage::disk('public')->delete(str_replace('/storage/', '', $statement->pdf_path));
             }
             $data['pdf_path'] = '/storage/'.$request->file('pdf')->store('media-statements/pdf', 'public');
         }
-        unset($data['featured_image'], $data['pdf'], $data['attachments']);
+
+        unset(
+            $data['featured_image'],
+            $data['remove_featured_image'],
+            $data['pdf'],
+            $data['attachments'],
+        );
+    }
+
+    private function applyContentType(array &$data, ?MediaStatement $statement = null): void
+    {
+        if (($data['content_type'] ?? null) === 'pdf') {
+            $data['content'] = null;
+
+            return;
+        }
+
+        if (($data['content_type'] ?? null) === 'text') {
+            $path = $data['pdf_path'] ?? $statement?->pdf_path;
+
+            if ($path) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $path));
+            }
+
+            $data['pdf_path'] = null;
+        }
     }
 
     private function storeAttachments(Request $request, MediaStatement $statement): void

@@ -10,6 +10,7 @@ use App\Models\OrganizationPosition;
 use App\Models\User;
 use App\Services\FeeService;
 use App\Services\ProfileService;
+use App\Support\Malaysia;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -80,6 +81,7 @@ class ProfileController extends Controller
                 'id' => $user->id,
                 'member_no' => $user->member_no,
                 'name' => $user->name,
+                'salutation' => $user->salutation,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'ic_number' => $user->ic_number,
@@ -100,6 +102,7 @@ class ProfileController extends Controller
                 'address_1' => $user->address_1,
                 'address_2' => $user->address_2,
                 'postcode' => $user->postcode,
+                'district' => $user->district,
                 'city' => $user->city,
                 'state' => $user->state,
                 'emergency_contact_name' => $user->emergency_contact_name,
@@ -152,6 +155,10 @@ class ProfileController extends Controller
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
             ] : null,
+            'educationLevels' => Malaysia::educationLevels(),
+            'salutations' => Malaysia::salutations(),
+            'states' => Malaysia::states(),
+            'districts' => Malaysia::districts(),
         ]);
     }
 
@@ -183,6 +190,10 @@ class ProfileController extends Controller
             'parsedGender' => $parsedGender,
             'branches' => $branches,
             'currentBranchId' => $user->branch_id,
+            'educationLevels' => Malaysia::educationLevels(),
+            'salutations' => Malaysia::salutations(),
+            'states' => Malaysia::states(),
+            'districts' => Malaysia::districts(),
         ]);
     }
 

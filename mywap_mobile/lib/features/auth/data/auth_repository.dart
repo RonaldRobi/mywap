@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../shared/l10n/l10n.dart';
 import 'models/user.dart';
 
 /// Auth endpoints wrapper. UI never touches HTTP directly.
@@ -188,7 +189,7 @@ class AuthRepository {
   Future<User> _persistSession(Map<String, dynamic> data) async {
     final token = data['token'] as String?;
     if (token == null) {
-      throw const FormatException('Tiada token dalam respons.');
+      throw FormatException(currentAppLocalizations.authMissingToken);
     }
     await _tokenStorage.write(token);
 

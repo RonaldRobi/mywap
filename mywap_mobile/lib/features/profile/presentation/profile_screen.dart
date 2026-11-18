@@ -199,7 +199,9 @@ class _ProfileHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name ?? '-',
+                      [user.salutation, user.name]
+                          .where((part) => part != null && part.trim().isNotEmpty)
+                          .join(' '),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: AppColors.white,
                       ),
@@ -427,12 +429,13 @@ class _DetailsCard extends StatelessWidget {
   final ProfileUser user;
 
   String get _address {
+    final area = user.district ?? user.city;
     final parts =
         [
           user.address_1,
           user.address_2,
-          if (user.postcode != null && user.city != null)
-            '${user.postcode} ${user.city}',
+          if (user.postcode != null && area != null)
+            '${user.postcode} $area',
           user.state,
         ].where((p) => p != null && p.trim().isNotEmpty).toList();
     return parts.isEmpty ? '' : parts.join(', ');

@@ -160,6 +160,7 @@ class PublicHomeController extends Controller
                 'category' => $item->category,
                 'file_path' => $item->file_path,
                 'cover_image_path' => $item->cover_image_path,
+                'share_url' => \App\Support\ShareUrl::route('share.pustaka', $item),
             ])
             ->values()
             ->all();
@@ -213,6 +214,7 @@ class PublicHomeController extends Controller
     private function mediaStatements(): array
     {
         return MediaStatement::query()
+            ->with('organization:id,name')
             ->where('is_published', true)
             ->where(fn ($query) => $query->whereNull('published_at')->orWhere('published_at', '<=', now()))
             ->whereNull('organization_id')
@@ -224,6 +226,7 @@ class PublicHomeController extends Controller
                 'id' => $statement->id,
                 'title' => $statement->title,
                 'featured_image' => $statement->featured_image_path ? asset($statement->featured_image_path) : null,
+                'organization_name' => $statement->organization?->name ?? 'Semua Organisasi',
                 'pdf_url' => $statement->pdf_path ? asset($statement->pdf_path) : null,
             ])
             ->values()

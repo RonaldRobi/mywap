@@ -10,7 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/financial_providers.dart';
@@ -30,9 +30,10 @@ class FinancialOverviewScreen extends ConsumerWidget {
     final isAdmin = ref.watch(currentUserProvider)?.isAdmin ?? false;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.account_balance_wallet_outlined,
+        semanticLabel: context.l10n.finOverviewTitle,
+        showBack: true,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(

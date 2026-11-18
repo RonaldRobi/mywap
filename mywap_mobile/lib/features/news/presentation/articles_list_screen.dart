@@ -10,7 +10,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../application/news_providers.dart';
 import '../data/models/news.dart';
 import '../../../shared/theme/app_text_theme.dart';
@@ -24,9 +24,10 @@ class ArticlesListScreen extends ConsumerWidget {
     final async = ref.watch(articleListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.menu_book_outlined,
+        semanticLabel: context.l10n.articlesTitle,
+        showBack: true,
       ),
       body: async.when(
         data:

@@ -1709,6 +1709,12 @@ abstract class AppLocalizations {
   /// **'Basic Information'**
   String get basicInfoSection;
 
+  /// No description provided for @salutationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Salutation'**
+  String get salutationLabel;
+
   /// No description provided for @educationProfessionSection.
   ///
   /// In en, this message translates to:
@@ -1793,6 +1799,18 @@ abstract class AppLocalizations {
   /// **'Postcode'**
   String get postcodeLabel;
 
+  /// No description provided for @postcodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Postcode must be 5 digits.'**
+  String get postcodeInvalid;
+
+  /// No description provided for @districtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get districtLabel;
+
   /// No description provided for @cityLabel.
   ///
   /// In en, this message translates to:
@@ -1804,6 +1822,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'State'**
   String get stateLabel;
+
+  /// No description provided for @selectStateFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a state first'**
+  String get selectStateFirst;
 
   /// No description provided for @emergencySection.
   ///
@@ -4751,6 +4775,42 @@ abstract class AppLocalizations {
   /// **'Delete Member'**
   String get adminDeleteMemberButton;
 
+  /// No description provided for @adminResetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get adminResetPasswordTitle;
+
+  /// No description provided for @adminNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get adminNewPasswordLabel;
+
+  /// No description provided for @adminPasswordMinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum 8 characters'**
+  String get adminPasswordMinHint;
+
+  /// No description provided for @adminResetButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get adminResetButton;
+
+  /// No description provided for @adminPasswordReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Member password has been changed.'**
+  String get adminPasswordReset;
+
+  /// No description provided for @adminSortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort list'**
+  String get adminSortTooltip;
+
   /// No description provided for @adminFeesTitle.
   ///
   /// In en, this message translates to:
@@ -5812,6 +5872,900 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notifications keep you informed about programs, announcements and important reminders. You can change this permission in your device settings at any time.'**
   String get faqA7;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @shareItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this item'**
+  String get shareItem;
+
+  /// No description provided for @shareLinkUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Share link is not available for this item yet.'**
+  String get shareLinkUnavailable;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open sharing. Please try again.'**
+  String get shareFailed;
+
+  /// No description provided for @mediaStatementsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No media statements yet.'**
+  String get mediaStatementsEmpty;
+
+  /// No description provided for @mediaStatementsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official statements and materials from the organisation.'**
+  String get mediaStatementsSubtitle;
+
+  /// No description provided for @openPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Open PDF'**
+  String get openPdf;
+
+  /// No description provided for @callLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callLabel;
+
+  /// No description provided for @checkoutViewReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'View Receipt'**
+  String get checkoutViewReceipt;
+
+  /// No description provided for @newsVideoInvalidLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid video link.'**
+  String get newsVideoInvalidLink;
+
+  /// No description provided for @fileInvalidRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid file. Please try again.'**
+  String get fileInvalidRetry;
+
+  /// No description provided for @authMissingToken.
+  ///
+  /// In en, this message translates to:
+  /// **'No token in the response.'**
+  String get authMissingToken;
+
+  /// No description provided for @prayerLocationBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is blocked. Allow it in Settings.'**
+  String get prayerLocationBlocked;
+
+  /// No description provided for @prayerLocationAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location for prayer times in your area'**
+  String get prayerLocationAllow;
+
+  /// No description provided for @prayerLocationOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are off. Turn them on for prayer times.'**
+  String get prayerLocationOff;
+
+  /// No description provided for @prayerLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load prayer times. Try again.'**
+  String get prayerLoadFailed;
+
+  /// No description provided for @prayerNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next prayer'**
+  String get prayerNext;
+
+  /// No description provided for @prayerTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Prayer Times'**
+  String get prayerTodayTitle;
+
+  /// No description provided for @prayerMinutesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min left'**
+  String prayerMinutesLeft(int minutes);
+
+  /// No description provided for @orgAgePlus.
+  ///
+  /// In en, this message translates to:
+  /// **'{min}+ years'**
+  String orgAgePlus(int min);
+
+  /// No description provided for @orgAgeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{min}-{max} years'**
+  String orgAgeRange(int min, int max);
+
+  /// No description provided for @roleBranchAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Admin'**
+  String get roleBranchAdmin;
+
+  /// No description provided for @roleBranchAdminWithBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch Admin ({branch})'**
+  String roleBranchAdminWithBranch(String branch);
+
+  /// No description provided for @roleOrganizationAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'{organization} Admin'**
+  String roleOrganizationAdmin(String organization);
+
+  /// No description provided for @shareSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareSheetTitle;
+
+  /// No description provided for @shareWhatsApp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get shareWhatsApp;
+
+  /// No description provided for @shareFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Facebook'**
+  String get shareFacebook;
+
+  /// No description provided for @shareTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram'**
+  String get shareTelegram;
+
+  /// No description provided for @shareX.
+  ///
+  /// In en, this message translates to:
+  /// **'X'**
+  String get shareX;
+
+  /// No description provided for @shareCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get shareCopyLink;
+
+  /// No description provided for @shareCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get shareCopyText;
+
+  /// No description provided for @shareMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get shareMoreOptions;
+
+  /// No description provided for @shareLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied.'**
+  String get shareLinkCopied;
+
+  /// No description provided for @shareTextCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Text copied.'**
+  String get shareTextCopied;
+
+  /// No description provided for @adminConfirmAttendanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Attendance'**
+  String get adminConfirmAttendanceTitle;
+
+  /// No description provided for @adminConfirmAttendanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this participant as present now?\n\nName: {name}'**
+  String adminConfirmAttendanceBody(String name);
+
+  /// No description provided for @adminConfirmPresentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Present'**
+  String get adminConfirmPresentButton;
+
+  /// No description provided for @adminAttendanceConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance for {name} confirmed.'**
+  String adminAttendanceConfirmed(String name);
+
+  /// No description provided for @adminAttendanceRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to record attendance.'**
+  String get adminAttendanceRecordFailed;
+
+  /// No description provided for @adminParticipantPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant Already Present'**
+  String get adminParticipantPresent;
+
+  /// No description provided for @adminAttendedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Attended at {datetime}'**
+  String adminAttendedTime(String datetime);
+
+  /// No description provided for @adminOpenFastScanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Fast Scanner'**
+  String get adminOpenFastScanner;
+
+  /// No description provided for @adminSearchAttendanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name, Member No. or IC No...'**
+  String get adminSearchAttendanceHint;
+
+  /// No description provided for @adminFilterAllCount.
+  ///
+  /// In en, this message translates to:
+  /// **'All ({count})'**
+  String adminFilterAllCount(int count);
+
+  /// No description provided for @adminFilterPresentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Present ({count})'**
+  String adminFilterPresentCount(int count);
+
+  /// No description provided for @adminFilterNotPresentCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Present ({count})'**
+  String adminFilterNotPresentCount(int count);
+
+  /// No description provided for @adminNoParticipantsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No participants match your search.'**
+  String get adminNoParticipantsMatch;
+
+  /// No description provided for @adminAllParticipantsPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'All participants are present!'**
+  String get adminAllParticipantsPresent;
+
+  /// No description provided for @adminTapToConfirmPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to confirm attendance'**
+  String get adminTapToConfirmPresent;
+
+  /// No description provided for @adminAudienceAllNgo.
+  ///
+  /// In en, this message translates to:
+  /// **'All Movement Users (Cross-NGO)'**
+  String get adminAudienceAllNgo;
+
+  /// No description provided for @adminAudienceSpecificOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific Organisation'**
+  String get adminAudienceSpecificOrg;
+
+  /// No description provided for @adminAudienceAllUsrah.
+  ///
+  /// In en, this message translates to:
+  /// **'All Usrah Groups'**
+  String get adminAudienceAllUsrah;
+
+  /// No description provided for @adminAudienceMyBranchMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'All Members of My Branch'**
+  String get adminAudienceMyBranchMembers;
+
+  /// No description provided for @adminAudienceMyBranchUsrah.
+  ///
+  /// In en, this message translates to:
+  /// **'Usrah Groups of My Branch'**
+  String get adminAudienceMyBranchUsrah;
+
+  /// No description provided for @adminAudienceOrgMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'All {organization} Members'**
+  String adminAudienceOrgMembers(String organization);
+
+  /// No description provided for @adminAudienceOrgMembersFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'All Organisation Members'**
+  String get adminAudienceOrgMembersFallback;
+
+  /// No description provided for @adminAudienceOrgUsrah.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation Usrah Groups'**
+  String get adminAudienceOrgUsrah;
+
+  /// No description provided for @adminSystemAdministrator.
+  ///
+  /// In en, this message translates to:
+  /// **'System Administrator'**
+  String get adminSystemAdministrator;
+
+  /// No description provided for @adminBroadcastHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The broadcast is sent as an official in-app notification to the selected audience.'**
+  String get adminBroadcastHint;
+
+  /// No description provided for @adminSelectTargetOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Target Organisation'**
+  String get adminSelectTargetOrg;
+
+  /// No description provided for @adminSelectOrgError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an organisation.'**
+  String get adminSelectOrgError;
+
+  /// No description provided for @adminDashboardNotificationsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get adminDashboardNotificationsTooltip;
+
+  /// No description provided for @adminWebPortalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk registration, CSV import and system configuration are managed on the official MyWAP web portal.'**
+  String get adminWebPortalNote;
+
+  /// No description provided for @adminFullAccessScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Full access to the 3-NGO ecosystem: PKPIM, ABIM & WADAH'**
+  String get adminFullAccessScope;
+
+  /// No description provided for @adminBranchScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch scope: {branch}'**
+  String adminBranchScope(String branch);
+
+  /// No description provided for @adminOrgScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation scope: {organization}'**
+  String adminOrgScope(String organization);
+
+  /// No description provided for @adminDefaultBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Branch'**
+  String get adminDefaultBranch;
+
+  /// No description provided for @adminDefaultOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation'**
+  String get adminDefaultOrg;
+
+  /// No description provided for @adminRegistrationDesk.
+  ///
+  /// In en, this message translates to:
+  /// **'REGISTRATION DESK'**
+  String get adminRegistrationDesk;
+
+  /// No description provided for @adminParticipantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Participants'**
+  String adminParticipantsCount(int count);
+
+  /// No description provided for @adminScanParticipantCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Participant Card'**
+  String get adminScanParticipantCard;
+
+  /// No description provided for @adminList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get adminList;
+
+  /// No description provided for @adminScanCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Card'**
+  String get adminScanCard;
+
+  /// No description provided for @adminMemberDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Member Directory'**
+  String get adminMemberDirectory;
+
+  /// No description provided for @adminFeeCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee Collection'**
+  String get adminFeeCollection;
+
+  /// No description provided for @adminSixMonthCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'6-Month Collection'**
+  String get adminSixMonthCollection;
+
+  /// No description provided for @adminCheckInRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({memberNo}) - Attendance Recorded'**
+  String adminCheckInRecorded(String name, String memberNo);
+
+  /// No description provided for @adminCheckInRecordedName.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} - Attendance Recorded'**
+  String adminCheckInRecordedName(String name);
+
+  /// No description provided for @adminScanNotSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan was not successful.'**
+  String get adminScanNotSuccessful;
+
+  /// No description provided for @adminAttendanceRecordError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error while recording attendance. Please try again.'**
+  String get adminAttendanceRecordError;
+
+  /// No description provided for @adminManualEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Entry'**
+  String get adminManualEntry;
+
+  /// No description provided for @adminManualEntryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter IC No. (12 digits), Member No., or member phone number.'**
+  String get adminManualEntryHint;
+
+  /// No description provided for @adminIcMemberPhoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IC No. / Member No. / Phone'**
+  String get adminIcMemberPhoneLabel;
+
+  /// No description provided for @adminIcMemberPhoneExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: 880123015566 or PKPIM-0012'**
+  String get adminIcMemberPhoneExample;
+
+  /// No description provided for @adminAttendanceCardScanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Card Scanner'**
+  String get adminAttendanceCardScanner;
+
+  /// No description provided for @adminTorch.
+  ///
+  /// In en, this message translates to:
+  /// **'Flashlight'**
+  String get adminTorch;
+
+  /// No description provided for @adminSwitchCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Camera'**
+  String get adminSwitchCamera;
+
+  /// No description provided for @adminNoScheduledPrograms.
+  ///
+  /// In en, this message translates to:
+  /// **'No Scheduled Programs'**
+  String get adminNoScheduledPrograms;
+
+  /// No description provided for @adminNoScheduledProgramsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled events for your branch or organisation at the moment.'**
+  String get adminNoScheduledProgramsBody;
+
+  /// No description provided for @adminParticipantList.
+  ///
+  /// In en, this message translates to:
+  /// **'Participant List'**
+  String get adminParticipantList;
+
+  /// No description provided for @adminPointCameraMemberCardQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the Member Card QR code'**
+  String get adminPointCameraMemberCardQr;
+
+  /// No description provided for @adminManualInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Input (IC No. / Card)'**
+  String get adminManualInput;
+
+  /// No description provided for @adminLoadEventsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load events.'**
+  String get adminLoadEventsFailed;
+
+  /// No description provided for @adminSearchFeesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name or Member No...'**
+  String get adminSearchFeesHint;
+
+  /// No description provided for @adminNoMatchingFeeRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'No fee records match your search.'**
+  String get adminNoMatchingFeeRecords;
+
+  /// No description provided for @adminSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get adminSortNewest;
+
+  /// No description provided for @adminSortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get adminSortOldest;
+
+  /// No description provided for @adminSortNameAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Name A-Z'**
+  String get adminSortNameAsc;
+
+  /// No description provided for @adminSortNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Name Z-A'**
+  String get adminSortNameDesc;
+
+  /// No description provided for @adminRoleFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get adminRoleFallback;
+
+  /// No description provided for @adminMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator Menu'**
+  String get adminMenuTitle;
+
+  /// No description provided for @adminManagementOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Management & Operations'**
+  String get adminManagementOperations;
+
+  /// No description provided for @adminScanAttendanceCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Attendance Card'**
+  String get adminScanAttendanceCard;
+
+  /// No description provided for @adminScanAttendanceCardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick camera scanner for participant membership cards at programs'**
+  String get adminScanAttendanceCardSubtitle;
+
+  /// No description provided for @adminProgramAttendanceMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Programs & Attendance'**
+  String get adminProgramAttendanceMenu;
+
+  /// No description provided for @adminProgramAttendanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Program list, attendance records & registration status'**
+  String get adminProgramAttendanceSubtitle;
+
+  /// No description provided for @adminMemberDirectorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Member search, active status check & contact info'**
+  String get adminMemberDirectorySubtitle;
+
+  /// No description provided for @adminFeeCollectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitor annual fee payment status & collection summary'**
+  String get adminFeeCollectionSubtitle;
+
+  /// No description provided for @adminBroadcastMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast Message'**
+  String get adminBroadcastMenu;
+
+  /// No description provided for @adminBroadcastMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send urgent announcement notifications to member groups'**
+  String get adminBroadcastMenuSubtitle;
+
+  /// No description provided for @adminAdminManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator User Manual'**
+  String get adminAdminManual;
+
+  /// No description provided for @adminAdminManualSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MyWAP system operations guide for administrators'**
+  String get adminAdminManualSubtitle;
+
+  /// No description provided for @adminCreateContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Content'**
+  String get adminCreateContent;
+
+  /// No description provided for @adminCreateContentNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Full document creation is done on the web portal. This button opens the relevant page.'**
+  String get adminCreateContentNote;
+
+  /// No description provided for @adminCreateProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Program'**
+  String get adminCreateProgram;
+
+  /// No description provided for @adminCreateProgramSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new programs, registration forms & attendance settings'**
+  String get adminCreateProgramSubtitle;
+
+  /// No description provided for @adminCreateProgramDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Program on Web Portal'**
+  String get adminCreateProgramDialogTitle;
+
+  /// No description provided for @adminCreateProgramDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Program creation needs the full editor for dates, location, registration forms and pricing. It opens on the official myWAP web portal.'**
+  String get adminCreateProgramDialogBody;
+
+  /// No description provided for @adminWriteArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Article'**
+  String get adminWriteArticle;
+
+  /// No description provided for @adminWriteArticleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full text editor, cover image & gallery'**
+  String get adminWriteArticleSubtitle;
+
+  /// No description provided for @adminWriteArticleDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Article on Web Portal'**
+  String get adminWriteArticleDialogTitle;
+
+  /// No description provided for @adminWriteArticleDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The article editor with text formatting, cover image and gallery is available on the web portal. Content will appear in the app after publishing.'**
+  String get adminWriteArticleDialogBody;
+
+  /// No description provided for @adminLatestInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Info'**
+  String get adminLatestInfo;
+
+  /// No description provided for @adminLatestInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage news, categories & publishing'**
+  String get adminLatestInfoSubtitle;
+
+  /// No description provided for @adminManageLatestInfoDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Latest Info on Web Portal'**
+  String get adminManageLatestInfoDialogTitle;
+
+  /// No description provided for @adminManageLatestInfoDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'News, categories and the publishing schedule are managed on the web portal.'**
+  String get adminManageLatestInfoDialogBody;
+
+  /// No description provided for @adminMediaStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Statement'**
+  String get adminMediaStatement;
+
+  /// No description provided for @adminMediaStatementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload PDF, images & official statement text'**
+  String get adminMediaStatementSubtitle;
+
+  /// No description provided for @adminCreateMediaStatementDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Media Statement on Web Portal'**
+  String get adminCreateMediaStatementDialogTitle;
+
+  /// No description provided for @adminCreateMediaStatementDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload the PDF, featured image and write official statement text on the web portal.'**
+  String get adminCreateMediaStatementDialogBody;
+
+  /// No description provided for @adminCreateForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Form'**
+  String get adminCreateForm;
+
+  /// No description provided for @adminCreateFormSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Form builder, questions & QR link'**
+  String get adminCreateFormSubtitle;
+
+  /// No description provided for @adminCreateFormDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Form on Web Portal'**
+  String get adminCreateFormDialogTitle;
+
+  /// No description provided for @adminCreateFormDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The interactive form builder (questions, options, QR) is available on the web portal.'**
+  String get adminCreateFormDialogBody;
+
+  /// No description provided for @adminLogoutAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out Administrator Account'**
+  String get adminLogoutAdmin;
+
+  /// No description provided for @adminOpenWebFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the web portal.'**
+  String get adminOpenWebFailed;
+
+  /// No description provided for @adminOpenWebPortal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Web Portal'**
+  String get adminOpenWebPortal;
+
+  /// No description provided for @adminScanMemberCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Member Card'**
+  String get adminScanMemberCard;
+
+  /// No description provided for @adminNavHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Main'**
+  String get adminNavHome;
+
+  /// No description provided for @adminNavOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get adminNavOperations;
+
+  /// No description provided for @roleOrgAdminFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Organisation Admin'**
+  String get roleOrgAdminFallback;
+
+  /// No description provided for @prayerHoursLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h left'**
+  String prayerHoursLeft(int hours);
+
+  /// No description provided for @prayerHoursMinutesLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min left'**
+  String prayerHoursMinutesLeft(int hours, int minutes);
+
+  /// No description provided for @adminNotPresentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Present'**
+  String get adminNotPresentLabel;
+
+  /// No description provided for @prayerSelectLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose location'**
+  String get prayerSelectLocation;
+
+  /// No description provided for @prayerUseDeviceLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use device location'**
+  String get prayerUseDeviceLocation;
+
+  /// No description provided for @prayerLocationUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location'**
+  String get prayerLocationUnknown;
+
+  /// No description provided for @prayerManualLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS is unavailable. Choose a location to get prayer times.'**
+  String get prayerManualLocationHint;
+
+  /// No description provided for @prayerGpsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS is unavailable.'**
+  String get prayerGpsUnavailable;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

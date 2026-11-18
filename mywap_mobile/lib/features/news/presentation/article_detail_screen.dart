@@ -10,6 +10,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/html_content.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../public/presentation/guest_prompt.dart';
 import '../application/news_providers.dart';
@@ -26,12 +27,21 @@ class ArticleDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(articleDetailProvider(articleId));
+    final article = async.valueOrNull?.article;
     final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/articles'),
         title: Text(context.l10n.articlesTitle),
+        actions: [
+          if (article != null)
+            ShareItemIconButton(
+              title: article.title ?? '',
+              url: article.shareUrl,
+              text: article.excerpt,
+            ),
+        ],
       ),
       body: async.when(
         data:
@@ -126,6 +136,15 @@ class _ArticleDetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.sm),
           Text(article.title ?? '-', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: Spacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ShareItemButton(
+              title: article.title ?? '',
+              url: article.shareUrl,
+              text: article.excerpt,
+            ),
+          ),
           const SizedBox(height: Spacing.lg),
           HtmlContent(article.content, style: theme.textTheme.bodyLarge),
           if (article.gallery.isNotEmpty) ...[

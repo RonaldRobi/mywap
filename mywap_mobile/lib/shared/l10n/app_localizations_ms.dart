@@ -51,7 +51,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get navHomeMember => 'Utama';
 
   @override
-  String get navHomeGuest => 'Beranda';
+  String get navHomeGuest => 'Laman Utama';
 
   @override
   String get navProgram => 'Program';
@@ -225,7 +225,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get menuSectionExplore => 'Terokai';
 
   @override
-  String get menuGuestHome => 'Beranda';
+  String get menuGuestHome => 'Laman Utama';
 
   @override
   String get menuGuestHomeSubtitle => 'Halaman utama';
@@ -454,7 +454,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get forgotPasswordTitle => 'Lupa Kata Laluan';
 
   @override
-  String get forgotPasswordSubtitle => 'Masukkan No. Kad Pengenalan anda. Kami akan hantar pautan reset ke emel berdaftar.';
+  String get forgotPasswordSubtitle => 'Masukkan No. Kad Pengenalan anda. Kami akan hantar pautan set semula ke emel berdaftar.';
 
   @override
   String get rememberPassword => 'Ingat kata laluan?';
@@ -735,7 +735,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get securitySection => 'Keselamatan';
 
   @override
-  String get editProfile => 'Edit Profil';
+  String get editProfile => 'Sunting Profil';
 
   @override
   String get memberJourney => 'Perjalanan Ahli';
@@ -830,6 +830,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get basicInfoSection => 'Maklumat Asas';
 
   @override
+  String get salutationLabel => 'Gelaran';
+
+  @override
   String get educationProfessionSection => 'Pendidikan & Profesion';
 
   @override
@@ -872,10 +875,19 @@ class AppLocalizationsMs extends AppLocalizations {
   String get postcodeLabel => 'Poskod';
 
   @override
+  String get postcodeInvalid => 'Poskod mesti 5 digit.';
+
+  @override
+  String get districtLabel => 'Daerah';
+
+  @override
   String get cityLabel => 'Bandar';
 
   @override
   String get stateLabel => 'Negeri';
+
+  @override
+  String get selectStateFirst => 'Pilih negeri dahulu';
 
   @override
   String get emergencySection => 'Hubungan Kecemasan';
@@ -1139,7 +1151,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get eventPhysical => 'FIZIKAL';
 
   @override
-  String get eventOnline => 'ONLINE';
+  String get eventOnline => 'ATAS TALIAN';
 
   @override
   String get nextEvent => 'ACARA SETERUSNYA';
@@ -1325,7 +1337,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get ecomParcelShippedHint => 'Parcel telah dihantar — sentuh untuk Track & Terima';
+  String get ecomParcelShippedHint => 'Parcel telah dihantar. Sentuh untuk Jejak & Terima';
 
   @override
   String get ecomOrderReceived => 'Pesanan disahkan diterima. Terima kasih!';
@@ -1376,7 +1388,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ecomParcelTracking => 'Penjejakan Parcel';
 
   @override
-  String get ecomTrack => 'Track';
+  String get ecomTrack => 'Jejak';
 
   @override
   String get ecomCopyTrackingTooltip => 'Salin No. Penjejakan';
@@ -1773,7 +1785,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get newsSearchVideos => 'Cari video…';
 
   @override
-  String get newsLiveFilter => 'Live';
+  String get newsLiveFilter => 'Langsung';
 
   @override
   String get newsNoVideoSearch => 'Tiada video sepadan dengan carian.';
@@ -2004,7 +2016,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get orgCardQrHint => 'Imbas kod QR untuk pengesahan keahlian.';
 
   @override
-  String get orgCardBackMissing => 'Design belakang kad belum dimuat naik.';
+  String get orgCardBackMissing => 'Reka bentuk belakang kad belum dimuat naik.';
 
   @override
   String get notifMarkAllRead => 'Tandakan Semua Dibaca';
@@ -2435,6 +2447,24 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get adminDeleteMemberButton => 'Padam Ahli';
+
+  @override
+  String get adminResetPasswordTitle => 'Tukar Kata Laluan';
+
+  @override
+  String get adminNewPasswordLabel => 'Kata Laluan Baharu';
+
+  @override
+  String get adminPasswordMinHint => 'Minimum 8 aksara';
+
+  @override
+  String get adminResetButton => 'Tukar';
+
+  @override
+  String get adminPasswordReset => 'Kata laluan ahli telah ditukar.';
+
+  @override
+  String get adminSortTooltip => 'Susun senarai';
 
   @override
   String get adminFeesTitle => 'Yuran';
@@ -3000,4 +3030,489 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get faqA7 => 'Notifikasi digunakan untuk memaklumkan anda tentang program, pengumuman dan peringatan penting. Anda boleh menukar kebenaran ini dalam tetapan peranti pada bila-bila masa.';
+
+  @override
+  String get share => 'Kongsi';
+
+  @override
+  String get shareItem => 'Kongsi item ini';
+
+  @override
+  String get shareLinkUnavailable => 'Pautan kongsi untuk item ini belum tersedia.';
+
+  @override
+  String get shareFailed => 'Tidak dapat membuka kongsi. Sila cuba lagi.';
+
+  @override
+  String get mediaStatementsEmpty => 'Belum ada kenyataan media.';
+
+  @override
+  String get mediaStatementsSubtitle => 'Kenyataan dan bahan rasmi organisasi.';
+
+  @override
+  String get openPdf => 'Buka PDF';
+
+  @override
+  String get callLabel => 'Panggil';
+
+  @override
+  String get checkoutViewReceipt => 'Lihat Resit';
+
+  @override
+  String get newsVideoInvalidLink => 'Pautan video tidak sah.';
+
+  @override
+  String get fileInvalidRetry => 'Fail tidak sah. Sila cuba lagi.';
+
+  @override
+  String get authMissingToken => 'Tiada token dalam respons.';
+
+  @override
+  String get prayerLocationBlocked => 'Lokasi disekat. Benarkan dalam Tetapan.';
+
+  @override
+  String get prayerLocationAllow => 'Benarkan lokasi untuk waktu solat kawasan anda';
+
+  @override
+  String get prayerLocationOff => 'Perkhidmatan lokasi dimatikan. Hidupkan untuk waktu solat.';
+
+  @override
+  String get prayerLoadFailed => 'Waktu solat tidak dapat dimuatkan. Cuba lagi.';
+
+  @override
+  String get prayerNext => 'Waktu solat seterusnya';
+
+  @override
+  String get prayerTodayTitle => 'Waktu Solat Hari Ini';
+
+  @override
+  String prayerMinutesLeft(int minutes) {
+    return '$minutes minit lagi';
+  }
+
+  @override
+  String orgAgePlus(int min) {
+    return '$min+ tahun';
+  }
+
+  @override
+  String orgAgeRange(int min, int max) {
+    return '$min-$max tahun';
+  }
+
+  @override
+  String get roleBranchAdmin => 'Admin Cawangan';
+
+  @override
+  String roleBranchAdminWithBranch(String branch) {
+    return 'Admin Cawangan ($branch)';
+  }
+
+  @override
+  String roleOrganizationAdmin(String organization) {
+    return 'Admin $organization';
+  }
+
+  @override
+  String get shareSheetTitle => 'Kongsi';
+
+  @override
+  String get shareWhatsApp => 'WhatsApp';
+
+  @override
+  String get shareFacebook => 'Facebook';
+
+  @override
+  String get shareTelegram => 'Telegram';
+
+  @override
+  String get shareX => 'X';
+
+  @override
+  String get shareCopyLink => 'Salin pautan';
+
+  @override
+  String get shareCopyText => 'Salin teks';
+
+  @override
+  String get shareMoreOptions => 'Pilihan lain';
+
+  @override
+  String get shareLinkCopied => 'Pautan disalin.';
+
+  @override
+  String get shareTextCopied => 'Teks disalin.';
+
+  @override
+  String get adminConfirmAttendanceTitle => 'Sahkan Kehadiran';
+
+  @override
+  String adminConfirmAttendanceBody(String name) {
+    return 'Tandakan kehadiran peserta ini sekarang?\n\nNama: $name';
+  }
+
+  @override
+  String get adminConfirmPresentButton => 'Sahkan Hadir';
+
+  @override
+  String adminAttendanceConfirmed(String name) {
+    return 'Kehadiran $name berjaya disahkan.';
+  }
+
+  @override
+  String get adminAttendanceRecordFailed => 'Ralat merekod kehadiran.';
+
+  @override
+  String get adminParticipantPresent => 'Peserta Telah Hadir';
+
+  @override
+  String adminAttendedTime(String datetime) {
+    return 'Waktu Hadir: $datetime';
+  }
+
+  @override
+  String get adminOpenFastScanner => 'Buka Pengimbas Pantas';
+
+  @override
+  String get adminSearchAttendanceHint => 'Cari nama, No. Ahli atau No. KP...';
+
+  @override
+  String adminFilterAllCount(int count) {
+    return 'Semua ($count)';
+  }
+
+  @override
+  String adminFilterPresentCount(int count) {
+    return 'Hadir ($count)';
+  }
+
+  @override
+  String adminFilterNotPresentCount(int count) {
+    return 'Belum Hadir ($count)';
+  }
+
+  @override
+  String get adminNoParticipantsMatch => 'Tiada peserta sepadan dengan carian.';
+
+  @override
+  String get adminAllParticipantsPresent => 'Semua peserta telah hadir!';
+
+  @override
+  String get adminTapToConfirmPresent => 'Ketik untuk sahkan hadir';
+
+  @override
+  String get adminAudienceAllNgo => 'Semua Pengguna Gerakan (Rentas NGO)';
+
+  @override
+  String get adminAudienceSpecificOrg => 'Mengikut Organisasi Tertentu';
+
+  @override
+  String get adminAudienceAllUsrah => 'Semua Kumpulan Usrah';
+
+  @override
+  String get adminAudienceMyBranchMembers => 'Semua Ahli Cawangan Saya';
+
+  @override
+  String get adminAudienceMyBranchUsrah => 'Kumpulan Usrah Cawangan Saya';
+
+  @override
+  String adminAudienceOrgMembers(String organization) {
+    return 'Semua Ahli $organization';
+  }
+
+  @override
+  String get adminAudienceOrgMembersFallback => 'Semua Ahli Organisasi';
+
+  @override
+  String get adminAudienceOrgUsrah => 'Kumpulan Usrah Organisasi';
+
+  @override
+  String get adminSystemAdministrator => 'Pentadbir Sistem';
+
+  @override
+  String get adminBroadcastHint => 'Siaran dihantar sebagai notifikasi in-app rasmi kepada sasaran terpilih.';
+
+  @override
+  String get adminSelectTargetOrg => 'Pilih Organisasi Sasaran';
+
+  @override
+  String get adminSelectOrgError => 'Sila pilih salah satu organisasi.';
+
+  @override
+  String get adminDashboardNotificationsTooltip => 'Notifikasi';
+
+  @override
+  String get adminWebPortalNote => 'Operasi pendaftaran pukal, import fail CSV, dan konfigurasi sistem boleh diuruskan melalui portal web rasmi MyWAP.';
+
+  @override
+  String get adminFullAccessScope => 'Akses penuh ekosistem 3 NGO: PKPIM, ABIM & WADAH';
+
+  @override
+  String adminBranchScope(String branch) {
+    return 'Skop Cawangan: $branch';
+  }
+
+  @override
+  String adminOrgScope(String organization) {
+    return 'Skop Organisasi: $organization';
+  }
+
+  @override
+  String get adminDefaultBranch => 'Cawangan Anda';
+
+  @override
+  String get adminDefaultOrg => 'Organisasi';
+
+  @override
+  String get adminRegistrationDesk => 'MEJA PENDAFTARAN';
+
+  @override
+  String adminParticipantsCount(int count) {
+    return '$count Peserta';
+  }
+
+  @override
+  String get adminScanParticipantCard => 'Imbas Kad Peserta';
+
+  @override
+  String get adminList => 'Senarai';
+
+  @override
+  String get adminScanCard => 'Imbas Kad';
+
+  @override
+  String get adminMemberDirectory => 'Direktori Ahli';
+
+  @override
+  String get adminFeeCollection => 'Kutipan Yuran';
+
+  @override
+  String get adminSixMonthCollection => 'Kutipan 6 Bulan';
+
+  @override
+  String adminCheckInRecorded(String name, String memberNo) {
+    return '$name ($memberNo) - Kehadiran Berjaya Direkodkan';
+  }
+
+  @override
+  String adminCheckInRecordedName(String name) {
+    return '$name - Kehadiran Berjaya Direkodkan';
+  }
+
+  @override
+  String get adminScanNotSuccessful => 'Imbasan tidak berjaya.';
+
+  @override
+  String get adminAttendanceRecordError => 'Ralat semasa merekod kehadiran. Sila cuba lagi.';
+
+  @override
+  String get adminManualEntry => 'Kemasukan Manual';
+
+  @override
+  String get adminManualEntryHint => 'Masukkan No. Kad Pengenalan (12 digit), No. Ahli, atau No. Telefon ahli.';
+
+  @override
+  String get adminIcMemberPhoneLabel => 'No. IC / No. Ahli / Telefon';
+
+  @override
+  String get adminIcMemberPhoneExample => 'Cth: 880123015566 atau PKPIM-0012';
+
+  @override
+  String get adminAttendanceCardScanner => 'Pengimbas Kad Kehadiran';
+
+  @override
+  String get adminTorch => 'Lampu Kilat';
+
+  @override
+  String get adminSwitchCamera => 'Tukar Kamera';
+
+  @override
+  String get adminNoScheduledPrograms => 'Tiada Program Berjadual';
+
+  @override
+  String get adminNoScheduledProgramsBody => 'Tiada acara berjadual untuk cawangan atau organisasi anda buat masa ini.';
+
+  @override
+  String get adminParticipantList => 'Senarai Peserta';
+
+  @override
+  String get adminPointCameraMemberCardQr => 'Halakan kamera ke Kod QR Kad Keahlian';
+
+  @override
+  String get adminManualInput => 'Input Manual (No. IC / Kad)';
+
+  @override
+  String get adminLoadEventsFailed => 'Ralat memuatkan acara.';
+
+  @override
+  String get adminSearchFeesHint => 'Cari nama atau No. Ahli...';
+
+  @override
+  String get adminNoMatchingFeeRecords => 'Tiada rekod yuran sepadan dengan carian.';
+
+  @override
+  String get adminSortNewest => 'Terbaru dahulu';
+
+  @override
+  String get adminSortOldest => 'Terlama dahulu';
+
+  @override
+  String get adminSortNameAsc => 'Nama A-Z';
+
+  @override
+  String get adminSortNameDesc => 'Nama Z-A';
+
+  @override
+  String get adminRoleFallback => 'Pentadbir';
+
+  @override
+  String get adminMenuTitle => 'Menu Pentadbir';
+
+  @override
+  String get adminManagementOperations => 'Fungsi Pengurusan & Operasi';
+
+  @override
+  String get adminScanAttendanceCard => 'Imbas Kad Kehadiran';
+
+  @override
+  String get adminScanAttendanceCardSubtitle => 'Pengimbas pantas kamera untuk kad keahlian peserta di program';
+
+  @override
+  String get adminProgramAttendanceMenu => 'Program & Kehadiran';
+
+  @override
+  String get adminProgramAttendanceSubtitle => 'Senarai program, rekod kehadiran & status pendaftaran';
+
+  @override
+  String get adminMemberDirectorySubtitle => 'Carian ahli, semakan status aktif & maklumat perhubungan';
+
+  @override
+  String get adminFeeCollectionSubtitle => 'Pantau status bayaran yuran tahunan ahli & ringkasan kutipan';
+
+  @override
+  String get adminBroadcastMenu => 'Mesej Siaran (Broadcast)';
+
+  @override
+  String get adminBroadcastMenuSubtitle => 'Hantar notifikasi pengumuman segera kepada kumpulan ahli';
+
+  @override
+  String get adminAdminManual => 'Manual Pengguna Pentadbir';
+
+  @override
+  String get adminAdminManualSubtitle => 'Panduan operasi sistem MyWAP untuk pentadbir';
+
+  @override
+  String get adminCreateContent => 'Cipta Kandungan';
+
+  @override
+  String get adminCreateContentNote => 'Penciptaan dokumen penuh dibuat di portal web. Butang ini membuka halaman berkaitan.';
+
+  @override
+  String get adminCreateProgram => 'Cipta Program';
+
+  @override
+  String get adminCreateProgramSubtitle => 'Tambah program baharu, borang pendaftaran & tetapan kehadiran';
+
+  @override
+  String get adminCreateProgramDialogTitle => 'Cipta Program di Portal Web';
+
+  @override
+  String get adminCreateProgramDialogBody => 'Penciptaan program memerlukan editor penuh untuk tetapan tarikh, lokasi, borang pendaftaran, dan harga. Ia dibuka di portal web rasmi myWAP.';
+
+  @override
+  String get adminWriteArticle => 'Tulis Artikel';
+
+  @override
+  String get adminWriteArticleSubtitle => 'Editor teks penuh, gambar cover & galeri';
+
+  @override
+  String get adminWriteArticleDialogTitle => 'Tulis Artikel di Portal Web';
+
+  @override
+  String get adminWriteArticleDialogBody => 'Editor artikel dengan format teks, gambar cover dan galeri tersedia di portal web. Kandungan akan terus muncul dalam aplikasi selepas diterbitkan.';
+
+  @override
+  String get adminLatestInfo => 'Info Terkini';
+
+  @override
+  String get adminLatestInfoSubtitle => 'Urus berita, kategori & penerbitan';
+
+  @override
+  String get adminManageLatestInfoDialogTitle => 'Urus Info Terkini di Portal Web';
+
+  @override
+  String get adminManageLatestInfoDialogBody => 'Pengurusan berita, kategori dan jadual penerbitan dilakukan di portal web.';
+
+  @override
+  String get adminMediaStatement => 'Kenyataan Media';
+
+  @override
+  String get adminMediaStatementSubtitle => 'Muat naik PDF, imej & teks kenyataan rasmi';
+
+  @override
+  String get adminCreateMediaStatementDialogTitle => 'Cipta Kenyataan Media di Portal Web';
+
+  @override
+  String get adminCreateMediaStatementDialogBody => 'Muat naik PDF, imej featured dan tulis teks kenyataan rasmi di portal web.';
+
+  @override
+  String get adminCreateForm => 'Cipta Borang';
+
+  @override
+  String get adminCreateFormSubtitle => 'Pembina borang, soalan & pautan QR';
+
+  @override
+  String get adminCreateFormDialogTitle => 'Cipta Borang di Portal Web';
+
+  @override
+  String get adminCreateFormDialogBody => 'Pembina borang interaktif (soalan, pilihan, QR) tersedia di portal web.';
+
+  @override
+  String get adminLogoutAdmin => 'Log Keluar Akaun Pentadbir';
+
+  @override
+  String get adminOpenWebFailed => 'Tidak dapat membuka portal web.';
+
+  @override
+  String get adminOpenWebPortal => 'Buka Portal Web';
+
+  @override
+  String get adminScanMemberCard => 'Imbas Kad Ahli';
+
+  @override
+  String get adminNavHome => 'Utama';
+
+  @override
+  String get adminNavOperations => 'Operasi';
+
+  @override
+  String get roleOrgAdminFallback => 'Admin Organisasi';
+
+  @override
+  String prayerHoursLeft(int hours) {
+    return '$hours jam lagi';
+  }
+
+  @override
+  String prayerHoursMinutesLeft(int hours, int minutes) {
+    return '$hours jam $minutes minit lagi';
+  }
+
+  @override
+  String get adminNotPresentLabel => 'Belum Hadir';
+
+  @override
+  String get prayerSelectLocation => 'Pilih lokasi';
+
+  @override
+  String get prayerUseDeviceLocation => 'Gunakan lokasi peranti';
+
+  @override
+  String get prayerLocationUnknown => 'Lokasi anda';
+
+  @override
+  String get prayerManualLocationHint => 'GPS tidak tersedia. Pilih lokasi untuk mendapatkan waktu solat.';
+
+  @override
+  String get prayerGpsUnavailable => 'GPS tidak tersedia.';
 }

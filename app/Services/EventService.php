@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\EventStatus;
 use App\Models\Event;
+use App\Support\ShareUrl;
 use App\Models\EventRsvp;
 use App\Models\Form;
 use App\Models\Registration;
@@ -44,6 +46,7 @@ class EventService
             'start_formatted' => $event->start_time->format('d/m/Y H:i'),
             'end_time' => $event->end_time->toISOString(),
             'featured_image_url' => $event->featured_image_url,
+            'share_url' => $event->status === EventStatus::Draft ? null : ShareUrl::route('share.event', $event),
             'google_calendar_url' => $event->google_calendar_url,
             'organization' => [
                 'id' => $event->organization?->id ?? null,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/validation/malaysian_phone.dart';
 import '../../../shared/widgets/dob_picker.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
@@ -39,14 +41,11 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final Map<String, TextEditingController> _fields = {
-    'education_level': TextEditingController(),
     'current_profession': TextEditingController(),
     'phone': TextEditingController(),
     'address_1': TextEditingController(),
     'address_2': TextEditingController(),
     'postcode': TextEditingController(),
-    'city': TextEditingController(),
-    'state': TextEditingController(),
     'emergency_contact_name': TextEditingController(),
     'emergency_contact_phone': TextEditingController(),
     'topics': TextEditingController(),
@@ -56,8 +55,16 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   bool _dobFromIc = false;
   String? _gender;
   String? _maritalStatus;
+  String? _salutation;
+  String? _educationLevel;
+  String? _state;
+  String? _district;
   int? _branchId;
   List<ProfileBranch> _branches = const [];
+  List<String> _educationLevels = const [];
+  List<String> _salutations = const [];
+  List<String> _states = const [];
+  Map<String, List<String>> _districts = const {};
   bool _metaLoaded = false;
   bool _saving = false;
   final Map<String, String> _serverErrors = {};
@@ -115,6 +122,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     _gender = meta.parsedGender;
     _branches = meta.branches;
     _branchId = meta.currentBranchId;
+    _educationLevels = meta.educationLevels;
+    _salutations = meta.salutations;
+    _states = meta.states;
+    _districts = meta.districts;
   }
 
   Widget _buildForm() {
@@ -158,10 +169,23 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             ),
           _section(context.l10n.requiredInfoSection, [
             _branchField(),
-            _textField(
-              'education_level',
+            _optionField(
+              key: 'salutation',
+              label: context.l10n.salutationLabel,
+              value: _salutation,
+              options: _pairOptions(_withCurrent(_salutations, _salutation)),
+              onChanged: (value) => setState(() => _salutation = value),
+            ),
+            _optionField(
+              key: 'education_level',
               label: context.l10n.educationLevelLabel,
+              value: _educationLevel,
+              options: _pairOptions(
+                _withCurrent(_educationLevels, _educationLevel),
+              ),
               required: true,
+              onChanged:
+                  (value) => setState(() => _educationLevel = value),
             ),
             _textField(
               'current_profession',
@@ -172,7 +196,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               'phone',
               label: context.l10n.phoneLabel,
               required: true,
+              isPhone: true,
               keyboardType: TextInputType.phone,
+              inputFormatters: MalaysianPhone.inputFormatters,
+              maxLength: 11,
             ),
           ]),
           _section(context.l10n.moreInfoSection, [
@@ -198,10 +225,51 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
             _textField(
               'postcode',
               label: context.l10n.postcodeLabel,
+              required: true,
+              isPostcode: true,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(5),
+              ],
+              maxLength: 5,
             ),
-            _textField('city', label: context.l10n.cityLabel),
-            _textField('state', label: context.l10n.stateLabel),
+            _optionField(
+              key: 'state',
+              label: context.l10n.stateLabel,
+              value: _state,
+              options: _pairOptions(_withCurrent(_states, _state)),
+              required: true,
+              onChanged: (value) {
+                setState(() {
+                  _state = value;
+                  if (_district != null &&
+                      !(_districts[value] ?? const []).contains(_district)) {
+                    _district = null;
+                  }
+                });
+              },
+            ),
+            _optionField(
+              key: 'district',
+              label: context.l10n.districtLabel,
+              value: _district,
+              options: _pairOptions(
+                _withCurrent(
+                  _state == null
+                      ? const <String>[]
+                      : _districts[_state] ?? const <String>[],
+                  _district,
+                ),
+              ),
+              required: true,
+              enabled: _state != null,
+              hint:
+                  _state == null
+                      ? context.l10n.selectStateFirst
+                      : context.l10n.choose,
+              onChanged: (value) => setState(() => _district = value),
+            ),
           ]),
           _section(context.l10n.emergencySection, [
             _textField('emergency_contact_name', label: context.l10n.nameLabel),
@@ -209,6 +277,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               'emergency_contact_phone',
               label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
+              isPhone: true,
+              inputFormatters: MalaysianPhone.inputFormatters,
+              maxLength: 11,
             ),
           ]),
           _section(context.l10n.interestsSection, [
@@ -253,12 +324,29 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     );
   }
 
+  List<String> _withCurrent(List<String> options, String? current) {
+    if (current == null ||
+        current.trim().isEmpty ||
+        options.contains(current)) {
+      return options;
+    }
+    return [...options, current];
+  }
+
+  List<(String, String)> _pairOptions(List<String> values) => [
+    for (final value in values) (value, value),
+  ];
+
   Widget _textField(
     String key, {
     required String label,
     bool required = false,
+    bool isPhone = false,
+    bool isPostcode = false,
     TextInputType? keyboardType,
     String? hint,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
@@ -266,14 +354,26 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
         controller: _fields[key],
         keyboardType: keyboardType,
         textCapitalization: TextCapitalization.sentences,
+        inputFormatters: inputFormatters,
+        maxLength: maxLength,
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
           hintText: hint,
           errorText: _serverErrors[key],
+          counterText: '',
         ),
         validator: (value) {
-          if (required && (value == null || value.trim().isEmpty)) {
+          final trimmed = value?.trim() ?? '';
+          if (required && trimmed.isEmpty) {
             return context.l10n.fieldRequired(label);
+          }
+          if (isPhone && trimmed.isNotEmpty && !MalaysianPhone.isValid(trimmed)) {
+            return context.l10n.phoneInvalid;
+          }
+          if (isPostcode &&
+              trimmed.isNotEmpty &&
+              !RegExp(r'^\d{5}$').hasMatch(trimmed)) {
+            return context.l10n.postcodeInvalid;
           }
           return null;
         },
@@ -330,26 +430,41 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     required String? value,
     required List<(String, String)> options,
     required ValueChanged<String?> onChanged,
+    bool required = false,
+    bool enabled = true,
+    String? hint,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
       child: DropdownButtonFormField<String>(
         value: value,
         decoration: InputDecoration(
-          labelText: label,
+          labelText: required ? '$label *' : label,
           errorText: _serverErrors[key],
         ),
-        hint: Text(context.l10n.choose),
+        hint: Text(hint ?? context.l10n.choose),
         items: [
           for (final (optionValue, optionLabel) in options)
             DropdownMenuItem(value: optionValue, child: Text(optionLabel)),
         ],
-        onChanged: (selected) {
-          onChanged(selected);
-          if (_serverErrors.containsKey(key)) {
-            setState(() => _serverErrors.remove(key));
-          }
-        },
+        validator:
+            required
+                ? (selected) {
+                  if (selected == null || selected.trim().isEmpty) {
+                    return context.l10n.fieldRequired(label);
+                  }
+                  return null;
+                }
+                : null,
+        onChanged:
+            enabled
+                ? (selected) {
+                  onChanged(selected);
+                  if (_serverErrors.containsKey(key)) {
+                    setState(() => _serverErrors.remove(key));
+                  }
+                }
+                : null,
       ),
     );
   }
@@ -379,10 +494,16 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       return text.isEmpty ? null : text;
     }
 
+    String? phone(String key) {
+      final text = valueOf(key);
+      return text == null ? null : MalaysianPhone.normalize(text);
+    }
+
     return <String, dynamic>{
-      'education_level': valueOf('education_level'),
+      'salutation': _salutation,
+      'education_level': _educationLevel,
       'current_profession': valueOf('current_profession'),
-      'phone': valueOf('phone'),
+      'phone': phone('phone'),
       'branch_id': _branchId,
       'dob': _dob == null ? null : ProfileFormat.apiDate(_dob!),
       'gender': _gender,
@@ -390,10 +511,10 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
       'address_1': valueOf('address_1'),
       'address_2': valueOf('address_2'),
       'postcode': valueOf('postcode'),
-      'city': valueOf('city'),
-      'state': valueOf('state'),
+      'district': _district,
+      'state': _state,
       'emergency_contact_name': valueOf('emergency_contact_name'),
-      'emergency_contact_phone': valueOf('emergency_contact_phone'),
+      'emergency_contact_phone': phone('emergency_contact_phone'),
       'topics': valueOf('topics'),
     };
   }

@@ -27,6 +27,22 @@ defineProps({
         type: Object,
         default: null,
     },
+    educationLevels: {
+        type: Array,
+        default: () => [],
+    },
+    salutations: {
+        type: Array,
+        default: () => [],
+    },
+    states: {
+        type: Array,
+        default: () => [],
+    },
+    districts: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 </script>
 
@@ -46,6 +62,10 @@ defineProps({
                         :org-positions="orgPositions"
                         :can-edit-ic-number="canEditIcNumber"
                         :pending-branch-request="pendingBranchRequest"
+                        :education-levels="educationLevels"
+                        :salutations="salutations"
+                        :states="states"
+                        :districts="districts"
                     />
                 </section>
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Infaq;
+use App\Support\ShareUrl;
 use App\Models\InfaqDonation;
 use App\Models\Organization;
 use App\Models\Payment;
@@ -48,6 +49,7 @@ class InfaqService
                 'progress_percent' => $item->progress_percent,
                 'image_path' => $item->image_path,
                 'public_url' => $item->public_url,
+                'share_url' => ShareUrl::route('share.infaq', $item),
                 'is_external' => $item->is_external,
                 'external_url' => $item->external_url,
                 'organization_id' => $item->organization_id,
@@ -122,6 +124,7 @@ class InfaqService
                 'collected_amount' => $item->collected_amount,
                 'target_amount' => $item->target_amount,
                 'public_url' => $item->public_url,
+                'share_url' => ShareUrl::route('share.infaq', $item),
             ]);
 
         return [
@@ -145,6 +148,7 @@ class InfaqService
                 'total_donors' => $totalDonors,
                 'days_running' => $daysRunning,
                 'public_url' => $infaq->public_url,
+                'share_url' => ShareUrl::route('share.infaq', $infaq),
                 'year' => $infaq->year,
                 'month' => $infaq->month,
                 'day' => $infaq->day,

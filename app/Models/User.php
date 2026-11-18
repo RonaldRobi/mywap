@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Scopes\OrganizationScope;
 use App\Notifications\OtpEmail;
+use App\Support\Malaysia;
 use App\Support\NormalizesStoragePath;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,6 +57,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'salutation',
         'email',
         'ic_number',
         'password',
@@ -85,6 +87,7 @@ class User extends Authenticatable
         'address_1',
         'address_2',
         'postcode',
+        'district',
         'city',
         'state',
         'office_phone',
@@ -153,6 +156,36 @@ class User extends Authenticatable
     {
         return Attribute::make(
             set: fn ($value) => self::normalizeIc($value),
+        );
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => Malaysia::normalizePhone($value),
+        );
+    }
+
+    protected function emergencyContactPhone(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => Malaysia::normalizePhone($value),
+        );
+    }
+
+    protected function wadahState(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => Malaysia::titleCase($value),
+            set: fn ($value) => Malaysia::titleCase($value),
+        );
+    }
+
+    protected function branchName(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => Malaysia::titleCase($value),
+            set: fn ($value) => Malaysia::titleCase($value),
         );
     }
 

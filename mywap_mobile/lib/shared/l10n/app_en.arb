@@ -283,6 +283,7 @@
   "accountDeleted": "Your account has been deleted.",
   "deleteAccountSubtitle": "Permanently delete your account",
   "basicInfoSection": "Basic Information",
+  "salutationLabel": "Salutation",
   "educationProfessionSection": "Education & Profession",
   "educationLevelLabel": "Education Level",
   "currentProfessionLabel": "Current Profession",
@@ -297,8 +298,11 @@
   "addressLine1": "Address (Line 1)",
   "addressLine2": "Address (Line 2)",
   "postcodeLabel": "Postcode",
+  "postcodeInvalid": "Postcode must be 5 digits.",
+  "districtLabel": "District",
   "cityLabel": "City",
   "stateLabel": "State",
+  "selectStateFirst": "Select a state first",
   "emergencySection": "Emergency Contact",
   "nameLabel": "Name",
   "saveChanges": "Save Changes",
@@ -1129,6 +1133,12 @@
   "adminDeactivateMemberButton": "Deactivate Member",
   "adminReactivateMemberButton": "Reactivate",
   "adminDeleteMemberButton": "Delete Member",
+  "adminResetPasswordTitle": "Change Password",
+  "adminNewPasswordLabel": "New Password",
+  "adminPasswordMinHint": "Minimum 8 characters",
+  "adminResetButton": "Change",
+  "adminPasswordReset": "Member password has been changed.",
+  "adminSortTooltip": "Sort list",
   "adminFeesTitle": "Fees",
   "adminFeePaid": "Paid",
   "adminFeeUnpaid": "Unpaid",
@@ -1430,6 +1440,10 @@
   "faqA6": "After logging in, open Menu and choose Fees & Payments to view your status and make a fee payment. For infaq, open a campaign and tap Donate Now. The campaign page opens in your browser so you can contribute there.",
   "faqQ7": "Why does the app ask for notification permission?",
   "faqA7": "Notifications keep you informed about programs, announcements and important reminders. You can change this permission in your device settings at any time.",
+  "share": "Share",
+  "shareItem": "Share this item",
+  "shareLinkUnavailable": "Share link is not available for this item yet.",
+  "shareFailed": "Could not open sharing. Please try again.",
   "@ecomStockAvailable": {
     "placeholders": {
       "count": {
@@ -1443,5 +1457,292 @@
         "type": "int"
       }
     }
-  }
+  },
+  "mediaStatementsEmpty": "No media statements yet.",
+  "mediaStatementsSubtitle": "Official statements and materials from the organisation.",
+  "openPdf": "Open PDF",
+  "callLabel": "Call",
+  "checkoutViewReceipt": "View Receipt",
+  "newsVideoInvalidLink": "Invalid video link.",
+  "fileInvalidRetry": "Invalid file. Please try again.",
+  "authMissingToken": "No token in the response.",
+  "prayerLocationBlocked": "Location is blocked. Allow it in Settings.",
+  "prayerLocationAllow": "Allow location for prayer times in your area",
+  "prayerLocationOff": "Location services are off. Turn them on for prayer times.",
+  "prayerLoadFailed": "Could not load prayer times. Try again.",
+  "prayerNext": "Next prayer",
+  "prayerTodayTitle": "Today's Prayer Times",
+  "prayerMinutesLeft": "{minutes} min left",
+  "@prayerMinutesLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "orgAgePlus": "{min}+ years",
+  "@orgAgePlus": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "orgAgeRange": "{min}-{max} years",
+  "@orgAgeRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "roleBranchAdmin": "Branch Admin",
+  "roleBranchAdminWithBranch": "Branch Admin ({branch})",
+  "@roleBranchAdminWithBranch": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "roleOrganizationAdmin": "{organization} Admin",
+  "@roleOrganizationAdmin": {
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSheetTitle": "Share",
+  "shareWhatsApp": "WhatsApp",
+  "shareFacebook": "Facebook",
+  "shareTelegram": "Telegram",
+  "shareX": "X",
+  "shareCopyLink": "Copy link",
+  "shareCopyText": "Copy text",
+  "shareMoreOptions": "More options",
+  "shareLinkCopied": "Link copied.",
+  "shareTextCopied": "Text copied.",
+  "adminConfirmAttendanceTitle": "Confirm Attendance",
+  "adminConfirmAttendanceBody": "Mark this participant as present now?\n\nName: {name}",
+  "@adminConfirmAttendanceBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminConfirmPresentButton": "Mark Present",
+  "adminAttendanceConfirmed": "Attendance for {name} confirmed.",
+  "@adminAttendanceConfirmed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAttendanceRecordFailed": "Failed to record attendance.",
+  "adminParticipantPresent": "Participant Already Present",
+  "adminAttendedTime": "Attended at {datetime}",
+  "@adminAttendedTime": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "adminOpenFastScanner": "Open Fast Scanner",
+  "adminSearchAttendanceHint": "Search name, Member No. or IC No...",
+  "adminFilterAllCount": "All ({count})",
+  "@adminFilterAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminFilterPresentCount": "Present ({count})",
+  "@adminFilterPresentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminFilterNotPresentCount": "Not Present ({count})",
+  "@adminFilterNotPresentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminNoParticipantsMatch": "No participants match your search.",
+  "adminAllParticipantsPresent": "All participants are present!",
+  "adminTapToConfirmPresent": "Tap to confirm attendance",
+  "adminAudienceAllNgo": "All Movement Users (Cross-NGO)",
+  "adminAudienceSpecificOrg": "Specific Organisation",
+  "adminAudienceAllUsrah": "All Usrah Groups",
+  "adminAudienceMyBranchMembers": "All Members of My Branch",
+  "adminAudienceMyBranchUsrah": "Usrah Groups of My Branch",
+  "adminAudienceOrgMembers": "All {organization} Members",
+  "@adminAudienceOrgMembers": {
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAudienceOrgMembersFallback": "All Organisation Members",
+  "adminAudienceOrgUsrah": "Organisation Usrah Groups",
+  "adminSystemAdministrator": "System Administrator",
+  "adminBroadcastHint": "The broadcast is sent as an official in-app notification to the selected audience.",
+  "adminSelectTargetOrg": "Select Target Organisation",
+  "adminSelectOrgError": "Please select an organisation.",
+  "adminDashboardNotificationsTooltip": "Notifications",
+  "adminWebPortalNote": "Bulk registration, CSV import and system configuration are managed on the official MyWAP web portal.",
+  "adminFullAccessScope": "Full access to the 3-NGO ecosystem: PKPIM, ABIM & WADAH",
+  "adminBranchScope": "Branch scope: {branch}",
+  "@adminBranchScope": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "adminOrgScope": "Organisation scope: {organization}",
+  "@adminOrgScope": {
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "adminDefaultBranch": "Your Branch",
+  "adminDefaultOrg": "Organisation",
+  "adminRegistrationDesk": "REGISTRATION DESK",
+  "adminParticipantsCount": "{count} Participants",
+  "@adminParticipantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminScanParticipantCard": "Scan Participant Card",
+  "adminList": "List",
+  "adminScanCard": "Scan Card",
+  "adminMemberDirectory": "Member Directory",
+  "adminFeeCollection": "Fee Collection",
+  "adminSixMonthCollection": "6-Month Collection",
+  "adminCheckInRecorded": "{name} ({memberNo}) - Attendance Recorded",
+  "@adminCheckInRecorded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "memberNo": {
+        "type": "String"
+      }
+    }
+  },
+  "adminCheckInRecordedName": "{name} - Attendance Recorded",
+  "@adminCheckInRecordedName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminScanNotSuccessful": "Scan was not successful.",
+  "adminAttendanceRecordError": "Error while recording attendance. Please try again.",
+  "adminManualEntry": "Manual Entry",
+  "adminManualEntryHint": "Enter IC No. (12 digits), Member No., or member phone number.",
+  "adminIcMemberPhoneLabel": "IC No. / Member No. / Phone",
+  "adminIcMemberPhoneExample": "Example: 880123015566 or PKPIM-0012",
+  "adminAttendanceCardScanner": "Attendance Card Scanner",
+  "adminTorch": "Flashlight",
+  "adminSwitchCamera": "Switch Camera",
+  "adminNoScheduledPrograms": "No Scheduled Programs",
+  "adminNoScheduledProgramsBody": "No scheduled events for your branch or organisation at the moment.",
+  "adminParticipantList": "Participant List",
+  "adminPointCameraMemberCardQr": "Point the camera at the Member Card QR code",
+  "adminManualInput": "Manual Input (IC No. / Card)",
+  "adminLoadEventsFailed": "Failed to load events.",
+  "adminSearchFeesHint": "Search name or Member No...",
+  "adminNoMatchingFeeRecords": "No fee records match your search.",
+  "adminSortNewest": "Newest first",
+  "adminSortOldest": "Oldest first",
+  "adminSortNameAsc": "Name A-Z",
+  "adminSortNameDesc": "Name Z-A",
+  "adminRoleFallback": "Administrator",
+  "adminMenuTitle": "Administrator Menu",
+  "adminManagementOperations": "Management & Operations",
+  "adminScanAttendanceCard": "Scan Attendance Card",
+  "adminScanAttendanceCardSubtitle": "Quick camera scanner for participant membership cards at programs",
+  "adminProgramAttendanceMenu": "Programs & Attendance",
+  "adminProgramAttendanceSubtitle": "Program list, attendance records & registration status",
+  "adminMemberDirectorySubtitle": "Member search, active status check & contact info",
+  "adminFeeCollectionSubtitle": "Monitor annual fee payment status & collection summary",
+  "adminBroadcastMenu": "Broadcast Message",
+  "adminBroadcastMenuSubtitle": "Send urgent announcement notifications to member groups",
+  "adminAdminManual": "Administrator User Manual",
+  "adminAdminManualSubtitle": "MyWAP system operations guide for administrators",
+  "adminCreateContent": "Create Content",
+  "adminCreateContentNote": "Full document creation is done on the web portal. This button opens the relevant page.",
+  "adminCreateProgram": "Create Program",
+  "adminCreateProgramSubtitle": "Add new programs, registration forms & attendance settings",
+  "adminCreateProgramDialogTitle": "Create Program on Web Portal",
+  "adminCreateProgramDialogBody": "Program creation needs the full editor for dates, location, registration forms and pricing. It opens on the official myWAP web portal.",
+  "adminWriteArticle": "Write Article",
+  "adminWriteArticleSubtitle": "Full text editor, cover image & gallery",
+  "adminWriteArticleDialogTitle": "Write Article on Web Portal",
+  "adminWriteArticleDialogBody": "The article editor with text formatting, cover image and gallery is available on the web portal. Content will appear in the app after publishing.",
+  "adminLatestInfo": "Latest Info",
+  "adminLatestInfoSubtitle": "Manage news, categories & publishing",
+  "adminManageLatestInfoDialogTitle": "Manage Latest Info on Web Portal",
+  "adminManageLatestInfoDialogBody": "News, categories and the publishing schedule are managed on the web portal.",
+  "adminMediaStatement": "Media Statement",
+  "adminMediaStatementSubtitle": "Upload PDF, images & official statement text",
+  "adminCreateMediaStatementDialogTitle": "Create Media Statement on Web Portal",
+  "adminCreateMediaStatementDialogBody": "Upload the PDF, featured image and write official statement text on the web portal.",
+  "adminCreateForm": "Create Form",
+  "adminCreateFormSubtitle": "Form builder, questions & QR link",
+  "adminCreateFormDialogTitle": "Create Form on Web Portal",
+  "adminCreateFormDialogBody": "The interactive form builder (questions, options, QR) is available on the web portal.",
+  "adminLogoutAdmin": "Log Out Administrator Account",
+  "adminOpenWebFailed": "Could not open the web portal.",
+  "adminOpenWebPortal": "Open Web Portal",
+  "adminScanMemberCard": "Scan Member Card",
+  "adminNavHome": "Main",
+  "adminNavOperations": "Operations",
+  "roleOrgAdminFallback": "Organisation Admin",
+  "prayerHoursLeft": "{hours} h left",
+  "@prayerHoursLeft": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "prayerHoursMinutesLeft": "{hours} h {minutes} min left",
+  "@prayerHoursMinutesLeft": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "adminNotPresentLabel": "Not Present",
+  "prayerSelectLocation": "Choose location",
+  "prayerUseDeviceLocation": "Use device location",
+  "prayerLocationUnknown": "Your location",
+  "prayerManualLocationHint": "GPS is unavailable. Choose a location to get prayer times.",
+  "prayerGpsUnavailable": "GPS is unavailable."
 }

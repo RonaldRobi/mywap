@@ -10,6 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/infaq_providers.dart';
@@ -35,8 +36,9 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
     final listAsync = ref.watch(infaqListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.volunteer_activism_outlined,
+        semanticLabel: context.l10n.infaqTitle,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: listAsync.when(

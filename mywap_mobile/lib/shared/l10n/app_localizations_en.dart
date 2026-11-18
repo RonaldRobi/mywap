@@ -830,6 +830,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get basicInfoSection => 'Basic Information';
 
   @override
+  String get salutationLabel => 'Salutation';
+
+  @override
   String get educationProfessionSection => 'Education & Profession';
 
   @override
@@ -872,10 +875,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get postcodeLabel => 'Postcode';
 
   @override
+  String get postcodeInvalid => 'Postcode must be 5 digits.';
+
+  @override
+  String get districtLabel => 'District';
+
+  @override
   String get cityLabel => 'City';
 
   @override
   String get stateLabel => 'State';
+
+  @override
+  String get selectStateFirst => 'Select a state first';
 
   @override
   String get emergencySection => 'Emergency Contact';
@@ -2437,6 +2449,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminDeleteMemberButton => 'Delete Member';
 
   @override
+  String get adminResetPasswordTitle => 'Change Password';
+
+  @override
+  String get adminNewPasswordLabel => 'New Password';
+
+  @override
+  String get adminPasswordMinHint => 'Minimum 8 characters';
+
+  @override
+  String get adminResetButton => 'Change';
+
+  @override
+  String get adminPasswordReset => 'Member password has been changed.';
+
+  @override
+  String get adminSortTooltip => 'Sort list';
+
+  @override
   String get adminFeesTitle => 'Fees';
 
   @override
@@ -3000,4 +3030,489 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get faqA7 => 'Notifications keep you informed about programs, announcements and important reminders. You can change this permission in your device settings at any time.';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get shareItem => 'Share this item';
+
+  @override
+  String get shareLinkUnavailable => 'Share link is not available for this item yet.';
+
+  @override
+  String get shareFailed => 'Could not open sharing. Please try again.';
+
+  @override
+  String get mediaStatementsEmpty => 'No media statements yet.';
+
+  @override
+  String get mediaStatementsSubtitle => 'Official statements and materials from the organisation.';
+
+  @override
+  String get openPdf => 'Open PDF';
+
+  @override
+  String get callLabel => 'Call';
+
+  @override
+  String get checkoutViewReceipt => 'View Receipt';
+
+  @override
+  String get newsVideoInvalidLink => 'Invalid video link.';
+
+  @override
+  String get fileInvalidRetry => 'Invalid file. Please try again.';
+
+  @override
+  String get authMissingToken => 'No token in the response.';
+
+  @override
+  String get prayerLocationBlocked => 'Location is blocked. Allow it in Settings.';
+
+  @override
+  String get prayerLocationAllow => 'Allow location for prayer times in your area';
+
+  @override
+  String get prayerLocationOff => 'Location services are off. Turn them on for prayer times.';
+
+  @override
+  String get prayerLoadFailed => 'Could not load prayer times. Try again.';
+
+  @override
+  String get prayerNext => 'Next prayer';
+
+  @override
+  String get prayerTodayTitle => 'Today\'s Prayer Times';
+
+  @override
+  String prayerMinutesLeft(int minutes) {
+    return '$minutes min left';
+  }
+
+  @override
+  String orgAgePlus(int min) {
+    return '$min+ years';
+  }
+
+  @override
+  String orgAgeRange(int min, int max) {
+    return '$min-$max years';
+  }
+
+  @override
+  String get roleBranchAdmin => 'Branch Admin';
+
+  @override
+  String roleBranchAdminWithBranch(String branch) {
+    return 'Branch Admin ($branch)';
+  }
+
+  @override
+  String roleOrganizationAdmin(String organization) {
+    return '$organization Admin';
+  }
+
+  @override
+  String get shareSheetTitle => 'Share';
+
+  @override
+  String get shareWhatsApp => 'WhatsApp';
+
+  @override
+  String get shareFacebook => 'Facebook';
+
+  @override
+  String get shareTelegram => 'Telegram';
+
+  @override
+  String get shareX => 'X';
+
+  @override
+  String get shareCopyLink => 'Copy link';
+
+  @override
+  String get shareCopyText => 'Copy text';
+
+  @override
+  String get shareMoreOptions => 'More options';
+
+  @override
+  String get shareLinkCopied => 'Link copied.';
+
+  @override
+  String get shareTextCopied => 'Text copied.';
+
+  @override
+  String get adminConfirmAttendanceTitle => 'Confirm Attendance';
+
+  @override
+  String adminConfirmAttendanceBody(String name) {
+    return 'Mark this participant as present now?\n\nName: $name';
+  }
+
+  @override
+  String get adminConfirmPresentButton => 'Mark Present';
+
+  @override
+  String adminAttendanceConfirmed(String name) {
+    return 'Attendance for $name confirmed.';
+  }
+
+  @override
+  String get adminAttendanceRecordFailed => 'Failed to record attendance.';
+
+  @override
+  String get adminParticipantPresent => 'Participant Already Present';
+
+  @override
+  String adminAttendedTime(String datetime) {
+    return 'Attended at $datetime';
+  }
+
+  @override
+  String get adminOpenFastScanner => 'Open Fast Scanner';
+
+  @override
+  String get adminSearchAttendanceHint => 'Search name, Member No. or IC No...';
+
+  @override
+  String adminFilterAllCount(int count) {
+    return 'All ($count)';
+  }
+
+  @override
+  String adminFilterPresentCount(int count) {
+    return 'Present ($count)';
+  }
+
+  @override
+  String adminFilterNotPresentCount(int count) {
+    return 'Not Present ($count)';
+  }
+
+  @override
+  String get adminNoParticipantsMatch => 'No participants match your search.';
+
+  @override
+  String get adminAllParticipantsPresent => 'All participants are present!';
+
+  @override
+  String get adminTapToConfirmPresent => 'Tap to confirm attendance';
+
+  @override
+  String get adminAudienceAllNgo => 'All Movement Users (Cross-NGO)';
+
+  @override
+  String get adminAudienceSpecificOrg => 'Specific Organisation';
+
+  @override
+  String get adminAudienceAllUsrah => 'All Usrah Groups';
+
+  @override
+  String get adminAudienceMyBranchMembers => 'All Members of My Branch';
+
+  @override
+  String get adminAudienceMyBranchUsrah => 'Usrah Groups of My Branch';
+
+  @override
+  String adminAudienceOrgMembers(String organization) {
+    return 'All $organization Members';
+  }
+
+  @override
+  String get adminAudienceOrgMembersFallback => 'All Organisation Members';
+
+  @override
+  String get adminAudienceOrgUsrah => 'Organisation Usrah Groups';
+
+  @override
+  String get adminSystemAdministrator => 'System Administrator';
+
+  @override
+  String get adminBroadcastHint => 'The broadcast is sent as an official in-app notification to the selected audience.';
+
+  @override
+  String get adminSelectTargetOrg => 'Select Target Organisation';
+
+  @override
+  String get adminSelectOrgError => 'Please select an organisation.';
+
+  @override
+  String get adminDashboardNotificationsTooltip => 'Notifications';
+
+  @override
+  String get adminWebPortalNote => 'Bulk registration, CSV import and system configuration are managed on the official MyWAP web portal.';
+
+  @override
+  String get adminFullAccessScope => 'Full access to the 3-NGO ecosystem: PKPIM, ABIM & WADAH';
+
+  @override
+  String adminBranchScope(String branch) {
+    return 'Branch scope: $branch';
+  }
+
+  @override
+  String adminOrgScope(String organization) {
+    return 'Organisation scope: $organization';
+  }
+
+  @override
+  String get adminDefaultBranch => 'Your Branch';
+
+  @override
+  String get adminDefaultOrg => 'Organisation';
+
+  @override
+  String get adminRegistrationDesk => 'REGISTRATION DESK';
+
+  @override
+  String adminParticipantsCount(int count) {
+    return '$count Participants';
+  }
+
+  @override
+  String get adminScanParticipantCard => 'Scan Participant Card';
+
+  @override
+  String get adminList => 'List';
+
+  @override
+  String get adminScanCard => 'Scan Card';
+
+  @override
+  String get adminMemberDirectory => 'Member Directory';
+
+  @override
+  String get adminFeeCollection => 'Fee Collection';
+
+  @override
+  String get adminSixMonthCollection => '6-Month Collection';
+
+  @override
+  String adminCheckInRecorded(String name, String memberNo) {
+    return '$name ($memberNo) - Attendance Recorded';
+  }
+
+  @override
+  String adminCheckInRecordedName(String name) {
+    return '$name - Attendance Recorded';
+  }
+
+  @override
+  String get adminScanNotSuccessful => 'Scan was not successful.';
+
+  @override
+  String get adminAttendanceRecordError => 'Error while recording attendance. Please try again.';
+
+  @override
+  String get adminManualEntry => 'Manual Entry';
+
+  @override
+  String get adminManualEntryHint => 'Enter IC No. (12 digits), Member No., or member phone number.';
+
+  @override
+  String get adminIcMemberPhoneLabel => 'IC No. / Member No. / Phone';
+
+  @override
+  String get adminIcMemberPhoneExample => 'Example: 880123015566 or PKPIM-0012';
+
+  @override
+  String get adminAttendanceCardScanner => 'Attendance Card Scanner';
+
+  @override
+  String get adminTorch => 'Flashlight';
+
+  @override
+  String get adminSwitchCamera => 'Switch Camera';
+
+  @override
+  String get adminNoScheduledPrograms => 'No Scheduled Programs';
+
+  @override
+  String get adminNoScheduledProgramsBody => 'No scheduled events for your branch or organisation at the moment.';
+
+  @override
+  String get adminParticipantList => 'Participant List';
+
+  @override
+  String get adminPointCameraMemberCardQr => 'Point the camera at the Member Card QR code';
+
+  @override
+  String get adminManualInput => 'Manual Input (IC No. / Card)';
+
+  @override
+  String get adminLoadEventsFailed => 'Failed to load events.';
+
+  @override
+  String get adminSearchFeesHint => 'Search name or Member No...';
+
+  @override
+  String get adminNoMatchingFeeRecords => 'No fee records match your search.';
+
+  @override
+  String get adminSortNewest => 'Newest first';
+
+  @override
+  String get adminSortOldest => 'Oldest first';
+
+  @override
+  String get adminSortNameAsc => 'Name A-Z';
+
+  @override
+  String get adminSortNameDesc => 'Name Z-A';
+
+  @override
+  String get adminRoleFallback => 'Administrator';
+
+  @override
+  String get adminMenuTitle => 'Administrator Menu';
+
+  @override
+  String get adminManagementOperations => 'Management & Operations';
+
+  @override
+  String get adminScanAttendanceCard => 'Scan Attendance Card';
+
+  @override
+  String get adminScanAttendanceCardSubtitle => 'Quick camera scanner for participant membership cards at programs';
+
+  @override
+  String get adminProgramAttendanceMenu => 'Programs & Attendance';
+
+  @override
+  String get adminProgramAttendanceSubtitle => 'Program list, attendance records & registration status';
+
+  @override
+  String get adminMemberDirectorySubtitle => 'Member search, active status check & contact info';
+
+  @override
+  String get adminFeeCollectionSubtitle => 'Monitor annual fee payment status & collection summary';
+
+  @override
+  String get adminBroadcastMenu => 'Broadcast Message';
+
+  @override
+  String get adminBroadcastMenuSubtitle => 'Send urgent announcement notifications to member groups';
+
+  @override
+  String get adminAdminManual => 'Administrator User Manual';
+
+  @override
+  String get adminAdminManualSubtitle => 'MyWAP system operations guide for administrators';
+
+  @override
+  String get adminCreateContent => 'Create Content';
+
+  @override
+  String get adminCreateContentNote => 'Full document creation is done on the web portal. This button opens the relevant page.';
+
+  @override
+  String get adminCreateProgram => 'Create Program';
+
+  @override
+  String get adminCreateProgramSubtitle => 'Add new programs, registration forms & attendance settings';
+
+  @override
+  String get adminCreateProgramDialogTitle => 'Create Program on Web Portal';
+
+  @override
+  String get adminCreateProgramDialogBody => 'Program creation needs the full editor for dates, location, registration forms and pricing. It opens on the official myWAP web portal.';
+
+  @override
+  String get adminWriteArticle => 'Write Article';
+
+  @override
+  String get adminWriteArticleSubtitle => 'Full text editor, cover image & gallery';
+
+  @override
+  String get adminWriteArticleDialogTitle => 'Write Article on Web Portal';
+
+  @override
+  String get adminWriteArticleDialogBody => 'The article editor with text formatting, cover image and gallery is available on the web portal. Content will appear in the app after publishing.';
+
+  @override
+  String get adminLatestInfo => 'Latest Info';
+
+  @override
+  String get adminLatestInfoSubtitle => 'Manage news, categories & publishing';
+
+  @override
+  String get adminManageLatestInfoDialogTitle => 'Manage Latest Info on Web Portal';
+
+  @override
+  String get adminManageLatestInfoDialogBody => 'News, categories and the publishing schedule are managed on the web portal.';
+
+  @override
+  String get adminMediaStatement => 'Media Statement';
+
+  @override
+  String get adminMediaStatementSubtitle => 'Upload PDF, images & official statement text';
+
+  @override
+  String get adminCreateMediaStatementDialogTitle => 'Create Media Statement on Web Portal';
+
+  @override
+  String get adminCreateMediaStatementDialogBody => 'Upload the PDF, featured image and write official statement text on the web portal.';
+
+  @override
+  String get adminCreateForm => 'Create Form';
+
+  @override
+  String get adminCreateFormSubtitle => 'Form builder, questions & QR link';
+
+  @override
+  String get adminCreateFormDialogTitle => 'Create Form on Web Portal';
+
+  @override
+  String get adminCreateFormDialogBody => 'The interactive form builder (questions, options, QR) is available on the web portal.';
+
+  @override
+  String get adminLogoutAdmin => 'Log Out Administrator Account';
+
+  @override
+  String get adminOpenWebFailed => 'Could not open the web portal.';
+
+  @override
+  String get adminOpenWebPortal => 'Open Web Portal';
+
+  @override
+  String get adminScanMemberCard => 'Scan Member Card';
+
+  @override
+  String get adminNavHome => 'Main';
+
+  @override
+  String get adminNavOperations => 'Operations';
+
+  @override
+  String get roleOrgAdminFallback => 'Organisation Admin';
+
+  @override
+  String prayerHoursLeft(int hours) {
+    return '$hours h left';
+  }
+
+  @override
+  String prayerHoursMinutesLeft(int hours, int minutes) {
+    return '$hours h $minutes min left';
+  }
+
+  @override
+  String get adminNotPresentLabel => 'Not Present';
+
+  @override
+  String get prayerSelectLocation => 'Choose location';
+
+  @override
+  String get prayerUseDeviceLocation => 'Use device location';
+
+  @override
+  String get prayerLocationUnknown => 'Your location';
+
+  @override
+  String get prayerManualLocationHint => 'GPS is unavailable. Choose a location to get prayer times.';
+
+  @override
+  String get prayerGpsUnavailable => 'GPS is unavailable.';
 }

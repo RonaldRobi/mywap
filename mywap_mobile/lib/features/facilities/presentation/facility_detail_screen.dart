@@ -304,25 +304,10 @@ class _DetailSkeleton extends StatelessWidget {
   }
 }
 
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mac',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Ogo',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dis',
-];
-
 String? _formatDateTime(String? iso) {
   final dt = DateTime.tryParse(iso ?? '');
   if (dt == null) return null;
   String pad(int v) => v.toString().padLeft(2, '0');
-  return '${dt.day} ${_months[dt.month - 1]} ${dt.year}, '
+  return '${Formatters.shortDate(dt)}, '
       '${pad(dt.hour)}:${pad(dt.minute)}';
 }

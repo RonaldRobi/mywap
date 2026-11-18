@@ -166,12 +166,12 @@ class _DashboardContent extends ConsumerWidget {
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
                     title: context.l10n.mediaStatementsTitle,
-                    subtitle: 'Kenyataan dan bahan rasmi organisasi',
+                    subtitle: context.l10n.mediaStatementsSubtitle,
                     action: () => context.push('/media-statements'),
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 104,
+                    height: 320,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: mediaStatements.length,
@@ -569,8 +569,12 @@ class _MembershipCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'KAD KEAHLIAN · '
-                                    '${orgName?.isNotEmpty == true ? orgName : 'ORGANISASI'}'
+                            context.l10n
+                                .memberCardTitle(
+                                  orgName?.isNotEmpty == true
+                                      ? orgName!
+                                      : context.l10n.orgFallbackUpper,
+                                )
                                 .toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1291,43 +1295,74 @@ class _MediaStatementPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 250,
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
+      width: 175,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
         child: InkWell(
+          borderRadius: AppRadius.card,
           onTap: () => context.push('/media-statements/${item.id}'),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 88,
-                height: 104,
-                child:
-                    item.featuredImage == null
-                        ? const ColoredBox(
-                          color: AppColors.greenTint,
-                          child: Icon(Icons.campaign_outlined),
-                        )
-                        : AppImage(
-                          item.featuredImage,
-                          fit: BoxFit.cover,
-                          borderRadius: BorderRadius.zero,
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 4 / 5,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (item.featuredImage?.isNotEmpty == true)
+                        AppImage(item.featuredImage, fit: BoxFit.cover)
+                      else
+                        Container(color: AppColors.paleGreen),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [AppColors.scrim, Colors.transparent],
+                          ),
                         ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(Spacing.sm),
-                  child: Text(
-                    item.title ?? '-',
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      ),
+                      Positioned(
+                        left: Spacing.sm,
+                        bottom: Spacing.sm,
+                        right: Spacing.sm,
+                        child: Text(
+                          item.organizationName ?? context.l10n.newsAllOrganizations,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: AppTextTheme.minSize,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.title ?? '-',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

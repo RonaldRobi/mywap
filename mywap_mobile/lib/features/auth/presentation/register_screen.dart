@@ -7,6 +7,7 @@ import '../../../shared/ic/malaysian_ic.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/validation/malaysian_phone.dart';
 import '../../../shared/widgets/dob_picker.dart';
 import '../application/auth_controller.dart';
 import 'widgets/auth_scaffold.dart';
@@ -100,7 +101,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         phone:
             _phoneController.text.trim().isEmpty
                 ? null
-                : _phoneController.text.trim(),
+                : MalaysianPhone.normalize(_phoneController.text),
         dob: _dob == null ? null : formatDobApi(_dob!),
         referralCode: widget.referralCode,
       );
@@ -223,10 +224,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 hint: context.l10n.phoneHint,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.done,
+                inputFormatters: MalaysianPhone.inputFormatters,
                 validator: (v) {
                   final phone = (v ?? '').trim();
                   if (phone.isEmpty) return null;
-                  if (!RegExp(r'^[0-9+\-\s()]{7,20}$').hasMatch(phone)) {
+                  if (!MalaysianPhone.isValid(phone)) {
                     return context.l10n.phoneInvalid;
                   }
                   return null;

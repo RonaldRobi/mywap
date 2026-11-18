@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/html_content.dart';
 import '../../../shared/widgets/skeleton_box.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../application/media_statement_providers.dart';
 import '../data/media_statement_repository.dart';
 
@@ -33,7 +34,7 @@ class MediaStatementsScreen extends ConsumerWidget {
                       ? ListView(
                         children: [
                           const SizedBox(height: 120),
-                          Center(child: Text('Belum ada kenyataan media.')),
+                          Center(child: Text(context.l10n.mediaStatementsEmpty)),
                         ],
                       )
                       : ListView.separated(
@@ -128,10 +129,18 @@ class MediaStatementDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(mediaStatementDetailProvider(id));
+    final shareStatement = async.valueOrNull?.statement;
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(),
         title: Text(context.l10n.mediaStatementsTitle),
+        actions: [
+          if (shareStatement != null)
+            ShareItemIconButton(
+              title: shareStatement.title ?? '',
+              url: shareStatement.shareUrl,
+            ),
+        ],
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -158,6 +167,14 @@ class MediaStatementDetailScreen extends ConsumerWidget {
                   detail.statement.title ?? '-',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
+                const SizedBox(height: Spacing.md),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ShareItemButton(
+                    title: detail.statement.title ?? '',
+                    url: detail.statement.shareUrl,
+                  ),
+                ),
                 const SizedBox(height: Spacing.lg),
                 if (detail.statement.pdfUrl != null)
                   FilledButton.icon(
@@ -167,7 +184,7 @@ class MediaStatementDetailScreen extends ConsumerWidget {
                           mode: LaunchMode.externalApplication,
                         ),
                     icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: const Text('Buka PDF'),
+                    label: Text(context.l10n.openPdf),
                   ),
                 if (detail.content != null &&
                     detail.content!.trim().isNotEmpty) ...[

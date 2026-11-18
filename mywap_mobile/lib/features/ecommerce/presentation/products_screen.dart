@@ -600,7 +600,7 @@ class _ProductCard extends ConsumerWidget {
                     const SizedBox(height: 6),
                     SizedBox(
                       width: double.infinity,
-                      height: AppSizes.buttonHeight,
+                      height: 32,
                       child:
                           isStaff
                               ? Center(
@@ -626,11 +626,11 @@ class _ProductCard extends ConsumerWidget {
                                   disabledForegroundColor:
                                       AppColors.textTertiary,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   textStyle: const TextStyle(
                                     fontSize: AppTextTheme.minSize,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 child: Text(_actionLabel(context, product)),

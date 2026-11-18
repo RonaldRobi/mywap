@@ -6,6 +6,9 @@ use App\Models\MediaStatement;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class MediaStatementTest extends TestCase
@@ -48,6 +51,90 @@ class MediaStatementTest extends TestCase
             ->assertJsonPath('data.pdf_url', asset($statement->pdf_path))
             ->assertJsonPath('data.public_url', route('media-statements.show', $statement))
             ->assertJsonPath('data.detail_url', route('api.v1.media-statements.show', $statement));
+    }
+
+    public function test_share_preview_uses_featured_image_for_og_tags(): void
+    {
+        $statement = $this->statement(User::factory()->create(), null, 'Kenyataan Media Rasmi', [
+            'content_type' => 'both',
+            'featured_image_path' => '/storage/media-statements/cover.jpg',
+            'pdf_path' => '/storage/media-statements/pdf/release.pdf',
+        ]);
+
+        $this->get(route('share.media-statement', $statement))
+            ->assertOk()
+            ->assertSee('property="og:image"', false)
+            ->assertSee(url('/storage/media-statements/cover.jpg'), false)
+            ->assertSee('Kenyataan Media Rasmi');
+    }
+
+    public function test_title_rejects_emoji_and_symbols(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.media-statements.store'), [
+            'title' => 'Kenyataan 🚀 Media',
+            'content_type' => 'text',
+            'content' => '<p>Kandungan</p>',
+            'is_published' => true,
+        ]);
+
+        $response->assertSessionHasErrors('title');
+        $this->assertDatabaseCount('media_statements', 0);
+    }
+
+    public function test_pdf_only_statement_saves_without_text_content(): void
+    {
+        Storage::fake('public');
+
+        $response = $this->actingAs($this->admin())->post(route('admin.media-statements.store'), [
+            'title' => 'Kenyataan Media Rasmi',
+            'content_type' => 'pdf',
+            'pdf' => UploadedFile::fake()->create('kenyataan.pdf', 120, 'application/pdf'),
+            'is_published' => true,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $statement = MediaStatement::firstOrFail();
+        $this->assertSame('pdf', $statement->content_type);
+        $this->assertNull($statement->content);
+        $this->assertNotNull($statement->pdf_path);
+    }
+
+    public function test_text_statement_requires_visible_content(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.media-statements.store'), [
+            'title' => 'Kenyataan Media Rasmi',
+            'content_type' => 'text',
+            'content' => '<p><br></p>',
+            'is_published' => true,
+        ]);
+
+        $response->assertSessionHasErrors('content');
+    }
+
+    public function test_both_content_types_require_pdf_and_text(): void
+    {
+        $response = $this->actingAs($this->admin())->post(route('admin.media-statements.store'), [
+            'title' => 'Kenyataan Media Rasmi',
+            'content_type' => 'both',
+            'content' => '<p>Kandungan</p>',
+            'is_published' => true,
+        ]);
+
+        $response->assertSessionHasErrors('pdf');
+    }
+
+    private function admin(): User
+    {
+        Role::findOrCreate('Superadmin', 'web');
+
+        $admin = User::factory()->create([
+            'current_organization_id' => null,
+            'profile_completed_at' => now(),
+        ]);
+        $admin->assignRole('Superadmin');
+
+        return $admin;
     }
 
     private function statement(User $author, ?Organization $organization, string $title, array $extra = []): MediaStatement

@@ -33,6 +33,15 @@ class MemberRegistration
     }
 
     /**
+     * Simpan nombor telefon dalam format tempatan Malaysia (bermula 0).
+     * Contoh: "+60 12-345 6789" -> "0123456789".
+     */
+    public static function normalizePhone(?string $phone): string
+    {
+        return (string) (Malaysia::normalizePhone($phone) ?? '');
+    }
+
+    /**
      * @return array<string, array<int, string>>
      */
     public static function rules(): array
@@ -41,7 +50,7 @@ class MemberRegistration
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'ic_number' => ['required', 'string', 'max:32', 'regex:'.\App\Models\User::IC_VALIDATION_REGEX],
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]{7,20}$/'],
+            'phone' => ['nullable', 'string', 'regex:/^0[0-9]{8,10}$/'],
             'dob' => ['required', 'date', 'before_or_equal:today'],
             'branch_id' => ['nullable', 'exists:branches,id'],
         ];
@@ -64,8 +73,7 @@ class MemberRegistration
             'ic_number.required' => 'Sila masukkan No. Kad Pengenalan atau No. Passport.',
             'ic_number.regex' => 'No. Kad Pengenalan mesti tepat 12 digit tanpa sengkang atau ruang (cth: 900101011234). Pasport mesti 6-32 aksara alfanumerik.',
 
-            'phone.regex' => 'No. telefon tidak sah. Gunakan nombor sahaja, contoh: 0123456789.',
-            'phone.max' => 'No. telefon terlalu panjang.',
+            'phone.regex' => 'No. telefon tidak sah. Gunakan format Malaysia tanpa +60, contoh: 0123456789.',
 
             'dob.required' => 'Tarikh lahir wajib diisi kerana No. IC tidak dapat dibaca. Sila pilih tarikh lahir.',
             'dob.date' => 'Tarikh lahir tidak sah. Sila pilih tarikh yang betul.',

@@ -301,7 +301,10 @@ void main() {
     );
     expect(buyButton.onPressed, isNull);
     final addButton = tester.widget<OutlinedButton>(
-      find.byWidgetPredicate((widget) => widget is OutlinedButton),
+      find.ancestor(
+        of: find.text('Masukkan ke Troli'),
+        matching: find.byWidgetPredicate((widget) => widget is OutlinedButton),
+      ),
     );
     expect(addButton.onPressed, isNull);
   });

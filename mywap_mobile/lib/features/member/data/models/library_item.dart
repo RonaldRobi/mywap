@@ -11,6 +11,7 @@ class LibraryItem {
     this.file_path,
     this.cover_image_path,
     this.category,
+    this.share_url,
   });
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) => LibraryItem(
@@ -20,6 +21,7 @@ class LibraryItem {
         file_path: json['file_path'] as String?,
         cover_image_path: json['cover_image_path'] as String?,
         category: json['category'] as String?,
+        share_url: json['share_url'] as String?,
       );
 
   final int? id;
@@ -28,4 +30,5 @@ class LibraryItem {
   final String? file_path;
   final String? cover_image_path;
   final String? category;
+  final String? share_url;
 }

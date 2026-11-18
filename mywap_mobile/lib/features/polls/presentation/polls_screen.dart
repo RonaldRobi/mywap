@@ -8,6 +8,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
@@ -23,8 +24,10 @@ class PollsScreen extends ConsumerWidget {
     final pollsAsync = ref.watch(pollsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.how_to_vote_outlined,
+        semanticLabel: l10n.pollTitle,
+        showBack: true,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: pollsAsync.when(

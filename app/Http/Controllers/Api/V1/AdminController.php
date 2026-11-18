@@ -56,6 +56,24 @@ class AdminController extends Controller
         ]);
     }
 
+    public function resetMemberPassword(Request $request, User $user): JsonResponse
+    {
+        $authUser = $request->user();
+        $this->authorizeAdmin($authUser);
+
+        if (! $authUser->hasRole('Superadmin') && $user->current_organization_id !== $authUser->current_organization_id) {
+            throw new HttpResponseException(ApiResponse::error('Tiada kebenaran.', [], 403));
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $user->update(['password' => bcrypt($validated['password']), 'must_change_password' => true]);
+
+        return ApiResponse::success(['id' => $user->id]);
+    }
+
     public function destroyMember(Request $request, User $user): JsonResponse
     {
         $authUser = $request->user();

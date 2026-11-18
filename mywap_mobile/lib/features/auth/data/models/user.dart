@@ -2,6 +2,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'organization.dart';
+import '../../../../shared/l10n/l10n.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
@@ -66,15 +67,15 @@ sealed class User with _$User {
     if (isSuperadmin) return 'Superadmin';
     if (isBranchAdmin) {
       return branch_name != null && branch_name!.isNotEmpty
-          ? 'Admin Cawangan ($branch_name)'
-          : 'Admin Cawangan';
+          ? currentAppLocalizations.roleBranchAdminWithBranch(branch_name!)
+          : currentAppLocalizations.roleBranchAdmin;
     }
     if (isOrgAdmin) {
       return organization?.name != null
-          ? 'Admin ${organization!.name}'
-          : 'Admin Organisasi';
+          ? currentAppLocalizations.roleOrganizationAdmin(organization!.name!)
+          : currentAppLocalizations.roleOrgAdminFallback;
     }
-    return 'Ahli';
+    return currentAppLocalizations.adminMemberFallback;
   }
 
   /// Staff accounts manage the mall catalogue and orders. They buy with a

@@ -10,6 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
@@ -27,8 +28,10 @@ class FacilitiesScreen extends ConsumerWidget {
     final facilitiesAsync = ref.watch(facilitiesProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.apartment_outlined,
+        semanticLabel: l10n.facTitle,
+        showBack: true,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(
@@ -397,25 +400,10 @@ DateTime? _parse(String? value) {
   return DateTime.tryParse(value);
 }
 
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mac',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Ogo',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dis',
-];
-
 String? _formatDateTime(String? iso) {
   final dt = _parse(iso);
   if (dt == null) return null;
   String pad(int v) => v.toString().padLeft(2, '0');
-  return '${dt.day} ${_months[dt.month - 1]} ${dt.year}, '
+  return '${Formatters.shortDate(dt)}, '
       '${pad(dt.hour)}:${pad(dt.minute)}';
 }

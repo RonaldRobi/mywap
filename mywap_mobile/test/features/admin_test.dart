@@ -64,6 +64,7 @@ class FakeAdminRepository implements AdminRepository {
   Future<PaginatedMembers> members({
     String search = '',
     String status = '',
+    String sort = '',
     int page = 1,
   }) async {
     var items = membersSeed;
@@ -72,6 +73,11 @@ class FakeAdminRepository implements AdminRepository {
     }
     if (status.isNotEmpty) {
       items = items.where((m) => m.status == status).toList();
+    }
+    if (sort == 'name_asc') {
+      items = [...items]..sort((a, b) => a.name.compareTo(b.name));
+    } else if (sort == 'name_desc') {
+      items = [...items]..sort((a, b) => b.name.compareTo(a.name));
     }
     return PaginatedMembers(
       items: items,
@@ -84,6 +90,9 @@ class FakeAdminRepository implements AdminRepository {
 
   @override
   Future<void> toggleMemberActive(int userId) async {}
+
+  @override
+  Future<void> resetMemberPassword(int userId, String password) async {}
 
   @override
   Future<void> deleteMember(int userId) async {}

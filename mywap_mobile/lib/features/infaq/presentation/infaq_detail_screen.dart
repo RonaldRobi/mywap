@@ -12,6 +12,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
 
@@ -78,11 +79,20 @@ class _InfaqDetailScreenState extends ConsumerState<InfaqDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(infaqDetailProvider(widget.slug));
+    final infaq = detailAsync.valueOrNull?.infaq;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/infaq'),
         title: Text(context.l10n.infaqDetailTitle),
+        actions: [
+          if (infaq != null)
+            ShareItemIconButton(
+              title: infaq.title ?? '',
+              url: infaq.shareUrl,
+              text: infaq.description,
+            ),
+        ],
       ),
       body: detailAsync.when(
         data:
@@ -167,6 +177,12 @@ class _DetailContent extends StatelessWidget {
                   const SizedBox(height: Spacing.sm),
                 ],
                 Text(infaq.title ?? '-', style: theme.textTheme.headlineSmall),
+                const SizedBox(height: Spacing.md),
+                ShareItemButton(
+                  title: infaq.title ?? '',
+                  url: infaq.shareUrl,
+                  text: infaq.description,
+                ),
                 const SizedBox(height: Spacing.sm),
                 if (infaq.daysRunning != null || infaq.totalDonors != null)
                   Row(

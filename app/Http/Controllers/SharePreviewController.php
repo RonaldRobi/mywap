@@ -7,11 +7,14 @@ use App\Models\Article;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\Infaq;
+use App\Models\LibraryItem;
+use App\Models\MediaStatement;
 use App\Models\NewsPost;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Services\RegistrationShareService;
 use App\Support\RegistrationPoster;
+use App\Support\ShareUrl;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -29,8 +32,8 @@ class SharePreviewController extends Controller
             title: $newsPost->title,
             description: $newsPost->excerpt ?: Str::limit(strip_tags((string) $newsPost->content), 160),
             imageUrl: $this->absoluteUrl($newsPost->cover_image_path),
-            pageUrl: route('share.info', $newsPost, true),
-            redirectUrl: route('news.show', $newsPost, true),
+            pageUrl: ShareUrl::route('share.info', $newsPost),
+            redirectUrl: ShareUrl::route('news.show', $newsPost),
             type: 'article'
         );
     }
@@ -44,8 +47,37 @@ class SharePreviewController extends Controller
             title: $article->title,
             description: $article->excerpt ?: Str::limit(strip_tags((string) $article->content), 160),
             imageUrl: $this->absoluteUrl($article->cover_image_path),
-            pageUrl: route('share.article', $article, true),
-            redirectUrl: route('articles.show', $article, true),
+            pageUrl: ShareUrl::route('share.article', $article),
+            redirectUrl: ShareUrl::route('articles.show', $article),
+            type: 'article'
+        );
+    }
+
+    public function mediaStatement(MediaStatement $mediaStatement): View
+    {
+        abort_if(! $mediaStatement->is_published, 404);
+        abort_if($mediaStatement->published_at && $mediaStatement->published_at->isFuture(), 404);
+        $description = Str::limit(strip_tags((string) $mediaStatement->content), 160);
+
+        return $this->renderPreview(
+            title: $mediaStatement->title,
+            description: $description ?: 'Kenyataan media rasmi. Muat turun kenyataan penuh dalam format PDF.',
+            imageUrl: $this->absoluteUrl($mediaStatement->featured_image_path),
+            pageUrl: ShareUrl::route('share.media-statement', $mediaStatement),
+            redirectUrl: ShareUrl::route('media-statements.show', $mediaStatement),
+            type: 'article'
+        );
+    }
+
+    public function pustaka(LibraryItem $libraryItem): View
+    {
+        return $this->renderPreview(
+            title: $libraryItem->title ?: 'Pustaka myWAP',
+            description: Str::limit(strip_tags((string) $libraryItem->description), 160)
+                ?: 'Buku digital dalam Pustaka myWAP.',
+            imageUrl: $this->absoluteUrl($libraryItem->cover_image_path),
+            pageUrl: ShareUrl::route('share.pustaka', $libraryItem),
+            redirectUrl: ShareUrl::route('member.library'),
             type: 'article'
         );
     }
@@ -58,8 +90,8 @@ class SharePreviewController extends Controller
             title: $infaq->title,
             description: strip_tags((string) $infaq->description) ?: 'Sertai kempen infaq ini sekarang.',
             imageUrl: $this->absoluteUrl($infaq->image_path),
-            pageUrl: route('share.infaq', $infaq, true),
-            redirectUrl: route('infaq.show', $infaq, true),
+            pageUrl: ShareUrl::route('share.infaq', $infaq),
+            redirectUrl: ShareUrl::route('infaq.show', $infaq),
             type: 'article'
         );
     }
@@ -71,14 +103,14 @@ class SharePreviewController extends Controller
         $activeForms = $event->activeForms;
 
         $redirectUrl = $activeForms->count() === 1
-            ? route('events.register.public', $activeForms->first()->share_token, true)
-            : route('events.show', $event->slug, true);
+            ? ShareUrl::route('events.register.public', $activeForms->first()->share_token)
+            : ShareUrl::route('events.show', $event->slug);
 
         return $this->renderPreview(
             title: $event->title,
             description: $event->description ?: 'Program komuniti terkini. Jom sertai bersama.',
             imageUrl: $this->absoluteUrl($event->featured_image_url),
-            pageUrl: route('share.event', $event, true),
+            pageUrl: ShareUrl::route('share.event', $event),
             redirectUrl: $redirectUrl,
             type: 'article'
         );
@@ -95,14 +127,14 @@ class SharePreviewController extends Controller
 
         // Borang pendaftaran event → teruskan ke halaman daftar.
         $redirectUrl = $form->event_id
-            ? route('events.register.public', $form->share_token, true)
-            : route('forms.public', ['token' => $form->share_token], true);
+            ? ShareUrl::route('events.register.public', $form->share_token)
+            : ShareUrl::route('forms.public', ['token' => $form->share_token]);
 
         return $this->renderPreview(
             title: $form->title,
             description: $form->description ?: 'Sila isi borang ini.',
             imageUrl: $imageUrl,
-            pageUrl: route('share.form', $form, true),
+            pageUrl: ShareUrl::route('share.form', $form),
             redirectUrl: $redirectUrl,
             type: 'article'
         );
@@ -122,9 +154,9 @@ class SharePreviewController extends Controller
         return $this->renderPreview(
             title: $context['title'],
             description: $context['description'],
-            imageUrl: route('share.register.image', $params, true),
-            pageUrl: route('share.register', $params, true),
-            redirectUrl: route('register', array_filter(['ref' => $referralCode]), true),
+            imageUrl: ShareUrl::route('share.register.image', $params),
+            pageUrl: ShareUrl::route('share.register', $params),
+            redirectUrl: ShareUrl::route('register', array_filter(['ref' => $referralCode])),
             type: 'website'
         );
     }
@@ -150,8 +182,8 @@ class SharePreviewController extends Controller
             description: Str::limit(strip_tags((string) $product->description), 160)
                 ?: 'Lihat produk ini di myWAP Mall.',
             imageUrl: $this->productImageUrl($product->image),
-            pageUrl: route('share.product', $product, true),
-            redirectUrl: route('mall.show', $product, true),
+            pageUrl: ShareUrl::route('share.product', $product),
+            redirectUrl: ShareUrl::route('mall.show', $product),
             type: 'product'
         );
     }
@@ -215,7 +247,9 @@ class SharePreviewController extends Controller
             $siteName = $setting->app_name ?: $siteName;
         }
 
-        $resolvedImage = $imageUrl ?: $this->absoluteUrl($fallbackLogo) ?: asset('apple-touch-icon.png');
+        $resolvedImage = $imageUrl
+            ?: $this->absoluteUrl($fallbackLogo)
+            ?: $this->absoluteUrl('/apple-touch-icon.png');
 
         return view('share.preview', [
             'siteName' => $siteName,
@@ -238,6 +272,8 @@ class SharePreviewController extends Controller
             return $url;
         }
 
-        return url($url);
+        $base = rtrim((string) config('app.share_url', config('app.url')), '/');
+
+        return $base.'/'.ltrim($url, '/');
     }
 }

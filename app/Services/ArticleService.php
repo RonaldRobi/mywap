@@ -8,6 +8,7 @@ use App\Models\ArticleComment;
 use App\Models\ArticleReaction;
 use App\Models\User;
 use App\Models\UserBlock;
+use App\Support\ShareUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -37,6 +38,7 @@ class ArticleService
             'author_name' => $article->author?->name ?? 'Admin',
             'published_date' => $article->published_at ? $article->published_at->format('d/m/Y') : $article->created_at->format('d/m/Y'),
             'public_url' => route('articles.show', $article->slug),
+            'share_url' => ShareUrl::route('share.article', $article->slug),
             'is_featured' => $article->is_featured,
             'categories' => $article->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
         ];
@@ -134,6 +136,7 @@ class ArticleService
                 'cover_image_path' => $article->cover_image_path,
                 'published_at' => $article->published_at?->toDateTimeString(),
                 'organization_name' => $article->organization?->name ?? 'Semua Organisasi',
+                'share_url' => ShareUrl::route('share.article', $article->slug),
                 'author_name' => $article->author?->name ?? '-',
                 'likes_count' => $likes,
                 'dislikes_count' => $dislikes,

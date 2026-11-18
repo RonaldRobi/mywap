@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -306,23 +307,8 @@ class _UsrahSkeleton extends StatelessWidget {
   }
 }
 
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mac',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Ogo',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dis',
-];
-
 String? _formatDate(String? iso) {
   final dt = DateTime.tryParse(iso ?? '');
   if (dt == null) return null;
-  return '${dt.day} ${_months[dt.month - 1]} ${dt.year}';
+  return Formatters.shortDate(dt);
 }

@@ -8,6 +8,7 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
@@ -24,8 +25,9 @@ class EventsScreen extends ConsumerWidget {
     final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.event_outlined,
+        semanticLabel: context.l10n.eventsTitle,
         actions: [
           if (isAuthenticated)
             IconButton(

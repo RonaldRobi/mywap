@@ -79,6 +79,7 @@ class AdminMembersState {
 class AdminMembersController extends Notifier<AdminMembersState> {
   String _search = '';
   String _status = '';
+  String _sort = '';
   int _requestId = 0;
 
   @override
@@ -97,12 +98,24 @@ class AdminMembersController extends Notifier<AdminMembersState> {
     _load(refresh: true);
   }
 
+  void setSort(String sort) {
+    _sort = sort;
+    _load(refresh: true);
+  }
+
   void retry() => _load(refresh: true);
 
   /// Nyahaktifkan / aktifkan semula ahli, kemudian muat semula senarai.
   Future<void> toggleActive(int userId) async {
     await ref.read(adminRepositoryProvider).toggleMemberActive(userId);
     await _load(refresh: true);
+  }
+
+  /// Tetapkan semula kata laluan ahli, tanpa memuat semula senarai.
+  Future<void> resetPassword(int userId, String password) async {
+    await ref
+        .read(adminRepositoryProvider)
+        .resetMemberPassword(userId, password);
   }
 
   /// Padam ahli (soft delete di backend), kemudian muat semula senarai.
@@ -127,7 +140,7 @@ class AdminMembersController extends Notifier<AdminMembersState> {
     try {
       final result = await ref
           .read(adminRepositoryProvider)
-          .members(search: _search, status: _status, page: page);
+          .members(search: _search, status: _status, sort: _sort, page: page);
       if (requestId != _requestId) return;
       final items =
           page == 1 ? result.items : [...state.items, ...result.items];

@@ -76,6 +76,8 @@ Route::get('/.well-known/assetlinks.json', [DeepLinkController::class, 'android'
 Route::get('/api/postcode/lookup', [PostcodeController::class, 'lookup'])->name('postcode.lookup')->middleware('throttle:30,1,web-postcode');
 Route::get('/share/info/{newsPost}', [SharePreviewController::class, 'info'])->name('share.info')->middleware('throttle:30,1,web-share-info');
 Route::get('/share/artikel/{article:slug}', [SharePreviewController::class, 'article'])->name('share.article')->middleware('throttle:30,1,web-share-article');
+Route::get('/share/kenyataan-media/{mediaStatement}', [SharePreviewController::class, 'mediaStatement'])->name('share.media-statement')->middleware('throttle:30,1,web-share-media-statement');
+Route::get('/share/pustaka/{libraryItem}', [SharePreviewController::class, 'pustaka'])->name('share.pustaka')->middleware('throttle:30,1,web-share-pustaka');
 Route::get('/share/infaq/{infaq}', [SharePreviewController::class, 'infaq'])->name('share.infaq')->middleware('throttle:30,1,web-share-infaq');
 Route::get('/share/event/{event}', [SharePreviewController::class, 'event'])->name('share.event')->middleware('throttle:30,1,web-share-event');
 Route::get('/share/borang/{form}', [SharePreviewController::class, 'form'])->name('share.form')->middleware('throttle:30,1,web-share-form');
@@ -250,6 +252,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::get('/admin/media-statements', [MediaStatementController::class, 'adminIndex'])->name('admin.media-statements.index');
         Route::get('/admin/media-statements/create', [MediaStatementController::class, 'create'])->name('admin.media-statements.create');
         Route::post('/admin/media-statements', [MediaStatementController::class, 'store'])->name('admin.media-statements.store');
+        Route::post('/admin/media-statements/content-image', [MediaStatementController::class, 'uploadContentImage'])->name('admin.media-statements.content-image');
         Route::get('/admin/media-statements/{mediaStatement}/edit', [MediaStatementController::class, 'edit'])->name('admin.media-statements.edit');
         Route::put('/admin/media-statements/{mediaStatement}', [MediaStatementController::class, 'update'])->name('admin.media-statements.update');
         Route::delete('/admin/media-statements/{mediaStatement}', [MediaStatementController::class, 'destroy'])->name('admin.media-statements.destroy');

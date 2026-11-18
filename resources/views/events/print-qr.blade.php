@@ -470,7 +470,7 @@
             $titleSize = $titleLength > 72 ? '17pt' : ($titleLength > 48 ? '19pt' : '21pt');
             $brandNames = $organizationBrands->pluck('name');
             $brandLabel = $brandNames->count() > 1
-                ? 'PKPIM · ABIM · WADAH'
+                ? 'PKPIM · ABIM · Wadah'
                 : ($brandNames->first() ?? 'Semua Organisasi');
         @endphp
 

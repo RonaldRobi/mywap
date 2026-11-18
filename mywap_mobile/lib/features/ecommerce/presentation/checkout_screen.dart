@@ -9,6 +9,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/payment/payment_webview_screen.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/validation/malaysian_phone.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/loading_overlay.dart';
 import '../../../shared/widgets/app_back_button.dart';
@@ -135,7 +136,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .checkout(
             products: _productsPayload,
             shippingName: _nameController.text,
-            shippingPhone: _phoneController.text,
+            shippingPhone: MalaysianPhone.normalize(_phoneController.text),
             shippingEmail: _emailController.text,
             shippingAddress: _addressController.text,
             shippingPostcode: _postcodeController.text,
@@ -157,7 +158,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final receiptAction =
           (isGuest && receiptUrl != null && receiptUrl.isNotEmpty)
               ? SnackBarAction(
-                label: 'Lihat Resit',
+                label: context.l10n.checkoutViewReceipt,
                 onPressed:
                     () => launchUrl(
                       Uri.parse(receiptUrl),
@@ -293,16 +294,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    inputFormatters: MalaysianPhone.inputFormatters,
                     decoration: InputDecoration(
                       labelText: l10n.phoneLabel,
-                      hintText: '012-3456789',
+                      hintText: '0123456789',
                       prefixIcon: const Icon(Icons.phone_outlined),
                     ),
-                    validator:
-                        (value) =>
-                            (value == null || value.trim().isEmpty)
-                                ? l10n.ecomPhoneRequired
-                                : null,
+                    validator: (value) {
+                      final phone = value?.trim() ?? '';
+                      if (phone.isEmpty) return l10n.ecomPhoneRequired;
+                      if (!MalaysianPhone.isValid(phone)) {
+                        return l10n.phoneInvalid;
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(

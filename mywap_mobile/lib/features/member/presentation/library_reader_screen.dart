@@ -6,6 +6,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../application/member_core_providers.dart';
 import '../data/models/library_item.dart';
 
@@ -128,6 +129,11 @@ class _LibraryReaderScreenState extends ConsumerState<LibraryReaderScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          ShareItemIconButton(
+            title: widget.item.title ?? '',
+            url: widget.item.share_url,
+            text: widget.item.description,
+          ),
           IconButton(
             tooltip:
                 favourites.contains(_bookId)

@@ -13,6 +13,7 @@ class Infaq {
     this.progressPercent,
     this.imagePath,
     this.publicUrl,
+    this.shareUrl,
     this.isExternal = false,
     this.externalUrl,
     this.organizationId,
@@ -30,6 +31,7 @@ class Infaq {
   final double? progressPercent;
   final String? imagePath;
   final String? publicUrl;
+  final String? shareUrl;
   final bool isExternal;
   final String? externalUrl;
   final int? organizationId;
@@ -47,6 +49,7 @@ class Infaq {
         progressPercent: parseDoubleValue(json['progress_percent']),
         imagePath: json['image_path'] as String?,
         publicUrl: json['public_url'] as String?,
+        shareUrl: json['share_url'] as String?,
         isExternal: parseBoolValue(json['is_external']),
         externalUrl: json['external_url'] as String?,
         organizationId: parseIntValue(json['organization_id']),
@@ -78,6 +81,7 @@ class InfaqInfo {
     this.totalDonors,
     this.daysRunning,
     this.publicUrl,
+    this.shareUrl,
     this.year,
     this.month,
     this.day,
@@ -102,6 +106,7 @@ class InfaqInfo {
   final int? totalDonors;
   final int? daysRunning;
   final String? publicUrl;
+  final String? shareUrl;
   final String? year;
   final String? month;
   final String? day;
@@ -126,6 +131,7 @@ class InfaqInfo {
         totalDonors: parseIntValue(json['total_donors']),
         daysRunning: parseIntValue(json['days_running']),
         publicUrl: json['public_url'] as String?,
+        shareUrl: json['share_url'] as String?,
         year: json['year']?.toString(),
         month: json['month']?.toString(),
         day: json['day']?.toString(),

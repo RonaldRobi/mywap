@@ -10,6 +10,7 @@ use App\Models\EventRsvp;
 use App\Models\OrganizationPosition;
 use App\Models\User;
 use App\Notifications\BranchChangeRequestSubmitted;
+use App\Support\Malaysia;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -40,6 +41,7 @@ class ProfileService
             'id' => $user->id,
             'member_no' => $user->member_no,
             'name' => $user->name,
+            'salutation' => $user->salutation,
             'email' => $user->email,
             'phone' => $user->phone,
             'ic_number' => $user->ic_number,
@@ -61,6 +63,7 @@ class ProfileService
             'address_1' => $user->address_1,
             'address_2' => $user->address_2,
             'postcode' => $user->postcode,
+            'district' => $user->district,
             'city' => $user->city,
             'state' => $user->state,
             'emergency_contact_name' => $user->emergency_contact_name,
@@ -161,6 +164,10 @@ class ProfileService
             'currentBranchId' => $user->branch_id,
             'currentBranchName' => $user->branch?->name,
             'organizationName' => $user->organization?->name,
+            'educationLevels' => Malaysia::educationLevels(),
+            'salutations' => Malaysia::salutations(),
+            'states' => Malaysia::states(),
+            'districts' => Malaysia::districts(),
             'pendingBranchRequest' => $pendingRequest ? [
                 'to_branch' => $pendingRequest->toBranch?->name,
             ] : null,
@@ -234,6 +241,10 @@ class ProfileService
             'parsedGender' => User::guessGenderFromIc($user->ic_number),
             'branches' => $branches,
             'currentBranchId' => $user->branch_id,
+            'educationLevels' => Malaysia::educationLevels(),
+            'salutations' => Malaysia::salutations(),
+            'states' => Malaysia::states(),
+            'districts' => Malaysia::districts(),
         ];
     }
 
@@ -243,20 +254,22 @@ class ProfileService
     public static function completeRules(): array
     {
         return [
+            'salutation' => ['nullable', 'string', 'max:40'],
             'education_level' => ['required', 'string', 'max:120'],
             'current_profession' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'regex:/^0[0-9]{8,10}$/'],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
             'dob' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:lelaki,perempuan'],
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
             'address_1' => ['nullable', 'string', 'max:255'],
             'address_2' => ['nullable', 'string', 'max:255'],
-            'postcode' => ['nullable', 'string', 'max:5'],
+            'postcode' => ['nullable', 'digits:5'],
+            'district' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
-            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'emergency_contact_phone' => ['nullable', 'string', 'regex:/^0[0-9]{8,10}$/'],
             'topics' => ['nullable', 'string'],
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Support\Malaysia;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,16 @@ class ProfileUpdateRequest extends FormRequest
         if ($this->has('ic_number')) {
             $this->merge(['ic_number' => User::normalizeIc($this->input('ic_number'))]);
         }
+
+        if ($this->has('phone')) {
+            $this->merge(['phone' => Malaysia::normalizePhone($this->input('phone'))]);
+        }
+
+        if ($this->has('emergency_contact_phone')) {
+            $this->merge([
+                'emergency_contact_phone' => Malaysia::normalizePhone($this->input('emergency_contact_phone')),
+            ]);
+        }
     }
 
     public function rules(): array
@@ -29,8 +40,16 @@ class ProfileUpdateRequest extends FormRequest
             $icRule[] = 'regex:'.User::IC_VALIDATION_REGEX;
         }
 
+        $requiresAddress = $this->filled('address_1')
+            || $this->filled('address_2')
+            || $this->filled('postcode')
+            || $this->filled('district')
+            || $this->filled('city')
+            || $this->filled('state');
+
         return [
             'name' => ['required', 'string', 'max:255'],
+            'salutation' => ['nullable', 'string', 'max:40'],
             'email' => [
                 'required',
                 'string',
@@ -40,7 +59,7 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
             'ic_number' => $icRule,
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'regex:/^0[0-9]{8,10}$/'],
             'dob' => ['nullable', 'date'],
             'education_level' => ['nullable', 'string', 'max:120'],
             'current_profession' => ['nullable', 'string', 'max:120'],
@@ -55,11 +74,12 @@ class ProfileUpdateRequest extends FormRequest
             'marital_status' => ['nullable', 'in:bujang,berkahwin,bercerai,duda/janda'],
             'address_1' => ['nullable', 'string', 'max:255'],
             'address_2' => ['nullable', 'string', 'max:255'],
-            'postcode' => ['nullable', 'string', 'max:5'],
+            'postcode' => $requiresAddress ? ['required', 'digits:5'] : ['nullable', 'digits:5'],
+            'district' => $requiresAddress ? ['required', 'string', 'max:100'] : ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
-            'state' => ['nullable', 'string', 'max:100'],
+            'state' => $requiresAddress ? ['required', 'string', 'max:100'] : ['nullable', 'string', 'max:100'],
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
-            'emergency_contact_phone' => ['nullable', 'string', 'max:30'],
+            'emergency_contact_phone' => ['nullable', 'string', 'regex:/^0[0-9]{8,10}$/'],
             'topics' => ['nullable', 'string'],
         ];
     }

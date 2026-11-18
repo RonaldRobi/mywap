@@ -51,23 +51,29 @@ class _AdminAttendanceDetailScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Sahkan Kehadiran'),
+        title: Text(context.l10n.adminConfirmAttendanceTitle),
         content: Text(
-          'Tandakan kehadiran peserta ini sekarang?\n\n'
-          'Nama: ${registration.name.isEmpty ? "Peserta" : registration.name}\n'
-          '${registration.memberNo.isNotEmpty ? "No. Ahli: ${registration.memberNo}" : ""}',
+          [
+            context.l10n.adminConfirmAttendanceBody(
+              registration.name.isEmpty
+                  ? context.l10n.adminMemberFallback
+                  : registration.name,
+            ),
+            if (registration.memberNo.isNotEmpty)
+              context.l10n.adminMemberNoPrefix(registration.memberNo),
+          ].join('\n'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text('Batal'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogCtx, true),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.movementGreen,
             ),
-            child: const Text('Sahkan Hadir'),
+            child: Text(context.l10n.adminConfirmPresentButton),
           ),
         ],
       ),
@@ -98,7 +104,11 @@ class _AdminAttendanceDetailScreenState
         SnackBar(
           content: Text(
             result.isOk
-                ? 'Kehadiran ${registration.name.isEmpty ? "peserta" : registration.name} berjaya disahkan.'
+                ? context.l10n.adminAttendanceConfirmed(
+                  registration.name.isEmpty
+                      ? context.l10n.adminMemberFallback
+                      : registration.name,
+                )
                 : result.message,
           ),
           backgroundColor: result.isOk ? AppColors.movementDarkGreen : AppColors.error,
@@ -115,8 +125,8 @@ class _AdminAttendanceDetailScreenState
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ralat merekod kehadiran.'),
+        SnackBar(
+          content: Text(context.l10n.adminAttendanceRecordFailed),
           backgroundColor: AppColors.error,
         ),
       );
@@ -143,7 +153,7 @@ class _AdminAttendanceDetailScreenState
                   ),
                   const SizedBox(width: Spacing.sm),
                   Text(
-                    'Peserta Telah Hadir',
+                    sheetCtx.l10n.adminParticipantPresent,
                     style: Theme.of(sheetCtx).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -157,13 +167,15 @@ class _AdminAttendanceDetailScreenState
               ),
               if (registration.memberNo.isNotEmpty)
                 Text(
-                  'No. Ahli: ${registration.memberNo}',
+                  sheetCtx.l10n.adminMemberNoPrefix(registration.memberNo),
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),
               const SizedBox(height: Spacing.sm),
               if (registration.attendedAt != null)
                 Text(
-                  'Waktu Hadir: ${Formatters.datetime(registration.attendedAt)}',
+                  sheetCtx.l10n.adminAttendedTime(
+                    Formatters.datetime(registration.attendedAt),
+                  ),
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),
               const SizedBox(height: Spacing.lg),
@@ -172,7 +184,7 @@ class _AdminAttendanceDetailScreenState
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
                 ),
-                child: const Text('Tutup'),
+                child: Text(sheetCtx.l10n.close),
               ),
             ],
           ),
@@ -194,7 +206,7 @@ class _AdminAttendanceDetailScreenState
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_rounded),
-            tooltip: 'Buka Pengimbas Pantas',
+            tooltip: context.l10n.adminOpenFastScanner,
             onPressed: _openFastScanner,
           ),
         ],
@@ -335,7 +347,7 @@ class _AttendanceContent extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             decoration: InputDecoration(
-              hintText: 'Cari nama, No. Ahli atau No. KP...',
+              hintText: context.l10n.adminSearchAttendanceHint,
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: searchQuery.isNotEmpty
                   ? IconButton(
@@ -370,17 +382,17 @@ class _AttendanceContent extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
             children: [
               _FilterChip(
-                label: 'Semua (${data.registrations.length})',
+                label: context.l10n.adminFilterAllCount(data.registrations.length),
                 selected: filter == 'all',
                 onTap: () => onFilterChanged('all'),
               ),
               _FilterChip(
-                label: 'Hadir (${data.attendedCount})',
+                label: context.l10n.adminFilterPresentCount(data.attendedCount),
                 selected: filter == 'attended',
                 onTap: () => onFilterChanged('attended'),
               ),
               _FilterChip(
-                label: 'Belum Hadir ($unattendedCount)',
+                label: context.l10n.adminFilterNotPresentCount(unattendedCount),
                 selected: filter == 'unattended',
                 onTap: () => onFilterChanged('unattended'),
               ),
@@ -396,9 +408,9 @@ class _AttendanceContent extends StatelessWidget {
               ? EmptyState(
                   icon: Icons.event_seat_outlined,
                   message: searchQuery.isNotEmpty
-                      ? 'Tiada peserta sepadan dengan carian.'
+                      ? context.l10n.adminNoParticipantsMatch
                       : (filter == 'unattended'
-                          ? 'Semua peserta telah hadir!'
+                          ? context.l10n.adminAllParticipantsPresent
                           : context.l10n.adminNoRegistrations),
                 )
               : ListView.builder(
@@ -556,7 +568,7 @@ class _RegistrationCard extends StatelessWidget {
           Formatters.datetime(registration.attendedAt),
         )
       else if (!registration.attended)
-        'Ketik untuk sahkan hadir',
+        context.l10n.adminTapToConfirmPresent,
     ];
 
     return ListCard(
@@ -605,7 +617,7 @@ class _RegistrationCard extends StatelessWidget {
             Text(
               registration.attended
                   ? context.l10n.adminAttendedLabel
-                  : 'Belum Hadir',
+                  : context.l10n.adminNotPresentLabel,
               style: TextStyle(
                 color: registration.attended
                     ? AppColors.movementNavy

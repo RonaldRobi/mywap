@@ -77,7 +77,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
       lastDate: DateTime(now.year + 5),
     );
     if (date == null) return;
-    _setValue(questionId, _formatDate(date));
+    _setValue(questionId, Formatters.shortDate(date));
   }
 
   Future<void> _pickFile(int questionId) async {
@@ -387,20 +387,3 @@ class _FormSkeleton extends StatelessWidget {
   }
 }
 
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mac',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Ogo',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dis',
-];
-
-String _formatDate(DateTime value) =>
-    '${value.day} ${_months[value.month - 1]} ${value.year}';

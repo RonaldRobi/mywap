@@ -182,6 +182,7 @@ class MemberCoreService
                 'file_path' => $item->file_path,
                 'cover_image_path' => $item->cover_image_path,
                 'category' => $item->category,
+                'share_url' => \App\Support\ShareUrl::route('share.pustaka', $item),
             ])
             ->all();
     }

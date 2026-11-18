@@ -93,7 +93,7 @@ ApiException mapApiError(DioException error) {
       code: ApiErrorCode.tooManyRequests,
     ),
     _ => ApiException(
-      message ?? 'Ralat tidak dijangka. Sila cuba lagi.',
+      message ?? currentAppLocalizations.unexpectedErrorRetry,
       statusCode: status,
     ),
   };

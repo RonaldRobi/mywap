@@ -8,6 +8,7 @@ Route::middleware(['auth:sanctum', 'api_admin'])->group(function () {
     Route::get('/admin/events', [AdminController::class, 'events']);
     Route::get('/admin/members', [AdminController::class, 'members']);
     Route::patch('/admin/members/{user}/toggle-active', [AdminController::class, 'toggleMemberActive']);
+    Route::post('/admin/members/{user}/reset-password', [AdminController::class, 'resetMemberPassword']);
     Route::delete('/admin/members/{user}', [AdminController::class, 'destroyMember']);
     Route::get('/admin/fees', [AdminController::class, 'fees']);
     Route::get('/admin/attendance/registrations', [AdminController::class, 'attendance']);

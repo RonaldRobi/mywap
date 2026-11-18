@@ -7,24 +7,30 @@ class MediaStatement {
     required this.id,
     this.title,
     this.featuredImage,
+    this.organizationName,
     this.publishedDate,
     this.detailUrl,
+    this.shareUrl,
     this.pdfUrl,
   });
 
   final int id;
   final String? title;
   final String? featuredImage;
+  final String? organizationName;
   final String? publishedDate;
   final String? detailUrl;
+  final String? shareUrl;
   final String? pdfUrl;
 
   factory MediaStatement.fromJson(Map<String, dynamic> json) => MediaStatement(
     id: parseIntValue(json['id']) ?? 0,
     title: json['title'] as String?,
     featuredImage: json['featured_image'] as String?,
+    organizationName: json['organization_name'] as String?,
     publishedDate: json['published_date'] as String?,
     detailUrl: json['detail_url'] as String?,
+    shareUrl: json['share_url'] as String?,
     pdfUrl: json['pdf_url'] as String?,
   );
 }

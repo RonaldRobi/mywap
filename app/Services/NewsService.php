@@ -8,6 +8,7 @@ use App\Models\NewsPostComment;
 use App\Models\NewsPostReaction;
 use App\Models\User;
 use App\Models\UserBlock;
+use App\Support\ShareUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -35,6 +36,7 @@ class NewsService
             'organization_name' => $post->organization?->name ?? 'Semua Organisasi',
             'category_name' => $post->category?->name ?? 'Umum',
             'published_at' => $post->published_at?->toDateTimeString(),
+            'share_url' => ShareUrl::route('share.info', $post),
             'likes_count' => (int) ($post->likes_count ?? 0),
             'dislikes_count' => (int) ($post->dislikes_count ?? 0),
             'comments_count' => (int) ($post->comments_count ?? 0),
@@ -149,6 +151,7 @@ class NewsService
                 'cover_image_path' => $post->cover_image_path,
                 'published_at' => $post->published_at?->toDateTimeString(),
                 'organization_name' => $post->organization?->name ?? 'Semua Organisasi',
+                'share_url' => ShareUrl::route('share.info', $post),
                 'category' => $post->category ? [
                     'id' => $post->category->id,
                     'name' => $post->category->name,

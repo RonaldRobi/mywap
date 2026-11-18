@@ -10,7 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/referral_providers.dart';
 import '../data/models/referral_data.dart';
@@ -28,9 +28,10 @@ class ReferralScreen extends ConsumerWidget {
     final dataAsync = ref.watch(referralDataProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.group_add_outlined,
+        semanticLabel: context.l10n.referralTitle,
+        showBack: true,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(

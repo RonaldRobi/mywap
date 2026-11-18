@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/organic_canvas_background.dart';
@@ -803,10 +804,10 @@ class _MediaStatementsSection extends StatelessWidget {
           path: '/media-statements',
         ),
         if (items.isEmpty)
-          const _EmptyHint(message: 'Belum ada kenyataan media.')
+          _EmptyHint(message: context.l10n.mediaStatementsEmpty)
         else
           SizedBox(
-            height: 104,
+            height: 300,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
@@ -828,43 +829,69 @@ class _MediaStatementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 250,
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
+      width: 175,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: AppRadius.card,
         child: InkWell(
+          borderRadius: AppRadius.card,
           onTap: () => context.push('/media-statements/${item.id}'),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 88,
-                height: 104,
-                child:
-                    item.featuredImage == null
-                        ? const ColoredBox(
-                          color: AppColors.greenTint,
-                          child: Icon(Icons.campaign_outlined),
-                        )
-                        : AppImage(
-                          item.featuredImage,
-                          fit: BoxFit.cover,
-                          borderRadius: BorderRadius.zero,
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: 4 / 5,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (item.featuredImage?.isNotEmpty == true)
+                        AppImage(item.featuredImage, fit: BoxFit.cover)
+                      else
+                        Container(color: AppColors.paleGreen),
+                      const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [AppColors.scrim, Colors.transparent],
+                          ),
                         ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(Spacing.sm),
-                  child: Text(
-                    item.title ?? '-',
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      ),
+                      Positioned(
+                        left: Spacing.sm,
+                        right: Spacing.sm,
+                        bottom: Spacing.sm,
+                        child: Text(
+                          item.organizationName ?? context.l10n.newsAllOrganizations,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: AppTextTheme.minSize,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: Text(
+                      item.title ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

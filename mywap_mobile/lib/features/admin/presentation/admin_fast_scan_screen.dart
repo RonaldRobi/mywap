@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -66,6 +67,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
   Future<void> _processScan(String identifier) async {
     final eventId = _selectedEventId;
     if (eventId == null || _isProcessing) return;
+    final l10n = context.l10n;
 
     setState(() => _isProcessing = true);
     HapticFeedback.lightImpact();
@@ -79,11 +81,15 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
       ref.invalidate(adminDashboardProvider);
 
       final reg = result.registration;
-      final name = reg?.name ?? 'Ahli';
+      final name = reg?.name ?? l10n.adminMemberFallback;
       final memberNo = reg?.memberNo ?? '';
       final msg = result.isOk
-          ? '$name ($memberNo) - Kehadiran Berjaya Direkodkan'
-          : (result.message.isNotEmpty ? result.message : 'Imbasan tidak berjaya.');
+          ? (memberNo.isEmpty
+              ? l10n.adminCheckInRecordedName(name)
+              : l10n.adminCheckInRecorded(name, memberNo))
+          : (result.message.isNotEmpty
+              ? result.message
+              : l10n.adminScanNotSuccessful);
 
       _setFeedback(msg, result.isOk);
       if (result.isOk) {
@@ -93,7 +99,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
       _setFeedback(e.message, false);
       HapticFeedback.heavyImpact();
     } catch (_) {
-      _setFeedback('Ralat semasa merekod kehadiran. Sila cuba lagi.', false);
+      _setFeedback(l10n.adminAttendanceRecordError, false);
       HapticFeedback.heavyImpact();
     } finally {
       // Jeda 1.8 saat sebelum menerima imbasan seterusnya supaya tidak terimbas kod yang sama dua kali
@@ -152,24 +158,24 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
               ),
               const SizedBox(height: Spacing.md),
               Text(
-                'Kemasukan Manual',
+                sheetContext.l10n.adminManualEntry,
                 style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Masukkan No. Kad Pengenalan (12 digit), No. Ahli, atau No. Telefon ahli.',
+              Text(
+                sheetContext.l10n.adminManualEntryHint,
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: Spacing.lg),
               TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'No. IC / No. Ahli / Telefon',
-                  hintText: 'Cth: 880123015566 atau PKPIM-0012',
-                  prefixIcon: Icon(Icons.person_search_outlined),
+                decoration: InputDecoration(
+                  labelText: sheetContext.l10n.adminIcMemberPhoneLabel,
+                  hintText: sheetContext.l10n.adminIcMemberPhoneExample,
+                  prefixIcon: const Icon(Icons.person_search_outlined),
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (val) => Navigator.of(sheetContext).pop(val.trim()),
@@ -180,7 +186,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
                 ),
-                child: const Text('Sahkan Kehadiran'),
+                child: Text(sheetContext.l10n.adminConfirmAttendanceTitle),
               ),
             ],
           ),
@@ -202,11 +208,11 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black.withValues(alpha: 0.8),
         foregroundColor: AppColors.white,
-        title: const Text('Pengimbas Kad Kehadiran'),
+        title: Text(context.l10n.adminAttendanceCardScanner),
         actions: [
           IconButton(
             icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
-            tooltip: 'Lampu Kilat',
+            tooltip: context.l10n.adminTorch,
             onPressed: () {
               setState(() => _torchOn = !_torchOn);
               _scannerController.toggleTorch();
@@ -214,7 +220,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.flip_camera_ios_outlined),
-            tooltip: 'Tukar Kamera',
+            tooltip: context.l10n.adminSwitchCamera,
             onPressed: () => _scannerController.switchCamera(),
           ),
         ],
@@ -233,20 +239,20 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                     children: [
                       const Icon(Icons.event_busy, color: AppColors.textSecondary, size: 48),
                       const SizedBox(height: Spacing.md),
-                      const Text(
-                        'Tiada Program Berjadual',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                      Text(
+                        context.l10n.adminNoScheduledPrograms,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                       const SizedBox(height: Spacing.xs),
-                      const Text(
-                        'Tiada acara berjadual untuk cawangan/organisasi anda buat masa ini.',
+                      Text(
+                        context.l10n.adminNoScheduledProgramsBody,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                       ),
                       const SizedBox(height: Spacing.lg),
                       OutlinedButton(
                         onPressed: () => context.pop(),
-                        child: const Text('Kembali'),
+                        child: Text(context.l10n.back),
                       ),
                     ],
                   ),
@@ -331,7 +337,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                               return DropdownMenuItem<int>(
                                 value: ev.id,
                                 child: Text(
-                                  ev.title ?? 'Program',
+                                  ev.title ?? context.l10n.adminProgramFallback,
                                   style: const TextStyle(
                                     color: AppColors.white,
                                     fontSize: 14,
@@ -351,7 +357,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.list_alt, color: AppColors.white, size: 20),
-                        tooltip: 'Senarai Peserta',
+                        tooltip: context.l10n.adminParticipantList,
                         onPressed: () {
                           if (currentEvent.id != null) {
                             context.push('/admin/attendance/${currentEvent.id}');
@@ -413,8 +419,8 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                           color: Colors.black.withValues(alpha: 0.65),
                           borderRadius: AppRadius.pill,
                         ),
-                        child: const Text(
-                          'Halakan kamera ke Kod QR Kad Keahlian',
+                        child: Text(
+                          context.l10n.adminPointCameraMemberCardQr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white70,
@@ -439,9 +445,9 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                     shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
                   ),
                   icon: const Icon(Icons.keyboard_alt_outlined),
-                  label: const Text(
-                    'Input Manual (No. IC / Kad)',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  label: Text(
+                    context.l10n.adminManualInput,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -453,7 +459,7 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
         ),
         error: (e, _) => Center(
           child: ErrorRetry(
-            message: e is ApiException ? e.message : 'Ralat memuatkan acara.',
+            message: e is ApiException ? e.message : context.l10n.adminLoadEventsFailed,
             onRetry: () => ref.invalidate(adminUpcomingEventsProvider),
           ),
         ),

@@ -125,7 +125,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Info Terkini'), findsOneWidget);
+      expect(find.byIcon(Icons.newspaper_outlined), findsWidgets);
       expect(find.text('Muktamar Tahunan 2026'), findsOneWidget);
       expect(find.text('Umum'), findsOneWidget);
     });

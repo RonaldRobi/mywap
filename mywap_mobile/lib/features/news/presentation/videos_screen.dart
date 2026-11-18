@@ -6,7 +6,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
@@ -23,9 +23,10 @@ class VideosScreen extends ConsumerWidget {
     final async = ref.watch(videosProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.play_circle_outline,
+        semanticLabel: context.l10n.videoTitle,
+        showBack: true,
       ),
       body: async.when(
         data:

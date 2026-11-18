@@ -31,6 +31,7 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
   final _scrollController = ScrollController();
   Timer? _debounce;
   String _status = '';
+  String _sort = '';
 
   @override
   void initState() {
@@ -67,6 +68,12 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     ref.read(adminMembersControllerProvider.notifier).setStatus(status);
   }
 
+  void _selectSort(String sort) {
+    if (_sort == sort) return;
+    setState(() => _sort = sort);
+    ref.read(adminMembersControllerProvider.notifier).setSort(sort);
+  }
+
   void _showDetail(AdminMember member) {
     showModalBottomSheet<void>(
       context: context,
@@ -78,6 +85,7 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
                 ref.read(currentUserProvider)?.roles?.contains('Superadmin') ??
                 false,
             onToggleActive: () => _toggleActive(member),
+            onResetPassword: () => _resetPassword(member),
             onDelete: () => _deleteMember(member),
           ),
     );
@@ -87,6 +95,62 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _resetPassword(AdminMember member) async {
+    final id = member.id;
+    if (id == null) return;
+
+    final passwordController = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(context.l10n.adminResetPasswordTitle),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: context.l10n.adminNewPasswordLabel,
+              helperText: context.l10n.adminPasswordMinHint,
+            ),
+            onSubmitted: (value) {
+              if (value.length >= 8) {
+                Navigator.of(dialogContext).pop(value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.adminCancelButton),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = passwordController.text;
+                if (value.length >= 8) {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+              child: Text(context.l10n.adminResetButton),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null || !mounted) return;
+    try {
+      await ref
+          .read(adminMembersControllerProvider.notifier)
+          .resetPassword(id, result);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _snack(context.l10n.adminPasswordReset);
+    } on ApiException catch (e) {
+      if (mounted) _snack(e.message);
+    }
   }
 
   Future<void> _toggleActive(AdminMember member) async {
@@ -176,7 +240,37 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
     final state = ref.watch(adminMembersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.adminMembersTitle)),
+      appBar: AppBar(
+        title: Text(context.l10n.adminMembersTitle),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: context.l10n.adminSortTooltip,
+            icon: const Icon(Icons.sort),
+            onSelected: _selectSort,
+            initialValue: _sort,
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: '',
+                    child: Text(context.l10n.adminSortNewest),
+                  ),
+                  PopupMenuItem(
+                    value: 'oldest',
+                    child: Text(context.l10n.adminSortOldest),
+                  ),
+                  PopupMenuItem(
+                    value: 'name_asc',
+                    child: Text(context.l10n.adminSortNameAsc),
+                  ),
+                  PopupMenuItem(
+                    value: 'name_desc',
+                    child: Text(context.l10n.adminSortNameDesc),
+                  ),
+                ],
+          ),
+          const SizedBox(width: Spacing.xs),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -353,12 +447,14 @@ class _MemberDetailSheet extends StatelessWidget {
     required this.member,
     required this.canDelete,
     required this.onToggleActive,
+    required this.onResetPassword,
     required this.onDelete,
   });
 
   final AdminMember member;
   final bool canDelete;
   final VoidCallback onToggleActive;
+  final VoidCallback onResetPassword;
   final VoidCallback onDelete;
 
   @override
@@ -436,14 +532,17 @@ class _MemberDetailSheet extends StatelessWidget {
                     ),
                     OutlinedButton.icon(
                       onPressed: () {
-                        final cleanPhone = member.phone.replaceAll(RegExp(r'\s+'), '');
+                        final cleanPhone = member.phone.replaceAll(
+                          RegExp(r'\s+'),
+                          '',
+                        );
                         launchUrl(
                           Uri.parse('tel:$cleanPhone'),
                           mode: LaunchMode.externalApplication,
                         );
                       },
                       icon: const Icon(Icons.phone_outlined, size: 16),
-                      label: const Text('Panggil'),
+                      label: Text(context.l10n.callLabel),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 36),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -463,7 +562,7 @@ class _MemberDetailSheet extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.email_outlined, size: 16),
-                      label: const Text('Emel'),
+                      label: Text(context.l10n.emailLabel),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 36),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -517,6 +616,15 @@ class _MemberDetailSheet extends StatelessWidget {
                       ? context.l10n.adminDeactivateMemberButton
                       : context.l10n.adminReactivateMemberButton,
                 ),
+              ),
+            ),
+            const SizedBox(height: Spacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onResetPassword,
+                icon: const Icon(Icons.lock_reset_outlined),
+                label: Text(context.l10n.adminResetPasswordTitle),
               ),
             ),
             if (canDelete) ...[

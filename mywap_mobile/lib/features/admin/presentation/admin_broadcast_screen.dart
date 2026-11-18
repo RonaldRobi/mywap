@@ -95,28 +95,28 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
 
     if (isSuperadmin) {
       audienceItems.addAll([
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'all',
-          child: Text('Semua Pengguna Gerakan (Rentas NGO)'),
+          child: Text(context.l10n.adminAudienceAllNgo),
         ),
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'org',
-          child: Text('Mengikut Organisasi Tertentu'),
+          child: Text(context.l10n.adminAudienceSpecificOrg),
         ),
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'usrah',
-          child: Text('Semua Kumpulan Usrah'),
+          child: Text(context.l10n.adminAudienceAllUsrah),
         ),
       ]);
     } else if (isBranchAdmin) {
       audienceItems.addAll([
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'members',
-          child: Text('Semua Ahli Cawangan Saya'),
+          child: Text(context.l10n.adminAudienceMyBranchMembers),
         ),
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'usrah',
-          child: Text('Kumpulan Usrah Cawangan Saya'),
+          child: Text(context.l10n.adminAudienceMyBranchUsrah),
         ),
       ]);
     } else {
@@ -126,13 +126,13 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
           value: 'members',
           child: Text(
             user?.organizationName != null
-                ? 'Semua Ahli ${user!.organizationName}'
-                : 'Semua Ahli Organisasi',
+                ? context.l10n.adminAudienceOrgMembers(user!.organizationName!)
+                : context.l10n.adminAudienceOrgMembersFallback,
           ),
         ),
-        const DropdownMenuItem(
+        DropdownMenuItem(
           value: 'usrah',
-          child: Text('Kumpulan Usrah Organisasi'),
+          child: Text(context.l10n.adminAudienceOrgUsrah),
         ),
       ]);
     }
@@ -174,14 +174,14 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user?.adminRoleTitle ?? 'Pentadbir Sistem',
+                            user?.adminRoleTitle ?? context.l10n.adminSystemAdministrator,
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),
                           ),
                           Text(
-                            'Siaran dihantar sebagai notifikasi in-app rasmi kepada sasaran terpilih.',
+                            context.l10n.adminBroadcastHint,
                             style: TextStyle(
                               fontSize: 11,
                               color: AppColors.textSecondary,
@@ -266,9 +266,9 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
               const SizedBox(height: Spacing.lg),
               DropdownButtonFormField<int>(
                 value: _selectedOrgId,
-                decoration: const InputDecoration(
-                  labelText: 'Pilih Organisasi Sasaran',
-                  prefixIcon: Icon(
+                decoration: InputDecoration(
+                  labelText: context.l10n.adminSelectTargetOrg,
+                  prefixIcon: const Icon(
                     Icons.apartment,
                     color: AppColors.textSecondary,
                   ),
@@ -281,7 +281,7 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
                   DropdownMenuItem(value: 3, child: Text('WADAH')),
                 ],
                 validator: (val) =>
-                    val == null ? 'Sila pilih salah satu organisasi.' : null,
+                    val == null ? context.l10n.adminSelectOrgError : null,
                 onChanged: (value) => setState(() => _selectedOrgId = value),
               ),
             ],

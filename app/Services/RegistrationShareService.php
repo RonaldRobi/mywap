@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\ShareUrl;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class RegistrationShareService
@@ -23,7 +24,7 @@ class RegistrationShareService
         return $context + [
             'qr_svg' => $this->qrSvg($context['register_url']),
             'qr_png_url' => route('admin.jemput-ahli.qr', $query),
-            'poster_url' => route('share.register.image', $query),
+            'poster_url' => ShareUrl::route('share.register.image', $query),
             'poster_download_url' => route('admin.jemput-ahli.poster', $query),
         ];
     }
@@ -33,13 +34,13 @@ class RegistrationShareService
         $organizationName = $organization?->name ?? 'myWAP';
 
         $registerParams = $referralCode ? ['ref' => $referralCode] : [];
-        $registerUrl = route('register', $registerParams);
+        $registerUrl = ShareUrl::route('register', $registerParams);
 
         $shareParams = array_filter([
             'org' => $organization?->slug,
             'ref' => $referralCode,
         ]);
-        $shareUrl = route('share.register', $shareParams);
+        $shareUrl = ShareUrl::route('share.register', $shareParams);
 
         $title = $organization
             ? "Jemput Ahli {$organizationName}"

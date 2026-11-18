@@ -7,7 +7,6 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
-import '../../../shared/theme/app_text_theme.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
@@ -52,7 +51,7 @@ class AdminDashboardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            tooltip: 'Notifikasi',
+            tooltip: context.l10n.adminDashboardNotificationsTooltip,
             onPressed: () => context.push('/notifications'),
           ),
         ],
@@ -60,12 +59,14 @@ class AdminDashboardScreen extends ConsumerWidget {
       body: dashboardAsync.when(
         data: (data) => _DashboardContent(user: user, data: data),
         loading: () => const _DashboardSkeleton(),
-        error: (error, _) => ErrorRetry(
-          message: error is ApiException
-              ? error.message
-              : context.l10n.adminUnexpectedError,
-          onRetry: () => ref.invalidate(adminDashboardProvider),
-        ),
+        error:
+            (error, _) => ErrorRetry(
+              message:
+                  error is ApiException
+                      ? error.message
+                      : context.l10n.adminUnexpectedError,
+              onRetry: () => ref.invalidate(adminDashboardProvider),
+            ),
       ),
     );
   }
@@ -130,10 +131,8 @@ class _DashboardContent extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (data.revenueValues.length >= 2) ...[
-                        _buildRevenueTrend(data.revenueValues),
-                        const SizedBox(height: Spacing.md),
-                      ],
+                      _RevenueHeader(values: data.revenueValues),
+                      const SizedBox(height: Spacing.md),
                       _RevenueChart(
                         labels: data.revenueLabels,
                         values: data.revenueValues,
@@ -172,18 +171,18 @@ class _DashboardContent extends ConsumerWidget {
                 borderRadius: AppRadius.md,
                 border: Border.all(color: AppColors.divider),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.laptop_chromebook_rounded,
                     color: AppColors.textSecondary,
                     size: 20,
                   ),
-                  SizedBox(width: Spacing.sm),
+                  const SizedBox(width: Spacing.sm),
                   Expanded(
                     child: Text(
-                      'Operasi pendaftaran pukal, import fail CSV, dan konfigurasi sistem boleh diuruskan melalui portal web rasmi MyWAP.',
-                      style: TextStyle(
+                      context.l10n.adminWebPortalNote,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -213,47 +212,6 @@ class _DashboardContent extends ConsumerWidget {
       ),
     ),
   );
-
-  Widget _buildRevenueTrend(List<double> values) {
-    final current = values.last;
-    final previous = values[values.length - 2];
-    if (previous <= 0) return const SizedBox.shrink();
-
-    final diff = current - previous;
-    final pct = ((diff / previous) * 100).round();
-    final isPositive = diff >= 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isPositive ? AppColors.paleGreen : AppColors.surfaceMuted,
-        borderRadius: AppRadius.pill,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-            size: 16,
-            color: isPositive ? AppColors.movementDarkGreen : AppColors.textSecondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            isPositive
-                ? '+$pct% berbanding bulan lepas'
-                : '$pct% berbanding bulan lepas',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isPositive
-                  ? AppColors.movementDarkGreen
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Kad pengenalan peranan & skop tanggungjawab admin
@@ -275,19 +233,28 @@ class _RoleBanner extends StatelessWidget {
     if (isSuper) {
       badgeBg = const Color(0xFF1E293B);
       badgeText = AppColors.white;
-      scopeDesc = 'Akses penuh ekosistem 3 NGO: PKPIM, ABIM & WADAH';
+      scopeDesc = context.l10n.adminFullAccessScope;
     } else if (isBranch) {
       badgeBg = AppColors.accentTint;
       badgeText = AppColors.warning;
-      scopeDesc = 'Skop Cawangan: ${user.branch_name ?? 'Cawangan Anda'}';
+      scopeDesc = context.l10n.adminBranchScope(
+        user.branch_name ?? context.l10n.adminDefaultBranch,
+      );
     } else {
       badgeBg = AppColors.paleGreen;
       badgeText = AppColors.movementDarkGreen;
-      scopeDesc = 'Skop Organisasi: ${user.organization?.name ?? 'Organisasi'}';
+      scopeDesc = context.l10n.adminOrgScope(
+        user.organization?.name ?? context.l10n.adminDefaultOrg,
+      );
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lg,
+        Spacing.sm,
+        Spacing.lg,
+        Spacing.sm,
+      ),
       child: Container(
         padding: const EdgeInsets.all(Spacing.md),
         decoration: BoxDecoration(
@@ -300,13 +267,16 @@ class _RoleBanner extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: isSuper
-                  ? const Color(0xFF1E293B)
-                  : (isBranch ? AppColors.accent : AppColors.movementGreen),
+              backgroundColor:
+                  isSuper
+                      ? const Color(0xFF1E293B)
+                      : (isBranch ? AppColors.accent : AppColors.movementGreen),
               child: Icon(
                 isSuper
                     ? Icons.shield_outlined
-                    : (isBranch ? Icons.domain_rounded : Icons.account_balance_rounded),
+                    : (isBranch
+                        ? Icons.domain_rounded
+                        : Icons.account_balance_rounded),
                 color: AppColors.white,
                 size: 22,
               ),
@@ -319,7 +289,10 @@ class _RoleBanner extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: badgeBg,
                           borderRadius: AppRadius.pill,
@@ -369,13 +342,16 @@ class _HeroEventDesk extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.sm, Spacing.lg, Spacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        Spacing.lg,
+        Spacing.sm,
+        Spacing.lg,
+        Spacing.sm,
+      ),
       child: Card(
         margin: EdgeInsets.zero,
         color: AppColors.movementNavy,
-        shape: const RoundedRectangleBorder(
-          borderRadius: AppRadius.card,
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.all(Spacing.lg),
           child: Column(
@@ -384,19 +360,26 @@ class _HeroEventDesk extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.movementSoftGreen,
                       borderRadius: AppRadius.pill,
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fiber_manual_record, color: AppColors.movementNavy, size: 10),
-                        SizedBox(width: 4),
+                        const Icon(
+                          Icons.fiber_manual_record,
+                          color: AppColors.movementNavy,
+                          size: 10,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          'MEJA PENDAFTARAN',
-                          style: TextStyle(
+                          context.l10n.adminRegistrationDesk,
+                          style: const TextStyle(
                             color: AppColors.movementNavy,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -409,7 +392,7 @@ class _HeroEventDesk extends StatelessWidget {
                   const Spacer(),
                   if (activeEvent.rsvp_count != null)
                     Text(
-                      '${activeEvent.rsvp_count} Peserta',
+                      context.l10n.adminParticipantsCount(activeEvent.rsvp_count!),
                       style: const TextStyle(
                         color: AppColors.movementOffWhite,
                         fontSize: 12,
@@ -420,7 +403,7 @@ class _HeroEventDesk extends StatelessWidget {
               ),
               const SizedBox(height: Spacing.md),
               Text(
-                activeEvent.title ?? 'Program',
+                activeEvent.title ?? context.l10n.adminProgramFallback,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w700,
@@ -448,12 +431,14 @@ class _HeroEventDesk extends StatelessWidget {
                         backgroundColor: AppColors.movementGreen,
                         foregroundColor: AppColors.white,
                         minimumSize: const Size.fromHeight(48),
-                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.md,
+                        ),
                       ),
                       icon: const Icon(Icons.qr_code_scanner, size: 20),
-                      label: const Text(
-                        'Imbas Kad Peserta',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                      label: Text(
+                        context.l10n.adminScanParticipantCard,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -470,11 +455,13 @@ class _HeroEventDesk extends StatelessWidget {
                         foregroundColor: AppColors.white,
                         side: const BorderSide(color: AppColors.divider),
                         minimumSize: const Size.fromHeight(48),
-                        shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.md,
+                        ),
                       ),
-                      child: const Text(
-                        'Senarai',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        context.l10n.adminList,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -496,25 +483,25 @@ class _AdminActionsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       _ActionItem(
-        label: 'Imbas Kad',
+        label: context.l10n.adminScanCard,
         path: '/admin/scan',
         icon: Icons.qr_code_scanner_rounded,
         color: AppColors.movementGreen,
       ),
       _ActionItem(
-        label: 'Kehadiran',
+        label: context.l10n.adminAttendanceTitle,
         path: '/admin/attendance',
         icon: Icons.event_available_rounded,
         color: AppColors.movementDarkGreen,
       ),
       _ActionItem(
-        label: 'Direktori Ahli',
+        label: context.l10n.adminMemberDirectory,
         path: '/admin/members',
         icon: Icons.people_alt_rounded,
         color: const Color(0xFF1E293B),
       ),
       _ActionItem(
-        label: 'Yuran Ahli',
+        label: context.l10n.adminFeesTitle,
         path: '/admin/fees',
         icon: Icons.receipt_long_rounded,
         color: AppColors.warning,
@@ -600,22 +587,22 @@ class _StatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _StatCard(
-        label: 'Jumlah Ahli',
+        label: context.l10n.adminStatTotalMembers,
         value: '${stats.totalMembers}',
         icon: Icons.group_outlined,
       ),
       _StatCard(
-        label: 'Ahli Aktif',
+        label: context.l10n.adminStatActiveMembers,
         value: '${stats.activeMembers}',
         icon: Icons.verified_user_outlined,
       ),
       _StatCard(
-        label: 'Kutipan Yuran',
+        label: context.l10n.adminFeeCollection,
         value: Formatters.currency(stats.totalRevenue),
         icon: Icons.payments_outlined,
       ),
       _StatCard(
-        label: 'Program Akan Datang',
+        label: context.l10n.adminStatUpcomingEvents,
         value: '${stats.upcomingEvents}',
         icon: Icons.event_outlined,
       ),
@@ -691,11 +678,52 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _RevenueHeader extends StatelessWidget {
+  const _RevenueHeader({required this.values});
+  final List<double> values;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = values.fold<double>(0, (sum, v) => sum + v);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.adminSixMonthCollection,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                Formatters.currency(total),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.movementNavy,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _RevenueChart extends StatelessWidget {
   const _RevenueChart({required this.labels, required this.values});
 
   final List<String> labels;
   final List<double> values;
+
+  String _shortLabel(String label) {
+    final parts = label.trim().split(RegExp(r'\s+'));
+    return parts.isNotEmpty ? parts.first : label;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -707,9 +735,16 @@ class _RevenueChart extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: values[i],
-              color: AppColors.movementGreen,
-              width: 20,
-              borderRadius: const BorderRadius.all(Radius.circular(4)),
+              width: 18,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.movementSoftGreen, AppColors.movementGreen],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(5),
+                topRight: Radius.circular(5),
+              ),
             ),
           ],
         ),
@@ -719,10 +754,17 @@ class _RevenueChart extends StatelessWidget {
       height: 220,
       child: BarChart(
         BarChartData(
-          maxY: maxValue <= 0 ? 1 : maxValue * 1.25,
-          alignment: BarChartAlignment.spaceAround,
+          maxY: maxValue <= 0 ? 1 : maxValue * 1.2,
+          alignment: BarChartAlignment.spaceBetween,
           barGroups: groups,
-          gridData: const FlGridData(show: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval: maxValue <= 0 ? 1 : (maxValue * 1.2) / 4,
+            getDrawingHorizontalLine:
+                (_) =>
+                    const FlLine(color: AppColors.surfaceMuted, strokeWidth: 1),
+          ),
           borderData: FlBorderData(show: false),
           barTouchData: BarTouchData(
             enabled: true,
@@ -770,7 +812,7 @@ class _RevenueChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 34,
+                reservedSize: 28,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
                   if (index < 0 || index >= labels.length) {
@@ -779,9 +821,11 @@ class _RevenueChart extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      labels[index],
+                      _shortLabel(labels[index]),
+                      maxLines: 1,
                       style: const TextStyle(
-                        fontSize: AppTextTheme.minSize,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -817,10 +861,7 @@ class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.lg,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: 4),
       child: Card(
         margin: EdgeInsets.zero,
         color: AppColors.white,

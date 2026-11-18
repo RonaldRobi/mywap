@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -6,6 +7,7 @@ import '../../../shared/ic/malaysian_ic.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/validation/malaysian_phone.dart';
 import '../../../shared/widgets/dob_picker.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
@@ -40,7 +42,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     'name': TextEditingController(),
     'email': TextEditingController(),
     'phone': TextEditingController(),
-    'education_level': TextEditingController(),
     'current_profession': TextEditingController(),
     'industry': TextEditingController(),
     'locality': TextEditingController(),
@@ -50,8 +51,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     'address_1': TextEditingController(),
     'address_2': TextEditingController(),
     'postcode': TextEditingController(),
-    'city': TextEditingController(),
-    'state': TextEditingController(),
     'emergency_contact_name': TextEditingController(),
     'emergency_contact_phone': TextEditingController(),
   };
@@ -60,6 +59,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _dobFromIc = false;
   String? _gender;
   String? _maritalStatus;
+  String? _salutation;
+  String? _educationLevel;
+  String? _state;
+  String? _district;
   String? _organizationName;
   String? _currentBranchName;
   bool _isPublicInDirectory = true;
@@ -115,7 +118,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     fill('name', user.name);
     fill('email', user.email);
     fill('phone', user.phone);
-    fill('education_level', user.education_level);
     fill('current_profession', user.current_profession);
     fill('industry', user.industry);
     fill('locality', user.locality);
@@ -125,10 +127,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     fill('address_1', user.address_1);
     fill('address_2', user.address_2);
     fill('postcode', user.postcode);
-    fill('city', user.city);
-    fill('state', user.state);
     fill('emergency_contact_name', user.emergency_contact_name);
     fill('emergency_contact_phone', user.emergency_contact_phone);
+
+    _salutation = user.salutation;
+    _educationLevel = user.education_level;
+    _state = user.state;
+    _district = user.district ?? user.city;
 
     _dob = user.dob == null ? null : ProfileFormat.parseDate(user.dob!);
     if (_dob == null) {
@@ -145,6 +150,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final editMetaAsync = ref.watch(profileEditMetaProvider);
     final meta = editMetaAsync.valueOrNull;
     final branches = meta?.branches ?? const <ProfileBranch>[];
+    final salutations = _withCurrent(meta?.salutations ?? const [], _salutation);
+    final educationLevels =
+        _withCurrent(meta?.educationLevels ?? const [], _educationLevel);
+    final states = _withCurrent(meta?.states ?? const [], _state);
+    final districts = _districtOptions(
+      meta?.districts ?? const {},
+      _state,
+      _district,
+    );
 
     return Form(
       key: _formKey,
@@ -176,6 +190,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               label: context.l10n.fullNameLabel,
               required: true,
             ),
+            _optionField(
+              key: 'salutation',
+              label: context.l10n.salutationLabel,
+              value: _salutation,
+              options: _pairOptions(salutations),
+              onChanged: (value) => setState(() => _salutation = value),
+            ),
             _textField(
               'email',
               label: context.l10n.emailLabel,
@@ -186,6 +207,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               'phone',
               label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
+              isPhone: true,
+              inputFormatters: MalaysianPhone.inputFormatters,
+              maxLength: 11,
             ),
             _dobField(),
             _optionField(
@@ -204,9 +228,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ]),
           _section(context.l10n.educationProfessionSection, [
-            _textField(
-              'education_level',
+            _optionField(
+              key: 'education_level',
               label: context.l10n.educationLevelLabel,
+              value: _educationLevel,
+              options: _pairOptions(educationLevels),
+              onChanged:
+                  (value) => setState(() => _educationLevel = value),
             ),
             _textField(
               'current_profession',
@@ -242,10 +270,47 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _textField(
               'postcode',
               label: context.l10n.postcodeLabel,
+              required: true,
+              isPostcode: true,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(5),
+              ],
+              maxLength: 5,
             ),
-            _textField('city', label: context.l10n.cityLabel),
-            _textField('state', label: context.l10n.stateLabel),
+            _optionField(
+              key: 'state',
+              label: context.l10n.stateLabel,
+              value: _state,
+              options: _pairOptions(states),
+              required: true,
+              onChanged: (value) {
+                setState(() {
+                  _state = value;
+                  final options = _districtOptions(
+                    meta?.districts ?? const {},
+                    value,
+                  );
+                  if (_district != null && !options.contains(_district)) {
+                    _district = null;
+                  }
+                });
+              },
+            ),
+            _optionField(
+              key: 'district',
+              label: context.l10n.districtLabel,
+              value: _district,
+              options: _pairOptions(districts),
+              required: true,
+              enabled: _state != null,
+              hint:
+                  _state == null
+                      ? context.l10n.selectStateFirst
+                      : context.l10n.choose,
+              onChanged: (value) => setState(() => _district = value),
+            ),
           ]),
           _section(context.l10n.emergencySection, [
             _textField('emergency_contact_name', label: context.l10n.nameLabel),
@@ -253,6 +318,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               'emergency_contact_phone',
               label: context.l10n.phoneLabel,
               keyboardType: TextInputType.phone,
+              isPhone: true,
+              inputFormatters: MalaysianPhone.inputFormatters,
+              maxLength: 11,
             ),
           ]),
           const SizedBox(height: Spacing.md),
@@ -448,13 +516,40 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
+  List<String> _withCurrent(List<String> options, String? current) {
+    if (current == null ||
+        current.trim().isEmpty ||
+        options.contains(current)) {
+      return options;
+    }
+    return [...options, current];
+  }
+
+  List<String> _districtOptions(
+    Map<String, List<String>> districts,
+    String? state, [
+    String? current,
+  ]) {
+    final options =
+        state == null ? <String>[] : districts[state] ?? const <String>[];
+    return _withCurrent(options, current);
+  }
+
+  List<(String, String)> _pairOptions(List<String> values) => [
+    for (final value in values) (value, value),
+  ];
+
   Widget _textField(
     String key, {
     required String label,
     bool required = false,
     bool isEmail = false,
+    bool isPhone = false,
+    bool isPostcode = false,
     TextInputType? keyboardType,
     String? hint,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
@@ -462,10 +557,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         controller: _fields[key],
         keyboardType: keyboardType,
         textCapitalization: TextCapitalization.sentences,
+        inputFormatters: inputFormatters,
+        maxLength: maxLength,
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
           hintText: hint,
           errorText: _serverErrors[key],
+          counterText: '',
         ),
         validator: (value) {
           final trimmed = value?.trim() ?? '';
@@ -476,6 +574,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               trimmed.isNotEmpty &&
               !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed)) {
             return context.l10n.emailInvalidEdit;
+          }
+          if (isPhone && trimmed.isNotEmpty && !MalaysianPhone.isValid(trimmed)) {
+            return context.l10n.phoneInvalid;
+          }
+          if (isPostcode &&
+              trimmed.isNotEmpty &&
+              !RegExp(r'^\d{5}$').hasMatch(trimmed)) {
+            return context.l10n.postcodeInvalid;
           }
           return null;
         },
@@ -494,26 +600,41 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required String? value,
     required List<(String, String)> options,
     required ValueChanged<String?> onChanged,
+    bool required = false,
+    bool enabled = true,
+    String? hint,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
       child: DropdownButtonFormField<String>(
         value: value,
         decoration: InputDecoration(
-          labelText: label,
+          labelText: required ? '$label *' : label,
           errorText: _serverErrors[key],
         ),
-        hint: Text(context.l10n.choose),
+        hint: Text(hint ?? context.l10n.choose),
         items: [
           for (final (optionValue, optionLabel) in options)
             DropdownMenuItem(value: optionValue, child: Text(optionLabel)),
         ],
-        onChanged: (selected) {
-          onChanged(selected);
-          if (_serverErrors.containsKey(key)) {
-            setState(() => _serverErrors.remove(key));
-          }
-        },
+        validator:
+            required
+                ? (selected) {
+                  if (selected == null || selected.trim().isEmpty) {
+                    return context.l10n.fieldRequired(label);
+                  }
+                  return null;
+                }
+                : null,
+        onChanged:
+            enabled
+                ? (selected) {
+                  onChanged(selected);
+                  if (_serverErrors.containsKey(key)) {
+                    setState(() => _serverErrors.remove(key));
+                  }
+                }
+                : null,
       ),
     );
   }
@@ -543,14 +664,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       return text.isEmpty ? null : text;
     }
 
+    String? phone(String key) {
+      final text = valueOf(key);
+      return text == null ? null : MalaysianPhone.normalize(text);
+    }
+
     return <String, dynamic>{
       'name': valueOf('name'),
+      'salutation': _salutation,
       'email': valueOf('email'),
-      'phone': valueOf('phone'),
+      'phone': phone('phone'),
       'dob': _dob == null ? null : ProfileFormat.apiDate(_dob!),
       'gender': _gender,
       'marital_status': _maritalStatus,
-      'education_level': valueOf('education_level'),
+      'education_level': _educationLevel,
       'current_profession': valueOf('current_profession'),
       'industry': valueOf('industry'),
       'locality': valueOf('locality'),
@@ -560,10 +687,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       'address_1': valueOf('address_1'),
       'address_2': valueOf('address_2'),
       'postcode': valueOf('postcode'),
-      'city': valueOf('city'),
-      'state': valueOf('state'),
+      'district': _district,
+      'state': _state,
       'emergency_contact_name': valueOf('emergency_contact_name'),
-      'emergency_contact_phone': valueOf('emergency_contact_phone'),
+      'emergency_contact_phone': phone('emergency_contact_phone'),
       'topics': valueOf('topics'),
     };
   }

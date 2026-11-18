@@ -239,7 +239,7 @@ void main() {
 
     router.go('/infaq');
     await tester.pumpAndSettle();
-    expect(find.text('Infaq'), findsWidgets);
+    expect(find.byIcon(Icons.volunteer_activism_outlined), findsWidgets);
 
     router.go('/menu');
     await tester.pumpAndSettle();

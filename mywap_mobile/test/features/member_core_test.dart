@@ -125,14 +125,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Design belakang kad belum dimuat naik.'), findsNothing);
+    expect(find.text('Reka bentuk belakang kad belum dimuat naik.'), findsNothing);
 
     // Ketik kad (bukan QR) untuk flip.
     await tester.tap(find.text('AHMAD BIN ALI'));
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Design belakang kad belum dimuat naik.'),
+      find.text('Reka bentuk belakang kad belum dimuat naik.'),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);

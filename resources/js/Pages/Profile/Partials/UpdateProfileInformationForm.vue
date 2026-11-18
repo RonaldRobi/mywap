@@ -32,6 +32,22 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    educationLevels: {
+        type: Array,
+        default: () => [],
+    },
+    salutations: {
+        type: Array,
+        default: () => [],
+    },
+    states: {
+        type: Array,
+        default: () => [],
+    },
+    districts: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
 
@@ -69,6 +85,7 @@ function submitBranchChange() {
 
 const form = useForm({
     name: user.name,
+    salutation: user.salutation ?? '',
     email: user.email,
     ic_number: user.ic_number ?? '',
     phone: user.phone ?? '',
@@ -86,11 +103,28 @@ const form = useForm({
     address_1: user.address_1 ?? '',
     address_2: user.address_2 ?? '',
     postcode: user.postcode ?? '',
+    district: user.district ?? user.city ?? '',
     city: user.city ?? '',
     state: user.state ?? '',
     emergency_contact_name: user.emergency_contact_name ?? '',
     emergency_contact_phone: user.emergency_contact_phone ?? '',
     topics: user.topics ?? '',
+});
+
+function withCurrent(options, current) {
+    if (!current || options.includes(current)) return options;
+    return [...options, current];
+}
+
+const salutationOptions = computed(() => withCurrent(props.salutations, form.salutation));
+const educationLevelOptions = computed(() => withCurrent(props.educationLevels, form.education_level));
+const stateOptions = computed(() => withCurrent(props.states, form.state));
+const districtOptions = computed(() => withCurrent(props.districts?.[form.state] ?? [], form.district));
+
+watch(() => form.state, (state) => {
+    if (form.district && !(props.districts?.[state] ?? []).includes(form.district)) {
+        form.district = '';
+    }
 });
 
 function guessGenderFromIc(ic) {
@@ -114,6 +148,10 @@ watch(() => form.postcode, async (val) => {
         if (res.data.found) {
             if (!form.city) form.city = res.data.city || '';
             if (!form.state) form.state = res.data.state || '';
+            const district = res.data.city || '';
+            if (!form.district && (props.districts?.[form.state] ?? []).includes(district)) {
+                form.district = district;
+            }
         }
     } catch {}
 });
@@ -176,6 +214,15 @@ function submitProfile() {
             <div class="rounded-2xl border border-gray-100 bg-gray-50/60 p-4 md:p-5">
                 <p class="text-xs font-bold uppercase tracking-[0.12em] text-gray-500">Akaun</p>
                 <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <InputLabel for="salutation" value="Gelaran" />
+                        <select id="salutation" v-model="form.salutation" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="">Tiada</option>
+                            <option v-for="option in salutationOptions" :key="option" :value="option">{{ option }}</option>
+                        </select>
+                        <InputError class="mt-2" :message="form.errors.salutation" />
+                    </div>
+
                     <div>
                         <InputLabel for="name" value="Nama" />
                         <TextInput
@@ -288,10 +335,28 @@ function submitProfile() {
                 <div class="mt-3 space-y-3">
                     <TextInput type="text" class="mt-1 block w-full" v-model="form.address_1" placeholder="Alamat baris 1" />
                     <TextInput type="text" class="mt-1 block w-full" v-model="form.address_2" placeholder="Alamat baris 2 (optional)" />
-                    <div class="grid grid-cols-3 gap-3">
-                        <TextInput type="text" maxlength="5" class="mt-1 block w-full" v-model="form.postcode" placeholder="Poskod" />
-                        <TextInput type="text" class="mt-1 block w-full" v-model="form.city" placeholder="Bandar" />
-                        <TextInput type="text" class="mt-1 block w-full" v-model="form.state" placeholder="Negeri" />
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                            <InputLabel for="postcode" value="Poskod" />
+                            <TextInput id="postcode" type="text" maxlength="5" inputmode="numeric" class="mt-1 block w-full" v-model="form.postcode" placeholder="56000" required />
+                            <InputError class="mt-2" :message="form.errors.postcode" />
+                        </div>
+                        <div>
+                            <InputLabel for="state" value="Negeri" />
+                            <select id="state" v-model="form.state" required class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">Pilih negeri</option>
+                                <option v-for="option in stateOptions" :key="option" :value="option">{{ option }}</option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors.state" />
+                        </div>
+                        <div>
+                            <InputLabel for="district" value="Daerah" />
+                            <select id="district" v-model="form.district" :disabled="!form.state" :required="!!form.state" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm disabled:bg-gray-100">
+                                <option value="">{{ form.state ? 'Pilih daerah' : 'Pilih negeri dahulu' }}</option>
+                                <option v-for="option in districtOptions" :key="option" :value="option">{{ option }}</option>
+                            </select>
+                            <InputError class="mt-2" :message="form.errors.district" />
+                        </div>
                     </div>
                     <div>
                         <InputLabel for="locality" value="Lokaliti" />
@@ -306,7 +371,10 @@ function submitProfile() {
                 <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <InputLabel for="education_level" value="Tahap Pendidikan" />
-                        <TextInput id="education_level" type="text" class="mt-1 block w-full" v-model="form.education_level" />
+                        <select id="education_level" v-model="form.education_level" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="">Pilih tahap pendidikan</option>
+                            <option v-for="option in educationLevelOptions" :key="option" :value="option">{{ option }}</option>
+                        </select>
                         <InputError class="mt-2" :message="form.errors.education_level" />
                     </div>
 

@@ -7,6 +7,7 @@ use App\Models\ArticleCategory;
 use App\Models\ArticleMedia;
 use App\Models\ArticleTag;
 use App\Models\Organization;
+use App\Rules\NoEmojiInTitle;
 use App\Services\ArticleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -140,7 +141,7 @@ class ArticleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'organization_id' => 'nullable|exists:organizations,id',
             'excerpt' => 'nullable|string',
             'content' => 'required|string',
@@ -215,7 +216,7 @@ class ArticleController extends Controller
         $this->authorizeArticleAccess($user, $article);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'organization_id' => 'nullable|exists:organizations,id',
             'excerpt' => 'nullable|string',
             'content' => 'required|string',

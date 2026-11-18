@@ -178,7 +178,7 @@ class Form extends Model
 
     public function getShareUrlAttribute(): string
     {
-        return route('share.form', $this, true);
+        return \App\Support\ShareUrl::route('share.form', $this);
     }
 
     // ─── Harga Tier (cth. Pelajar / Orang Awam) ─────────────────────────────

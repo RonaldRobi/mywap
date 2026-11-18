@@ -11,7 +11,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/organization_providers.dart';
 import '../data/models/organization_info.dart';
@@ -26,9 +26,10 @@ class OrganizationInfoScreen extends ConsumerWidget {
     final infoAsync = ref.watch(organizationInfoProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(),
-        title: const SizedBox.shrink(),
+      appBar: AppTopBar(
+        icon: Icons.corporate_fare_outlined,
+        semanticLabel: context.l10n.orgInfoTitle,
+        showBack: true,
         actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: infoAsync.when(
@@ -717,10 +718,10 @@ List<(IconData, String, String?)> _socialLinks(
   return [
     (
       Icons.mail_outline,
-      'Emel',
+      context.l10n.emailLabel,
       (org.email?.isNotEmpty ?? false) ? 'mailto:${org.email}' : null,
     ),
-    (Icons.call_outlined, 'Panggil', tel.isNotEmpty ? 'tel:$tel' : null),
+    (Icons.call_outlined, context.l10n.callLabel, tel.isNotEmpty ? 'tel:$tel' : null),
     (
       Icons.chat_bubble_outline,
       'WhatsApp',

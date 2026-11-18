@@ -29,6 +29,7 @@ class AdminRepository {
   Future<PaginatedMembers> members({
     String search = '',
     String status = '',
+    String sort = '',
     int page = 1,
   }) async {
     final data = await _api.get(
@@ -36,6 +37,7 @@ class AdminRepository {
       query: {
         if (search.isNotEmpty) 'search': search,
         if (status.isNotEmpty) 'status': status,
+        if (sort.isNotEmpty) 'sort': sort,
         'per_page': 25,
         'page': page,
       },
@@ -48,15 +50,25 @@ class AdminRepository {
     await _api.patch('$_members/$userId/toggle-active');
   }
 
+  Future<void> resetMemberPassword(int userId, String password) async {
+    await _api.post(
+      '$_members/$userId/reset-password',
+      body: {'password': password},
+    );
+  }
+
   Future<void> deleteMember(int userId) async {
     await _api.delete('$_members/$userId');
   }
 
   Future<FeesData> fees({String status = '', String search = ''}) async {
-    final data = await _api.get(_fees, query: {
-      if (status.isNotEmpty) 'status': status,
-      if (search.isNotEmpty) 'search': search,
-    });
+    final data = await _api.get(
+      _fees,
+      query: {
+        if (status.isNotEmpty) 'status': status,
+        if (search.isNotEmpty) 'search': search,
+      },
+    );
     return FeesData.fromJson((data as Map<String, dynamic>?) ?? {});
   }
 
@@ -100,10 +112,10 @@ class AdminRepository {
   /// Upcoming events via the scoped `/admin/events` endpoint. Scoped by role
   /// (Superadmin = all, Org Admin = org, Branch Admin = branch).
   Future<List<Event>> upcomingEvents() async {
-    final data = await _api.get(_adminEvents, query: {
-      'tab': 'upcoming',
-      'per_page': 50,
-    });
+    final data = await _api.get(
+      _adminEvents,
+      query: {'tab': 'upcoming', 'per_page': 50},
+    );
     if (data is List) {
       return data
           .whereType<Map<String, dynamic>>()

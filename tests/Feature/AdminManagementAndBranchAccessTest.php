@@ -175,7 +175,7 @@ class AdminManagementAndBranchAccessTest extends TestCase
         $this->assertFalse($admins->contains(fn ($admin) => $admin['id'] === $this->member->id));
 
         $branchAdminRow = $admins->firstWhere('id', $this->branchAdmin->id);
-        $this->assertSame('PERAK', $branchAdminRow['branch_name']);
+        $this->assertSame('Perak', $branchAdminRow['branch_name']);
         $this->assertTrue($branchAdminRow['is_branch_admin']);
     }
 

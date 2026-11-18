@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../../member/application/member_providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../public/presentation/guest_prompt.dart';
@@ -130,11 +131,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(eventDetailProvider(widget.eventId));
+    final shareEvent = detailAsync.valueOrNull?.event;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/events'),
         title: Text(context.l10n.eventDetailsTitle),
+        actions: [
+          if (shareEvent != null)
+            ShareItemIconButton(
+              title: shareEvent.title ?? '',
+              url: shareEvent.share_url,
+              text: shareEvent.description,
+            ),
+        ],
       ),
       body: detailAsync.when(
         data:
@@ -225,6 +235,12 @@ class _DetailContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: theme.textTheme.headlineSmall),
+                const SizedBox(height: Spacing.md),
+                ShareItemButton(
+                  title: title,
+                  url: event?.share_url,
+                  text: description,
+                ),
                 const SizedBox(height: Spacing.md),
                 if (event?.organization?.name != null) ...[
                   Row(

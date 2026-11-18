@@ -12,6 +12,7 @@ class NewsPost {
     this.organizationName,
     this.categoryName,
     this.publishedAt,
+    this.shareUrl,
     this.likesCount = 0,
     this.dislikesCount = 0,
     this.commentsCount = 0,
@@ -26,6 +27,7 @@ class NewsPost {
   final String? organizationName;
   final String? categoryName;
   final String? publishedAt;
+  final String? shareUrl;
   final int likesCount;
   final int dislikesCount;
   final int commentsCount;
@@ -40,6 +42,7 @@ class NewsPost {
         organizationName: json['organization_name'] as String?,
         categoryName: json['category_name'] as String?,
         publishedAt: json['published_at'] as String?,
+        shareUrl: json['share_url'] as String?,
         likesCount: _int(json['likes_count']) ?? 0,
         dislikesCount: _int(json['dislikes_count']) ?? 0,
         commentsCount: _int(json['comments_count']) ?? 0,
@@ -82,6 +85,7 @@ class NewsDetailPost {
     this.coverImagePath,
     this.publishedAt,
     this.organizationName,
+    this.shareUrl,
     this.category,
     this.authorName,
     this.likesCount = 0,
@@ -98,6 +102,7 @@ class NewsDetailPost {
   final String? coverImagePath;
   final String? publishedAt;
   final String? organizationName;
+  final String? shareUrl;
   final NewsCategory? category;
   final String? authorName;
   final int likesCount;
@@ -114,6 +119,7 @@ class NewsDetailPost {
         coverImagePath: json['cover_image_path'] as String?,
         publishedAt: json['published_at'] as String?,
         organizationName: json['organization_name'] as String?,
+        shareUrl: json['share_url'] as String?,
         category: json['category'] is Map<String, dynamic>
             ? NewsCategory.fromJson(json['category'] as Map<String, dynamic>)
             : null,
@@ -213,6 +219,7 @@ class ArticleDetailPost {
     this.coverImagePath,
     this.publishedAt,
     this.organizationName,
+    this.shareUrl,
     this.authorName,
     this.likesCount = 0,
     this.dislikesCount = 0,
@@ -231,6 +238,7 @@ class ArticleDetailPost {
   final String? coverImagePath;
   final String? publishedAt;
   final String? organizationName;
+  final String? shareUrl;
   final String? authorName;
   final int likesCount;
   final int dislikesCount;
@@ -250,6 +258,7 @@ class ArticleDetailPost {
         coverImagePath: json['cover_image_path'] as String?,
         publishedAt: json['published_at'] as String?,
         organizationName: json['organization_name'] as String?,
+        shareUrl: json['share_url'] as String?,
         authorName: json['author_name'] as String?,
         likesCount: _int(json['likes_count']) ?? 0,
         dislikesCount: _int(json['dislikes_count']) ?? 0,

@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names
 
 import '../../../../core/utils/json_parsing.dart';
+import '../../../../shared/l10n/l10n.dart';
 
 /// Payload from `GET /organization/info`.
 class OrganizationInfoData {
@@ -108,8 +109,8 @@ class OrganizationDetail {
   final String? tiktok_url;
 
   String get ageRangeLabel {
-    if (max_age == null) return '${min_age ?? 0}+ tahun';
-    return '${min_age ?? 0}–$max_age tahun';
+    if (max_age == null) return currentAppLocalizations.orgAgePlus(min_age ?? 0);
+    return currentAppLocalizations.orgAgeRange(min_age ?? 0, max_age!);
   }
 }
 

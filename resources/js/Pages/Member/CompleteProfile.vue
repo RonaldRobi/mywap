@@ -2,7 +2,7 @@
 import { parseDobFromIc } from '@/composables/useDob';
 import MalaysianDateInput from '@/Components/MalaysianDateInput.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import axios from 'axios';
 
 const page = usePage();
@@ -10,6 +10,10 @@ const parsedDob = page.props.parsedDob || '';
 const parsedGender = page.props.parsedGender || '';
 const branches = page.props.branches || [];
 const currentBranchId = page.props.currentBranchId ?? '';
+const educationLevels = page.props.educationLevels || [];
+const salutations = page.props.salutations || [];
+const states = page.props.states || [];
+const districts = page.props.districts || {};
 
 function guessGenderFromIc(ic) {
     if (!ic) return '';
@@ -19,6 +23,7 @@ function guessGenderFromIc(ic) {
 }
 
 const form = useForm({
+    salutation: '',
     education_level: '',
     current_profession: '',
     phone: '',
@@ -29,11 +34,28 @@ const form = useForm({
     address_1: '',
     address_2: '',
     postcode: '',
+    district: '',
     city: '',
     state: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
     topics: '',
+});
+
+function withCurrent(options, current) {
+    if (!current || options.includes(current)) return options;
+    return [...options, current];
+}
+
+const salutationOptions = computed(() => withCurrent(salutations, form.salutation));
+const educationLevelOptions = computed(() => withCurrent(educationLevels, form.education_level));
+const stateOptions = computed(() => withCurrent(states, form.state));
+const districtOptions = computed(() => withCurrent(districts[form.state] || [], form.district));
+
+watch(() => form.state, (state) => {
+    if (form.district && !(districts[state] || []).includes(form.district)) {
+        form.district = '';
+    }
 });
 
 const postcodeLoading = ref(false);
@@ -46,6 +68,10 @@ watch(() => form.postcode, async (val) => {
         if (res.data.found) {
             form.city = res.data.city || form.city;
             form.state = res.data.state || form.state;
+            const district = res.data.city || '';
+            if ((districts[form.state] || []).includes(district)) {
+                form.district = district;
+            }
         }
     } catch {
     } finally {
@@ -80,8 +106,16 @@ const submit = () => {
                         <p v-if="form.errors.branch_id" class="mt-1 text-xs text-red-500">{{ form.errors.branch_id }}</p>
                     </div>
                     <div>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Gelaran</label>
+                        <select v-model="form.salutation" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0">
+                            <option value="">Tiada</option>
+                            <option v-for="option in salutationOptions" :key="option" :value="option">{{ option }}</option>
+                        </select>
+                        <p v-if="form.errors.salutation" class="mt-1 text-xs text-red-500">{{ form.errors.salutation }}</p>
+                    </div>
+                    <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Nombor Telefon *</label>
-                        <input v-model="form.phone" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="0123456789" required>
+                        <input v-model="form.phone" type="text" inputmode="numeric" maxlength="11" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="0123456789" required>
                         <p v-if="form.errors.phone" class="mt-1 text-xs text-red-500">{{ form.errors.phone }}</p>
                     </div>
                     <div>
@@ -117,19 +151,28 @@ const submit = () => {
                     <div class="space-y-4">
                         <input v-model="form.address_1" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="Alamat baris 1">
                         <input v-model="form.address_2" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="Alamat baris 2 (optional)">
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div>
-                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Poskod</label>
-                                <input v-model="form.postcode" type="text" maxlength="5" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="56000">
+                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Poskod *</label>
+                                <input v-model="form.postcode" type="text" inputmode="numeric" maxlength="5" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="56000" required>
                                 <p v-if="postcodeLoading" class="mt-1 text-xs text-gray-400">Mencari...</p>
+                                <p v-if="form.errors.postcode" class="mt-1 text-xs text-red-500">{{ form.errors.postcode }}</p>
                             </div>
                             <div>
-                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Bandar</label>
-                                <input v-model="form.city" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="Kuala Lumpur">
+                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Negeri *</label>
+                                <select v-model="form.state" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" required>
+                                    <option value="">Pilih negeri</option>
+                                    <option v-for="option in stateOptions" :key="option" :value="option">{{ option }}</option>
+                                </select>
+                                <p v-if="form.errors.state" class="mt-1 text-xs text-red-500">{{ form.errors.state }}</p>
                             </div>
                             <div>
-                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Negeri</label>
-                                <input v-model="form.state" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="Wilayah Persekutuan">
+                                <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Daerah *</label>
+                                <select v-model="form.district" :disabled="!form.state" :required="!!form.state" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0 disabled:bg-gray-100">
+                                    <option value="">{{ form.state ? 'Pilih daerah' : 'Pilih negeri dahulu' }}</option>
+                                    <option v-for="option in districtOptions" :key="option" :value="option">{{ option }}</option>
+                                </select>
+                                <p v-if="form.errors.district" class="mt-1 text-xs text-red-500">{{ form.errors.district }}</p>
                             </div>
                         </div>
                     </div>
@@ -140,7 +183,10 @@ const submit = () => {
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Pendidikan *</label>
-                            <input v-model="form.education_level" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="Ijazah Sarjana Muda" required>
+                            <select v-model="form.education_level" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" required>
+                                <option value="">Pilih tahap pendidikan</option>
+                                <option v-for="option in educationLevelOptions" :key="option" :value="option">{{ option }}</option>
+                            </select>
                             <p v-if="form.errors.education_level" class="mt-1 text-xs text-red-500">{{ form.errors.education_level }}</p>
                         </div>
                         <div>
@@ -164,7 +210,7 @@ const submit = () => {
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">No. Telefon</label>
-                            <input v-model="form.emergency_contact_phone" type="text" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="0123456789">
+                            <input v-model="form.emergency_contact_phone" type="text" inputmode="numeric" maxlength="11" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" placeholder="0123456789">
                         </div>
                     </div>
                 </div>

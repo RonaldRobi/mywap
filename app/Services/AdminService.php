@@ -570,7 +570,22 @@ class AdminService
             ->when($search, fn ($q) => MemberSearch::apply($q, $search))
             ->when($status === 'active', fn ($q) => $q->whereNotNull('profile_completed_at'))
             ->when($status === 'pending', fn ($q) => $q->whereNull('profile_completed_at'))
-            ->latest('created_at');
+            ->when(
+                $request->input('sort') === 'name_asc',
+                fn ($q) => $q->orderBy('name', 'asc'),
+            )
+            ->when(
+                $request->input('sort') === 'name_desc',
+                fn ($q) => $q->orderBy('name', 'desc'),
+            )
+            ->when(
+                $request->input('sort') === 'oldest',
+                fn ($q) => $q->orderBy('created_at', 'asc'),
+            )
+            ->when(
+                ! in_array($request->input('sort'), ['name_asc', 'name_desc', 'oldest'], true),
+                fn ($q) => $q->latest('created_at'),
+            );
 
         $perPage = $this->perPage($request, 15, [10, 15, 25, 50, 100]);
 

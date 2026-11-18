@@ -1,6 +1,7 @@
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../shared/l10n/l10n.dart';
 import 'models/news.dart';
 
 /// Repository for News (Info Terkini), Articles and Videos.
@@ -82,7 +83,7 @@ class NewsRepository {
   Future<String> watchVideo(Video video) async {
     final url = video.watchUrl;
     if (url.isEmpty) {
-      throw const ApiException('Pautan video tidak sah.');
+      throw ApiException(currentAppLocalizations.newsVideoInvalidLink);
     }
     return url;
   }

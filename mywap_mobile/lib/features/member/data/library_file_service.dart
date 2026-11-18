@@ -47,8 +47,8 @@ class LibraryFileService {
     await _download(AppEnv.resolveUrl(filePath), target, onProgress);
 
     if (!await target.exists() || await target.length() == 0) {
-      throw const ApiException(
-        'Fail tidak sah. Sila cuba lagi.',
+      throw ApiException(
+        currentAppLocalizations.fileInvalidRetry,
         statusCode: 0,
       );
     }

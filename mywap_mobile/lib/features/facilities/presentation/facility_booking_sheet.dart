@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/validation/malaysian_phone.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import '../../../shared/theme/app_text_theme.dart';
@@ -95,6 +96,12 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
       setState(() => _error = context.l10n.facErrorContactRequired);
       return;
     }
+    if (!_isMember &&
+        _phoneController.text.trim().isNotEmpty &&
+        !MalaysianPhone.isValid(_phoneController.text)) {
+      setState(() => _error = context.l10n.phoneInvalid);
+      return;
+    }
 
     setState(() {
       _submitting = true;
@@ -114,7 +121,7 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
             contactPhone:
                 _phoneController.text.trim().isEmpty
                     ? null
-                    : _phoneController.text.trim(),
+                    : MalaysianPhone.normalize(_phoneController.text),
           );
       if (!mounted) return;
       setState(() {
@@ -275,10 +282,19 @@ class _FacilityBookingSheetState extends ConsumerState<FacilityBookingSheet> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: MalaysianPhone.inputFormatters,
                   decoration: InputDecoration(
                     labelText: l10n.facContactPhone,
                     prefixIcon: const Icon(Icons.phone_outlined),
                   ),
+                  validator: (value) {
+                    final phone = value?.trim() ?? '';
+                    if (phone.isEmpty) return null;
+                    if (!MalaysianPhone.isValid(phone)) {
+                      return l10n.phoneInvalid;
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: Spacing.lg),
               ],
@@ -406,29 +422,8 @@ class _DayChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  static const List<String> _weekdays = [
-    'Ahad',
-    'Isnin',
-    'Selasa',
-    'Rabu',
-    'Khamis',
-    'Jumaat',
-    'Sabtu',
-  ];
-  static const List<String> _months = [
-    'Jan',
-    'Feb',
-    'Mac',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Ogo',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Dis',
-  ];
+  static List<String> get _weekdays => Formatters.weekdays;
+  static List<String> get _months => Formatters.months;
 
   @override
   Widget build(BuildContext context) {
@@ -744,33 +739,8 @@ String _hourLabel(int hour) {
   return '${pad(hour)}:00';
 }
 
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mac',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Ogo',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Dis',
-];
-const List<String> _weekdays = [
-  'Ahad',
-  'Isnin',
-  'Selasa',
-  'Rabu',
-  'Khamis',
-  'Jumaat',
-  'Sabtu',
-];
-
 String _formatDateTime(DateTime value) {
   String pad(int v) => v.toString().padLeft(2, '0');
-  return '${_weekdays[value.weekday - 1]}, ${value.day} '
-      '${_months[value.month - 1]} ${value.year}, '
+  return '${Formatters.longDate(value)}, '
       '${pad(value.hour)}:${pad(value.minute)}';
 }

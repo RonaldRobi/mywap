@@ -12,6 +12,7 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/share_item.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/cart_notifier.dart';
 import '../application/product_providers.dart';
@@ -203,11 +204,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(productDetailProvider(widget.productId));
     final isStaff = ref.watch(currentUserProvider)?.isStaff ?? false;
+    final shareProduct = detailAsync.valueOrNull?.product;
 
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallback: '/products'),
         title: Text(context.l10n.ecomProductDetailTitle),
+        actions: [
+          if (shareProduct != null)
+            ShareItemIconButton(
+              title: shareProduct.name ?? '',
+              url: shareProduct.shareUrl,
+              text: shareProduct.description,
+            ),
+        ],
       ),
       body: detailAsync.when(
         data: (detail) {
@@ -392,6 +402,12 @@ class _DetailContent extends StatelessWidget {
                       ),
                     ],
                   ],
+                ),
+                const SizedBox(height: Spacing.md),
+                ShareItemButton(
+                  title: product.name ?? '',
+                  url: product.shareUrl,
+                  text: product.description,
                 ),
                 if (availableStock != null) ...[
                   const SizedBox(height: Spacing.sm),
@@ -698,18 +714,32 @@ class _BottomBar extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: canBuy ? onAddToCart : null,
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                      minimumSize: const Size.fromHeight(44),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.sm,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    icon: const Icon(Icons.add_shopping_cart),
+                    icon: const Icon(Icons.add_shopping_cart, size: 18),
                     label: Text(context.l10n.ecomAddToCart),
                   ),
                 ),
-                const SizedBox(width: Spacing.md),
+                const SizedBox(width: Spacing.sm),
                 Expanded(
                   child: FilledButton(
                     onPressed: canBuy ? onBuyNow : null,
                     style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                      minimumSize: const Size.fromHeight(44),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.sm,
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     child: Text(
                       soldOut

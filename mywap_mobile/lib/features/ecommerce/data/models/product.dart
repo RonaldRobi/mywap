@@ -107,6 +107,7 @@ class Product {
     this.image,
     this.images = const [],
     this.status,
+    this.shareUrl,
     this.variationsCount,
     this.category,
     this.organization,
@@ -127,6 +128,7 @@ class Product {
   final String? image;
   final List<String> images;
   final bool? status;
+  final String? shareUrl;
   final int? variationsCount;
   final Category? category;
   final ProductOrganization? organization;
@@ -163,6 +165,7 @@ class Product {
         image: json['image'] as String?,
         images: parseStringList(json['images']),
         status: json['status'] is bool ? json['status'] as bool : null,
+        shareUrl: json['share_url'] as String?,
         variationsCount: parseIntValue(json['variations_count']),
         category: json['category'] is Map<String, dynamic>
             ? Category.fromJson(json['category'] as Map<String, dynamic>)

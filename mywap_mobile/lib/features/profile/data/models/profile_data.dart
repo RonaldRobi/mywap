@@ -27,6 +27,22 @@ Map<String, dynamic>? _asMap(dynamic value) {
   return value is Map<String, dynamic> ? value : null;
 }
 
+List<String> _parseStringList(dynamic value) {
+  if (value is! List) return const [];
+  return value.whereType<String>().toList(growable: false);
+}
+
+Map<String, List<String>> _parseDistrictMap(dynamic value) {
+  if (value is! Map) return const {};
+  return {
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is List)
+        entry.key as String: (entry.value as List)
+            .whereType<String>()
+            .toList(growable: false),
+  };
+}
+
 /// Parses a nullable map, returning `null` when the key is absent.
 T? _fromJsonOrNull<T>(
   dynamic value,
@@ -196,6 +212,7 @@ class ProfileUser {
     this.id,
     this.member_no,
     this.name,
+    this.salutation,
     this.email,
     this.phone,
     this.ic_number,
@@ -217,6 +234,7 @@ class ProfileUser {
     this.address_1,
     this.address_2,
     this.postcode,
+    this.district,
     this.city,
     this.state,
     this.emergency_contact_name,
@@ -231,6 +249,7 @@ class ProfileUser {
       id: parseIntValue(json['id']),
       member_no: json['member_no'] as String?,
       name: json['name'] as String?,
+      salutation: json['salutation'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       ic_number: json['ic_number'] as String?,
@@ -260,6 +279,7 @@ class ProfileUser {
       address_1: json['address_1'] as String?,
       address_2: json['address_2'] as String?,
       postcode: json['postcode'] as String?,
+      district: json['district'] as String?,
       city: json['city'] as String?,
       state: json['state'] as String?,
       emergency_contact_name: json['emergency_contact_name'] as String?,
@@ -279,6 +299,7 @@ class ProfileUser {
   final int? id;
   final String? member_no;
   final String? name;
+  final String? salutation;
   final String? email;
   final String? phone;
   final String? ic_number;
@@ -300,6 +321,7 @@ class ProfileUser {
   final String? address_1;
   final String? address_2;
   final String? postcode;
+  final String? district;
   final String? city;
   final String? state;
   final String? emergency_contact_name;
@@ -343,6 +365,10 @@ class CompleteMeta {
     this.parsedGender,
     this.branches = const [],
     this.currentBranchId,
+    this.educationLevels = const [],
+    this.salutations = const [],
+    this.states = const [],
+    this.districts = const {},
   });
 
   factory CompleteMeta.fromJson(Map<String, dynamic> json) {
@@ -351,6 +377,10 @@ class CompleteMeta {
       parsedGender: json['parsedGender'] as String?,
       branches: _parseList(json['branches'], ProfileBranch.fromJson),
       currentBranchId: parseIntValue(json['currentBranchId']),
+      educationLevels: _parseStringList(json['educationLevels']),
+      salutations: _parseStringList(json['salutations']),
+      states: _parseStringList(json['states']),
+      districts: _parseDistrictMap(json['districts']),
     );
   }
 
@@ -365,6 +395,11 @@ class CompleteMeta {
 
   /// Branch currently assigned to the member, if any.
   final int? currentBranchId;
+
+  final List<String> educationLevels;
+  final List<String> salutations;
+  final List<String> states;
+  final Map<String, List<String>> districts;
 }
 
 /// A branch option for the edit form (`ProfileService::editMeta()`).
@@ -404,6 +439,10 @@ class EditMeta {
     this.currentBranchName,
     this.organizationName,
     this.pendingBranchRequest,
+    this.educationLevels = const [],
+    this.salutations = const [],
+    this.states = const [],
+    this.districts = const {},
   });
 
   factory EditMeta.fromJson(Map<String, dynamic> json) {
@@ -420,6 +459,10 @@ class EditMeta {
         json['pendingBranchRequest'],
         PendingBranchRequest.fromJson,
       ),
+      educationLevels: _parseStringList(json['educationLevels']),
+      salutations: _parseStringList(json['salutations']),
+      states: _parseStringList(json['states']),
+      districts: _parseDistrictMap(json['districts']),
     );
   }
 
@@ -429,4 +472,8 @@ class EditMeta {
   final String? currentBranchName;
   final String? organizationName;
   final PendingBranchRequest? pendingBranchRequest;
+  final List<String> educationLevels;
+  final List<String> salutations;
+  final List<String> states;
+  final Map<String, List<String>> districts;
 }

@@ -117,7 +117,7 @@ void main() {
       expect(find.text('ahmad@example.com'), findsOneWidget);
       expect(find.text('0123456789'), findsOneWidget);
       expect(find.text('900520-10-1234'), findsOneWidget);
-      expect(find.text('Edit Profil'), findsOneWidget);
+      expect(find.text('Sunting Profil'), findsOneWidget);
       expect(find.text('Perjalanan Ahli'), findsOneWidget);
       expect(find.textContaining('Wadah Kuala Lumpur'), findsWidgets);
     });
@@ -244,7 +244,7 @@ void main() {
         find.text('Sila semak semula maklumat yang bertanda merah.'),
         findsOneWidget,
       );
-      expect(find.text('Edit Profil'), findsWidgets);
+      expect(find.text('Sunting Profil'), findsWidgets);
     });
 
     testWidgets('biometric tile shows Face ID when hasFaceId is true', (

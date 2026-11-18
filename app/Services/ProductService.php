@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\ShareUrl;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -38,6 +39,7 @@ class ProductService
             'image' => $product->image,
             'images' => $product->images ?? [],
             'status' => $product->status,
+            'share_url' => $product->status ? ShareUrl::route('share.product', $product) : null,
             'created_at' => $product->created_at,
             'updated_at' => $product->updated_at,
             'variations_count' => $product->variations_count ?? 0,

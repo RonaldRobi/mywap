@@ -182,12 +182,14 @@ class PublicMediaStatement {
     this.id,
     this.title,
     this.featuredImage,
+    this.organizationName,
     this.pdfUrl,
   });
 
   final int? id;
   final String? title;
   final String? featuredImage;
+  final String? organizationName;
   final String? pdfUrl;
 
   factory PublicMediaStatement.fromJson(Map<String, dynamic> json) =>
@@ -195,6 +197,7 @@ class PublicMediaStatement {
         id: parseIntValue(json['id']),
         title: json['title'] as String?,
         featuredImage: json['featured_image'] as String?,
+        organizationName: json['organization_name'] as String?,
         pdfUrl: json['pdf_url'] as String?,
       );
 }

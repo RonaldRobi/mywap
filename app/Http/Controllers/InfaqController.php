@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Infaq;
 use App\Models\InfaqDonation;
 use App\Models\Organization;
+use App\Rules\NoEmojiInTitle;
 use App\Services\BayarCashService;
 use App\Services\DonorService;
 use App\Services\InfaqService;
@@ -77,7 +78,7 @@ class InfaqController extends Controller
     {
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:2000'],
             'external_url' => ['nullable', 'url', 'max:1000'],
             'type' => ['required', 'in:one_off,progress'],
@@ -138,7 +139,7 @@ class InfaqController extends Controller
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:2000'],
             'external_url' => ['nullable', 'url', 'max:1000'],
             'type' => ['required', 'in:one_off,progress'],

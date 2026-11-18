@@ -13,6 +13,7 @@ use App\Models\Form;
 use App\Models\Organization;
 use App\Models\Registration;
 use App\Models\Scopes\OrganizationScope;
+use App\Rules\NoEmojiInTitle;
 use App\Services\RegistrationDedupeService;
 use App\Support\QrPng;
 use Illuminate\Contracts\View\View;
@@ -378,7 +379,7 @@ class EventController extends Controller
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
             // Optional — borang lama (modal Program) tidak hantar field ini.
@@ -436,7 +437,7 @@ class EventController extends Controller
                 'integer',
                 'exists:organizations,id',
             ],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
             'status' => ['sometimes', 'required', 'in:draft,published'],
@@ -792,7 +793,7 @@ class EventController extends Controller
 
         $data = $request->validate([
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255', new NoEmojiInTitle],
             'description' => ['nullable', 'string', 'max:4000'],
             'type' => ['required', 'in:physical,online'],
             'status' => ['sometimes', 'required', 'in:draft,published'],
