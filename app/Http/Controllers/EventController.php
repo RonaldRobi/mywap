@@ -394,28 +394,23 @@ class EventController extends Controller
             'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
-            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'poster_images' => ['nullable', 'array'],
-            'poster_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gallery_images' => ['nullable', 'array'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'organizations' => ['nullable', 'array'],
             'organizations.*' => ['integer', 'exists:organizations,id'],
         ]);
 
         // Replace image only if a new one is uploaded
-        $posterFiles = array_values(array_filter((array) $request->file('poster_images', [])));
+        $galleryFiles = array_values(array_filter((array) $request->file('gallery_images', [])));
         if ($request->hasFile('featured_image')) {
             // Delete old image
             if ($event->featured_image_path) {
                 Storage::disk('public')->delete($event->featured_image_path);
             }
             $data['featured_image_path'] = $request->file('featured_image')->store('events', 'public');
-        } elseif ($posterFiles !== []) {
-            if ($event->featured_image_path) {
-                Storage::disk('public')->delete($event->featured_image_path);
-            }
-            $data['featured_image_path'] = array_shift($posterFiles)->store('events', 'public');
         }
-        $this->storeAdditionalPosters($event, $posterFiles);
+        $this->storeAdditionalPosters($event, $galleryFiles);
         unset($data['featured_image']);
 
         $event->update([
@@ -460,9 +455,9 @@ class EventController extends Controller
             'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
-            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'poster_images' => ['nullable', 'array'],
-            'poster_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gallery_images' => ['nullable', 'array'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'organizations' => ['nullable', 'array'],
             'organizations.*' => ['integer', 'exists:organizations,id'],
         ]);
@@ -472,10 +467,7 @@ class EventController extends Controller
             $featuredImagePath = $request->file('featured_image')->store('events', 'public');
         }
 
-        $posterFiles = array_values(array_filter((array) $request->file('poster_images', [])));
-        if (! $featuredImagePath && $posterFiles !== []) {
-            $featuredImagePath = array_shift($posterFiles)->store('events', 'public');
-        }
+        $galleryFiles = array_values(array_filter((array) $request->file('gallery_images', [])));
 
         $event = Event::create([
             'organization_id' => $isSuperadmin
@@ -493,7 +485,7 @@ class EventController extends Controller
         ]);
 
         $this->syncOrganizations($event, $request, $isSuperadmin);
-        $this->storeAdditionalPosters($event, $posterFiles);
+        $this->storeAdditionalPosters($event, $galleryFiles);
 
         return back()->with('success', 'Program baharu berjaya ditambah.');
     }
@@ -790,8 +782,12 @@ class EventController extends Controller
                 'organization_id' => $event->organization_id,
                 'organization_ids' => $event->organizations->pluck('id')->all(),
                 'branch_id' => $event->branch_id,
-                'visibility' => $event->visibility?->value ?? EventVisibility::Open->value,
-                'featured_image_url' => $event->featured_image_url,
+                 'visibility' => $event->visibility?->value ?? EventVisibility::Open->value,
+                 'featured_image_url' => $event->featured_image_url,
+                 'poster_urls' => collect([$event->featured_image_url])
+                     ->merge($event->posters->map(fn ($poster) => asset('storage/'.$poster->path)))
+                     ->unique()
+                     ->values(),
             ] : null,
             'organizations' => $isSuperadmin
                 ? Organization::orderBy('min_age')->get(['id', 'name'])
@@ -832,24 +828,19 @@ class EventController extends Controller
             'maps_url' => ['nullable', 'string', 'max:500'],
             'start_time' => ['required', 'date'],
             'end_time' => ['required', 'date', 'after:start_time'],
-            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'poster_images' => ['nullable', 'array'],
-            'poster_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'gallery_images' => ['nullable', 'array'],
+            'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'organizations' => ['nullable', 'array'],
             'organizations.*' => ['integer', 'exists:organizations,id'],
         ]);
 
-        $posterFiles = array_values(array_filter((array) $request->file('poster_images', [])));
+        $galleryFiles = array_values(array_filter((array) $request->file('gallery_images', [])));
         if ($request->hasFile('featured_image')) {
             if ($event?->featured_image_path) {
                 Storage::disk('public')->delete($event->featured_image_path);
             }
             $data['featured_image_path'] = $request->file('featured_image')->store('events', 'public');
-        } elseif ($posterFiles !== []) {
-            if ($event?->featured_image_path) {
-                Storage::disk('public')->delete($event->featured_image_path);
-            }
-            $data['featured_image_path'] = array_shift($posterFiles)->store('events', 'public');
         }
         unset($data['featured_image']);
 
@@ -882,7 +873,7 @@ class EventController extends Controller
         $event = $event ? tap($event)->update($fields) : Event::create($fields);
 
         $this->syncOrganizations($event, $request, $isSuperadmin);
-        $this->storeAdditionalPosters($event, $posterFiles);
+        $this->storeAdditionalPosters($event, $galleryFiles);
 
         MemberDashboardService::forgetCache();
 

@@ -1777,6 +1777,7 @@ class AdminService
             'recipient_ids' => $input['recipient_ids'] ?? null,
             'notification_channels' => $input['notification_channels'] ?? ['in_app'],
             'email_use_template' => $input['email_use_template'] ?? false,
+            'scheduled_at' => $input['scheduled_at'] ?? null,
         ]);
 
         $dispatch = SendBroadcastJob::dispatch($message->id);

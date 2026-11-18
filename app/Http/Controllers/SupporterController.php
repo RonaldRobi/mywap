@@ -34,8 +34,12 @@ class SupporterController extends Controller
     {
         $user = $request->user();
         [$isSuperadmin, $search, $programId, $status, $organizationId] = $this->resolveFilters($request);
+        $isBranchAdmin = $user->isBranchAdmin();
 
         $base = $this->baseQuery($request, $isSuperadmin, $organizationId);
+        $hasBranchPrograms = ! $isBranchAdmin || Event::query()
+            ->whereIn('branch_id', $user->managedBranchIds())
+            ->exists();
 
         $counts = [
             'total' => (clone $base)->count(),
@@ -93,6 +97,7 @@ class SupporterController extends Controller
                     $query->where('supporters.organization_id', $organizationId);
                 }
             })
+            ->when($isBranchAdmin, fn ($query) => $query->whereIn('branch_id', $user->managedBranchIds()))
             ->orderByDesc('start_time')
             ->limit(200)
             ->get()
@@ -110,6 +115,8 @@ class SupporterController extends Controller
             'supporters' => $supporters,
             'counts' => $counts,
             'isSuperadmin' => $isSuperadmin,
+            'isBranchAdmin' => $isBranchAdmin,
+            'hasBranchPrograms' => $hasBranchPrograms,
             'organizations' => $organizations,
             'programs' => $programs,
             'defaultOrganizationId' => $user->current_organization_id,
@@ -423,6 +430,7 @@ class SupporterController extends Controller
     {
         $user = $request->user();
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isBranchAdmin = $user->isBranchAdmin();
 
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
@@ -437,6 +445,7 @@ class SupporterController extends Controller
             ->whereNull('converted_at')
             ->whereNotNull('email')
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($isBranchAdmin, fn ($q) => $q->whereHas('events', fn ($events) => $events->whereIn('events.branch_id', $user->managedBranchIds())))
             ->get()
             ->unique(fn (Supporter $supporter) => mb_strtolower((string) $supporter->email));
 
@@ -505,6 +514,7 @@ class SupporterController extends Controller
 
         return Supporter::query()
             ->when(! $isSuperadmin, fn ($q) => $q->where('organization_id', $user->current_organization_id))
+            ->when($user->isBranchAdmin(), fn ($q) => $q->whereHas('events', fn ($events) => $events->whereIn('events.branch_id', $user->managedBranchIds())))
             ->when($isSuperadmin && $organizationId, fn ($q) => $q->where('organization_id', $organizationId));
     }
 

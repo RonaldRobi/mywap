@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -27,6 +27,22 @@ const createFormUrl = computed(() => {
 
 const isEditing = !!props.event;
 
+function datePart(value) {
+    return value?.slice(0, 10) ?? '';
+}
+
+function timePart(value) {
+    return value?.slice(11, 16) ?? '';
+}
+
+const existingStart = props.event?.start_time ?? '';
+const existingEnd = props.event?.end_time ?? '';
+const initialStartDate = datePart(existingStart);
+const initialEndDate = datePart(existingEnd) || initialStartDate;
+const uploadError = ref('');
+const featuredPreview = ref(props.event?.featured_image_url ?? '');
+const galleryPreviews = ref((props.event?.poster_urls ?? []).slice(1));
+
 const form = useForm({
     title: props.event?.title ?? '',
     description: props.event?.description ?? '',
@@ -36,12 +52,15 @@ const form = useForm({
     visibility: props.event?.visibility ?? (props.isBranchAdmin ? 'branch_only' : 'open'),
     location_or_link: props.event?.location_or_link ?? '',
     maps_url: props.event?.maps_url ?? '',
-    start_time: props.event?.start_time ?? '',
-    end_time: props.event?.end_time ?? '',
+    start_date: initialStartDate,
+    start_clock: timePart(existingStart),
+    end_date: initialEndDate,
+    end_clock: timePart(existingEnd),
+    multi_day: initialStartDate !== initialEndDate,
     organization_id: props.event?.organization_id ?? '',
     organization_ids: props.event?.organization_ids ?? [],
     featured_image: null,
-    poster_images: [],
+    gallery_images: [],
 });
 
 function startsWithHttp(value) {
@@ -57,9 +76,52 @@ function toggleOrg(id) {
 }
 
 const invalidTimes = computed(() => {
-    if (!form.start_time || !form.end_time) return false;
-    return new Date(form.end_time).getTime() <= new Date(form.start_time).getTime();
+    if (!form.start_date || !form.start_clock || !form.end_date || !form.end_clock) return false;
+    return new Date(`${form.end_date}T${form.end_clock}`).getTime()
+        <= new Date(`${form.start_date}T${form.start_clock}`).getTime();
 });
+
+watch(() => form.start_date, (value) => {
+    if (!form.multi_day) form.end_date = value;
+});
+
+watch(() => form.multi_day, (value) => {
+    if (!value) form.end_date = form.start_date;
+});
+
+function validateImage(file) {
+    if (!file) return true;
+    if (file.size > 2 * 1024 * 1024) {
+        uploadError.value = `${file.name} melebihi had 2MB.`;
+        return false;
+    }
+    return true;
+}
+
+function handleFeaturedChange(event) {
+    const file = event.target.files?.[0] ?? null;
+    uploadError.value = '';
+    if (!validateImage(file)) {
+        event.target.value = '';
+        form.featured_image = null;
+        return;
+    }
+    form.featured_image = file;
+    featuredPreview.value = file ? URL.createObjectURL(file) : props.event?.featured_image_url ?? '';
+}
+
+function handleGalleryChange(event) {
+    const files = Array.from(event.target.files ?? []);
+    uploadError.value = '';
+    if (files.some((file) => !validateImage(file))) {
+        event.target.value = '';
+        form.gallery_images = [];
+        galleryPreviews.value = (props.event?.poster_urls ?? []).slice(1);
+        return;
+    }
+    form.gallery_images = files;
+    galleryPreviews.value = files.map((file) => URL.createObjectURL(file));
+}
 
 function submit() {
     if (invalidTimes.value) return;
@@ -69,11 +131,18 @@ function submit() {
         const payload = { ...data, organizations: data.organization_ids || [] };
         delete payload.organization_ids;
         // Jangan hantar featured_image kosong (elak ralat "failed to upload").
+        payload.start_time = `${data.start_date}T${data.start_clock}`;
+        payload.end_time = `${data.multi_day ? data.end_date : data.start_date}T${data.end_clock}`;
+        delete payload.start_date;
+        delete payload.start_clock;
+        delete payload.end_date;
+        delete payload.end_clock;
+        delete payload.multi_day;
         if (!payload.featured_image) {
             delete payload.featured_image;
         }
-        if (!payload.poster_images?.length) {
-            delete payload.poster_images;
+        if (!payload.gallery_images?.length) {
+            delete payload.gallery_images;
         }
         // Multipart PUT tidak di-parse oleh PHP — guna POST + method spoofing.
         if (isEditing) {
@@ -88,7 +157,7 @@ function submit() {
 
     form.post(url, {
         forceFormData: true,
-        onSuccess: () => (isEditing ? form.reset('featured_image') : form.reset()),
+        onSuccess: () => (isEditing ? form.reset('featured_image', 'gallery_images') : form.reset()),
     });
 }
 </script>
@@ -227,20 +296,38 @@ function submit() {
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-4">
                             <div>
-                                <label class="mb-1 block text-sm font-semibold text-gray-700">Mula *</label>
-                                <input v-model="form.start_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Tarikh program *</label>
+                                <input v-model="form.start_date" type="date" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-0" />
+                                <p class="mt-1 text-xs text-gray-500">Pilih tarikh sebenar program berlangsung, bukan tarikh mencipta rekod.</p>
                                 <p v-if="form.errors.start_time" class="mt-1 text-xs text-red-500">{{ form.errors.start_time }}</p>
                             </div>
-                            <div>
-                                <label class="mb-1 block text-sm font-semibold text-gray-700">Tamat *</label>
-                                <input v-model="form.end_time" type="datetime-local" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0" />
-                                <p v-if="form.errors.end_time" class="mt-1 text-xs text-red-500">{{ form.errors.end_time }}</p>
+
+                            <label class="flex min-h-[44px] items-center gap-3 text-sm font-semibold text-gray-700">
+                                <input v-model="form.multi_day" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                Program lebih daripada sehari
+                            </label>
+
+                            <div v-if="form.multi_day">
+                                <label class="mb-1 block text-sm font-semibold text-gray-700">Tarikh program tamat *</label>
+                                <input v-model="form.end_date" type="date" :min="form.start_date" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-0" />
                             </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-1 block text-sm font-semibold text-gray-700">Masa mula *</label>
+                                    <input v-model="form.start_clock" type="time" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-0" />
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-sm font-semibold text-gray-700">Masa tamat *</label>
+                                    <input v-model="form.end_clock" type="time" class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:ring-0" />
+                                </div>
+                            </div>
+                            <p v-if="form.errors.end_time" class="text-xs text-red-500">{{ form.errors.end_time }}</p>
                         </div>
 
-                        <p v-if="invalidTimes" class="text-xs text-red-500">Masa Tamat mesti selepas Masa Mula.</p>
+                        <p v-if="invalidTimes" class="text-xs text-red-500">Tarikh dan masa tamat mesti selepas tarikh dan masa mula.</p>
 
                         <p class="rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-800">
                             Pendaftaran dibuka sebaik program diterbitkan dan ditutup <strong>24 jam selepas</strong> program tamat.
@@ -325,23 +412,27 @@ function submit() {
 
                     <div class="space-y-3 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                         <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Poster Program</h2>
-                        <p class="text-xs text-gray-400">Pilih satu atau beberapa poster. Poster pertama menjadi featured image dan poster seterusnya disimpan sebagai galeri.</p>
-                        <input
-                            type="file"
-                            multiple
-                            accept="image/jpg,image/jpeg,image/png,image/webp"
-                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                            @change="form.poster_images = Array.from($event.target.files ?? [])"
-                        />
-                        <p v-if="form.poster_images.length" class="text-xs font-semibold text-indigo-700">
-                            {{ form.poster_images.length }} poster dipilih. Poster pertama kekal sebagai featured image.
-                        </p>
-                        <div v-if="isEditing && event.featured_image_url" class="mx-auto w-full max-w-[280px]">
-                            <div class="aspect-[4/5] w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                                <img :src="event.featured_image_url" class="h-full w-full object-contain" alt="Poster semasa (nisbah 4:5)" />
+                        <p class="text-xs text-gray-400">Setiap fail mesti kurang daripada 2MB. Featured image digunakan sebagai poster utama program.</p>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">Featured image</label>
+                            <input type="file" accept="image/jpg,image/jpeg,image/png,image/webp" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" @change="handleFeaturedChange" />
+                            <div v-if="featuredPreview" class="mx-auto aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                                <img :src="featuredPreview" class="h-full w-full object-contain" alt="Pratonton featured image" />
                             </div>
-                            <p class="mt-1 text-center text-xs text-gray-400">Poster semasa ialah featured image. Pilih fail baharu jika mahu menggantikannya dan menambah galeri.</p>
                         </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">Gallery poster</label>
+                            <input type="file" multiple accept="image/jpg,image/jpeg,image/png,image/webp" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" @change="handleGalleryChange" />
+                            <p class="text-xs text-gray-400">Boleh pilih beberapa poster. Ia tidak mengubah featured image.</p>
+                            <div v-if="galleryPreviews.length" class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                <div v-for="(preview, index) in galleryPreviews" :key="preview" class="aspect-[4/5] overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+                                    <img :src="preview" :alt="`Pratonton gallery ${index + 1}`" class="h-full w-full object-cover" />
+                                </div>
+                            </div>
+                        </div>
+                        <p v-if="uploadError" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{{ uploadError }}</p>
                     </div>
                 </div>
             </div>

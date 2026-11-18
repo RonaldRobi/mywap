@@ -65,19 +65,20 @@ class BroadcastController extends Controller
                 'notification_channels' => $message->notification_channels ?? ['in_app'],
                 'sent_at' => $message->sent_at?->toDateTimeString(),
                 'status' => $message->status ?? 'queued',
-                'status_label' => match ($message->status) {
-                    'processing' => 'Sedang Dihantar',
-                    'completed' => 'Selesai Dihantar',
-                    'partial' => 'Selesai (Sebahagian Gagal)',
-                    'failed' => 'Gagal',
+                'status_label' => match (true) {
+                    $message->status === 'processing' => 'Sedang Dihantar',
+                    $message->status === 'completed' => 'Selesai Dihantar',
+                    $message->status === 'partial' => 'Selesai (Sebahagian Gagal)',
+                    $message->status === 'failed' => 'Gagal',
+                    filled($message->scheduled_at) => 'Dijadualkan',
                     default => 'Menunggu Beratur (Queue)',
                 },
                 'total_recipients' => $message->recipient_count,
                 'success_count' => $message->success_count,
                 'failed_count' => $message->failed_count,
                 'started_at' => $message->started_at?->toDateTimeString(),
-                 'finished_at' => $message->finished_at?->toDateTimeString(),
-                 'scheduled_at' => $message->scheduled_at?->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i'),
+                'finished_at' => $message->finished_at?->toDateTimeString(),
+                'scheduled_at' => $message->scheduled_at?->timezone('Asia/Kuala_Lumpur')->format('Y-m-d H:i'),
                 'error_message' => $message->error_message,
             ]);
 
@@ -241,9 +242,9 @@ class BroadcastController extends Controller
             'target_criteria' => $data['target_criteria'],
             'recipient_ids' => $data['recipient_ids'] ?? null,
             'notification_channels' => $data['notification_channels'],
-             'email_use_template' => $request->boolean('email_use_template', false),
-             'scheduled_at' => $data['scheduled_at'] ?? null,
-         ]);
+            'email_use_template' => $request->boolean('email_use_template', false),
+            'scheduled_at' => $data['scheduled_at'] ?? null,
+        ]);
 
         return back()->with('success', 'Push notification sedang diproses dan akan dihantar berperingkat.');
     }

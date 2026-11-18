@@ -34,6 +34,8 @@ class EnsureBranchAdminAccess
         'admin.facilities.',
         'admin.facility-bookings.',
         'admin.broadcasts.',
+        'admin.supporters.index',
+        'admin.supporters.invite',
         'superadmin.infaq.',
         'admin.donors.',
         'admin.members.export',

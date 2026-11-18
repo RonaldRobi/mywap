@@ -7,6 +7,8 @@ const props = defineProps({
     supporters: { type: Object, default: () => ({ data: [], links: [] }) },
     counts: { type: Object, default: () => ({ total: 0, with_email: 0, prospects: 0, members: 0 }) },
     isSuperadmin: Boolean,
+    isBranchAdmin: Boolean,
+    hasBranchPrograms: Boolean,
     organizations: { type: Array, default: () => [] },
     programs: { type: Array, default: () => [] },
     defaultOrganizationId: Number,
@@ -160,7 +162,7 @@ function removeSupporter(item) {
                 {{ $page.props.flash.error }}
             </div>
 
-            <div class="mb-6 grid gap-4 lg:grid-cols-2">
+            <div v-if="!isBranchAdmin" class="mb-6 grid gap-4 lg:grid-cols-2">
                 <form @submit.prevent="submit" class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
                     <h2 class="text-sm font-bold text-gray-800">Tambah Pendukung</h2>
                     <p class="mt-1 text-xs text-gray-500">Isi sekurang-kurangnya emel, No. telefon, atau No. IC.</p>
@@ -268,13 +270,13 @@ function removeSupporter(item) {
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     <button type="button" class="min-h-11 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" @click="applyFilters">Cari</button>
                     <button type="button" class="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-50" @click="resetFilters">Set semula</button>
-                    <a :href="exportUrl('excel')" class="inline-flex min-h-11 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Export Excel</a>
-                    <a :href="exportUrl('pdf')" class="inline-flex min-h-11 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100">Export PDF</a>
+                    <a v-if="!isBranchAdmin" :href="exportUrl('excel')" class="inline-flex min-h-11 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">Export Excel</a>
+                    <a v-if="!isBranchAdmin" :href="exportUrl('pdf')" class="inline-flex min-h-11 items-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100">Export PDF</a>
                     <span class="text-xs text-gray-500">{{ supporters.total ?? supporters.data.length }} rekod</span>
                 </div>
             </div>
 
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div v-if="!isBranchAdmin || supporters.data.length" class="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p class="text-sm font-semibold text-gray-600">{{ selectedCount }} dipilih</p>
                 <button
                     type="button"
@@ -299,12 +301,12 @@ function removeSupporter(item) {
                                 </th>
                                 <th class="px-4 py-3">Nama</th>
                                 <th class="px-4 py-3">Hubungan</th>
-                                <th class="px-4 py-3">No. IC</th>
+                                <th v-if="!isBranchAdmin" class="px-4 py-3">No. IC</th>
                                 <th class="px-4 py-3">Program</th>
                                 <th class="px-4 py-3">Status</th>
                                 <th v-if="isSuperadmin" class="px-4 py-3">Organisasi</th>
                                 <th class="px-4 py-3">Jemputan</th>
-                                <th class="px-4 py-3"></th>
+                                <th v-if="!isBranchAdmin" class="px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -324,7 +326,7 @@ function removeSupporter(item) {
                                     <p v-if="item.phone" class="text-xs text-gray-500">{{ item.phone }}</p>
                                     <p v-if="!item.email && !item.phone" class="text-xs text-gray-500">Tiada emel atau telefon</p>
                                 </td>
-                                <td class="px-4 py-3 text-gray-600">{{ item.ic_number || '-' }}</td>
+                                <td v-if="!isBranchAdmin" class="px-4 py-3 text-gray-600">{{ item.ic_number || '-' }}</td>
                                 <td class="px-4 py-3">
                                     <template v-if="item.programs.length">
                                         <p class="font-semibold text-gray-700">{{ item.programs[0].title }}</p>
@@ -352,13 +354,23 @@ function removeSupporter(item) {
                                     <p v-if="item.last_invited_at">Dijemput {{ item.last_invited_at }}</p>
                                     <p v-else>Belum dijemput</p>
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td v-if="!isBranchAdmin" class="px-4 py-3 text-right">
                                     <button type="button" class="min-h-9 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50" @click="removeSupporter(item)">Buang</button>
                                 </td>
                             </tr>
                             <tr v-if="!supporters.data.length">
-                                <td :colspan="isSuperadmin ? 9 : 8" class="px-4 py-10 text-center text-sm text-gray-500">
-                                    Belum ada pendukung untuk tapisan ini. Peserta bukan ahli yang mendaftar atau hadir ke program akan muncul di sini secara automatik.
+                                <td :colspan="isSuperadmin ? 9 : (isBranchAdmin ? 6 : 8)" class="px-4 py-10 text-center text-sm text-gray-500">
+                                    <template v-if="isBranchAdmin && !hasBranchPrograms">
+                                        <p class="font-semibold text-gray-700">Belum ada program untuk cawangan ini.</p>
+                                        <p class="mx-auto mt-1 max-w-lg">Buat program dan terima pendaftaran peserta dahulu. Peserta yang belum menjadi ahli akan muncul di sini untuk dihantar jemputan.</p>
+                                    </template>
+                                    <template v-else-if="isBranchAdmin">
+                                        <p class="font-semibold text-gray-700">Belum ada pendukung daripada program cawangan.</p>
+                                        <p class="mx-auto mt-1 max-w-lg">Apabila peserta bukan ahli mendaftar atau hadir ke program cawangan, rekod mereka akan muncul di sini.</p>
+                                    </template>
+                                    <template v-else>
+                                        Belum ada pendukung untuk tapisan ini. Peserta bukan ahli yang mendaftar atau hadir ke program akan muncul di sini secara automatik.
+                                    </template>
                                 </td>
                             </tr>
                         </tbody>

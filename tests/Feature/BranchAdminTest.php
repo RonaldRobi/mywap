@@ -17,6 +17,7 @@ use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\Supporter;
 use App\Models\UsrahGroup;
 use App\Models\User;
 use App\Models\Video;
@@ -199,6 +200,46 @@ class BranchAdminTest extends TestCase
         $this->actingAs($this->branchAdmin)->get(route('admin.fees.members'))->assertOk();
         $this->actingAs($this->branchAdmin)->get(route('admin.hub.manage'))->assertOk();
         $this->actingAs($this->branchAdmin)->get(route('admin.branch-report.index'))->assertOk();
+    }
+
+    public function test_branch_admin_sees_only_supporters_from_managed_branch_programs(): void
+    {
+        $ownEvent = $this->branchEvent($this->perak, 'Program Perak');
+        $otherEvent = $this->branchEvent($this->johor, 'Program Johor');
+        $ownSupporter = Supporter::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Pendukung Perak',
+            'email' => 'perak-supporter@example.com',
+            'source' => Supporter::SOURCE_PROGRAM,
+            'is_active' => true,
+        ]);
+        $otherSupporter = Supporter::create([
+            'organization_id' => $this->abim->id,
+            'name' => 'Pendukung Johor',
+            'email' => 'johor-supporter@example.com',
+            'source' => Supporter::SOURCE_PROGRAM,
+            'is_active' => true,
+        ]);
+        $ownEvent->supporters()->attach($ownSupporter);
+        $otherEvent->supporters()->attach($otherSupporter);
+
+        $response = $this->actingAs($this->branchAdmin)->get(route('admin.supporters.index'));
+        $response->assertOk();
+
+        $names = collect($response->viewData('page')['props']['supporters']['data'])->pluck('name');
+        $this->assertTrue($names->contains('Pendukung Perak'));
+        $this->assertFalse($names->contains('Pendukung Johor'));
+    }
+
+    public function test_branch_admin_without_programs_gets_guidance_on_supporters_page(): void
+    {
+        $response = $this->actingAs($this->branchAdmin)->get(route('admin.supporters.index'));
+        $response->assertOk();
+
+        $props = $response->viewData('page')['props'];
+        $this->assertTrue($props['isBranchAdmin']);
+        $this->assertFalse($props['hasBranchPrograms']);
+        $this->assertEmpty($props['programs']);
     }
 
     public function test_fee_page_only_lists_branch_members(): void

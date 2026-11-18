@@ -39,6 +39,7 @@ const broadcastForm = useForm({
     recipient_ids: [],
     notification_channels: ['in_app'],
     email_use_template: false,
+    scheduled_at: '',
 });
 
 const selectedOrgId = ref(initialOrganizationId);
@@ -102,6 +103,7 @@ function submitBroadcast() {
         preserveScroll: true,
         onSuccess: () => {
             broadcastForm.reset('title', 'content', 'action_type', 'action_id', 'action_label', 'action_url', 'target_criteria', 'recipient_ids', 'notification_channels', 'email_use_template');
+            broadcastForm.scheduled_at = '';
             selectedMembers.value = [];
             memberSearchQuery.value = '';
             memberResults.value = [];
@@ -481,6 +483,10 @@ function channelLabel(ch) {
     return ch === 'in_app' ? 'In-App' : 'Email';
 }
 
+function resendBroadcast(id) {
+    router.post(route('admin.broadcasts.resend', id), {}, { preserveScroll: true });
+}
+
 function logEventLabel(event) {
     return {
         queued: 'Dalam giliran',
@@ -491,6 +497,7 @@ function logEventLabel(event) {
         delivery_failed: 'Hantaran gagal',
         fcm_sent: 'Push peranti (FCM) dihantar',
         fcm_skipped: 'Push peranti (FCM) dilangkau',
+        resent: 'Dihantar semula',
     }[event] || event;
 }
 
@@ -848,6 +855,13 @@ onBeforeUnmount(stopPolling);
                             </div>
                         </div>
 
+                        <div class="md:col-span-2">
+                            <label for="scheduled_at" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Jadual Penghantaran (Pilihan)</label>
+                            <input id="scheduled_at" v-model="broadcastForm.scheduled_at" type="datetime-local" :min="new Date().toISOString().slice(0, 16)" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold focus:border-gray-900 focus:ring-gray-900 transition-all md:max-w-sm">
+                            <p class="mt-1 text-[11px] text-gray-400">Biarkan kosong untuk hantar sebaik sahaja queue memprosesnya. Waktu Malaysia.</p>
+                            <p v-if="broadcastForm.errors.scheduled_at" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.scheduled_at }}</p>
+                        </div>
+
                         <div class="md:col-span-2 flex justify-end mt-2">
                             <button type="submit" :disabled="broadcastForm.processing" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-gray-800 transition-all hover:-translate-y-0.5 disabled:opacity-60">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
@@ -914,6 +928,16 @@ onBeforeUnmount(stopPolling);
                                         {{ item.status_label }}
                                     </span>
                                     <span v-if="item.finished_at" class="text-[10px] text-gray-400 font-medium">Siap: {{ item.finished_at }}</span>
+                                    <span v-if="item.scheduled_at && !item.finished_at" class="text-[10px] text-blue-500 font-medium">Dijadualkan: {{ item.scheduled_at }}</span>
+                                    <button
+                                        v-if="!['queued', 'processing'].includes(item.status)"
+                                        type="button"
+                                        @click="resendBroadcast(item.id)"
+                                        class="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-[11px] font-bold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
+                                    >
+                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5.5 9A7 7 0 0117 6.5L20 9M18.5 15A7 7 0 017 17.5L4 15" /></svg>
+                                        Hantar Semula
+                                    </button>
                                     <button
                                         type="button"
                                         @click="toggleLogs(item.id)"

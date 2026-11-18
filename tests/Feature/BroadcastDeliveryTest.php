@@ -21,6 +21,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -211,6 +212,53 @@ class BroadcastDeliveryTest extends TestCase
         $this->assertSame('completed', $fresh->status);
         $this->assertSame(1, $fresh->recipient_count);
         $this->assertSame(1, $fresh->success_count);
+    }
+
+    public function test_admin_can_resend_a_completed_broadcast_as_a_new_delivery(): void
+    {
+        $admin = $this->makeAdmin();
+        $message = $this->createBroadcast(['in_app']);
+        Bus::dispatchSync(new SendBroadcastJob($message->id));
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.resend', $message))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        $copy = BroadcastMessage::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $this->assertNotSame($message->id, $copy->id);
+        $this->assertSame($message->title, $copy->title);
+        $this->assertSame($message->recipient_ids, $copy->recipient_ids);
+        $this->assertSame('completed', $copy->status);
+        $this->assertDatabaseHas('broadcast_logs', [
+            'broadcast_message_id' => $message->id,
+            'event' => 'resent',
+        ]);
+    }
+
+    public function test_admin_can_schedule_a_broadcast(): void
+    {
+        $admin = $this->makeAdmin();
+        $scheduledAt = now('Asia/Kuala_Lumpur')->addHour()->format('Y-m-d\\TH:i');
+        Queue::fake();
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => 'Hebahan Berjadual',
+                'content' => 'Akan dihantar kemudian.',
+                'target_criteria' => 'organization',
+                'notification_channels' => ['in_app'],
+                'scheduled_at' => $scheduledAt,
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $message = BroadcastMessage::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $this->assertNotNull($message->scheduled_at);
+        $this->assertSame('queued', $message->status);
+        Queue::assertPushed(SendBroadcastJob::class, fn ($job) => $job->broadcastMessageId === $message->id);
     }
 
     public function test_org_admin_all_stays_scoped_to_own_org_without_platform_label(): void
