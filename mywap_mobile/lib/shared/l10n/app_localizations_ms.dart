@@ -174,7 +174,31 @@ class AppLocalizationsMs extends AppLocalizations {
   String get menuLibrarySubtitle => 'Bahan bacaan & rujukan';
 
   @override
-  String get menuSectionMall => 'myWAP Mall';
+  String get menuSectionMall => 'MyWAP Mall';
+
+  @override
+  String get menuPrimaryActions => 'Aksi Utama';
+
+  @override
+  String get menuQuickScan => 'Imbas Pantas';
+
+  @override
+  String get menuQuickAdmin => 'Papan Kawalan';
+
+  @override
+  String get menuQuickEvents => 'Acara';
+
+  @override
+  String get menuQuickNotifications => 'Pemberitahuan';
+
+  @override
+  String get menuQuickDigitalId => 'ID Digital';
+
+  @override
+  String get menuQuickFees => 'Yuran';
+
+  @override
+  String get menuQuickTickets => 'Tiket Saya';
 
   @override
   String get menuProducts => 'Produk';
@@ -646,7 +670,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get noInfaqCampaigns => 'Tiada kempen infaq buat masa ini.';
 
   @override
-  String get becomeMemberTitle => 'Jadi Ahli myWAP';
+  String get becomeMemberTitle => 'Jadi Ahli MyWAP';
 
   @override
   String get becomeMemberBody => 'Daftar untuk akses kad ahli, status yuran, program, usrah dan banyak lagi.';
@@ -1182,7 +1206,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get biometricFingerprintLoginLower => 'Log masuk dengan Cap Jari';
 
   @override
-  String get ecomMarketTitle => 'Pasar';
+  String get ecomMarketTitle => 'MyWAP Mall';
 
   @override
   String get ecomCartTitle => 'Troli';
@@ -2657,7 +2681,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scanQrTitle => 'Imbas QR Kehadiran';
 
   @override
-  String get scanPointCameraHint => 'Halakan kamera ke kod QR pada poster/skrin program untuk daftar hadir.';
+  String get scanPointCameraHint => 'Sejajarkan kod QR dalam bingkai untuk daftar hadir.';
 
   @override
   String get scanCloseButton => 'Tutup';
@@ -2976,6 +3000,9 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get homeGuestTitle => 'Selamat datang ke myWAP';
+
+  @override
+  String get homeAccessLabel => 'Akses Awam & Ahli';
 
   @override
   String get homeGuestBody => 'Log masuk untuk akses kad ahli, yuran, program dan usrah. Ahli sedia ada yang belum pernah log masuk boleh aktifkan akaun dahulu.';
@@ -3339,7 +3366,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminParticipantList => 'Senarai Peserta';
 
   @override
-  String get adminPointCameraMemberCardQr => 'Halakan kamera ke Kod QR Kad Keahlian';
+  String get adminPointCameraMemberCardQr => 'Sejajarkan Kod QR Kad Keahlian dalam bingkai untuk merekod kehadiran.';
 
   @override
   String get adminManualInput => 'Input Manual (No. IC / Kad)';

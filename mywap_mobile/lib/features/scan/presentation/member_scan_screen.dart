@@ -8,6 +8,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/scan_viewfinder.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../events/application/event_providers.dart';
 
@@ -212,42 +213,57 @@ class _MemberScanScreenState extends ConsumerState<MemberScanScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        leading: const AppBackButton(),
-        backgroundColor: Colors.black,
+        leading: const AppBackButton(light: true),
+        backgroundColor: AppColors.movementNavy,
         foregroundColor: AppColors.white,
+        centerTitle: true,
         title: Text(context.l10n.scanQrTitle),
       ),
       body: Stack(
         children: [
           MobileScanner(controller: _controller, onDetect: _onDetect),
-          // Frame overlay — memberi fokus visual pada kawasan imbasan.
-          Center(
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.movementSoftGreen,
-                  width: 3,
-                ),
-                borderRadius: AppRadius.xl,
-              ),
-            ),
-          ),
+          ScanViewfinder(isProcessing: _processing),
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: SafeArea(
               top: false,
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.xl),
-                child: Text(
-                  context.l10n.scanPointCameraHint,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(
+                  Spacing.lg,
+                  0,
+                  Spacing.lg,
+                  Spacing.lg,
+                ),
+                padding: const EdgeInsets.all(Spacing.lg),
+                decoration: const BoxDecoration(
+                  color: AppColors.movementNavy,
+                  borderRadius: AppRadius.lg,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: AppColors.white,
+                        size: AppSizes.iconMd,
+                      ),
+                    ),
+                    const SizedBox(width: Spacing.md),
+                    Expanded(
+                      child: Text(
+                        context.l10n.scanPointCameraHint,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textOnDark,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -133,6 +133,31 @@ class ExportMembersTest extends TestCase
         $this->assertStringNotContainsString('Ahli Wadah', $content);
     }
 
+    public function test_export_sorts_members_by_numeric_member_number(): void
+    {
+        $admin = $this->makeUser('Admin Wadah', $this->wadah, null);
+        $admin->assignRole('Admin');
+
+        $this->memberWadah->update([
+            'member_no' => 'W0010',
+            'member_no_sequence' => 10,
+        ]);
+
+        $this->makeUser('Ahli Wadah 2', $this->wadah, null, [
+            'member_no' => 'W0002',
+            'member_no_sequence' => 2,
+        ]);
+        $this->makeUser('Ahli Wadah 1', $this->wadah, null, [
+            'member_no' => 'W0001',
+            'member_no_sequence' => 1,
+        ]);
+
+        $content = $this->export($admin);
+
+        $this->assertLessThan(strpos($content, 'W0002'), strpos($content, 'W0001'));
+        $this->assertLessThan(strpos($content, 'W0010'), strpos($content, 'W0002'));
+    }
+
     public function test_member_cannot_export_members(): void
     {
         $member = $this->makeUser('Ahli Biasa', $this->abim, $this->selangor);

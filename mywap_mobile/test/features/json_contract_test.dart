@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mywap_mobile/core/utils/formatters.dart';
 import 'package:mywap_mobile/features/events/data/models/event.dart';
 import 'package:mywap_mobile/features/facilities/data/models/facility.dart';
 import 'package:mywap_mobile/features/financial/data/models/financial_overview.dart';
@@ -7,6 +8,7 @@ import 'package:mywap_mobile/features/forms/data/models/form_model.dart';
 import 'package:mywap_mobile/features/infaq/data/models/infaq.dart';
 import 'package:mywap_mobile/features/member/data/models/announcement.dart';
 import 'package:mywap_mobile/features/member/data/models/fee_status.dart';
+import 'package:mywap_mobile/features/organization/data/models/organization_info.dart';
 import 'package:mywap_mobile/features/polls/data/models/poll.dart';
 
 /// Laravel's `decimal:2` cast serializes values as strings (`"0.00"`), and
@@ -157,6 +159,47 @@ void main() {
       expect(announcement.reads_count, 11);
       expect(announcement.is_pinned, isTrue);
       expect(announcement.is_read, isFalse);
+    });
+  });
+
+  group('organization', () {
+    test('OrganizationInfoData parses member_count directly from organization', () {
+      final data = OrganizationInfoData.fromJson({
+        'organizations': [
+          {'id': 2, 'slug': 'pkpim', 'member_count': 120, 'chart_member_count': 15},
+        ],
+        'organization': {
+          'id': 2,
+          'slug': 'pkpim',
+          'name': 'PKPIM',
+          'member_count': 120,
+          'chart_member_count': 15,
+        },
+        'chart_members': [],
+      });
+
+      expect(data.organization?.member_count, 120);
+      expect(data.organization?.chart_member_count, 15);
+      expect(Formatters.number(data.organization?.member_count), '120');
+    });
+
+    test('OrganizationInfoData falls back to organizations list when member_count is missing in organization payload', () {
+      final data = OrganizationInfoData.fromJson({
+        'organizations': [
+          {'id': 2, 'slug': 'pkpim', 'member_count': 450, 'chart_member_count': 20},
+          {'id': 3, 'slug': 'abim', 'member_count': 1250, 'chart_member_count': 30},
+        ],
+        'organization': {
+          'id': 3,
+          'slug': 'abim',
+          'name': 'ABIM',
+        },
+        'chart_members': [],
+      });
+
+      expect(data.organization?.member_count, 1250);
+      expect(data.organization?.chart_member_count, 30);
+      expect(Formatters.number(data.organization?.member_count), '1,250');
     });
   });
 }

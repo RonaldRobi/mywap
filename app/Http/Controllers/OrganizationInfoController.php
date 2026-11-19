@@ -40,7 +40,9 @@ class OrganizationInfoController extends Controller
             ? $organizations->firstWhere('slug', $requestedSlug)
             : null;
 
-        $organization = $selected ?? $currentOrganization ?? $organizations->first();
+        $organization = $selected
+            ?? ($currentOrganization ? $organizations->firstWhere('id', $currentOrganization->id) : null)
+            ?? $organizations->first();
 
         $chartMembers = $organization->chartMembers()->get()->map(fn (OrganizationChartMember $member) => [
             'id' => $member->id,
@@ -198,6 +200,8 @@ class OrganizationInfoController extends Controller
             'color_theme' => $organization->color_theme,
             'min_age' => $organization->min_age,
             'max_age' => $organization->max_age,
+            'member_count' => (int) ($organization->members_count ?? $organization->members()->excludeAdminPanel()->count()),
+            'chart_member_count' => (int) ($organization->chart_members_count ?? $organization->chartMembers()->count()),
             'email' => $organization->email,
             'phone' => $organization->phone,
             'website_url' => $organization->website_url,

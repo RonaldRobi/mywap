@@ -87,6 +87,14 @@ abstract final class Formatters {
     return _currency.format(n);
   }
 
+  /// Formats an integer or number with thousands separator, e.g. 1250 → "1,250".
+  static String number(dynamic value) {
+    final num? n =
+        value is num ? value : num.tryParse(value?.toString() ?? '');
+    if (n == null) return '0';
+    return NumberFormat.decimalPattern(_locale).format(n);
+  }
+
   static String date(DateTime? date) {
     if (date == null) return '-';
     String pad(int value) => value.toString().padLeft(2, '0');

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../shared/l10n/l10n.dart';
+import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/app_image.dart';
@@ -20,10 +21,19 @@ class MediaStatementsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(mediaStatementsProvider);
+
     return Scaffold(
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.mediaStatementsTitle),
+        title: Text(
+          context.l10n.mediaStatementsTitle,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.movementNavy,
+          ),
+        ),
       ),
       body: async.when(
         data:
@@ -34,7 +44,26 @@ class MediaStatementsScreen extends ConsumerWidget {
                       ? ListView(
                         children: [
                           const SizedBox(height: 120),
-                          Center(child: Text(context.l10n.mediaStatementsEmpty)),
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.campaign_outlined,
+                                  size: 48,
+                                  color: AppColors.textTertiary,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  context.l10n.mediaStatementsEmpty,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       )
                       : ListView.separated(
@@ -55,7 +84,7 @@ class MediaStatementsScreen extends ConsumerWidget {
               itemBuilder:
                   (_, __) => const Padding(
                     padding: EdgeInsets.only(bottom: Spacing.md),
-                    child: SkeletonBox(height: 90),
+                    child: SkeletonBox(height: 100, radius: 16),
                   ),
             ),
         error:
@@ -73,49 +102,127 @@ class MediaStatementsScreen extends ConsumerWidget {
 
 class _MediaStatementCard extends StatelessWidget {
   const _MediaStatementCard({required this.item});
+
   final MediaStatement item;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      margin: EdgeInsets.zero,
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap:
             () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => MediaStatementDetailScreen(id: item.id),
               ),
             ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 96,
-              height: 88,
-              child:
-                  item.featuredImage == null
-                      ? const ColoredBox(
-                        color: Color(0xFFE7F5EA),
-                        child: Icon(Icons.campaign_outlined, size: 28),
-                      )
-                      : AppImage(
-                        item.featuredImage,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.zero,
-                      ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(Spacing.md),
-                child: Text(
-                  item.title ?? '-',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x12000000), width: 0.8),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0612241C),
+                blurRadius: 10,
+                offset: Offset(0, 3),
               ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(Spacing.md),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child:
+                        item.featuredImage == null
+                            ? Container(
+                              color: const Color(0xFFE8F5E9),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.campaign_rounded,
+                                  size: 30,
+                                  color: AppColors.movementGreen,
+                                ),
+                              ),
+                            )
+                            : AppImage(item.featuredImage, fit: BoxFit.cover),
+                  ),
+                ),
+                const SizedBox(width: Spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementGreen.withValues(
+                            alpha: 0.12,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'KENYATAAN MEDIA',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.description_outlined,
+                            size: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Siaran Rasmi',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 12,
+                            color: Color(0xFFB0B0B5),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -124,21 +231,31 @@ class _MediaStatementCard extends StatelessWidget {
 
 class MediaStatementDetailScreen extends ConsumerWidget {
   const MediaStatementDetailScreen({super.key, required this.id});
+
   final int id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(mediaStatementDetailProvider(id));
-    final shareStatement = async.valueOrNull?.statement;
+    final statement = async.valueOrNull?.statement;
+
     return Scaffold(
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
         leading: const AppBackButton(),
-        title: Text(context.l10n.mediaStatementsTitle),
+        title: Text(
+          context.l10n.mediaStatementsTitle,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.movementNavy,
+          ),
+        ),
         actions: [
-          if (shareStatement != null)
+          if (statement != null)
             ShareItemIconButton(
-              title: shareStatement.title ?? '',
-              url: shareStatement.shareUrl,
+              title: statement.title ?? '',
+              url: statement.shareUrl,
             ),
         ],
       ),
@@ -152,47 +269,139 @@ class MediaStatementDetailScreen extends ConsumerWidget {
                       : context.l10n.unexpectedError,
               onRetry: () => ref.invalidate(mediaStatementDetailProvider(id)),
             ),
-        data:
-            (detail) => ListView(
-              padding: const EdgeInsets.all(Spacing.lg),
-              children: [
-                if (detail.statement.featuredImage != null)
-                  AppImage(
-                    detail.statement.featuredImage,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                const SizedBox(height: Spacing.lg),
-                Text(
-                  detail.statement.title ?? '-',
-                  style: Theme.of(context).textTheme.headlineSmall,
+        data: (detail) {
+          final s = detail.statement;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.lg,
+              Spacing.sm,
+              Spacing.lg,
+              Spacing.xxl,
+            ),
+            children: [
+              // Badge Dokumen Rasmi
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
                 ),
-                const SizedBox(height: Spacing.md),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ShareItemButton(
-                    title: detail.statement.title ?? '',
-                    url: detail.statement.shareUrl,
+                decoration: BoxDecoration(
+                  color: AppColors.movementGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 13,
+                      color: AppColors.movementGreen,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'SIARAN MEDIA RASMI',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: AppColors.movementGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Spacing.md),
+
+              // Tajuk Utama
+              Text(
+                s.title ?? '-',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: AppColors.movementNavy,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: Spacing.lg),
+
+              // Poster Gambar Jika Ada
+              if (s.featuredImage != null && s.featuredImage!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: AppImage(s.featuredImage, fit: BoxFit.cover),
                   ),
                 ),
                 const SizedBox(height: Spacing.lg),
-                if (detail.statement.pdfUrl != null)
-                  FilledButton.icon(
+              ],
+
+              // Butang Muat Turun PDF (Jika Tersedia)
+              if (s.pdfUrl != null && s.pdfUrl!.isNotEmpty) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
                     onPressed:
                         () => launchUrl(
-                          Uri.parse(detail.statement.pdfUrl!),
+                          Uri.parse(s.pdfUrl!),
                           mode: LaunchMode.externalApplication,
                         ),
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
-                    label: Text(context.l10n.openPdf),
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                    label: Text(
+                      context.l10n.openPdf,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                if (detail.content != null &&
-                    detail.content!.trim().isNotEmpty) ...[
-                  const SizedBox(height: Spacing.lg),
-                  HtmlContent(detail.content),
-                ],
+                ),
+                const SizedBox(height: Spacing.lg),
               ],
-            ),
+
+              // Teks Kandungan Siaran Media
+              if (detail.content != null &&
+                  detail.content!.trim().isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(Spacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: const Color(0x10000000),
+                      width: 0.8,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0612241C),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: HtmlContent(
+                    detail.content,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.7,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }

@@ -1,6 +1,7 @@
 import '../../../core/constants/api_paths.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/json_parsing.dart';
+import '../../ecommerce/data/models/product.dart';
 
 /// Banner dashboard yang dimuat naik oleh admin (untuk carousel Beranda).
 class PublicBanner {
@@ -214,6 +215,7 @@ class PublicHomeData {
     this.events = const [],
     this.infaqs = const [],
     this.mediaStatements = const [],
+    this.products = const [],
   });
 
   final String? logoUrl;
@@ -225,6 +227,7 @@ class PublicHomeData {
   final List<PublicEvent> events;
   final List<PublicInfaq> infaqs;
   final List<PublicMediaStatement> mediaStatements;
+  final List<Product> products;
 
   factory PublicHomeData.fromJson(Map<String, dynamic> json) => PublicHomeData(
     logoUrl: json['logo_url'] as String?,
@@ -239,6 +242,7 @@ class PublicHomeData {
       json['media_statements'],
       PublicMediaStatement.fromJson,
     ),
+    products: _listOf(json['products'], Product.fromJson),
   );
 }
 

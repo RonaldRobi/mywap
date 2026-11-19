@@ -148,9 +148,9 @@ section "Versi"
 
 if [ "$DRY_RUN" -eq 1 ]; then
   step "Dry-run (tiada perubahan ditulis)"
-  if [ "$RELEASE" -eq 1 ] && [ "$IOS" -eq 1 ]; then
+  if [ "$IOS" -eq 1 ]; then
     if ! RELEASE_ENV="$(cd "$FLUTTER_DIR" && ruby tool/version.rb next-release --env)"; then
-      fail "Release tidak boleh diteruskan. Semak: ruby tool/version.rb status"
+      fail "iOS tidak boleh diteruskan. Semak: ruby tool/version.rb status"
     fi
     eval "$RELEASE_ENV"
   fi
@@ -165,10 +165,10 @@ CURRENT_MARKETING="$(sed -n 's/^version:[[:space:]]*//p' "$FLUTTER_DIR/pubspec.y
 CURRENT_MARKETING="${CURRENT_MARKETING%%+*}"
 PLANNED_MARKETING="$CURRENT_MARKETING"
 
-if [ "$RELEASE" -eq 1 ] && [ "$IOS" -eq 1 ]; then
+if [ "$IOS" -eq 1 ]; then
   step "Semak version App Store (next-release)"
   if ! RELEASE_ENV="$(cd "$FLUTTER_DIR" && ruby tool/version.rb next-release --env)"; then
-    fail "Release tidak boleh diteruskan. Semak: ruby tool/version.rb status"
+    fail "iOS tidak boleh diteruskan. Semak: ruby tool/version.rb status"
   fi
   eval "$RELEASE_ENV"
   PLANNED_MARKETING="$MARKETING"
@@ -191,9 +191,9 @@ if [ "$RELEASE" -eq 1 ] && [ "$ASSUME_YES" -eq 0 ]; then
   esac
 fi
 
-if [ "$RELEASE" -eq 1 ] && [ "$IOS" -eq 1 ]; then
+if [ "$IOS" -eq 1 ]; then
   if ! RELEASE_ENV="$(cd "$FLUTTER_DIR" && ruby tool/version.rb next-release --write --env)"; then
-    fail "Release tidak boleh diteruskan. Semak: ruby tool/version.rb status"
+    fail "iOS tidak boleh diteruskan. Semak: ruby tool/version.rb status"
   fi
   eval "$RELEASE_ENV"
 fi

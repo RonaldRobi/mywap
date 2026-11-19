@@ -8,12 +8,10 @@ import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/error_retry.dart';
-import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../application/event_providers.dart';
 import '../data/models/event.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 class EventsScreen extends ConsumerWidget {
@@ -25,44 +23,39 @@ class EventsScreen extends ConsumerWidget {
     final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
-      appBar: AppTopBar(
-        icon: Icons.event_outlined,
-        semanticLabel: context.l10n.eventsTitle,
-        actions: [
-          if (isAuthenticated)
-            IconButton(
-              tooltip: context.l10n.eventsMyRegistrationsTooltip,
-              onPressed: () => context.push('/events/my-registrations'),
-              icon: const Icon(Icons.event_available_outlined),
-            ),
-          const NotificationBell(),
-          const SizedBox(width: Spacing.sm),
-        ],
-      ),
-      body: eventsAsync.when(
-        data:
-            (events) => _EventsList(
-              events: events,
-              onRefresh: () async => ref.invalidate(eventsProvider),
-            ),
-        loading: () => const _EventsSkeleton(),
-        error:
-            (error, _) => ErrorRetry(
-              message:
-                  error is ApiException
-                      ? error.message
-                      : context.l10n.unexpectedError,
-              onRetry: () => ref.invalidate(eventsProvider),
-            ),
+      body: SafeArea(
+        bottom: false,
+        child: eventsAsync.when(
+          data:
+              (events) => _EventsList(
+                events: events,
+                isAuthenticated: isAuthenticated,
+                onRefresh: () async => ref.invalidate(eventsProvider),
+              ),
+          loading: () => const _EventsSkeleton(),
+          error:
+              (error, _) => ErrorRetry(
+                message:
+                    error is ApiException
+                        ? error.message
+                        : context.l10n.unexpectedError,
+                onRetry: () => ref.invalidate(eventsProvider),
+              ),
+        ),
       ),
     );
   }
 }
 
 class _EventsList extends StatelessWidget {
-  const _EventsList({required this.events, required this.onRefresh});
+  const _EventsList({
+    required this.events,
+    required this.isAuthenticated,
+    required this.onRefresh,
+  });
 
   final List<Event> events;
+  final bool isAuthenticated;
   final Future<void> Function() onRefresh;
 
   @override
@@ -82,7 +75,7 @@ class _EventsList extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(
           Spacing.lg,
-          Spacing.lg,
+          Spacing.md,
           Spacing.lg,
           Spacing.xxl,
         ),
@@ -93,6 +86,7 @@ class _EventsList extends StatelessWidget {
             return _PageIntro(
               title: context.l10n.eventsTitle,
               subtitle: context.l10n.eventsSubtitle,
+              isAuthenticated: isAuthenticated,
             );
           }
           return _EventCard(event: events[index - 1]);
@@ -224,28 +218,68 @@ class _EventCard extends StatelessWidget {
 }
 
 class _PageIntro extends StatelessWidget {
-  const _PageIntro({required this.title, required this.subtitle});
+  const _PageIntro({
+    required this.title,
+    required this.subtitle,
+    this.isAuthenticated = false,
+  });
+
   final String title;
   final String subtitle;
+  final bool isAuthenticated;
+
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: Spacing.xs),
-      Text(
-        subtitle,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: Spacing.xs),
+              Text(
+                subtitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        if (isAuthenticated)
+          Padding(
+            padding: const EdgeInsets.only(left: Spacing.sm),
+            child: ActionChip(
+              avatar: const Icon(
+                Icons.event_available_outlined,
+                size: 16,
+                color: AppColors.movementGreen,
+              ),
+              label: Text(
+                context.l10n.eventsMyRegistrationsTooltip,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.movementNavy,
+                ),
+              ),
+              backgroundColor: AppColors.softGreenSurface,
+              side: BorderSide(
+                color: AppColors.movementGreen.withValues(alpha: 0.2),
+              ),
+              onPressed: () => context.push('/events/my-registrations'),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _ImageChip extends StatelessWidget {

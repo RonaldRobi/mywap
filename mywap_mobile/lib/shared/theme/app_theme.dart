@@ -46,9 +46,9 @@ abstract final class AppSizes {
   static const double navBarHeight = 76;
 
   /// Tinggi [BottomAppBar] tersuai pada kedua-dua shell (ahli & tetamu).
-  /// Dulunya 56 pada shell ahli dan 60 pada shell tetamu — satu token kini
-  /// memastikan takuk FAB sejajar sama pada kedua-duanya.
-  static const double bottomNavHeight = 60;
+  /// Dilaraskan ke 50 supaya rapat ke bahagian bawah skrin mengikut standard iOS/Android,
+  /// mengelakkan jurang kosong yang terlalu besar di bawah label tab.
+  static const double bottomNavHeight = 50;
 
   static const double iconSm = 20;
   static const double iconMd = 24;
@@ -68,6 +68,10 @@ abstract final class AppShadows {
 
   static const List<BoxShadow> floating = [
     BoxShadow(color: Color(0x2212241C), blurRadius: 28, offset: Offset(0, 14)),
+  ];
+
+  static const List<BoxShadow> sheet = [
+    BoxShadow(color: Color(0x1F12241C), blurRadius: 32, offset: Offset(0, -8)),
   ];
 }
 
@@ -90,18 +94,19 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.pageBackground,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.pageBackground,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
+        titleSpacing: 4.0,
         titleTextStyle: TextStyle(
           fontFamily: AppTextTheme.fontFamily,
           color: AppColors.textPrimary,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
         ),
       ),
       cardTheme: CardThemeData(

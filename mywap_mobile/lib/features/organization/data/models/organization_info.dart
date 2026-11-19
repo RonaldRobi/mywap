@@ -15,16 +15,39 @@ class OrganizationInfoData {
     final orgJson = json['organization'];
     final orgsJson = json['organizations'];
     final chartJson = json['chart_members'];
+    final orgs = orgsJson is List
+        ? orgsJson
+            .whereType<Map<String, dynamic>>()
+            .map(OrganizationDetail.fromJson)
+            .toList(growable: false)
+        : const <OrganizationDetail>[];
+
+    var org = orgJson is Map<String, dynamic>
+        ? OrganizationDetail.fromJson(orgJson)
+        : null;
+
+    if (org != null && orgs.isNotEmpty) {
+      final match = orgs.cast<OrganizationDetail?>().firstWhere(
+            (o) =>
+                (org!.id != null && o?.id == org.id) ||
+                (org.slug != null && o?.slug == org.slug),
+            orElse: () => null,
+          );
+      if (match != null) {
+        final memberCount = org.member_count ?? match.member_count;
+        final chartCount = org.chart_member_count ?? match.chart_member_count;
+        if (memberCount != org.member_count || chartCount != org.chart_member_count) {
+          org = org.copyWith(
+            member_count: memberCount,
+            chart_member_count: chartCount,
+          );
+        }
+      }
+    }
+
     return OrganizationInfoData(
-      organization: orgJson is Map<String, dynamic>
-          ? OrganizationDetail.fromJson(orgJson)
-          : null,
-      organizations: orgsJson is List
-          ? orgsJson
-              .whereType<Map<String, dynamic>>()
-              .map(OrganizationDetail.fromJson)
-              .toList(growable: false)
-          : const [],
+      organization: org,
+      organizations: orgs,
       chartMembers: chartJson is List
           ? chartJson
               .whereType<Map<String, dynamic>>()
@@ -107,6 +130,51 @@ class OrganizationDetail {
   final String? twitter_url;
   final String? youtube_url;
   final String? tiktok_url;
+
+  OrganizationDetail copyWith({
+    int? id,
+    String? name,
+    String? slug,
+    String? description,
+    String? logo_path,
+    String? color_theme,
+    int? min_age,
+    int? max_age,
+    int? member_count,
+    int? chart_member_count,
+    bool? is_current,
+    bool? is_selected,
+    String? email,
+    String? phone,
+    String? website_url,
+    String? facebook_url,
+    String? instagram_url,
+    String? twitter_url,
+    String? youtube_url,
+    String? tiktok_url,
+  }) =>
+      OrganizationDetail(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        slug: slug ?? this.slug,
+        description: description ?? this.description,
+        logo_path: logo_path ?? this.logo_path,
+        color_theme: color_theme ?? this.color_theme,
+        min_age: min_age ?? this.min_age,
+        max_age: max_age ?? this.max_age,
+        member_count: member_count ?? this.member_count,
+        chart_member_count: chart_member_count ?? this.chart_member_count,
+        is_current: is_current ?? this.is_current,
+        is_selected: is_selected ?? this.is_selected,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        website_url: website_url ?? this.website_url,
+        facebook_url: facebook_url ?? this.facebook_url,
+        instagram_url: instagram_url ?? this.instagram_url,
+        twitter_url: twitter_url ?? this.twitter_url,
+        youtube_url: youtube_url ?? this.youtube_url,
+        tiktok_url: tiktok_url ?? this.tiktok_url,
+      );
 
   String get ageRangeLabel {
     if (max_age == null) return currentAppLocalizations.orgAgePlus(min_age ?? 0);

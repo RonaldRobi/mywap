@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -12,7 +13,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_top_bar.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/organization_providers.dart';
 import '../data/models/organization_info.dart';
 
@@ -27,10 +27,8 @@ class OrganizationInfoScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.corporate_fare_outlined,
-        semanticLabel: context.l10n.orgInfoTitle,
+        title: context.l10n.orgInfoTitle,
         showBack: true,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: infoAsync.when(
         skipLoadingOnRefresh: true,
@@ -503,14 +501,18 @@ class _OrgHeroCard extends StatelessWidget {
                     Expanded(
                       child: _HeroStat(
                         label: context.l10n.orgTotalMembers,
-                        value: '${org.member_count ?? 0}',
+                        value: Formatters.number(org.member_count ?? 0),
                       ),
                     ),
                     const SizedBox(width: Spacing.sm),
                     Expanded(
                       child: _HeroStat(
                         label: context.l10n.orgLeadership,
-                        value: '$chartCount',
+                        value: Formatters.number(
+                          chartCount > 0
+                              ? chartCount
+                              : (org.chart_member_count ?? 0),
+                        ),
                       ),
                     ),
                   ],
@@ -624,7 +626,7 @@ class _StatsRow extends StatelessWidget {
           child: _InfoTile(
             icon: Icons.groups_2_outlined,
             label: context.l10n.orgMembers,
-            value: '${org.member_count ?? 0}',
+            value: Formatters.number(org.member_count ?? 0),
             accent: accent,
           ),
         ),
@@ -633,7 +635,9 @@ class _StatsRow extends StatelessWidget {
           child: _InfoTile(
             icon: Icons.badge_outlined,
             label: context.l10n.orgLeadership,
-            value: '$chartCount',
+            value: Formatters.number(
+              chartCount > 0 ? chartCount : (org.chart_member_count ?? 0),
+            ),
             accent: accent,
           ),
         ),
@@ -721,7 +725,11 @@ List<(IconData, String, String?)> _socialLinks(
       context.l10n.emailLabel,
       (org.email?.isNotEmpty ?? false) ? 'mailto:${org.email}' : null,
     ),
-    (Icons.call_outlined, context.l10n.callLabel, tel.isNotEmpty ? 'tel:$tel' : null),
+    (
+      Icons.call_outlined,
+      context.l10n.callLabel,
+      tel.isNotEmpty ? 'tel:$tel' : null,
+    ),
     (
       Icons.chat_bubble_outline,
       'WhatsApp',

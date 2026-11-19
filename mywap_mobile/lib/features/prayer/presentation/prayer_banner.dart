@@ -306,137 +306,266 @@ class _PrayerPhoto extends StatelessWidget {
   }
 }
 
-Future<void> _showPrayerDetails(
-  BuildContext context,
-  PrayerSnapshot snapshot,
-) {
-  const order = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+Future<void> _showPrayerDetails(BuildContext context, PrayerSnapshot snapshot) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    showDragHandle: true,
     backgroundColor: AppColors.surface,
     shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheet),
-    builder:
-        (sheetContext) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.xl,
-              Spacing.md,
-              Spacing.xl,
-              Spacing.xl,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    builder: (sheetContext) => _PrayerDetailsSheet(snapshot: snapshot),
+  );
+}
+
+class _PrayerDetailsSheet extends StatefulWidget {
+  const _PrayerDetailsSheet({required this.snapshot});
+
+  final PrayerSnapshot snapshot;
+
+  @override
+  State<_PrayerDetailsSheet> createState() => _PrayerDetailsSheetState();
+}
+
+class _PrayerDetailsSheetState extends State<_PrayerDetailsSheet> {
+  static const _order = ['Subuh', 'Zohor', 'Asar', 'Maghrib', 'Isyak'];
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!malaysiaNow().isBefore(widget.snapshot.nextAt)) {
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final snapshot = widget.snapshot;
+    final remaining = snapshot.nextAt.difference(malaysiaNow());
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.xl,
+          Spacing.xs,
+          Spacing.xl,
+          Spacing.xl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.divider,
-                      borderRadius: AppRadius.pill,
-                    ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.l10n.prayerTodayTitle,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: Spacing.xs),
+                      Text(
+                        snapshot.hijriDate,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: Spacing.lg),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.mosque_outlined,
-                      color: AppColors.movementGreen,
-                    ),
-                    const SizedBox(width: Spacing.sm),
-                    Expanded(
-                      child: Text(
-                        sheetContext.l10n.prayerTodayTitle,
-                        style: Theme.of(sheetContext).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  tooltip: context.l10n.close,
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
                 ),
-                const SizedBox(height: Spacing.xs),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 14,
+              ],
+            ),
+            const SizedBox(height: Spacing.md),
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: AppColors.movementGreen,
+                ),
+                const SizedBox(width: Spacing.sm),
+                Expanded(
+                  child: Text(
+                    snapshot.locationName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        snapshot.locationName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(sheetContext).textTheme.bodySmall
-                            ?.copyWith(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  snapshot.hijriDate,
-                  style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: Spacing.lg),
-                for (final name in order)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: Spacing.sm),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.md,
-                        vertical: Spacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            name == snapshot.nextName
-                                ? AppColors.paleGreen
-                                : AppColors.surfaceMuted,
-                        borderRadius: AppRadius.sm,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            snapshot.prayerTimes[name] ?? '--:--',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.movementDarkGreen,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: Spacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    child: Text(sheetContext.l10n.close),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: Spacing.xl),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.lg),
+              decoration: const BoxDecoration(
+                color: AppColors.movementNavy,
+                borderRadius: AppRadius.lg,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.prayerNext,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textOnDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                  Wrap(
+                    spacing: Spacing.lg,
+                    runSpacing: Spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        snapshot.nextName,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        snapshot.nextTime,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    _formatRemaining(remaining),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textOnDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Spacing.xl),
+            Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: AppRadius.lg,
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Column(
+                children: [
+                  for (var index = 0; index < _order.length; index++) ...[
+                    _PrayerTimeRow(
+                      name: _order[index],
+                      time: snapshot.prayerTimes[_order[index]] ?? '--:--',
+                      isNext: _order[index] == snapshot.nextName,
+                    ),
+                    if (index != _order.length - 1)
+                      const Divider(height: 1, indent: Spacing.lg),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
-  );
+      ),
+    );
+  }
+}
+
+class _PrayerTimeRow extends StatelessWidget {
+  const _PrayerTimeRow({
+    required this.name,
+    required this.time,
+    required this.isNext,
+  });
+
+  final String name;
+  final String time;
+  final bool isNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 58),
+      color: isNext ? AppColors.paleGreen : AppColors.surface,
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.lg,
+        vertical: Spacing.sm,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: isNext ? FontWeight.w800 : FontWeight.w600,
+                    color:
+                        isNext
+                            ? AppColors.movementDarkGreen
+                            : AppColors.textPrimary,
+                  ),
+                ),
+                if (isNext)
+                  Text(
+                    context.l10n.prayerNext,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.movementDarkGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Spacing.md),
+          Text(
+            time,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color:
+                  isNext ? AppColors.movementDarkGreen : AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _LocationSheet extends StatelessWidget {
@@ -465,9 +594,9 @@ class _LocationSheet extends StatelessWidget {
             const SizedBox(height: Spacing.xs),
             Text(
               context.l10n.prayerManualLocationHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: Spacing.md),
             ListTile(
@@ -494,7 +623,8 @@ class _LocationSheet extends StatelessWidget {
               child: ListView.separated(
                 itemCount: prayerLocations.length,
                 separatorBuilder:
-                    (_, __) => const Divider(height: 1, color: AppColors.divider),
+                    (_, __) =>
+                        const Divider(height: 1, color: AppColors.divider),
                 itemBuilder: (context, index) {
                   final location = prayerLocations[index];
                   return ListTile(

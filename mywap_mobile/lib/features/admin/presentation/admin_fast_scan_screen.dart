@@ -11,6 +11,7 @@ import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/error_retry.dart';
+import '../../../shared/widgets/scan_viewfinder.dart';
 import '../application/admin_providers.dart';
 
 /// Pengimbas Pantas Kad Keahlian untuk Pentadbir (`/admin/scan`).
@@ -27,7 +28,8 @@ class AdminFastScanScreen extends ConsumerStatefulWidget {
   final int? initialEventId;
 
   @override
-  ConsumerState<AdminFastScanScreen> createState() => _AdminFastScanScreenState();
+  ConsumerState<AdminFastScanScreen> createState() =>
+      _AdminFastScanScreenState();
 }
 
 class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
@@ -83,13 +85,14 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
       final reg = result.registration;
       final name = reg?.name ?? l10n.adminMemberFallback;
       final memberNo = reg?.memberNo ?? '';
-      final msg = result.isOk
-          ? (memberNo.isEmpty
-              ? l10n.adminCheckInRecordedName(name)
-              : l10n.adminCheckInRecorded(name, memberNo))
-          : (result.message.isNotEmpty
-              ? result.message
-              : l10n.adminScanNotSuccessful);
+      final msg =
+          result.isOk
+              ? (memberNo.isEmpty
+                  ? l10n.adminCheckInRecordedName(name)
+                  : l10n.adminCheckInRecorded(name, memberNo))
+              : (result.message.isNotEmpty
+                  ? result.message
+                  : l10n.adminScanNotSuccessful);
 
       _setFeedback(msg, result.isOk);
       if (result.isOk) {
@@ -159,9 +162,9 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
               const SizedBox(height: Spacing.md),
               Text(
                 sheetContext.l10n.adminManualEntry,
-                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
@@ -178,11 +181,14 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                   prefixIcon: const Icon(Icons.person_search_outlined),
                 ),
                 textInputAction: TextInputAction.done,
-                onSubmitted: (val) => Navigator.of(sheetContext).pop(val.trim()),
+                onSubmitted:
+                    (val) => Navigator.of(sheetContext).pop(val.trim()),
               ),
               const SizedBox(height: Spacing.lg),
               FilledButton(
-                onPressed: () => Navigator.of(sheetContext).pop(controller.text.trim()),
+                onPressed:
+                    () =>
+                        Navigator.of(sheetContext).pop(controller.text.trim()),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
                 ),
@@ -206,8 +212,9 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black.withValues(alpha: 0.8),
+        backgroundColor: AppColors.movementNavy,
         foregroundColor: AppColors.white,
+        centerTitle: true,
         title: Text(context.l10n.adminAttendanceCardScanner),
         actions: [
           IconButton(
@@ -237,17 +244,27 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.event_busy, color: AppColors.textSecondary, size: 48),
+                      const Icon(
+                        Icons.event_busy,
+                        color: AppColors.textSecondary,
+                        size: 48,
+                      ),
                       const SizedBox(height: Spacing.md),
                       Text(
                         context.l10n.adminNoScheduledPrograms,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: Spacing.xs),
                       Text(
                         context.l10n.adminNoScheduledProgramsBody,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: Spacing.lg),
                       OutlinedButton(
@@ -262,7 +279,8 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
           }
 
           // Tetapkan program pilihan awal secara automatik jika belum dipilih
-          if (_selectedEventId == null || !events.any((e) => e.id == _selectedEventId)) {
+          if (_selectedEventId == null ||
+              !events.any((e) => e.id == _selectedEventId)) {
             _selectedEventId = events.first.id;
           }
 
@@ -274,40 +292,19 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Lapisan Kamera Pengimbas
               MobileScanner(
                 controller: _scannerController,
                 onDetect: _onDetect,
               ),
-
-              // Garisan Fokus Reticle
-              Center(
-                child: Container(
-                  width: 260,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _isProcessing
-                          ? AppColors.warning
-                          : AppColors.movementSoftGreen,
-                      width: 3,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Stack(
-                    children: [
-                      if (_isProcessing)
-                        const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.white,
-                          ),
-                        ),
-                    ],
+              ScanViewfinder(isProcessing: _isProcessing),
+              if (_isProcessing)
+                const Center(
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(color: AppColors.white),
                   ),
                 ),
-              ),
-
-              // Bar Pemilihan Program di Bahagian Atas
               Positioned(
                 top: Spacing.md,
                 left: Spacing.md,
@@ -318,13 +315,17 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                     vertical: Spacing.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.movementNavy.withValues(alpha: 0.92),
-                    borderRadius: AppRadius.md,
-                    border: Border.all(color: Colors.white24),
+                    color: AppColors.movementNavy,
+                    borderRadius: AppRadius.lg,
+                    boxShadow: AppShadows.floating,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.event_available, color: AppColors.movementSoftGreen, size: 22),
+                      const Icon(
+                        Icons.event_available,
+                        color: AppColors.white,
+                        size: 22,
+                      ),
                       const SizedBox(width: Spacing.sm),
                       Expanded(
                         child: DropdownButtonHideUnderline(
@@ -333,20 +334,22 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                             dropdownColor: AppColors.movementNavy,
                             iconEnabledColor: AppColors.white,
                             isExpanded: true,
-                            items: events.map((ev) {
-                              return DropdownMenuItem<int>(
-                                value: ev.id,
-                                child: Text(
-                                  ev.title ?? context.l10n.adminProgramFallback,
-                                  style: const TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              );
-                            }).toList(),
+                            items:
+                                events.map((ev) {
+                                  return DropdownMenuItem<int>(
+                                    value: ev.id,
+                                    child: Text(
+                                      ev.title ??
+                                          context.l10n.adminProgramFallback,
+                                      style: const TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
                             onChanged: (newId) {
                               if (newId != null) {
                                 setState(() => _selectedEventId = newId);
@@ -356,11 +359,17 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.list_alt, color: AppColors.white, size: 20),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size.square(AppSizes.tapTarget),
+                          foregroundColor: AppColors.white,
+                        ),
+                        icon: const Icon(Icons.list_alt, size: 22),
                         tooltip: context.l10n.adminParticipantList,
                         onPressed: () {
                           if (currentEvent.id != null) {
-                            context.push('/admin/attendance/${currentEvent.id}');
+                            context.push(
+                              '/admin/attendance/${currentEvent.id}',
+                            );
                           }
                         },
                       ),
@@ -369,102 +378,96 @@ class _AdminFastScanScreenState extends ConsumerState<AdminFastScanScreen> {
                 ),
               ),
 
-              // Panduan / Banner Maklum Balas Imbasan
               Positioned(
-                bottom: 100,
+                bottom: 0,
                 left: Spacing.lg,
                 right: Spacing.lg,
-                child: _lastScanFeedback != null
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.lg,
-                          vertical: Spacing.md,
-                        ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(Spacing.lg),
                         decoration: BoxDecoration(
-                          color: _lastScanSuccess
-                              ? AppColors.movementDarkGreen
-                              : AppColors.error,
-                          borderRadius: AppRadius.md,
-                          boxShadow: AppShadows.card,
+                          color:
+                              _lastScanFeedback == null
+                                  ? AppColors.movementNavy
+                                  : (_lastScanSuccess
+                                      ? AppColors.movementDarkGreen
+                                      : AppColors.error),
+                          borderRadius: AppRadius.lg,
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(
-                              _lastScanSuccess
-                                  ? Icons.check_circle_outline
-                                  : Icons.error_outline,
+                              _lastScanFeedback == null
+                                  ? Icons.qr_code_scanner_rounded
+                                  : (_lastScanSuccess
+                                      ? Icons.check_circle_outline
+                                      : Icons.error_outline),
                               color: AppColors.white,
-                              size: 24,
+                              size: AppSizes.iconMd,
                             ),
-                            const SizedBox(width: Spacing.sm),
+                            const SizedBox(width: Spacing.md),
                             Expanded(
                               child: Text(
-                                _lastScanFeedback!,
+                                _lastScanFeedback ??
+                                    context.l10n.adminPointCameraMemberCardQr,
                                 style: const TextStyle(
-                                  color: AppColors.white,
+                                  color: AppColors.textOnDark,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  height: 1.35,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      )
-                    : Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.md,
-                          vertical: Spacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: AppRadius.pill,
-                        ),
-                        child: Text(
-                          context.l10n.adminPointCameraMemberCardQr,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: Spacing.sm),
+                      FilledButton.icon(
+                        onPressed: _openManualEntry,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.white,
+                          foregroundColor: AppColors.movementNavy,
+                          minimumSize: const Size.fromHeight(
+                            AppSizes.buttonHeight,
+                          ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: AppRadius.lg,
                           ),
                         ),
+                        icon: const Icon(Icons.keyboard_alt_outlined),
+                        label: Text(
+                          context.l10n.adminManualInput,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
-              ),
-
-              // Butang Tindakan Bawah (Kemasukan Manual)
-              Positioned(
-                bottom: Spacing.lg,
-                left: Spacing.lg,
-                right: Spacing.lg,
-                child: FilledButton.icon(
-                  onPressed: _openManualEntry,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.white,
-                    foregroundColor: AppColors.movementNavy,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: const RoundedRectangleBorder(borderRadius: AppRadius.md),
-                  ),
-                  icon: const Icon(Icons.keyboard_alt_outlined),
-                  label: Text(
-                    context.l10n.adminManualInput,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                    ],
                   ),
                 ),
               ),
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.movementGreen),
-        ),
-        error: (e, _) => Center(
-          child: ErrorRetry(
-            message: e is ApiException ? e.message : context.l10n.adminLoadEventsFailed,
-            onRetry: () => ref.invalidate(adminUpcomingEventsProvider),
-          ),
-        ),
+        loading:
+            () => const Center(
+              child: CircularProgressIndicator(color: AppColors.movementGreen),
+            ),
+        error:
+            (e, _) => Center(
+              child: ErrorRetry(
+                message:
+                    e is ApiException
+                        ? e.message
+                        : context.l10n.adminLoadEventsFailed,
+                onRetry: () => ref.invalidate(adminUpcomingEventsProvider),
+              ),
+            ),
       ),
     );
   }
 }
-

@@ -39,18 +39,18 @@ abstract final class AppColors {
 
   static const Color white = Color(0xFFFFFFFF);
 
-  /// Latar skrin. Hue hangat (90) — dulunya biru-kelabu #F7F8FA (hue 220).
-  /// Dinaikkan sedikit ke arah mint (#F2FBF6) supaya kanvas terasa segar dan
-  /// bentuk organik lut-sinar (lihat `OrganicCanvasBackground`) menyatu.
-  static const Color pageBackground = Color(0xFFF2FBF6);
+  /// Latar skrin. Neutral off-white bersih & moden (menggantikan mint pudar #F2FBF6).
+  /// Memberikan kontras tinggi kepada kad putih (#FFFFFF) dan menaikkan seri
+  /// warna hijau jenama (#147A3D).
+  static const Color pageBackground = Color(0xFFF8F9FA);
   static const Color background = pageBackground;
   static const Color authBackground = Color(0xFFE5F0E8);
   static const Color authPattern = Color(0xFFCFE2D4);
   static const Color surface = white;
-  static const Color surfaceMuted = Color(0xFFF1F4EF);
+  static const Color surfaceMuted = Color(0xFFF1F3F5);
 
   /// Permukaan hijau lembut untuk blok/seksyen.
-  static const Color softGreenSurface = Color(0xFFEDF4EC);
+  static const Color softGreenSurface = Color(0xFFF0F5F2);
 
   /// Latar terpilih (cth. petunjuk navigasi, cip aktif).
   static const Color paleGreen = Color(0xFFDFF1E4);
@@ -116,14 +116,15 @@ abstract final class AppColors {
   // meruntuhkannya kepada keluarga hijau + amber sahaja supaya dashboard
   // tidak kelihatan seperti app fintech.
 
-  static const Color shortcutFee = Color(0xFF059669);
-  static const Color shortcutBooking = Color(0xFFD97706);
-  static const Color shortcutNews = Color(0xFF4F46E5);
-  static const Color shortcutInfaq = Color(0xFFE11D48);
-  static const Color shortcutCard = Color(0xFF2563EB);
-  static const Color shortcutUsrah = Color(0xFF7C3AED);
-  static const Color shortcutShop = Color(0xFFEA580C);
-  static const Color shortcutReferral = Color(0xFF0D9488);
+  // Apple System Tint palette untuk Shortcuts Concept A
+  static const Color shortcutFee = Color(0xFF34C759); // Apple Green
+  static const Color shortcutBooking = Color(0xFFFF9500); // Apple Orange
+  static const Color shortcutNews = Color(0xFF5856D6); // Apple Indigo
+  static const Color shortcutInfaq = Color(0xFFFF2D55); // Apple Rose/Red
+  static const Color shortcutCard = Color(0xFF007AFF); // Apple Blue
+  static const Color shortcutUsrah = Color(0xFFAF52DE); // Apple Purple
+  static const Color shortcutShop = Color(0xFFFF9F0A); // Apple Amber
+  static const Color shortcutReferral = Color(0xFF30B0C7); // Apple Teal
 
   // ---------------------------------------------------------------------
   // Lapisan & overlay

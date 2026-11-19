@@ -96,7 +96,6 @@ platform :ios do
       ipa: ipa,
       api_key_path: api_key_path,
       app_version: version[:marketing],
-      build_number: version[:build].to_s,
       submit_for_review: true,
       automatic_release: false,
       force: true,

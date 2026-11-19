@@ -136,16 +136,7 @@ class _ArticleDetailBody extends StatelessWidget {
           ),
           const SizedBox(height: Spacing.sm),
           Text(article.title ?? '-', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: Spacing.md),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ShareItemButton(
-              title: article.title ?? '',
-              url: article.shareUrl,
-              text: article.excerpt,
-            ),
-          ),
-          const SizedBox(height: Spacing.lg),
+          const SizedBox(height: Spacing.xl),
           HtmlContent(article.content, style: theme.textTheme.bodyLarge),
           if (article.gallery.isNotEmpty) ...[
             const SizedBox(height: Spacing.lg),

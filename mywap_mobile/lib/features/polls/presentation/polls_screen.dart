@@ -11,7 +11,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/poll_providers.dart';
 import '../data/models/poll.dart';
 
@@ -25,10 +24,8 @@ class PollsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.how_to_vote_outlined,
-        semanticLabel: l10n.pollTitle,
+        title: l10n.pollTitle,
         showBack: true,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: pollsAsync.when(
         data:

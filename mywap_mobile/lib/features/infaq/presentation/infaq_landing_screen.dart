@@ -10,9 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_image.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
-import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/infaq_providers.dart';
 import '../data/models/infaq.dart';
 import '../../../shared/theme/app_text_theme.dart';
@@ -36,27 +34,25 @@ class _InfaqScreenState extends ConsumerState<InfaqScreen> {
     final listAsync = ref.watch(infaqListProvider);
 
     return Scaffold(
-      appBar: AppTopBar(
-        icon: Icons.volunteer_activism_outlined,
-        semanticLabel: context.l10n.infaqTitle,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
-      ),
-      body: listAsync.when(
-        data:
-            (list) => _InfaqList(
-              list: list,
-              selectedOrgId: _selectedOrgId,
-              onOrgSelected: (id) => setState(() => _selectedOrgId = id),
-            ),
-        loading: () => const _InfaqListSkeleton(),
-        error:
-            (error, _) => ErrorRetry(
-              message:
-                  error is ApiException
-                      ? error.message
-                      : context.l10n.unexpectedError,
-              onRetry: () => ref.invalidate(infaqListProvider),
-            ),
+      body: SafeArea(
+        bottom: false,
+        child: listAsync.when(
+          data:
+              (list) => _InfaqList(
+                list: list,
+                selectedOrgId: _selectedOrgId,
+                onOrgSelected: (id) => setState(() => _selectedOrgId = id),
+              ),
+          loading: () => const _InfaqListSkeleton(),
+          error:
+              (error, _) => ErrorRetry(
+                message:
+                    error is ApiException
+                        ? error.message
+                        : context.l10n.unexpectedError,
+                onRetry: () => ref.invalidate(infaqListProvider),
+              ),
+        ),
       ),
     );
   }
@@ -330,7 +326,7 @@ class _InfaqIntro extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         Spacing.lg,
-        Spacing.lg,
+        Spacing.md,
         Spacing.lg,
         Spacing.md,
       ),

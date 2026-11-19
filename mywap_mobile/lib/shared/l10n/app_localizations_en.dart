@@ -174,7 +174,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuLibrarySubtitle => 'Reading & reference materials';
 
   @override
-  String get menuSectionMall => 'myWAP Mall';
+  String get menuSectionMall => 'MyWAP Mall';
+
+  @override
+  String get menuPrimaryActions => 'Primary Actions';
+
+  @override
+  String get menuQuickScan => 'Quick Scan';
+
+  @override
+  String get menuQuickAdmin => 'Dashboard';
+
+  @override
+  String get menuQuickEvents => 'Events';
+
+  @override
+  String get menuQuickNotifications => 'Alerts';
+
+  @override
+  String get menuQuickDigitalId => 'My ID';
+
+  @override
+  String get menuQuickFees => 'Fees';
+
+  @override
+  String get menuQuickTickets => 'My Tickets';
 
   @override
   String get menuProducts => 'Products';
@@ -646,7 +670,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noInfaqCampaigns => 'No infaq campaigns at the moment.';
 
   @override
-  String get becomeMemberTitle => 'Become a myWAP Member';
+  String get becomeMemberTitle => 'Become a MyWAP Member';
 
   @override
   String get becomeMemberBody => 'Register for access to your member card, fee status, programs, usrah and more.';
@@ -1182,7 +1206,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biometricFingerprintLoginLower => 'Log in with Fingerprint';
 
   @override
-  String get ecomMarketTitle => 'Market';
+  String get ecomMarketTitle => 'MyWAP Mall';
 
   @override
   String get ecomCartTitle => 'Cart';
@@ -2657,7 +2681,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanQrTitle => 'Scan Attendance QR';
 
   @override
-  String get scanPointCameraHint => 'Point the camera at the QR code on the program poster/screen to check in.';
+  String get scanPointCameraHint => 'Align the QR code within the frame to check in.';
 
   @override
   String get scanCloseButton => 'Close';
@@ -2976,6 +3000,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeGuestTitle => 'Welcome to myWAP';
+
+  @override
+  String get homeAccessLabel => 'Public & Member Access';
 
   @override
   String get homeGuestBody => 'Log in to access your member card, fees, programs and usrah. Existing members who have never logged in can activate their account first.';
@@ -3339,7 +3366,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminParticipantList => 'Participant List';
 
   @override
-  String get adminPointCameraMemberCardQr => 'Point the camera at the Member Card QR code';
+  String get adminPointCameraMemberCardQr => 'Align the Member Card QR code within the frame to record attendance.';
 
   @override
   String get adminManualInput => 'Manual Input (IC No. / Card)';

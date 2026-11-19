@@ -11,7 +11,6 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_top_bar.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/referral_providers.dart';
 import '../data/models/referral_data.dart';
 import '../../../shared/theme/app_text_theme.dart';
@@ -29,10 +28,8 @@ class ReferralScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.group_add_outlined,
-        semanticLabel: context.l10n.referralTitle,
+        title: context.l10n.referralTitle,
         showBack: true,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(
         data:

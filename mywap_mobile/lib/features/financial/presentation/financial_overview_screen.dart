@@ -12,7 +12,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../../shared/widgets/app_top_bar.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/financial_providers.dart';
 import '../data/models/financial_overview.dart';
 import 'widgets/pay_fee_button.dart';
@@ -31,17 +30,16 @@ class FinancialOverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.account_balance_wallet_outlined,
-        semanticLabel: context.l10n.finOverviewTitle,
+        title: context.l10n.finOverviewTitle,
         showBack: true,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: dataAsync.when(
         data:
             (data) => _FinancialContent(
               data: data,
               showFee: !isAdmin,
-              onRefresh: () async => ref.invalidate(financialOverviewProvider),
+              onRefresh:
+                  () async => ref.invalidate(financialOverviewProvider),
             ),
         loading: () => const _FinancialSkeleton(),
         error:

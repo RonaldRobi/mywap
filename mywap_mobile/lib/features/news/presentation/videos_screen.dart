@@ -24,8 +24,7 @@ class VideosScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.play_circle_outline,
-        semanticLabel: context.l10n.videoTitle,
+        title: context.l10n.videoTitle,
         showBack: true,
       ),
       body: async.when(

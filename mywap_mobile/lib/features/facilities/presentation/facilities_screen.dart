@@ -13,7 +13,6 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/app_top_bar.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
 import '../application/facility_providers.dart';
 import '../data/models/facility.dart';
 import 'widgets/booking_status_chips.dart';
@@ -29,10 +28,8 @@ class FacilitiesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.apartment_outlined,
-        semanticLabel: l10n.facTitle,
+        title: l10n.facTitle,
         showBack: true,
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
       ),
       body: facilitiesAsync.when(
         data:

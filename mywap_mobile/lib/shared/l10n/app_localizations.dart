@@ -428,8 +428,56 @@ abstract class AppLocalizations {
   /// No description provided for @menuSectionMall.
   ///
   /// In en, this message translates to:
-  /// **'myWAP Mall'**
+  /// **'MyWAP Mall'**
   String get menuSectionMall;
+
+  /// No description provided for @menuPrimaryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Actions'**
+  String get menuPrimaryActions;
+
+  /// No description provided for @menuQuickScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Scan'**
+  String get menuQuickScan;
+
+  /// No description provided for @menuQuickAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get menuQuickAdmin;
+
+  /// No description provided for @menuQuickEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get menuQuickEvents;
+
+  /// No description provided for @menuQuickNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get menuQuickNotifications;
+
+  /// No description provided for @menuQuickDigitalId.
+  ///
+  /// In en, this message translates to:
+  /// **'My ID'**
+  String get menuQuickDigitalId;
+
+  /// No description provided for @menuQuickFees.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees'**
+  String get menuQuickFees;
+
+  /// No description provided for @menuQuickTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'My Tickets'**
+  String get menuQuickTickets;
 
   /// No description provided for @menuProducts.
   ///
@@ -1364,7 +1412,7 @@ abstract class AppLocalizations {
   /// No description provided for @becomeMemberTitle.
   ///
   /// In en, this message translates to:
-  /// **'Become a myWAP Member'**
+  /// **'Become a MyWAP Member'**
   String get becomeMemberTitle;
 
   /// No description provided for @becomeMemberBody.
@@ -2384,7 +2432,7 @@ abstract class AppLocalizations {
   /// No description provided for @ecomMarketTitle.
   ///
   /// In en, this message translates to:
-  /// **'Market'**
+  /// **'MyWAP Mall'**
   String get ecomMarketTitle;
 
   /// No description provided for @ecomCartTitle.
@@ -5174,7 +5222,7 @@ abstract class AppLocalizations {
   /// No description provided for @scanPointCameraHint.
   ///
   /// In en, this message translates to:
-  /// **'Point the camera at the QR code on the program poster/screen to check in.'**
+  /// **'Align the QR code within the frame to check in.'**
   String get scanPointCameraHint;
 
   /// No description provided for @scanCloseButton.
@@ -5764,6 +5812,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome to myWAP'**
   String get homeGuestTitle;
+
+  /// No description provided for @homeAccessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Public & Member Access'**
+  String get homeAccessLabel;
 
   /// No description provided for @homeGuestBody.
   ///
@@ -6422,7 +6476,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminPointCameraMemberCardQr.
   ///
   /// In en, this message translates to:
-  /// **'Point the camera at the Member Card QR code'**
+  /// **'Align the Member Card QR code within the frame to record attendance.'**
   String get adminPointCameraMemberCardQr;
 
   /// No description provided for @adminManualInput.

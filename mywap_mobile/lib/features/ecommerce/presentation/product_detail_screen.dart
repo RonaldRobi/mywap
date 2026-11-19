@@ -403,12 +403,6 @@ class _DetailContent extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: Spacing.md),
-                ShareItemButton(
-                  title: product.name ?? '',
-                  url: product.shareUrl,
-                  text: product.description,
-                ),
                 if (availableStock != null) ...[
                   const SizedBox(height: Spacing.sm),
                   _StockStatus(stock: availableStock!),

@@ -110,6 +110,8 @@ class MemberExtrasApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.organization.name', 'PKPIM')
+            ->assertJsonPath('data.organization.member_count', 1)
+            ->assertJsonPath('data.organization.chart_member_count', 1)
             ->assertJsonPath('data.chart_members.0.name', 'Ahmad Firdaus');
     }
 

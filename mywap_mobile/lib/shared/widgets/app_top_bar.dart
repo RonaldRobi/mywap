@@ -1,89 +1,74 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'app_back_button.dart';
 
-/// Header skrin tanpa tajuk teks.
+/// Header bar overlay telus bersandar gaya Apple/Spotify.
 ///
-/// Fokus visual ialah chip ikon seksyen (bukan tajuk), di atas gradien lembut
-/// berjenama dengan garis halus di bawah. Label aksesibiliti kekal supaya
-/// pembaca skrin masih tahu seksyen semasa walaupun tiada tajuk kelihatan.
+/// - Pada tab utama (`showBack == false`): Saiz ketinggian ialah 0 (tiada gap langsung).
+/// - Pada sub-halaman (`showBack == true`): Memaparkan butang 'Back' bulatan terapung
+///   di kiri atas bersebelahan tajuk halaman. Belah kanan kosong sepenuhnya.
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   const AppTopBar({
     super.key,
-    required this.icon,
-    required this.semanticLabel,
+    this.icon,
+    this.semanticLabel,
+    this.title,
     this.showBack = false,
     this.backFallback = '/dashboard',
     this.actions,
+    this.light = false,
   });
 
-  final IconData icon;
-  final String semanticLabel;
+  final IconData? icon;
+  final String? semanticLabel;
+  final String? title;
   final bool showBack;
   final String backFallback;
   final List<Widget>? actions;
+  final bool light;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize =>
+      showBack ? const Size.fromHeight(48) : Size.zero;
 
   @override
   Widget build(BuildContext context) {
+    if (!showBack) {
+      return const SizedBox.shrink();
+    }
+
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      leadingWidth: showBack ? 56 : null,
-      leading: showBack ? AppBackButton(fallback: backFallback) : null,
-      titleSpacing: showBack ? 0 : Spacing.lg,
-      title: Semantics(
-        label: semanticLabel,
-        header: true,
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: AppColors.paleGreen,
-            borderRadius: AppRadius.sm,
-            border: Border.all(
-              color: AppColors.movementSoftGreen.withValues(alpha: 0.55),
-            ),
-          ),
-          child: Icon(icon, size: 21, color: AppColors.movementDarkGreen),
+      toolbarHeight: 48,
+      leadingWidth: 54,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: AppBackButton(
+          fallback: backFallback,
+          light: light,
         ),
       ),
-      actions: actions,
-      flexibleSpace: const _TopBarBackdrop(),
-    );
-  }
-}
-
-class _TopBarBackdrop extends StatelessWidget {
-  const _TopBarBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        const Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFE9F6EC), AppColors.pageBackground],
+      titleSpacing: 4,
+      title: title != null && title!.isNotEmpty
+          ? Text(
+              title!,
+              style: TextStyle(
+                color: light ? AppColors.white : AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
               ),
-            ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(height: 1, color: AppColors.divider),
-        ),
-      ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      centerTitle: false,
+      actions: null, // Belah kanan kosong sepenuhnya
     );
   }
 }

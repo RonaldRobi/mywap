@@ -25,8 +25,7 @@ class ArticlesListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.menu_book_outlined,
-        semanticLabel: context.l10n.articlesTitle,
+        title: context.l10n.articlesTitle,
         showBack: true,
       ),
       body: async.when(

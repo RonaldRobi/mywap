@@ -25,8 +25,7 @@ class NewsListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppTopBar(
-        icon: Icons.newspaper_outlined,
-        semanticLabel: context.l10n.newsTitle,
+        title: context.l10n.newsTitle,
         showBack: true,
       ),
       body: async.when(

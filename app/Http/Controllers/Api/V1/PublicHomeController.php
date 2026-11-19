@@ -11,7 +11,9 @@ use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\MediaStatement;
 use App\Models\NewsPost;
+use App\Models\Product;
 use App\Models\Video;
+use App\Services\ProductService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -41,6 +43,7 @@ class PublicHomeController extends Controller
             'events' => $this->section('events', fn () => $this->events()),
             'infaqs' => $this->section('infaqs', fn () => $this->infaqs()),
             'media_statements' => $this->section('media_statements', fn () => $this->mediaStatements()),
+            'products' => $this->section('products', fn () => $this->products()),
         ]);
     }
 
@@ -229,6 +232,21 @@ class PublicHomeController extends Controller
                 'organization_name' => $statement->organization?->name ?? 'Semua Organisasi',
                 'pdf_url' => $statement->pdf_path ? asset($statement->pdf_path) : null,
             ])
+            ->values()
+            ->all();
+    }
+
+    private function products(): array
+    {
+        $service = app(ProductService::class);
+
+        return Product::query()
+            ->with(['category:id,name', 'organization:id,name'])
+            ->active()
+            ->latest('id')
+            ->take(8)
+            ->get()
+            ->map(fn (Product $product) => $service->serialize($product))
             ->values()
             ->all();
     }

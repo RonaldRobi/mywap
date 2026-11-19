@@ -10,7 +10,7 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/skeleton_box.dart';
-import '../../member/presentation/widgets/notification_bell.dart';
+import '../../../shared/widgets/app_top_bar.dart';
 import '../application/usrah_providers.dart';
 import '../data/models/usrah.dart';
 import '../../../shared/theme/app_text_theme.dart';
@@ -23,9 +23,9 @@ class UsrahScreen extends ConsumerWidget {
     final usrahAsync = ref.watch(usrahProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.menuUsrah),
-        actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
+      appBar: AppTopBar(
+        title: context.l10n.menuUsrah,
+        showBack: true,
       ),
       body: usrahAsync.when(
         data:

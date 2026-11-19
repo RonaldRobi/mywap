@@ -100,6 +100,7 @@ class CartNotifier extends Notifier<CartState> {
     if (index >= 0) {
       final existing = state.items[index];
       final max = item.stock ?? existing.stock;
+      if (max != null && existing.quantity >= max) return false;
       var quantity = existing.quantity + item.quantity;
       if (max != null) quantity = quantity.clamp(1, max).toInt();
       final updated = existing.copyWith(quantity: quantity, stock: max);

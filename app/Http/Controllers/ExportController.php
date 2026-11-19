@@ -97,6 +97,9 @@ class ExportController extends Controller
 
         $query = $this->scopedMembers($request)
             ->with(['organization', 'branch', 'membershipFees' => fn ($q) => $q->where('year', now()->year)])
+            ->orderByRaw('CASE WHEN member_no_sequence IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('member_no_sequence')
+            ->orderBy('member_no')
             ->orderBy('name');
 
         $label = $isFull ? 'members-full' : 'members';

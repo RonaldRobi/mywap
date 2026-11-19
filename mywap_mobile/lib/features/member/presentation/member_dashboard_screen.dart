@@ -13,6 +13,9 @@ import '../../../shared/widgets/error_retry.dart';
 import '../../../shared/widgets/organic_canvas_background.dart';
 import '../../../shared/widgets/skeleton_box.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../ecommerce/application/cart_notifier.dart';
+import '../../ecommerce/application/product_providers.dart';
+import '../../ecommerce/data/models/product.dart';
 import '../../events/data/models/event.dart';
 import '../application/member_core_providers.dart';
 import '../application/member_providers.dart';
@@ -23,6 +26,9 @@ import 'widgets/notification_bell.dart';
 import '../../prayer/presentation/prayer_banner.dart';
 import '../../media_statements/application/media_statement_providers.dart';
 import '../../media_statements/data/media_statement_repository.dart';
+import '../../news/application/news_providers.dart';
+import '../../news/data/models/news.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../shared/theme/app_text_theme.dart';
 
 class MemberDashboardScreen extends ConsumerWidget {
@@ -78,11 +84,15 @@ class _DashboardContent extends ConsumerWidget {
     final mediaStatements =
         ref.watch(mediaStatementsProvider).valueOrNull ??
         const <MediaStatement>[];
+    final videos = ref.watch(videosProvider).valueOrNull ?? const <Video>[];
+    final mallProducts =
+        ref.watch(productsProvider).valueOrNull?.items ?? const <Product>[];
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(memberDashboardProvider);
         ref.invalidate(memberLibraryProvider);
+        ref.invalidate(videosProvider);
       },
       child: CustomScrollView(
         slivers: [
@@ -91,9 +101,10 @@ class _DashboardContent extends ConsumerWidget {
             backgroundColor: AppColors.pageBackground.withValues(alpha: 0.94),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
-            titleSpacing: 0,
-            title: _Greeting(name: memberName),
-            actions: const [NotificationBell(), SizedBox(width: Spacing.sm)],
+            toolbarHeight: 64,
+            titleSpacing: Spacing.lg,
+            title: _PolishedGreeting(member: member, name: memberName),
+            actions: const [NotificationBell(), SizedBox(width: Spacing.lg)],
           ),
           const SliverToBoxAdapter(child: PrayerBanner()),
           SliverPadding(
@@ -128,8 +139,8 @@ class _DashboardContent extends ConsumerWidget {
                   )
                 else
                   SizedBox(
-                    // Kad poster penuh 4:5 (200 × 250) mengikut standard poster moden.
-                    height: 250,
+                    // Kad Pas Program (Event Pass) dengan Poster Potret 4:5 Sebenar & Butang CTA Penuh
+                    height: 406,
                     child: ListView.separated(
                       clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
@@ -149,10 +160,9 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    // Imej anjal + footer teks. Tinggi ini menentukan saiz
-                    // imej; teks sentiasa rapat ke bawah tanpa jurang.
-                    height: 300,
+                    height: 255,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: infaqItems.length,
                       separatorBuilder:
@@ -166,13 +176,15 @@ class _DashboardContent extends ConsumerWidget {
                   const SizedBox(height: Spacing.xl),
                   _SectionLabel(
                     title: context.l10n.mediaStatementsTitle,
-                    subtitle: context.l10n.mediaStatementsSubtitle,
+                    subtitle: 'Siaran rasmi & pendirian terkini pertubuhan',
                     action: () => context.push('/media-statements'),
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 320,
+                    // Kad Media Statement 4:5 Potret Padan dengan Kad Program
+                    height: 406,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: mediaStatements.length,
                       separatorBuilder:
@@ -203,8 +215,9 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 300,
+                    height: 220,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: news.length.clamp(0, 6),
                       separatorBuilder:
@@ -222,8 +235,9 @@ class _DashboardContent extends ConsumerWidget {
                   ),
                   const SizedBox(height: Spacing.md),
                   SizedBox(
-                    height: 300,
+                    height: 220,
                     child: ListView.separated(
+                      clipBehavior: Clip.none,
                       scrollDirection: Axis.horizontal,
                       itemCount: articles.length.clamp(0, 6),
                       separatorBuilder:
@@ -232,6 +246,26 @@ class _DashboardContent extends ConsumerWidget {
                           (_, index) => _ArticleCard(item: articles[index]),
                     ),
                   ),
+                ],
+                if (videos.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: context.l10n.videoTitle,
+                    subtitle: 'Kuliah pilihan, tazkirah & rakaman terkini',
+                    action: () => context.push('/videos'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  _VideoSection(videos: videos),
+                ],
+                if (mallProducts.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _SectionLabel(
+                    title: 'MyWAP Mall',
+                    subtitle: 'Pilihan ahli',
+                    action: () => context.push('/products'),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  _MallSection(products: mallProducts),
                 ],
                 const _LibrarySection(),
               ]),
@@ -243,51 +277,161 @@ class _DashboardContent extends ConsumerWidget {
   }
 }
 
-class _Greeting extends StatelessWidget {
-  const _Greeting({required this.name});
+class _PolishedGreeting extends StatelessWidget {
+  const _PolishedGreeting({this.member, required this.name});
+  final DashboardMember? member;
   final String name;
 
   /// Nama pertama sahaja — nama penuh memenuhi bar tajuk dan terpotong
-  /// ("Assalamualaikum, MUHAMAD H...") pada saiz teks mesra warga emas.
   String get _firstName {
     final parts = name.trim().split(RegExp(r'\s+'));
     return parts.isEmpty ? name : parts.first;
   }
 
+  String get _initial {
+    final trimmed = _firstName.trim();
+    if (trimmed.isEmpty) return 'M';
+    return trimmed.substring(0, 1).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
-    final greeting =
+    final (timeGreeting, timeIcon) =
         hour < 12
-            ? context.l10n.greetingMorning
-            : hour < 18
-            ? context.l10n.greetingAfternoon
-            : context.l10n.greetingEvening;
-    // `SliverAppBar` menetapkan `titleSpacing: 0`, jadi tanpa padding ini
-    // teks mula tepat pada tepi skrin — tak selari dengan padding
-    // `Spacing.lg` yang dipakai kandungan di bawahnya dan skrin lain.
-    return Padding(
-      padding: const EdgeInsets.only(left: Spacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            context.l10n.greetingSalam(_firstName),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ? ('SELAMAT PAGI', Icons.wb_sunny_rounded)
+            : hour < 15
+            ? ('SELAMAT TENGAH HARI', Icons.wb_sunny_rounded)
+            : hour < 19
+            ? ('SELAMAT PETANG', Icons.wb_twilight_rounded)
+            : ('SELAMAT MALAM', Icons.nights_stay_rounded);
+
+    final photoUrl = member?.photo_url;
+
+    return Row(
+      children: [
+        // 1. VIP Avatar dengan Dwi-Lapisan Ring Apple
+        GestureDetector(
+          onTap: () => context.push('/profile'),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.movementGreen.withValues(alpha: 0.45),
+                      AppColors.movementDarkGreen.withValues(alpha: 0.15),
+                    ],
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x10000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.white,
+                  ),
+                  child: ClipOval(
+                    child:
+                        photoUrl != null && photoUrl.isNotEmpty
+                            ? AppImage(photoUrl, fit: BoxFit.cover)
+                            : Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFE8F5E9),
+                                    Color(0xFFC8E6C9),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _initial,
+                                  style: const TextStyle(
+                                    color: AppColors.movementDarkGreen,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 17,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                  ),
+                ),
+              ),
+              // Titik Ahli Aktif (Active Status Ring)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF34C759), // Apple Active Green
+                    border: Border.all(color: AppColors.white, width: 2),
+                  ),
+                ),
+              ),
+            ],
           ),
-          Text(
-            greeting,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(width: Spacing.md),
+
+        // 2. Hirarki Tipografi Sapaan Anggun
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(timeIcon, size: 11, color: AppColors.movementGreen),
+                  const SizedBox(width: 4),
+                  Text(
+                    timeGreeting,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: AppColors.movementGreen,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                context.l10n.greetingSalam(_firstName),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                  color: AppColors.movementNavy,
+                  height: 1.2,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -387,46 +531,46 @@ class _ShortcutsGrid extends ConsumerWidget {
         path: '/member/fee-status',
       ),
     _ShortcutItem(
-      icon: Icons.calendar_today_rounded,
+      icon: Icons.apartment_rounded,
       label: l10n.quickBook,
       color: AppColors.shortcutBooking,
       path: '/facilities',
     ),
     _ShortcutItem(
-      icon: Icons.article_rounded,
+      icon: Icons.newspaper_rounded,
       label: l10n.quickNews,
       color: AppColors.shortcutNews,
       path: '/news',
     ),
     _ShortcutItem(
-      icon: Icons.favorite_rounded,
+      icon: Icons.volunteer_activism_rounded,
       label: l10n.menuInfaq,
       color: AppColors.shortcutInfaq,
       path: '/infaq',
     ),
     if (!isAdmin)
       _ShortcutItem(
-        icon: Icons.contact_page_rounded,
+        icon: Icons.badge_rounded,
         label: l10n.quickCard,
         color: AppColors.shortcutCard,
         path: '/card',
       ),
     if (!isAdmin)
       _ShortcutItem(
-        icon: Icons.groups_2_rounded,
+        icon: Icons.diversity_3_rounded,
         label: l10n.menuUsrah,
         color: AppColors.shortcutUsrah,
         path: '/usrah',
       ),
     _ShortcutItem(
-      icon: Icons.shopping_bag_rounded,
+      icon: Icons.storefront_rounded,
       label: l10n.quickMall,
       color: AppColors.shortcutShop,
       path: '/products',
     ),
     if (!isAdmin)
       _ShortcutItem(
-        icon: Icons.share_rounded,
+        icon: Icons.person_add_alt_1_rounded,
         label: l10n.quickInvite,
         color: AppColors.shortcutReferral,
         path: '/member/referral',
@@ -439,7 +583,7 @@ class _ShortcutsGrid extends ConsumerWidget {
     final items = _items(context.l10n, includeFee: !isAdmin, isAdmin: isAdmin);
     final rows = <Widget>[];
     for (var i = 0; i < items.length; i += 4) {
-      if (i > 0) rows.add(const SizedBox(height: Spacing.sm));
+      if (i > 0) rows.add(const SizedBox(height: Spacing.md));
       rows.add(
         Row(
           children: [
@@ -475,32 +619,45 @@ class _ShortcutTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: AppRadius.sm,
+        borderRadius: BorderRadius.circular(16),
         onTap: () => context.push(item.path),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+          padding: const EdgeInsets.symmetric(
+            vertical: Spacing.xs,
+            horizontal: 2,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: .12),
-                  borderRadius: AppRadius.sm,
-                  border: Border.all(color: item.color.withValues(alpha: .08)),
+                  color: item.color,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: item.color.withValues(alpha: 0.28),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Icon(item.icon, color: item.color, size: 20),
+                child: Icon(item.icon, color: AppColors.white, size: 22),
               ),
-              const SizedBox(height: Spacing.xs),
+              const SizedBox(height: 6),
               Text(
                 item.label,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(fontSize: 11, height: 1.15),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: AppColors.textPrimary,
+                  height: 1.15,
+                ),
               ),
             ],
           ),
@@ -1028,17 +1185,33 @@ class _Watermark extends StatelessWidget {
   }
 }
 
-String _formatEventDate(Event event) {
+class _EventDateParts {
+  const _EventDateParts({
+    required this.day,
+    required this.month,
+    required this.weekday,
+  });
+
+  final String day;
+  final String month;
+  final String weekday;
+}
+
+_EventDateParts _parseCalendarDate(Event event) {
   if (event.start_time?.isNotEmpty == true) {
     final dt = DateTime.tryParse(event.start_time!);
     if (dt != null) {
-      return Formatters.shortDate(dt.toLocal());
+      final local = dt.toLocal();
+      final day = local.day.toString().padLeft(2, '0');
+      final month = Formatters.months[local.month - 1].toUpperCase();
+      final weekday =
+          Formatters.weekdays[local.weekday - 1].substring(0, 3).toUpperCase();
+      return _EventDateParts(day: day, month: month, weekday: weekday);
     }
   }
-  final raw = event.start_formatted?.trim();
-  if (raw == null || raw.isEmpty) return '';
 
-  if (raw.contains('/')) {
+  final raw = event.start_formatted?.trim();
+  if (raw != null && raw.contains('/')) {
     final datePart = raw.split(' ').first;
     final parts = datePart.split('/');
     if (parts.length == 3) {
@@ -1046,22 +1219,117 @@ String _formatEventDate(Event event) {
       final m = int.tryParse(parts[1]);
       final y = int.tryParse(parts[2]);
       if (d != null && m != null && y != null && m >= 1 && m <= 12) {
-        return '$d ${Formatters.months[m - 1]} $y';
+        final dt = DateTime(y, m, d);
+        final day = d.toString().padLeft(2, '0');
+        final month = Formatters.months[m - 1].toUpperCase();
+        final weekday =
+            Formatters.weekdays[dt.weekday - 1].substring(0, 3).toUpperCase();
+        return _EventDateParts(day: day, month: month, weekday: weekday);
       }
     }
   }
 
-  if (raw.contains('•')) {
-    final datePart = raw.split('•').first.trim();
-    if (datePart.contains(',')) {
-      return datePart.split(',').last.trim();
+  if (raw != null && raw.isNotEmpty) {
+    final clean = raw.contains('•') ? raw.split('•').first.trim() : raw;
+    final commaParts = clean.split(',');
+    String weekday = 'ACARA';
+    String day = '--';
+    String month = 'ACARA';
+
+    if (commaParts.length == 2) {
+      final w = commaParts.first.trim();
+      weekday =
+          w.length >= 3 ? w.substring(0, 3).toUpperCase() : w.toUpperCase();
+      final dateTokens = commaParts[1].trim().split(RegExp(r'\s+'));
+      if (dateTokens.isNotEmpty) day = dateTokens[0].padLeft(2, '0');
+      if (dateTokens.length > 1) month = dateTokens[1].toUpperCase();
     }
-    return datePart;
+    return _EventDateParts(day: day, month: month, weekday: weekday);
   }
 
-  return raw;
+  return const _EventDateParts(day: '--', month: 'ACARA', weekday: 'ACARA');
 }
 
+/// Stempel Kalendar Timbul (Floating 3D-feel Calendar Stamp)
+class _FloatingCalendarStamp extends StatelessWidget {
+  const _FloatingCalendarStamp({required this.dateParts});
+
+  final _EventDateParts dateParts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.divider.withValues(alpha: 0.8),
+          width: 0.8,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x35000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Bulan Hijau Jenama
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 2.5),
+            color: AppColors.movementGreen,
+            child: Text(
+              dateParts.month,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          // Nombor Hari Besar & Jelas
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 3, 2, 1),
+            child: Text(
+              dateParts.day,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.movementNavy,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                height: 1.05,
+              ),
+            ),
+          ),
+          // Singkatan Hari (cth: SAB)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Text(
+              dateParts.weekday,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kad Acara Konsep Pas Masuk / Tiket (Event Pass Card)
 class _EventCard extends StatelessWidget {
   const _EventCard({required this.event});
   final Event event;
@@ -1069,153 +1337,207 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOnline = event.type == 'online';
-    final locationText = isOnline
-        ? (event.location_or_link?.isNotEmpty == true
-            ? event.location_or_link!
-            : context.l10n.eventOnline)
-        : (event.location_or_link?.isNotEmpty == true
-            ? event.location_or_link!
-            : context.l10n.eventPhysical);
-    final dateText = _formatEventDate(event);
+    final locationText =
+        isOnline
+            ? (event.location_or_link?.isNotEmpty == true
+                ? event.location_or_link!
+                : context.l10n.eventOnline)
+            : (event.location_or_link?.isNotEmpty == true
+                ? event.location_or_link!
+                : context.l10n.eventPhysical);
+    final dateParts = _parseCalendarDate(event);
+    final isMalay = Localizations.localeOf(context).languageCode == 'ms';
 
     return Container(
-      width: 200,
+      width: 210,
       decoration: BoxDecoration(
-        color: AppColors.movementNavy,
-        borderRadius: AppRadius.card,
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.divider.withValues(alpha: 0.35),
+          color: AppColors.divider.withValues(alpha: 0.6),
           width: 0.8,
         ),
-        boxShadow: AppShadows.card,
+        boxShadow: AppShadows.subtle,
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => context.push('/events/${event.id}'),
-          child: Stack(
-            fit: StackFit.expand,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Poster imej latar penuh (4:5)
-              if (event.featured_image_url?.isNotEmpty == true)
-                AppImage(event.featured_image_url, fit: BoxFit.cover)
-              else
-                Container(
-                  color: AppColors.movementNavy,
-                  child: Center(
-                    child: Icon(
-                      Icons.event_outlined,
-                      size: 44,
-                      color: AppColors.movementSoftGreen.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
-              // Lapisan gradien halus dari tengah ke bawah untuk kontras teks
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Color(0x2012241C),
-                      Color(0xCC12241C),
-                      Color(0xF512241C),
-                    ],
-                    stops: [0.35, 0.55, 0.80, 1.0],
-                  ),
-                ),
-              ),
-              // Lencana status Online / Fizikal di bucu atas (rekaan kemas berpetunjuk titik bercahaya)
-              Positioned(
-                left: Spacing.sm + 2,
-                top: Spacing.sm + 2,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.movementNavy.withValues(alpha: 0.72),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: AppColors.white.withValues(alpha: 0.22),
-                      width: 0.75,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+              // Bahagian Atas: Poster Potret 4:5 Sebenar dengan Stempel Kalendar Timbul & Lencana Status
+              AspectRatio(
+                aspectRatio: 4 / 5,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (event.featured_image_url?.isNotEmpty == true)
+                      AppImage(
+                        event.featured_image_url,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                    else
                       Container(
-                        width: 6,
-                        height: 6,
+                        color: AppColors.movementNavy,
+                        child: Center(
+                          child: Icon(
+                            Icons.event_outlined,
+                            size: 48,
+                            color: AppColors.movementSoftGreen.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Gradien bayang atas halus untuk kontras lencana
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 50,
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color:
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x40000000), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Stempel Kalendar Terapung di Bucu Kiri Atas
+                    Positioned(
+                      left: 10,
+                      top: 10,
+                      child: _FloatingCalendarStamp(dateParts: dateParts),
+                    ),
+                    // Lencana Status (Online / Fizikal) di Bucu Kanan Atas
+                    Positioned(
+                      right: 10,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementNavy.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.25),
+                            width: 0.75,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    isOnline
+                                        ? const Color(0xFF34D399)
+                                        : const Color(0xFFFBBF24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (isOnline
+                                            ? const Color(0xFF34D399)
+                                            : const Color(0xFFFBBF24))
+                                        .withValues(alpha: 0.6),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
                               isOnline
-                                  ? const Color(0xFF34D399)
-                                  : const Color(0xFFFBBF24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isOnline
-                                      ? const Color(0xFF34D399)
-                                      : const Color(0xFFFBBF24))
-                                  .withValues(alpha: 0.6),
-                              blurRadius: 4,
+                                  ? context.l10n.eventOnline.toUpperCase()
+                                  : context.l10n.eventPhysical.toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        isOnline
-                            ? context.l10n.eventOnline.toUpperCase()
-                            : context.l10n.eventPhysical.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              // Blok maklumat di bahagian bawah (ketinggian seragam)
-              Positioned(
-                left: Spacing.md,
-                right: Spacing.md,
-                bottom: Spacing.md,
+
+              // Bahagian Tengah: Pembahagi Tiket / Kupon Bertakuk (Ticket Notch)
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 14,
+                    decoration: const BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: BorderRadius.horizontal(
+                        right: Radius.circular(7),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dashCount =
+                            (constraints.constrainWidth() / 8).floor();
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                            dashCount,
+                            (_) => Container(
+                              width: 4,
+                              height: 1,
+                              color: AppColors.divider.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 14,
+                    decoration: const BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: BorderRadius.horizontal(
+                        left: Radius.circular(7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Bahagian Bawah: Maklumat Teks & Butang CTA Penuh
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (dateText.isNotEmpty) ...[
-                      Text(
-                        dateText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF6EE7B7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
                     SizedBox(
-                      height: 36,
+                      height: 38,
                       child: Text(
                         event.title ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: AppColors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
                           height: 1.25,
                         ),
                       ),
@@ -1227,8 +1549,8 @@ class _EventCard extends StatelessWidget {
                           isOnline
                               ? Icons.link_rounded
                               : Icons.location_on_outlined,
-                          size: 13,
-                          color: AppColors.white.withValues(alpha: 0.85),
+                          size: 14,
+                          color: AppColors.movementGreen,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -1236,32 +1558,60 @@ class _EventCard extends StatelessWidget {
                             locationText,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.white.withValues(alpha: 0.85),
-                              fontSize: 11,
+                            style: const TextStyle(
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.white.withValues(alpha: 0.18),
-                            border: Border.all(
-                              color: AppColors.white.withValues(alpha: 0.25),
-                              width: 0.75,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 12,
-                            color: AppColors.white,
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Butang Penuh (Full-Width Button) Gradient Hijau
+                    Container(
+                      width: double.infinity,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.movementGreen,
+                            AppColors.movementDarkGreen,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.movementGreen.withValues(
+                              alpha: 0.28,
+                            ),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isMalay ? 'Lihat Program' : 'View Event',
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: AppColors.white,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1352,13 +1702,29 @@ class _InfaqCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress =
         ((item.progress_percent ?? 0) / 100).clamp(0, 1).toDouble();
+    final percentInt = (item.progress_percent ?? 0).toInt();
+
+    String formatMoney(dynamic value) {
+      if (value == null) return 'RM 0';
+      if (value is num) return Formatters.currency(value);
+      final parsed = double.tryParse(value.toString());
+      return parsed != null ? Formatters.currency(parsed) : value.toString();
+    }
+
+    final collectedStr =
+        item.collected_amount != null
+            ? formatMoney(item.collected_amount)
+            : null;
+    final targetStr =
+        item.target_amount != null ? formatMoney(item.target_amount) : null;
+
     return Container(
-      width: 176,
+      width: 240,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.divider.withValues(alpha: 0.5),
+          color: AppColors.divider.withValues(alpha: 0.6),
           width: 0.8,
         ),
         boxShadow: AppShadows.subtle,
@@ -1370,45 +1736,201 @@ class _InfaqCard extends StatelessWidget {
           onTap: () => context.go('/infaq'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: AppImage(item.image_path, fit: BoxFit.cover),
+              // Gambar Kempen dengan Tag Status
+              SizedBox(
+                height: 120,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (item.image_path?.isNotEmpty == true)
+                      AppImage(
+                        item.image_path,
+                        width: double.infinity,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      )
+                    else
+                      Container(
+                        color: AppColors.softGreenSurface,
+                        child: const Center(
+                          child: Icon(
+                            Icons.volunteer_activism_rounded,
+                            size: 40,
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                      ),
+                    // Tag Status di Bucu Kanan Atas
+                    Positioned(
+                      right: 10,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementNavy.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.25),
+                            width: 0.75,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF34D399),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              (item.type?.isNotEmpty == true
+                                      ? item.type!
+                                      : 'KEMPEN AKTIF')
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
+              // Bahagian Maklumat Kempen & Sasaran
               Padding(
                 padding: const EdgeInsets.all(Spacing.md),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title ?? '-',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
+                    SizedBox(
+                      height: 36,
+                      child: Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
                       ),
                     ),
                     const SizedBox(height: Spacing.sm),
+                    // Bar Kemajuan Tebal & Berwarna
                     ClipRRect(
-                      borderRadius: AppRadius.xs,
+                      borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: progress,
-                        minHeight: 5,
-                        backgroundColor: AppColors.divider,
+                        minHeight: 7,
+                        backgroundColor: AppColors.divider.withValues(
+                          alpha: 0.5,
+                        ),
                         color: AppColors.movementGreen,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.l10n.collectedPercent(
-                        (item.progress_percent ?? 0).toInt(),
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    const SizedBox(height: 6),
+                    // Angka Kutipan & Sasaran
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          collectedStr ?? '$percentInt% Terkumpul',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                        Text(
+                          targetStr != null
+                              ? 'Sasaran: $targetStr'
+                              : '$percentInt%',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Baris Butang Infaq Pantas & Social Proof
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.favorite_rounded,
+                              size: 13,
+                              color: Color(0xFFEF4444),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Infaq Jemaah',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.greenTint,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(
+                              color: AppColors.movementGreen.withValues(
+                                alpha: 0.25,
+                              ),
+                              width: 0.75,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'SUMBANG',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.movementGreen,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 13,
+                                color: AppColors.movementGreen,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1428,13 +1950,15 @@ class _MediaStatementPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMalay = Localizations.localeOf(context).languageCode == 'ms';
+
     return Container(
-      width: 175,
+      width: 210,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.divider.withValues(alpha: 0.5),
+          color: AppColors.divider.withValues(alpha: 0.6),
           width: 0.8,
         ),
         boxShadow: AppShadows.subtle,
@@ -1446,59 +1970,233 @@ class _MediaStatementPreview extends StatelessWidget {
           onTap: () => context.push('/media-statements/${item.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Bahagian Atas: Poster Potret 4:5 Sebenar dengan Lencana Rasmi
               AspectRatio(
                 aspectRatio: 4 / 5,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     if (item.featuredImage?.isNotEmpty == true)
-                      AppImage(item.featuredImage, fit: BoxFit.cover)
+                      AppImage(
+                        item.featuredImage,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      )
                     else
-                      Container(color: AppColors.paleGreen),
-                    const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [AppColors.scrim, Colors.transparent],
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.movementNavy, Color(0xFF1E3A2B)],
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.campaign_outlined,
+                            size: 48,
+                            color: AppColors.movementSoftGreen.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Gradien bayang atas halus untuk kontras badge
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 50,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x55000000), Colors.transparent],
+                          ),
                         ),
                       ),
                     ),
+                    // Lencana Rasmi di Bucu Atas Gambar
                     Positioned(
-                      left: Spacing.sm,
-                      bottom: Spacing.sm,
-                      right: Spacing.sm,
-                      child: Text(
-                        item.organizationName ?? context.l10n.newsAllOrganizations,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: AppTextTheme.minSize,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.white,
+                      left: 10,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementNavy.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.25),
+                            width: 0.75,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF34D399),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isMalay ? 'SIARAN MEDIA' : 'PRESS RELEASE',
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
+
+              // Bahagian Tengah: Pembahagi Takuk Tiket
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 14,
+                    decoration: const BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: BorderRadius.horizontal(
+                        right: Radius.circular(7),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dashCount =
+                            (constraints.constrainWidth() / 8).floor();
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                            dashCount,
+                            (_) => Container(
+                              width: 4,
+                              height: 1,
+                              color: AppColors.divider.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 14,
+                    decoration: const BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: BorderRadius.horizontal(
+                        left: Radius.circular(7),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Bahagian Bawah: Maklumat Teks Kenyataan Media & Butang Tindakan Penuh
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (item.organizationName ?? 'Organisasi')
+                                .toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.movementGreen,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        if (item.publishedDate?.isNotEmpty == true)
+                          Text(
+                            item.publishedDate!,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: 38,
+                      child: Text(
                         item.title ?? '-',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Butang Penuh (Full-Width Button) untuk Membaca Kenyataan
+                    Container(
+                      width: double.infinity,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: AppColors.greenTint,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: AppColors.movementGreen.withValues(
+                            alpha: 0.35,
+                          ),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isMalay ? 'Baca Kenyataan' : 'Read Statement',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.movementGreen,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: AppColors.movementGreen,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1516,50 +2214,160 @@ class _PollPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responded = poll.has_responded ?? false;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: Spacing.md),
-      child: Material(
-        color: AppColors.white,
-        borderRadius: AppRadius.card,
-        child: InkWell(
-          borderRadius: AppRadius.card,
-          onTap: () => context.push('/polls/${poll.id}'),
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
-            child: Row(
-              children: [
-                Icon(
-                  responded
-                      ? Icons.check_circle_outline
-                      : Icons.how_to_vote_outlined,
-                  color:
-                      responded ? AppColors.success : AppColors.movementGreen,
-                ),
-                const SizedBox(width: Spacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                responded
+                    ? AppColors.movementGreen.withValues(alpha: 0.35)
+                    : AppColors.divider.withValues(alpha: 0.6),
+            width: 0.8,
+          ),
+          boxShadow: AppShadows.subtle,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => context.push('/polls/${poll.id}'),
+            child: Padding(
+              padding: const EdgeInsets.all(Spacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        poll.title ?? '-',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              responded
+                                  ? const Color(0xFFE6F4EA)
+                                  : AppColors.accentTint,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              responded
+                                  ? Icons.check_circle_rounded
+                                  : Icons.how_to_vote_rounded,
+                              size: 13,
+                              color:
+                                  responded
+                                      ? AppColors.movementGreen
+                                      : AppColors.warning,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              responded ? 'UNDIAN SELESAI' : 'SUARA AHLI AKTIF',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color:
+                                    responded
+                                        ? AppColors.movementGreen
+                                        : AppColors.warning,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const Spacer(),
+                      if (poll.response_count != null)
+                        Text(
+                          '${poll.response_count} undian',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  Text(
+                    poll.title ?? '-',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.movementNavy,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Text(
                         responded
                             ? context.l10n.pollAnswered
-                            : context.l10n.pollNotAnswered(
-                              poll.response_count ?? 0,
+                            : (poll.ends_at_formatted?.isNotEmpty == true
+                                ? 'Tamat: ${poll.ends_at_formatted}'
+                                : 'Undian dibuka'),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color:
+                              responded
+                                  ? AppColors.movementGreen
+                                  : AppColors.textSecondary,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              responded
+                                  ? AppColors.pageBackground
+                                  : AppColors.greenTint,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(
+                            color: AppColors.movementGreen.withValues(
+                              alpha: 0.25,
                             ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                            width: 0.75,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              responded ? 'LIHAT HASIL' : 'UNDI SEKARANG',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.movementGreen,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 11,
+                              color: AppColors.movementGreen,
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1575,12 +2383,12 @@ class _NewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 176,
+      width: 250,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.divider.withValues(alpha: 0.5),
+          color: AppColors.divider.withValues(alpha: 0.6),
           width: 0.8,
         ),
         boxShadow: AppShadows.subtle,
@@ -1592,33 +2400,143 @@ class _NewsCard extends StatelessWidget {
           onTap: () => context.push('/news/${item.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child:
-                    item.cover_image_path?.isNotEmpty == true
-                        ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                        : Container(color: AppColors.paleGreen),
+              // Gambar Landskap 16:9 Bersih
+              SizedBox(
+                height: 122,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (item.cover_image_path?.isNotEmpty == true)
+                      AppImage(
+                        item.cover_image_path,
+                        width: double.infinity,
+                        height: 122,
+                        fit: BoxFit.cover,
+                      )
+                    else
+                      Container(
+                        color: AppColors.greenTint,
+                        child: const Center(
+                          child: Icon(
+                            Icons.newspaper_rounded,
+                            size: 36,
+                            color: AppColors.movementGreen,
+                          ),
+                        ),
+                      ),
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 40,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x45000000), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 10,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementNavy.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.2),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFEF4444),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              (item.category_name?.isNotEmpty == true
+                                      ? item.category_name!
+                                      : 'BERITA')
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
+              // Kandungan Teks Berita
               Padding(
                 padding: const EdgeInsets.all(Spacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title ?? '-',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.category_name ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                    SizedBox(
+                      height: 38,
+                      child: Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 12,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.organization_name ?? 'Berita Semasa',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 12,
+                          color: AppColors.movementGreen,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1637,13 +2555,18 @@ class _ArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final author =
+        item.author_name?.isNotEmpty == true
+            ? item.author_name!
+            : (item.organization_name ?? 'Wacana Minda');
+
     return Container(
-      width: 176,
+      width: 250,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: AppRadius.card,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.divider.withValues(alpha: 0.5),
+          color: AppColors.divider.withValues(alpha: 0.6),
           width: 0.8,
         ),
         boxShadow: AppShadows.subtle,
@@ -1655,33 +2578,140 @@ class _ArticleCard extends StatelessWidget {
           onTap: () => context.push('/articles/${item.id}'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child:
-                    item.cover_image_path?.isNotEmpty == true
-                        ? AppImage(item.cover_image_path, fit: BoxFit.cover)
-                        : Container(color: AppColors.paleGreen),
+              // Gambar Landskap 16:9 dengan Badge Artikel Editorial
+              SizedBox(
+                height: 122,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (item.cover_image_path?.isNotEmpty == true)
+                      AppImage(
+                        item.cover_image_path,
+                        width: double.infinity,
+                        height: 122,
+                        fit: BoxFit.cover,
+                      )
+                    else
+                      Container(
+                        color: const Color(0xFFFAF6F0),
+                        child: const Center(
+                          child: Icon(
+                            Icons.auto_stories_rounded,
+                            size: 36,
+                            color: Color(0xFF8B6B43),
+                          ),
+                        ),
+                      ),
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 40,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x45000000), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 10,
+                      top: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.movementNavy.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.2),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.menu_book_rounded,
+                              size: 10,
+                              color: Color(0xFFFBBF24),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'WACANA & FIKRAH',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
+              // Kandungan Teks Artikel Editorial
               Padding(
                 padding: const EdgeInsets.all(Spacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title ?? '-',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.author_name ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                    SizedBox(
+                      height: 38,
+                      child: Text(
+                        item.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.edit_note_rounded,
+                          size: 14,
+                          color: AppColors.movementGreen,
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            author,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.movementGreen,
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          '•  5 min bacaan',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1794,6 +2824,365 @@ class _LibraryBookCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _VideoSection extends StatelessWidget {
+  const _VideoSection({required this.videos});
+
+  final List<Video> videos;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 236,
+      child: ListView.separated(
+        clipBehavior: Clip.none,
+        scrollDirection: Axis.horizontal,
+        itemCount: videos.length.clamp(0, 6),
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+        itemBuilder: (_, index) => _VideoCard(video: videos[index]),
+      ),
+    );
+  }
+}
+
+class _VideoCard extends StatelessWidget {
+  const _VideoCard({required this.video});
+
+  final Video video;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      child: Material(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        elevation: 0,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            final url = video.watchUrl;
+            if (url.isNotEmpty) {
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x12000000), width: 0.8),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A12241C),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (video.thumbnailUrl != null &&
+                            video.thumbnailUrl!.isNotEmpty)
+                          AppImage(video.thumbnailUrl, fit: BoxFit.cover)
+                        else
+                          Container(
+                            color: const Color(0xFF1B2A22),
+                            child: const Center(
+                              child: Icon(
+                                Icons.videocam_rounded,
+                                color: Colors.white54,
+                                size: 36,
+                              ),
+                            ),
+                          ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Color(0x75000000)],
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.88),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x40000000),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 28,
+                              color: AppColors.movementNavy,
+                            ),
+                          ),
+                        ),
+                        if (video.isLive)
+                          Positioned(
+                            left: 10,
+                            top: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF3B30),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.fiber_manual_record,
+                                    size: 8,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'LIVE',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(Spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        video.title ?? '-',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.movementNavy,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.ondemand_video_rounded,
+                            size: 13,
+                            color: AppColors.movementGreen,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Tonton di YouTube',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.movementGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MallSection extends ConsumerWidget {
+  const _MallSection({required this.products});
+
+  final List<Product> products;
+
+  void _addToCart(BuildContext context, WidgetRef ref, Product product) {
+    final id = product.id;
+    if (id == null || product.isOutOfStock) return;
+    if ((product.variationsCount ?? 0) > 0) {
+      context.push('/products/$id');
+      return;
+    }
+
+    final added = ref
+        .read(cartProvider.notifier)
+        .add(
+          CartItem(
+            key: '$id:0',
+            productId: id,
+            name: product.name ?? context.l10n.ecomProductFallback,
+            image: product.displayImage,
+            unitPrice: product.effectivePrice,
+            quantity: 1,
+            stock: product.stock,
+            postageCost: product.postageCost,
+          ),
+        );
+    if (!added) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(context.l10n.ecomAddedToCart)));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      height: 310,
+      child: ListView.separated(
+        clipBehavior: Clip.none,
+        scrollDirection: Axis.horizontal,
+        itemCount: products.length.clamp(0, 6),
+        separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+        itemBuilder: (_, index) {
+          final item = products[index];
+          return SizedBox(
+            width: 175,
+            child: Material(
+              color: AppColors.white,
+              borderRadius: AppRadius.card,
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap:
+                          item.id == null
+                              ? null
+                              : () => context.push('/products/${item.id}'),
+                      child: AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: AppImage(
+                          item.displayImage,
+                          fit: BoxFit.cover,
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Spacing.sm),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (item.category?.name?.isNotEmpty ?? false) ...[
+                            Text(
+                              item.category!.name!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            const SizedBox(height: Spacing.xs),
+                          ],
+                          Text(
+                            item.name ?? context.l10n.ecomProductFallback,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.movementNavy,
+                              height: 1.2,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            Formatters.currency(item.effectivePrice),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.movementGreen,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.sm),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: FilledButton.icon(
+                              onPressed:
+                                  item.isOutOfStock
+                                      ? null
+                                      : () => _addToCart(context, ref, item),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.sm,
+                                ),
+                                backgroundColor: AppColors.movementGreen,
+                                foregroundColor: AppColors.white,
+                                disabledBackgroundColor: AppColors.surfaceMuted,
+                                disabledForegroundColor: AppColors.textTertiary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.add_shopping_cart_rounded,
+                                size: 16,
+                              ),
+                              label: Text(
+                                item.isOutOfStock
+                                    ? context.l10n.ecomSoldOut
+                                    : (item.variationsCount ?? 0) > 0
+                                    ? context.l10n.ecomChooseOptions
+                                    : context.l10n.ecomAddToCart,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
