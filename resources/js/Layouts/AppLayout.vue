@@ -395,7 +395,7 @@ const navItems = computed(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5L18.5 7H20a2 2 0 012 2v10a2 2 0 01-2 2z"/>
                  </svg>`,
     },
-    ...(isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? [{
+    ...(isSuperadmin.value ? [{
         label:  'Kenyataan Media',
         href:   route('admin.media-statements.index'),
         active: route().current('admin.media-statements.*'),
@@ -404,7 +404,7 @@ const navItems = computed(() => {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2zm3 5h6m-6 4h6m-6 4h3"/>
                 </svg>`,
     }] : []),
-    {
+    ...(isSuperadmin.value || isMember.value ? [{
         label:  'Video',
         href:   isAdmin.value || isSuperadmin.value || isBranchAdmin.value ? route('admin.videos.manage') : route('member.videos.index'),
         active: route().current('admin.videos.*') || route().current('member.videos.*'),
@@ -412,8 +412,8 @@ const navItems = computed(() => {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>`,
-    },
-    {
+    }]: []),
+    ...(isSuperadmin.value || isMember.value ? [{
         label:  'Usrah',
         href:   isMember.value ? route('member.usrah') : route('admin.usrah.index'),
         active: route().current('member.usrah') || route().current('admin.usrah.*'),
@@ -421,7 +421,7 @@ const navItems = computed(() => {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v11.494m-5.747-8.62h11.494M4.5 19.5h15a2 2 0 002-2v-11a2 2 0 00-2-2h-15a2 2 0 00-2 2v11a2 2 0 002 2z"/>
                 </svg>`,
-    },
+    }]: []),
     ...(isAdmin.value || isSuperadmin.value ? [{
         label:  'Borang',
         href:   route('admin.forms.index'),
@@ -451,12 +451,6 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
     }, {
-        label:  'Yuran Ahli',
-        href:   route('admin.fees.members'),
-        active: route().current('admin.fees.members'),
-        colorClass: 'text-[#2F6B32]',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
-    }, {
         label:  'Cawangan',
         href:   route('branches.index'),
         active: route().current('branches.*'),
@@ -482,12 +476,6 @@ const navItems = computed(() => {
         active: route().current('admin.hub.*'),
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
-    }, {
-        label:  'Yuran Ahli',
-        href:   route('admin.fees.members'),
-        active: route().current('admin.fees.members*'),
-        colorClass: 'text-[#2F6B32]',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
     }, {
         label:  'Pustaka',
         href:   route('admin.library.manage'),
@@ -544,7 +532,7 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
     }] : []),
-    {
+    ...(isSuperadmin.value || isMember.value ? [{
         label:  'Yuran & Bayaran',
         href:   isSuperadmin.value
                     ? route('superadmin.fees.index')
@@ -559,7 +547,7 @@ const navItems = computed(() => {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>`,
-    },
+    }]: []),
     ...(isSuperadmin.value || isAdmin.value || isMember.value ? [{
         label:  'Infaq',
         href:   (isSuperadmin.value || isAdmin.value) ? route('superadmin.infaq.index') : route('infaq.index'),
@@ -844,7 +832,7 @@ const bottomNavItems = computed(() => {
     return [
         { label: 'Utama',     href: route('dashboard'),     active: route().current('dashboard') || route().current('admin.dashboard') || route().current('member.dashboard'),   icon: find('Papan Pemuka')?.icon },
         { label: 'Program',  href: route('events.index'),  active: route().current('events.*'),    icon: find('Program')?.icon },
-        { label: isMember.value ? 'Pustaka' : 'Usrah', href: isMember.value ? route('member.library') : (isAdmin.value || isSuperadmin.value ? route('admin.usrah.index') : route('member.usrah')), active: isMember.value ? route().current('member.library') : (route().current('member.usrah') || route().current('admin.usrah.*')), icon: isMember.value ? find('Pustaka')?.icon : find('Usrah')?.icon },
+        ...(isMember.value ? [{ label: 'Pustaka', href: route('member.library'), active: route().current('member.library'), icon: find('Pustaka')?.icon }] : []),
         { label: isMember.value ? 'Kad' : 'Profil',  href: isMember.value ? route('member.card') : route('profile.edit'),  active: isMember.value ? route().current('member.card') : route().current('profile.edit'), icon: isMember.value ? find('Kad Ahli')?.icon : find('Profil')?.icon },
     ];
 });
