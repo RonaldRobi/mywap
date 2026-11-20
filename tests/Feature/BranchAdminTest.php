@@ -521,9 +521,16 @@ class BranchAdminTest extends TestCase
         $this->assertFalse($this->branchAdmin->fresh()->must_change_password);
     }
 
-    public function test_branch_change_request_notifies_destination_secretaries_only(): void
+    public function test_branch_change_request_notifies_destination_admins_and_secretaries_only(): void
     {
         Notification::fake();
+
+        $destinationAdmin = $this->member('Admin Johor', $this->abim, $this->johor, '920101015552');
+        BranchAdmin::create([
+            'branch_id' => $this->johor->id,
+            'user_id' => $destinationAdmin->id,
+            'role' => BranchAdmin::ROLE_MANAGER,
+        ]);
 
         $destinationSecretary = $this->member('Setiausaha Johor', $this->abim, $this->johor, '920101015553');
         BranchAdmin::create([
@@ -544,6 +551,8 @@ class BranchAdminTest extends TestCase
             ->assertRedirect(route('profile.edit'));
 
         Notification::assertSentTo($destinationSecretary, BranchChangeRequestSubmitted::class);
+        Notification::assertSentTo($destinationAdmin, BranchChangeRequestSubmitted::class);
+        Notification::assertNotSentTo($this->branchAdmin, BranchChangeRequestSubmitted::class);
         Notification::assertNotSentTo($sourceSecretary, BranchChangeRequestSubmitted::class);
 
         $this->assertDatabaseHas('branch_change_requests', [

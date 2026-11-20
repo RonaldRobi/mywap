@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Branch;
+use App\Models\BranchAdmin;
 use App\Models\BranchChangeRequest;
 use App\Models\BranchTransitionHistory;
 use App\Models\EventRsvp;
@@ -211,10 +212,13 @@ class ProfileService
             'status' => 'pending',
         ]);
 
-        $recipients = $branch->secretaries()
+        $recipients = $branch->adminUsers()
+            ->wherePivotIn('role', [BranchAdmin::ROLE_MANAGER, BranchAdmin::ROLE_SETIAUSAHA])
             ->where('users.is_active', true)
             ->get()
-            ->reject(fn (User $secretary) => ! $secretary->email || $secretary->emailIsPlaceholder());
+            ->reject(fn (User $recipient) => ! $recipient->email || $recipient->emailIsPlaceholder())
+            ->unique('id')
+            ->values();
 
         if ($recipients->isNotEmpty()) {
             Notification::send($recipients, new BranchChangeRequestSubmitted($branchChangeRequest));
