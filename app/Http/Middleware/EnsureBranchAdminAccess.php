@@ -41,6 +41,7 @@ class EnsureBranchAdminAccess
         'admin.members.export',
         'admin.members.update',
         'admin.hub.manage',
+        'admin.member-movements.',
         'admin.hub.members.logs',
         'admin.hub.members.programs',
         'admin.hub.members.toggle-active',

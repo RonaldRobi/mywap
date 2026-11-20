@@ -116,6 +116,9 @@ class DashboardController extends Controller
             'managementLinks' => $data['managementLinks'],
             'campaigns' => $data['campaigns'],
             'isBranchAdmin' => $user->isBranchAdmin(),
+            'managedBranchNames' => $user->isBranchAdmin()
+                ? $user->managedBranches()->orderBy('name')->pluck('name')->values()
+                : [],
             'registrationShare' => app(RegistrationShareService::class)->forUser($user),
         ]);
     }

@@ -11,6 +11,7 @@ const props = defineProps({
     managementLinks: { type: Object, required: true },
     registrationShare: { type: Object, required: true },
     isBranchAdmin: Boolean,
+    managedBranchNames: { type: Array, default: () => [] },
 });
 
 const shareCopied = ref(false);
@@ -125,6 +126,7 @@ function activityTone(type = '') {
                 <section class="lg:col-span-8 rounded-2xl border border-slate-800 bg-[radial-gradient(110%_120%_at_95%_10%,#1e3a2f_0%,#0f172a_58%,#090e1a_100%)] p-5 text-white sm:p-7">
                     <div>
                         <p class="text-xs font-semibold text-[#B8D9C0]">{{ scopeLabel }}</p>
+                        <p v-if="isBranchAdmin && managedBranchNames.length" class="mt-1 text-sm font-bold text-white">{{ managedBranchNames.join(', ') }}</p>
                         <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <h2 class="text-2xl font-black tracking-tight sm:text-3xl">{{ organization?.name }}</h2>

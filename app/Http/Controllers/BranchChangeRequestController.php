@@ -81,6 +81,96 @@ class BranchChangeRequestController extends Controller
         ]);
     }
 
+    public function movements(Request $request): Response
+    {
+        $user = $request->user();
+        $branchIds = $user->managedBranchIds();
+
+        abort_if($branchIds === [], 403, 'Akaun admin cawangan belum ditugaskan.');
+
+        $search = trim((string) $request->query('search', ''));
+        $direction = in_array($request->query('direction'), ['incoming', 'outgoing', 'all'], true)
+            ? $request->query('direction')
+            : 'incoming';
+        $selectedBranchId = (int) $request->query('branch_id', 0);
+        $selectedBranchId = in_array($selectedBranchId, $branchIds, true) ? $selectedBranchId : null;
+        $scopeBranchIds = $selectedBranchId ? [$selectedBranchId] : $branchIds;
+
+        $query = BranchTransitionHistory::query()
+            ->with([
+                'user:id,name,email,member_no,branch_id',
+                'fromBranch:id,name,state',
+                'toBranch:id,name,state',
+            ])
+            ->when($direction === 'incoming', fn ($q) => $q->whereIn('to_branch_id', $scopeBranchIds))
+            ->when($direction === 'outgoing', fn ($q) => $q->whereIn('from_branch_id', $scopeBranchIds))
+            ->when($direction === 'all', fn ($q) => $q->where(function ($movementQuery) use ($scopeBranchIds) {
+                $movementQuery->whereIn('from_branch_id', $scopeBranchIds)
+                    ->orWhereIn('to_branch_id', $scopeBranchIds);
+            }))
+            ->when($search !== '', fn ($q) => $q->whereHas(
+                'user',
+                fn ($userQuery) => MemberSearch::apply($userQuery, $search, MemberSearch::COLUMNS, false),
+            ));
+
+        $movements = $query
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(25)
+            ->withQueryString()
+            ->through(function (BranchTransitionHistory $movement) use ($branchIds) {
+                $fromManaged = $movement->from_branch_id && in_array((int) $movement->from_branch_id, $branchIds, true);
+                $toManaged = in_array((int) $movement->to_branch_id, $branchIds, true);
+                $direction = $fromManaged && $toManaged
+                    ? 'internal'
+                    : ($toManaged ? 'incoming' : 'outgoing');
+
+                return [
+                    'id' => $movement->id,
+                    'user' => [
+                        'id' => $movement->user->id,
+                        'name' => $movement->user->name,
+                        'email' => $movement->user->email,
+                        'member_no' => $movement->user->member_no,
+                    ],
+                    'from_branch' => $movement->fromBranch?->name,
+                    'to_branch' => $movement->toBranch?->name ?? 'Tiada cawangan',
+                    'direction' => $direction,
+                    'source' => match ($movement->change_type) {
+                        'self_request' => 'Permohonan ahli',
+                        'admin_direct' => 'Kemas kini admin',
+                        'admin_bulk' => 'Pemindahan pukal',
+                        'registration' => 'Pendaftaran',
+                        'profile_completion' => 'Lengkap profil',
+                        'import' => 'Import ahli',
+                        default => 'Kemas kini cawangan',
+                    },
+                    'changed_at' => $movement->created_at->format('d/m/Y, H:i'),
+                    'changed_at_relative' => $movement->created_at->diffForHumans(),
+                    'member_url' => in_array((int) $movement->user->branch_id, $branchIds, true)
+                        ? route('admin.hub.manage', [
+                            'search' => $movement->user->member_no ?: $movement->user->name,
+                        ])
+                        : null,
+                ];
+            });
+
+        $branches = Branch::query()
+            ->whereKey($branchIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'state']);
+
+        return Inertia::render('Admin/MemberMovements', [
+            'movements' => $movements,
+            'branches' => $branches,
+            'filters' => [
+                'search' => $search,
+                'direction' => $direction,
+                'branch_id' => $selectedBranchId,
+            ],
+        ]);
+    }
+
     public function approve(Request $request, BranchChangeRequest $branchChangeRequest): RedirectResponse
     {
         $user = $request->user();

@@ -477,6 +477,12 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
     }, {
+        label:  'Pergerakan Ahli',
+        href:   route('admin.member-movements.index'),
+        active: route().current('admin.member-movements.*'),
+        colorClass: 'text-[#2F6B32]',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11m0 0l-3-3m3 3l-3 3M17 17H6m0 0l3 3m-3-3l3-3"/></svg>`,
+    }, {
         label:  'Pustaka',
         href:   route('admin.library.manage'),
         active: route().current('admin.library.*'),

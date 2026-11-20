@@ -500,6 +500,10 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
         Route::post('branch-change-requests/{branchChangeRequest}/reject', [BranchChangeRequestController::class, 'reject'])->name('branch-change-requests.reject');
     });
 
+    Route::get('/admin/member-movements', [BranchChangeRequestController::class, 'movements'])
+        ->middleware(['role:Admin Cawangan', 'branch_admin_access'])
+        ->name('admin.member-movements.index');
+
     // Member export + laporan cawangan — Org Admin, Branch Admin
     Route::middleware('role:Admin|Superadmin|org-admin|Admin Cawangan')->group(function () {
         Route::get('/admin/members/export', [ExportController::class, 'exportMembers'])->name('admin.members.export');
