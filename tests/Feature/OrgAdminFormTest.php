@@ -69,6 +69,34 @@ class OrgAdminFormTest extends TestCase
         $this->assertEquals($this->orgA->id, $form->organization_id);
     }
 
+    public function test_org_admin_can_enable_profile_autofill_for_selected_questions(): void
+    {
+        $this->actingAs($this->adminA);
+
+        $this->post(route('admin.forms.store'), [
+            'title' => 'Borang Autofill Org A',
+            'is_active' => true,
+            'allow_public' => true,
+            'autofill_enabled' => true,
+            'questions' => [
+                [
+                    'label' => 'Nama peserta',
+                    'type' => 'text',
+                    'required' => true,
+                    'autofill_key' => 'name',
+                    'options' => [],
+                    'placeholder' => '',
+                    'help_text' => '',
+                ],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $form = Form::where('title', 'Borang Autofill Org A')->firstOrFail();
+
+        $this->assertTrue($form->autofill_enabled);
+        $this->assertSame('name', $form->questions()->firstOrFail()->autofill_key);
+    }
+
     public function test_org_admin_can_edit_own_form(): void
     {
         $form = Form::create([

@@ -16,6 +16,7 @@ class FormQuestion extends Model
         'required',
         'placeholder',
         'help_text',
+        'autofill_key',
         'sort_order',
     ];
 

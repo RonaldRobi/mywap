@@ -34,6 +34,8 @@ class FormController extends Controller
 
     const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file', 'branch'];
 
+    const AUTOFILL_KEYS = ['name', 'email', 'phone', 'member_no', 'ic_number', 'dob', 'gender', 'profession', 'address_1', 'address_2', 'postcode', 'district', 'city', 'state'];
+
     // ─── ADMIN ──────────────────────────────────────────────────────────────
 
     public function index(Request $request): Response
@@ -148,6 +150,7 @@ class FormController extends Controller
             'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
             'allow_public' => ['boolean'],
+            'autofill_enabled' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
             'event_id' => ['nullable', 'exists:events,id'],
             'header_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -160,6 +163,7 @@ class FormController extends Controller
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
+            'questions.*.autofill_key' => ['nullable', 'in:'.implode(',', self::AUTOFILL_KEYS)],
             'items' => ['nullable', 'array'],
             'items.*.id' => ['nullable', 'integer'],
             'items.*.name' => ['required', 'string', 'max:255'],
@@ -211,6 +215,7 @@ class FormController extends Controller
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'allow_public' => $data['allow_public'] ?? true,
+                'autofill_enabled' => $data['autofill_enabled'] ?? false,
                 'organization_id' => $organizationId,
                 'branch_id' => $branchId,
                 'event_id' => $data['event_id'] ?? null,
@@ -231,6 +236,7 @@ class FormController extends Controller
                     'required' => $q['required'] ?? false,
                     'placeholder' => $q['placeholder'] ?? null,
                     'help_text' => $q['help_text'] ?? null,
+                    'autofill_key' => (($data['autofill_enabled'] ?? false) ? ($q['autofill_key'] ?? null) : null),
                     'sort_order' => $i,
                 ]);
             }
@@ -288,6 +294,7 @@ class FormController extends Controller
                 'terms' => $form->terms,
                 'is_active' => $form->is_active,
                 'allow_public' => $form->allow_public,
+                'autofill_enabled' => (bool) $form->autofill_enabled,
                 'organization_id' => $form->organization_id,
                 'event_id' => $form->event_id,
                 'share_token' => $form->share_token,
@@ -301,6 +308,7 @@ class FormController extends Controller
                     'required' => $q->required,
                     'placeholder' => $q->placeholder,
                     'help_text' => $q->help_text,
+                    'autofill_key' => $q->autofill_key,
                     'sort_order' => $q->sort_order,
                 ])->values(),
                 'items' => $form->items->map(fn (FormItem $item) => [
@@ -348,6 +356,7 @@ class FormController extends Controller
             'terms' => ['nullable', 'string', 'max:10000'],
             'is_active' => ['boolean'],
             'allow_public' => ['boolean'],
+            'autofill_enabled' => ['boolean'],
             'organization_id' => $isSuperadmin ? ['nullable', 'exists:organizations,id'] : ['nullable'],
             'event_id' => ['nullable', 'exists:events,id'],
             'header_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -361,6 +370,7 @@ class FormController extends Controller
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
             'questions.*.help_text' => ['nullable', 'string', 'max:5000'],
+            'questions.*.autofill_key' => ['nullable', 'in:'.implode(',', self::AUTOFILL_KEYS)],
             'deleted_question_ids' => ['nullable', 'array'],
             'deleted_question_ids.*' => ['integer'],
             'items' => ['nullable', 'array'],
@@ -412,6 +422,7 @@ class FormController extends Controller
                 'terms' => $data['terms'] ?? null,
                 'is_active' => $data['is_active'] ?? $form->is_active,
                 'allow_public' => $data['allow_public'] ?? $form->allow_public,
+                'autofill_enabled' => $data['autofill_enabled'] ?? $form->autofill_enabled,
                 'organization_id' => $organizationId,
                 'branch_id' => $branchId,
                 'event_id' => $data['event_id'] ?? $form->event_id,
@@ -444,6 +455,7 @@ class FormController extends Controller
                             'required' => $q['required'] ?? false,
                             'placeholder' => $q['placeholder'] ?? null,
                             'help_text' => $q['help_text'] ?? null,
+                            'autofill_key' => (($data['autofill_enabled'] ?? $form->autofill_enabled) ? ($q['autofill_key'] ?? null) : null),
                             'sort_order' => $i,
                         ]);
                     }
@@ -456,6 +468,7 @@ class FormController extends Controller
                         'required' => $q['required'] ?? false,
                         'placeholder' => $q['placeholder'] ?? null,
                         'help_text' => $q['help_text'] ?? null,
+                        'autofill_key' => (($data['autofill_enabled'] ?? $form->autofill_enabled) ? ($q['autofill_key'] ?? null) : null),
                         'sort_order' => $i,
                     ]);
                 }

@@ -1078,6 +1078,11 @@ class AppLocalizationsMs extends AppLocalizations {
   String get checkMarkedFields => 'Sila semak semula maklumat yang bertanda merah.';
 
   @override
+  String missingRequiredFields(Object fields) {
+    return 'Medan wajib yang belum diisi: $fields.';
+  }
+
+  @override
   String get genderLabel => 'Jantina';
 
   @override
@@ -1331,7 +1336,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ecomPhoneRequired => 'Nombor telefon diperlukan';
 
   @override
-  String get ecomAddressOptional => 'Alamat (pilihan)';
+  String get ecomAddressOptional => 'Alamat penghantaran diperlukan';
 
   @override
   String get ecomPostcodeOptional => 'Poskod (pilihan)';
@@ -3545,4 +3550,12 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get prayerGpsUnavailable => 'GPS tidak tersedia.';
+
+  @override
+  String get formAutofillButton => 'Isi daripada profil';
+
+  @override
+  String formAutofillResult(Object count) {
+    return '$count medan diisi daripada profil anda.';
+  }
 }

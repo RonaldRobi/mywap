@@ -24,6 +24,7 @@ class Form extends Model
         'terms',
         'is_active',
         'allow_public',
+        'autofill_enabled',
         'share_token',
         'header_image_path',
         'recipient_emails',
@@ -35,6 +36,7 @@ class Form extends Model
         return [
             'is_active' => 'boolean',
             'allow_public' => 'boolean',
+            'autofill_enabled' => 'boolean',
             'recipient_emails' => 'array',
             'payment_required' => 'boolean',
             'price' => 'decimal:2',

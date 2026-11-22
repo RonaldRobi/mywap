@@ -1078,6 +1078,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkMarkedFields => 'Please review the information marked in red.';
 
   @override
+  String missingRequiredFields(Object fields) {
+    return 'Required fields not completed: $fields.';
+  }
+
+  @override
   String get genderLabel => 'Gender';
 
   @override
@@ -1331,7 +1336,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ecomPhoneRequired => 'Phone number is required';
 
   @override
-  String get ecomAddressOptional => 'Address (optional)';
+  String get ecomAddressOptional => 'Shipping address is required';
 
   @override
   String get ecomPostcodeOptional => 'Postcode (optional)';
@@ -3545,4 +3550,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get prayerGpsUnavailable => 'GPS is unavailable.';
+
+  @override
+  String get formAutofillButton => 'Fill from profile';
+
+  @override
+  String formAutofillResult(Object count) {
+    return '$count fields filled from your profile.';
+  }
 }

@@ -614,6 +614,10 @@ void main() {
       '0123456789',
     );
     await tester.enterText(
+      find.widgetWithText(TextFormField, 'Alamat penghantaran diperlukan *'),
+      'No 1, Jalan Ali, Kuala Lumpur',
+    );
+    await tester.enterText(
       find.widgetWithText(TextFormField, 'Emel'),
       'tetamu@emel.com',
     );
@@ -660,6 +664,10 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Alamat penghantaran diperlukan *'),
+      'No 1, Jalan Ali, Kuala Lumpur',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Emel'),
@@ -723,6 +731,10 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Telefon'),
       '0123456789',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Alamat penghantaran diperlukan *'),
+      'No 1, Jalan Ali, Kuala Lumpur',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Emel'),

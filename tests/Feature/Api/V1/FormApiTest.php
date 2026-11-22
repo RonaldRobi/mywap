@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormQuestion;
 use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -171,5 +172,48 @@ class FormApiTest extends TestCase
         ]);
 
         $this->getJson("/api/v1/forms/{$form->share_token}")->assertStatus(404);
+    }
+
+    public function test_autofill_is_opt_in_and_returns_mapped_profile_values(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Ali Bin Abu',
+            'email' => 'ali@example.com',
+            'phone' => '0123456789',
+            'profile_completed_at' => now(),
+        ]);
+        $user->assignRole('Member');
+
+        $form = Form::create([
+            'organization_id' => $this->org->id,
+            'title' => 'Borang Autofill',
+            'is_active' => true,
+            'allow_public' => true,
+            'autofill_enabled' => true,
+        ]);
+        FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama peserta',
+            'type' => 'text',
+            'autofill_key' => 'name',
+            'sort_order' => 0,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/forms/{$form->share_token}/autofill")
+            ->assertOk()
+            ->assertJsonPath('data.values.'.$form->questions->first()->id, 'Ali Bin Abu');
+    }
+
+    public function test_existing_form_has_no_autofill_values_when_not_enabled(): void
+    {
+        $user = User::factory()->create(['name' => 'Ali Bin Abu']);
+        $user->assignRole('Member');
+        $form = $this->makeForm();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/forms/{$form->share_token}/autofill")
+            ->assertOk()
+            ->assertJsonPath('data.values', []);
     }
 }

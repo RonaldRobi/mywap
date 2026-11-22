@@ -87,6 +87,7 @@ class EcommerceApiTest extends TestCase
             'shipping_name' => 'Tetamu Awam',
             'shipping_phone' => '0123456789',
             'shipping_email' => 'tetamu@example.test',
+            'shipping_address' => 'No 1, Jalan Tetamu, Kuala Lumpur',
         ]);
 
         $response
@@ -244,11 +245,28 @@ class EcommerceApiTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 1]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
             'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'No 1, Jalan Utama, Kuala Lumpur',
         ])->assertOk();
 
         Notification::assertSentTo($this->admin, NewOrderAdminNotification::class);
         Notification::assertNotSentTo($this->member, OrderPlacedEmail::class);
+    }
+
+    public function test_checkout_rejects_missing_shipping_address(): void
+    {
+        $product = $this->product(['member_price' => null]);
+
+        $this->postJson('/api/v1/orders', [
+            'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_name' => 'Ali',
+            'shipping_phone' => '0123456789',
+            'shipping_email' => 'ali@example.test',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('shipping_address');
+
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_admin_cannot_checkout_via_api(): void
@@ -301,6 +319,7 @@ class EcommerceApiTest extends TestCase
             'products' => [['id' => $product->id, 'quantity' => 1]],
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
         ])->assertOk();
 
         $order = Order::firstOrFail();
@@ -332,6 +351,7 @@ class EcommerceApiTest extends TestCase
         Sanctum::actingAs($this->member);
         $this->postJson('/api/v1/orders', [
             'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
         ])->assertOk();
 
         $order = Order::firstOrFail();
@@ -442,6 +462,7 @@ class EcommerceApiTest extends TestCase
         Sanctum::actingAs($this->member);
         $this->postJson('/api/v1/orders', [
             'products' => [['id' => $product->id, 'quantity' => 1]],
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
         ])->assertOk();
 
         $order = Order::firstOrFail();

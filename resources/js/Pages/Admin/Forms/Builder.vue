@@ -32,6 +32,7 @@ function createQuestion(q = {}) {
         required: !!q.required,
         placeholder: q.placeholder ?? '',
         help_text: q.help_text ?? '',
+        autofill_key: q.autofill_key ?? '',
     };
 }
 
@@ -109,6 +110,7 @@ const formData = reactive({
     terms:          props.form?.terms ?? '',
     is_active:      props.form?.is_active ?? true,
     allow_public:   props.form?.allow_public ?? true,
+    autofill_enabled: props.form?.autofill_enabled ?? false,
     organization_id: props.form?.organization_id ?? '',
     event_id:       props.form?.event_id ?? props.preselectedEventId ?? '',
     header_image:   null,
@@ -306,6 +308,7 @@ function save() {
             required: q.required,
             placeholder: q.placeholder,
             help_text: q.help_text,
+            autofill_key: formData.autofill_enabled ? q.autofill_key || null : null,
         })),
     };
 
@@ -648,6 +651,13 @@ const valid = computed(() => {
                     <label class="flex items-center gap-2 text-sm">
                         <input type="checkbox" v-model="formData.allow_public" class="rounded border-gray-300" /> Boleh diakses awam (pautan)
                     </label>
+                    <label class="flex items-start gap-2 text-sm">
+                        <input type="checkbox" v-model="formData.autofill_enabled" class="mt-0.5 rounded border-gray-300" />
+                        <span>
+                            <span class="font-semibold text-gray-700">Benarkan isi daripada profil</span>
+                            <span class="block text-xs text-gray-400">Peserta login boleh tekan button untuk mengisi soalan yang dipetakan.</span>
+                        </span>
+                    </label>
                 </div>
 
                 <!-- Recipient emails (lanjutan) -->
@@ -740,6 +750,28 @@ const valid = computed(() => {
                     <label class="flex items-center gap-2 text-xs">
                         <input type="checkbox" v-model="q.required" class="rounded border-gray-300" /> Wajib diisi
                     </label>
+
+                    <div v-if="formData.autofill_enabled" class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Isi daripada profil</label>
+                        <select v-model="q.autofill_key" class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-300">
+                            <option value="">Jangan isi automatik</option>
+                            <option value="name">Nama penuh</option>
+                            <option value="email">Emel</option>
+                            <option value="phone">No. telefon</option>
+                            <option value="member_no">No. ahli</option>
+                            <option value="ic_number">No. IC</option>
+                            <option value="dob">Tarikh lahir</option>
+                            <option value="gender">Jantina</option>
+                            <option value="profession">Pekerjaan</option>
+                            <option value="address_1">Alamat 1</option>
+                            <option value="address_2">Alamat 2</option>
+                            <option value="postcode">Poskod</option>
+                            <option value="district">Daerah</option>
+                            <option value="city">Bandar</option>
+                            <option value="state">Negeri</option>
+                        </select>
+                        <p class="mt-1 text-[11px] text-emerald-700">Pilih hanya jika soalan ini memang meminta maklumat tersebut.</p>
+                    </div>
 
                     <!-- Options for select/radio/checkbox -->
                     <div v-if="['select', 'radio', 'checkbox'].includes(q.type)" class="space-y-1.5 pl-2 border-l-2 border-indigo-200">

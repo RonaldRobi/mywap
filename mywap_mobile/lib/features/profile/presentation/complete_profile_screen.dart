@@ -39,6 +39,7 @@ class CompleteProfileScreen extends ConsumerStatefulWidget {
 
 class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _summaryKey = GlobalKey();
 
   final Map<String, TextEditingController> _fields = {
     'current_profession': TextEditingController(),
@@ -67,6 +68,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   Map<String, List<String>> _districts = const {};
   bool _metaLoaded = false;
   bool _saving = false;
+  bool _showValidationSummary = false;
   final Map<String, String> _serverErrors = {};
 
   @override
@@ -129,8 +131,13 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
   }
 
   Widget _buildForm() {
+    final missingFields = _missingRequiredLabels();
     return Form(
       key: _formKey,
+      autovalidateMode:
+          _showValidationSummary
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(
           Spacing.lg,
@@ -154,17 +161,35 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
               ],
             ),
           ),
-          if (_serverErrors.isNotEmpty)
+          if (_serverErrors.isNotEmpty || _showValidationSummary)
             Container(
+              key: _summaryKey,
               margin: const EdgeInsets.only(bottom: Spacing.lg),
               padding: const EdgeInsets.all(Spacing.md),
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.08),
                 borderRadius: AppRadius.md,
               ),
-              child: Text(
-                context.l10n.checkMarkedFields,
-                style: const TextStyle(color: AppColors.error),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.checkMarkedFields,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                  if (missingFields.isNotEmpty) ...[
+                    const SizedBox(height: Spacing.xs),
+                    Text(
+                      context.l10n.missingRequiredFields(
+                        missingFields.join(', '),
+                      ),
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           _section(context.l10n.requiredInfoSection, [
@@ -184,8 +209,7 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
                 _withCurrent(_educationLevels, _educationLevel),
               ),
               required: true,
-              onChanged:
-                  (value) => setState(() => _educationLevel = value),
+              onChanged: (value) => setState(() => _educationLevel = value),
             ),
             _textField(
               'current_profession',
@@ -367,7 +391,9 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
           if (required && trimmed.isEmpty) {
             return context.l10n.fieldRequired(label);
           }
-          if (isPhone && trimmed.isNotEmpty && !MalaysianPhone.isValid(trimmed)) {
+          if (isPhone &&
+              trimmed.isNotEmpty &&
+              !MalaysianPhone.isValid(trimmed)) {
             return context.l10n.phoneInvalid;
           }
           if (isPostcode &&
@@ -519,10 +545,52 @@ class _CompleteProfileScreenState extends ConsumerState<CompleteProfileScreen> {
     };
   }
 
+  List<String> _missingRequiredLabels() {
+    bool isBlank(String? value) => value == null || value.trim().isEmpty;
+    bool isTextFieldBlank(String key) => isBlank(_fields[key]!.text);
+
+    return [
+      for (final (label, missing) in <(String, bool)>[
+        (context.l10n.branchRequired, _branchId == null),
+        (context.l10n.educationLevelLabel, isBlank(_educationLevel)),
+        (
+          context.l10n.currentProfessionLabel,
+          isTextFieldBlank('current_profession'),
+        ),
+        (context.l10n.phoneLabel, isTextFieldBlank('phone')),
+        (context.l10n.postcodeLabel, isTextFieldBlank('postcode')),
+        (context.l10n.stateLabel, isBlank(_state)),
+        (context.l10n.districtLabel, isBlank(_district)),
+      ])
+        if (missing) label.replaceAll('*', '').trim(),
+    ];
+  }
+
+  void _scrollToSummary() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final summaryContext = _summaryKey.currentContext;
+      if (summaryContext == null) return;
+      final reduceMotion = MediaQuery.of(context).disableAnimations;
+      Scrollable.ensureVisible(
+        summaryContext,
+        alignment: 0.1,
+        duration:
+            reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
+      );
+    });
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
+    if (!_formKey.currentState!.validate()) {
+      setState(() => _showValidationSummary = true);
+      _scrollToSummary();
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _showValidationSummary = false;
+    });
 
     try {
       await ref.read(profileRepositoryProvider).completeProfile(_payload());

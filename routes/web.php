@@ -451,6 +451,7 @@ Route::middleware(['auth', 'verified', 'profile_complete'])->group(function () {
     Route::middleware(['role:Admin|Superadmin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
         Route::resource('products', ProductController::class)->except(['index', 'show']);
         Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+        Route::post('orders/{order}/request-address', [OrderController::class, 'requestAddress'])->name('orders.requestAddress');
     });
 
     Route::middleware(['role:Admin|Superadmin|org-admin|Admin Cawangan', 'branch_admin_access'])->group(function () {
@@ -527,6 +528,10 @@ Route::group(['prefix' => 'mall', 'middleware' => ['throttle:60,1,web-mall']], f
     // Logged-in owners and admins are let through by the controller instead.
     Route::get('/orders/{order}', [OrderController::class, 'showPublic'])
         ->name('mall.order.show');
+    Route::get('/orders/{order}/address', [OrderController::class, 'editAddress'])
+        ->name('mall.order.address.edit');
+    Route::post('/orders/{order}/address', [OrderController::class, 'updateAddress'])
+        ->name('mall.order.address.update');
 
     // Greedy catch-all: must stay last so it cannot shadow the routes above.
     Route::get('/{product}', [ProductController::class, 'show'])->name('mall.show');

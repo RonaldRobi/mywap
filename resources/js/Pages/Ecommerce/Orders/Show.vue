@@ -23,8 +23,17 @@ const statusForm = useForm({
     tracking_no: props.order.tracking_no ?? '',
 });
 
+const addressForm = useForm({});
+
+const customerEmail = computed(() => props.order.customer_email || props.order.user?.email || '');
+const canRequestAddress = computed(() => isAdmin.value && !props.order.shipping_address && customerEmail.value);
+
 function updateStatus() {
     statusForm.post(route('orders.updateStatus', props.order.id));
+}
+
+function requestAddress() {
+    addressForm.post(route('orders.requestAddress', props.order.id));
 }
 
 function parseVariationSnapshot(item) {
@@ -202,6 +211,19 @@ const grandTotal = computed(() => {
                             <span class="block text-xs font-semibold text-gray-500 mb-1">No Tracking</span>
                             <span class="text-base font-bold text-gray-900 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100 inline-block">{{ order.tracking_no }}</span>
                         </div>
+                    </div>
+
+                    <div v-if="canRequestAddress" class="mt-6 border-t border-gray-100 pt-5">
+                        <p class="text-xs leading-5 text-gray-500">Alamat pembeli belum lengkap. Hantar pautan selamat ke {{ customerEmail }}.</p>
+                        <button
+                            type="button"
+                            :disabled="addressForm.processing"
+                            class="mt-3 w-full rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            @click="requestAddress"
+                        >
+                            {{ addressForm.processing ? 'Menghantar...' : 'Hantar Pautan Alamat' }}
+                        </button>
+                        <p v-if="addressForm.errors.error" class="mt-2 text-xs font-medium text-red-600">{{ addressForm.errors.error }}</p>
                     </div>
 
                     <!-- Pay Button (for pending orders, logged-in users only) -->

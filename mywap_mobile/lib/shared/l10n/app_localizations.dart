@@ -2189,6 +2189,12 @@ abstract class AppLocalizations {
   /// **'Please review the information marked in red.'**
   String get checkMarkedFields;
 
+  /// No description provided for @missingRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Required fields not completed: {fields}.'**
+  String missingRequiredFields(Object fields);
+
   /// No description provided for @genderLabel.
   ///
   /// In en, this message translates to:
@@ -2678,7 +2684,7 @@ abstract class AppLocalizations {
   /// No description provided for @ecomAddressOptional.
   ///
   /// In en, this message translates to:
-  /// **'Address (optional)'**
+  /// **'Shipping address is required'**
   String get ecomAddressOptional;
 
   /// No description provided for @ecomPostcodeOptional.
@@ -6826,6 +6832,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GPS is unavailable.'**
   String get prayerGpsUnavailable;
+
+  /// No description provided for @formAutofillButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill from profile'**
+  String get formAutofillButton;
+
+  /// No description provided for @formAutofillResult.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} fields filled from your profile.'**
+  String formAutofillResult(Object count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -45,6 +45,8 @@ abstract final class ApiPaths {
   static String eventRegistration(int eventId) =>
       '/events/$eventId/registration';
 
+  static String formAutofill(String token) => '/forms/$token/autofill';
+
   // ---- Organization ----
   static const String organizationInfo = '/organization/info';
 

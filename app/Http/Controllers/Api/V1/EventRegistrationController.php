@@ -53,6 +53,7 @@ class EventRegistrationController extends Controller
 
         return ApiResponse::success([
             'form' => $this->forms->publicFormPayload($form),
+            'autofill' => $this->forms->autofillPayload($form, $user),
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,

@@ -9,12 +9,12 @@ const props = defineProps({
 });
 
 const searchQuery = ref('');
-const statusFilter = ref('all');
+const statusFilter = ref('confirmed');
 
 const statusOptions = ['all', 'confirmed', 'pending'];
 
 const filteredDonations = computed(() => {
-    let items = [...props.donations];
+    let items = props.donations.filter(d => Number(d.amount) > 0);
     const q = searchQuery.value.toLowerCase().trim();
     if (q) {
         items = items.filter(d =>
@@ -31,13 +31,14 @@ const filteredDonations = computed(() => {
 });
 
 const stats = computed(() => {
-    const confirmed = props.donations.filter(d => d.status === 'confirmed');
+    const donations = props.donations.filter(d => Number(d.amount) > 0);
+    const confirmed = donations.filter(d => d.status === 'confirmed');
     return {
-        total: props.donations.length,
+        total: donations.length,
         confirmed: confirmed.length,
-        pending: props.donations.filter(d => d.status === 'pending').length,
+        pending: donations.filter(d => d.status === 'pending').length,
         totalAmount: confirmed.reduce((s, d) => s + d.amount, 0),
-        uniqueDonors: new Set(props.donations.map(d => d.donor_email || d.donor_name)).size,
+        uniqueDonors: new Set(donations.map(d => d.donor_email || d.donor_name)).size,
     };
 });
 
@@ -211,13 +212,13 @@ function exportCsv() {
                         <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     </div>
                     <p class="text-sm font-bold text-gray-500">Tiada penderma ditemui</p>
-                    <p class="text-xs text-gray-400 mt-1" v-if="props.donations.length">Tiada hasil untuk carian ini.</p>
+                    <p class="text-xs text-gray-400 mt-1" v-if="props.donations.length">Tiada hasil untuk carian atau penapis ini.</p>
                     <p class="text-xs text-gray-400 mt-1" v-else>Belum ada sumbangan untuk kempen ini.</p>
                 </div>
 
                 <!-- Footer -->
                 <div v-if="filteredDonations.length" class="border-t border-gray-100 bg-gray-50/30 px-4 py-3 flex items-center justify-between text-xs text-gray-500">
-                    <span>Menunjukkan {{ filteredDonations.length }} dari {{ props.donations.length }} penderma</span>
+                    <span>Menunjukkan {{ filteredDonations.length }} daripada {{ stats.total }} penderma</span>
                     <span v-if="statusFilter === 'all'">Jumlah: {{ formatMYR(stats.totalAmount) }}</span>
                 </div>
             </div>

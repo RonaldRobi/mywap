@@ -7,8 +7,11 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\OrderAddressRequestEmail;
 use App\Services\PaymentGatewayManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -83,6 +86,50 @@ class OrderSecurityTest extends TestCase
         $order = $this->guestOrder();
 
         $this->get($order->publicUrl())->assertOk();
+    }
+
+    public function test_admin_can_request_and_buyer_can_submit_missing_address(): void
+    {
+        Notification::fake();
+        $order = Order::create([
+            'organisasi_id' => $this->org->id,
+            'total' => 50,
+            'postage_cost' => 10,
+            'status' => 'pending',
+            'shipping_name' => 'Dr. Shahrum Shah Bin Abdullah',
+            'shipping_phone' => '0178794537',
+            'customer_email' => 'drshahrumshah@gmail.com',
+        ]);
+        $admin = User::factory()->create(['current_organization_id' => $this->org->id]);
+        $admin->assignRole('Admin');
+
+        $this->actingAs($admin)
+            ->post(route('orders.requestAddress', $order))
+            ->assertRedirect(route('orders.show', $order));
+
+        Notification::assertSentOnDemand(
+            OrderAddressRequestEmail::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'drshahrumshah@gmail.com'
+                && str_contains($notification->addressUrl, '/mall/orders/'.$order->id.'/address'),
+        );
+
+        $addressUrl = URL::temporarySignedRoute(
+            'mall.order.address.edit',
+            now()->addMinutes(10),
+            ['order' => $order->id],
+        );
+
+        $this->get($addressUrl)->assertOk();
+        $this->post($addressUrl, [
+            'shipping_address' => 'No 1, Jalan Utama, Kuala Lumpur',
+            'shipping_postcode' => '50000',
+        ])->assertRedirect($order->publicUrl());
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'shipping_address' => 'No 1, Jalan Utama, Kuala Lumpur',
+            'shipping_postcode' => '50000',
+        ]);
     }
 
     /**
@@ -195,6 +242,8 @@ class OrderSecurityTest extends TestCase
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
             'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
             'shipping_address' => 'KL',
         ])->assertSessionHasNoErrors();
 
@@ -220,6 +269,8 @@ class OrderSecurityTest extends TestCase
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
             'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
             'shipping_address' => 'KL',
         ])->assertSessionHasNoErrors();
 
@@ -323,6 +374,7 @@ class OrderSecurityTest extends TestCase
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
             'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
         ])->assertSessionHasNoErrors();
 
         $order = Order::latest('id')->firstOrFail();
@@ -348,6 +400,7 @@ class OrderSecurityTest extends TestCase
             'shipping_name' => 'Ali',
             'shipping_phone' => '0123456789',
             'shipping_email' => 'ali@example.test',
+            'shipping_address' => 'No 1, Jalan Ali, Kuala Lumpur',
         ])->assertSessionHasNoErrors();
         $pending = Order::latest('id')->firstOrFail();
 
@@ -356,6 +409,7 @@ class OrderSecurityTest extends TestCase
             'shipping_name' => 'Siti',
             'shipping_phone' => '0123456788',
             'shipping_email' => 'siti@example.test',
+            'shipping_address' => 'No 2, Jalan Siti, Kuala Lumpur',
         ])->assertSessionHasNoErrors();
         $paid = Order::latest('id')->firstOrFail();
         $paid->status = 'paid';

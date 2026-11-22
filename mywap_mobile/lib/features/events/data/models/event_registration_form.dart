@@ -10,12 +10,14 @@ class EventRegistrationData {
     this.event,
     this.paymentGateway,
     this.myRegistration,
+    this.autofill = const {},
   });
 
   final FormModel? form;
   final EventRegistrationEvent? event;
   final PaymentGatewayBrand? paymentGateway;
   final EventRegistrationSummary? myRegistration;
+  final Map<int, dynamic> autofill;
 
   factory EventRegistrationData.fromJson(Map<String, dynamic> json) =>
       EventRegistrationData(
@@ -41,7 +43,17 @@ class EventRegistrationData {
                   json['my_registration'] as Map<String, dynamic>,
                 )
                 : null,
+        autofill: _parseAutofill(
+          json['autofill'] is Map ? (json['autofill'] as Map)['values'] : null,
+        ),
       );
+}
+
+Map<int, dynamic> _parseAutofill(dynamic value) {
+  if (value is! Map) return const {};
+  return Map<int, dynamic>.from(
+    value.map((key, item) => MapEntry(int.parse(key.toString()), item)),
+  );
 }
 
 class EventRegistrationEvent {

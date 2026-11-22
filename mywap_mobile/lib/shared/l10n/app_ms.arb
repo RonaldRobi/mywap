@@ -349,6 +349,7 @@
   "maritalDivorced": "Bercerai",
   "maritalWidowed": "Duda / Janda",
   "checkMarkedFields": "Sila semak semula maklumat yang bertanda merah.",
+  "missingRequiredFields": "Medan wajib yang belum diisi: {fields}.",
   "genderLabel": "Jantina",
   "maritalStatusLabel": "Status Perkahwinan",
   "linkedinLabel": "LinkedIn URL",
@@ -430,7 +431,7 @@
   "ecomFullNameHint": "Nama penuh",
   "ecomNameRequired": "Nama diperlukan",
   "ecomPhoneRequired": "Nombor telefon diperlukan",
-  "ecomAddressOptional": "Alamat (pilihan)",
+  "ecomAddressOptional": "Alamat penghantaran diperlukan",
   "ecomPostcodeOptional": "Poskod (pilihan)",
   "ecomOrderSummary": "Ringkasan Pesanan",
   "ecomSubmitOrder": "Hantar Pesanan",
@@ -1121,5 +1122,7 @@
   "prayerUseDeviceLocation": "Gunakan lokasi peranti",
   "prayerLocationUnknown": "Lokasi anda",
   "prayerManualLocationHint": "GPS tidak tersedia. Pilih lokasi untuk mendapatkan waktu solat.",
-  "prayerGpsUnavailable": "GPS tidak tersedia."
+  "prayerGpsUnavailable": "GPS tidak tersedia.",
+  "formAutofillButton": "Isi daripada profil",
+  "formAutofillResult": "{count} medan diisi daripada profil anda."
 }

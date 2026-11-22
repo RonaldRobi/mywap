@@ -9,6 +9,8 @@ use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -97,6 +99,55 @@ class OrderController extends Controller
         });
 
         return redirect()->route('orders.show', $order)->with('success', 'Status pesanan dikemaskini!');
+    }
+
+    public function requestAddress(Request $request, Order $order)
+    {
+        $this->authorize('update', $order);
+
+        abort_if($order->shipping_address, 422, 'Pesanan ini sudah mempunyai alamat penghantaran.');
+
+        $email = $order->customer_email ?: $order->user?->email;
+        abort_unless($email, 422, 'Pesanan ini tiada emel pembeli untuk menerima pautan.');
+
+        $addressUrl = URL::temporarySignedRoute(
+            'mall.order.address.edit',
+            now()->addDays(7),
+            ['order' => $order->id],
+        );
+
+        Notification::route('mail', $email)
+            ->notify(new \App\Notifications\OrderAddressRequestEmail($order, $addressUrl));
+
+        return redirect()->route('orders.show', $order)->with('success', 'Pautan kemas kini alamat telah dihantar kepada pembeli.');
+    }
+
+    public function editAddress(Request $request, Order $order)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        return Inertia::render('Ecommerce/Orders/Address', [
+            'order' => [
+                'id' => $order->id,
+                'shipping_name' => $order->shipping_name,
+                'shipping_address' => $order->shipping_address,
+                'shipping_postcode' => $order->shipping_postcode,
+            ],
+        ]);
+    }
+
+    public function updateAddress(Request $request, Order $order)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        $validated = $request->validate([
+            'shipping_address' => ['required', 'string'],
+            'shipping_postcode' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        $order->update($validated);
+
+        return redirect()->to($order->publicUrl())->with('success', 'Alamat penghantaran telah dikemaskini.');
     }
 
     /**

@@ -26,6 +26,14 @@ class FormController extends Controller
         return ApiResponse::success(['form' => $payload]);
     }
 
+    public function autofill(Request $request, string $token): JsonResponse
+    {
+        $form = $this->forms->findPublic($token);
+        $form->loadMissing('questions');
+
+        return ApiResponse::success($this->forms->autofillPayload($form, $request->user()));
+    }
+
     public function submit(Request $request, string $token): JsonResponse
     {
         $form = $this->forms->findPublic($token);

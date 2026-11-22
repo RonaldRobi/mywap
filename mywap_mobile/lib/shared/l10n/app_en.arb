@@ -426,6 +426,7 @@
     }
   },
   "checkMarkedFields": "Please review the information marked in red.",
+  "missingRequiredFields": "Required fields not completed: {fields}.",
   "genderLabel": "Gender",
   "maritalStatusLabel": "Marital Status",
   "linkedinLabel": "LinkedIn URL",
@@ -542,7 +543,7 @@
   "ecomFullNameHint": "Full name",
   "ecomNameRequired": "Name is required",
   "ecomPhoneRequired": "Phone number is required",
-  "ecomAddressOptional": "Address (optional)",
+  "ecomAddressOptional": "Shipping address is required",
   "ecomPostcodeOptional": "Postcode (optional)",
   "ecomOrderSummary": "Order Summary",
   "ecomSubmitOrder": "Submit Order",
@@ -1754,5 +1755,7 @@
   "prayerUseDeviceLocation": "Use device location",
   "prayerLocationUnknown": "Your location",
   "prayerManualLocationHint": "GPS is unavailable. Choose a location to get prayer times.",
-  "prayerGpsUnavailable": "GPS is unavailable."
+  "prayerGpsUnavailable": "GPS is unavailable.",
+  "formAutofillButton": "Fill from profile",
+  "formAutofillResult": "{count} fields filled from your profile."
 }

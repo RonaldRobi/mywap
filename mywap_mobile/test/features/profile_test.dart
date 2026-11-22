@@ -10,6 +10,7 @@ import 'package:mywap_mobile/features/auth/application/auth_controller.dart';
 import 'package:mywap_mobile/features/profile/application/profile_providers.dart';
 import 'package:mywap_mobile/features/profile/data/models/profile_data.dart';
 import 'package:mywap_mobile/features/profile/data/profile_repository.dart';
+import 'package:mywap_mobile/features/profile/presentation/complete_profile_screen.dart';
 import 'package:mywap_mobile/features/profile/presentation/edit_profile_screen.dart';
 import 'package:mywap_mobile/features/profile/presentation/profile_screen.dart';
 
@@ -289,6 +290,31 @@ void main() {
 
       expect(find.text('Log masuk dengan Cap Jari'), findsOneWidget);
       expect(find.text('Log masuk dengan Face ID'), findsNothing);
+    });
+  });
+
+  group('CompleteProfileScreen', () {
+    testWidgets('lists empty required fields after submit', (tester) async {
+      _bigViewport(tester);
+      final repo = _FakeProfileRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [profileRepositoryProvider.overrideWithValue(repo)],
+          child: const MaterialApp(home: CompleteProfileScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Simpan & Selesai'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Medan wajib yang belum diisi:'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Profesion Semasa'), findsWidgets);
+      expect(find.textContaining('Poskod'), findsWidgets);
     });
   });
 }

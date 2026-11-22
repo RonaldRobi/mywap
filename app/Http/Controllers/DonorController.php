@@ -19,7 +19,9 @@ class DonorController extends Controller
 
         // Donors are a platform-wide aggregate, so an organisation admin may
         // only see donors who actually donated to their own organisation.
-        $base = Donor::query();
+        $base = Donor::query()->whereHas('donations', fn ($q) => $q
+            ->where('status', 'confirmed')
+            ->where('amount', '>', 0));
         if (! $isSuperadmin) {
             $base->whereHas('donations.infaq', fn ($q) => $q->where('organization_id', $orgId)
                 ->when($branchIds !== [], fn ($infaqQuery) => $infaqQuery->whereIn('branch_id', $branchIds)));
@@ -65,11 +67,18 @@ class DonorController extends Controller
         ]);
 
         if ($isSuperadmin) {
+            $confirmed = InfaqDonation::query()
+                ->where('status', 'confirmed')
+                ->where('amount', '>', 0);
+            $totalDonors = (clone $base)->count();
+            $totalAmount = (float) (clone $confirmed)->sum('amount');
+            $totalDonations = (clone $confirmed)->count();
+
             $summary = [
-                'total_donors' => Donor::count(),
-                'total_amount' => Donor::sum('total_donated'),
-                'total_donations' => Donor::sum('donation_count'),
-                'avg_per_donor' => Donor::avg('total_donated') ?? 0,
+                'total_donors' => $totalDonors,
+                'total_amount' => $totalAmount,
+                'total_donations' => $totalDonations,
+                'avg_per_donor' => $totalDonors > 0 ? $totalAmount / $totalDonors : 0,
             ];
         } else {
             $confirmed = InfaqDonation::query()

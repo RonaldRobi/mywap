@@ -9,6 +9,7 @@ class FormQuestion {
     this.required = false,
     this.placeholder,
     this.helpText,
+    this.autofillKey,
   });
 
   final int? id;
@@ -18,6 +19,7 @@ class FormQuestion {
   final bool required;
   final String? placeholder;
   final String? helpText;
+  final String? autofillKey;
 
   bool get isFile => type == 'file';
   bool get isMultipleChoice => type == 'checkbox';
@@ -30,6 +32,7 @@ class FormQuestion {
     required: parseBoolValue(json['required']),
     placeholder: json['placeholder'] as String?,
     helpText: json['help_text'] as String?,
+    autofillKey: json['autofill_key'] as String?,
   );
 }
 
@@ -115,6 +118,7 @@ class FormModel {
     this.headerImageUrl,
     this.questions = const [],
     this.redirectTo,
+    this.autofillEnabled = false,
   });
 
   final int? id;
@@ -132,6 +136,7 @@ class FormModel {
   final String? headerImageUrl;
   final List<FormQuestion> questions;
   final String? redirectTo;
+  final bool autofillEnabled;
 
   factory FormModel.fromJson(Map<String, dynamic> json) => FormModel(
     id: parseIntValue(json['id']),
@@ -149,6 +154,7 @@ class FormModel {
     headerImageUrl: json['header_image_url'] as String?,
     questions: _parseQuestions(json['questions']),
     redirectTo: json['redirect_to'] as String?,
+    autofillEnabled: parseBoolValue(json['autofill_enabled']),
   );
 }
 

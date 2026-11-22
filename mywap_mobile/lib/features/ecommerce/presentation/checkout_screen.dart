@@ -335,10 +335,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     textCapitalization: TextCapitalization.sentences,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      labelText: l10n.ecomAddressOptional,
-                      prefixIcon: const Icon(Icons.home_outlined),
-                    ),
-                  ),
+                       labelText: '${l10n.ecomAddressOptional} *',
+                       prefixIcon: const Icon(Icons.home_outlined),
+                     ),
+                     validator:
+                         (value) =>
+                             (value == null || value.trim().isEmpty)
+                                 ? l10n.ecomAddressOptional
+                                 : null,
+                   ),
                   const SizedBox(height: Spacing.md),
                   TextFormField(
                     controller: _postcodeController,

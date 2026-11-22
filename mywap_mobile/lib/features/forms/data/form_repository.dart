@@ -33,6 +33,15 @@ class FormRepository {
         : const FormModel();
   }
 
+  Future<Map<int, dynamic>> autofill(String token) async {
+    final data = await _api.get(ApiPaths.formAutofill(token));
+    final values = data is Map<String, dynamic> ? data['values'] : null;
+    if (values is! Map) return {};
+    return Map<int, dynamic>.from(
+      values.map((key, value) => MapEntry(int.parse(key.toString()), value)),
+    );
+  }
+
   Future<FormSubmitResult> submit(
     String token,
     Map<String, dynamic> answers, {

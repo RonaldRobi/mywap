@@ -111,6 +111,36 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     setState(() => _document = File(path));
   }
 
+  void _autofill(FormModel form, Map<int, dynamic> values) {
+    var filled = 0;
+    for (final question in form.questions) {
+      final id = question.id;
+      final value = id == null ? null : values[id];
+      if (id == null || value == null || value == '') continue;
+      if (question.type == 'text' ||
+          question.type == 'textarea' ||
+          question.type == 'email' ||
+          question.type == 'number' ||
+          question.type == 'phone') {
+        _controllerFor(id).text = value.toString();
+      } else if ((question.type == 'select' || question.type == 'radio') &&
+          !question.options.contains(value.toString())) {
+        continue;
+      } else if (question.type == 'checkbox' && value is! List) {
+        continue;
+      }
+      _values[id] =
+          question.type == 'checkbox' && value is List
+              ? value
+              : value.toString();
+      filled++;
+    }
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.formAutofillResult(filled))),
+    );
+  }
+
   /// Tier terpilih (fallback ke tier default / pertama bila belum dipilih).
   FormTier? _selectedTier(FormModel form) {
     final tiers = form.tiers;
@@ -162,7 +192,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         return;
       }
       if (addon.hasVariants && _addonVariants[id] == null) {
-        _addonVariants[id] = addon.variants.isNotEmpty ? addon.variants.first.id : null;
+        _addonVariants[id] =
+            addon.variants.isNotEmpty ? addon.variants.first.id : null;
       }
       if ((_addonQuantities[id] ?? 0) < 1) {
         _addonQuantities[id] = 1;
@@ -469,7 +500,9 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 ] else if (_baseAmount(form) > 0) ...[
                   const SizedBox(height: Spacing.lg),
                   Text(
-                    context.l10n.eventFee(Formatters.currency(_baseAmount(form))),
+                    context.l10n.eventFee(
+                      Formatters.currency(_baseAmount(form)),
+                    ),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.movementGreen,
                       fontWeight: FontWeight.w700,
@@ -498,6 +531,17 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       ),
                     ),
                   ],
+                ],
+                if (form.autofillEnabled && data.autofill.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.lg),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _autofill(form, data.autofill),
+                      icon: const Icon(Icons.person_outline),
+                      label: Text(context.l10n.formAutofillButton),
+                    ),
+                  ),
                 ],
                 if (showMethods) ...[
                   const SizedBox(height: Spacing.lg),
@@ -864,7 +908,8 @@ class _AddonTile extends StatelessWidget {
                         for (final variant in addon.variants)
                           DropdownMenuItem<int>(
                             value: variant.id,
-                            enabled: variant.stock == null || variant.stock! > 0,
+                            enabled:
+                                variant.stock == null || variant.stock! > 0,
                             child: Text(
                               '${variant.name ?? ''} — '
                               '${Formatters.currency(variant.price ?? addon.price ?? 0)}',
@@ -1167,7 +1212,6 @@ class _RegistrationSkeleton extends StatelessWidget {
     );
   }
 }
-
 
 String _fileNameOf(String path) {
   final normalized = path.replaceAll('\\', '/');

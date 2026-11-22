@@ -17,6 +17,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../application/form_providers.dart';
 import '../data/form_repository.dart';
 import '../data/models/form_model.dart';
+import '../../auth/application/auth_controller.dart';
 import 'form_question_fields.dart';
 
 class FormScreen extends ConsumerStatefulWidget {
@@ -88,6 +89,44 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     setState(() => _files[questionId] = File(path));
   }
 
+  Future<void> _autofill(FormModel form) async {
+    try {
+      final values = await ref
+          .read(formRepositoryProvider)
+          .autofill(widget.token);
+      var filled = 0;
+      for (final question in form.questions) {
+        final id = question.id;
+        final value = id == null ? null : values[id];
+        if (id == null || value == null || value == '') continue;
+        if (question.type == 'text' ||
+            question.type == 'textarea' ||
+            question.type == 'email' ||
+            question.type == 'number' ||
+            question.type == 'phone') {
+          _controllerFor(id).text = value.toString();
+        } else if ((question.type == 'select' || question.type == 'radio') &&
+            !question.options.contains(value.toString())) {
+          continue;
+        } else if (question.type == 'checkbox' && value is! List) {
+          continue;
+        }
+        _values[id] =
+            question.type == 'checkbox' && value is List
+                ? value
+                : value.toString();
+        filled++;
+      }
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.formAutofillResult(filled))),
+      );
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
   Future<void> _submit(FormModel form) async {
     final answers = <String, dynamic>{};
 
@@ -148,6 +187,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
   @override
   Widget build(BuildContext context) {
     final formAsync = ref.watch(formDetailProvider(widget.token));
+    final isAuthenticated = ref.watch(currentUserProvider) != null;
 
     if (_result != null) {
       return _SuccessScreen(form: formAsync.valueOrNull, result: _result!);
@@ -172,6 +212,8 @@ class _FormScreenState extends ConsumerState<FormScreen> {
               onPickFile: _pickFile,
               controllerFor: _controllerFor,
               onSubmit: () => _submit(form),
+              onAutofill: () => _autofill(form),
+              showAutofill: isAuthenticated && form.autofillEnabled,
             ),
         loading: () => const _FormSkeleton(),
         error:
@@ -200,6 +242,8 @@ class _FormBody extends StatelessWidget {
     required this.onPickFile,
     required this.controllerFor,
     required this.onSubmit,
+    required this.onAutofill,
+    required this.showAutofill,
   });
 
   final FormModel form;
@@ -214,6 +258,8 @@ class _FormBody extends StatelessWidget {
   final Future<void> Function(int questionId) onPickFile;
   final TextEditingController Function(int questionId) controllerFor;
   final VoidCallback onSubmit;
+  final VoidCallback onAutofill;
+  final bool showAutofill;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +291,17 @@ class _FormBody extends StatelessWidget {
             form.description!,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+        if (showAutofill) ...[
+          const SizedBox(height: Spacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: onAutofill,
+              icon: const Icon(Icons.person_outline),
+              label: Text(context.l10n.formAutofillButton),
             ),
           ),
         ],
@@ -386,4 +443,3 @@ class _FormSkeleton extends StatelessWidget {
     );
   }
 }
-

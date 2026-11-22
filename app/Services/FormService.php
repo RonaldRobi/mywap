@@ -64,7 +64,52 @@ class FormService
                     'required' => $q->required,
                     'placeholder' => $q->placeholder,
                     'help_text' => $q->help_text,
+                    'autofill_key' => $form->autofill_enabled ? $q->autofill_key : null,
                 ])->values(),
+            'autofill_enabled' => (bool) $form->autofill_enabled,
+        ];
+    }
+
+    /**
+     * Return only explicitly mapped profile fields. Sensitive fields are not
+     * exposed unless an admin deliberately maps the question to them.
+     */
+    public function autofillPayload(Form $form, User $user): array
+    {
+        if (! $form->autofill_enabled) {
+            return ['values' => []];
+        }
+
+        $user->loadMissing(['branch']);
+
+        $profile = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'member_no' => $user->member_no,
+            'ic_number' => $user->ic_number,
+            'dob' => $user->dob?->format('d/m/Y'),
+            'gender' => $user->gender,
+            'profession' => $user->current_profession,
+            'address_1' => $user->address_1,
+            'address_2' => $user->address_2,
+            'postcode' => $user->postcode,
+            'district' => $user->district,
+            'city' => $user->city,
+            'state' => $user->state,
+        ];
+
+        return [
+            'values' => $form->questions
+                ->filter(fn ($question) => $question->autofill_key !== null)
+                ->mapWithKeys(function ($question) use ($profile) {
+                    $value = $profile[$question->autofill_key] ?? null;
+
+                    return $value === null || $value === ''
+                        ? []
+                        : [(string) $question->id => $value];
+                })
+                ->all(),
         ];
     }
 

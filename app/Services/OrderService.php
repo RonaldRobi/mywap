@@ -44,7 +44,7 @@ class OrderService
             'products.*.variation_option_id' => 'nullable|exists:product_variation_options,id',
             'products.*.variation_snapshot' => 'nullable|string',
             'shipping_name' => 'nullable|string|max:255',
-            'shipping_address' => 'nullable|string',
+            'shipping_address' => 'required|string',
             'shipping_postcode' => 'nullable|string|max:10',
             'shipping_phone' => 'nullable|string|max:20',
         ];
@@ -67,7 +67,7 @@ class OrderService
             'shipping_name' => [$isMember ? 'nullable' : 'required', 'string', 'max:255'],
             'shipping_phone' => [$isMember ? 'nullable' : 'required', 'string', 'max:20'],
             'shipping_email' => [$isMember ? 'nullable' : 'required', 'email', 'max:255'],
-            'shipping_address' => 'nullable|string',
+            'shipping_address' => 'required|string',
             'shipping_postcode' => 'nullable|string|max:10',
         ];
     }
