@@ -9,10 +9,12 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductVariationOption;
 use App\Models\User;
+use App\Notifications\NewOrderAdminNotification;
 use App\Notifications\OrderPlacedEmail;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -147,7 +149,7 @@ class OrderService
         }
 
         return $query
-            ->with('items.product')
+            ->with(['items.product', 'user'])
             ->latest()
             ->paginate(self::perPage($request))
             ->withQueryString()
@@ -189,7 +191,7 @@ class OrderService
             $shippingPhone = $shippingPhone ?: ($user?->phone ?? null);
         }
 
-        return DB::transaction(function () use ($data, $user, $applyMemberPricing, $shippingName, $shippingPhone) {
+        $order = DB::transaction(function () use ($data, $user, $applyMemberPricing, $shippingName, $shippingPhone) {
             $productIds = collect($data['products'])->pluck('id');
             $products = Product::with('variations')
                 ->whereIn('id', $productIds)
@@ -320,6 +322,46 @@ class OrderService
 
             return $order;
         });
+
+        $this->notifyAdminsOfNewOrder($order);
+
+        return $order;
+    }
+
+    private function notifyAdminsOfNewOrder(Order $order): void
+    {
+        try {
+            $order->loadMissing('items.product');
+            $orderBranchIds = $order->items
+                ->map(fn ($item) => $item->product?->branch_id)
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->all();
+            $admins = User::withoutGlobalScopes()
+                ->whereHas('roles', fn ($query) => $query->whereIn('name', ['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan']))
+                ->where(function ($query) use ($order) {
+                    $query->whereHas('roles', fn ($roles) => $roles->where('name', 'Superadmin'))
+                        ->orWhere('current_organization_id', $order->organisasi_id);
+                })
+                ->get();
+
+            $buyerName = $order->shipping_name ?: ($order->user?->name ?: 'Tetamu');
+
+            foreach ($admins as $admin) {
+                if ($admin->isBranchAdmin() && ! array_intersect($admin->managedBranchIds(), $orderBranchIds)) {
+                    continue;
+                }
+
+                $admin->notify(new NewOrderAdminNotification($order->id, $buyerName));
+                Cache::forget("unread:{$admin->id}");
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('OrderService: gagal menghantar notifikasi pesanan baharu.', [
+                'order_id' => $order->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

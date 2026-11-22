@@ -100,14 +100,14 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
     });
     try {
       final repo = ref.read(authRepositoryProvider);
-      await repo.updateAndSendOtp(
+      final result = await repo.updateAndSendOtp(
         _icController.text.trim(),
         _channel,
         _contactController.text.trim(),
       );
       if (!mounted) return;
       setState(() => _step = _OtpStep.verify);
-      _startResendCooldown();
+      _startResendCooldown((result['cooldown_seconds'] as num?)?.toInt() ?? 30);
     } on ApiException catch (e) {
       setState(() => _error = e.message);
     } finally {
@@ -115,9 +115,9 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
     }
   }
 
-  void _startResendCooldown() {
+  void _startResendCooldown([int seconds = 30]) {
     _resendTimer?.cancel();
-    setState(() => _resendSeconds = 60);
+    setState(() => _resendSeconds = seconds);
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -139,14 +139,18 @@ class _FirstLoginOtpScreenState extends ConsumerState<FirstLoginOtpScreen> {
       _error = null;
     });
     try {
-      await ref
+      final result = await ref
           .read(authRepositoryProvider)
           .updateAndSendOtp(
             _icController.text.trim(),
             _channel,
             _contactController.text.trim(),
           );
-      if (mounted) _startResendCooldown();
+      if (mounted) {
+        _startResendCooldown(
+          (result['cooldown_seconds'] as num?)?.toInt() ?? 30,
+        );
+      }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {

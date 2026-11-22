@@ -201,6 +201,7 @@ class _AdminBroadcastScreenState extends ConsumerState<AdminBroadcastScreen> {
             TextFormField(
               controller: _titleController,
               textInputAction: TextInputAction.next,
+              maxLength: 60,
               decoration: InputDecoration(
                 labelText: context.l10n.adminBroadcastTitleLabel,
                 hintText: context.l10n.adminBroadcastTitleHint,

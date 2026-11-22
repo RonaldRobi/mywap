@@ -52,7 +52,7 @@ class BroadcastController extends Controller
                 'target_criteria_label' => match ($message->target_criteria) {
                     'all' => 'Semua Ahli',
                     'organization' => 'Ahli Organisasi',
-                    'branch' => 'Ahli Cawangan',
+                    'branch' => 'Ahli Cawangan/Negeri',
                     'specific_members' => 'Individu Tertentu',
                     'supporters' => 'Pendukung (Bukan Ahli)',
                     default => $message->target_criteria,
@@ -163,7 +163,7 @@ class BroadcastController extends Controller
         $isBranchAdmin = $user->isBranchAdmin();
 
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:60'],
             'content' => ['required', 'string'],
             'action_type' => ['nullable', 'in:none,event,product,external'],
             'action_id' => ['nullable', 'integer'],
@@ -189,7 +189,7 @@ class BroadcastController extends Controller
         if ($isBranchAdmin) {
             if (($data['action_type'] ?? 'none') === 'product') {
                 throw ValidationException::withMessages([
-                    'action_type' => 'Admin cawangan tidak boleh memautkan produk dalam siaran cawangan.',
+                    'action_type' => 'Admin cawangan/negeri tidak boleh memautkan produk dalam siaran cawangan/negeri.',
                 ]);
             }
 
@@ -433,7 +433,7 @@ class BroadcastController extends Controller
         }
 
         if ($user->isBranchAdmin()) {
-            abort(403, 'Admin cawangan tidak boleh memautkan produk.');
+            abort(403, 'Admin cawangan/negeri tidak boleh memautkan produk.');
         }
 
         if (! $isSuperadmin && $product->organisasi_id !== null && (int) $product->organisasi_id !== (int) $user->current_organization_id) {

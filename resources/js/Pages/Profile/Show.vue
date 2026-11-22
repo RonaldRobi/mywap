@@ -210,7 +210,7 @@ const initials = computed(() =>
                         <span class="font-medium text-gray-800">{{ profileUser.topics }}</span>
                     </div>
                     <div v-if="profileUser.branch_name" class="col-span-2">
-                        <span class="text-xs text-gray-400 block">Cawangan</span>
+                        <span class="text-xs text-gray-400 block">Cawangan/Negeri</span>
                         <span class="font-medium text-gray-800">{{ profileUser.branch_name }}</span>
                     </div>
                     <div v-if="profileUser.locality" class="col-span-2">

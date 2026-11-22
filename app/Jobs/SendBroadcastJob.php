@@ -219,7 +219,7 @@ class SendBroadcastJob implements ShouldQueue
 
                 try {
                     Notification::route('mail', $supporter->email)
-                        ->notify(new SupporterBroadcastNotification($message));
+                        ->notify(new SupporterBroadcastNotification($message, $supporter->name));
                     $success++;
                 } catch (Throwable $e) {
                     $failed++;

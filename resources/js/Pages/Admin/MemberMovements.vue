@@ -90,13 +90,13 @@ function resetFilters() {
                     </div>
 
                     <div v-if="branches.length > 1">
-                        <label for="movement-branch" class="mb-1.5 block text-sm font-semibold text-gray-700">Cawangan</label>
+                        <label for="movement-branch" class="mb-1.5 block text-sm font-semibold text-gray-700">Cawangan/Negeri</label>
                         <select
                             id="movement-branch"
                             v-model="branchId"
                             class="min-h-11 w-full cursor-pointer rounded-xl border-gray-300 text-sm focus:border-[#2F6B32] focus:ring-[#2F6B32]"
                         >
-                            <option value="">Semua cawangan jagaan</option>
+                            <option value="">Semua cawangan/negeri jagaan</option>
                             <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.name }}</option>
                         </select>
                     </div>

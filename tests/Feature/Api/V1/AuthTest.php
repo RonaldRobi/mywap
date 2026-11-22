@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\AppSetting;
 use App\Models\Organization;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -215,7 +218,7 @@ class AuthTest extends TestCase
         $this->assertTrue($legacy->fresh()->emailIsPlaceholder());
     }
 
-    public function test_send_otp_requires_sixty_second_resend_cooldown(): void
+    public function test_send_otp_requires_thirty_second_same_channel_cooldown(): void
     {
         Queue::fake();
 
@@ -229,9 +232,58 @@ class AuthTest extends TestCase
         $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
             ->assertOk();
 
-        $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
-            ->assertStatus(422)
-            ->assertJsonPath('message', 'Sila tunggu 3 minit sebelum meminta kod OTP baharu.');
+        $response = $this->postJson('/api/v1/auth/send-otp', ['ic_number' => 'C1111222'])
+            ->assertStatus(422);
+        $this->assertMatchesRegularExpression(
+            '/^Sila tunggu (?:29|30) saat sebelum meminta kod OTP baharu\.$/',
+            (string) $response->json('message'),
+        );
+    }
+
+    public function test_switching_otp_channels_waits_thirty_seconds_then_both_channels_wait_sixty_seconds(): void
+    {
+        Http::fake(['*' => Http::response(['code' => 200], 200)]);
+        AppSetting::singleton()->update([
+            'onesender_url' => 'https://onesender.test/messages',
+            'onesender_api_key' => 'test-key',
+        ]);
+
+        $member = User::factory()->create([
+            'email' => 'member@real-mail.test',
+            'ic_number' => 'C2222333',
+            'current_organization_id' => $this->org->id,
+            'first_login_at' => null,
+        ]);
+
+        $this->postJson('/api/v1/auth/send-otp', ['ic_number' => $member->ic_number])
+            ->assertOk();
+
+        $response = $this->postJson('/api/v1/auth/update-and-send-otp', [
+            'ic_number' => $member->ic_number,
+            'channel' => 'whatsapp',
+            'contact' => '0132716575',
+        ])->assertStatus(422);
+        $this->assertMatchesRegularExpression(
+            '/^Sila tunggu (?:29|30) saat sebelum meminta kod OTP baharu\.$/',
+            (string) $response->json('message'),
+        );
+
+        Carbon::setTestNow(now()->addSeconds(30));
+
+        $this->postJson('/api/v1/auth/update-and-send-otp', [
+            'ic_number' => $member->ic_number,
+            'channel' => 'whatsapp',
+            'contact' => '0132716575',
+        ])->assertOk();
+
+        $response = $this->postJson('/api/v1/auth/send-otp', ['ic_number' => $member->ic_number])
+            ->assertStatus(422);
+        $this->assertMatchesRegularExpression(
+            '/^Sila tunggu (?:59 saat|1 minit) sebelum meminta kod OTP baharu\.$/',
+            (string) $response->json('message'),
+        );
+
+        Carbon::setTestNow();
     }
 
     public function test_public_traffic_does_not_exhaust_login_rate_limit(): void

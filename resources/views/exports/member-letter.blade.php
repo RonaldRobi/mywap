@@ -65,7 +65,7 @@
         <tr><td class="label">No. Ahli</td><td>{{ $member_no }}</td></tr>
         <tr><td class="label">No. Kad Pengenalan</td><td>{{ $ic_number }}</td></tr>
         <tr><td class="label">Organisasi</td><td>{{ $organization }}</td></tr>
-        <tr><td class="label">Cawangan</td><td>{{ $branch }}</td></tr>
+        <tr><td class="label">Cawangan/Negeri</td><td>{{ $branch }}</td></tr>
         <tr><td class="label">Negeri</td><td>{{ $state }}</td></tr>
         <tr><td class="label">Tarikh Mula Keahlian</td><td>{{ $joined_at }}</td></tr>
     </table>

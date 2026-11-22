@@ -39,6 +39,22 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('member.dashboard', absolute: false));
     }
 
+    public function test_branch_admin_with_member_role_is_sent_to_admin_dashboard_after_login(): void
+    {
+        $user = User::factory()->create(['first_login_at' => now()]);
+        Role::create(['name' => 'Member']);
+        Role::create(['name' => 'Admin Cawangan']);
+        $user->assignRole(['Member', 'Admin Cawangan']);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('admin.dashboard', absolute: false));
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
@@ -136,7 +152,37 @@ class AuthenticationTest extends TestCase
             && $request['to'] === '60132716575');
     }
 
-    public function test_failed_web_whatsapp_otp_allows_immediate_email_fallback(): void
+    public function test_web_first_login_whatsapp_accepts_onesender_success_response_without_code(): void
+    {
+        Http::fake([
+            '*' => Http::response(['status' => true, 'message' => 'Message sent'], 200),
+        ]);
+
+        AppSetting::singleton()->update([
+            'onesender_url' => 'https://onesender.test/messages',
+            'onesender_api_key' => 'test-key',
+        ]);
+
+        $user = User::factory()->create([
+            'ic_number' => '940729045407',
+            'first_login_at' => null,
+        ]);
+
+        $this->postJson(route('login.update-and-send-otp'), [
+            'ic_number' => $user->ic_number,
+            'channel' => 'whatsapp',
+            'contact' => '+60132716575',
+        ])->assertOk()->assertJsonPath('channel', 'whatsapp');
+
+        $this->assertDatabaseHas('otp_codes', [
+            'user_id' => $user->id,
+            'channel' => 'whatsapp',
+            'recipient' => '60132716575',
+            'used_at' => null,
+        ]);
+    }
+
+    public function test_failed_web_whatsapp_otp_requires_both_channel_cooldown_before_email_fallback(): void
     {
         Http::fake([
             '*' => Http::response(['code' => 500], 500),
@@ -161,11 +207,15 @@ class AuthenticationTest extends TestCase
             'contact' => '0132716575',
         ])->assertStatus(422);
 
-        $this->postJson(route('login.update-and-send-otp'), [
+        $response = $this->postJson(route('login.update-and-send-otp'), [
             'ic_number' => $user->ic_number,
             'channel' => 'email',
             'contact' => $user->email,
-        ])->assertOk()->assertJsonPath('channel', 'email');
+        ])->assertStatus(422);
+        $this->assertMatchesRegularExpression(
+            '/^Sila tunggu (?:29|30) saat sebelum meminta kod OTP baharu\.$/',
+            (string) $response->json('message'),
+        );
     }
 
     public function test_members_can_authenticate_with_ic_number(): void

@@ -29,7 +29,7 @@ class BranchReportController extends Controller
         return response()->streamDownload(function () use ($data) {
             $handle = fopen('php://output', 'w');
 
-            fputcsv($handle, ['Laporan Cawangan', $data['branch']['name'] ?? '-', 'Tahun', $data['year']]);
+            fputcsv($handle, ['Laporan Cawangan/Negeri', $data['branch']['name'] ?? '-', 'Tahun', $data['year']]);
             fputcsv($handle, []);
             fputcsv($handle, ['Ringkasan', 'Jumlah']);
             foreach ($data['summary'] as $row) {
@@ -71,7 +71,7 @@ class BranchReportController extends Controller
             ->orderBy('name')
             ->get(['id', 'organization_id', 'name', 'state']);
 
-        abort_if($branches->isEmpty(), 403, 'Tiada cawangan untuk laporan.');
+        abort_if($branches->isEmpty(), 403, 'Tiada cawangan/negeri untuk laporan.');
 
         $branchId = $isBranchAdmin
             ? $user->resolveManagedBranchId($request->integer('branch_id') ?: null)

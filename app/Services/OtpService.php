@@ -16,7 +16,9 @@ class OtpService
      */
     public const MAX_ATTEMPTS = 5;
 
-    public const RESEND_COOLDOWN_SECONDS = 180;
+    public const CHANNEL_COOLDOWN_SECONDS = 30;
+
+    public const BOTH_CHANNEL_COOLDOWN_SECONDS = 60;
 
     public function generate(User $user, string $purpose = 'login', ?string $channel = null): OtpCode
     {
@@ -121,25 +123,68 @@ class OtpService
 
     public function retryAfter(User $user, string $purpose = 'login', ?string $channel = null): int
     {
-        $latest = OtpCode::query()
+        $recent = OtpCode::query()
             ->where('user_id', $user->id)
             ->where('purpose', $purpose)
-            ->whereNull('used_at')
-            ->when($channel !== null, fn ($query) => $query->where('channel', $channel))
             ->latest()
-            ->first();
+            ->limit(2)
+            ->get();
 
+        $latest = $recent->first();
         if (! $latest || $latest->created_at === null) {
             return 0;
         }
 
-        $elapsed = now()->diffInSeconds($latest->created_at, false);
+        $elapsed = (int) ceil($latest->created_at->diffInRealSeconds(now(), false));
 
         if ($elapsed < 0) {
-            return self::RESEND_COOLDOWN_SECONDS;
+            return self::BOTH_CHANNEL_COOLDOWN_SECONDS;
         }
 
-        return max(0, self::RESEND_COOLDOWN_SECONDS - $elapsed);
+        if ($channel !== null && $latest->channel === $channel) {
+            return max(0, self::CHANNEL_COOLDOWN_SECONDS - $elapsed);
+        }
+
+        if ($recent->count() >= 2
+            && $recent[0]->channel !== null
+            && $recent[1]->channel !== null
+            && $recent[0]->channel !== $recent[1]->channel) {
+            return max(0, self::BOTH_CHANNEL_COOLDOWN_SECONDS - $elapsed);
+        }
+
+        if ($channel === null) {
+            return max(0, self::CHANNEL_COOLDOWN_SECONDS - $elapsed);
+        }
+
+        $latestForChannel = $recent->firstWhere('channel', $channel);
+        if (! $latestForChannel || $latestForChannel->created_at === null) {
+            return max(0, self::CHANNEL_COOLDOWN_SECONDS - $elapsed);
+        }
+
+        $channelElapsed = (int) ceil($latestForChannel->created_at->diffInRealSeconds(now(), false));
+
+        return $channelElapsed < 0
+            ? self::CHANNEL_COOLDOWN_SECONDS
+            : max(0, self::CHANNEL_COOLDOWN_SECONDS - $channelElapsed);
+    }
+
+    public function cooldownAfterSend(User $user, string $purpose = 'login'): int
+    {
+        $recent = OtpCode::query()
+            ->where('user_id', $user->id)
+            ->where('purpose', $purpose)
+            ->latest()
+            ->limit(2)
+            ->get();
+
+        if ($recent->count() >= 2
+            && $recent[0]->channel !== null
+            && $recent[1]->channel !== null
+            && $recent[0]->channel !== $recent[1]->channel) {
+            return self::BOTH_CHANNEL_COOLDOWN_SECONDS;
+        }
+
+        return self::CHANNEL_COOLDOWN_SECONDS;
     }
 
     private function generateCode(): string

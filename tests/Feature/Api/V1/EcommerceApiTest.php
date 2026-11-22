@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\NewOrderAdminNotification;
 use App\Notifications\OrderPlacedEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -246,7 +247,8 @@ class EcommerceApiTest extends TestCase
             'shipping_email' => 'ali@example.test',
         ])->assertOk();
 
-        Notification::assertNothingSent();
+        Notification::assertSentTo($this->admin, NewOrderAdminNotification::class);
+        Notification::assertNotSentTo($this->member, OrderPlacedEmail::class);
     }
 
     public function test_admin_cannot_checkout_via_api(): void

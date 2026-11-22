@@ -15,10 +15,10 @@ const props = defineProps({
 
 const organizations = [
     {
-        name: 'PKPIM',
-        fullName: 'Persatuan Kebangsaan Pelajar Islam Malaysia',
-        description: 'wadah untuk pelajar dan mahasiswa Islam, sekitar umur 15–25 tahun, yang membina kefahaman Islam, kepimpinan, intelektualisme dan kesedaran sosial dalam kalangan generasi muda.',
-        logo: '/storage/logos/organizations/zratUgj9brjqSZMoHiHh8BeyXdUl3Uy2SrgWEph1.png',
+        name: 'WADAH',
+        fullName: 'Wadah Pencerdasan Umat Malaysia',
+        description: 'wadah untuk masyarakat dan generasi yang lebih matang, khususnya 40 tahun ke atas, yang meneruskan agenda pencerdasan umat, kepimpinan, pemikiran dan khidmat kepada masyarakat.',
+        logo: '/storage/logos/organizations/TQphsffDuK8ikn8duJ5LNTSIqBb5PnYfwZGlMMl4.png',
     },
     {
         name: 'ABIM',
@@ -27,10 +27,10 @@ const organizations = [
         logo: '/storage/logos/organizations/hREFAvHpwkZILTQczpAomZ0nyoEq4F2JxweJ1zeU.png',
     },
     {
-        name: 'WADAH',
-        fullName: 'Wadah Pencerdasan Umat Malaysia',
-        description: 'wadah untuk masyarakat dan generasi yang lebih matang, khususnya 40 tahun ke atas, yang meneruskan agenda pencerdasan umat, kepimpinan, pemikiran dan khidmat kepada masyarakat.',
-        logo: '/storage/logos/organizations/TQphsffDuK8ikn8duJ5LNTSIqBb5PnYfwZGlMMl4.png',
+        name: 'PKPIM',
+        fullName: 'Persatuan Kebangsaan Pelajar Islam Malaysia',
+        description: 'wadah untuk pelajar dan mahasiswa Islam, sekitar umur 15–25 tahun, yang membina kefahaman Islam, kepimpinan, intelektualisme dan kesedaran sosial dalam kalangan generasi muda.',
+        logo: '/storage/logos/organizations/zratUgj9brjqSZMoHiHh8BeyXdUl3Uy2SrgWEph1.png',
     },
 ];
 
@@ -67,20 +67,20 @@ const tone = computed(() => props.light
 </script>
 
 <template>
-    <div v-if="compact" class="flex min-w-0 items-center gap-2" aria-label="Ekosistem PKPIM ABIM WADAH">
+    <div v-if="compact" class="flex min-w-0 items-center gap-2" aria-label="Ekosistem WADAH ABIM PKPIM">
         <div class="flex items-center gap-1 rounded-lg border border-[#D5E3D8] bg-white p-1">
             <span v-for="organization in organizations" :key="organization.name" :class="mini ? 'h-5 w-5' : 'h-7 w-7'" class="flex items-center justify-center bg-white p-0.5">
                 <img :src="organization.logo" :alt="`Logo ${organization.name}`" class="h-full w-full object-contain">
             </span>
         </div>
         <div v-if="!mini" class="hidden min-w-0 sm:block">
-            <p class="truncate text-[10px] font-black uppercase tracking-[0.13em] text-[#123D2A]">PKPIM · ABIM · WADAH</p>
+            <p class="truncate text-[10px] font-black uppercase tracking-[0.13em] text-[#123D2A]">WADAH · ABIM · PKPIM</p>
             <p class="truncate text-[9px] font-medium text-[#2F6B32]">Ekosistem Gerakan</p>
         </div>
     </div>
 
     <div v-else-if="stacked" class="flex flex-col items-center gap-2.5">
-        <div class="flex items-center gap-1.5 rounded-xl border border-[#D5E3D8] bg-white p-2" aria-label="Logo PKPIM ABIM WADAH">
+        <div class="flex items-center gap-1.5 rounded-xl border border-[#D5E3D8] bg-white p-2" aria-label="Logo WADAH ABIM PKPIM">
             <span v-for="organization in organizations" :key="organization.name" class="flex h-11 w-11 items-center justify-center bg-white p-1">
                 <img :src="organization.logo" :alt="`Logo ${organization.name}`" class="h-full w-full object-contain">
             </span>
@@ -93,7 +93,7 @@ const tone = computed(() => props.light
 
     <div v-else>
         <template v-if="showHeader">
-            <div class="rounded-2xl border border-[#D5E3D8] bg-white p-2.5 sm:p-5" aria-label="Logo PKPIM ABIM WADAH">
+            <div class="rounded-2xl border border-[#D5E3D8] bg-white p-2.5 sm:p-5" aria-label="Logo WADAH ABIM PKPIM">
                 <div class="grid grid-cols-3 items-center divide-x divide-[#E1EAE3]">
                     <div v-for="organization in organizations" :key="organization.name" class="flex h-10 items-center justify-center px-2 sm:h-20 sm:px-5">
                         <img :src="organization.logo" :alt="`Logo ${organization.name}`" class="max-h-full w-full object-contain">

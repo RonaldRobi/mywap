@@ -101,14 +101,25 @@ function onWindowKeydown(event) {
 }
 
 let drawerHandler;
+let notificationPoller;
 onMounted(() => {
     drawerHandler = () => { mobileMenuOpen.value = true; };
     window.addEventListener('open-mobile-drawer', drawerHandler);
     window.addEventListener('keydown', onWindowKeydown);
+    if (user.value) {
+        notificationPoller = window.setInterval(() => {
+            router.reload({
+                only: ['notifications', 'order_badge_count'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 30000);
+    }
 });
 onUnmounted(() => {
     if (drawerHandler) window.removeEventListener('open-mobile-drawer', drawerHandler);
     window.removeEventListener('keydown', onWindowKeydown);
+    if (notificationPoller) window.clearInterval(notificationPoller);
 });
 const navContainer   = ref(null);
 function scrollToActive() {
@@ -136,6 +147,7 @@ const isBranchAdmin = computed(() => roles.value.includes('Admin Cawangan'));
 const isMember     = computed(() => roles.value.includes('Member'));
 const isAdminPanel = computed(() => isSuperadmin.value || isAdmin.value || isBranchAdmin.value);
 const notifications = computed(() => page.props.notifications ?? { unread_count: 0, recent: [] });
+const orderBadgeCount = computed(() => page.props.order_badge_count ?? 0);
 
 function openNotifications() {
     notifMenuOpen.value = !notifMenuOpen.value;
@@ -201,6 +213,7 @@ const ecommerceChildren = computed(() => {
                 label: 'Pesanan',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
+                badge: orderBadgeCount.value,
                 colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
@@ -220,6 +233,7 @@ const ecommerceChildren = computed(() => {
                 label: 'Pesanan',
                 href: route('orders.index'),
                 active: route().current('orders.*'),
+                badge: orderBadgeCount.value,
                 colorClass: 'text-[#2F6B32]',
                 icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
             },
@@ -451,7 +465,7 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
     }, {
-        label:  'Cawangan',
+        label:  'Cawangan/Negeri',
         href:   route('branches.index'),
         active: route().current('branches.*'),
         colorClass: 'text-[#2F6B32]',
@@ -463,15 +477,15 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
     }, {
-        label:  'Tukar Cawangan',
+        label:  'Tukar Cawangan/Negeri',
         href:   route('branch-change-requests.index'),
         active: route().current('branch-change-requests.*'),
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
     }] : []),
-    ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{ type: 'section', label: 'Pengurusan Cawangan' }] : []),
+    ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{ type: 'section', label: 'Pengurusan Cawangan/Negeri' }] : []),
     ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
-        label:  'Ahli Cawangan',
+        label:  'Ahli Cawangan/Negeri',
         href:   route('admin.hub.manage'),
         active: route().current('admin.hub.*'),
         colorClass: 'text-[#2F6B32]',
@@ -495,13 +509,13 @@ const navItems = computed(() => {
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"/></svg>`,
     }, {
-        label:  'Laporan Cawangan',
+        label:  'Laporan Cawangan/Negeri',
         href:   route('admin.branch-report.index'),
         active: route().current('admin.branch-report.*'),
         colorClass: 'text-[#2F6B32]',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`,
     }, {
-        label:  'Hebahan Cawangan',
+        label:  'Hebahan Cawangan/Negeri',
         href:   route('admin.broadcasts.index'),
         active: route().current('admin.broadcasts.*'),
         colorClass: 'text-[#2F6B32]',
@@ -520,7 +534,7 @@ const navItems = computed(() => {
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`,
     }] : []),
     ...(isBranchAdmin.value && !isAdmin.value && !isSuperadmin.value ? [{
-        label:  'Laporan Cawangan',
+        label:  'Laporan Cawangan/Negeri',
         href:   route('admin.branch-report.index'),
         active: route().current('admin.branch-report.*'),
         colorClass: 'text-[#2F6B32]',
@@ -924,6 +938,9 @@ const bottomNavItems = computed(() => {
                                 ></span>
                                 <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
                                 <span class="truncate">{{ t(child.label) }}</span>
+                                <span v-if="child.badge > 0" class="ms-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                    {{ child.badge > 99 ? '99+' : child.badge }}
+                                </span>
                             </Link>
                         </div>
                     </template>
@@ -1322,6 +1339,9 @@ const bottomNavItems = computed(() => {
                                 ></span>
                                 <span class="shrink-0" :class="child.colorClass ?? 'text-gray-400'" v-html="child.icon" />
                                 <span class="truncate">{{ t(child.label) }}</span>
+                                <span v-if="child.badge > 0" class="ms-auto inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                    {{ child.badge > 99 ? '99+' : child.badge }}
+                                </span>
                             </Link>
                         </div>
                     </template>

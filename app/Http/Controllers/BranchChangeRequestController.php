@@ -57,7 +57,7 @@ class BranchChangeRequestController extends Controller
                 'member_no' => $r->user->member_no,
             ],
             'from_branch' => $r->fromBranch?->name,
-            'to_branch' => $r->toBranch?->name ?? 'Tiada Cawangan',
+            'to_branch' => $r->toBranch?->name ?? 'Tiada Cawangan/Negeri',
             'submitted_at' => $r->created_at->diffForHumans(),
             'submitted_at_raw' => $r->created_at->toISOString(),
         ]);
@@ -86,7 +86,7 @@ class BranchChangeRequestController extends Controller
         $user = $request->user();
         $branchIds = $user->managedBranchIds();
 
-        abort_if($branchIds === [], 403, 'Akaun admin cawangan belum ditugaskan.');
+        abort_if($branchIds === [], 403, 'Akaun admin cawangan/negeri belum ditugaskan.');
 
         $search = trim((string) $request->query('search', ''));
         $direction = in_array($request->query('direction'), ['incoming', 'outgoing', 'all'], true)
@@ -134,7 +134,7 @@ class BranchChangeRequestController extends Controller
                         'member_no' => $movement->user->member_no,
                     ],
                     'from_branch' => $movement->fromBranch?->name,
-                    'to_branch' => $movement->toBranch?->name ?? 'Tiada cawangan',
+                    'to_branch' => $movement->toBranch?->name ?? 'Tiada cawangan/negeri',
                     'direction' => $direction,
                     'source' => match ($movement->change_type) {
                         'self_request' => 'Permohonan ahli',
@@ -143,7 +143,7 @@ class BranchChangeRequestController extends Controller
                         'registration' => 'Pendaftaran',
                         'profile_completion' => 'Lengkap profil',
                         'import' => 'Import ahli',
-                        default => 'Kemas kini cawangan',
+                        default => 'Kemas kini cawangan/negeri',
                     },
                     'changed_at' => $movement->created_at->format('d/m/Y, H:i'),
                     'changed_at_relative' => $movement->created_at->diffForHumans(),
@@ -180,7 +180,7 @@ class BranchChangeRequestController extends Controller
 
         DB::transaction(fn () => $this->approveRequest($branchChangeRequest, $user));
 
-        return back()->with('success', 'Permohonan pertukaran cawangan telah diluluskan.');
+        return back()->with('success', 'Permohonan pertukaran cawangan/negeri telah diluluskan.');
     }
 
     public function approveBulk(Request $request): RedirectResponse
@@ -215,7 +215,7 @@ class BranchChangeRequestController extends Controller
         $approved = $requests->count();
         $skipped = count($data['ids']) - $approved;
 
-        $message = "{$approved} permohonan pertukaran cawangan telah diluluskan.";
+        $message = "{$approved} permohonan pertukaran cawangan/negeri telah diluluskan.";
         if ($skipped > 0) {
             $message .= " {$skipped} permohonan dilangkau (sudah diproses atau tidak dijumpai).";
         }
@@ -247,7 +247,7 @@ class BranchChangeRequestController extends Controller
             $data['rejection_reason'] ?? null,
         ));
 
-        return back()->with('success', 'Permohonan pertukaran cawangan telah ditolak.');
+        return back()->with('success', 'Permohonan pertukaran cawangan/negeri telah ditolak.');
     }
 
     private function approveRequest(BranchChangeRequest $branchChangeRequest, $user): void

@@ -308,7 +308,7 @@ function submitProfile() {
                                     <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ organizationName }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan</p>
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan/Negeri</p>
                                     <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ currentBranchName }}</p>
                                     <p v-if="pendingBranchRequest" class="mt-1 text-xs font-medium text-amber-700">
                                         Menunggu kelulusan: {{ pendingBranchRequest.to_branch }}
@@ -323,7 +323,7 @@ function submitProfile() {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0-4-4m4 4-4 4M16 17H4m0 0 4 4m-4-4 4-4" />
                                 </svg>
-                                Tukar Cawangan
+                                Tukar Cawangan/Negeri
                             </button>
                         </div>
                     </div>
@@ -490,20 +490,20 @@ function submitProfile() {
             </div>
         </form>
 
-        <!-- Modal Tukar Cawangan -->
+        <!-- Modal Tukar Cawangan/Negeri -->
         <div
             v-if="showBranchModal"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
             @click.self="showBranchModal = false"
         >
             <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                <h3 class="text-lg font-bold text-gray-900">Tukar Cawangan</h3>
+                <h3 class="text-lg font-bold text-gray-900">Tukar Cawangan/Negeri</h3>
                 <p class="mt-1 text-sm text-gray-500">
                     Pilih cawangan baharu. Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.
                 </p>
 
                 <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan sekarang</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Cawangan/Negeri sekarang</p>
                     <p class="mt-0.5 text-sm font-semibold text-gray-900">{{ currentBranchName }}</p>
                     <p class="text-xs text-gray-500">{{ organizationName }}</p>
                 </div>
@@ -515,7 +515,7 @@ function submitProfile() {
                 </div>
 
                 <div class="mt-4">
-                    <InputLabel for="new_branch_id" value="Cawangan baharu" />
+                    <InputLabel for="new_branch_id" value="Cawangan/Negeri baharu" />
                     <select
                         id="new_branch_id"
                         v-model="branchForm.branch_id"
@@ -532,7 +532,7 @@ function submitProfile() {
 
                 <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
                     <p class="text-xs font-medium text-blue-800">
-                        Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.
+                        Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan/Negeri hanya bertukar selepas diluluskan.
                     </p>
                 </div>
 

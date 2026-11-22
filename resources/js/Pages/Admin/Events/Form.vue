@@ -390,8 +390,8 @@ function submit() {
                         <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Organisasi &amp; Siapa Boleh Sertai</h2>
 
                         <div v-if="isBranchAdmin" class="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-500">Cawangan penganjur</p>
-                            <p class="mt-1 text-sm font-bold text-gray-900">{{ branch?.name || 'Cawangan anda' }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-indigo-500">Cawangan/Negeri penganjur</p>
+                            <p class="mt-1 text-sm font-bold text-gray-900">{{ branch?.name || 'Cawangan/Negeri anda' }}</p>
                         </div>
 
                         <div v-if="isSuperadmin">

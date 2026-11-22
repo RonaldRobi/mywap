@@ -36,7 +36,7 @@ class OneSenderWhatsappService
                     'text' => ['body' => $message],
                 ]);
 
-            if ($response->successful() && (int) $response->json('code') === 200) {
+            if ($this->isSuccessfulResponse($response)) {
                 return true;
             }
 
@@ -106,5 +106,32 @@ class OneSenderWhatsappService
         }
 
         return $digits;
+    }
+
+    private function isSuccessfulResponse(
+        \Illuminate\Http\Client\Response $response,
+    ): bool {
+        if (! $response->successful()) {
+            return false;
+        }
+
+        $payload = $response->json();
+        if (! is_array($payload)) {
+            return false;
+        }
+
+        if ((int) ($payload['code'] ?? 0) === 200) {
+            return true;
+        }
+
+        if (($payload['success'] ?? false) === true || ($payload['status'] ?? false) === true) {
+            return true;
+        }
+
+        return in_array(
+            strtolower((string) ($payload['status'] ?? '')),
+            ['success', 'sent', 'queued'],
+            true,
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\AppSetting;
+use App\Notifications\NewOrderAdminNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -152,6 +153,9 @@ class HandleInertiaRequests extends Middleware
                 'unread_count' => 0,
                 'recent' => [],
             ],
+            'order_badge_count' => $user && $user->hasAnyRole(['Superadmin', 'Admin', 'org-admin', 'Admin Cawangan'])
+                ? $user->unreadNotifications()->where('type', NewOrderAdminNotification::class)->count()
+                : 0,
         ];
     }
 

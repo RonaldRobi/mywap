@@ -7,7 +7,7 @@
                 <p style="margin:0 0 12px;">Assalamualaikum,</p>
 
                 <p style="margin:0 0 12px;">
-                    Satu permohonan pertukaran cawangan telah dihantar dan memerlukan perhatian pihak cawangan.
+                    Satu permohonan pertukaran cawangan/negeri telah dihantar dan memerlukan perhatian pihak cawangan/negeri.
                 </p>
 
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
@@ -16,11 +16,11 @@
                         <td style="padding:8px 0;font-weight:600;color:#0f172a;">{{ $memberName }} ({{ $memberNo }})</td>
                     </tr>
                     <tr>
-                        <td style="padding:8px 0;color:#64748b;">Dari cawangan</td>
+                        <td style="padding:8px 0;color:#64748b;">Dari cawangan/negeri</td>
                         <td style="padding:8px 0;font-weight:600;color:#0f172a;">{{ $fromBranch }}</td>
                     </tr>
                     <tr>
-                        <td style="padding:8px 0;color:#64748b;">Ke cawangan</td>
+                        <td style="padding:8px 0;color:#64748b;">Ke cawangan/negeri</td>
                         <td style="padding:8px 0;font-weight:600;color:#0f172a;">{{ $toBranch }}</td>
                     </tr>
                     <tr>
@@ -30,7 +30,7 @@
                 </table>
 
                 <p style="margin:0 0 12px;">
-                    Permohonan ini akan diproses oleh admin organisasi. Emel ini hanya untuk makluman pihak cawangan.
+                    Permohonan ini akan diproses oleh admin organisasi. Emel ini hanya untuk makluman pihak cawangan/negeri.
                 </p>
 
                 <p style="margin:16px 0 0;">

@@ -27,10 +27,10 @@ class BranchChangeRequestReviewed extends Notification
         $approved = $this->status === 'approved';
 
         return [
-            'title' => $approved ? 'Pertukaran cawangan diluluskan' : 'Pertukaran cawangan ditolak',
+            'title' => $approved ? 'Pertukaran cawangan/negeri diluluskan' : 'Pertukaran cawangan/negeri ditolak',
             'content' => $approved
-                ? 'Permohonan tukar ke '.($request->toBranch?->name ?? 'cawangan baharu').' telah diluluskan.'
-                : 'Permohonan tukar ke '.($request->toBranch?->name ?? 'cawangan baharu').' telah ditolak.'
+                ? 'Permohonan tukar ke '.($request->toBranch?->name ?? 'cawangan/negeri baharu').' telah diluluskan.'
+                : 'Permohonan tukar ke '.($request->toBranch?->name ?? 'cawangan/negeri baharu').' telah ditolak.'
                     .($this->reason ? ' Sebab: '.$this->reason : ''),
             'type' => 'branch_change_request_reviewed',
             'action_type' => 'branch_change_request',

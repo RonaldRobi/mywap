@@ -732,7 +732,7 @@ class FormController extends Controller
     {
         $form = $this->forms->findPublic($token);
 
-        abort_if($form->event?->isBranchOnly(), 403, 'Borang ini hanya untuk ahli cawangan penganjur.');
+        abort_if($form->event?->isBranchOnly(), 403, 'Borang ini hanya untuk ahli cawangan/negeri penganjur.');
 
         $data = $request->validate($this->forms->validationRules($form));
 

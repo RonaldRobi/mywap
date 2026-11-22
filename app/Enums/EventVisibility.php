@@ -10,7 +10,7 @@ enum EventVisibility: string
     public function label(): string
     {
         return match ($this) {
-            self::BranchOnly => 'Ahli cawangan sahaja',
+            self::BranchOnly => 'Ahli cawangan/negeri sahaja',
             self::Open => 'Terbuka kepada semua',
         };
     }

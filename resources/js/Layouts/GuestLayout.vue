@@ -1,22 +1,22 @@
 <script setup>
 import AppSplashScreen from '@/Components/AppSplashScreen.vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import ChatBot from '@/Components/ChatBot.vue';
 import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
     <div
-        class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0"
+        class="flex min-h-screen flex-col items-center bg-[#F4F6F1] px-4 py-8 sm:justify-center sm:py-12"
     >
-        <div>
-            <Link href="/">
-                <ApplicationLogo class="h-20 w-20 fill-current text-gray-500" />
+        <div class="mb-6 text-center">
+            <Link href="/" class="inline-block text-xl font-black tracking-tight text-[#123D2A]">
+                myWAP
             </Link>
+            <p class="mt-1 text-xs font-medium text-[#52645A]">Platform digital ahli</p>
         </div>
 
         <div
-            class="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg"
+            class="w-full max-w-md overflow-hidden rounded-2xl border border-[#D5E3D8] bg-white px-5 py-6 shadow-[0_16px_40px_rgba(7,21,37,0.08)] sm:px-8 sm:py-8"
         >
             <slot />
         </div>

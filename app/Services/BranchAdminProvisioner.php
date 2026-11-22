@@ -96,7 +96,7 @@ class BranchAdminProvisioner
                     'target_type' => User::class,
                     'target_id' => $user->id,
                     'action' => 'branch_admin_account_auto_created',
-                    'description' => "Akaun admin cawangan {$branch->name} dicipta secara automatik.",
+                    'description' => "Akaun admin cawangan/negeri {$branch->name} dicipta secara automatik.",
                 ]);
             }
 

@@ -39,6 +39,14 @@ const accent = computed(() => props.organization.color_theme || '#10b981');
 const accentSoft = computed(() => hexToRgba(accent.value, 0.12));
 const accentLine = computed(() => hexToRgba(accent.value, 0.28));
 
+const organizationOrder = ['wadah', 'abim', 'pkpim'];
+
+const orderedOrganizations = computed(() => [...props.organizations].sort((a, b) => {
+    const aIndex = organizationOrder.indexOf(a.slug);
+    const bIndex = organizationOrder.indexOf(b.slug);
+    return (aIndex === -1 ? organizationOrder.length : aIndex) - (bIndex === -1 ? organizationOrder.length : bIndex);
+}));
+
 const selectedSummary = computed(
     () => props.organizations.find((o) => o.slug === props.organization.slug) || {}
 );
@@ -214,7 +222,7 @@ function confirmDelete() {
 
             <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <button
-                    v-for="item in organizations"
+                    v-for="item in orderedOrganizations"
                     :key="item.slug"
                     type="button"
                     @click="selectOrganization(item)"

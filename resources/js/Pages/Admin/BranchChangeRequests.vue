@@ -108,16 +108,16 @@ function approve(r) {
 </script>
 
 <template>
-    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard" title="Permohonan Tukar Cawangan">
-        <Head title="Permohonan Tukar Cawangan" />
+    <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard" title="Permohonan Tukar Cawangan/Negeri">
+        <Head title="Permohonan Tukar Cawangan/Negeri" />
 
         <template #header>
-            Permohonan Tukar Cawangan
+            Permohonan Tukar Cawangan/Negeri
         </template>
 
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Permohonan Tukar Cawangan</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Permohonan Tukar Cawangan/Negeri</h2>
             </div>
 
             <div class="mb-6 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:p-5">
@@ -153,12 +153,12 @@ function approve(r) {
                  <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem_auto]">
                      <label class="sr-only" for="branch-change-search">Cari permohonan</label>
                      <input id="branch-change-search" v-model="search" type="search" placeholder="Cari nama, no. ahli atau emel..." class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
-                     <label class="sr-only" for="from-branch-filter">Cawangan asal</label>
+                     <label class="sr-only" for="from-branch-filter">Cawangan/Negeri asal</label>
                      <select id="from-branch-filter" v-model="fromBranchId" class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
                          <option value="">Semua cawangan asal</option>
                          <option v-for="branch in branches" :key="`from-${branch.id}`" :value="branch.id">{{ branch.name }}</option>
                      </select>
-                     <label class="sr-only" for="to-branch-filter">Cawangan sasaran</label>
+                     <label class="sr-only" for="to-branch-filter">Cawangan/Negeri sasaran</label>
                      <select id="to-branch-filter" v-model="toBranchId" class="min-h-11 rounded-xl border border-gray-200 px-3 text-sm focus:border-gray-900 focus:ring-gray-900">
                          <option value="">Semua cawangan sasaran</option>
                          <option v-for="branch in branches" :key="`to-${branch.id}`" :value="branch.id">{{ branch.name }}</option>
@@ -223,7 +223,7 @@ function approve(r) {
                             <p class="text-xs text-gray-500">{{ r.user.email }} · {{ r.user.member_no }}</p>
                             <div class="mt-2 flex items-center gap-2 text-sm">
                                 <span class="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
-                                    {{ r.from_branch || 'Tiada Cawangan' }}
+                                    {{ r.from_branch || 'Tiada Cawangan/Negeri' }}
                                 </span>
                                 <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />

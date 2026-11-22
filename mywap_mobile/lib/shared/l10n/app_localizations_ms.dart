@@ -715,7 +715,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get noOrganization => 'Tiada organisasi';
 
   @override
-  String get noBranch => 'Tiada cawangan';
+  String get noBranch => 'Tiada cawangan/negeri';
 
   @override
   String memberNoShort(String number) {
@@ -729,7 +729,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get icNoLabel => 'No. IC';
 
   @override
-  String get branchLabel => 'Cawangan';
+  String get branchLabel => 'Cawangan/Negeri';
 
   @override
   String get localityLabel => 'Lokaliti';
@@ -926,7 +926,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get organizationLabel => 'Organisasi';
 
   @override
-  String get changeBranch => 'Tukar Cawangan';
+  String get changeBranch => 'Tukar Cawangan/Negeri';
 
   @override
   String branchRequestPending(String branch) {
@@ -934,7 +934,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get branchRequestSent => 'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.';
+  String get branchRequestSent => 'Permohonan tukar cawangan/negeri telah dihantar untuk kelulusan admin.';
 
   @override
   String fieldRequired(String field) {
@@ -951,16 +951,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileUpdatedSuccess => 'Profil berjaya dikemas kini.';
 
   @override
-  String get chooseNewBranch => 'Sila pilih cawangan baharu.';
+  String get chooseNewBranch => 'Sila pilih cawangan/negeri baharu.';
 
   @override
-  String get changeBranchTitle => 'Tukar Cawangan';
+  String get changeBranchTitle => 'Tukar Cawangan/Negeri';
 
   @override
-  String get changeBranchNote => 'Permohonan ini perlu diluluskan oleh admin sebelum cawangan anda bertukar.';
+  String get changeBranchNote => 'Permohonan ini perlu diluluskan oleh admin sebelum cawangan/negeri anda bertukar.';
 
   @override
-  String get currentBranch => 'Cawangan sekarang';
+  String get currentBranch => 'Cawangan/Negeri sekarang';
 
   @override
   String branchRequestPendingShort(String branch) {
@@ -968,21 +968,21 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get newBranchLabel => 'Cawangan baharu';
+  String get newBranchLabel => 'Cawangan/Negeri baharu';
 
   @override
-  String get selectBranch => 'Pilih cawangan';
+  String get selectBranch => 'Pilih cawangan/negeri';
 
   @override
   String branchOption(String id) {
-    return 'Cawangan $id';
+    return 'Cawangan/Negeri $id';
   }
 
   @override
-  String get noOtherBranches => 'Tiada cawangan lain tersedia untuk organisasi anda.';
+  String get noOtherBranches => 'Tiada cawangan/negeri lain tersedia untuk organisasi anda.';
 
   @override
-  String get branchRequestNote => 'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan hanya bertukar selepas diluluskan.';
+  String get branchRequestNote => 'Permohonan akan dihantar kepada admin untuk kelulusan. Cawangan/Negeri hanya bertukar selepas diluluskan.';
 
   @override
   String get sendRequest => 'Hantar Permohonan';
@@ -1006,10 +1006,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get saveAndFinish => 'Simpan & Selesai';
 
   @override
-  String get branchRequired => 'Cawangan *';
+  String get branchRequired => 'Cawangan/Negeri *';
 
   @override
-  String get branchRequiredError => 'Sila pilih cawangan.';
+  String get branchRequiredError => 'Sila pilih cawangan/negeri.';
 
   @override
   String get profileCompleted => 'Profil berjaya dilengkapkan.';
@@ -2328,7 +2328,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminWebFacilities => 'Fasiliti';
 
   @override
-  String get adminWebBranches => 'Cawangan';
+  String get adminWebBranches => 'Cawangan/Negeri';
 
   @override
   String get adminWebPositions => 'Jawatan';
@@ -2340,7 +2340,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminWebDonors => 'Penderma';
 
   @override
-  String get adminWebChangeBranch => 'Tukar Cawangan';
+  String get adminWebChangeBranch => 'Tukar Cawangan/Negeri';
 
   @override
   String get adminWebOnlyTitle => 'Fungsi Versi Web';
@@ -2443,7 +2443,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminFieldIcNo => 'No. IC';
 
   @override
-  String get adminFieldBranch => 'Cawangan';
+  String get adminFieldBranch => 'Cawangan/Negeri';
 
   @override
   String get adminFieldOrganization => 'Organisasi';
@@ -3131,11 +3131,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get roleBranchAdmin => 'Admin Cawangan';
+  String get roleBranchAdmin => 'Admin Cawangan/Negeri';
 
   @override
   String roleBranchAdminWithBranch(String branch) {
-    return 'Admin Cawangan ($branch)';
+    return 'Admin Cawangan/Negeri ($branch)';
   }
 
   @override
@@ -3240,10 +3240,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminAudienceAllUsrah => 'Semua Kumpulan Usrah';
 
   @override
-  String get adminAudienceMyBranchMembers => 'Semua Ahli Cawangan Saya';
+  String get adminAudienceMyBranchMembers => 'Semua Ahli Cawangan/Negeri Saya';
 
   @override
-  String get adminAudienceMyBranchUsrah => 'Kumpulan Usrah Cawangan Saya';
+  String get adminAudienceMyBranchUsrah => 'Kumpulan Usrah Cawangan/Negeri Saya';
 
   @override
   String adminAudienceOrgMembers(String organization) {
@@ -3279,7 +3279,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String adminBranchScope(String branch) {
-    return 'Skop Cawangan: $branch';
+    return 'Skop Cawangan/Negeri: $branch';
   }
 
   @override
@@ -3288,7 +3288,7 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String get adminDefaultBranch => 'Cawangan Anda';
+  String get adminDefaultBranch => 'Cawangan/Negeri Anda';
 
   @override
   String get adminDefaultOrg => 'Organisasi';
@@ -3360,7 +3360,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get adminNoScheduledPrograms => 'Tiada Program Berjadual';
 
   @override
-  String get adminNoScheduledProgramsBody => 'Tiada acara berjadual untuk cawangan atau organisasi anda buat masa ini.';
+  String get adminNoScheduledProgramsBody => 'Tiada acara berjadual untuk cawangan/negeri atau organisasi anda buat masa ini.';
 
   @override
   String get adminParticipantList => 'Senarai Peserta';

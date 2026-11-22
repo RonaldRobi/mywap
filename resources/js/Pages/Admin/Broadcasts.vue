@@ -65,6 +65,10 @@ const selectedOrgDisplay = computed(() => {
     return `${name}${count}`;
 });
 
+const showPushPreview = computed(() => broadcastForm.notification_channels.includes('in_app'));
+const pushPreviewTitle = computed(() => broadcastForm.title.trim() || 'Tajuk notifikasi anda');
+const pushPreviewContent = computed(() => broadcastForm.content.trim());
+
 function onTargetCriteriaChange() {
     if (broadcastForm.target_criteria === 'supporters') {
         // Pendukung hanya boleh menerima emel.
@@ -567,14 +571,48 @@ onBeforeUnmount(() => {
                     <form class="grid grid-cols-1 gap-4 md:grid-cols-2" @submit.prevent="submitBroadcast">
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Tajuk Notifikasi</label>
-                            <input v-model="broadcastForm.title" type="text" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold" required>
+                            <input v-model="broadcastForm.title" type="text" maxlength="60" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all font-semibold" required>
+                            <div class="mt-1 flex items-start justify-between gap-3">
+                                <p class="text-[11px] text-gray-500">Tajuk ringkas supaya tidak terpotong pada skrin kunci. Maksimum 60 aksara.</p>
+                                <span class="shrink-0 text-[11px] tabular-nums text-gray-500">{{ broadcastForm.title.length }}/60</span>
+                            </div>
                             <p v-if="broadcastForm.errors.title" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.title }}</p>
                         </div>
 
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-500">Kandungan / Mesej</label>
                             <textarea v-model="broadcastForm.content" rows="4" class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-900 focus:ring-gray-900 transition-all" required></textarea>
+                            <div class="mt-1 flex items-start justify-between gap-3">
+                                <p class="text-[11px] text-gray-500">Baris baharu dikekalkan. Mesej panjang dipaparkan sebahagian pada skrin kunci.</p>
+                                <span class="shrink-0 text-[11px] tabular-nums text-gray-500">{{ broadcastForm.content.length }} aksara</span>
+                            </div>
                             <p v-if="broadcastForm.errors.content" class="mt-1 text-xs text-red-600">{{ broadcastForm.errors.content }}</p>
+                        </div>
+
+                        <div v-if="showPushPreview" class="md:col-span-2">
+                            <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">Pratonton Push</p>
+                                        <p class="mt-0.5 text-[11px] text-gray-500">Anggaran paparan pada skrin kunci. Saiz sebenar bergantung pada telefon.</p>
+                                    </div>
+                                    <span class="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">In-App</span>
+                                </div>
+                                <div class="mt-3 rounded-3xl bg-slate-900/5 p-3 sm:p-4">
+                                    <div class="mx-auto max-w-md rounded-2xl border border-white/80 bg-white px-4 py-3 shadow-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] bg-[#2F6B32]" aria-hidden="true">
+                                                <svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm7-6v-5a7 7 0 1 0-14 0v5l-2 2h18l-2-2z"/></svg>
+                                            </span>
+                                            <span class="text-[11px] font-bold uppercase tracking-wide text-gray-500">myWAP</span>
+                                            <span class="ml-auto text-[11px] text-gray-500">Sekarang</span>
+                                        </div>
+                                        <p class="mt-2 break-words text-sm font-bold leading-snug text-gray-900">{{ pushPreviewTitle }}</p>
+                                        <p v-if="pushPreviewContent" class="mt-1 line-clamp-3 whitespace-pre-line break-words text-[13px] leading-snug text-gray-600">{{ pushPreviewContent }}</p>
+                                        <p v-else class="mt-1 text-[13px] leading-snug text-gray-500">Mesej anda akan muncul di sini.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Notification Destination -->

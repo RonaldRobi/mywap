@@ -109,7 +109,7 @@ function roleClass(role) {
                     <h1 class="text-xl font-black text-gray-900">Pengurusan Admin</h1>
                     <p class="mt-1 text-sm text-gray-500">
                         <template v-if="isSuperadmin">
-                            Superadmin boleh mengurus semua akaun pentadbir. Cipta Admin organisasi di bawah, dan urus Admin Cawangan di halaman Cawangan.
+                            Superadmin boleh mengurus semua akaun pentadbir. Cipta Admin organisasi di bawah, dan urus Admin Cawangan/Negeri di halaman Cawangan/Negeri.
                         </template>
                         <template v-else>
                             Admin organisasi boleh mengurus Admin Cawangan/Negeri organisasi ini. Admin organisasi lain hanya boleh diurus oleh Superadmin.
@@ -144,7 +144,7 @@ function roleClass(role) {
                             {{ selectedOrganization?.name ?? 'Semua organisasi' }} · {{ admins.length }} akaun
                         </span>
                         <Link :href="route('branches.index')" class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                            Urus Cawangan
+                            Urus Cawangan/Negeri
                         </Link>
                     </div>
                 </div>

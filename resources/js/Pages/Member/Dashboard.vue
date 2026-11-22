@@ -443,7 +443,7 @@ function scrollBooks(direction) {
                         <!-- Glassmorphism stats row -->
                         <div class="grid grid-cols-2 gap-2 mt-4">
                             <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">
-                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">{{ t('Cawangan Ahli') }}</p>
+                                <p class="text-[9px] text-white/45 font-semibold uppercase tracking-wider">{{ t('Cawangan/Negeri Ahli') }}</p>
                                 <p class="mt-1 text-[13px] font-bold line-clamp-1">{{ member.branch_name || '—' }}</p>
                             </div>
                             <div class="backdrop-blur-xl bg-white/[0.08] rounded-2xl border border-white/[0.12] p-2.5 text-center">

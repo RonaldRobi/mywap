@@ -15,7 +15,7 @@ const page = usePage();
 const isLoggedIn = computed(() => !!page.props.auth.user);
 
 const isAdmin = computed(() => {
-    return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin'].includes(role));
+    return page.props.auth.user?.roles?.some(role => ['Admin', 'Superadmin', 'org-admin', 'Admin Cawangan'].includes(role));
 });
 
 const statusForm = useForm({
@@ -111,14 +111,33 @@ const grandTotal = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Shipping Info -->
-                    <div v-if="order.shipping_name || order.shipping_address" class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
-                        <p class="text-sm font-semibold text-gray-900 mb-3">Alamat Penghantaran</p>
-                        <div class="text-sm text-gray-600 space-y-1">
-                            <p v-if="order.shipping_name" class="font-semibold text-gray-900">{{ order.shipping_name }}</p>
-                            <p v-if="order.shipping_address">{{ order.shipping_address }}</p>
-                            <p v-if="order.shipping_postcode">{{ order.shipping_postcode }}</p>
-                            <p v-if="order.shipping_phone">{{ order.shipping_phone }}</p>
+                    <!-- Buyer and shipping info -->
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                            <p class="mb-3 text-sm font-semibold text-gray-900">Maklumat Pembeli</p>
+                            <dl class="space-y-2 text-sm">
+                                <div>
+                                    <dt class="text-xs font-semibold text-gray-500">Nama</dt>
+                                    <dd class="font-semibold text-gray-900">{{ order.shipping_name || order.user?.name || 'Tetamu' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs font-semibold text-gray-500">Emel</dt>
+                                    <dd class="break-words text-gray-700">{{ order.customer_email || order.user?.email || 'Tidak tersedia' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs font-semibold text-gray-500">Telefon</dt>
+                                    <dd class="text-gray-700">{{ order.shipping_phone || order.user?.phone || 'Tidak tersedia' }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <div class="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+                            <p class="mb-3 text-sm font-semibold text-gray-900">Alamat Penghantaran</p>
+                            <div v-if="order.shipping_address || order.shipping_postcode" class="space-y-1 text-sm text-gray-600">
+                                <p class="whitespace-pre-line">{{ order.shipping_address || 'Alamat tidak diisi' }}</p>
+                                <p v-if="order.shipping_postcode">{{ order.shipping_postcode }}</p>
+                            </div>
+                            <p v-else class="text-sm text-gray-500">Alamat penghantaran tidak diisi.</p>
                         </div>
                     </div>
 

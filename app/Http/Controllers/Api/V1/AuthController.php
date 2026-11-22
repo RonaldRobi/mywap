@@ -501,6 +501,7 @@ class AuthController extends Controller
                 ? 'Kod OTP telah dihantar melalui WhatsApp.'
                 : 'Kod OTP telah dihantar ke emel anda.',
             'channel' => $channel,
+            'cooldown_seconds' => $otp->cooldownAfterSend($user, 'login'),
         ]);
     }
 
@@ -551,6 +552,7 @@ class AuthController extends Controller
                 ? 'Kod OTP telah dihantar melalui WhatsApp.'
                 : 'Kod OTP telah dihantar ke emel anda.',
             'channel' => $channel,
+            'cooldown_seconds' => $otp->cooldownAfterSend($user, 'login'),
         ]);
     }
 

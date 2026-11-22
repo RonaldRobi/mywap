@@ -175,7 +175,7 @@ class ExportController extends Controller
 
         if ($admin->isBranchAdmin()) {
             $branchIds = $admin->managedBranchIds();
-            abort_if($branchIds === [], 403, 'Akaun admin cawangan ini tiada cawangan.');
+            abort_if($branchIds === [], 403, 'Akaun admin cawangan/negeri ini tiada cawangan/negeri.');
 
             return $query->whereIn('branch_id', $branchIds);
         }
@@ -311,14 +311,14 @@ class ExportController extends Controller
 
     private function simpleColumns(): array
     {
-        return ['No Ahli', 'Nama', 'Email', 'Phone', 'IC', 'DOB', 'Organisasi', 'Cawangan', 'Status Yuran'];
+        return ['No Ahli', 'Nama', 'Email', 'Phone', 'IC', 'DOB', 'Organisasi', 'Cawangan/Negeri', 'Status Yuran'];
     }
 
     private function fullColumns(): array
     {
         return [
             'No Ahli', 'Nama', 'Email', 'Phone', 'IC', 'DOB', 'Jantina', 'Status Perkahwinan',
-            'Organisasi', 'Cawangan', 'Alamat 1', 'Alamat 2', 'Poskod', 'Bandar', 'Negeri',
+            'Organisasi', 'Cawangan/Negeri', 'Alamat 1', 'Alamat 2', 'Poskod', 'Bandar', 'Negeri',
             'Telefon Rumah', 'Telefon Pejabat', 'No Faks',
             'Tahap Pendidikan', 'Profesion', 'Industri', 'Kepakaran', 'Jawatan',
             'Nama Kontak Kecemasan', 'Telefon Kontak Kecemasan',

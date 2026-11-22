@@ -227,13 +227,13 @@ const submit = () => {
                         </div>
 
                         <div v-if="filteredBranches.length > 0 && inferredOrganization">
-                            <InputLabel for="branch_id" value="Cawangan" class="!text-[#123D2A]" />
+                            <InputLabel for="branch_id" value="Cawangan/Negeri" class="!text-[#123D2A]" />
                             <select
                                 id="branch_id"
                                 v-model="form.branch_id"
                                 class="mt-1 block w-full rounded-xl border border-[#C8D8CB] bg-white px-4 py-3 text-[#071525] focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
                             >
-                                <option value="">Pilih Cawangan</option>
+                                <option value="">Pilih Cawangan/Negeri</option>
                                 <option v-for="branch in filteredBranches" :key="branch.id" :value="branch.id">
                                     {{ branch.name }}{{ branch.state ? ` - ${branch.state}` : '' }}
                                 </option>
@@ -242,7 +242,7 @@ const submit = () => {
                         </div>
 
                         <div v-if="inferredOrganization && filteredBranches.length === 0" class="rounded-xl border border-[#D5E3D8] bg-[#F4F6F1] p-3">
-                            <p class="text-xs text-[#4A5A50]">Cawangan: <span class="font-semibold text-[#123D2A]">Tidak Berkenaan</span></p>
+                            <p class="text-xs text-[#4A5A50]">Cawangan/Negeri: <span class="font-semibold text-[#123D2A]">Tidak Berkenaan</span></p>
                         </div>
 
                         <div v-if="inferredOrganization">

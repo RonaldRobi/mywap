@@ -79,7 +79,7 @@ class MemberRegistration
             'dob.date' => 'Tarikh lahir tidak sah. Sila pilih tarikh yang betul.',
             'dob.before_or_equal' => 'Tarikh lahir tidak boleh pada masa hadapan.',
 
-            'branch_id.exists' => 'Cawangan yang dipilih tidak sah. Sila pilih semula.',
+            'branch_id.exists' => 'Cawangan/Negeri yang dipilih tidak sah. Sila pilih semula.',
         ];
     }
 
@@ -94,7 +94,7 @@ class MemberRegistration
             'ic_number' => 'No. Kad Pengenalan',
             'phone' => 'No. telefon',
             'dob' => 'tarikh lahir',
-            'branch_id' => 'cawangan',
+            'branch_id' => 'cawangan/negeri',
         ];
     }
 }

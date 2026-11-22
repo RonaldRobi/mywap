@@ -367,10 +367,10 @@ const malaysianStates = [
 </script>
 
 <template>
-    <Head title="Pengurusan Cawangan" />
+    <Head title="Pengurusan Cawangan/Negeri" />
 
     <AppLayout :back-route="route('admin.dashboard')" back-label="Kembali ke Dashboard">
-        <template #header>Pengurusan Cawangan</template>
+        <template #header>Pengurusan Cawangan/Negeri</template>
 
         <div class="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
 
@@ -384,7 +384,7 @@ const malaysianStates = [
 
             <!-- Page header -->
             <div class="mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Pengurusan Cawangan</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Pengurusan Cawangan/Negeri</h2>
                 <p class="mt-1 text-sm text-gray-500">Tambah, kemaskini atau padam cawangan di bawah organisasi anda.</p>
             </div>
 
@@ -478,7 +478,7 @@ const malaysianStates = [
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                 </svg>
-                                Tambah Cawangan
+                                Tambah Cawangan/Negeri
                             </button>
                         </div>
                     </div>
@@ -572,7 +572,7 @@ const malaysianStates = [
 
                         <!-- Empty state inside org -->
                         <div v-if="!org.branches.length" class="col-span-full rounded-3xl border border-dashed border-gray-200 py-10 text-center text-sm text-gray-400">
-                            Belum ada cawangan. Klik "Tambah Cawangan" untuk mula.
+                            Belum ada cawangan. Klik "Tambah Cawangan/Negeri" untuk mula.
                         </div>
                     </div>
                 </div>
@@ -591,14 +591,14 @@ const malaysianStates = [
             <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="showAddModal = false">
                 <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl" @click.stop>
                     <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                        <h3 class="text-base font-bold text-gray-900">Tambah Cawangan Baharu</h3>
+                        <h3 class="text-base font-bold text-gray-900">Tambah Cawangan/Negeri Baharu</h3>
                         <button @click="showAddModal = false" class="p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition-colors">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                     </div>
                     <form @submit.prevent="submitAdd" class="px-6 py-5 space-y-4">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Cawangan <span class="text-red-500">*</span></label>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Cawangan/Negeri <span class="text-red-500">*</span></label>
                             <input v-model="addForm.name" type="text" required class="w-full rounded-2xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors" placeholder="e.g. Selangor" />
                             <p v-if="addForm.errors.name" class="mt-1 text-xs text-red-500">{{ addForm.errors.name }}</p>
                         </div>
@@ -623,7 +623,7 @@ const malaysianStates = [
                         </div>
                         <div class="flex items-center gap-3 pt-2">
                             <button type="submit" :disabled="addForm.processing" class="flex-1 rounded-2xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-60 transition-colors">
-                                {{ addForm.processing ? 'Menyimpan...' : 'Tambah Cawangan' }}
+                                {{ addForm.processing ? 'Menyimpan...' : 'Tambah Cawangan/Negeri' }}
                             </button>
                             <button type="button" @click="showAddModal = false" class="flex-1 rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
                                 Batal
@@ -655,7 +655,7 @@ const malaysianStates = [
                     <div class="flex-1 px-6 py-5 space-y-6">
                         <!-- Logo section -->
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Logo Cawangan</p>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Logo Cawangan/Negeri</p>
                             <div class="flex items-center gap-4 mb-3">
                                 <div class="relative h-16 w-16 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
                                     <img v-if="editingBranch.logo_path" :src="editingBranch.logo_path" class="h-full w-full object-contain p-1" />
@@ -683,9 +683,9 @@ const malaysianStates = [
 
                         <!-- Edit details form -->
                         <form @submit.prevent="submitEdit" class="space-y-4">
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Maklumat Cawangan</p>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Maklumat Cawangan/Negeri</p>
                             <div>
-                                <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Cawangan <span class="text-red-500">*</span></label>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Cawangan/Negeri <span class="text-red-500">*</span></label>
                                 <input v-model="editForm.name" type="text" required class="w-full rounded-2xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-400 focus:ring-0 outline-none transition-colors" />
                                 <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-500">{{ editForm.errors.name }}</p>
                             </div>
@@ -710,7 +710,7 @@ const malaysianStates = [
                             </div>
                             <label class="flex items-center gap-3 cursor-pointer rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
                                 <input type="checkbox" v-model="editForm.is_active" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                <span class="text-sm font-semibold text-gray-700">Cawangan Aktif</span>
+                                <span class="text-sm font-semibold text-gray-700">Cawangan/Negeri Aktif</span>
                             </label>
 
                             <!-- Admin section in drawer -->
@@ -783,7 +783,7 @@ const malaysianStates = [
                     <div class="px-6 py-5 space-y-6">
                         <!-- Akaun admin cawangan -->
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Akaun Admin Cawangan</p>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Akaun Admin Cawangan/Negeri</p>
 
                             <div v-if="managingAdminsBranch.manager" class="space-y-3">
                                 <div class="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
@@ -822,7 +822,7 @@ const malaysianStates = [
                                 </form>
 
                                 <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-wider text-indigo-700">Cawangan diurus</p>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-indigo-700">Cawangan/Negeri diurus</p>
                                     <p class="mt-1 text-xs text-indigo-700">Tandakan cawangan lain yang boleh diurus oleh akaun ini. Satu akaun boleh mengurus beberapa cawangan dalam organisasi yang sama.</p>
                                     <div class="mt-3 space-y-1.5">
                                         <label
@@ -842,7 +842,7 @@ const malaysianStates = [
                                                 <span class="block truncate text-sm font-medium text-gray-800">{{ branch.name }}</span>
                                                 <span v-if="branch.state" class="block text-xs text-gray-400">{{ branch.state }}</span>
                                             </span>
-                                            <span v-if="branch.id === managingAdminsBranch.id" class="ml-auto shrink-0 text-[10px] font-semibold text-indigo-600">Cawangan ini</span>
+                                            <span v-if="branch.id === managingAdminsBranch.id" class="ml-auto shrink-0 text-[10px] font-semibold text-indigo-600">Cawangan/Negeri ini</span>
                                             <span v-else-if="isBranchOccupied(branch)" class="ml-auto shrink-0 text-[10px] font-semibold text-amber-600">Ada admin lain</span>
                                         </label>
                                     </div>
@@ -853,14 +853,14 @@ const malaysianStates = [
                                         :disabled="branchScopeForm.processing"
                                         class="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 transition-colors"
                                     >
-                                        {{ branchScopeForm.processing ? 'Menyimpan...' : 'Simpan Skop Cawangan' }}
+                                        {{ branchScopeForm.processing ? 'Menyimpan...' : 'Simpan Skop Cawangan/Negeri' }}
                                     </button>
                                 </div>
                             </div>
 
                             <div v-else class="space-y-4">
                                 <div v-if="unassignedAdmins.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                                    <p class="text-xs font-bold uppercase tracking-wide text-amber-700">Akaun Admin Cawangan Belum Ditugaskan</p>
+                                    <p class="text-xs font-bold uppercase tracking-wide text-amber-700">Akaun Admin Cawangan/Negeri Belum Ditugaskan</p>
                                     <p class="mt-1 text-xs text-amber-700">Pilih akaun sedia ada untuk ditugaskan ke cawangan ini, atau cipta akaun baharu di bawah.</p>
                                     <div class="mt-2 space-y-2">
                                         <div v-for="account in unassignedAdmins" :key="account.id" class="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
@@ -1010,9 +1010,9 @@ const malaysianStates = [
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                             </svg>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-900">Padam Cawangan</h3>
+                        <h3 class="text-lg font-bold text-gray-900">Padam Cawangan/Negeri</h3>
                         <p class="mt-2 text-sm text-gray-500">
-                            Anda pasti mahu memadam cawangan <strong>"{{ confirmDeleteBranch.name }}"</strong>? Cawangan yang mempunyai ahli tidak boleh dipadam. Tindakan ini tidak boleh dibatalkan.
+                            Anda pasti mahu memadam cawangan <strong>"{{ confirmDeleteBranch.name }}"</strong>? Cawangan/Negeri yang mempunyai ahli tidak boleh dipadam. Tindakan ini tidak boleh dibatalkan.
                         </p>
                     </div>
                     <div class="flex items-center gap-3 px-6 pb-5">

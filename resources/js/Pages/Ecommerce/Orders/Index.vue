@@ -42,6 +42,7 @@ const page = usePage();
                         <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <tr>
                                 <th class="px-4 py-3 text-left">ID</th>
+                                <th class="px-4 py-3 text-left">Pembeli</th>
                                 <th class="px-4 py-3 text-left">Tarikh</th>
                                 <th class="px-4 py-3 text-right">Jumlah (RM)</th>
                                 <th class="px-4 py-3 text-left">Status</th>
@@ -51,6 +52,10 @@ const page = usePage();
                         <tbody class="divide-y divide-gray-100">
                             <tr v-for="o in orders.data" :key="o.id" class="hover:bg-gray-50/60">
                                 <td class="px-4 py-3 font-semibold text-gray-900">#{{ o.id }}</td>
+                                <td class="px-4 py-3">
+                                    <p class="font-semibold text-gray-900">{{ o.shipping_name || o.user?.name || 'Tetamu' }}</p>
+                                    <p class="mt-0.5 max-w-[14rem] truncate text-xs text-gray-500">{{ o.customer_email || o.user?.email || 'Emel tidak tersedia' }}</p>
+                                </td>
                                 <td class="px-4 py-3 text-gray-600">{{ o.created_at }}</td>
                                 <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ Number(o.total ?? 0).toFixed(2) }}</td>
                                 <td class="px-4 py-3">
@@ -65,7 +70,7 @@ const page = usePage();
                                 </td>
                             </tr>
                             <tr v-if="!orders.data?.length">
-                                <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">
+                                <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
                                     Tiada pesanan.
                                 </td>
                             </tr>
@@ -92,4 +97,3 @@ const page = usePage();
         </div>
     </AppLayout>
 </template>
-

@@ -70,7 +70,7 @@
                     <th>Program</th>
                     <th>Kategori</th>
                     <th>Organisasi</th>
-                    <th>Cawangan</th>
+                    <th>Cawangan/Negeri</th>
                     <th>Tarikh</th>
                     <th>Lokasi</th>
                     <th>Peserta unik</th>
@@ -86,7 +86,7 @@
                         <td>{{ $event['title'] }}</td>
                         <td>{{ $event['category_label'] }}</td>
                         <td>{{ $event['organization_name'] }}</td>
-                        <td>{{ $event['branch_name'] ?? 'Semua cawangan' }}</td>
+                        <td>{{ $event['branch_name'] ?? 'Semua cawangan/negeri' }}</td>
                         <td>{{ $event['date_label'] }}</td>
                         <td>{{ $event['location_or_link'] ?? '-' }}</td>
                         <td class="number">{{ $event['unique_participants_count'] }}</td>

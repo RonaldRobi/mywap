@@ -27,12 +27,12 @@ class BranchChangeRequestSubmitted extends Notification implements ShouldQueue
         $logoPath = $settings->system_logo_path ?? '/images/logomywaphorizontal.png';
 
         return (new MailMessage)
-            ->subject('Permohonan tukar cawangan baharu')
+            ->subject('Permohonan tukar cawangan/negeri baharu')
             ->view('emails.branch-change-request', [
                 'memberName' => $request->user?->name ?? 'Ahli',
                 'memberNo' => $request->user?->member_no ?? '-',
-                'fromBranch' => $request->fromBranch?->name ?? 'Tiada cawangan',
-                'toBranch' => $request->toBranch?->name ?? 'Tiada cawangan',
+                'fromBranch' => $request->fromBranch?->name ?? 'Tiada cawangan/negeri',
+                'toBranch' => $request->toBranch?->name ?? 'Tiada cawangan/negeri',
                 'submittedAt' => $request->created_at?->timezone(config('app.timezone'))->format('d/m/Y H:i') ?? '-',
                 'logoUrl' => url($logoPath),
                 'appName' => config('app.name'),
@@ -44,10 +44,10 @@ class BranchChangeRequestSubmitted extends Notification implements ShouldQueue
         $request = $this->branchChangeRequest->loadMissing(['user', 'fromBranch', 'toBranch']);
 
         return [
-            'title' => 'Permohonan tukar cawangan',
+            'title' => 'Permohonan tukar cawangan/negeri',
             'content' => ($request->user?->name ?? 'Ahli').' memohon tukar dari '
-                .($request->fromBranch?->name ?? 'Tiada cawangan').' ke '
-                .($request->toBranch?->name ?? 'Tiada cawangan').'. Admin organisasi akan memproses permohonan ini.',
+                .($request->fromBranch?->name ?? 'Tiada cawangan/negeri').' ke '
+                .($request->toBranch?->name ?? 'Tiada cawangan/negeri').'. Admin organisasi akan memproses permohonan ini.',
             'type' => 'branch_change_request',
             'action_type' => 'branch_change_request',
             'action_id' => $request->id,

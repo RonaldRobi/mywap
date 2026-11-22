@@ -117,13 +117,13 @@ class BranchController extends Controller
 
         // Admins can only add branches under their own organisation
         if (! $isSuperadmin && (int) $data['organization_id'] !== (int) $user->current_organization_id) {
-            abort(403, 'Anda tidak dibenarkan menambah cawangan organisasi lain.');
+            abort(403, 'Anda tidak dibenarkan menambah cawangan/negeri organisasi lain.');
         }
 
         $branch = Branch::create($data);
         app(BranchAdminProvisioner::class)->provision($branch, Auth::id());
 
-        return back()->with('success', 'Cawangan berjaya ditambah!');
+        return back()->with('success', 'Cawangan/Negeri berjaya ditambah!');
     }
 
     /**
@@ -150,7 +150,7 @@ class BranchController extends Controller
 
         $branch->update($data);
 
-        return back()->with('success', 'Cawangan berjaya dikemaskini!');
+        return back()->with('success', 'Cawangan/Negeri berjaya dikemaskini!');
     }
 
     /**
@@ -181,7 +181,7 @@ class BranchController extends Controller
         $stored = $request->file('branch_logo')->store('logos/branches', 'public');
         $branch->update(['logo_path' => '/storage/'.ltrim($stored, '/')]);
 
-        return back()->with('success', 'Logo cawangan berjaya dikemaskini!');
+        return back()->with('success', 'Logo cawangan/negeri berjaya dikemaskini!');
     }
 
     /**
@@ -205,7 +205,7 @@ class BranchController extends Controller
 
         $branch->update(['logo_path' => null]);
 
-        return back()->with('success', 'Logo cawangan berjaya dipadam!');
+        return back()->with('success', 'Logo cawangan/negeri berjaya dipadam!');
     }
 
     /**
@@ -222,12 +222,12 @@ class BranchController extends Controller
         }
 
         if ($branch->members()->count() > 0) {
-            return back()->with('error', 'Cawangan ini masih mempunyai ahli. Pindahkan ahli terlebih dahulu sebelum memadam cawangan.');
+            return back()->with('error', 'Cawangan/Negeri ini masih mempunyai ahli. Pindahkan ahli terlebih dahulu sebelum memadam cawangan/negeri.');
         }
 
         $branch->delete();
 
-        return back()->with('success', 'Cawangan berjaya dipadam!');
+        return back()->with('success', 'Cawangan/Negeri berjaya dipadam!');
     }
 
     /**
@@ -281,17 +281,17 @@ class BranchController extends Controller
                 'target_type' => User::class,
                 'target_id' => $user->id,
                 'action' => 'branch_admin_account_created',
-                'description' => "Akaun admin cawangan {$branch->name} dicipta.",
+                'description' => "Akaun admin cawangan/negeri {$branch->name} dicipta.",
             ]);
 
             return $user;
         });
 
         if (! $created) {
-            return back()->with('error', 'Cawangan ini sudah mempunyai akaun admin. Gunakan pilihan tukar kata laluan.');
+            return back()->with('error', 'Cawangan/Negeri ini sudah mempunyai akaun admin. Gunakan pilihan tukar kata laluan.');
         }
 
-        return back()->with('success', 'Akaun admin cawangan berjaya dicipta.');
+        return back()->with('success', 'Akaun admin cawangan/negeri berjaya dicipta.');
     }
 
     /**
@@ -313,7 +313,7 @@ class BranchController extends Controller
                 ->exists();
 
             if ($managerExists) {
-                return ['error' => 'Cawangan ini sudah mempunyai akaun admin.'];
+                return ['error' => 'Cawangan/Negeri ini sudah mempunyai akaun admin.'];
             }
 
             $target = User::withoutGlobalScopes()->findOrFail($data['user_id']);
@@ -330,11 +330,11 @@ class BranchController extends Controller
                 ->where('branch_id', $branch->id)
                 ->where('role', BranchAdmin::ROLE_MANAGER)
                 ->exists()) {
-                return ['error' => 'Akaun tersebut sudah menjadi admin cawangan ini.'];
+                return ['error' => 'Akaun tersebut sudah menjadi admin cawangan/negeri ini.'];
             }
 
             if (! $target->hasRole('Admin Cawangan')) {
-                return ['error' => 'Akaun ini bukan akaun admin cawangan. Cipta akaun admin cawangan berasingan.'];
+                return ['error' => 'Akaun ini bukan akaun admin cawangan/negeri. Cipta akaun admin cawangan/negeri berasingan.'];
             }
 
             $target->forceFill([
@@ -358,10 +358,10 @@ class BranchController extends Controller
                 'target_type' => User::class,
                 'target_id' => $target->id,
                 'action' => 'branch_admin_account_assigned',
-                'description' => "Akaun admin sedia ada ditugaskan ke cawangan {$branch->name}.",
+                'description' => "Akaun admin sedia ada ditugaskan ke cawangan/negeri {$branch->name}.",
             ]);
 
-            return ['success' => 'Akaun admin berjaya ditugaskan ke cawangan ini.'];
+            return ['success' => 'Akaun admin berjaya ditugaskan ke cawangan/negeri ini.'];
         });
 
         if (isset($result['error'])) {
@@ -372,9 +372,9 @@ class BranchController extends Controller
     }
 
     /**
-     * Tetapkan cawangan tambahan yang diurus oleh admin cawangan ini.
+     * Tetapkan cawangan/negeri tambahan yang diurus oleh admin cawangan/negeri ini.
      *
-     * Satu akaun boleh mengurus beberapa cawangan dalam organisasi yang sama.
+     * Satu akaun boleh mengurus beberapa cawangan/negeri dalam organisasi yang sama.
      * Cawangan yang sudah mempunyai admin lain tidak akan diambil alih.
      */
     public function syncAdminBranches(Request $request, Branch $branch): RedirectResponse
@@ -393,7 +393,7 @@ class BranchController extends Controller
             ->first();
 
         if (! $manager?->user) {
-            return back()->with('error', 'Cawangan ini belum mempunyai akaun admin.');
+            return back()->with('error', 'Cawangan/Negeri ini belum mempunyai akaun admin.');
         }
 
         $requested = collect($data['branch_ids'] ?? [])
@@ -410,7 +410,7 @@ class BranchController extends Controller
             ->keyBy('id');
 
         if ($branches->count() !== $requested->count()) {
-            return back()->with('error', 'Ada cawangan yang tidak sah untuk organisasi ini.');
+            return back()->with('error', 'Ada cawangan/negeri yang tidak sah untuk organisasi ini.');
         }
 
         $skipped = [];
@@ -452,17 +452,17 @@ class BranchController extends Controller
             'target_type' => User::class,
             'target_id' => $manager->user_id,
             'action' => 'branch_admin_branches_synced',
-            'description' => 'Skop cawangan admin dikemas kini: '.implode(', ', $assigned).'.',
+            'description' => 'Skop cawangan/negeri admin dikemas kini: '.implode(', ', $assigned).'.',
         ]);
 
         if ($skipped !== []) {
             return back()->with(
                 'success',
-                'Skop cawangan dikemas kini. Cawangan berikut sudah mempunyai admin lain: '.implode(', ', $skipped).'.'
+                'Skop cawangan/negeri dikemas kini. Cawangan/Negeri berikut sudah mempunyai admin lain: '.implode(', ', $skipped).'.'
             );
         }
 
-        return back()->with('success', 'Skop cawangan admin berjaya dikemas kini.');
+        return back()->with('success', 'Skop cawangan/negeri admin berjaya dikemas kini.');
     }
 
     /**
@@ -483,7 +483,7 @@ class BranchController extends Controller
             ->first();
 
         if (! $manager?->user) {
-            return back()->with('error', 'Cawangan ini belum mempunyai akaun admin.');
+            return back()->with('error', 'Cawangan/Negeri ini belum mempunyai akaun admin.');
         }
 
         $manager->user->update(['password' => $data['password']]);
@@ -494,10 +494,10 @@ class BranchController extends Controller
             'target_type' => User::class,
             'target_id' => $manager->user_id,
             'action' => 'branch_admin_password_reset',
-            'description' => "Kata laluan admin cawangan {$branch->name} ditukar.",
+            'description' => "Kata laluan admin cawangan/negeri {$branch->name} ditukar.",
         ]);
 
-        return back()->with('success', 'Kata laluan admin cawangan berjaya dikemas kini.');
+        return back()->with('success', 'Kata laluan admin cawangan/negeri berjaya dikemas kini.');
     }
 
     /**
@@ -514,7 +514,7 @@ class BranchController extends Controller
             ->first();
 
         if (! $manager?->user) {
-            return back()->with('error', 'Cawangan ini belum mempunyai akaun admin.');
+            return back()->with('error', 'Cawangan/Negeri ini belum mempunyai akaun admin.');
         }
 
         $manager->user->removeRole('Admin Cawangan');
@@ -527,10 +527,10 @@ class BranchController extends Controller
             'target_type' => User::class,
             'target_id' => $manager->user_id,
             'action' => 'branch_admin_account_revoked',
-            'description' => "Akses admin cawangan {$branch->name} dibatalkan.",
+            'description' => "Akses admin cawangan/negeri {$branch->name} dibatalkan.",
         ]);
 
-        return back()->with('success', 'Akses admin cawangan telah dibatalkan.');
+        return back()->with('success', 'Akses admin cawangan/negeri telah dibatalkan.');
     }
 
     /**
@@ -554,11 +554,11 @@ class BranchController extends Controller
             }
 
             if ((int) $target->current_organization_id !== (int) $branch->organization_id) {
-                return ['error' => 'Ahli tersebut bukan dalam organisasi cawangan ini.'];
+                return ['error' => 'Ahli tersebut bukan dalam organisasi cawangan/negeri ini.'];
             }
 
             if ((int) $target->branch_id !== (int) $branch->id) {
-                return ['error' => 'Ahli tersebut bukan dalam cawangan ini.'];
+                return ['error' => 'Ahli tersebut bukan dalam cawangan/negeri ini.'];
             }
 
             if (! $target->email || $target->emailIsPlaceholder()) {
@@ -571,7 +571,7 @@ class BranchController extends Controller
                 ->first();
 
             if ($existing) {
-                return ['error' => 'Ahli ini sudah dilantik untuk cawangan ini.'];
+                return ['error' => 'Ahli ini sudah dilantik untuk cawangan/negeri ini.'];
             }
 
             $count = BranchAdmin::query()
@@ -580,7 +580,7 @@ class BranchController extends Controller
                 ->count();
 
             if ($count >= BranchAdmin::MAX_SETIAUSAHA) {
-                return ['error' => 'Cawangan ini sudah mempunyai '.BranchAdmin::MAX_SETIAUSAHA.' setiausaha.'];
+                return ['error' => 'Cawangan/Negeri ini sudah mempunyai '.BranchAdmin::MAX_SETIAUSAHA.' setiausaha.'];
             }
 
             $manager = BranchAdmin::query()
@@ -591,7 +591,7 @@ class BranchController extends Controller
                 ->first();
 
             if (! $manager?->user) {
-                return ['error' => 'Cawangan ini belum mempunyai akaun admin. Cipta akaun admin cawangan terlebih dahulu sebelum melantik setiausaha.'];
+                return ['error' => 'Cawangan/Negeri ini belum mempunyai akaun admin. Cipta akaun admin cawangan/negeri terlebih dahulu sebelum melantik setiausaha.'];
             }
 
             $temporaryPassword = Str::password(12, symbols: false);
@@ -619,11 +619,11 @@ class BranchController extends Controller
                 'target_type' => User::class,
                 'target_id' => $target->id,
                 'action' => 'branch_secretary_appointed',
-                'description' => "{$target->name} dilantik sebagai setiausaha cawangan {$branch->name}. Kata laluan sementara akaun admin cawangan dihantar melalui emel.",
+                'description' => "{$target->name} dilantik sebagai setiausaha cawangan/negeri {$branch->name}. Kata laluan sementara akaun admin cawangan/negeri dihantar melalui emel.",
             ]);
 
             return [
-                'success' => 'Setiausaha cawangan berjaya dilantik.',
+                'success' => 'Setiausaha cawangan/negeri berjaya dilantik.',
                 'secretary' => $target,
                 'login_email' => $manager->user->email,
                 'temporary_password' => $temporaryPassword,
@@ -647,7 +647,7 @@ class BranchController extends Controller
 
             return back()->with(
                 'success',
-                $result['success'].' Namun emel butiran log masuk gagal dihantar. Sila reset kata laluan akaun admin cawangan dan berikan kepada setiausaha.'
+                $result['success'].' Namun emel butiran log masuk gagal dihantar. Sila reset kata laluan akaun admin cawangan/negeri dan berikan kepada setiausaha.'
             );
         }
 
@@ -668,7 +668,7 @@ class BranchController extends Controller
             ->first();
 
         if (! $assignment) {
-            return back()->with('error', 'Ahli tersebut bukan setiausaha cawangan ini.');
+            return back()->with('error', 'Ahli tersebut bukan setiausaha cawangan/negeri ini.');
         }
 
         $assignment->delete();
@@ -679,10 +679,10 @@ class BranchController extends Controller
             'target_type' => User::class,
             'target_id' => $user->id,
             'action' => 'branch_secretary_removed',
-            'description' => "{$user->name} dibuang sebagai setiausaha cawangan {$branch->name}.",
+            'description' => "{$user->name} dibuang sebagai setiausaha cawangan/negeri {$branch->name}.",
         ]);
 
-        return back()->with('success', 'Setiausaha cawangan berjaya dibuang.');
+        return back()->with('success', 'Setiausaha cawangan/negeri berjaya dibuang.');
     }
 
     private function authorizeBranchManagement(Branch $branch): void

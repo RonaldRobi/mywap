@@ -158,7 +158,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($user);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:60'],
             'message' => ['required', 'string'],
             'audience' => ['required', 'in:all,members,usrah,org'],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
@@ -233,7 +233,7 @@ class AdminController extends Controller
         }
 
         if ($user->isBranchAdmin() && $user->managedBranchIds() === []) {
-            throw new HttpResponseException(ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan.', [], 403));
+            throw new HttpResponseException(ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan/negeri.', [], 403));
         }
     }
 }

@@ -153,7 +153,7 @@ const statusClass = {
                     </label>
 
                     <label v-if="branches.length > 1" class="block">
-                        <span class="mb-1 block text-xs font-semibold text-gray-600">Cawangan</span>
+                        <span class="mb-1 block text-xs font-semibold text-gray-600">Cawangan/Negeri</span>
                         <select v-model="form.branch_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 focus:border-indigo-400 focus:ring-0">
                             <option value="">Semua cawangan</option>
                             <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>

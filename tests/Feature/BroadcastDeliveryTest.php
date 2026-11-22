@@ -177,6 +177,70 @@ class BroadcastDeliveryTest extends TestCase
         $this->assertSame('Tajuk Siaran', $mail->subject);
     }
 
+    public function test_template_broadcast_email_does_not_repeat_greeting_when_content_already_greets(): void
+    {
+        $message = $this->createBroadcast(['email']);
+        $message->update([
+            'email_use_template' => true,
+            'content' => "Assalamualaikum semua,\n\nProgram bermula esok.",
+        ]);
+
+        $mail = (new GeneralBroadcastNotification($message->fresh()))->toMail($this->memberA);
+        $html = view($mail->view, $mail->viewData)->render();
+
+        $this->assertSame('emails.broadcast-push', $mail->view);
+        $this->assertSame(1, substr_count(strtolower($html), 'assalamualaikum'));
+        $this->assertStringContainsString('Program bermula esok.', $html);
+    }
+
+    public function test_template_broadcast_email_greets_member_when_content_has_no_greeting(): void
+    {
+        $message = $this->createBroadcast(['email']);
+        $message->update([
+            'email_use_template' => true,
+            'content' => 'Program bermula esok.',
+        ]);
+
+        $mail = (new GeneralBroadcastNotification($message->fresh()))->toMail($this->memberA);
+        $text = preg_replace('/\s+/', ' ', strip_tags((string) view($mail->view, $mail->viewData)->render()));
+
+        $this->assertStringContainsString('Assalamualaikum Ahmad Firdaus,', $text);
+    }
+
+    public function test_supporter_template_email_uses_supporter_name(): void
+    {
+        $message = BroadcastMessage::create([
+            'organization_id' => $this->org->id,
+            'target_organization_id' => $this->org->id,
+            'title' => 'Siaran Pendukung',
+            'content' => 'Program bermula esok.',
+            'target_criteria' => 'supporters',
+            'notification_channels' => ['email'],
+            'email_use_template' => true,
+        ]);
+
+        $mail = (new SupporterBroadcastNotification($message, 'Pendukung PKPIM'))->toMail((object) []);
+        $text = preg_replace('/\s+/', ' ', strip_tags((string) view($mail->view, $mail->viewData)->render()));
+
+        $this->assertStringContainsString('Assalamualaikum Pendukung PKPIM,', $text);
+    }
+
+    public function test_broadcast_title_is_limited_to_60_characters(): void
+    {
+        $admin = $this->makeAdmin();
+        Queue::fake();
+
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.broadcasts.store'), [
+                'title' => str_repeat('A', 61),
+                'content' => 'Mesej ujian.',
+                'target_criteria' => 'organization',
+                'notification_channels' => ['in_app'],
+                'email_use_template' => false,
+            ])
+            ->assertSessionHasErrors('title');
+    }
+
     public function test_web_admin_store_specific_members_creates_and_sends(): void
     {
         $admin = User::factory()->create([

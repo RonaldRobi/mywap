@@ -138,7 +138,7 @@ function submit() {
                             :required="q.required"
                             class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300 disabled:bg-gray-50 disabled:text-gray-400"
                         >
-                            <option value="">Pilih Cawangan...</option>
+                            <option value="">Pilih Cawangan/Negeri...</option>
                             <option v-for="b in stateBranches(q.id)" :key="b.id" :value="`${selectedState[q.id]} - ${b.name}`">{{ b.name }}</option>
                         </select>
                     </div>

@@ -71,7 +71,7 @@ class ProgramReportController extends Controller
             fputcsv($handle, ['Kadar kehadiran (%)', $data['attendance_rate']]);
             fputcsv($handle, []);
             fputcsv($handle, [
-                'Program', 'Kategori', 'Organisasi', 'Cawangan', 'Tarikh', 'Lokasi',
+                'Program', 'Kategori', 'Organisasi', 'Cawangan/Negeri', 'Tarikh', 'Lokasi',
                 'Peserta unik', 'Hadir', 'Kadar (%)', 'Status',
             ]);
 
@@ -80,7 +80,7 @@ class ProgramReportController extends Controller
                     $event['title'],
                     $event['category_label'],
                     $event['organization_name'],
-                    $event['branch_name'] ?? 'Semua cawangan',
+                    $event['branch_name'] ?? 'Semua cawangan/negeri',
                     $event['date_label'],
                     $event['location_or_link'] ?? '',
                     $event['unique_participants_count'],
@@ -127,7 +127,7 @@ class ProgramReportController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         $isBranchAdmin = $user->isBranchAdmin();
 
-        abort_if($isBranchAdmin && $user->managedBranchIds() === [], 403, 'Akaun admin cawangan belum ditugaskan.');
+        abort_if($isBranchAdmin && $user->managedBranchIds() === [], 403, 'Akaun admin cawangan/negeri belum ditugaskan.');
 
         $years = $this->availableYears($user);
         $year = $this->resolveYear($request);
@@ -423,7 +423,7 @@ class ProgramReportController extends Controller
         ?int $branchId,
     ): string {
         if ($user->isBranchAdmin()) {
-            return $branches->firstWhere('id', $branchId)?->name ?? 'Cawangan';
+            return $branches->firstWhere('id', $branchId)?->name ?? 'Cawangan/Negeri';
         }
 
         $parts = [];

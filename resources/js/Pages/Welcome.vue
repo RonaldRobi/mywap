@@ -1,6 +1,8 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+
+const organizationOrder = ['wadah', 'abim', 'pkpim'];
 
 const props = defineProps({
     canLogin: Boolean,
@@ -11,6 +13,12 @@ const props = defineProps({
     articles: Array,
     organizations: Array,
 });
+
+const orderedOrganizations = computed(() => [...(props.organizations ?? [])].sort((a, b) => {
+    const aIndex = organizationOrder.indexOf(a.slug);
+    const bIndex = organizationOrder.indexOf(b.slug);
+    return (aIndex === -1 ? organizationOrder.length : aIndex) - (bIndex === -1 ? organizationOrder.length : bIndex);
+}));
 
 const isMobileMenuOpen = ref(false);
 const toggleMobileMenu = () => isMobileMenuOpen.value = !isMobileMenuOpen.value;
@@ -245,7 +253,7 @@ onUnmounted(() => {
                         </p>
                     </div>
                     <div class="mt-10 lg:mt-0 grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-1">
-                        <div v-for="(org, index) in organizations" :key="org.id" class="reveal-on-scroll rounded-2xl bg-slate-50 p-6 border border-slate-100 shadow-sm flex items-center gap-5 transition hover:shadow-md" :style="`transition-delay: ${index * 150}ms`">
+                        <div v-for="(org, index) in orderedOrganizations" :key="org.id" class="reveal-on-scroll rounded-2xl bg-slate-50 p-6 border border-slate-100 shadow-sm flex items-center gap-5 transition hover:shadow-md" :style="`transition-delay: ${index * 150}ms`">
                             <div v-if="org.logo_path" class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white border border-slate-200 overflow-hidden p-2">
                                 <img :src="org.logo_path" class="w-full h-full object-contain" :alt="org.name">
                             </div>

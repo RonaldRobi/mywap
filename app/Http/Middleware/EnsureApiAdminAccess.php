@@ -26,7 +26,7 @@ class EnsureApiAdminAccess
         }
 
         if ($user->isBranchAdmin() && $user->managedBranchIds() === []) {
-            return ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan.', [], 403);
+            return ApiResponse::error('Akaun anda belum diperuntukkan ke mana-mana cawangan/negeri.', [], 403);
         }
 
         return $next($request);

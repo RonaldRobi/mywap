@@ -16,7 +16,10 @@ class SupporterBroadcastNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public BroadcastMessage $broadcastMessage) {}
+    public function __construct(
+        public BroadcastMessage $broadcastMessage,
+        public ?string $recipientName = null,
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -30,10 +33,10 @@ class SupporterBroadcastNotification extends Notification
         $message->subject($this->broadcastMessage->title);
 
         if ($this->broadcastMessage->email_use_template) {
-            return $message->markdown('emails.broadcast-push', [
+            return $message->view('emails.broadcast-push', [
                 'title' => $this->broadcastMessage->title,
                 'content' => $this->broadcastMessage->content,
-                'name' => 'Pendukung',
+                'name' => $this->recipientName,
             ]);
         }
 

@@ -69,7 +69,7 @@ class GeneralBroadcastNotification extends Notification
         if ($this->broadcastMessage->email_use_template) {
             return $message
                 ->subject($this->broadcastMessage->title)
-                ->markdown('emails.broadcast-push', [
+                ->view('emails.broadcast-push', [
                     'title' => $this->broadcastMessage->title,
                     'content' => $this->broadcastMessage->content,
                     'name' => $notifiable->name,

@@ -1502,7 +1502,7 @@ abstract class AppLocalizations {
   /// No description provided for @noBranch.
   ///
   /// In en, this message translates to:
-  /// **'No branch'**
+  /// **'No branch/state'**
   String get noBranch;
 
   /// No description provided for @memberNoShort.
@@ -1526,7 +1526,7 @@ abstract class AppLocalizations {
   /// No description provided for @branchLabel.
   ///
   /// In en, this message translates to:
-  /// **'Branch'**
+  /// **'Branch/State'**
   String get branchLabel;
 
   /// No description provided for @localityLabel.
@@ -1904,7 +1904,7 @@ abstract class AppLocalizations {
   /// No description provided for @changeBranch.
   ///
   /// In en, this message translates to:
-  /// **'Change Branch'**
+  /// **'Change Branch/State'**
   String get changeBranch;
 
   /// No description provided for @branchRequestPending.
@@ -1916,7 +1916,7 @@ abstract class AppLocalizations {
   /// No description provided for @branchRequestSent.
   ///
   /// In en, this message translates to:
-  /// **'Branch change request has been sent for admin approval.'**
+  /// **'Branch/State change request has been sent for admin approval.'**
   String get branchRequestSent;
 
   /// No description provided for @fieldRequired.
@@ -1946,25 +1946,25 @@ abstract class AppLocalizations {
   /// No description provided for @chooseNewBranch.
   ///
   /// In en, this message translates to:
-  /// **'Please select a new branch.'**
+  /// **'Please select a new branch/state.'**
   String get chooseNewBranch;
 
   /// No description provided for @changeBranchTitle.
   ///
   /// In en, this message translates to:
-  /// **'Change Branch'**
+  /// **'Change Branch/State'**
   String get changeBranchTitle;
 
   /// No description provided for @changeBranchNote.
   ///
   /// In en, this message translates to:
-  /// **'This request must be approved by an admin before your branch changes.'**
+  /// **'This request must be approved by an admin before your branch/state changes.'**
   String get changeBranchNote;
 
   /// No description provided for @currentBranch.
   ///
   /// In en, this message translates to:
-  /// **'Current branch'**
+  /// **'Current branch/state'**
   String get currentBranch;
 
   /// No description provided for @branchRequestPendingShort.
@@ -1976,31 +1976,31 @@ abstract class AppLocalizations {
   /// No description provided for @newBranchLabel.
   ///
   /// In en, this message translates to:
-  /// **'New branch'**
+  /// **'New branch/state'**
   String get newBranchLabel;
 
   /// No description provided for @selectBranch.
   ///
   /// In en, this message translates to:
-  /// **'Select branch'**
+  /// **'Select branch/state'**
   String get selectBranch;
 
   /// No description provided for @branchOption.
   ///
   /// In en, this message translates to:
-  /// **'Branch {id}'**
+  /// **'Branch/State {id}'**
   String branchOption(String id);
 
   /// No description provided for @noOtherBranches.
   ///
   /// In en, this message translates to:
-  /// **'No other branches are available for your organisation.'**
+  /// **'No other branches/states are available for your organisation.'**
   String get noOtherBranches;
 
   /// No description provided for @branchRequestNote.
   ///
   /// In en, this message translates to:
-  /// **'The request will be sent to an admin for approval. Your branch changes only after approval.'**
+  /// **'The request will be sent to an admin for approval. Your branch/state changes only after approval.'**
   String get branchRequestNote;
 
   /// No description provided for @sendRequest.
@@ -2048,13 +2048,13 @@ abstract class AppLocalizations {
   /// No description provided for @branchRequired.
   ///
   /// In en, this message translates to:
-  /// **'Branch *'**
+  /// **'Branch/State *'**
   String get branchRequired;
 
   /// No description provided for @branchRequiredError.
   ///
   /// In en, this message translates to:
-  /// **'Please select a branch.'**
+  /// **'Please select a branch/state.'**
   String get branchRequiredError;
 
   /// No description provided for @profileCompleted.
@@ -4544,7 +4544,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminWebBranches.
   ///
   /// In en, this message translates to:
-  /// **'Branches'**
+  /// **'Branches/States'**
   String get adminWebBranches;
 
   /// No description provided for @adminWebPositions.
@@ -4568,7 +4568,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminWebChangeBranch.
   ///
   /// In en, this message translates to:
-  /// **'Change Branch'**
+  /// **'Change Branch/State'**
   String get adminWebChangeBranch;
 
   /// No description provided for @adminWebOnlyTitle.
@@ -4766,7 +4766,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminFieldBranch.
   ///
   /// In en, this message translates to:
-  /// **'Branch'**
+  /// **'Branch/State'**
   String get adminFieldBranch;
 
   /// No description provided for @adminFieldOrganization.
@@ -6062,13 +6062,13 @@ abstract class AppLocalizations {
   /// No description provided for @roleBranchAdmin.
   ///
   /// In en, this message translates to:
-  /// **'Branch Admin'**
+  /// **'Branch/State Admin'**
   String get roleBranchAdmin;
 
   /// No description provided for @roleBranchAdminWithBranch.
   ///
   /// In en, this message translates to:
-  /// **'Branch Admin ({branch})'**
+  /// **'Branch/State Admin ({branch})'**
   String roleBranchAdminWithBranch(String branch);
 
   /// No description provided for @roleOrganizationAdmin.
@@ -6248,13 +6248,13 @@ abstract class AppLocalizations {
   /// No description provided for @adminAudienceMyBranchMembers.
   ///
   /// In en, this message translates to:
-  /// **'All Members of My Branch'**
+  /// **'All Members of My Branch/State'**
   String get adminAudienceMyBranchMembers;
 
   /// No description provided for @adminAudienceMyBranchUsrah.
   ///
   /// In en, this message translates to:
-  /// **'Usrah Groups of My Branch'**
+  /// **'Usrah Groups of My Branch/State'**
   String get adminAudienceMyBranchUsrah;
 
   /// No description provided for @adminAudienceOrgMembers.
@@ -6320,7 +6320,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminBranchScope.
   ///
   /// In en, this message translates to:
-  /// **'Branch scope: {branch}'**
+  /// **'Branch/State scope: {branch}'**
   String adminBranchScope(String branch);
 
   /// No description provided for @adminOrgScope.
@@ -6332,7 +6332,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminDefaultBranch.
   ///
   /// In en, this message translates to:
-  /// **'Your Branch'**
+  /// **'Your Branch/State'**
   String get adminDefaultBranch;
 
   /// No description provided for @adminDefaultOrg.
@@ -6464,7 +6464,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminNoScheduledProgramsBody.
   ///
   /// In en, this message translates to:
-  /// **'No scheduled events for your branch or organisation at the moment.'**
+  /// **'No scheduled events for your branch/state or organisation at the moment.'**
   String get adminNoScheduledProgramsBody;
 
   /// No description provided for @adminParticipantList.

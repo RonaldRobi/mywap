@@ -637,7 +637,7 @@ class RegistrationController extends Controller
         abort_unless(
             $user && (int) $user->branch_id === (int) $event->branch_id,
             403,
-            'Program ini hanya untuk ahli cawangan penganjur.'
+            'Program ini hanya untuk ahli cawangan/negeri penganjur.'
         );
     }
 

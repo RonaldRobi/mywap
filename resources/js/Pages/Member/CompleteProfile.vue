@@ -95,14 +95,14 @@ const submit = () => {
             <form class="mt-8 space-y-5 text-left" @submit.prevent="submit">
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Cawangan *</label>
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Cawangan/Negeri *</label>
                         <select v-model="form.branch_id" class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-gray-500 focus:ring-0" required>
-                            <option value="">Pilih Cawangan</option>
+                            <option value="">Pilih Cawangan/Negeri</option>
                             <option v-for="branch in branches" :key="branch.id" :value="branch.id">
                                 {{ branch.name }}{{ branch.state && branch.state !== branch.name ? ' — ' + branch.state : '' }}
                             </option>
                         </select>
-                        <p class="mt-1 text-xs text-gray-400">Cawangan diperlukan untuk pengurusan keahlian.</p>
+                        <p class="mt-1 text-xs text-gray-400">Cawangan/Negeri diperlukan untuk pengurusan keahlian.</p>
                         <p v-if="form.errors.branch_id" class="mt-1 text-xs text-red-500">{{ form.errors.branch_id }}</p>
                     </div>
                     <div>

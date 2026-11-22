@@ -861,7 +861,7 @@ const valid = computed(() => {
                                     <option>Pilih Negeri...</option>
                                 </select>
                                 <select disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
-                                    <option>Pilih Cawangan...</option>
+                                    <option>Pilih Cawangan/Negeri...</option>
                                 </select>
                                 <p class="text-[11px] text-gray-400">Pilihan dijana dari cawangan organisasi.</p>
                             </div>

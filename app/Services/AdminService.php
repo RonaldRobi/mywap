@@ -1261,7 +1261,7 @@ class AdminService
         if ($actor->isBranchAdmin()) {
             if (! $matchedUser || ! $actor->canManageBranch($matchedUser->branch_id)) {
                 throw ValidationException::withMessages([
-                    'ic_number' => 'Peserta mesti ahli cawangan ini.',
+                    'ic_number' => 'Peserta mesti ahli cawangan/negeri ini.',
                 ]);
             }
         }

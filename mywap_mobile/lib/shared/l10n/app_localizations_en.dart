@@ -715,7 +715,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noOrganization => 'No organisation';
 
   @override
-  String get noBranch => 'No branch';
+  String get noBranch => 'No branch/state';
 
   @override
   String memberNoShort(String number) {
@@ -729,7 +729,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icNoLabel => 'IC No.';
 
   @override
-  String get branchLabel => 'Branch';
+  String get branchLabel => 'Branch/State';
 
   @override
   String get localityLabel => 'Locality';
@@ -926,7 +926,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get organizationLabel => 'Organisation';
 
   @override
-  String get changeBranch => 'Change Branch';
+  String get changeBranch => 'Change Branch/State';
 
   @override
   String branchRequestPending(String branch) {
@@ -934,7 +934,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get branchRequestSent => 'Branch change request has been sent for admin approval.';
+  String get branchRequestSent => 'Branch/State change request has been sent for admin approval.';
 
   @override
   String fieldRequired(String field) {
@@ -951,16 +951,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUpdatedSuccess => 'Profile updated successfully.';
 
   @override
-  String get chooseNewBranch => 'Please select a new branch.';
+  String get chooseNewBranch => 'Please select a new branch/state.';
 
   @override
-  String get changeBranchTitle => 'Change Branch';
+  String get changeBranchTitle => 'Change Branch/State';
 
   @override
-  String get changeBranchNote => 'This request must be approved by an admin before your branch changes.';
+  String get changeBranchNote => 'This request must be approved by an admin before your branch/state changes.';
 
   @override
-  String get currentBranch => 'Current branch';
+  String get currentBranch => 'Current branch/state';
 
   @override
   String branchRequestPendingShort(String branch) {
@@ -968,21 +968,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get newBranchLabel => 'New branch';
+  String get newBranchLabel => 'New branch/state';
 
   @override
-  String get selectBranch => 'Select branch';
+  String get selectBranch => 'Select branch/state';
 
   @override
   String branchOption(String id) {
-    return 'Branch $id';
+    return 'Branch/State $id';
   }
 
   @override
-  String get noOtherBranches => 'No other branches are available for your organisation.';
+  String get noOtherBranches => 'No other branches/states are available for your organisation.';
 
   @override
-  String get branchRequestNote => 'The request will be sent to an admin for approval. Your branch changes only after approval.';
+  String get branchRequestNote => 'The request will be sent to an admin for approval. Your branch/state changes only after approval.';
 
   @override
   String get sendRequest => 'Send Request';
@@ -1006,10 +1006,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveAndFinish => 'Save & Finish';
 
   @override
-  String get branchRequired => 'Branch *';
+  String get branchRequired => 'Branch/State *';
 
   @override
-  String get branchRequiredError => 'Please select a branch.';
+  String get branchRequiredError => 'Please select a branch/state.';
 
   @override
   String get profileCompleted => 'Profile completed successfully.';
@@ -2328,7 +2328,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminWebFacilities => 'Facilities';
 
   @override
-  String get adminWebBranches => 'Branches';
+  String get adminWebBranches => 'Branches/States';
 
   @override
   String get adminWebPositions => 'Positions';
@@ -2340,7 +2340,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminWebDonors => 'Donors';
 
   @override
-  String get adminWebChangeBranch => 'Change Branch';
+  String get adminWebChangeBranch => 'Change Branch/State';
 
   @override
   String get adminWebOnlyTitle => 'Web Version Features';
@@ -2443,7 +2443,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminFieldIcNo => 'IC No.';
 
   @override
-  String get adminFieldBranch => 'Branch';
+  String get adminFieldBranch => 'Branch/State';
 
   @override
   String get adminFieldOrganization => 'Organisation';
@@ -3131,11 +3131,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get roleBranchAdmin => 'Branch Admin';
+  String get roleBranchAdmin => 'Branch/State Admin';
 
   @override
   String roleBranchAdminWithBranch(String branch) {
-    return 'Branch Admin ($branch)';
+    return 'Branch/State Admin ($branch)';
   }
 
   @override
@@ -3240,10 +3240,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminAudienceAllUsrah => 'All Usrah Groups';
 
   @override
-  String get adminAudienceMyBranchMembers => 'All Members of My Branch';
+  String get adminAudienceMyBranchMembers => 'All Members of My Branch/State';
 
   @override
-  String get adminAudienceMyBranchUsrah => 'Usrah Groups of My Branch';
+  String get adminAudienceMyBranchUsrah => 'Usrah Groups of My Branch/State';
 
   @override
   String adminAudienceOrgMembers(String organization) {
@@ -3279,7 +3279,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String adminBranchScope(String branch) {
-    return 'Branch scope: $branch';
+    return 'Branch/State scope: $branch';
   }
 
   @override
@@ -3288,7 +3288,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get adminDefaultBranch => 'Your Branch';
+  String get adminDefaultBranch => 'Your Branch/State';
 
   @override
   String get adminDefaultOrg => 'Organisation';
@@ -3360,7 +3360,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminNoScheduledPrograms => 'No Scheduled Programs';
 
   @override
-  String get adminNoScheduledProgramsBody => 'No scheduled events for your branch or organisation at the moment.';
+  String get adminNoScheduledProgramsBody => 'No scheduled events for your branch/state or organisation at the moment.';
 
   @override
   String get adminParticipantList => 'Participant List';

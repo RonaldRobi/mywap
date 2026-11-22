@@ -1198,10 +1198,10 @@ async function finishImport() {
                         </div>
 
                         <div>
-                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Cawangan</label>
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Cawangan/Negeri</label>
                             <div class="relative">
                                 <select v-model="branchIdFilter" class="w-full rounded-xl border-gray-200 text-sm pl-3 pr-9 py-2 appearance-none focus:border-gray-900 focus:ring-gray-900 shadow-sm transition-colors">
-                                    <option value="">Semua Cawangan</option>
+                                    <option value="">Semua Cawangan/Negeri</option>
                                     <option v-for="b in availableBranches" :key="b.id" :value="b.id">{{ branchLabel(b) }}</option>
                                 </select>
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -1359,7 +1359,7 @@ async function finishImport() {
                                         <span v-else-if="member.fee_status === 'life_member'" class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Seumur Hidup</span>
                                         <span v-else-if="member.fee_status === 'exempted'" class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">Dikecualikan</span>
                                         <span v-else class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Tertunggak</span>
-                                        <span v-if="member.has_role_admin_cawangan" class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">Admin Cawangan</span>
+                                        <span v-if="member.has_role_admin_cawangan" class="inline-flex items-center rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">Admin Cawangan/Negeri</span>
                                         <span class="text-[11px] text-gray-400">{{ member.branch_name }}</span>
                                     </div>
                                 </td>
@@ -1865,7 +1865,7 @@ async function finishImport() {
                                             <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold" :style="{ backgroundColor: (selectedMember.organization_color ?? '#6b7280') + '20', color: selectedMember.organization_color ?? '#6b7280' }">{{ selectedMember.organization_name }}</span>
                                             <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
                                                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                                {{ selectedMember.branch_name || 'Tiada Cawangan' }}
+                                                {{ selectedMember.branch_name || 'Tiada Cawangan/Negeri' }}
                                             </span>
                                         </div>
                                     </div>
@@ -1877,7 +1877,7 @@ async function finishImport() {
                                     </div>
                                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3.5">
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">No Ahli</p><p class="text-sm font-bold text-gray-800">{{ selectedMember.member_no || '—' }}</p></div>
-                                        <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
+                                        <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan/Negeri</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Asal No</p><p class="text-sm font-semibold text-gray-600">{{ selectedMember.original_member_no || '—' }}</p><p v-if="selectedMember.original_member_no && selectedMember.original_member_no !== selectedMember.member_no" class="text-[10px] text-gray-400">Nombor pertama semasa mendaftar</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">No IC</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.ic_number || '—' }}</p></div>
                                         <div>
@@ -1954,7 +1954,7 @@ async function finishImport() {
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Profesion</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.current_profession || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Industri</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.industry || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Jawatan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.position || '—' }}</p></div>
-                                        <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
+                                        <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Cawangan/Negeri</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.branch_name || '—' }}</p></div>
                                         <div><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Lokaliti</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.locality || '—' }}</p></div>
                                         <div class="col-span-2"><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Kepakaran</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.expertise || '—' }}</p></div>
                                         <div class="col-span-2"><p class="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Topik / Bidang</p><p class="text-sm font-semibold text-gray-800">{{ selectedMember.topics || '—' }}</p></div>
@@ -2114,7 +2114,7 @@ async function finishImport() {
                                         <input v-model="editForm.industry" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0">
                                     </div>
                                     <div v-if="!isBranchAdmin">
-                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Cawangan</label>
+                                        <label class="mb-1 block text-xs font-semibold text-gray-500">Cawangan/Negeri</label>
                                         <select v-model="editForm.branch_id" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:ring-0">
                                             <option value="">Pilih</option>
                                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>

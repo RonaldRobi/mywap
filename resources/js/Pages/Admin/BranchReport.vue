@@ -43,13 +43,13 @@ const eventSummary = computed(() => props.summary.slice(8));
 </script>
 
 <template>
-    <Head :title="`Laporan Cawangan: ${branch?.name ?? ''}`" />
+    <Head :title="`Laporan Cawangan/Negeri: ${branch?.name ?? ''}`" />
 
     <AppLayout>
         <div class="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
             <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-black tracking-tight text-gray-900">Laporan Cawangan</h1>
+                    <h1 class="text-2xl font-black tracking-tight text-gray-900">Laporan Cawangan/Negeri</h1>
                     <p class="mt-1 text-sm text-gray-500">
                         {{ branch?.name }} {{ branch?.state ? '· '.concat(branch.state) : '' }} · Tahun {{ selectedYear }}
                     </p>
@@ -103,7 +103,7 @@ const eventSummary = computed(() => props.summary.slice(8));
             </div>
 
             <div class="mt-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-                <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Keaktifan Ahli Cawangan</h2>
+                <h2 class="text-sm font-bold uppercase tracking-wide text-gray-500">Keaktifan Ahli Cawangan/Negeri</h2>
                 <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div v-for="item in activity" :key="item.key" class="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                         <p class="text-2xl font-black text-gray-900">{{ item.value }}</p>

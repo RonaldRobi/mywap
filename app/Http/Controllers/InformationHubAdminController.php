@@ -244,7 +244,7 @@ class InformationHubAdminController extends Controller
                     'organization_name' => $u->organization?->name ?? 'Tiada Organisasi',
                     'organization_id' => $u->current_organization_id,
                     'organization_color' => $u->organization?->color_theme,
-                    'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
+                    'branch_name' => $u->branch?->name ?? 'Tiada Cawangan/Negeri',
                     'branch_id' => $u->branch_id,
                     'locality' => $u->locality,
                     'linkedin_url' => $u->linkedin_url,
@@ -1474,7 +1474,7 @@ class InformationHubAdminController extends Controller
                 'name' => $u->name,
                 'member_no' => $u->member_no,
                 'branch_id' => $u->branch_id,
-                'branch_name' => $u->branch?->name ?? 'Tiada Cawangan',
+                'branch_name' => $u->branch?->name ?? 'Tiada Cawangan/Negeri',
                 'organization_name' => $u->organization?->name ?? '—',
                 'organization_id' => $u->current_organization_id,
             ]);
@@ -1515,7 +1515,7 @@ class InformationHubAdminController extends Controller
 
         if (! $isSuperadmin) {
             if ($targetBranch->organization_id !== $authUser->current_organization_id) {
-                return response()->json(['message' => 'Cawangan di luar organisasi anda.'], 403);
+                return response()->json(['message' => 'Cawangan/Negeri di luar organisasi anda.'], 403);
             }
         }
 
@@ -1528,7 +1528,7 @@ class InformationHubAdminController extends Controller
 
         foreach ($members as $member) {
             if ($member->branch_id === $targetBranch->id) {
-                $errors[] = "{$member->name} ({$member->member_no}) sudah berada di cawangan ini.";
+                $errors[] = "{$member->name} ({$member->member_no}) sudah berada di cawangan/negeri ini.";
 
                 continue;
             }
@@ -1559,7 +1559,7 @@ class InformationHubAdminController extends Controller
                 'target_type' => User::class,
                 'target_id' => $member->id,
                 'action' => 'bulk_branch_change',
-                'description' => "Cawangan ditukar secara pukal ke {$targetBranch->name}.",
+                'description' => "Cawangan/Negeri ditukar secara pukal ke {$targetBranch->name}.",
             ]);
 
             $successCount++;

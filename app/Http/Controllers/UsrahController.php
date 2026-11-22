@@ -137,7 +137,7 @@ class UsrahController extends Controller
                 ->all();
 
             if (array_diff($requestedIds, $allowedIds) !== []) {
-                abort(422, 'Hanya ahli cawangan sendiri boleh ditambah ke kumpulan usrah ini.');
+                abort(422, 'Hanya ahli cawangan/negeri sendiri boleh ditambah ke kumpulan usrah ini.');
             }
         }
 

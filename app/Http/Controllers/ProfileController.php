@@ -339,7 +339,7 @@ class ProfileController extends Controller
             ->exists();
 
         if ($hasBranchRequest) {
-            return Redirect::route('profile.edit')->with('success', 'Permohonan pertukaran cawangan telah dihantar untuk kelulusan admin.');
+            return Redirect::route('profile.edit')->with('success', 'Permohonan pertukaran cawangan/negeri telah dihantar untuk kelulusan admin.');
         }
 
         return Redirect::route('profile.edit');
@@ -361,7 +361,7 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit')->with(
             'success',
-            'Permohonan tukar cawangan ke '.($branchChangeRequest->toBranch?->name ?? 'cawangan baharu').
+            'Permohonan tukar cawangan/negeri ke '.($branchChangeRequest->toBranch?->name ?? 'cawangan/negeri baharu').
             ' telah dihantar untuk kelulusan admin.'
         );
     }

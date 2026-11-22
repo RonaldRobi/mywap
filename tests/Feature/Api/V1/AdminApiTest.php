@@ -679,6 +679,6 @@ class AdminApiTest extends TestCase
 
         $this->getJson('/api/v1/admin/dashboard')
             ->assertStatus(403)
-            ->assertJsonPath('message', 'Akaun anda belum diperuntukkan ke mana-mana cawangan.');
+            ->assertJsonPath('message', 'Akaun anda belum diperuntukkan ke mana-mana cawangan/negeri.');
     }
 }

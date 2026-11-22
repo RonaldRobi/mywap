@@ -191,13 +191,13 @@ class ProfileService
 
         if (! $branch) {
             throw ValidationException::withMessages([
-                'branch_id' => 'Cawangan yang dipilih tidak sah untuk organisasi anda.',
+                'branch_id' => 'Cawangan/Negeri yang dipilih tidak sah untuk organisasi anda.',
             ]);
         }
 
         if ((int) $user->branch_id === (int) $branch->id) {
             throw ValidationException::withMessages([
-                'branch_id' => 'Anda sudah berada di cawangan ini.',
+                'branch_id' => 'Anda sudah berada di cawangan/negeri ini.',
             ]);
         }
 
@@ -291,7 +291,7 @@ class ProfileService
 
         if (! $branch) {
             throw ValidationException::withMessages([
-                'branch_id' => 'Cawangan yang dipilih tidak sah untuk organisasi anda.',
+                'branch_id' => 'Cawangan/Negeri yang dipilih tidak sah untuk organisasi anda.',
             ]);
         }
 

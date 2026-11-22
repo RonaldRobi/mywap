@@ -463,7 +463,7 @@ class BranchAdminTest extends TestCase
 
         $this->assertStringContainsString('abim-perak@mywap.my', $html);
         $this->assertStringContainsString('TempPass123', $html);
-        $this->assertStringContainsString('Akses anda sebagai Setiausaha Cawangan dalam sistem myWAP telah diaktifkan', $html);
+        $this->assertStringContainsString('Akses anda sebagai Setiausaha Cawangan/Negeri dalam sistem myWAP telah diaktifkan', $html);
         $this->assertStringContainsString('tidak mengubah jawatan rasmi anda', $html);
         $this->assertStringContainsString('wajib', $html);
         $this->assertStringContainsString('logomywaphorizontal.png', $html);

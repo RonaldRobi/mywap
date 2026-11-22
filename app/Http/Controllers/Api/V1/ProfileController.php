@@ -85,7 +85,7 @@ class ProfileController extends Controller
                 'to_branch' => $branchChangeRequest->toBranch?->name,
             ],
         ], [
-            'message' => 'Permohonan tukar cawangan telah dihantar untuk kelulusan admin.',
+            'message' => 'Permohonan tukar cawangan/negeri telah dihantar untuk kelulusan admin.',
         ]);
     }
 

@@ -71,6 +71,6 @@ class EnsureBranchAdminAccess
             }
         }
 
-        abort(403, 'Laluan ini tidak dibenarkan untuk Admin Cawangan.');
+        abort(403, 'Laluan ini tidak dibenarkan untuk Admin Cawangan/Negeri.');
     }
 }

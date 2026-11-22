@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Modal from '@/Components/Modal.vue';
 import MovementBranding from '@/Components/MovementBranding.vue';
+import PasswordInput from '@/Components/PasswordInput.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 
@@ -338,15 +339,16 @@ const submit = () => {
 
                                 <div>
                                     <InputLabel for="password" value="Password" class="!text-slate-200" />
-                                    <TextInput
-                                        id="password"
-                                        type="password"
-                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="form.password"
-                                        required
-                                        autocomplete="current-password"
-                                        placeholder="••••••••"
-                                    />
+                                    <div class="mt-1">
+                                        <PasswordInput
+                                            id="password"
+                                            class="block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
+                                            v-model="form.password"
+                                            required
+                                            autocomplete="current-password"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
                                     <InputError class="mt-2" :message="form.errors.password" />
                                 </div>
 
@@ -434,15 +436,16 @@ const submit = () => {
 
                                 <div>
                                     <InputLabel for="password_member" value="Password" class="!text-slate-200" />
-                                    <TextInput
-                                        id="password_member"
-                                        type="password"
-                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="form.password"
-                                        required
-                                        autocomplete="current-password"
-                                        placeholder="••••••••"
-                                    />
+                                    <div class="mt-1">
+                                        <PasswordInput
+                                            id="password_member"
+                                            class="block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
+                                            v-model="form.password"
+                                            required
+                                            autocomplete="current-password"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
                                     <InputError class="mt-2" :message="form.errors.password" />
                                     <InputError class="mt-2" :message="currentIdentifierError" />
                                 </div>
@@ -616,27 +619,29 @@ const submit = () => {
 
                                 <div>
                                     <InputLabel for="otp_password" value="Kata Laluan Baru" class="!text-slate-200" />
-                                    <TextInput
-                                        id="otp_password"
-                                        type="password"
-                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="otpForm.password"
-                                        required
-                                        minlength="8"
-                                        placeholder="Minimum 8 aksara"
-                                    />
+                                    <div class="mt-1">
+                                        <PasswordInput
+                                            id="otp_password"
+                                            class="block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
+                                            v-model="otpForm.password"
+                                            required
+                                            minlength="8"
+                                            placeholder="Minimum 8 aksara"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <InputLabel for="otp_password_confirmation" value="Pengesahan Kata Laluan" class="!text-slate-200" />
-                                    <TextInput
-                                        id="otp_password_confirmation"
-                                        type="password"
-                                        class="mt-1 block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
-                                        v-model="otpForm.password_confirmation"
-                                        required
-                                        placeholder="Taip semula kata laluan"
-                                    />
+                                    <div class="mt-1">
+                                        <PasswordInput
+                                            id="otp_password_confirmation"
+                                            class="block w-full focus:border-[#2F6B32] focus:ring-[#6FBF8A]"
+                                            v-model="otpForm.password_confirmation"
+                                            required
+                                            placeholder="Taip semula kata laluan"
+                                        />
+                                    </div>
                                 </div>
 
                                 <InputError class="mt-2" :message="otpError" />
@@ -730,7 +735,7 @@ const submit = () => {
                     </Transition>
                     <div class="mt-6 border-t border-[#D5E3D8] pt-4 text-center">
                         <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2F6B32]">Platform rasmi ekosistem</p>
-                        <p class="mt-1 text-xs font-black tracking-[0.12em] text-[#123D2A]">PKPIM · ABIM · WADAH</p>
+                        <p class="mt-1 text-xs font-black tracking-[0.12em] text-[#123D2A]">WADAH · ABIM · PKPIM</p>
                     </div>
                 </div>
             </section>

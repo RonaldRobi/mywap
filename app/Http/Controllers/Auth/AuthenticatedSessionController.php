@@ -200,6 +200,7 @@ class AuthenticatedSessionController extends Controller
                 ? 'Kod OTP telah dihantar melalui WhatsApp.'
                 : 'Kod OTP telah dihantar ke emel berdaftar anda.',
             'channel' => $channel,
+            'cooldown_seconds' => $otp->cooldownAfterSend($user, 'login'),
         ]);
     }
 
@@ -239,6 +240,7 @@ class AuthenticatedSessionController extends Controller
             return response()->json([
                 'message' => 'Kod OTP telah dihantar melalui WhatsApp.',
                 'channel' => 'whatsapp',
+                'cooldown_seconds' => $otp->cooldownAfterSend($user, 'login'),
             ]);
         }
 
@@ -257,6 +259,7 @@ class AuthenticatedSessionController extends Controller
         return response()->json([
             'message' => 'Kod OTP telah dihantar ke emel anda.',
             'channel' => 'email',
+            'cooldown_seconds' => $otp->cooldownAfterSend($user, 'login'),
         ]);
     }
 
@@ -394,7 +397,7 @@ class AuthenticatedSessionController extends Controller
             return 'admin.dashboard';
         }
 
-        if ($user->hasAnyRole(['Admin', 'org-admin'])) {
+        if ($user->hasAnyRole(['Admin', 'org-admin', 'Admin Cawangan'])) {
             return 'admin.dashboard';
         }
 

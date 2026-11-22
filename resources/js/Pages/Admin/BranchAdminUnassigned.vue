@@ -16,8 +16,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 
             <h1 class="mt-5 text-2xl font-black text-gray-900">Akaun admin cawangan belum ditugaskan</h1>
             <p class="mt-2 max-w-lg text-sm text-gray-500">
-                Akaun ini mempunyai akses Admin Cawangan tetapi belum dilantik ke mana-mana cawangan.
-                Sila hubungi admin organisasi untuk menetapkan cawangan anda melalui halaman Cawangan.
+                Akaun ini mempunyai akses Admin Cawangan/Negeri tetapi belum dilantik ke mana-mana cawangan.
+                Sila hubungi admin organisasi untuk menetapkan cawangan anda melalui halaman Cawangan/Negeri.
             </p>
 
             <div class="mt-6 flex flex-wrap items-center justify-center gap-3">

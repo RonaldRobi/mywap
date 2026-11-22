@@ -130,13 +130,13 @@ async function submitBulkChange() {
 </script>
 
 <template>
-    <Head title="Tukar Cawangan (Bulk)" />
+    <Head title="Tukar Cawangan/Negeri (Bulk)" />
     <AppLayout>
-        <template #header>Tukar Cawangan (Bulk)</template>
+        <template #header>Tukar Cawangan/Negeri (Bulk)</template>
 
         <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
             <div class="mb-6">
-                <h2 class="text-2xl font-black tracking-tight text-gray-900">Tukar Cawangan Secara Pukal</h2>
+                <h2 class="text-2xl font-black tracking-tight text-gray-900">Tukar Cawangan/Negeri Secara Pukal</h2>
                 <p class="text-sm font-medium text-gray-500 mt-1">Pilih ahli dari senarai untuk ditukar ke cawangan yang sama serentak.</p>
             </div>
 
@@ -153,7 +153,7 @@ async function submitBulkChange() {
                             <option v-for="o in organizations" :key="o.id" :value="o.id">{{ o.name }}</option>
                         </select>
                         <select v-model="branchFilter" class="md:w-44 rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm">
-                            <option value="">Semua Cawangan</option>
+                            <option value="">Semua Cawangan/Negeri</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
                     </div>
@@ -168,7 +168,7 @@ async function submitBulkChange() {
                                             <input type="checkbox" v-model="selectAll" class="rounded border-gray-300 text-gray-900 focus:ring-0">
                                         </th>
                                         <th class="px-4 py-3">Nama / No Ahli</th>
-                                        <th class="px-4 py-3">Cawangan Semasa</th>
+                                        <th class="px-4 py-3">Cawangan/Negeri Semasa</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 bg-white">
@@ -225,7 +225,7 @@ async function submitBulkChange() {
 
                         <!-- Target Branch -->
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Cawangan Sasaran</label>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5">Cawangan/Negeri Sasaran</label>
                             <select v-model="targetBranchId" class="w-full rounded-2xl border-gray-200 text-sm focus:border-gray-900 focus:ring-gray-900 shadow-sm">
                                 <option value="" disabled>Pilih cawangan</option>
                                 <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>

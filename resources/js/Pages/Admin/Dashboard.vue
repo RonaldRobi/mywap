@@ -20,8 +20,15 @@ const breakdownMode = ref('state');
 const isManagementView = computed(() => props.organization?.slug === 'management');
 const scopeLabel = computed(() => {
     if (isManagementView.value) return t('Keseluruhan organisasi');
-    if (props.isBranchAdmin) return t('Cawangan di bawah seliaan anda');
+    if (props.isBranchAdmin) return t('Cawangan/Negeri di bawah seliaan anda');
     return props.organization?.name ?? t('Organisasi anda');
+});
+const dashboardTitle = computed(() => {
+    if (props.isBranchAdmin && props.managedBranchNames.length) {
+        return props.managedBranchNames.join(', ');
+    }
+
+    return props.organization?.name;
 });
 const chartMax = computed(() => Math.max(1, ...(props.overview?.program_chart ?? []).map((item) => Number(item.value ?? 0))));
 const activityItems = computed(() => props.overview?.recent_activities ?? []);
@@ -126,10 +133,9 @@ function activityTone(type = '') {
                 <section class="lg:col-span-8 rounded-2xl border border-slate-800 bg-[radial-gradient(110%_120%_at_95%_10%,#1e3a2f_0%,#0f172a_58%,#090e1a_100%)] p-5 text-white sm:p-7">
                     <div>
                         <p class="text-xs font-semibold text-[#B8D9C0]">{{ scopeLabel }}</p>
-                        <p v-if="isBranchAdmin && managedBranchNames.length" class="mt-1 text-sm font-bold text-white">{{ managedBranchNames.join(', ') }}</p>
                         <div class="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <h2 class="text-2xl font-black tracking-tight sm:text-3xl">{{ organization?.name }}</h2>
+                                <h2 class="text-2xl font-black tracking-tight sm:text-3xl">{{ dashboardTitle }}</h2>
                                 <p class="mt-1 max-w-xl text-sm leading-6 text-slate-300">{{ t('Ringkasan operasi yang memerlukan perhatian dan tindakan pentadbiran.') }}</p>
                             </div>
                             <ExportCsvButton :href="route('admin.members.export')" />
@@ -252,7 +258,7 @@ function activityTone(type = '') {
                             </div>
                             <div v-if="isManagementView" class="inline-flex self-start rounded-lg bg-slate-100 p-1" aria-label="Pilih pecahan ahli">
                                 <button type="button" class="min-h-11 cursor-pointer rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'state' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" :aria-pressed="breakdownMode === 'state'" @click="breakdownMode = 'state'">{{ t('Negeri') }}</button>
-                                <button type="button" class="min-h-11 cursor-pointer rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'branch' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" :aria-pressed="breakdownMode === 'branch'" @click="breakdownMode = 'branch'">{{ t('Cawangan') }}</button>
+                                <button type="button" class="min-h-11 cursor-pointer rounded-md px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F6B32]" :class="breakdownMode === 'branch' ? 'bg-[#071525] text-white' : 'text-slate-600 hover:text-slate-900'" :aria-pressed="breakdownMode === 'branch'" @click="breakdownMode = 'branch'">{{ t('Cawangan/Negeri') }}</button>
                             </div>
                         </div>
                         <div v-if="isManagementView" class="flex flex-wrap gap-2 border-b border-slate-100 px-5 py-3 sm:px-6" aria-label="Tapis organisasi">

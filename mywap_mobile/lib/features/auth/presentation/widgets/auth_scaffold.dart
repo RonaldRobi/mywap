@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/app_locale.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_theme.dart';
-import '../../../onboarding/application/onboarding_providers.dart';
 import 'auth_canvas_background.dart';
 
 class AuthScaffold extends StatelessWidget {
@@ -169,40 +168,10 @@ class AuthBrandHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(appLocaleProvider) ?? const Locale('ms');
-    final logoUrl =
-        ref.watch(mobileAuthConfigurationProvider).valueOrNull?.login.logoUrl;
-
     return Container(
-      padding: const EdgeInsets.all(Spacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: .86),
-        borderRadius: AppRadius.lg,
-        border: Border.all(color: AppColors.white),
-        boxShadow: AppShadows.subtle,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.xs, vertical: 4),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.movementDarkGreen,
-              borderRadius: const BorderRadius.all(Radius.circular(4)),
-              border: Border.all(color: AppColors.movementNavy),
-            ),
-            child:
-                logoUrl?.isNotEmpty == true
-                    ? ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(3)),
-                      child: Image.network(
-                        logoUrl!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const _FallbackLogo(),
-                      ),
-                    )
-                    : const _FallbackLogo(),
-          ),
-          const SizedBox(width: Spacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,9 +180,10 @@ class AuthBrandHeader extends ConsumerWidget {
                   children: [
                     Text(
                       'myWAP',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.movementDarkGreen,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(width: Spacing.xs),
@@ -252,12 +222,11 @@ class AuthBrandHeader extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 const Text(
-                  'WADAH | ABIM | PKPIM',
+                  'Platform digital ahli',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: .6,
                   ),
                 ),
               ],
@@ -268,27 +237,6 @@ class AuthBrandHeader extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _FallbackLogo extends StatelessWidget {
-  const _FallbackLogo();
-
-  @override
-  Widget build(BuildContext context) => const Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Icon(Icons.volunteer_activism_outlined, color: AppColors.white, size: 21),
-      SizedBox(height: 1),
-      Text(
-        'myWAP',
-        style: TextStyle(
-          color: AppColors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    ],
-  );
 }
 
 class _LanguageToggle extends ConsumerWidget {

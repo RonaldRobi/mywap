@@ -7,16 +7,16 @@
                 <p style="margin:0 0 12px;">Assalamualaikum {{ $secretaryName }},</p>
 
                 <p style="margin:0 0 12px;">
-                    Akses anda sebagai Setiausaha Cawangan dalam sistem myWAP telah diaktifkan untuk
+                    Akses anda sebagai Setiausaha Cawangan/Negeri dalam sistem myWAP telah diaktifkan untuk
                     <strong style="color:#0f172a;">{{ $branchName }}</strong> di {{ $organizationName }}.
                 </p>
 
                 <p style="margin:0 0 12px;">
-                    Akses ini digunakan untuk mengurus urusan pentadbiran cawangan dalam myWAP. Ia tidak mengubah jawatan rasmi anda dalam organisasi.
+                    Akses ini digunakan untuk mengurus urusan pentadbiran cawangan/negeri dalam myWAP. Ia tidak mengubah jawatan rasmi anda dalam organisasi.
                 </p>
 
                 <p style="margin:0 0 12px;">
-                    Gunakan butiran di bawah untuk log masuk ke akaun admin cawangan. Akaun ini dikongsi oleh setiausaha yang diberi akses.
+                    Gunakan butiran di bawah untuk log masuk ke akaun admin cawangan/negeri. Akaun ini dikongsi oleh setiausaha yang diberi akses.
                 </p>
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
