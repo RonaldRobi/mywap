@@ -290,8 +290,8 @@ class RegistrationAdminTest extends TestCase
         $event = $this->event(['organization_id' => $otherOrg->id]);
         $form = $this->form($event);
 
-        $this->registration($event, $form, ['name' => 'Org Sendiri']);
-        $this->registration($event, $form, [
+        $own = $this->registration($event, $form, ['name' => 'Org Sendiri']);
+        $other = $this->registration($event, $form, [
             'name' => 'Org Lain',
             'organization_id' => $otherOrg->id,
         ]);
@@ -309,8 +309,8 @@ class RegistrationAdminTest extends TestCase
             ->assertOk();
 
         $csv = $response->streamedContent();
-        $this->assertStringContainsString('Org Sendiri', $csv);
-        $this->assertStringNotContainsString('Org Lain', $csv);
+        $this->assertStringContainsString($own->registration_no, $csv);
+        $this->assertStringNotContainsString($other->registration_no, $csv);
     }
 
     public function test_unpaid_registration_expires_and_releases_stock(): void
@@ -356,13 +356,13 @@ class RegistrationAdminTest extends TestCase
         $event = $this->event();
         $form = $this->form($event);
 
-        $this->registration($event, $form, ['name' => 'Nama Eksport']);
+        $registration = $this->registration($event, $form, ['name' => 'Nama Eksport']);
 
         $response = $this->actingAs($this->admin)
             ->get(route('admin.events.registrations.export', $event->id))
             ->assertOk();
 
-        $this->assertStringContainsString('Nama Eksport', $response->streamedContent());
+        $this->assertStringContainsString($registration->registration_no, $response->streamedContent());
     }
 
     public function test_public_legacy_registration_is_labelled_and_filterable(): void
@@ -448,6 +448,12 @@ class RegistrationAdminTest extends TestCase
         $this->assertContains('Nama Penuh', $header);
         $this->assertContains('No. IC', $header);
         $this->assertNotContains('Organisasi akaun', $header);
+        $this->assertNotContains('No. Ahli', $header);
+        $this->assertNotContains('Borang', $header);
+        $this->assertNotContains('Kategori', $header);
+        $this->assertNotContains('Jumlah (RM)', $header);
+        $this->assertNotContains('Item', $header);
+        $this->assertNotContains('Bayaran', $header);
         $this->assertSame(1, count(array_filter($header, fn ($column) => $column === 'Nama Penuh')));
         $this->assertSame(1, count(array_filter($header, fn ($column) => $column === 'No. IC')));
         $this->assertStringContainsString('Universiti Malaya', $csv);
@@ -461,5 +467,33 @@ class RegistrationAdminTest extends TestCase
             $excel->headers->get('Content-Type')
         );
         $this->assertStringContainsString('.xlsx', (string) $excel->headers->get('Content-Disposition'));
+    }
+
+    public function test_free_upcoming_event_export_omits_payment_and_attendance_columns(): void
+    {
+        $event = $this->event(['start_time' => now()->addDay()]);
+        $form = $this->form($event);
+        FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama Penuh',
+            'type' => 'text',
+            'sort_order' => 0,
+        ]);
+
+        $this->registration($event, $form, ['name' => 'Peserta Masa Depan']);
+
+        $csv = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id))
+            ->assertOk()
+            ->streamedContent();
+
+        $header = str_getcsv(str_replace("\xEF\xBB\xBF", '', strtok($csv, "\n")));
+        $this->assertContains('Nama Penuh', $header);
+        $this->assertNotContains('Jumlah (RM)', $header);
+        $this->assertNotContains('Item', $header);
+        $this->assertNotContains('Bayaran', $header);
+        $this->assertNotContains('Kehadiran', $header);
+        $this->assertNotContains('Masa Hadir', $header);
+        $this->assertStringNotContainsString('Tidak Hadir', $csv);
     }
 }

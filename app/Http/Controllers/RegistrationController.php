@@ -380,7 +380,7 @@ class RegistrationController extends Controller
             ->get()
             ->flatMap(fn (Form $form) => $form->questions)
             ->values();
-        $export = new EventRegistrationsExport($query->orderBy('id')->get(), $questions);
+        $export = new EventRegistrationsExport($query->orderBy('id')->get(), $questions, $event);
 
         if (in_array(strtolower((string) $request->input('format')), ['xlsx', 'excel'], true)) {
             return Excel::download($export, $filename.'.xlsx');
