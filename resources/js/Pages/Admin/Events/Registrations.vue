@@ -119,18 +119,25 @@ const payment = (r) => paymentBadge[r.payment_state] ?? paymentBadge.free;
                     <h1 class="mt-1 text-2xl font-black text-gray-900">Pendaftaran</h1>
                     <p class="text-sm text-gray-500">{{ event.title }}</p>
                 </div>
-                    <a
-                        :href="exportUrl('csv')"
-                        class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
-                    >
-                        Export CSV
-                    </a>
-                    <a
-                        :href="exportUrl('xlsx')"
-                        class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
-                    >
-                        Export Excel
-                    </a>
+                    <details class="relative">
+                        <summary class="cursor-pointer list-none rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800">
+                            Export
+                        </summary>
+                        <div class="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+                            <a
+                                :href="exportUrl('csv')"
+                                class="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                                CSV
+                            </a>
+                            <a
+                                :href="exportUrl('xlsx')"
+                                class="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                                Excel
+                            </a>
+                        </div>
+                    </details>
             </div>
 
             <div

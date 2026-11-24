@@ -399,6 +399,18 @@ class RegistrationAdminTest extends TestCase
             'type' => 'text',
             'sort_order' => 0,
         ]);
+        $nameQuestion = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama Penuh',
+            'type' => 'text',
+            'sort_order' => 1,
+        ]);
+        $icQuestion = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'No. IC',
+            'type' => 'text',
+            'sort_order' => 2,
+        ]);
         $registration = $this->registration($event, $form, [
             'name' => 'Peserta Awam',
             'user_id' => null,
@@ -415,15 +427,30 @@ class RegistrationAdminTest extends TestCase
             'form_question_id' => $question->id,
             'value' => 'Universiti Malaya',
         ]);
+        FormAnswer::create([
+            'form_response_id' => $response->id,
+            'form_question_id' => $nameQuestion->id,
+            'value' => 'Peserta Awam',
+        ]);
+        FormAnswer::create([
+            'form_response_id' => $response->id,
+            'form_question_id' => $icQuestion->id,
+            'value' => '900101-01-1234',
+        ]);
 
         $csv = $this->actingAs($this->admin)
             ->get(route('admin.events.registrations.export', $event->id))
             ->assertOk()
             ->streamedContent();
 
-        $this->assertStringContainsString('Nama Syarikat/Agensi/Organisasi/NGO', $csv);
+        $header = str_getcsv(str_replace("\xEF\xBB\xBF", '', strtok($csv, "\n")));
+        $this->assertContains('Nama Syarikat/Agensi/Organisasi/NGO', $header);
+        $this->assertContains('Nama Penuh', $header);
+        $this->assertContains('No. IC', $header);
+        $this->assertNotContains('Organisasi akaun', $header);
+        $this->assertSame(1, count(array_filter($header, fn ($column) => $column === 'Nama Penuh')));
+        $this->assertSame(1, count(array_filter($header, fn ($column) => $column === 'No. IC')));
         $this->assertStringContainsString('Universiti Malaya', $csv);
-        $this->assertStringContainsString('Orang awam', $csv);
 
         $excel = $this->actingAs($this->admin)
             ->get(route('admin.events.registrations.export', ['event' => $event->id, 'format' => 'xlsx']))
