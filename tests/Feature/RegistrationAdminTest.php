@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
+use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\FormAnswer;
 use App\Models\Form;
@@ -495,5 +496,33 @@ class RegistrationAdminTest extends TestCase
         $this->assertNotContains('Kehadiran', $header);
         $this->assertNotContains('Masa Hadir', $header);
         $this->assertStringNotContainsString('Tidak Hadir', $csv);
+    }
+
+    public function test_past_event_export_includes_attendance_status_and_time(): void
+    {
+        $event = $this->event();
+        $form = $this->form($event);
+
+        $attended = $this->registration($event, $form, ['name' => 'Sudah Hadir']);
+        $this->registration($event, $form, ['name' => 'Belum Hadir']);
+
+        $attendance = Attendance::create([
+            'registration_id' => $attended->id,
+            'event_id' => $event->id,
+            'attended_at' => now()->subMinutes(30),
+            'method' => 'member',
+        ]);
+
+        $csv = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id))
+            ->assertOk()
+            ->streamedContent();
+
+        $header = str_getcsv(str_replace("\xEF\xBB\xBF", '', strtok($csv, "\n")));
+        $this->assertContains('Kehadiran', $header);
+        $this->assertContains('Masa Hadir', $header);
+        $this->assertStringContainsString('Hadir', $csv);
+        $this->assertStringContainsString('Tidak Hadir', $csv);
+        $this->assertStringContainsString($attendance->attended_at->format('d/m/Y h:i A'), $csv);
     }
 }

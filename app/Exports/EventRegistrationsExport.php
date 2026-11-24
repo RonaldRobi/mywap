@@ -127,7 +127,7 @@ class EventRegistrationsExport extends StringValueBinder implements FromCollecti
 
         return match ($key) {
             'registration_no' => $registration->registration_no,
-            'created_at' => $registration->created_at?->toDateTimeString(),
+            'created_at' => $registration->created_at?->format('d/m/Y h:i A'),
             'status' => $registration->status->label(),
             'ticket_type' => $registration->ticket_type,
             'items' => $registration->items
@@ -144,7 +144,7 @@ class EventRegistrationsExport extends StringValueBinder implements FromCollecti
             'attendance' => $registration->attendance !== null
                 ? 'Hadir'
                 : ($event->start_time?->isPast() ? 'Tidak Hadir' : ''),
-            'attended_at' => $registration->attendance?->attended_at?->toDateTimeString(),
+            'attended_at' => $registration->attendance?->attended_at?->format('d/m/Y h:i A'),
             default => null,
         };
     }
