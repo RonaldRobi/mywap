@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RegistrationStatus;
+use App\Exports\EventRegistrationsExport;
 use App\Models\ActivityLog;
 use App\Models\Event;
 use App\Models\Form;
@@ -21,7 +22,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -288,42 +291,7 @@ class RegistrationController extends Controller
             'formResponse.answers.question', 'items',
         ]);
 
-        if ($request->filled('org')) {
-            $query->where('organization_id', (int) $request->org);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('registration_no', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('ic_number', 'like', "%{$search}%")
-                    ->orWhere('member_no', 'like', "%{$search}%");
-            });
-        }
-
-        // Penapis bayaran: percuma / dibayar / belum dibayar.
-        if ($request->filled('payment')) {
-            match ($request->payment) {
-                'free' => $query->whereRaw('(base_amount + addons_amount) <= 0'),
-                'paid' => $query->whereHas('latestPayment', fn ($q) => $q->where('status', 'successful')),
-                'unpaid' => $query
-                    ->whereRaw('(base_amount + addons_amount) > 0')
-                    ->whereDoesntHave('latestPayment', fn ($q) => $q->where('status', 'successful')),
-                default => null,
-            };
-        }
-
-        // Hanya peserta yang memesan item (untuk sediaan).
-        if ($request->boolean('has_items')) {
-            $query->whereHas('items');
-        }
+        $this->applyRegistrationFilters($query, $request);
 
         match ($request->query('sort')) {
             'items' => $query->orderByDesc('addons_amount')->orderByDesc('created_at'),
@@ -389,71 +357,94 @@ class RegistrationController extends Controller
      * Export senarai pendaftaran sebagai CSV bersih (peserta, item, bayaran,
      * status dan kehadiran).
      */
-    public function exportRegistrations(Request $request, Event $event): StreamedResponse
+    public function exportRegistrations(Request $request, Event $event): StreamedResponse|BinaryFileResponse
     {
         $user = $this->authorizeEventAdmin($request, $event);
         $isEventOwner = $user->hasRole('Superadmin') || $this->isEventOwner($user, $event);
 
-        $filename = 'pendaftaran-'.Str::slug($event->title).'-'.now()->format('Ymd-His').'.csv';
+        $filename = 'pendaftaran-'.Str::slug($event->title).'-'.now()->format('Ymd-His');
 
-        return response()->streamDownload(function () use ($event, $user, $isEventOwner) {
+        $query = Registration::with([
+            'organization', 'form.questions', 'items', 'latestPayment', 'attendance',
+            'formResponse.answers.question',
+        ])->where('event_id', $event->id);
+
+        if (! $isEventOwner) {
+            $query->where('organization_id', (int) $user->current_organization_id);
+        }
+
+        $this->applyRegistrationFilters($query, $request);
+        $questions = Form::query()
+            ->where('event_id', $event->id)
+            ->with('questions')
+            ->get()
+            ->flatMap(fn (Form $form) => $form->questions)
+            ->values();
+        $export = new EventRegistrationsExport($query->orderBy('id')->get(), $questions);
+
+        if (in_array(strtolower((string) $request->input('format')), ['xlsx', 'excel'], true)) {
+            return Excel::download($export, $filename.'.xlsx');
+        }
+
+        return response()->streamDownload(function () use ($export) {
             $file = fopen('php://output', 'w');
             fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $export->headings());
 
-            fputcsv($file, [
-                'No. Daftar', 'Nama', 'No. IC', 'No. Ahli', 'Telefon', 'Emel',
-                'Organisasi', 'Borang', 'Kategori', 'Item', 'Jumlah (RM)',
-                'Bayaran', 'Status', 'Kehadiran', 'Masa Hadir',
-            ]);
-
-            $query = Registration::with(['organization', 'form', 'items', 'latestPayment', 'attendance'])
-                ->where('event_id', $event->id)
-                ->orderBy('id');
-
-            if (! $isEventOwner) {
-                $query->where('organization_id', (int) $user->current_organization_id);
+            foreach ($export->collection() as $row) {
+                fputcsv($file, $row);
             }
 
-            $query->chunk(500, function ($registrations) use ($file) {
-                foreach ($registrations as $registration) {
-                    $items = $registration->items
-                        ->map(fn ($item) => trim(
-                            $item->name
-                            .($item->variant_name ? ' ('.$item->variant_name.')' : '')
-                            .' x'.$item->quantity
-                        ))
-                        ->implode('; ');
-
-                    $payment = $registration->isFreeRegistration()
-                        ? 'Percuma'
-                        : ($registration->latestPayment?->status === 'successful'
-                            ? 'Dibayar'.($registration->latestPayment?->uploaded_by !== null ? ' (manual)' : '')
-                            : 'Menunggu Bayaran');
-
-                    fputcsv($file, [
-                        $registration->registration_no,
-                        $registration->name,
-                        $registration->ic_number,
-                        $registration->member_no,
-                        $registration->phone,
-                        $registration->email,
-                        $registration->organization?->name,
-                        $registration->form?->title,
-                        $registration->ticket_type,
-                        $items !== '' ? $items : null,
-                        number_format($registration->totalAmount(), 2, '.', ''),
-                        $payment,
-                        $registration->status->label(),
-                        $registration->attendance ? 'Hadir' : 'Tidak Hadir',
-                        $registration->attendance?->attended_at?->toDateTimeString(),
-                    ]);
-                }
-            });
-
             fclose($file);
-        }, $filename, [
+        }, $filename.'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function applyRegistrationFilters(Builder $query, Request $request): void
+    {
+        if ($request->filled('org')) {
+            if ($request->org === 'public') {
+                $query->whereNull('user_id');
+            } else {
+                $query->where('organization_id', (int) $request->org)
+                    ->where(function (Builder $q) {
+                        $q->whereNotNull('user_id')
+                            ->orWhere('source', '!=', Registration::SOURCE_FORM);
+                    });
+            }
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('registration_no', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('ic_number', 'like', "%{$search}%")
+                    ->orWhere('member_no', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('payment')) {
+            match ($request->payment) {
+                'free' => $query->whereRaw('(base_amount + addons_amount) <= 0'),
+                'paid' => $query->whereHas('latestPayment', fn ($q) => $q->where('status', 'successful')),
+                'unpaid' => $query
+                    ->whereRaw('(base_amount + addons_amount) > 0')
+                    ->whereDoesntHave('latestPayment', fn ($q) => $q->where('status', 'successful')),
+                default => null,
+            };
+        }
+
+        if ($request->boolean('has_items')) {
+            $query->whereHas('items');
+        }
     }
 
     /**

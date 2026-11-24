@@ -361,6 +361,11 @@ class Registration extends Model
         return $this->attendance !== null;
     }
 
+    public function isPublicParticipant(): bool
+    {
+        return $this->user_id === null;
+    }
+
     /**
      * Sahkan pendaftaran (pending → confirmed) dan hantar emel pengesahan
      * sekali sahaja (dijaga oleh confirmation_sent_at). Dipanggil selepas

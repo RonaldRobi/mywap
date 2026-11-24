@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Enums\EventCategory;
 use App\Enums\EventStatus;
 use App\Models\Event;
+use App\Models\FormAnswer;
 use App\Models\Form;
+use App\Models\FormQuestion;
+use App\Models\FormResponse;
 use App\Models\FormItem;
 use App\Models\Organization;
 use App\Models\Payment;
@@ -360,5 +363,76 @@ class RegistrationAdminTest extends TestCase
             ->assertOk();
 
         $this->assertStringContainsString('Nama Eksport', $response->streamedContent());
+    }
+
+    public function test_public_legacy_registration_is_labelled_and_filterable(): void
+    {
+        $event = $this->event();
+        $form = $this->form($event);
+
+        $registration = $this->registration($event, $form, [
+            'name' => 'Peserta Awam Lama',
+            'user_id' => null,
+            'source' => Registration::SOURCE_FORM,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations', $event->id))
+            ->assertInertia(fn ($page) => $page
+                ->where('registrations.data.0.name', $registration->name)
+                ->where('registrations.data.0.organization_name', 'Orang awam'));
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations', ['event' => $event->id, 'org' => 'public']))
+            ->assertInertia(fn ($page) => $page
+                ->where('stats.total', 1)
+                ->where('registrations.data.0.name', $registration->name));
+    }
+
+    public function test_event_export_contains_all_form_questions_and_excel_download(): void
+    {
+        $event = $this->event();
+        $form = $this->form($event);
+        $question = FormQuestion::create([
+            'form_id' => $form->id,
+            'label' => 'Nama Syarikat/Agensi/Organisasi/NGO',
+            'type' => 'text',
+            'sort_order' => 0,
+        ]);
+        $registration = $this->registration($event, $form, [
+            'name' => 'Peserta Awam',
+            'user_id' => null,
+            'source' => Registration::SOURCE_FORM,
+        ]);
+        $response = FormResponse::create([
+            'form_id' => $form->id,
+            'registration_id' => $registration->id,
+            'respondent_name' => $registration->name,
+            'submitted_at' => now(),
+        ]);
+        FormAnswer::create([
+            'form_response_id' => $response->id,
+            'form_question_id' => $question->id,
+            'value' => 'Universiti Malaya',
+        ]);
+
+        $csv = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', $event->id))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Nama Syarikat/Agensi/Organisasi/NGO', $csv);
+        $this->assertStringContainsString('Universiti Malaya', $csv);
+        $this->assertStringContainsString('Orang awam', $csv);
+
+        $excel = $this->actingAs($this->admin)
+            ->get(route('admin.events.registrations.export', ['event' => $event->id, 'format' => 'xlsx']))
+            ->assertOk();
+
+        $this->assertSame(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $excel->headers->get('Content-Type')
+        );
+        $this->assertStringContainsString('.xlsx', (string) $excel->headers->get('Content-Disposition'));
     }
 }

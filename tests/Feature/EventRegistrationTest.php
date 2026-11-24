@@ -256,6 +256,7 @@ class EventRegistrationTest extends TestCase
             ->firstOrFail();
         $this->assertSame('Tetamu Test', $registration->name);
         $this->assertNull($registration->user_id);
+        $this->assertNull($registration->organization_id);
     }
 
     public function test_guest_participant_fields_mapped_from_form_answers(): void

@@ -33,6 +33,19 @@ function apply(extra = {}) {
     });
 }
 
+function exportUrl(format) {
+    const params = new URLSearchParams();
+
+    Object.entries(f).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined && value !== false) {
+            params.set(key, value === true ? '1' : value);
+        }
+    });
+    params.set('format', format);
+
+    return `${route('admin.events.registrations.export', props.event.id)}?${params.toString()}`;
+}
+
 function reset() {
     f.search = '';
     f.status = '';
@@ -106,12 +119,18 @@ const payment = (r) => paymentBadge[r.payment_state] ?? paymentBadge.free;
                     <h1 class="mt-1 text-2xl font-black text-gray-900">Pendaftaran</h1>
                     <p class="text-sm text-gray-500">{{ event.title }}</p>
                 </div>
-                <a
-                    :href="route('admin.events.registrations.export', event.id)"
-                    class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
-                >
-                    Export CSV
-                </a>
+                    <a
+                        :href="exportUrl('csv')"
+                        class="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+                    >
+                        Export CSV
+                    </a>
+                    <a
+                        :href="exportUrl('xlsx')"
+                        class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
+                    >
+                        Export Excel
+                    </a>
             </div>
 
             <div
@@ -207,6 +226,7 @@ const payment = (r) => paymentBadge[r.payment_state] ?? paymentBadge.free;
                     </select>
                     <select v-if="organizations.length" v-model="f.org" class="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0">
                         <option value="">Semua organisasi</option>
+                        <option value="public">Orang awam</option>
                         <option v-for="o in organizations" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
                     </select>
                 </div>
@@ -254,7 +274,7 @@ const payment = (r) => paymentBadge[r.payment_state] ?? paymentBadge.free;
                     <thead class="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-400">
                         <tr>
                             <th class="px-4 py-3">Peserta</th>
-                            <th class="px-4 py-3">Organisasi</th>
+                            <th class="px-4 py-3">Organisasi akaun</th>
                             <th class="px-4 py-3">Item</th>
                             <th class="px-4 py-3">Bayaran</th>
                             <th class="px-4 py-3">Status</th>

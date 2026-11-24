@@ -212,9 +212,7 @@ class RegistrationService
                     $attributes['member_no'] = $user->member_no ?: $existing->member_no;
                 }
 
-                if ($user?->current_organization_id ?? $form->organization_id) {
-                    $attributes['organization_id'] = $user?->current_organization_id ?? $form->organization_id;
-                }
+                $attributes['organization_id'] = $user?->current_organization_id;
 
                 if ($email) {
                     $attributes['email'] = $email;
@@ -247,8 +245,7 @@ class RegistrationService
                     'event_id' => $event->id,
                     'form_id' => $form->id,
                     'user_id' => $user?->id,
-                    'organization_id' => $user?->current_organization_id
-                        ?? $form->organization_id,
+                    'organization_id' => $user?->current_organization_id,
                     'member_no' => $user?->member_no,
                     'name' => $name ?: 'Peserta',
                     'email' => $email,
@@ -737,7 +734,9 @@ class RegistrationService
                     ($answer->question?->label ?? 'Soalan '.$answer->form_question_id) => $answer->value,
                 ])
                 ->all() ?? [],
-            'organization_name' => $r->organization?->name,
+            'organization_name' => $r->isPublicParticipant()
+                ? 'Orang awam'
+                : $r->organization?->name,
             'form_title' => $r->form?->title,
             'payment_status' => $r->latestPayment?->status ?? 'paid',
             'payment_state' => $r->isFreeRegistration()
