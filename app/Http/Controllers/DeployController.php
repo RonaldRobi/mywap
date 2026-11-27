@@ -89,6 +89,7 @@ class DeployController extends Controller
             // seeding tidak seharusnya menggagalkan deploy kod.
             ['key' => 'seed_admins', 'critical' => false, 'cmd' => escapeshellarg($php).' artisan abim:state-admins'],
             ['key' => 'optimize', 'critical' => true, 'cmd' => escapeshellarg($php).' artisan optimize'],
+            ['key' => 'scheduler_ensure', 'critical' => true, 'cmd' => escapeshellarg($php).' artisan app:ensure-scheduler'],
             ['key' => 'queue_restart', 'critical' => false, 'cmd' => escapeshellarg($php).' artisan queue:restart'],
             ['key' => 'queue_ensure', 'critical' => false, 'cmd' => 'sleep 5; if ps aux | grep -q "[a]rtisan queue:work"; then echo "queue worker already running"; else nohup '.escapeshellarg($php).' artisan queue:work --sleep=3 --tries=3 >> storage/logs/queue-worker.log 2>&1 & echo "queue worker started"; fi'],
         ];
@@ -98,6 +99,22 @@ class DeployController extends Controller
                 'key' => 'schedule_run',
                 'critical' => false,
                 'cmd' => escapeshellarg($php).' artisan schedule:run',
+            ];
+        }
+
+        if ($request->boolean('test_onesender_alert')) {
+            $steps[] = [
+                'key' => 'onesender_test_email',
+                'critical' => true,
+                'cmd' => escapeshellarg($php).' artisan onesender:monitor --test-email',
+            ];
+        }
+
+        if ($request->boolean('run_onesender_monitor')) {
+            $steps[] = [
+                'key' => 'onesender_monitor',
+                'critical' => true,
+                'cmd' => escapeshellarg($php).' artisan onesender:monitor',
             ];
         }
 

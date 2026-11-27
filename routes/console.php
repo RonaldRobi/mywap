@@ -5,6 +5,11 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('onesender:monitor')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(5)
+    ->appendOutputTo(storage_path('logs/onesender-monitor.log'));
+
 // Default inspire quote command (Breeze default)
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

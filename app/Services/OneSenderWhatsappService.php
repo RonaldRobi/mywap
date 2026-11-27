@@ -3,11 +3,46 @@
 namespace App\Services;
 
 use App\Models\AppSetting;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class OneSenderWhatsappService
 {
+    public function connectionStatus(): array
+    {
+        $settings = AppSetting::singleton();
+        $url = $settings->onesender_url ?: config('services.onesender.url');
+        $key = $settings->onesender_api_key ?: config('services.onesender.key');
+
+        if (! $url || ! $key || ! preg_match('~/messages/?$~', $url)) {
+            return ['state' => 'unknown', 'reason' => 'Tetapan URL atau kunci OneSender tidak lengkap.'];
+        }
+
+        try {
+            $response = Http::connectTimeout(5)->timeout(15)->withoutRedirecting()
+                ->withToken($key)->acceptJson()
+                ->get(preg_replace('~/messages/?$~', '/device', $url));
+
+            if (! $response->successful() || (int) $response->json('code') !== 200) {
+                return ['state' => 'unknown', 'reason' => 'API status OneSender gagal memberikan respons yang sah (HTTP '.$response->status().').'];
+            }
+
+            $online = $response->json('data.is_online');
+            if (! is_bool($online)) {
+                return ['state' => 'unknown', 'reason' => 'Respons OneSender tidak mengandungi status sambungan yang sah.'];
+            }
+
+            return [
+                'state' => $online ? 'online' : 'offline',
+                'reason' => $online ? 'Peranti WhatsApp tersambung.' : 'Peranti WhatsApp tidak tersambung ke OneSender.',
+            ];
+        } catch (ConnectionException) {
+            return ['state' => 'unknown', 'reason' => 'Server myWAP tidak dapat menghubungi API status OneSender.'];
+        }
+    }
+
     public function sendOtp(string $phone, string $otp): bool
     {
         $settings = AppSetting::singleton();
@@ -24,7 +59,7 @@ class OneSenderWhatsappService
         $message = "Kod OTP myWAP: *{$otp}*\n\n"
             ."Assalamualaikum. Kod ini untuk pengesahan log masuk myWAP dan sah selama 5 minit.\n\n"
             ."Jika anda tidak menerima kod atau menghadapi masalah, sila hubungi {$contact}.\n\n"
-            ."Jangan kongsi kod ini dengan sesiapa.";
+            .'Jangan kongsi kod ini dengan sesiapa.';
 
         try {
             $response = Http::timeout(15)
@@ -109,7 +144,7 @@ class OneSenderWhatsappService
     }
 
     private function isSuccessfulResponse(
-        \Illuminate\Http\Client\Response $response,
+        Response $response,
     ): bool {
         if (! $response->successful()) {
             return false;

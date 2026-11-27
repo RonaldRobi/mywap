@@ -33,6 +33,7 @@ return [
     ],
 
     'onesender' => [
+        'alert_email' => env('ONESENDER_ALERT_EMAIL', 'cyberokettechnology@gmail.com'),
         'url' => env('ONESENDER_URL'),
         'key' => env('ONESENDER_KEY'),
         'contact' => env('ONESENDER_CONTACT', '+601157452119'),
