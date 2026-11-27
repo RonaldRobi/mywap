@@ -91,7 +91,12 @@ class SharePreviewController extends Controller
             description: strip_tags((string) $infaq->description) ?: 'Sertai kempen infaq ini sekarang.',
             imageUrl: $this->absoluteUrl($infaq->image_path),
             pageUrl: ShareUrl::route('share.infaq', $infaq),
-            redirectUrl: ShareUrl::route('infaq.show', $infaq),
+            redirectUrl: ShareUrl::route('infaq.show', [
+                'year' => $infaq->year,
+                'month' => $infaq->month,
+                'day' => $infaq->day,
+                'infaq' => $infaq->slug,
+            ]),
             type: 'article'
         );
     }

@@ -60,6 +60,7 @@ class FormService
                     'id' => $q->id,
                     'label' => $q->label,
                     'type' => $q->type,
+                    'identity_type' => $q->identity_type,
                     'options' => $q->options,
                     'required' => $q->required,
                     'placeholder' => $q->placeholder,
@@ -137,6 +138,10 @@ class FormService
                 $rule[] = 'email';
             } elseif (in_array($q->type, ['number'])) {
                 $rule[] = 'numeric';
+            } elseif ($q->type === 'ic') {
+                $rule[] = ($q->identity_type ?? 'ic') === 'passport'
+                    ? 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9]{6,32}$/'
+                    : 'regex:/^\d{6}-?\d{2}-?\d{4}$/';
             } elseif (in_array($q->type, ['date'])) {
                 $rule[] = 'date';
             }

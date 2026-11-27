@@ -121,7 +121,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
           question.type == 'textarea' ||
           question.type == 'email' ||
           question.type == 'number' ||
-          question.type == 'phone') {
+          question.type == 'phone' ||
+          question.type == 'ic') {
         _controllerFor(id).text = value.toString();
       } else if ((question.type == 'select' || question.type == 'radio') &&
           !question.options.contains(value.toString())) {

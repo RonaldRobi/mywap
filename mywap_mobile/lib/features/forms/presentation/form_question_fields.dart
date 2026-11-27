@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../shared/l10n/l10n.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -113,6 +114,25 @@ class _QuestionField extends StatelessWidget {
         field = TextFormField(
           controller: controller(id!),
           keyboardType: TextInputType.number,
+          onChanged: (value) => onChanged(id, value),
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: question.placeholder,
+          ),
+        );
+      case 'ic':
+        final isPassport = question.identityType == 'passport';
+        field = TextFormField(
+          controller: controller(id!),
+          keyboardType: isPassport
+              ? TextInputType.text
+              : TextInputType.number,
+          inputFormatters: isPassport
+              ? null
+              : [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(12),
+                ],
           onChanged: (value) => onChanged(id, value),
           decoration: InputDecoration(
             labelText: label,

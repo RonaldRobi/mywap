@@ -5,6 +5,7 @@ class FormQuestion {
     this.id,
     this.label,
     this.type,
+    this.identityType,
     this.options = const [],
     this.required = false,
     this.placeholder,
@@ -15,6 +16,7 @@ class FormQuestion {
   final int? id;
   final String? label;
   final String? type;
+  final String? identityType;
   final List<String> options;
   final bool required;
   final String? placeholder;
@@ -28,6 +30,7 @@ class FormQuestion {
     id: parseIntValue(json['id']),
     label: json['label'] as String?,
     type: json['type'] as String?,
+    identityType: json['identity_type'] as String?,
     options: _parseStrings(json['options']),
     required: parseBoolValue(json['required']),
     placeholder: json['placeholder'] as String?,

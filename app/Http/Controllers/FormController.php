@@ -32,7 +32,7 @@ class FormController extends Controller
 {
     public function __construct(private readonly FormService $forms) {}
 
-    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'select', 'radio', 'checkbox', 'file', 'branch'];
+    const QUESTION_TYPES = ['text', 'textarea', 'number', 'email', 'phone', 'ic', 'date', 'select', 'radio', 'checkbox', 'file', 'branch'];
 
     const AUTOFILL_KEYS = ['name', 'email', 'phone', 'member_no', 'ic_number', 'dob', 'gender', 'profession', 'address_1', 'address_2', 'postcode', 'district', 'city', 'state'];
 
@@ -159,6 +159,7 @@ class FormController extends Controller
             'questions' => ['required', 'array', 'min:1'],
             'questions.*.label' => ['required', 'string', 'max:5000'],
             'questions.*.type' => ['required', 'in:'.implode(',', self::QUESTION_TYPES)],
+            'questions.*.identity_type' => ['nullable', 'in:ic,passport'],
             'questions.*.options' => ['nullable', 'array'],
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
@@ -232,6 +233,7 @@ class FormController extends Controller
                     'form_id' => $form->id,
                     'label' => $q['label'],
                     'type' => $q['type'],
+                    'identity_type' => $q['identity_type'] ?? null,
                     'options' => in_array($q['type'], ['select', 'radio', 'checkbox']) ? ($q['options'] ?? []) : null,
                     'required' => $q['required'] ?? false,
                     'placeholder' => $q['placeholder'] ?? null,
@@ -304,6 +306,7 @@ class FormController extends Controller
                     'id' => $q->id,
                     'label' => $q->label,
                     'type' => $q->type,
+                    'identity_type' => $q->identity_type,
                     'options' => $q->options,
                     'required' => $q->required,
                     'placeholder' => $q->placeholder,
@@ -366,6 +369,7 @@ class FormController extends Controller
             'questions.*.id' => ['nullable', 'integer'],
             'questions.*.label' => ['required', 'string', 'max:5000'],
             'questions.*.type' => ['required', 'in:'.implode(',', self::QUESTION_TYPES)],
+            'questions.*.identity_type' => ['nullable', 'in:ic,passport'],
             'questions.*.options' => ['nullable', 'array'],
             'questions.*.required' => ['boolean'],
             'questions.*.placeholder' => ['nullable', 'string', 'max:255'],
@@ -451,6 +455,7 @@ class FormController extends Controller
                         $question->update([
                             'label' => $q['label'],
                             'type' => $q['type'],
+                            'identity_type' => $q['identity_type'] ?? null,
                             'options' => in_array($q['type'], ['select', 'radio', 'checkbox']) ? ($q['options'] ?? []) : null,
                             'required' => $q['required'] ?? false,
                             'placeholder' => $q['placeholder'] ?? null,
@@ -464,6 +469,7 @@ class FormController extends Controller
                         'form_id' => $form->id,
                         'label' => $q['label'],
                         'type' => $q['type'],
+                        'identity_type' => $q['identity_type'] ?? null,
                         'options' => in_array($q['type'], ['select', 'radio', 'checkbox']) ? ($q['options'] ?? []) : null,
                         'required' => $q['required'] ?? false,
                         'placeholder' => $q['placeholder'] ?? null,

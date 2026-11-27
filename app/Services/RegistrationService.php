@@ -93,6 +93,10 @@ class RegistrationService
                 $rule[] = 'email';
             } elseif ($q->type === 'number') {
                 $rule[] = 'numeric';
+            } elseif ($q->type === 'ic') {
+                $rule[] = ($q->identity_type ?? 'ic') === 'passport'
+                    ? 'regex:/^(?=.*[A-Za-z])[A-Za-z0-9]{6,32}$/'
+                    : 'regex:/^\d{6}-?\d{2}-?\d{4}$/';
             } elseif ($q->type === 'phone') {
                 $rule[] = 'string';
                 $rule[] = 'max:50';
@@ -663,6 +667,12 @@ class RegistrationService
 
             if ($q->type === 'email') {
                 $result['email'] = $value;
+
+                continue;
+            }
+
+            if ($q->type === 'ic' && ($q->identity_type ?? 'ic') === 'ic') {
+                $result['ic_number'] ??= $value;
 
                 continue;
             }

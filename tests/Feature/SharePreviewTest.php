@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Infaq;
 use App\Models\LibraryItem;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,5 +33,24 @@ class SharePreviewTest extends TestCase
                 false
             )
             ->assertSee('Buku Panduan Ahli');
+    }
+
+    public function test_infaq_share_preview_renders_with_public_redirect_url(): void
+    {
+        $infaq = Infaq::create([
+            'title' => 'Bantuan Banjir',
+            'slug' => 'bantuan-banjir',
+            'description' => 'Mari bantu mangsa banjir.',
+            'type' => 'one_off',
+            'is_active' => true,
+        ]);
+
+        $redirect = rtrim(config('app.share_url'), '/').'/sumbangan/'
+            .$infaq->year.'/'.$infaq->month.'/'.$infaq->day.'/'.$infaq->slug;
+
+        $this->get(route('share.infaq', $infaq))
+            ->assertOk()
+            ->assertSee('Bantuan Banjir')
+            ->assertSee($redirect, false);
     }
 }

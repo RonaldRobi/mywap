@@ -28,6 +28,7 @@ function createQuestion(q = {}) {
         id: q.id ?? null,
         label: q.label ?? '',
         type: q.type ?? 'text',
+        identity_type: q.identity_type ?? null,
         options: q.options ?? [],
         required: !!q.required,
         placeholder: q.placeholder ?? '',
@@ -85,6 +86,7 @@ const typeLabels = {
     number:    'Nombor',
     email:     'Emel',
     phone:     'Telefon',
+    ic:        'No. KP / Passport',
     date:      'Tarikh',
     select:    'Dropdown',
     radio:     'Radio',
@@ -92,6 +94,13 @@ const typeLabels = {
     file:      'Muat Naik Fail',
     branch:    'Negeri & Cawangan',
 };
+
+const fieldPresets = [
+    { key: 'name', label: 'Nama Penuh', type: 'text', placeholder: 'cth. Ahmad bin Ali', autofill_key: 'name' },
+    { key: 'ic', label: 'No. KP / Passport', type: 'ic', placeholder: 'cth. 900101-01-1234', autofill_key: 'ic_number', identity_type: 'ic' },
+    { key: 'email', label: 'Alamat Emel', type: 'email', placeholder: 'cth. nama@contoh.com', autofill_key: 'email' },
+    { key: 'phone', label: 'No. Telefon', type: 'phone', placeholder: 'cth. 012-3456789', autofill_key: 'phone' },
+];
 
 const formData = reactive({
     title:          props.form?.title ?? '',
@@ -220,6 +229,35 @@ async function addQuestion() {
     highlightTimer = setTimeout(() => { highlightedQuestionUid.value = null; }, 1600);
 }
 
+async function addPreset(preset) {
+    const question = createQuestion({
+        label: preset.label,
+        type: preset.type,
+        identity_type: preset.identity_type ?? null,
+        placeholder: preset.placeholder ?? '',
+        autofill_key: preset.autofill_key ?? '',
+        required: true,
+    });
+    formData.questions.push(question);
+
+    if (preset.autofill_key) {
+        formData.autofill_enabled = true;
+    }
+
+    await nextTick();
+    const card = builderRoot.value?.querySelector(`[data-question-uid="${question._uid}"]`);
+    if (!card) return;
+
+    card.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'center',
+    });
+
+    highlightedQuestionUid.value = question._uid;
+    clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => { highlightedQuestionUid.value = null; }, 1600);
+}
+
 function removeQuestion(index) {
     if (formData.questions.length <= 1) return;
     const [removed] = formData.questions.splice(index, 1);
@@ -232,6 +270,12 @@ function onTypeChange(q) {
     }
     if (!q.options?.length) {
         q.options = [''];
+    }
+    if (q.type === 'ic' && !q.identity_type) {
+        q.identity_type = 'ic';
+    }
+    if (q.type !== 'ic') {
+        q.identity_type = null;
     }
 }
 
@@ -304,6 +348,7 @@ function save() {
             id: q.id,
             label: q.label,
             type: q.type,
+            identity_type: q.identity_type ?? null,
             options: ['select', 'radio', 'checkbox'].includes(q.type) ? (q.options || []).filter(o => o.trim()) : null,
             required: q.required,
             placeholder: q.placeholder,
@@ -697,14 +742,26 @@ const valid = computed(() => {
             <div class="rounded-3xl border border-white/60 bg-white/80 backdrop-blur-xl p-6 shadow-sm space-y-4">
                 <div class="flex items-center justify-between gap-3">
                     <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide">Soalan</h2>
-                    <button
-                        type="button"
-                        @click="addQuestion"
-                        class="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
-                    >
-                        <span aria-hidden="true" class="text-base leading-none">+</span>
-                        Tambah Soalan
-                    </button>
+                    <div class="flex flex-wrap items-center justify-end gap-1.5">
+                        <button
+                            v-for="p in fieldPresets"
+                            :key="p.key"
+                            type="button"
+                            @click="addPreset(p)"
+                            class="inline-flex min-h-11 items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+                        >
+                            <span aria-hidden="true" class="text-base leading-none">+</span>
+                            {{ p.label }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="addQuestion"
+                            class="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2"
+                        >
+                            <span aria-hidden="true" class="text-base leading-none">+</span>
+                            Soalan lain
+                        </button>
+                    </div>
                 </div>
 
                 <div
@@ -750,6 +807,21 @@ const valid = computed(() => {
                     <label class="flex items-center gap-2 text-xs">
                         <input type="checkbox" v-model="q.required" class="rounded border-gray-300" /> Wajib diisi
                     </label>
+
+                    <div v-if="q.type === 'ic'" class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+                        <p class="text-xs font-semibold text-gray-600 mb-1.5">Jenis identiti</p>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <label class="inline-flex items-center gap-1.5 text-xs text-gray-700">
+                                <input type="radio" v-model="q.identity_type" value="ic" class="rounded-full border-gray-300 text-indigo-600" />
+                                No. Kad Pengenalan
+                            </label>
+                            <label class="inline-flex items-center gap-1.5 text-xs text-gray-700">
+                                <input type="radio" v-model="q.identity_type" value="passport" class="rounded-full border-gray-300 text-indigo-600" />
+                                Passport
+                            </label>
+                        </div>
+                        <p class="mt-1 text-[11px] text-indigo-600">{{ q.identity_type === 'passport' ? 'Terima 6–32 aksara alfanumerik.' : 'Mesti 12 digit (contoh: 900101-01-1234).' }}</p>
+                    </div>
 
                     <div v-if="formData.autofill_enabled" class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Isi daripada profil</label>

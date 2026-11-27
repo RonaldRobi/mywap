@@ -91,11 +91,12 @@ function submit() {
                     </label>
                     <p v-if="q.help_text" class="text-xs text-gray-400 whitespace-pre-line">{{ q.help_text }}</p>
 
-                    <!-- Text / Email / Phone / Number / Date -->
+                    <!-- Text / Email / Phone / Number / Date / IC -->
                     <input
-                        v-if="['text', 'email', 'phone', 'number', 'date'].includes(q.type)"
+                        v-if="['text', 'email', 'phone', 'number', 'date', 'ic'].includes(q.type)"
                         v-model="responseForm.answers[q.id]"
-                        :type="q.type === 'phone' ? 'tel' : q.type"
+                        :type="q.type === 'phone' ? 'tel' : (q.type === 'ic' ? 'text' : q.type)"
+                        :inputmode="q.type === 'ic' && q.identity_type !== 'passport' ? 'numeric' : undefined"
                         :placeholder="q.placeholder || ''"
                         :required="q.required"
                         class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-0 focus:border-gray-300"

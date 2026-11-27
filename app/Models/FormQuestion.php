@@ -12,6 +12,7 @@ class FormQuestion extends Model
         'form_id',
         'label',
         'type',
+        'identity_type',
         'options',
         'required',
         'placeholder',
